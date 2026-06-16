@@ -1986,6 +1986,7 @@
 
 			(() => {
 				const updates = [];
+				const panes = [];
 
 				document
 					.querySelectorAll(".insp-src, .insp-asm")
@@ -2007,8 +2008,28 @@
 							passive: true,
 						});
 						updates.push(update);
-						update();
+						panes.push({ pane, code });
 					});
+
+				// Initial pass, deferred until after first paint so the layout
+				// reads run against an already-laid-out tree instead of forcing a
+				// synchronous reflow on the pre-LCP critical path. Reads are still
+				// batched ahead of writes to avoid per-pane thrashing.
+				const measureOverflow = () => {
+					const overflowing = panes.map(
+						({ code }) =>
+							code.scrollWidth -
+								code.clientWidth -
+								code.scrollLeft >
+							4,
+					);
+					panes.forEach(({ pane }, i) =>
+						pane.classList.toggle("scroll-more", overflowing[i]),
+					);
+				};
+				requestAnimationFrame(() =>
+					requestAnimationFrame(measureOverflow),
+				);
 
 				const updateAll = () =>
 					requestAnimationFrame(() => updates.forEach((fn) => fn()));
