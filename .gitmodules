@@ -1,0 +1,3 @@
+[submodule "vendor/wyst"]
+	path = vendor/wyst
+	url = git@github.com:wystlang/wyst.git

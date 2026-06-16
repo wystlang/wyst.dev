@@ -1,0 +1,16 @@
+{
+  "name": "wyst.dev",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "wyst.dev landing page and generated documentation site",
+  "scripts": {
+    "build": "node build/generate.mjs",
+    "docs": "node build/generate.mjs"
+  },
+  "devDependencies": {
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "prismjs": "^1.29.0"
+  }
+}

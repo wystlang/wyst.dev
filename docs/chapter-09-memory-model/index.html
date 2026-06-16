@@ -1,0 +1,1856 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Normal memory, volatile memory, atomics, barriers, ordering, agents, and happens-before." />
+		<title>Memory Model · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-09-memory-model/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/" aria-current="page"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 9</span>
+						<h1>Chapter 9: Wyst Memory Model</h1>
+						<p class="doc-lede">Normal memory, volatile memory, atomics, barriers, ordering, agents, and happens-before.</p>
+					</header>
+					<div class="doc-body">
+<blockquote>
+<p><strong>Canonical scope.</strong> ARM64 register model (§1.1), load/store
+architecture (§1.2), memory interpretation model (§1.3), memory
+access directives and volatility (§1.3.1), and the full memory
+model — execution model, compiler ordering rules, happens-before,
+visible-value-of-a-load, data races, atomicity, and interrupt handler
+ordering.</p>
+<p>Atomic runtime primitives live in <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a>;
+address types and conversion rules live in <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a>;
+inline assembly fence semantics live in <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.9</a>.</p>
+</blockquote>
+<p>With addresses, loads, stores, and functions established, the memory model
+defines ordering. Read normal memory and volatile memory first, then
+acquire/release, atomics, barriers, agents, and happens-before.</p>
+<hr>
+<h3 id="arm64-semantic-foundations" tabindex="-1"><a class="doc-anchor" href="#arm64-semantic-foundations" aria-hidden="true">#</a> ARM64 Semantic Foundations</h3>
+<hr>
+<h2 id="1.1-arm64-register-model" tabindex="-1"><a class="doc-anchor" href="#1.1-arm64-register-model" aria-hidden="true">#</a> 1.1 ARM64 Register Model</h2>
+<p>ARM64 is fundamentally register-oriented. Wyst surfaces this register file
+as a set of <strong>reserved tokens</strong> rather than as a set of variables. The
+register allocator owns variable-to-register mapping; the programmer
+expresses register affinity only via <code>#pin</code> (section 2.3) and manipulates
+registers directly only inside <code>#asm</code> blocks (section 2.9).</p>
+<p>General-purpose:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">x0-x30   64-bit
+w0-w30   lower 32-bit views
+sp,wsp   stack pointer
+xzr,wzr  zero register
+lr       alias for x30
+fp       alias for x29
+ip0,ip1  aliases for x16, x17 (linker scratch)
+</code></pre>
+<p>SIMD/FP:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">v0-v31   128-bit vectors
+q0-q31   128-bit views
+d0-d31   f64 / lower 64-bit views
+s0-s31   f32 / lower 32-bit views
+h0-h31   f16 / lower 16-bit views
+b0-b31   lower 8-bit views
+</code></pre>
+<p>These tokens are reserved by the lexer. Using one as a variable, parameter,
+constant, function, struct field, or label name is a syntax error. They may
+appear only:</p>
+<ol>
+<li>As the argument of a <code>#pin(...)</code> directive on a declaration.</li>
+<li>Inside the body of an <code>#asm { ... }</code> block.</li>
+</ol>
+<p>A Wyst statement like:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x0 <span class="token operator">=</span> x1 <span class="token operator">+</span> x2
+</code></pre>
+<p>is rejected. Add is expressed by writing variables:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
+b <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
+c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b      <span class="token comment">// lowers to `add xD, xA, xB` for whichever GPRs the allocator picks</span>
+</code></pre>
+<p>If the operation must use specific registers (firmware contract, fixed ABI),
+pin the variables:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">1</span>
+b <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x2<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">2</span>
+c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> a <span class="token operator">+</span> b   <span class="token comment">// guaranteed `add x0, x1, x2`</span>
+</code></pre>
+<p>If the operation must be emitted as a literal instruction (the rest of the
+function is also hand-scheduled, or the encoding is load-bearing), use <code>#asm</code>:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    body <span class="token punctuation">{</span> add x0<span class="token punctuation">,</span> x1<span class="token punctuation">,</span> x2 <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h2 id="1.2-load%2Fstore-architecture" tabindex="-1"><a class="doc-anchor" href="#1.2-load%2Fstore-architecture" aria-hidden="true">#</a> 1.2 Load/Store Architecture</h2>
+<p>ARM64 is a load/store ISA.</p>
+<p>Arithmetic only operates on registers.</p>
+<p>Memory access must be explicit.</p>
+<p>Traditional ARM64:</p>
+<pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm">ldr x0<span class="token punctuation">,</span> <span class="token punctuation">[</span>x1<span class="token punctuation">]</span>
+add x0<span class="token punctuation">,</span> x0<span class="token punctuation">,</span> <span class="token operator">#</span><span class="token number">5</span>
+str x0<span class="token punctuation">,</span> <span class="token punctuation">[</span>x1<span class="token punctuation">]</span>
+</code></pre>
+<p>Wyst preserves this explicitly.</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> memory_demo
+
+read_word <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h2 id="1.3-memory-interpretation-model" tabindex="-1"><a class="doc-anchor" href="#1.3-memory-interpretation-model" aria-hidden="true">#</a> 1.3 Memory Interpretation Model</h2>
+<p>This is one of Wyst's defining ideas.</p>
+<p>Wyst does not elevate addresses into:</p>
+<ul>
+<li>ownership objects</li>
+<li>provenance-tracked references</li>
+<li>hidden pointer abstractions</li>
+<li>named address spaces</li>
+</ul>
+<p>Addresses are typed values (<code>@T</code>) with a 64-bit machine representation,
+interpreted through typed memory syntax. They are distinct from <code>u64</code>
+(conversion requires <code>as</code>); arithmetic on them is byte-based, with the
+element type <code>T</code> recording stride for documentation and tooling only.
+The formal rules live in <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address Types subsection); this
+section introduces the surface form.</p>
+<p>ARM64 has a flat virtual address space. The only hardware distinction is:</p>
+<ul>
+<li><strong>Normal memory</strong> — cached, reorderable</li>
+<li><strong>Device memory</strong> — uncached, ordered, side-effecting</li>
+</ul>
+<p>The ordering semantics of memory operations — what the compiler may reorder, what values
+a load may return in the presence of concurrent stores, and how agents synchronize — are
+specified in this chapter.</p>
+<h3 id="normal-access" tabindex="-1"><a class="doc-anchor" href="#normal-access" aria-hidden="true">#</a> Normal Access</h3>
+<p>Canonical form:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">type[address]
+</code></pre>
+<p>Examples:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mem <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+
+x <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>     <span class="token comment">// load: read u64 from address in mem</span>
+                  <span class="token comment">// x's type is inferred as u64 from the load</span>
+
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span> <span class="token operator">=</span> x     <span class="token comment">// store: write x to u64 at address in mem</span>
+</code></pre>
+<p>The type of <code>x</code> is inferred from the load. Explicit annotation is also valid:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>
+</code></pre>
+<p>These are equivalent. The <code>:=</code> shorthand is simply <code>:</code> and <code>=</code> without whitespace.</p>
+<h3 id="device-access" tabindex="-1"><a class="doc-anchor" href="#device-access" aria-hidden="true">#</a> Device Access</h3>
+<p>Device (MMIO) accesses go through addresses typed <code>@volatile T</code>. Volatility
+is a property of the <strong>address type</strong>, not the access. There is no per-access
+<code>#volatile</code> directive in Wyst — declare the address as <code>@volatile T</code> once,
+and every load or store through it is automatically a compiler barrier.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile load — derived from address type</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile store — derived from address type</span>
+</code></pre>
+<p>A volatile access is a <strong>compiler barrier</strong>. The compiler may not:</p>
+<ul>
+<li>eliminate the access (no dead store elimination, no load forwarding)</li>
+<li>hoist the access above surrounding code</li>
+<li>sink the access below surrounding code</li>
+<li>merge multiple accesses to the same address</li>
+<li>speculatively execute the access ahead of a guard condition</li>
+</ul>
+<p>Two volatile accesses are never reordered with respect to each other.
+A plain access may not be moved across a volatile access in either direction.</p>
+<p><strong>Volatility does not emit CPU memory barriers.</strong> ARM64's weak memory model
+allows the CPU's store buffer to reorder writes to different addresses unless
+explicit barrier instructions are present. For MMIO sequences where access
+order must be observed by the device, use <code>%dsb</code> or <code>%dmb</code> between writes.
+See section 1.3.1 for barrier runtime primitives and MMIO ordering patterns.</p>
+<p><strong>Volatility does not control cacheability.</strong> Whether an address is cached
+or uncached is determined by the page-table entry for that address
+(specifically the MAIR index and the memory type attribute in the descriptor).
+A volatile access to an address mapped as Normal-Cacheable in the page
+tables will still go through the cache. Platform initialization code is
+responsible for configuring MMIO regions with Device memory attributes
+(e.g. Device-nGnRE) before accessing them.</p>
+<h3 id="address-types" tabindex="-1"><a class="doc-anchor" href="#address-types" aria-hidden="true">#</a> Address Types</h3>
+<p>Addresses are typed as <code>@T</code> — an address into elements of type <code>T</code>. This applies to <strong>any</strong> type with a compile-time-known size:</p>
+<h4>Integer Addresses</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token address-qualifier type">@u8</span>   <span class="token comment">// address into u8s   (element stride 1)</span>
+<span class="token address-qualifier type">@u16</span>  <span class="token comment">// address into u16s  (element stride 2)</span>
+<span class="token address-qualifier type">@u32</span>  <span class="token comment">// address into u32s  (element stride 4)</span>
+<span class="token address-qualifier type">@u64</span>  <span class="token comment">// address into u64s  (element stride 8)</span>
+</code></pre>
+<p>The &quot;stride N&quot; annotation describes what one <em>element</em> occupies, and source
+address arithmetic scales by that stride. <code>(p : @u32) + 1</code> is <code>p</code> advanced by
+one <code>u32</code> element, or four bytes. To step in raw bytes, cast to <code>@u8</code> or use
+explicit numeric <code>u64</code> arithmetic. The formal arithmetic rules are in
+<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address Types subsection).</p>
+<h4>Volatile Addresses</h4>
+<p>The qualifier <code>@volatile T</code> marks an address as referring to device memory.
+Every load or store through such an address is a compiler barrier (see
+section 1.3.1). Volatility propagates through address arithmetic:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
+GICD_CTLR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> GIC_BASE <span class="token operator">+</span> <span class="token number">0</span>    <span class="token comment">// still @volatile u32</span>
+GICD_TYPE <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> GIC_BASE <span class="token operator">+</span> <span class="token number">4</span>    <span class="token comment">// still @volatile u32</span>
+
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_CTLR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile store</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_TYPE<span class="token punctuation">]</span>            <span class="token comment">// volatile load</span>
+</code></pre>
+<p>There is no implicit conversion between <code>@T</code> and <code>@volatile T</code> in either
+direction. Stripping volatility requires an explicit <code>as</code> cast (<code>p as @T</code>),
+and adding volatility requires <code>p as @volatile T</code>. Both are visible source
+events; stripping volatility is almost always a bug.</p>
+<p>Volatility is determined only by the static address type at the memory-access
+site. A load or store through an expression of type <code>@T</code> is a plain access; a
+load or store through an expression of type <code>@volatile T</code> is a volatile access.
+This access-site rule does not create separate alias classes. A plain access
+through <code>@T</code> and a volatile access through <code>@volatile T</code> may alias when their
+numeric address ranges can overlap, including when one address was produced by
+casting the other.</p>
+<h4>Float Addresses</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token address-qualifier type">@f32</span>  <span class="token comment">// address into f32s (stride 4)</span>
+<span class="token address-qualifier type">@f64</span>  <span class="token comment">// address into f64s (stride 8)</span>
+</code></pre>
+<p>Float loads and stores use the same <code>type[address]</code> syntax:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">addr <span class="token operator">:</span> <span class="token address-qualifier type">@f32</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
+
+val <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">f32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>          <span class="token comment">// load f32</span>
+<span class="token builtin type">f32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span> <span class="token operator">=</span> val           <span class="token comment">// store f32</span>
+</code></pre>
+<h4>Struct Addresses</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// `string` is a built-in value with this representation:</span>
+<span class="token comment">// { ptr : @u8, len : u64 }</span>
+
+<span class="token address-qualifier type">@string</span>  <span class="token comment">// address into strings (stride 16)</span>
+</code></pre>
+<p>Struct stride is the total size of the struct (sum of field sizes including padding). Addressing structs lets you treat contiguous struct data as an array:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">msgs <span class="token operator">:</span> <span class="token address-qualifier type">@string</span> <span class="token operator">=</span> <span class="token number">0x6000</span>
+
+first_len <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msgs <span class="token operator">+</span> <span class="token number">8</span><span class="token punctuation">]</span>       <span class="token comment">// access .len field of first string (offset 8)</span>
+second_ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msgs <span class="token operator">+</span> <span class="token number">16</span><span class="token punctuation">]</span>     <span class="token comment">// access .ptr field of second string (offset 16)</span>
+</code></pre>
+<h4>Vector Addresses</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span>  <span class="token comment">// address into [f32:4] vectors (stride 16)</span>
+<span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">u8</span><span class="token operator">:</span><span class="token number">16</span><span class="token punctuation">]</span>  <span class="token comment">// address into [u8:16] vectors (stride 16)</span>
+<span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">u64</span><span class="token operator">:</span><span class="token number">2</span><span class="token punctuation">]</span>  <span class="token comment">// address into [u64:2] vectors (stride 16)</span>
+</code></pre>
+<p>Vector addresses follow the same model — stride equals the total vector size.</p>
+<p>The element type records the intended access type. Array and slice indexing
+syntax is a separate operation; <code>@T</code> address arithmetic uses element offsets:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">base <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+
+total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> i<span class="token punctuation">]</span>
+</code></pre>
+<h3 id="mmio-example" tabindex="-1"><a class="doc-anchor" href="#mmio-example" aria-hidden="true">#</a> MMIO Example</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+TXFF   <span class="token operator">::</span> <span class="token builtin type">u32</span>          <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
+
+<span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte
+</code></pre>
+<p>Volatility comes from the address type. No per-access directive can be
+forgotten.</p>
+<h3 id="why-this-model-exists" tabindex="-1"><a class="doc-anchor" href="#why-this-model-exists" aria-hidden="true">#</a> Why This Model Exists</h3>
+<p>This syntax unifies:</p>
+<ul>
+<li>loads</li>
+<li>stores</li>
+<li>arrays</li>
+<li>MMIO</li>
+<li>volatile memory</li>
+<li>typed access</li>
+<li>pointer arithmetic</li>
+</ul>
+<p>without introducing separate pointer semantics or named address spaces.</p>
+<p>Advantages:</p>
+<ul>
+<li>smaller semantic core</li>
+<li>direct ARM64 mapping</li>
+<li>clearer lowering rules</li>
+<li>easier explainability</li>
+<li>matches hardware reality (flat address space)</li>
+</ul>
+<p>Tradeoffs:</p>
+<ul>
+<li>harder alias analysis</li>
+<li>harder provenance tracking</li>
+<li>more compiler responsibility</li>
+</ul>
+<p>Wyst intentionally favors semantic clarity over optimizer complexity.</p>
+<hr>
+<h2 id="1.3.1-memory-access-directives-and-volatility" tabindex="-1"><a class="doc-anchor" href="#1.3.1-memory-access-directives-and-volatility" aria-hidden="true">#</a> 1.3.1 Memory Access Directives and Volatility</h2>
+<p>Wyst distinguishes four orthogonal mechanisms for controlling memory
+operations:</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Form</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Volatility (MMIO)</td>
+<td><code>@volatile T</code> type</td>
+<td>every access through the typed address</td>
+</tr>
+<tr>
+<td>Synchronization ordering</td>
+<td><code>#acquire</code>/<code>#release</code> per access</td>
+<td>one load or one store</td>
+</tr>
+<tr>
+<td>CPU memory ordering</td>
+<td><code>%dsb</code>/<code>%dmb</code>/<code>%isb()</code> barrier</td>
+<td>hardware and compiler fence at one point</td>
+</tr>
+<tr>
+<td>Compiler-only ordering</td>
+<td><code>%compiler_barrier()</code></td>
+<td>compiler fence at one point; emits nothing</td>
+</tr>
+</tbody>
+</table>
+<p>Volatility is <strong>always</strong> type-based. There is no per-access <code>#volatile</code>
+directive in Wyst. Acquire/release are per-access because synchronization
+sites are rare and explicit. Barriers are statement-level fences.</p>
+<hr>
+<h3 id="volatility-via-%40volatile-t" tabindex="-1"><a class="doc-anchor" href="#volatility-via-%40volatile-t" aria-hidden="true">#</a> Volatility via <code>@volatile T</code></h3>
+<p>An address of type <code>@volatile T</code> is an address into device memory.
+Every load or store through such an address is a <strong>compiler barrier</strong>:</p>
+<ul>
+<li>the compiler may not eliminate the access (no dead-store elimination,
+no load forwarding, no merging of consecutive accesses);</li>
+<li>the compiler may not hoist the access above surrounding code;</li>
+<li>the compiler may not sink the access below surrounding code;</li>
+<li>the compiler may not speculatively execute the access ahead of a guard.</li>
+</ul>
+<p>Two volatile accesses are never reordered relative to each other. A plain
+access may not be moved across a volatile access in either direction.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile load — guaranteed emitted</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile store — guaranteed emitted</span>
+</code></pre>
+<p>A volatile access lowers to the same <code>ldr</code>/<code>str</code> instruction as a plain
+access. The &quot;device&quot; behavior comes from the page-table attributes for the
+address, not from the instruction encoding. Volatility is a compiler
+contract, not a hardware contract — it guarantees the compiler does not
+optimize the access away.</p>
+<h4>Propagation</h4>
+<p>Volatility propagates through address arithmetic. If <code>p : @volatile u32</code>,
+then <code>p + 4</code> is <code>@volatile u32</code>, <code>p + i * 4</code> is <code>@volatile u32</code>, and any
+access through the derived address is a compiler barrier:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
+
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GIC_BASE <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>            <span class="token comment">// volatile store</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GIC_BASE <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load</span>
+</code></pre>
+<p>Volatility is a property of the static result type of the arithmetic
+expression. If an integer operand was produced from an address with <code>as u64</code>,
+the source address's volatile qualifier must match the result address
+qualifier. Mixed-volatility address arithmetic is rejected unless the source
+first casts one address to the intended qualifier:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mmio  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+plain <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span>          <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+
+bad  <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>                    <span class="token comment">// compile error</span>
+good <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token comment">// result is @volatile u32</span>
+</code></pre>
+<p>There is no implicit conversion between <code>@T</code> and <code>@volatile T</code> in either
+direction. To strip volatility (rare; almost always a mistake) use an explicit
+cast; to treat a plain address as volatile, use an explicit cast as well:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mmio <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+plain <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>             <span class="token comment">// volatility dropped; loads through `plain` are not barriers</span>
+
+ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+</code></pre>
+<p>The static address type at the access site decides whether the access is
+plain or volatile, but it is not an alias boundary. If <code>plain</code> and <code>mmio</code>
+hold the same numeric address, the compiler must assume <code>u32@[plain]</code> and
+<code>u32@[mmio]</code> may touch the same bytes even though one access is plain and the
+other is volatile.</p>
+<h4>What <code>@volatile</code> Does Not Do</h4>
+<p><strong>Volatility does not emit CPU memory barriers.</strong> ARM64's weak memory model
+allows the CPU's store buffer to reorder writes to different addresses unless
+explicit barrier instructions are present. For MMIO initialization sequences
+where access order must be observed by the device, explicit barriers are
+required. See <strong>MMIO Ordering</strong> below.</p>
+<p><strong>Volatility does not control cacheability.</strong> Whether an address is cached
+or uncached is determined by the page-table entry for that address
+(specifically the MAIR index and the memory type attribute in the descriptor).
+A volatile access to an address mapped as Normal-Cacheable in the page
+tables will still go through the cache. Platform initialization code is
+responsible for configuring MMIO regions with Device memory attributes
+(e.g. Device-nGnRE) before accessing them.</p>
+<hr>
+<h3 id="%23acquire" tabindex="-1"><a class="doc-anchor" href="#%23acquire" aria-hidden="true">#</a> <code>#acquire</code></h3>
+<p><code>#acquire</code> is a load-acquire. It guarantees that all subsequent memory
+accesses in program order are observed after this load. Use it to safely
+read a lock or flag that another agent (another core, an interrupt handler)
+may have written.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">val <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span>     <span class="token comment">// load-acquire</span>
+</code></pre>
+<p>Lowers to <code>ldar xD, [xN]</code> on ARM64. <code>#acquire</code> is only valid on loads —
+applying it to a store is a compile error.</p>
+<p><code>#acquire</code> is independent of volatility: it is valid on both <code>@T</code> and
+<code>@volatile T</code> addresses, though acquire-on-MMIO is rare and indicates
+synchronization through a device register.</p>
+<hr>
+<h3 id="%23release" tabindex="-1"><a class="doc-anchor" href="#%23release" aria-hidden="true">#</a> <code>#release</code></h3>
+<p><code>#release</code> is a store-release. It guarantees that all preceding memory
+accesses in program order are observed before this store. Use it to safely
+write a lock or flag that another agent will subsequently read.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>       <span class="token comment">// store-release</span>
+</code></pre>
+<p>Lowers to <code>stlr xD, [xN]</code> on ARM64. <code>#release</code> is only valid on stores —
+applying it to a load is a compile error.</p>
+<hr>
+<h3 id="combination-rules" tabindex="-1"><a class="doc-anchor" href="#combination-rules" aria-hidden="true">#</a> Combination Rules</h3>
+<table>
+<thead>
+<tr>
+<th>Combination</th>
+<th>Validity</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>load/store via <code>@T</code></td>
+<td>valid</td>
+<td>plain access</td>
+</tr>
+<tr>
+<td>load/store via <code>@volatile T</code></td>
+<td>valid</td>
+<td>volatile (compiler barrier)</td>
+</tr>
+<tr>
+<td><code>#acquire</code> on <code>@T</code> load</td>
+<td>valid</td>
+<td>acquire-release synchronization</td>
+</tr>
+<tr>
+<td><code>#release</code> on <code>@T</code> store</td>
+<td>valid</td>
+<td>acquire-release synchronization</td>
+</tr>
+<tr>
+<td><code>#acquire</code> on <code>@volatile T</code> load</td>
+<td>valid (rare)</td>
+<td>acquire-via-MMIO</td>
+</tr>
+<tr>
+<td><code>#release</code> on <code>@volatile T</code> store</td>
+<td>valid (rare)</td>
+<td>release-via-MMIO</td>
+</tr>
+<tr>
+<td><code>#acquire</code> on store</td>
+<td>compile error</td>
+<td>acquire is load-only</td>
+</tr>
+<tr>
+<td><code>#release</code> on load</td>
+<td>compile error</td>
+<td>release is store-only</td>
+</tr>
+<tr>
+<td>Both <code>#acquire</code> and <code>#release</code> on one access</td>
+<td>compile error</td>
+<td>mutually exclusive</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="barrier-runtime-primitives" tabindex="-1"><a class="doc-anchor" href="#barrier-runtime-primitives" aria-hidden="true">#</a> Barrier Runtime Primitives</h3>
+<p>Barriers enforce memory ordering at the CPU level, independent of any
+specific memory access. They are required wherever the ARM64 weak memory
+model would otherwise permit the CPU to reorder accesses in ways the program
+cannot tolerate.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>    <span class="token comment">// data synchronization barrier — full system</span>
+            <span class="token comment">// stalls until all preceding memory accesses complete</span>
+            <span class="token comment">// lowers to: dsb sy</span>
+
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>st<span class="token punctuation">)</span>    <span class="token comment">// data synchronization barrier — stores only</span>
+            <span class="token comment">// stalls until all preceding stores complete</span>
+            <span class="token comment">// lowers to: dsb st</span>
+
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ld<span class="token punctuation">)</span>    <span class="token comment">// data synchronization barrier — loads only</span>
+            <span class="token comment">// stalls until all preceding loads complete</span>
+            <span class="token comment">// lowers to: dsb ld</span>
+
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ish<span class="token punctuation">)</span>   <span class="token comment">// data synchronization barrier — inner shareable domain</span>
+            <span class="token comment">// lowers to: dsb ish</span>
+
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>osh<span class="token punctuation">)</span>   <span class="token comment">// data synchronization barrier — outer shareable domain</span>
+            <span class="token comment">// lowers to: dsb osh</span>
+
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>nsh<span class="token punctuation">)</span>   <span class="token comment">// data synchronization barrier — non-shareable domain</span>
+            <span class="token comment">// lowers to: dsb nsh</span>
+
+<span class="token primitive macro">%dmb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>    <span class="token comment">// data memory barrier — full system</span>
+            <span class="token comment">// orders but does not stall; preceding accesses are ordered</span>
+            <span class="token comment">// before subsequent ones but the CPU need not wait</span>
+            <span class="token comment">// lowers to: dmb sy</span>
+
+<span class="token primitive macro">%dmb</span><span class="token punctuation">(</span>ish<span class="token punctuation">)</span>   <span class="token comment">// data memory barrier — inner shareable domain</span>
+            <span class="token comment">// lowers to: dmb ish</span>
+
+<span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>      <span class="token comment">// instruction synchronization barrier</span>
+            <span class="token comment">// flushes the pipeline; required after writing system registers</span>
+            <span class="token comment">// that affect instruction fetch or decode</span>
+            <span class="token comment">// lowers to: isb</span>
+</code></pre>
+<p>The accepted <code>%dsb</code> and <code>%dmb</code> domain tokens are:</p>
+<table>
+<thead>
+<tr>
+<th>Token family</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sy</code></td>
+<td>full-system domain, all explicit memory accesses</td>
+</tr>
+<tr>
+<td><code>st</code></td>
+<td>full-system domain, stores only</td>
+</tr>
+<tr>
+<td><code>ld</code></td>
+<td>full-system domain, loads only</td>
+</tr>
+<tr>
+<td><code>ish</code></td>
+<td>inner-shareable domain, all explicit memory accesses</td>
+</tr>
+<tr>
+<td><code>ishst</code></td>
+<td>inner-shareable domain, stores only</td>
+</tr>
+<tr>
+<td><code>ishld</code></td>
+<td>inner-shareable domain, loads only</td>
+</tr>
+<tr>
+<td><code>osh</code></td>
+<td>outer-shareable domain, all explicit memory accesses</td>
+</tr>
+<tr>
+<td><code>oshst</code></td>
+<td>outer-shareable domain, stores only</td>
+</tr>
+<tr>
+<td><code>oshld</code></td>
+<td>outer-shareable domain, loads only</td>
+</tr>
+<tr>
+<td><code>nsh</code></td>
+<td>non-shareable domain, all explicit memory accesses</td>
+</tr>
+<tr>
+<td><code>nshst</code></td>
+<td>non-shareable domain, stores only</td>
+</tr>
+<tr>
+<td><code>nshld</code></td>
+<td>non-shareable domain, loads only</td>
+</tr>
+</tbody>
+</table>
+<p>The option tokens match the ARM64 architecture manual shareability/access
+domain notation.</p>
+<p><code>%dsb</code>, <code>%dmb</code>, and <code>%isb()</code> are also full two-way compiler memory fences:
+the compiler must not move any load, store, atomic, volatile access, barrier,
+or opaque side effect across them. This fusion is intentional policy, not an
+accident of the current backend. Use <code>%compiler_barrier()</code> when source needs
+only compiler ordering and must not emit a hardware barrier:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%compiler_barrier</span><span class="token punctuation">(</span><span class="token punctuation">)</span>   <span class="token comment">// full compiler memory fence; lowers to no instruction</span>
+</code></pre>
+<p><code>%compiler_barrier()</code> has no hardware memory-ordering effect. It does not
+flush pipelines, drain store buffers, order cache or TLB maintenance, or
+create a happens-before edge between agents.</p>
+<hr>
+<h3 id="mmio-ordering" tabindex="-1"><a class="doc-anchor" href="#mmio-ordering" aria-hidden="true">#</a> MMIO Ordering</h3>
+<p>Volatility alone is not sufficient for MMIO initialization sequences. On
+ARM64, the CPU store buffer may reorder stores to different addresses. A
+device that requires its configuration registers to be written in a specific
+order requires explicit barriers between those writes.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR   <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
+UART_IBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
+UART_FBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
+</code></pre>
+<p><strong>Incorrect</strong> (CPU may reorder stores even though every access is volatile):</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x0</span>       <span class="token comment">// disable UART</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_IBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>         <span class="token comment">// set baud divisor integer</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_FBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>        <span class="token comment">// set baud divisor fraction</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x301</span>     <span class="token comment">// re-enable UART</span>
+</code></pre>
+<p><strong>Correct</strong> (barriers enforce hardware observation order):</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x0</span>         <span class="token comment">// disable UART</span>
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>                   <span class="token comment">// wait until disable is observed</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_IBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_FBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>                   <span class="token comment">// wait until baud writes complete</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x301</span>       <span class="token comment">// re-enable UART</span>
+</code></pre>
+<p>Use <code>%dsb(sy)</code> when you need the CPU to stall until all preceding stores
+are globally observed. Use <code>%dmb(sy)</code> when ordering is required but
+the stall is not — for example, in a sequence of independent register
+writes where ordering relative to subsequent code matters but latency
+between the writes themselves does not.</p>
+<hr>
+<h3 id="spinlock-example" tabindex="-1"><a class="doc-anchor" href="#spinlock-example" aria-hidden="true">#</a> Spinlock Example</h3>
+<p>A complete acquire/release spinlock using <code>%cas</code> for the compare-and-swap
+and <code>#release</code> for the unlock store. <code>%cas</code> lowers to a single <code>casa</code>
+instruction on ARMv8.1 LSE or an <code>ldaxr</code>/<code>stxr</code> loop on baseline ARMv8.0.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">LOCK_ADDR <span class="token operator">::</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x8000</span>
+
+spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+        _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
+        <span class="token keyword">if</span> ok <span class="token punctuation">{</span> <span class="token keyword">return</span> <span class="token punctuation">}</span>
+        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+spin_unlock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>LOCK_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>   <span class="token comment">// store-release clears the lock</span>
+    <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span>                         <span class="token comment">// wake any waiters</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>This is the canonical spelling. An equivalent open-coded
+<code>ldaxr</code>/<code>stlxr</code> version appears at §2.9 as a worked example of <code>#asm</code>
+operand interpolation, but production code uses <code>%cas</code>. The full atomic
+runtime primitive surface — <code>%cas</code>, <code>%fetch_*</code>, <code>%xchg</code>, <code>%atomic_bit_*</code>,
+<code>%atomic_load</code>, <code>%atomic_store</code> — is specified in <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a>.</p>
+<hr>
+<h3 id="relationship-to-%23schedule" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23schedule" aria-hidden="true">#</a> Relationship to <code>#schedule</code></h3>
+<p>Volatile accesses are implicitly <code>#schedule(strict)</code> relative to other
+volatile accesses — the compiler will not reorder them relative to each
+other. This is a <strong>compiler scheduling</strong> constraint only. It does not prevent
+CPU reordering at the hardware level; use <code>%dsb</code> or <code>%dmb</code> for that.</p>
+<p><code>#acquire</code> and <code>#release</code> establish ordering at the hardware level via
+<code>ldar</code>/<code>stlr</code>; they do not constrain assembler scheduling of non-memory
+operations.</p>
+<hr>
+<h3 id="why-volatility-lives-in-the-type" tabindex="-1"><a class="doc-anchor" href="#why-volatility-lives-in-the-type" aria-hidden="true">#</a> Why Volatility Lives in the Type</h3>
+<p>Per-access <code>#volatile</code> directives have a known failure mode: a single
+forgotten annotation silently miscompiles, and the compiler issues no
+warning because both forms are legal at every access site. Wyst rejects
+that model. Volatility is a property of <em>what the address refers to</em>,
+not <em>how a particular line of code touches it</em>. Modelling it in the type
+makes the rule check-able:</p>
+<ul>
+<li>A function <code>read_reg(p : @volatile u32) -&gt; u32</code> cannot be called with
+a plain <code>@u32</code> argument without an explicit <code>as</code> cast.</li>
+<li>A function <code>peek(p : @u32) -&gt; u32</code> cannot be called with an
+<code>@volatile u32</code> argument without an explicit <code>as</code> cast.</li>
+<li>A struct field declared <code>@volatile u32</code> cannot be accessed as if it
+were a plain <code>u32</code>.</li>
+<li>Refactoring an MMIO access into a helper preserves the volatility
+through the parameter type.</li>
+</ul>
+<p>Code review can focus on the type declaration site, not on every access.</p>
+<hr>
+<h3 id="memory-model" tabindex="-1"><a class="doc-anchor" href="#memory-model" aria-hidden="true">#</a> Memory Model</h3>
+<hr>
+<h2 id="overview" tabindex="-1"><a class="doc-anchor" href="#overview" aria-hidden="true">#</a> Overview</h2>
+<p>Wyst's memory model defines two things:</p>
+<ol>
+<li>
+<p><strong>Compiler ordering</strong> — what reorderings the Wyst compiler is permitted to perform on
+memory operations in the emitted instruction sequence.</p>
+</li>
+<li>
+<p><strong>Hardware visibility</strong> — under what conditions a store performed by one execution agent
+becomes visible to a load performed by another.</p>
+</li>
+</ol>
+<p>The two levels are distinct. The compiler ordering rules constrain the instruction sequence
+the compiler emits. The hardware visibility rules describe what the ARM64 CPU guarantees
+about the order in which those instructions take effect. Both levels are required to reason
+correctly about concurrent Wyst programs.</p>
+<p>This model is compatible with and references the ARM64 Architecture Reference Manual
+(DDI 0487, VMSA memory model). Where ARM64 terminology is used (inner shareable, outer
+shareable, etc.) it carries the ARM64 meaning.</p>
+<hr>
+<h2 id="9.1-execution-model" tabindex="-1"><a class="doc-anchor" href="#9.1-execution-model" aria-hidden="true">#</a> 9.1 Execution Model</h2>
+<h3 id="agents" tabindex="-1"><a class="doc-anchor" href="#agents" aria-hidden="true">#</a> Agents</h3>
+<p>An <strong>execution agent</strong> is any unit of sequential execution that shares memory with others:</p>
+<ul>
+<li>A hardware CPU core</li>
+<li>An interrupt handler executing on a CPU core (preempting the interrupted thread)</li>
+<li>A DMA controller or bus master with write access to system memory</li>
+</ul>
+<p>Each agent executes a sequence of memory operations in <strong>program order</strong>: the order the
+operations appear in the source. Within a single agent, program order is the sequencing
+relation between that agent's operations.</p>
+<h3 id="memory-locations" tabindex="-1"><a class="doc-anchor" href="#memory-locations" aria-hidden="true">#</a> Memory Locations</h3>
+<p>A memory location is a single byte of addressable memory. Operations on multi-byte types
+(e.g. <code>u32</code>, <code>u64</code>) affect a contiguous sequence of bytes. The model applies to each byte
+individually, though naturally aligned multi-byte accesses are always access-atomic with
+respect to their own width (see 9.4 Atomicity).</p>
+<h3 id="operations" tabindex="-1"><a class="doc-anchor" href="#operations" aria-hidden="true">#</a> Operations</h3>
+<p>The model recognizes six kinds of memory operation:</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Wyst syntax</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain load</td>
+<td><code>T@[addr]</code> where <code>addr : @T</code></td>
+<td>Ordinary load; no ordering annotation</td>
+</tr>
+<tr>
+<td>Plain store</td>
+<td><code>T@[addr] = val</code> where <code>addr : @T</code></td>
+<td>Ordinary store; no ordering annotation</td>
+</tr>
+<tr>
+<td>Volatile load</td>
+<td><code>T@[addr]</code> where <code>addr : @volatile T</code></td>
+<td>Compiler-barrier load (MMIO)</td>
+</tr>
+<tr>
+<td>Volatile store</td>
+<td><code>T@[addr] = val</code> where <code>addr : @volatile T</code></td>
+<td>Compiler-barrier store (MMIO)</td>
+</tr>
+<tr>
+<td>Acquire load</td>
+<td><code>#acquire T@[addr]</code></td>
+<td>Load-acquire (synchronization)</td>
+</tr>
+<tr>
+<td>Release store</td>
+<td><code>#release T@[addr] = val</code></td>
+<td>Store-release (synchronization)</td>
+</tr>
+</tbody>
+</table>
+<p>Volatility is determined by the <strong>type</strong> of the address operand. There is
+no per-access <code>#volatile</code> form. An access through <code>@volatile T</code> is volatile;
+an access through <code>@T</code> is not.</p>
+<p>Barrier runtime primitives (<code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>) and compiler barriers
+(<code>%compiler_barrier()</code>) are ordering constraints between operations, not
+memory operations themselves. All four participate in compiler ordering rules
+as full two-way fences. Only <code>%dsb</code>, <code>%dmb</code>, and <code>%isb()</code> emit hardware
+barrier instructions.</p>
+<p><code>#schedule(strict)</code> block boundaries are also compiler ordering constraints.
+The opening and closing braces of a strict schedule block are hard scheduling
+boundaries: operations outside the block must not move inside it, and
+operations inside the block must not move outside it. These boundaries emit
+no instruction and provide no hardware memory-ordering guarantee.</p>
+<hr>
+<h2 id="9.2-compiler-ordering-rules" tabindex="-1"><a class="doc-anchor" href="#9.2-compiler-ordering-rules" aria-hidden="true">#</a> 9.2 Compiler Ordering Rules</h2>
+<p>The compiler ordering rules define which reorderings the Wyst compiler is permitted to
+perform. A <strong>reordering</strong> is any emission of an instruction sequence that differs from
+program order.</p>
+<h3 id="the-reordering-table" tabindex="-1"><a class="doc-anchor" href="#the-reordering-table" aria-hidden="true">#</a> The Reordering Table</h3>
+<p>Given operation A before operation B in source order: may the compiler emit B before A?</p>
+<p>Row = A (earlier). Column = B (later). &quot;Strict boundary&quot; means either the
+opening or closing brace of a <code>#schedule(strict)</code> block.</p>
+<table>
+<thead>
+<tr>
+<th>A ↓ / B →</th>
+<th>Plain</th>
+<th>Volatile</th>
+<th>Acquire load</th>
+<th>Release store</th>
+<th>Barrier</th>
+<th>Strict boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Plain</strong></td>
+<td>✓ (1)</td>
+<td>✗</td>
+<td>✓ (1)</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Volatile</strong></td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Acquire load</strong></td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Release store</strong></td>
+<td>✓ (1)</td>
+<td>✗</td>
+<td>✓ (1)</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Barrier</strong></td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Strict boundary</strong></td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+</tbody>
+</table>
+<p>&quot;Barrier&quot; includes <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, and <code>%compiler_barrier()</code>.</p>
+<p><strong>(1)</strong> Permitted only when the compiler can prove A and B access non-overlapping addresses
+and B does not depend on the value produced by A. See Alias Analysis below.</p>
+<h3 id="rule-explanations" tabindex="-1"><a class="doc-anchor" href="#rule-explanations" aria-hidden="true">#</a> Rule Explanations</h3>
+<p><strong>Plain → Plain (✓ with proof):</strong> Loads and stores to provably non-aliased, non-dependent
+locations may be freely reordered. Standard compiler freedom for sequential code.</p>
+<p><strong>Plain → Volatile (✗):</strong> A volatile access may not be moved before a preceding plain
+access. The plain access may be preparing data (e.g. writing a DMA buffer) that must be
+complete before the volatile access triggers device action.</p>
+<p><strong>Plain → Release store (✗):</strong> A release store may not be hoisted above anything before
+it. This is the definition of release: all preceding memory operations are ordered before
+it.</p>
+<p><strong>Volatile → anything (✗):</strong> Volatile accesses are a full two-way compiler fence. No
+operation may cross a volatile access in either direction.</p>
+<p><strong>Acquire load → anything after it (✗):</strong> An acquire load is a one-way downward fence.
+Nothing sequenced after the acquire may be moved before it. Operations before the acquire
+may be hoisted above it (row Plain → Acquire = ✓).</p>
+<p><strong>Barrier → anything (✗) / anything → Barrier (✗):</strong> <code>%dsb</code>, <code>%dmb</code>,
+<code>%isb()</code>, and <code>%compiler_barrier()</code> are full two-way compiler fences. No
+operation crosses a barrier in either direction.</p>
+<p><strong>Strict boundary → anything (✗) / anything → Strict boundary (✗):</strong> The opening
+and closing braces of a <code>#schedule(strict)</code> block are full two-way compiler
+scheduling fences. No operation crosses the boundary in either direction.
+Unlike <code>%dsb</code>, <code>%dmb</code>, or <code>%isb()</code>, a strict schedule boundary emits no
+instruction and does not affect hardware visibility. Use <code>%compiler_barrier()</code>
+when a statement-level compiler fence is needed without exact strict-block
+scheduling.</p>
+<h3 id="alias-analysis" tabindex="-1"><a class="doc-anchor" href="#alias-analysis" aria-hidden="true">#</a> Alias Analysis</h3>
+<p>The compiler may reorder two plain accesses only when it can prove they are non-aliased:</p>
+<ul>
+<li>Two accesses to the same named variable are assumed to alias.</li>
+<li>Two accesses to different named variables with no address derivation in common are
+assumed not to alias.</li>
+<li>Any access through a computed address (<code>T@[expr]</code>) is conservatively assumed to alias
+with any other computed-address access unless the compiler can prove disjoint ranges.</li>
+<li>Address volatility is not a non-aliasing fact. A plain access through <code>@T</code> and a
+volatile access through <code>@volatile T</code> are assumed to alias when their numeric address
+ranges can overlap.</li>
+<li>Because Wyst addresses are plain integers with no provenance, the compiler cannot perform
+inter-procedural alias analysis on address-typed parameters. Two <code>@T</code> parameters are
+always assumed to potentially alias.</li>
+</ul>
+<p><strong>Consequence:</strong> Wyst compilers do not perform alias-based optimizations across call
+boundaries. Specifically, two optimizations C compilers routinely perform are <em>not</em>
+available to a Wyst compiler:</p>
+<ol>
+<li><strong>No <code>restrict</code>-style load elimination across parameters.</strong> A load through one <code>@T</code>
+parameter after a store through another may not be eliminated on the grounds that the
+two parameters cannot alias.</li>
+<li><strong>No store-to-load forwarding across an opaque call.</strong> A store before a call followed
+by a load of the same location after the call is emitted as two memory operations.
+The call is assumed to potentially read or write the location.</li>
+</ol>
+<p>This is a deliberate design choice rooted in Wyst's address model: addresses are plain
+integers with no provenance, so the analyses that would unlock these optimizations are
+not soundly available. The trade is predictable instruction sequences for optimization
+opportunities; Wyst chooses predictability.</p>
+<p>The <code>#noescape</code> parameter attribute does not change this model. It is a
+call-local syntactic contract over where the parameter expression may appear:
+direct memory address operands and direct forwarding to another <code>#noescape</code>
+parameter are allowed, while casts, value aliases, stores, returns, indirect
+calls, and other value observations are rejected. The compiler does not infer or
+preserve hidden provenance through <code>u64</code> values.</p>
+<hr>
+<h2 id="9.3-happens-before" tabindex="-1"><a class="doc-anchor" href="#9.3-happens-before" aria-hidden="true">#</a> 9.3 Happens-Before</h2>
+<p>Happens-before is the relation that determines which stores are visible to which loads.</p>
+<h3 id="definition" tabindex="-1"><a class="doc-anchor" href="#definition" aria-hidden="true">#</a> Definition</h3>
+<p>The <strong>happens-before</strong> relation (written <strong>A hb B</strong>) is the smallest relation satisfying:</p>
+<p><strong>Rule 1 — Program order (single agent):</strong>
+If A and B are operations of the same agent, and A precedes B in program order,
+then A hb B.</p>
+<p><strong>Rule 2 — Synchronizes-with (acquire-release pairs):</strong>
+If S is a <code>#release</code> store to address X with value V, and L is an <code>#acquire</code> load from
+address X that reads V (or a value written after S in the modification order of X),
+then S <strong>synchronizes-with</strong> L, and therefore S hb L.</p>
+<p><strong>Rule 3 — Transitivity:</strong>
+If A hb B and B hb C, then A hb C.</p>
+<h3 id="what-synchronizes-with-provides" tabindex="-1"><a class="doc-anchor" href="#what-synchronizes-with-provides" aria-hidden="true">#</a> What Synchronizes-With Provides</h3>
+<p>If S (<code>#release</code>) synchronizes-with L (<code>#acquire</code>), everything that happened-before S
+also happened-before L:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Agent 1</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>              <span class="token operator">=</span> data   <span class="token comment">// (1) write data</span>
+<span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>    <span class="token operator">=</span> <span class="token number">1</span>      <span class="token comment">// (2) S — release store</span>
+
+<span class="token comment">// Agent 2</span>
+val  <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>      <span class="token comment">// (3) L — acquire load, reads 1</span>
+data <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>                <span class="token comment">// (4) guaranteed to observe (1)</span>
+</code></pre>
+<p>Because (1) hb (2) by program order, (2) synchronizes-with (3) by rule 2, and (3) hb (4)
+by program order, transitivity gives (1) hb (4). Agent 2 is guaranteed to observe
+Agent 1's write.</p>
+<p>If Agent 1 used a plain store at step (2), no synchronizes-with is established and step
+(4) may read a stale value.</p>
+<h3 id="barriers-and-happens-before" tabindex="-1"><a class="doc-anchor" href="#barriers-and-happens-before" aria-hidden="true">#</a> Barriers and Happens-Before</h3>
+<p><code>%dsb</code> and <code>%dmb</code> enforce hardware ordering within and around a single agent but do not
+themselves establish a synchronizes-with relationship with barriers on other agents. Two
+agents issuing <code>%dsb(sy)</code> independently do not synchronize with each other through the
+barriers alone.</p>
+<p>To synchronize across agents using barriers: one agent writes data, issues <code>%dsb(st)</code> to
+ensure the write is globally observable, then writes a plain-store flag. The other agent
+reads the flag, issues <code>%dsb(ld)</code> to ensure the flag read is complete, then reads the
+data. This establishes visibility through hardware ordering. It is correct but less
+composable than the acquire-release model.</p>
+<p><strong>Prefer <code>#acquire</code>/<code>#release</code> for CPU-to-CPU synchronization.</strong> Use barriers for MMIO
+ordering, cache maintenance, and cases where shareability domain specificity matters.</p>
+<hr>
+<h2 id="9.4-visible-value-of-a-load" tabindex="-1"><a class="doc-anchor" href="#9.4-visible-value-of-a-load" aria-hidden="true">#</a> 9.4 Visible Value of a Load</h2>
+<p>Given a load L at address X:</p>
+<p><strong>No concurrent stores:</strong>
+L reads the value of the most recent store to X that happens-before L. If no such store
+exists, L reads the initial value of X at program startup (see 9.7 Initial Values).</p>
+<p><strong>Data race present:</strong>
+If a store to X from another agent is concurrent with L — not ordered by happens-before
+in either direction — the value L reads is <strong>hardware-determined</strong>: it is the value the
+ARM64 memory system delivers for that address at that time. The compiler emits the load
+and accepts whatever the hardware returns. It does not assume a particular value and does
+not optimize on the basis that the race cannot occur.</p>
+<p>What &quot;hardware-determined&quot; can be depends on whether the load is access-atomic
+(see §9.6):</p>
+<ul>
+<li>
+<p><strong>Access-atomic loads</strong> (naturally aligned <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> on coherent normal
+memory): the load returns either the pre-race value or one of the concurrently-written
+values. No intermediate state is observable.</p>
+</li>
+<li>
+<p><strong>Non-access-atomic loads</strong> (misaligned accesses; multi-word accesses emitted as
+multiple scalar chunks or explicit pair/vector instructions; bitfield
+read-modify-write spanning a wider backing word than the single-copy-atomic width
+— see §9.6): the load may observe a value that is <em>neither</em> the pre-race value
+<em>nor</em> a value any agent ever stored as a whole. A misaligned access may decompose
+into sub-accesses, each independently racing; a 128-bit vector load or explicit
+pair load may observe one half pre-race and the other half post-race. Such tearing
+is a property of the hardware execution, not a compiler optimization.</p>
+</li>
+</ul>
+<p>In both cases the compiler emits the load as written and does not synthesize an
+&quot;as-if&quot; value. The atomicity rules in §9.6 determine which case applies.</p>
+<p><strong>Volatile load (access through <code>@volatile T</code>):</strong>
+Reads the value at the address as presented by the hardware at the time of the load,
+subject to page-table memory type attributes. The compiler may not cache, forward, hoist,
+or speculate the result.</p>
+<hr>
+<h2 id="9.5-data-races" tabindex="-1"><a class="doc-anchor" href="#9.5-data-races" aria-hidden="true">#</a> 9.5 Data Races</h2>
+<h3 id="definition-1" tabindex="-1"><a class="doc-anchor" href="#definition-1" aria-hidden="true">#</a> Definition</h3>
+<p>Two memory operations M and N from different agents constitute a <strong>data race</strong> if:</p>
+<ol>
+<li>M and N access at least one common byte.</li>
+<li>At least one of M or N is a store.</li>
+<li>Neither M hb N nor N hb M.</li>
+</ol>
+<h3 id="behavior" tabindex="-1"><a class="doc-anchor" href="#behavior" aria-hidden="true">#</a> Behavior</h3>
+<p>A data race in Wyst produces <strong>hardware-determined behavior</strong>. The compiler:</p>
+<ul>
+<li>Emits both operations as written.</li>
+<li>Does not delete, merge, or reorder them on the assumption that a race cannot occur.</li>
+<li>Does not synthesize stores the programmer did not write.</li>
+</ul>
+<p>The hardware executes both operations under ARM64 memory model rules for the relevant
+memory type. For normal cacheable memory the coherence protocol ensures eventual
+visibility; for device memory (MMIO) behavior is device-specific.</p>
+<p>This differs from C, where a data race is compiler-undefined behavior the compiler may
+exploit to eliminate branches or generate incorrect code. In Wyst a data race is a
+hardware event the compiler does not exploit. Programs with data races on shared mutable
+state are incorrect; the language does not make them safe, but it does not make them
+unpredictably wrong in ways that are not traceable to the hardware specification.</p>
+<h3 id="volatile-races" tabindex="-1"><a class="doc-anchor" href="#volatile-races" aria-hidden="true">#</a> Volatile Races</h3>
+<p>Concurrent volatile accesses (through <code>@volatile T</code>) from CPU and device to
+the same MMIO address are expected behavior for device-controlled registers.
+The device is an agent performing device-side writes; the hardware delivers
+the correct value because the page-table configures the address as device
+memory.</p>
+<p>Two CPU agents concurrently performing volatile accesses to the same MMIO
+register (at least one a store) constitute a race. The result is
+device-specific. Coordinate with external serialization or interrupt masking.</p>
+<h3 id="atomic-operations-and-races" tabindex="-1"><a class="doc-anchor" href="#atomic-operations-and-races" aria-hidden="true">#</a> Atomic Operations and Races</h3>
+<p>Atomic operations (§1.3.2) do <strong>not</strong> constitute a data race with each
+other on the same location, regardless of ordering. Two <code>%cas</code> operations
+on the same word from different agents are serialized by the architecture;
+neither tears nor produces an undefined result. Concurrent
+acqrel/seq_cst-ordered atomics participate in happens-before via Rule 2
+(synchronizes-with) and Rule 4 (seq_cst total order).</p>
+<p>A <em>plain</em> (non-atomic, non-directive) load or store concurrent with an
+atomic operation on the same byte IS a data race by the definition above
+— the plain access is the offending party. Shared mutable locations must
+be accessed only through atomic runtime primitives, <code>#acquire</code>/<code>#release</code>
+directives, or with all racing accesses synchronized by happens-before.</p>
+<hr>
+<h2 id="9.6-atomicity" tabindex="-1"><a class="doc-anchor" href="#9.6-atomicity" aria-hidden="true">#</a> 9.6 Atomicity</h2>
+<h3 id="natural-alignment" tabindex="-1"><a class="doc-anchor" href="#natural-alignment" aria-hidden="true">#</a> Natural Alignment</h3>
+<p>A load or store of type T at a naturally aligned address (address is a multiple of
+<code>size_of(T)</code>) is <strong>access-atomic</strong>: it appears to other agents as a single indivisible
+operation. No intermediate partially-written value is observable.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Size</th>
+<th>Required alignment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>u8</code>, <code>i8</code></td>
+<td>1 byte</td>
+<td>any</td>
+</tr>
+<tr>
+<td><code>u16</code>, <code>i16</code></td>
+<td>2 bytes</td>
+<td>2-byte aligned</td>
+</tr>
+<tr>
+<td><code>u32</code>, <code>i32</code>, <code>f32</code></td>
+<td>4 bytes</td>
+<td>4-byte aligned</td>
+</tr>
+<tr>
+<td><code>u64</code>, <code>i64</code>, <code>f64</code></td>
+<td>8 bytes</td>
+<td>8-byte aligned</td>
+</tr>
+</tbody>
+</table>
+<h3 id="misaligned-access" tabindex="-1"><a class="doc-anchor" href="#misaligned-access" aria-hidden="true">#</a> Misaligned Access</h3>
+<p>A load or store at a misaligned address is not access-atomic. The access may be
+decomposed by hardware into multiple sub-accesses. Concurrent agents may observe a
+partial write. Misaligned accesses to device memory additionally produce alignment faults
+on most ARM64 configurations.</p>
+<h3 id="multi-word-and-pair-accesses" tabindex="-1"><a class="doc-anchor" href="#multi-word-and-pair-accesses" aria-hidden="true">#</a> Multi-Word and Pair Accesses</h3>
+<p>Single-copy atomicity on the ARMv8-A baseline is guaranteed <em>only</em> for single-register
+aligned loads and stores up to 8 bytes (<code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code>). Any access wider than
+that is <em>not</em> access-atomic. Three lowerings trigger this in Wyst programs:</p>
+<ol>
+<li><strong>General-purpose pair loads/stores (<code>ldp</code>/<code>stp</code>).</strong> Explicit inline
+assembly, frame save/restore code, and explicit pair-oriented primitives may
+use pair instructions. <code>ldp</code> is observed by other agents as two independent
+8-byte loads; <code>stp</code> as two independent 8-byte stores. A racing agent may
+observe the high half from before the race and the low half from after it.</li>
+<li><strong>128-bit vector loads/stores (<code>ldr q</code>/<code>str q</code>).</strong> Full-vector accesses via the
+<code>[u8:16]@[addr]</code> form (§1.5.1) or other 16-byte SIMD lowerings are observed as two
+8-byte halves on ARMv8-A.</li>
+<li><strong>Compiler-synthesized aggregate copies.</strong> A struct, fixed-array,
+dynamic-array descriptor, slice/string descriptor, payload enum, or tuple copy
+wider than 8 bytes lowers to a deterministic sequence of scalar chunks. The
+whole sequence is not atomic, and racing agents may observe a prefix of old
+chunks and a suffix of new chunks, or the reverse, depending on which agent is
+reading and which is writing.</li>
+</ol>
+<p>Compiler-synthesized aggregate copies use this exact chunk rule:</p>
+<ol>
+<li>Copy legs run from byte offset 0 upward.</li>
+<li>At each offset, choose the largest chunk size in <code>8, 4, 2, 1</code> that fits the
+remaining byte count and is guaranteed aligned at both endpoints. Stack
+endpoints use the compiler's exact stack-slot offset; memory endpoints use the
+static alignment of the accessed type.</li>
+<li>Each chunk is one scalar general-purpose-register load followed by one scalar
+general-purpose-register store for that copy leg.</li>
+<li>The compiler does not use <code>ldp</code>/<code>stp</code> or SIMD vector load/store instructions for
+compiler-synthesized aggregate copies.</li>
+<li>A memory-to-memory aggregate assignment is two deterministic copy legs: source
+memory is first materialized into a compiler-owned temporary with this rule,
+then the temporary is copied to destination memory with the same rule.</li>
+</ol>
+<p>These are <em>hardware</em> properties of the lowering. The compiler pins the chunking
+above for reproducibility, and the §9.4 &quot;non-access-atomic load&quot; case applies to
+multi-chunk aggregate copies when they race.</p>
+<h4>Worked example: 16-byte struct copy</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Point <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+    x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+    y <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+
+src <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+dst <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4010</span>
+
+Point<span class="token operator">@</span><span class="token punctuation">[</span>dst<span class="token punctuation">]</span> <span class="token operator">=</span> Point<span class="token operator">@</span><span class="token punctuation">[</span>src<span class="token punctuation">]</span>                <span class="token comment">// 16-byte aggregate copy</span>
+</code></pre>
+<p>The compiler lowers the source-memory leg to scalar chunks:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">ldr x9, [src, #0]                      // low 8-byte chunk
+str x9, [tmp, #0]
+ldr x9, [src, #8]                      // high 8-byte chunk
+str x9, [tmp, #8]
+</code></pre>
+<p>Then it lowers the temporary-to-destination leg to scalar chunks:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">ldr x9, [tmp, #0]
+str x9, [dst, #0]                      // low 8-byte chunk
+ldr x9, [tmp, #8]
+str x9, [dst, #8]                      // high 8-byte chunk
+</code></pre>
+<p>A concurrent agent reading <code>dst</code> while another agent issues this copy may observe
+<code>(old_x, new_y)</code> or <code>(new_x, old_y)</code> — values that no agent ever stored as a whole
+<code>Point</code>. Use <code>#acquire</code>/<code>#release</code> on a flag, atomic runtime primitives (§1.3.2),
+or interrupt masking when wider-than-8-byte aggregates are shared across agents.</p>
+<h4>Bitfield case</h4>
+<p>Bitfield types (§1.6.1) use an unsigned <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> backing
+integer, so a bitfield read-modify-write itself never spans the
+single-copy-atomic width and is not subject to pair-store tearing. The
+Bitfield Read-Modify-Write subsection below covers the <em>separate</em> hazard of
+two agents writing different fields of the same backing word.</p>
+<h4>FEAT_LSE2 (optional)</h4>
+<p>ARMv8.4 FEAT_LSE2 widens single-copy atomicity to 16 bytes for naturally aligned
+accesses. Wyst programs do not rely on it by default. A future <code>#target(... features = (lse2))</code> opt-in (see <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>) may add an
+explicit 16-byte access or copy mode on platforms that support it; until that feature
+gate is added, the baseline scalar-chunk aggregate-copy rule stands and all
+multi-word aggregate copies are non-atomic.</p>
+<h3 id="bitfield-read-modify-write" tabindex="-1"><a class="doc-anchor" href="#bitfield-read-modify-write" aria-hidden="true">#</a> Bitfield Read-Modify-Write</h3>
+<p>A bitfield write <code>val.field = x</code> is a <strong>read-modify-write</strong>: the compiler reads the
+backing word, modifies the target field, and writes the backing word back. This sequence
+is <strong>not atomic</strong> with respect to concurrent writes to other fields of the same backing
+word.</p>
+<p>Two agents concurrently writing different fields of the same bitfield backing word race
+on the overlapping bytes. The result is hardware-determined and is likely to corrupt one
+or both writes.</p>
+<p>Programs must not allow concurrent writes to different fields of the same bitfield backing
+word without external serialization. For MMIO registers this means bitfield writes must
+not be used from interrupt handlers that share a register with the interrupted code, unless
+the register is exclusively owned by one context at a time.</p>
+<p>For practical safe patterns — including full-register writes, <code>ldxr</code>/<code>stxr</code> atomic RMW
+loops, and interrupt-disable sequences — see the <strong>Concurrency and Atomicity</strong> section
+in <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a> (Bitfield Types).</p>
+<hr>
+<h2 id="9.7-interrupt-handler-ordering" tabindex="-1"><a class="doc-anchor" href="#9.7-interrupt-handler-ordering" aria-hidden="true">#</a> 9.7 Interrupt Handler Ordering</h2>
+<h3 id="preemption-establishes-program-order" tabindex="-1"><a class="doc-anchor" href="#preemption-establishes-program-order" aria-hidden="true">#</a> Preemption Establishes Program Order</h3>
+<p>An interrupt handler begins executing after the interrupted code is suspended. All memory
+operations that completed (were globally observed) before the suspension point are visible
+to the handler. No additional synchronization primitive is required to observe values that
+were stably written before the interrupt.</p>
+<p>Operations that were in-flight (in the CPU store buffer, not yet globally observed) at
+suspension are not guaranteed visible to the handler.</p>
+<h3 id="sharing-data-with-an-interrupt-handler-(single-core)" tabindex="-1"><a class="doc-anchor" href="#sharing-data-with-an-interrupt-handler-(single-core)" aria-hidden="true">#</a> Sharing Data With an Interrupt Handler (Single Core)</h3>
+<p>To share mutable data between foreground code and an interrupt handler on the same core:</p>
+<ol>
+<li>Shared locations must be declared as <code>@volatile T</code> so that every access through them
+is a compiler barrier; the compiler cannot cache the value in a register across an
+interrupt point.</li>
+<li>For writes that must complete before the handler reads them, issue <code>%dsb(sy)</code> after the
+write and before the signaling store.</li>
+<li>For multi-word data that must be read or written consistently, disable interrupts during
+the critical section.</li>
+</ol>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result_buf   <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span>          <span class="token operator">=</span> <span class="token number">0x4000</span>
+result_ready <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4008</span>      <span class="token comment">// volatility lives in the type</span>
+
+<span class="token comment">// Foreground: write result and signal handler</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_buf<span class="token punctuation">]</span>   <span class="token operator">=</span> computed_value         <span class="token comment">// write result (plain)</span>
+<span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>                                   <span class="token comment">// ensure result is globally observable</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_ready<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>                       <span class="token comment">// signal (volatile via type)</span>
+
+<span class="token comment">// Interrupt handler: read signal and consume result</span>
+flag <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_ready<span class="token punctuation">]</span>                   <span class="token comment">// volatile via type — compiler cannot cache</span>
+<span class="token keyword">if</span> flag <span class="token operator">==</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ld<span class="token punctuation">)</span>                               <span class="token comment">// ensure flag load completes before result read</span>
+    val <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_buf<span class="token punctuation">]</span>                  <span class="token comment">// safe: dsb orders this after the flag read</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="sharing-data-with-an-interrupt-handler-(multi-core)" tabindex="-1"><a class="doc-anchor" href="#sharing-data-with-an-interrupt-handler-(multi-core)" aria-hidden="true">#</a> Sharing Data With an Interrupt Handler (Multi-Core)</h3>
+<p>When the handler may run on a different core than the producing code, preemption ordering
+does not apply. Use the acquire-release model:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Producing core</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_buf<span class="token punctuation">]</span>        <span class="token operator">=</span> computed_value    <span class="token comment">// write result</span>
+<span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_ready<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>             <span class="token comment">// store-release: result_buf ordered before this</span>
+
+<span class="token comment">// Handler (any core)</span>
+flag <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_ready<span class="token punctuation">]</span>          <span class="token comment">// load-acquire: subsequent reads ordered after</span>
+<span class="token keyword">if</span> flag <span class="token operator">==</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+    val <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_buf<span class="token punctuation">]</span>                  <span class="token comment">// happens-after the release; result is visible</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h2 id="9.8-initial-values" tabindex="-1"><a class="doc-anchor" href="#9.8-initial-values" aria-hidden="true">#</a> 9.8 Initial Values</h2>
+<p>Memory locations not explicitly initialized have <strong>hardware-determined initial values</strong>:</p>
+<ul>
+<li>Memory zeroed by startup code (e.g. the <code>.bss</code> initialization loop) contains zero.</li>
+<li>Stack memory reused from a previous frame contains values written by that frame.</li>
+<li>Device registers contain device-specific power-on reset values.</li>
+<li>Memory from an allocator contains values from its previous occupant.</li>
+</ul>
+<p><strong>The Wyst compiler does not zero-initialize local variables.</strong> A local variable declared
+but not assigned before use reads whatever is in its stack slot. Programs must not rely on
+locals being zero-initialized.</p>
+<p>The compiler must emit a warning for syntactically obvious reads of a local
+variable before an initializer or prior assignment. This warning is not a
+compile error: the generated program still has the hardware-determined behavior
+described above. The warning is intentionally conservative and local to visible
+source order. Implementations are not required to prove every path-sensitive
+initialization fact, but they must diagnose direct cases such as:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    x <span class="token operator">:</span> <span class="token builtin type">u64</span>
+    <span class="token keyword">return</span> x        <span class="token comment">// warning: x may be read before initialization</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h2 id="9.9-arm64-correspondence" tabindex="-1"><a class="doc-anchor" href="#9.9-arm64-correspondence" aria-hidden="true">#</a> 9.9 ARM64 Correspondence</h2>
+<p>The Wyst memory model is a restriction and formalization of the ARM64 VMSA memory model.
+Every guarantee Wyst makes is backed by a specific ARM64 hardware mechanism:</p>
+<table>
+<thead>
+<tr>
+<th>Wyst operation</th>
+<th>ARM64 instruction</th>
+<th>Hardware guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain load (via <code>@T</code>)</td>
+<td><code>ldr</code></td>
+<td>No ordering guarantee; may be reordered with other non-acquire/release accesses</td>
+</tr>
+<tr>
+<td>Plain store (via <code>@T</code>)</td>
+<td><code>str</code></td>
+<td>No ordering guarantee</td>
+</tr>
+<tr>
+<td>Volatile load (via <code>@volatile T</code>)</td>
+<td><code>ldr</code></td>
+<td>Compiler barrier only; cacheability from page-table MAIR</td>
+</tr>
+<tr>
+<td>Volatile store (via <code>@volatile T</code>)</td>
+<td><code>str</code></td>
+<td>Compiler barrier only; cacheability from page-table MAIR</td>
+</tr>
+<tr>
+<td><code>#acquire</code> load</td>
+<td><code>ldar</code></td>
+<td>One-way fence: all subsequent accesses observed after this load</td>
+</tr>
+<tr>
+<td><code>#release</code> store</td>
+<td><code>stlr</code></td>
+<td>One-way fence: all preceding accesses observed before this store</td>
+</tr>
+<tr>
+<td><code>%dsb(sy)</code></td>
+<td><code>dsb sy</code></td>
+<td>Stall until all preceding explicit memory accesses are globally observed (full system)</td>
+</tr>
+<tr>
+<td><code>%dsb(st)</code></td>
+<td><code>dsb st</code></td>
+<td>Stall until all preceding explicit stores are globally observed</td>
+</tr>
+<tr>
+<td><code>%dsb(ld)</code></td>
+<td><code>dsb ld</code></td>
+<td>Stall until all preceding explicit loads are globally observed</td>
+</tr>
+<tr>
+<td><code>%dsb(ish)</code></td>
+<td><code>dsb ish</code></td>
+<td><code>dsb sy</code> scoped to inner shareable domain</td>
+</tr>
+<tr>
+<td><code>%dsb(osh)</code></td>
+<td><code>dsb osh</code></td>
+<td><code>dsb sy</code> scoped to outer shareable domain</td>
+</tr>
+<tr>
+<td><code>%dsb(nsh)</code></td>
+<td><code>dsb nsh</code></td>
+<td><code>dsb sy</code> scoped to non-shareable domain</td>
+</tr>
+<tr>
+<td><code>%dmb(sy)</code></td>
+<td><code>dmb sy</code></td>
+<td>Order preceding accesses before subsequent ones; no pipeline stall</td>
+</tr>
+<tr>
+<td><code>%dmb(ish)</code></td>
+<td><code>dmb ish</code></td>
+<td><code>dmb sy</code> scoped to inner shareable domain</td>
+</tr>
+<tr>
+<td><code>%isb()</code></td>
+<td><code>isb</code></td>
+<td>Flush pipeline; all preceding instructions retire before subsequent fetch</td>
+</tr>
+<tr>
+<td><code>%compiler_barrier()</code></td>
+<td>none</td>
+<td>Full compiler fence only; no hardware memory-ordering guarantee</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>ldar</code> one-way semantics:</strong> The load value is observed, and all subsequent accesses in
+program order are observed after it. Preceding accesses may be observed before or after
+the <code>ldar</code>. Acquire is a downward fence, not a full barrier.</p>
+<p><strong><code>stlr</code> one-way semantics:</strong> All preceding accesses in program order are observed before
+this store. Subsequent accesses may be observed before or after the <code>stlr</code>. Release is an
+upward fence, not a full barrier.</p>
+<p><strong><code>dsb sy</code> stall semantics:</strong> The pipeline stalls until all preceding explicit memory
+accesses to any memory type are globally observed by all agents in the full system
+shareability domain. <code>dsb</code> is stronger than <code>dmb</code>; use <code>dmb</code> when the stall is not
+required.</p>
+<p><strong>Beyond this model:</strong> The ARM64 VMSA has additional mechanisms (load-exclusive/store-
+exclusive pairs for RMW atomicity, cache maintenance instructions, TLB invalidation) that
+are accessible through <code>#asm</code> but are not exposed as Wyst language primitives. For
+lock-free data structures, explicit cache maintenance, or TLB management, use <code>#asm</code>
+directly. <code>#asm</code> blocks are treated as full two-way compiler memory fences — the compiler
+assumes they may read or write any memory location.</p>
+<hr>
+<h2 id="9.10-known-hardware-hazards" tabindex="-1"><a class="doc-anchor" href="#9.10-known-hardware-hazards" aria-hidden="true">#</a> 9.10 Known Hardware Hazards</h2>
+<p>Certain instruction patterns are legal and well-defined but trigger
+microarchitectural penalties that are invisible at the ISA level. Wyst
+documents these patterns so that <code>wyst explain</code> can flag them and programmers
+can avoid them.</p>
+<hr>
+<h3 id="9.10.1-store-to-load-forwarding-(stlf)" tabindex="-1"><a class="doc-anchor" href="#9.10.1-store-to-load-forwarding-(stlf)" aria-hidden="true">#</a> 9.10.1 Store-to-Load Forwarding (STLF)</h3>
+<p>Modern ARM64 cores maintain a <strong>store buffer</strong> that allows a load to read a
+value from a preceding store before it reaches the cache. When forwarding
+succeeds, the load completes in a few cycles. When it fails, the core must
+drain the store buffer and re-read from cache, adding 10–20 cycles of penalty.</p>
+<h4>When Forwarding Succeeds</h4>
+<p>Forwarding succeeds when the load reads exactly the bytes written by the most
+recent store to the same address:</p>
+<ul>
+<li>Store and load are the same width and alignment.</li>
+<li>The load address is identical to the store address.</li>
+<li>The store is the most recent write to that address in program order.</li>
+</ul>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// STLF succeeds: matching width and alignment</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span> <span class="token operator">=</span> value
+result <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span>        <span class="token comment">// forwarded from store buffer</span>
+</code></pre>
+<h4>When Forwarding Fails</h4>
+<p>Forwarding fails when the load cannot be satisfied entirely from a single
+store buffer entry. Common failure cases:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Example</th>
+<th>Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Width mismatch (narrow store, wider load)</td>
+<td><code>u8@[@p] = x</code> then <code>u32@[@p]</code></td>
+<td>Load spans bytes not in store buffer entry</td>
+</tr>
+<tr>
+<td>Width mismatch (wider store, narrower load)</td>
+<td><code>u64@[@p] = x</code> then <code>u32@[@p]</code></td>
+<td>Some cores forward; others do not — non-portable</td>
+</tr>
+<tr>
+<td>Partial overlap</td>
+<td>Store to <code>@p</code>, load from <code>@p+2</code></td>
+<td>Load partially overlaps the store</td>
+</tr>
+<tr>
+<td>Multiple stores</td>
+<td><code>u32@[@p] = a</code> then <code>u32@[@p+4] = b</code> then <code>u64@[@p]</code></td>
+<td>Load needs data from two store buffer entries</td>
+</tr>
+</tbody>
+</table>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// STLF failure: narrow store followed by wider load</span>
+<span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span> <span class="token operator">=</span> flags
+combined <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span>      <span class="token comment">// penalty: ~10-20 cycle stall</span>
+
+<span class="token comment">// STLF failure: constructing a value from sub-word stores</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@p</span><span class="token punctuation">]</span>     <span class="token operator">=</span> lo
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@p</span> <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> hi
+full <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@p</span><span class="token punctuation">]</span>            <span class="token comment">// penalty: two store buffer entries</span>
+</code></pre>
+<h4>Bitfield RMW and STLF</h4>
+<p>Bitfield field writes compile to read-modify-write sequences using <code>ubfx</code> and
+<code>bfi</code> (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>). A field write followed by a
+differently-sized read of the backing integer can trigger STLF failure:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">status <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    ready <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
+    error <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+    count <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Potential STLF hazard: field write is a u32 RMW,</span>
+<span class="token comment">// but if the compiler or programmer batches sub-word</span>
+<span class="token comment">// stores, a subsequent full read may stall.</span>
+reg<span class="token punctuation">.</span>ready <span class="token operator">=</span> <span class="token number">1</span>
+reg<span class="token punctuation">.</span>error <span class="token operator">=</span> <span class="token number">0</span>
+reg<span class="token punctuation">.</span>count <span class="token operator">=</span> <span class="token number">42</span>
+raw <span class="token operator">:</span><span class="token operator">=</span> reg <span class="token keyword">as</span> <span class="token builtin type">u32</span>          <span class="token comment">// safe: all writes are full-width u32 RMW</span>
+</code></pre>
+<p>In practice, bitfield field writes in Wyst are full-width RMW on the backing
+type, so they do not cause width-mismatch STLF failures by themselves. The
+hazard arises when mixing bitfield access with raw sub-word stores to the same
+address, or when accessing the same memory at different widths through pointer
+casts.</p>
+<h4><code>wyst explain</code> Diagnostics</h4>
+<p><code>wyst explain</code> should flag the following patterns as potential STLF hazards:</p>
+<ul>
+<li>A store of width N followed by a load of width M ≠ N at the same base
+address (or provably overlapping addresses).</li>
+<li>Two or more stores to adjacent sub-words followed by a wider load spanning
+them.</li>
+<li>A pointer cast that changes access width between a store and a subsequent
+load to the same address.</li>
+</ul>
+<p>Diagnostics are informational. The patterns are well-defined; the penalty is
+a performance issue, not a correctness issue.</p>
+<h4>Guidance</h4>
+<ul>
+<li><strong>Store and load at the same width.</strong> If a value is stored as <code>u32</code>, read it
+back as <code>u32</code>.</li>
+<li><strong>Batch sub-word writes.</strong> Construct a full-width value in a register, then
+store once, rather than writing individual bytes or half-words.</li>
+<li><strong>Avoid cross-width aliasing.</strong> Do not write through a <code>@u8</code> and read back
+through a <code>@u64</code> at the same address.</li>
+</ul>
+<hr>
+<h2 id="9.11-quick-reference%3A-is-this-reordering-permitted%3F" tabindex="-1"><a class="doc-anchor" href="#9.11-quick-reference%3A-is-this-reordering-permitted%3F" aria-hidden="true">#</a> 9.11 Quick Reference: Is This Reordering Permitted?</h2>
+<p>Given operation A before operation B in source, may the compiler emit B before A?</p>
+<p><strong>No</strong> if any of:</p>
+<ul>
+<li>A or B is a volatile access (via <code>@volatile T</code>)</li>
+<li>A or B is <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, or <code>%compiler_barrier()</code></li>
+<li>B is a <code>#release</code> store (release stores may not be hoisted above anything)</li>
+<li>A is an <code>#acquire</code> load (acquire loads may not have anything after them moved before)</li>
+<li>A and B alias (access overlapping addresses, or compiler cannot prove non-aliasing)</li>
+<li>B depends on the value produced by A (data dependency)</li>
+</ul>
+<p><strong>Yes</strong> if all checks above are clear (both plain accesses, provably non-aliased,
+no data dependency).</p>
+<hr>
+<h2 id="9.12-cache-line-awareness" tabindex="-1"><a class="doc-anchor" href="#9.12-cache-line-awareness" aria-hidden="true">#</a> 9.12 Cache Line Awareness</h2>
+<p>Modern ARM64 processors transfer data between caches and main memory in
+fixed-size <strong>cache lines</strong> (typically 64 bytes; 128 bytes on Apple M-series).
+When two variables share a cache line and are written by different cores, the
+MESI coherence protocol forces the line to bounce between caches — even if the
+cores never access the same variable. This is <strong>false sharing</strong>, and it can
+degrade throughput by 10–50×.</p>
+<hr>
+<h3 id="%23shared-%E2%80%94-cache-line-isolation" tabindex="-1"><a class="doc-anchor" href="#%23shared-%E2%80%94-cache-line-isolation" aria-hidden="true">#</a> <code>#shared</code> — Cache-Line Isolation</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+flags   <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+</code></pre>
+<p><code>#shared</code> is a placement attribute on mutable global variables and <code>#percpu</code>
+declarations. It guarantees:</p>
+<ol>
+<li>The variable is aligned to cache line width (<code>#cache_line_width()</code>).</li>
+<li>The variable is padded to fill a full cache line.</li>
+<li>Two <code>#shared</code> variables are guaranteed to occupy different cache lines.</li>
+</ol>
+<p><strong>Legal positions:</strong> <code>#shared</code> may appear on:</p>
+<table>
+<thead>
+<tr>
+<th>Declaration kind</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mutable global</td>
+<td><code>counter : #shared u64 = 0</code></td>
+</tr>
+<tr>
+<td><code>#percpu</code> variable</td>
+<td><code>#percpu local_count : #shared u64 = 0</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Illegal positions (compile error):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Position</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local variables</td>
+<td>Stack layout is not shared between cores</td>
+</tr>
+<tr>
+<td>Constants (<code>::</code>)</td>
+<td>Immutable data has no write-side coherence traffic</td>
+</tr>
+<tr>
+<td>Struct fields</td>
+<td>Use explicit <code>#align</code> and padding instead</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Semantics:</strong></p>
+<ul>
+<li><code>#shared</code> implies <code>#align(#cache_line_width())</code>.</li>
+<li>The total space consumed is <code>max(#size_of(T), #cache_line_width())</code>.</li>
+<li><code>#shared</code> is a placement attribute, not a type modifier — <code>@T</code> still
+points to the variable's natural type, not to a padded wrapper.</li>
+<li><code>#shared</code> does not add any memory ordering. For concurrent access, combine
+with <code>#acquire</code> / <code>#release</code> or barrier runtime primitives as needed.</li>
+</ul>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Two per-CPU counters that will never false-share</span>
+<span class="token directive macro">#percpu</span> request_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token directive macro">#percpu</span> error_count   <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+</code></pre>
+<hr>
+<h3 id="%23cache_line_width()-%E2%80%94-compile-time-query" tabindex="-1"><a class="doc-anchor" href="#%23cache_line_width()-%E2%80%94-compile-time-query" aria-hidden="true">#</a> <code>#cache_line_width()</code> — Compile-Time Query</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">stride <span class="token operator">::</span> <span class="token directive macro">#cache_line_width</span><span class="token punctuation">(</span><span class="token punctuation">)</span>       <span class="token comment">// 64 on most ARM64; 128 on Apple M-series</span>
+buf <span class="token operator">:</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token directive macro">#cache_line_width</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token builtin type">u8</span>
+</code></pre>
+<p><code>#cache_line_width()</code> is a compile-time query that returns the cache line
+width in bytes for the current <code>#target</code>. It is resolved at compile time — no
+runtime cost, no code emitted.</p>
+<p><strong>Default value:</strong> 64 (matches Cortex-A and Neoverse families).</p>
+<p><strong>Override:</strong> <code>#target(... cache_line = 128)</code> sets the value for the
+compilation unit. This is required for Apple M-series targets where the
+DCache line size is 128 bytes.</p>
+<p><strong>Legal positions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#align</code> argument</td>
+<td><code>#align(#cache_line_width())</code></td>
+</tr>
+<tr>
+<td><code>#static_assert</code></td>
+<td><code>#static_assert(#cache_line_width() &gt;= 64)</code></td>
+</tr>
+<tr>
+<td>Array size</td>
+<td><code>buf : [#cache_line_width()]u8</code></td>
+</tr>
+<tr>
+<td>Constant declaration</td>
+<td><code>CL :: #cache_line_width()</code></td>
+</tr>
+<tr>
+<td>Arithmetic in constant expressions</td>
+<td><code>stride :: #cache_line_width() * 2</code></td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="/docs/chapter-06-types/">chapter-06-types.md §1.15</a> for the full compile-time query table.</p>
+<hr>
+<h3 id="false-sharing-diagnostic" tabindex="-1"><a class="doc-anchor" href="#false-sharing-diagnostic" aria-hidden="true">#</a> False-Sharing Diagnostic</h3>
+<p>The compiler emits a warning when two mutable globals (at least one of which
+is <code>#export</code>ed or <code>#percpu</code>) land on the same cache line and neither is marked
+<code>#shared</code>:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">warning: 'counter_a' and 'counter_b' may share a cache line
+         both are mutable globals; consider #shared if accessed from multiple cores
+         counter_a at offset 0x1000, counter_b at offset 0x1008 (same 64-byte line)
+</code></pre>
+<p>The diagnostic is informational — false sharing is a performance issue, not a
+correctness issue. Suppress it by adding <code>#shared</code> to the relevant
+declarations, or by placing them in explicit <code>#section</code> blocks with sufficient
+spacing.</p>
+<hr>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-08-functions/"><span class="dir">← Previous</span><span class="lbl">Functions, Control Flow, and Inline Assembly</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-10-runtime/"><span class="dir">Next →</span><span class="lbl">Runtime And Allocation</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-3"><a href="#arm64-semantic-foundations">ARM64 Semantic Foundations</a></li>
+				<li class="lvl-2"><a href="#1.1-arm64-register-model">1.1 ARM64 Register Model</a></li>
+				<li class="lvl-2"><a href="#1.2-load%2Fstore-architecture">1.2 Load/Store Architecture</a></li>
+				<li class="lvl-2"><a href="#1.3-memory-interpretation-model">1.3 Memory Interpretation Model</a></li>
+				<li class="lvl-3"><a href="#normal-access">Normal Access</a></li>
+				<li class="lvl-3"><a href="#device-access">Device Access</a></li>
+				<li class="lvl-3"><a href="#address-types">Address Types</a></li>
+				<li class="lvl-3"><a href="#mmio-example">MMIO Example</a></li>
+				<li class="lvl-3"><a href="#why-this-model-exists">Why This Model Exists</a></li>
+				<li class="lvl-2"><a href="#1.3.1-memory-access-directives-and-volatility">1.3.1 Memory Access Directives and Volatility</a></li>
+				<li class="lvl-3"><a href="#volatility-via-%40volatile-t">Volatility via @volatile T</a></li>
+				<li class="lvl-3"><a href="#%23acquire">#acquire</a></li>
+				<li class="lvl-3"><a href="#%23release">#release</a></li>
+				<li class="lvl-3"><a href="#combination-rules">Combination Rules</a></li>
+				<li class="lvl-3"><a href="#barrier-runtime-primitives">Barrier Runtime Primitives</a></li>
+				<li class="lvl-3"><a href="#mmio-ordering">MMIO Ordering</a></li>
+				<li class="lvl-3"><a href="#spinlock-example">Spinlock Example</a></li>
+				<li class="lvl-3"><a href="#relationship-to-%23schedule">Relationship to #schedule</a></li>
+				<li class="lvl-3"><a href="#why-volatility-lives-in-the-type">Why Volatility Lives in the Type</a></li>
+				<li class="lvl-3"><a href="#memory-model">Memory Model</a></li>
+				<li class="lvl-2"><a href="#overview">Overview</a></li>
+				<li class="lvl-2"><a href="#9.1-execution-model">9.1 Execution Model</a></li>
+				<li class="lvl-3"><a href="#agents">Agents</a></li>
+				<li class="lvl-3"><a href="#memory-locations">Memory Locations</a></li>
+				<li class="lvl-3"><a href="#operations">Operations</a></li>
+				<li class="lvl-2"><a href="#9.2-compiler-ordering-rules">9.2 Compiler Ordering Rules</a></li>
+				<li class="lvl-3"><a href="#the-reordering-table">The Reordering Table</a></li>
+				<li class="lvl-3"><a href="#rule-explanations">Rule Explanations</a></li>
+				<li class="lvl-3"><a href="#alias-analysis">Alias Analysis</a></li>
+				<li class="lvl-2"><a href="#9.3-happens-before">9.3 Happens-Before</a></li>
+				<li class="lvl-3"><a href="#definition">Definition</a></li>
+				<li class="lvl-3"><a href="#what-synchronizes-with-provides">What Synchronizes-With Provides</a></li>
+				<li class="lvl-3"><a href="#barriers-and-happens-before">Barriers and Happens-Before</a></li>
+				<li class="lvl-2"><a href="#9.4-visible-value-of-a-load">9.4 Visible Value of a Load</a></li>
+				<li class="lvl-2"><a href="#9.5-data-races">9.5 Data Races</a></li>
+				<li class="lvl-3"><a href="#definition-1">Definition</a></li>
+				<li class="lvl-3"><a href="#behavior">Behavior</a></li>
+				<li class="lvl-3"><a href="#volatile-races">Volatile Races</a></li>
+				<li class="lvl-3"><a href="#atomic-operations-and-races">Atomic Operations and Races</a></li>
+				<li class="lvl-2"><a href="#9.6-atomicity">9.6 Atomicity</a></li>
+				<li class="lvl-3"><a href="#natural-alignment">Natural Alignment</a></li>
+				<li class="lvl-3"><a href="#misaligned-access">Misaligned Access</a></li>
+				<li class="lvl-3"><a href="#multi-word-and-pair-accesses">Multi-Word and Pair Accesses</a></li>
+				<li class="lvl-3"><a href="#bitfield-read-modify-write">Bitfield Read-Modify-Write</a></li>
+				<li class="lvl-2"><a href="#9.7-interrupt-handler-ordering">9.7 Interrupt Handler Ordering</a></li>
+				<li class="lvl-3"><a href="#preemption-establishes-program-order">Preemption Establishes Program Order</a></li>
+				<li class="lvl-3"><a href="#sharing-data-with-an-interrupt-handler-(single-core)">Sharing Data With an Interrupt Handler (Single Core)</a></li>
+				<li class="lvl-3"><a href="#sharing-data-with-an-interrupt-handler-(multi-core)">Sharing Data With an Interrupt Handler (Multi-Core)</a></li>
+				<li class="lvl-2"><a href="#9.8-initial-values">9.8 Initial Values</a></li>
+				<li class="lvl-2"><a href="#9.9-arm64-correspondence">9.9 ARM64 Correspondence</a></li>
+				<li class="lvl-2"><a href="#9.10-known-hardware-hazards">9.10 Known Hardware Hazards</a></li>
+				<li class="lvl-3"><a href="#9.10.1-store-to-load-forwarding-(stlf)">9.10.1 Store-to-Load Forwarding (STLF)</a></li>
+				<li class="lvl-2"><a href="#9.11-quick-reference%3A-is-this-reordering-permitted%3F">9.11 Quick Reference: Is This Reordering Permitted?</a></li>
+				<li class="lvl-2"><a href="#9.12-cache-line-awareness">9.12 Cache Line Awareness</a></li>
+				<li class="lvl-3"><a href="#%23shared-%E2%80%94-cache-line-isolation">#shared — Cache-Line Isolation</a></li>
+				<li class="lvl-3"><a href="#%23cache_line_width()-%E2%80%94-compile-time-query">#cache_line_width() — Compile-Time Query</a></li>
+				<li class="lvl-3"><a href="#false-sharing-diagnostic">False-Sharing Diagnostic</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

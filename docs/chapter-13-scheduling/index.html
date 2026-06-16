@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes." />
+		<title>Scheduling Semantics · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-13-scheduling/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/" aria-current="page"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 13</span>
+						<h1>Chapter 13: Wyst Scheduling Semantics</h1>
+						<p class="doc-lede">Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes.</p>
+					</header>
+					<div class="doc-body">
+<blockquote>
+<p><strong>Canonical scope.</strong> The <code>#schedule(strict | relaxed | throughput | latency)</code> directive, the ordering-constraint vs optimization-hint
+distinction, and reproducibility scope. IR-level region representation
+of schedule blocks lives in <a href="/docs/appendix-a-ir/">appendix-a-ir.md §4.3</a>.</p>
+</blockquote>
+<h3 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-hidden="true">#</a> Semantic Boundary</h3>
+<p>Scheduling modes are permissions for instruction ordering, not a way to change
+source meaning. Optimization and IR rules build on the effects, memory
+ordering, and dependency rules established here.</p>
+<hr>
+<h3 id="scheduling-semantics" tabindex="-1"><a class="doc-anchor" href="#scheduling-semantics" aria-hidden="true">#</a> Scheduling Semantics</h3>
+<p>Wyst exposes scheduling permissions explicitly via the <code>#schedule</code> directive.
+Modes are divided into two categories:</p>
+<p><code>#schedule</code> modes are source-level scheduling modes, not build optimization
+modes. Build optimization modes are selected separately with <code>--optimization</code>
+or <code>optimization = &quot;...&quot;</code> in <code>wyst.project</code> (see
+<a href="/docs/chapter-17-optimization-modes/">chapter-17-optimization-modes.md</a>).
+Whatever build optimization mode is selected must still respect the
+<code>#schedule</code> regions in the source.</p>
+<p><strong>Ordering constraints</strong> — specify what the assembler is and is not permitted
+to do. Output is reproducible within a compiler version, target, and
+<code>#schedule</code> mode.</p>
+<p><strong>Optimization hints</strong> — express intent; the assembler may use them to
+improve code but the exact output is implementation-defined and may change
+across compiler versions or microarchitecture targets. For a fixed source
+input manifest, compiler binary, build optimization mode, target, and
+<code>#schedule</code> mode, the chosen output must still be deterministic across
+invocations. Do not use hint modes where source-order layout, exact instruction
+count, or cross-version instruction order must remain stable.</p>
+<hr>
+<h3 id="checked-scheduling-example" tabindex="-1"><a class="doc-anchor" href="#checked-scheduling-example" aria-hidden="true">#</a> Checked Scheduling Example</h3>
+<p><code>#schedule(strict)</code> is valid inside an ordinary function body:</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> scheduling_demo
+
+step <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        sum <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
+        <span class="token keyword">return</span> sum
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h2 id="strict-scheduling" tabindex="-1"><a class="doc-anchor" href="#strict-scheduling" aria-hidden="true">#</a> Strict Scheduling</h2>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    raw  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
+    next <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token operator">+</span> <span class="token number">1</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>Ordering constraint.</strong> Source order is preserved exactly. The assembler
+emits instructions in the order they appear in the source block. No
+instruction may be moved relative to any other. This includes non-dependent
+operations.</p>
+<p>The braces of a <code>#schedule(strict)</code> block are also hard scheduling
+boundaries. Instructions outside the block must not be moved into the block,
+and instructions inside the block must not be moved out of it. The boundary
+is a compiler scheduling fence only; it does not emit a hardware barrier and
+does not change the CPU memory-ordering rules described in
+<a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>.
+Use <code>%compiler_barrier()</code> when a statement-level compiler memory fence is
+needed without placing the surrounding operations inside a strict schedule
+region.</p>
+<p>Use <code>#schedule(strict)</code> when:</p>
+<ul>
+<li>source order is semantically significant</li>
+<li>floating-point sequential rounding is required (prevents FMA fusion)</li>
+<li>exact instruction layout is needed (e.g. counted <code>#ventry</code> bodies)</li>
+<li>timing-sensitive sequences must not be reordered</li>
+</ul>
+<hr>
+<h2 id="relaxed-scheduling" tabindex="-1"><a class="doc-anchor" href="#relaxed-scheduling" aria-hidden="true">#</a> Relaxed Scheduling</h2>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>relaxed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    lhs <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
+    rhs <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
+    sum <span class="token operator">:</span><span class="token operator">=</span> lhs <span class="token operator">+</span> rhs
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>Ordering constraint.</strong> The assembler may reorder instructions that have no
+data dependency between them. An instruction may not be moved past any
+instruction it depends on, and may not be moved past any instruction that
+depends on it. Data dependencies are respected strictly.</p>
+<p>Output is a pure function of source, compiler version, and target triple:
+the same source compiled with the same compiler version against the same
+target always produces the same instruction order, across all invocations.
+This is a specified guarantee, not an implementation convenience.
+Instruction order is not guaranteed to be preserved across compiler versions.</p>
+<p>Use <code>#schedule(relaxed)</code> when dependency ordering is sufficient and small
+reorderings for pipeline efficiency are acceptable.</p>
+<hr>
+<h2 id="throughput-scheduling" tabindex="-1"><a class="doc-anchor" href="#throughput-scheduling" aria-hidden="true">#</a> Throughput Scheduling</h2>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>throughput<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    sum <span class="token operator">=</span> a <span class="token operator">+</span> b
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>Optimization hint.</strong> The assembler attempts to schedule instructions to
+maximize throughput — preferring sequences that keep multiple execution
+units busy. The exact output is implementation-defined and may change across
+compiler versions or microarchitecture targets. Within one compiler binary and
+the same build inputs, the chosen instruction order is deterministic.</p>
+<p>Do not use <code>#schedule(throughput)</code> in <code>#ventry</code> bodies where instruction count
+must be predictable, in code that requires cross-version stable instruction
+order, or in floating-point code where consistent rounding is required.</p>
+<hr>
+<h2 id="latency-scheduling" tabindex="-1"><a class="doc-anchor" href="#latency-scheduling" aria-hidden="true">#</a> Latency Scheduling</h2>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>latency<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    chain <span class="token operator">=</span> chain <span class="token operator">+</span> next
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>Optimization hint.</strong> The assembler attempts to schedule instructions to
+minimize critical-path latency — preferring sequences that reduce dependency
+chain depth. The exact output is implementation-defined and may change across
+compiler versions or microarchitecture targets. Within one compiler binary and
+the same build inputs, the chosen instruction order is deterministic.</p>
+<p>Same caveats as <code>#schedule(throughput)</code>. Use only in non-critical paths where
+the hint mode's cross-version instability is acceptable in exchange for
+potential latency improvement.</p>
+<hr>
+<h2 id="layout-constraint" tabindex="-1"><a class="doc-anchor" href="#layout-constraint" aria-hidden="true">#</a> Layout Constraint</h2>
+<p><strong>Hint scheduling modes must not change code layout.</strong></p>
+<p><code>#schedule(throughput)</code> and <code>#schedule(latency)</code> may reorder instructions
+<strong>within a single basic block only</strong>. They must not:</p>
+<ul>
+<li>move instructions across basic block boundaries</li>
+<li>change the ordering of basic blocks in the emitted binary</li>
+<li>change which section a function or block is placed in</li>
+<li>alter the control flow graph shape (branch targets, fall-through targets)</li>
+</ul>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// The hint mode may reorder the two independent loads,</span>
+<span class="token comment">// but may NOT move them past the branch or change which</span>
+<span class="token comment">// block is the fall-through target.</span>
+
+<span class="token directive macro">#schedule</span><span class="token punctuation">(</span>throughput<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    a <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>p<span class="token punctuation">]</span>
+    b <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>q<span class="token punctuation">]</span>
+    <span class="token keyword">if</span> a <span class="token operator">></span> b <span class="token punctuation">{</span>
+        <span class="token function">hot_path</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        <span class="token function">cold_path</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><strong>Rationale.</strong> Code layout — block ordering, section placement, fall-through
+direction — is determined by the source structure and explicit directives
+(<code>#likely</code>/<code>#unlikely</code>, <code>#cold</code>, <code>#section</code>), never by scheduling hints.
+Separating layout from scheduling preserves two properties:</p>
+<ol>
+<li>
+<p><strong>Reproducibility scope.</strong> Layout decisions are deterministic under the
+Reproducibility Model's input catalog (same source input manifest,
+compiler version, build optimization mode, target, and <code>#schedule</code> modes
+→ same layout). Hint modes affect only instruction order within blocks,
+which is deterministic for the same compiler binary but may evolve across
+compiler versions or microarchitecture targets.</p>
+</li>
+<li>
+<p><strong>Composability.</strong> A programmer can pin layout with <code>#likely</code>/<code>#unlikely</code>
+and let a hint mode optimise instruction order within each block without
+the two interacting. See <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.7.2</a> for branch
+hints and <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> for hot/cold section conventions.</p>
+</li>
+</ol>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-12-simd/"><span class="dir">← Previous</span><span class="lbl">SIMD and Vector Syntax</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-14-exception-vectors/"><span class="dir">Next →</span><span class="lbl">Alignment and Exception Vectors</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-3"><a href="#semantic-boundary">Semantic Boundary</a></li>
+				<li class="lvl-3"><a href="#scheduling-semantics">Scheduling Semantics</a></li>
+				<li class="lvl-3"><a href="#checked-scheduling-example">Checked Scheduling Example</a></li>
+				<li class="lvl-2"><a href="#strict-scheduling">Strict Scheduling</a></li>
+				<li class="lvl-2"><a href="#relaxed-scheduling">Relaxed Scheduling</a></li>
+				<li class="lvl-2"><a href="#throughput-scheduling">Throughput Scheduling</a></li>
+				<li class="lvl-2"><a href="#latency-scheduling">Latency Scheduling</a></li>
+				<li class="lvl-2"><a href="#layout-constraint">Layout Constraint</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

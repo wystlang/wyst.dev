@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Language identity, principles, no compiler-exploitable UB, effect system, and compiler philosophy." />
+		<title>Language Design · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-01-language-design/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/" aria-current="page"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 1</span>
+						<h1>Chapter 1: Wyst Language Design</h1>
+						<p class="doc-lede">Language identity, principles, no compiler-exploitable UB, effect system, and compiler philosophy.</p>
+					</header>
+					<div class="doc-body">
+<p>This opening chapter gives the conceptual map for Wyst. It introduces memory
+ordering, effects, ABI, IR, object files, and tooling at a high level; later
+chapters define those topics in detail.</p>
+<blockquote>
+<p><strong>Chapter scope.</strong> This chapter states the identity, principles, and
+high-level rules of the language. When a topic is defined in more detail
+elsewhere, this chapter summarizes and links.</p>
+<p>Canonical definitions live in the following files:</p>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Canonical file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Type system, conversions, aggregates</td>
+<td><a href="/docs/chapter-06-types/">chapter-06-types.md</a></td>
+</tr>
+<tr>
+<td>Address types (<code>@T</code>, <code>@volatile T</code>)</td>
+<td><a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a></td>
+</tr>
+<tr>
+<td>Struct, bitfield, enum layout</td>
+<td><a href="/docs/chapter-06-types/">chapter-06-types.md §1.6, §1.6.1, §1.6.2</a></td>
+</tr>
+<tr>
+<td>Memory model (ordering, races)</td>
+<td><a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a></td>
+</tr>
+<tr>
+<td>Volatility, <code>#acquire</code>/<code>#release</code></td>
+<td><a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a></td>
+</tr>
+<tr>
+<td>Runtime primitives (<code>%</code>-prefixed)</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md</a></td>
+</tr>
+<tr>
+<td>Atomic runtime primitives</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a></td>
+</tr>
+<tr>
+<td>System register access</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.3</a></td>
+</tr>
+<tr>
+<td>Trap / cache / TLB / hint primitives</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.4–1.3.6</a></td>
+</tr>
+<tr>
+<td>Per-CPU / TLS</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.7</a></td>
+</tr>
+<tr>
+<td>Functions, control flow</td>
+<td><a href="/docs/chapter-08-functions/">chapter-08-functions.md</a></td>
+</tr>
+<tr>
+<td><code>#pin</code> register affinity</td>
+<td><a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.3</a></td>
+</tr>
+<tr>
+<td><code>#asm</code> inline assembly</td>
+<td><a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.9</a></td>
+</tr>
+<tr>
+<td>SIMD / vector syntax</td>
+<td><a href="/docs/chapter-12-simd/">chapter-12-simd.md</a></td>
+</tr>
+<tr>
+<td><code>#schedule</code> semantics, layout constraint</td>
+<td><a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a></td>
+</tr>
+<tr>
+<td>Modules, imports, layout, <code>#section</code></td>
+<td><a href="/docs/chapter-04-modules/">chapter-04-modules.md</a></td>
+</tr>
+<tr>
+<td>Alignment, <code>#exception_vector</code></td>
+<td><a href="/docs/chapter-14-exception-vectors/">chapter-14-exception-vectors.md</a></td>
+</tr>
+<tr>
+<td>Boot entry contract</td>
+<td><a href="/docs/chapter-05-boot/">chapter-05-boot.md</a></td>
+</tr>
+<tr>
+<td>Debug information (DWARF)</td>
+<td><a href="/docs/chapter-23-debug-info/">chapter-23-debug-info.md</a></td>
+</tr>
+<tr>
+<td>Calling convention (Native, AAPCS)</td>
+<td><a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md</a></td>
+</tr>
+<tr>
+<td>Operators, precedence, arithmetic</td>
+<td><a href="/docs/chapter-07-operators/">chapter-07-operators.md</a></td>
+</tr>
+<tr>
+<td>Formal grammar (PEG)</td>
+<td><a href="/docs/appendix-b-grammar/">appendix-b-grammar.md</a></td>
+</tr>
+<tr>
+<td>Object file format, relocations</td>
+<td><a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a></td>
+</tr>
+<tr>
+<td>Compiler IR (SSA, regions, ops)</td>
+<td><a href="/docs/appendix-a-ir/">appendix-a-ir.md</a></td>
+</tr>
+<tr>
+<td>Target descriptor, dependency chains</td>
+<td><a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.9, §14</a></td>
+</tr>
+<tr>
+<td><code>#likely</code>, <code>#unlikely</code>, <code>#cold</code></td>
+<td><a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.7.2</a></td>
+</tr>
+<tr>
+<td><code>select(cond, a, b)</code></td>
+<td><a href="/docs/chapter-07-operators/">chapter-07-operators.md</a></td>
+</tr>
+<tr>
+<td><code>#shared</code>, <code>#cache_line_width()</code></td>
+<td><a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.12</a></td>
+</tr>
+<tr>
+<td>Prefetch, non-temporal, cycle counter</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.8</a></td>
+</tr>
+<tr>
+<td>Store-to-load forwarding hazards</td>
+<td><a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.10</a></td>
+</tr>
+<tr>
+<td>Hot/cold section conventions</td>
+<td><a href="/docs/chapter-04-modules/">chapter-04-modules.md</a></td>
+</tr>
+<tr>
+<td><code>#field_offset(T, field)</code>, <code>#repr</code></td>
+<td><a href="/docs/chapter-06-types/">chapter-06-types.md</a></td>
+</tr>
+<tr>
+<td>Effect system, <code>#deny</code></td>
+<td>chapter-01-language-design.md (this file)</td>
+</tr>
+<tr>
+<td>Effect categories on runtime primitive ops</td>
+<td><a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.8</a></td>
+</tr>
+<tr>
+<td>TMA vocabulary</td>
+<td>chapter-01-language-design.md (this file)</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<h3 id="core-identity" tabindex="-1"><a class="doc-anchor" href="#core-identity" aria-hidden="true">#</a> Core Identity</h3>
+<p>Wyst is a semantic ARM64 systems language and assembler focused on:</p>
+<ul>
+<li>reproducible lowering</li>
+<li>explicit machine semantics</li>
+<li>no compiler-exploitable undefined behavior</li>
+<li>performance transparency</li>
+<li>readable low-level programming</li>
+<li>architecture-aware tooling</li>
+</ul>
+<p>Wyst is intentionally positioned between:</p>
+<ul>
+<li>traditional assembly</li>
+<li>compiler IRs</li>
+<li>systems programming languages</li>
+</ul>
+<p>It is best understood as:</p>
+<blockquote>
+<p>a human-readable semantic IR for machine-oriented programming.</p>
+</blockquote>
+<hr>
+<h2 id="design-constraints" tabindex="-1"><a class="doc-anchor" href="#design-constraints" aria-hidden="true">#</a> Design Constraints</h2>
+<p>Wyst must preserve:</p>
+<ul>
+<li>explicit dataflow</li>
+<li>explicit memory behavior</li>
+<li>deterministic lowering</li>
+<li>inspectable performance behavior</li>
+<li>direct ARM64 correspondence</li>
+</ul>
+<p>Wyst intentionally avoids:</p>
+<ul>
+<li>hidden optimization passes</li>
+<li>automatic algorithmic rewrites</li>
+<li>opaque compiler behavior</li>
+<li>implicit vectorization</li>
+<li>hidden allocation semantics</li>
+<li>compiler-exploitable undefined behavior</li>
+</ul>
+<p>The assembler may:</p>
+<ul>
+<li>select legal encodings</li>
+<li>select architecture-specific instruction forms</li>
+<li>schedule instructions within explicit permissions</li>
+<li>optimize layout and alignment</li>
+</ul>
+<p>The assembler may not:</p>
+<ul>
+<li>silently change algorithms</li>
+<li>silently rewrite control flow</li>
+<li>introduce hidden memory behavior</li>
+<li>perform hidden global optimization</li>
+</ul>
+<hr>
+<h2 id="no-compiler-exploitable-undefined-behavior" tabindex="-1"><a class="doc-anchor" href="#no-compiler-exploitable-undefined-behavior" aria-hidden="true">#</a> No Compiler-Exploitable Undefined Behavior</h2>
+<p>Wyst provides two behavior guarantees.</p>
+<p><strong>Guarantee 1 — No compiler-exploitable undefined behavior.</strong> The compiler
+never uses an unspecified program state as a license to transform, remove,
+or reorder code. In C, a compiler may assume signed overflow does not occur
+and delete branches on that basis. In Wyst, no such assumption is ever made.
+If the source says <code>x + 1</code>, the compiler emits <code>add</code>. Period.</p>
+<p><strong>Guarantee 2 — Hardware-determined behavior for invalid operations.</strong>
+When a program performs an operation whose outcome depends on hardware state
+— accessing an unmapped address, reading an uninitialized stack slot,
+dereferencing a stale pointer — the behavior is determined by the hardware,
+not by the compiler. The compiler emits the instruction the source describes.
+What the hardware does with that instruction is a property of the machine.</p>
+<p>This is not the same as memory safety. Wyst does not prevent invalid memory
+access. It guarantees the compiler will not exploit the possibility of such
+access to generate surprising code. The programmer retains responsibility for
+avoiding invalid operations in safety-critical paths.</p>
+<h3 id="principles" tabindex="-1"><a class="doc-anchor" href="#principles" aria-hidden="true">#</a> Principles</h3>
+<ul>
+<li><strong>No compiler-exploitable UB.</strong> There is no program state the compiler may
+use as a license for transformation. Arithmetic, control flow, and memory
+operations are emitted as written.</li>
+<li><strong>Integer arithmetic wraps.</strong> Signed and unsigned overflow wraps two's
+complement on the type width. No runtime check, no hidden branch, no
+debug/release mode difference. Programs may rely on wrap-around.</li>
+<li><strong>The machine dictates the answer.</strong> When the architecture defines behavior
+(e.g. unaligned access on ARM64), Wyst exposes it directly.</li>
+<li><strong>No silent compiler traps.</strong> The compiler does not insert panic, abort, or
+trap instructions unless the programmer explicitly requests them.</li>
+</ul>
+<h3 id="what-this-means" tabindex="-1"><a class="doc-anchor" href="#what-this-means" aria-hidden="true">#</a> What This Means</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>C behavior</th>
+<th>Wyst behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>signed overflow</td>
+<td>UB; compiler may delete branches</td>
+<td>two's complement wrap; emitted as written</td>
+</tr>
+<tr>
+<td>unsigned overflow</td>
+<td>wraps (defined in C)</td>
+<td>wraps; emitted as written</td>
+</tr>
+<tr>
+<td>out-of-bounds read</td>
+<td>UB; compiler may assume unreachable</td>
+<td>hardware read at that address</td>
+</tr>
+<tr>
+<td>out-of-bounds write</td>
+<td>UB; compiler may assume unreachable</td>
+<td>hardware write at that address</td>
+</tr>
+<tr>
+<td>uninitialized read</td>
+<td>UB; compiler may assume any value</td>
+<td>reads whatever the stack/register held</td>
+</tr>
+<tr>
+<td>null dereference</td>
+<td>UB; compiler may delete null checks</td>
+<td>data abort if address 0 is unmapped</td>
+</tr>
+<tr>
+<td>use after free</td>
+<td>UB</td>
+<td>hardware read/write at that address</td>
+</tr>
+<tr>
+<td>dangling pointer</td>
+<td>UB</td>
+<td>valid integer; access is hardware-determined</td>
+</tr>
+<tr>
+<td>aliasing</td>
+<td>UB under strict aliasing rules</td>
+<td>no strict aliasing; emitted as written</td>
+</tr>
+<tr>
+<td>unaligned access</td>
+<td>UB or implementation-defined</td>
+<td>ARM64 hardware behavior, exposed directly</td>
+</tr>
+</tbody>
+</table>
+<h3 id="contrast-with-c%2Fc%2B%2B" tabindex="-1"><a class="doc-anchor" href="#contrast-with-c%2Fc%2B%2B" aria-hidden="true">#</a> Contrast with C/C++</h3>
+<p>C and C++ define behavior only for &quot;valid&quot; programs and leave everything else
+as UB — a contract the compiler exploits for optimization. When a C compiler
+sees signed overflow, it may assume it cannot happen and delete the branch
+that follows. This is legal under the standard and produces real security
+vulnerabilities.</p>
+<p>Wyst removes the compiler's license to exploit unspecified states:</p>
+<ul>
+<li>The compiler never assumes overflow cannot occur</li>
+<li>The compiler never assumes pointers are non-null unless the programmer proves it</li>
+<li>The compiler never assumes memory accesses are in-bounds</li>
+<li>The compiler never transforms code based on &quot;this is UB, so it can't happen&quot;</li>
+</ul>
+<p>The tradeoff is that Wyst also does not prevent invalid memory access. It
+makes invalid access hardware-determined rather than compiler-determined.
+That is a meaningful improvement in predictability, not a safety guarantee.</p>
+<h3 id="integer-wrapping" tabindex="-1"><a class="doc-anchor" href="#integer-wrapping" aria-hidden="true">#</a> Integer Wrapping</h3>
+<p>All integer arithmetic — signed and unsigned — wraps on overflow. This is the default and only behavior.</p>
+<ul>
+<li>No runtime checks</li>
+<li>No hidden branches</li>
+<li>No panic on overflow</li>
+<li>No debug/release mode differences</li>
+</ul>
+<p>If checked arithmetic is needed, it is an explicit operation with a defined failure mode. The default <code>+</code>, <code>-</code>, <code>*</code> operators never check.</p>
+<h3 id="relationship-to-reproducibility" tabindex="-1"><a class="doc-anchor" href="#relationship-to-reproducibility" aria-hidden="true">#</a> Relationship to Reproducibility</h3>
+<p>No compiler-exploitable UB is a prerequisite for reproducible lowering. If
+the compiler could exploit unspecified states, two compilations of the same
+source with different optimization contexts could produce different code. By
+removing the license to exploit unspecified states, Wyst ensures that the
+output is determined by the source, not by compiler assumptions about what
+cannot happen.</p>
+<hr>
+<h2 id="semantic-model" tabindex="-1"><a class="doc-anchor" href="#semantic-model" aria-hidden="true">#</a> Semantic Model</h2>
+<h3 id="variable-model-and-register-affinity" tabindex="-1"><a class="doc-anchor" href="#variable-model-and-register-affinity" aria-hidden="true">#</a> Variable Model and Register Affinity</h3>
+<p>Wyst programs are written in terms of <strong>named variables</strong>, not registers.
+The register allocator owns the mapping from variables to physical registers.
+The programmer expresses register affinity only when the hardware contract
+requires a specific register, and only via the <code>#pin</code> directive.</p>
+<h4>Register Names Are Reserved Tokens</h4>
+<p>The following identifiers are reserved by the lexer and may not be used as
+variable, parameter, constant, function, or field names anywhere in a Wyst
+program:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Reserved tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>General-purpose 64-bit</td>
+<td><code>x0</code>–<code>x30</code></td>
+</tr>
+<tr>
+<td>General-purpose 32-bit</td>
+<td><code>w0</code>–<code>w30</code></td>
+</tr>
+<tr>
+<td>SIMD/FP 128-bit</td>
+<td><code>v0</code>–<code>v31</code></td>
+</tr>
+<tr>
+<td>SIMD/FP scalar views</td>
+<td><code>b0</code>–<code>b31</code>, <code>h0</code>–<code>h31</code>, <code>s0</code>–<code>s31</code>, <code>d0</code>–<code>d31</code>, <code>q0</code>–<code>q31</code></td>
+</tr>
+<tr>
+<td>Stack pointer</td>
+<td><code>sp</code>, <code>wsp</code></td>
+</tr>
+<tr>
+<td>Link register</td>
+<td><code>lr</code> (alias for <code>x30</code>)</td>
+</tr>
+<tr>
+<td>Frame pointer</td>
+<td><code>fp</code> (alias for <code>x29</code>)</td>
+</tr>
+<tr>
+<td>Platform register</td>
+<td><code>ip0</code> (<code>x16</code>), <code>ip1</code> (<code>x17</code>)</td>
+</tr>
+<tr>
+<td>Zero register</td>
+<td><code>xzr</code>, <code>wzr</code></td>
+</tr>
+</tbody>
+</table>
+<p>These tokens are legal <strong>only</strong> in two positions:</p>
+<ol>
+<li>Inside the argument list of a <code>#pin(...)</code> directive on a declaration
+(e.g. <code>counter : u64 #pin(x19) = 0</code>).</li>
+<li>Inside the body of an <code>#asm { ... }</code> block.</li>
+</ol>
+<p>Anywhere else they are a compile error. In particular:</p>
+<ul>
+<li>Writing <code>x0 = x1 + x2</code> outside <code>#asm</code> is a syntax error.</li>
+<li>Declaring <code>x0 : u64 = 0</code> is a syntax error (cannot bind a reserved token).</li>
+<li>A parameter list cannot name a parameter <code>x0</code>.</li>
+</ul>
+<h4>Variables, Not Registers</h4>
+<p>Every named binding in Wyst is a variable. The register allocator places
+variables in physical registers as a pure function of source, compiler
+version, and target. The programmer never writes physical registers as
+arithmetic operands; the assembly-like form <code>x0 = x1 + x2</code> does not exist
+at the Wyst surface level. It exists only inside <code>#asm</code> bodies, where the
+programmer has taken explicit responsibility for register-level scheduling.</p>
+<p>Compound operations apply to variables:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+counter <span class="token operator">+=</span> <span class="token number">1</span>            <span class="token comment">// lowers to `add xN, xN, #1` for whichever xN the allocator picked</span>
+</code></pre>
+<h4>Register Affinity via <code>#pin</code></h4>
+<p>When a value must live in a specific register because of a hardware or ABI
+contract — firmware delivering a DTB pointer in <code>x0</code>, an exception handler
+expecting the syndrome in a particular register, an <code>#asm</code> block whose
+encoding is fixed — the programmer expresses this with <code>#pin</code> on the
+declaration:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
+
+_start <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token function">kernel_init</span><span class="token punctuation">(</span>dtb<span class="token punctuation">)</span>
+    <span class="token keyword">loop</span> <span class="token punctuation">{</span> <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><code>#pin</code> is allowed on local variables and function parameters. It is not
+allowed on globals or constants — a pinned global would silently reserve a
+register program-wide, which is a hidden side effect Wyst does not permit.</p>
+<p><code>#pin</code> appears only at the declaration site. There is no statement-level
+pin form. A variable's register affinity is fixed when it is introduced.</p>
+<p>If a pin cannot be satisfied, the compiler emits a hard error. Pins are
+never silently moved to a different register, silently spilled around a
+call, or silently saved by an injected prologue. The full conflict catalog
+is in <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.3</a>, and includes:
+register unavailable, two pins requesting the same register, caller-saved
+pin live across a call, callee-saved local pin inside <code>#naked</code>, and rejection
+of <code>#pin(sp)</code>/<code>#pin(x29)</code>.</p>
+<h4>Direct Register Manipulation</h4>
+<p>Programs that genuinely need to manipulate a physical register without going
+through a Wyst variable (system instructions, register window saves, vector
+table prologues) do so inside an <code>#asm</code> block. Inside <code>#asm</code>, register
+tokens are first-class operands of the embedded assembler. Outside <code>#asm</code>,
+they are tokens with no expression meaning.</p>
+<p>This division gives Wyst two clean modes:</p>
+<ul>
+<li><strong>Wyst surface code</strong> — variables only; the allocator owns registers.</li>
+<li><strong><code>#asm</code> blocks</strong> — explicit register manipulation; the programmer owns
+registers and declares I/O to the surrounding scope.</li>
+</ul>
+<p><code>#pin</code> is the bridge: a <code>#pin(xN)</code> variable can be referenced by name from
+both Wyst code and an <code>#asm</code> block, and the allocator guarantees the binding
+lives in <code>xN</code> at the <code>#asm</code> site.</p>
+<p>See the <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.3</a>, for the full <code>#pin</code>
+specification, and section 2.9 for the <code>#asm</code> specification.</p>
+<hr>
+<h2 id="memory-model" tabindex="-1"><a class="doc-anchor" href="#memory-model" aria-hidden="true">#</a> Memory Model</h2>
+<p>Wyst uses a memory-interpretation model instead of pointer-centric semantics.
+Addresses are typed values (<code>@T</code>) with a 64-bit machine representation; the
+qualifier <code>@volatile T</code> marks an address as device memory whose accesses
+are compiler barriers. ARM64's two memory attributes — Normal (cached,
+reorderable) and Device (uncached, strictly ordered) — are reflected
+directly in the type system rather than in per-access directives.</p>
+<p>Canonical references:</p>
+<ul>
+<li>Address types, arithmetic, conversion rules → <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a></li>
+<li>Memory interpretation model, <code>#acquire</code> / <code>#release</code>, barrier runtime primitives
+(<code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, <code>%compiler_barrier()</code>) → <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a></li>
+<li>Execution model, happens-before, races, atomicity -&gt; <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a></li>
+</ul>
+<hr>
+<h2 id="structured-control-flow" tabindex="-1"><a class="doc-anchor" href="#structured-control-flow" aria-hidden="true">#</a> Structured Control Flow</h2>
+<p>Wyst favors structured control flow (<code>if</code>, <code>while</code>, <code>loop</code>, <code>repeat</code>) with
+explicit low-level escape hatches (<code>label</code>, <code>goto</code>) for hardware-required
+shapes such as <code>#ventry</code> slots. Structured syntax improves CFG visibility,
+dependency analysis, and tooling integration; the escape hatches keep
+hardware code expressible.</p>
+<p>Canonical reference: <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.4–2.5</a>.</p>
+<hr>
+<h2 id="effect-system" tabindex="-1"><a class="doc-anchor" href="#effect-system" aria-hidden="true">#</a> Effect System</h2>
+<p>Wyst tracks which architectural side effects a function may perform and
+lets the programmer restrict them with <code>#deny</code>. This gives kernel code
+something that even Rust does not have in a first-class way: compile-time
+enforcement of architectural boundaries — &quot;this module must not touch
+system registers,&quot; &quot;this interrupt handler must not mask interrupts.&quot;</p>
+<p>Canonical references: <a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.8</a> (effect categories on runtime
+primitive IR ops), <a href="/docs/appendix-a-ir/">appendix-a-ir.md §7</a> invariant 16 (verifier enforcement),
+<a href="/docs/appendix-b-grammar/">appendix-b-grammar.md</a> (<code>#deny</code> production).</p>
+<h3 id="design" tabindex="-1"><a class="doc-anchor" href="#design" aria-hidden="true">#</a> Design</h3>
+<p>Effects are <strong>inferred, not declared.</strong> The compiler knows every
+effect-introducing operation because Wyst has a closed runtime primitive set —
+every <code>%mrs</code>, <code>%svc</code>, <code>%tlbi_*</code>, <code>%atomic_*</code>, etc. is a known compiler
+primitive. The compiler assigns effect categories at the leaf (the
+runtime primitive call) and propagates them upward through the call graph during
+semantic analysis.</p>
+<p>The programmer does not annotate what a function <em>does</em> — the compiler
+already knows. The programmer annotates what a function <strong>must not do</strong>,
+using <code>#deny</code>.</p>
+<h3 id="effect-categories" tabindex="-1"><a class="doc-anchor" href="#effect-categories" aria-hidden="true">#</a> Effect Categories</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Introduced by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sysreg</code></td>
+<td><code>%mrs</code>, <code>%msr</code>, <code>%mrs_s</code>, <code>%msr_s</code>, <code>%daif_set</code>, <code>%daif_clr</code>, <code>%dczid_block_size</code></td>
+</tr>
+<tr>
+<td><code>trap</code></td>
+<td><code>%svc</code>, <code>%hvc</code>, <code>%smc</code>, <code>%brk</code>, <code>%hlt</code></td>
+</tr>
+<tr>
+<td><code>exception_return</code></td>
+<td><code>%eret</code></td>
+</tr>
+<tr>
+<td><code>cache_maintenance</code></td>
+<td><code>%dc_*</code>, <code>%ic_*</code></td>
+</tr>
+<tr>
+<td><code>tlb_maintenance</code></td>
+<td><code>%tlbi_*</code></td>
+</tr>
+<tr>
+<td><code>atomic</code></td>
+<td><code>%cas</code>, <code>%fetch_*</code>, <code>%xchg</code>, <code>%atomic_bit_*</code>, <code>%atomic_load</code>, <code>%atomic_store</code></td>
+</tr>
+<tr>
+<td><code>cpu_halt</code></td>
+<td><code>%wfi</code>, <code>%wfe</code></td>
+</tr>
+<tr>
+<td><code>interrupt_mask</code></td>
+<td><code>%daif_set</code>, <code>%daif_clr</code></td>
+</tr>
+<tr>
+<td><code>mmio</code></td>
+<td>any load/store through <code>@volatile T</code></td>
+</tr>
+<tr>
+<td><code>barrier</code></td>
+<td><code>%compiler_barrier</code>, <code>%dsb</code>, <code>%dmb</code>, <code>%isb</code></td>
+</tr>
+<tr>
+<td><code>stack_alloc</code></td>
+<td>ordinary local/tuple storage and <code>%addr_of(local)</code> stack-address materialization</td>
+</tr>
+<tr>
+<td><code>fp_state</code></td>
+<td>runtime floating-point arithmetic, comparison, conversion, and FP/SIMD primitives</td>
+</tr>
+<tr>
+<td><code>perf_counter</code></td>
+<td><code>%read_cycle_counter</code></td>
+</tr>
+</tbody>
+</table>
+<p>Some runtime primitives introduce multiple categories: <code>%daif_set</code> introduces
+both <code>sysreg</code> and <code>interrupt_mask</code>.</p>
+<p>The categories are deliberately coarse. They represent architectural
+boundaries (privilege level, memory type, synchronization domain), not
+individual instruction distinctions. TLB maintenance is separated from
+cache maintenance because address-translation invalidation is a distinct
+kernel boundary from cache-line cleaning, invalidation, or instruction-cache
+coherency. Finer-grained categories can be added in future versions without
+breaking existing <code>#deny</code> declarations.</p>
+<h3 id="inference" tabindex="-1"><a class="doc-anchor" href="#inference" aria-hidden="true">#</a> Inference</h3>
+<p>Effect inference is a whole-program pass during semantic analysis. It
+runs after name resolution and type checking, before IR construction.</p>
+<ol>
+<li>
+<p><strong>Leaf assignment.</strong> Every runtime primitive call, every cast whose target
+type is <code>@volatile T</code>, and every <code>@volatile T</code> load/store is tagged with its
+effect categories from the table above. The volatile retag itself introduces
+<code>mmio</code>, even if the resulting address is not accessed in the same expression.
+Ordinary local and tuple bindings introduce <code>stack_alloc</code>; <code>%addr_of(local)</code>
+also introduces <code>stack_alloc</code> because it materializes a stack-frame address.
+Runtime floating-point operations introduce <code>fp_state</code>; floating-point
+literals and pure moves do not by themselves introduce <code>fp_state</code>.</p>
+</li>
+<li>
+<p><strong><code>#asm</code> blocks.</strong> An <code>#asm</code> block that does not carry an explicit
+<code>effects</code> annotation is conservatively assigned all effect categories.
+The programmer may narrow this with <code>#asm(effects: none)</code> or
+<code>#asm(effects: atomic, sysreg)</code> to declare which effects the assembly
+actually performs. The <code>effects: none</code> form is verified against the compiler's
+recognized ARM64 inline-assembly instruction table and is rejected if the
+body contains a recognized effectful instruction. Other explicit effect lists
+are the programmer's declaration for <code>#deny</code> propagation.</p>
+</li>
+<li>
+<p><strong>Call graph propagation.</strong> For every function, the compiler computes
+the union of effect categories from:</p>
+<ul>
+<li>direct runtime primitive usage within the function body</li>
+<li><code>#asm</code> blocks within the function body</li>
+<li>the inferred effect sets of all functions called from the body</li>
+</ul>
+<p>This produces a per-function effect set.</p>
+</li>
+<li>
+<p><strong>Function-pointer calls.</strong> An indirect call contributes the conservative
+effect upper bound of the function-pointer value. <code>#addr_of(f)</code>
+contributes <code>f</code>'s inferred effect set; assignments, phis, fields,
+arrays, returns, and parameters combine bounds by union. A pointer produced
+from <code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code>, an imported ABI table, external
+declaration without inspectable body, or otherwise unknown source is treated
+as all effect categories for <code>#deny</code> checking. Raw integer-to-function-pointer
+<code>as</code> casts are rejected; the explicit <code>#trusted_cast</code> spelling records the
+programmer's ABI trust decision without claiming a narrower effect bound.
+This preserves the &quot;single inferred effect set per function&quot; model without
+adding user-written effect declarations to function-pointer types.</p>
+</li>
+<li>
+<p><strong><code>#deny</code> checking.</strong> For every function (or module) with a
+<code>#deny(effect, ...)</code> attribute, the compiler intersects the inferred
+effect set with the denied set. A non-empty intersection is a
+compile-time error.</p>
+</li>
+</ol>
+<p>Because Wyst does whole-program single-pass compilation, the entire call
+graph is visible. There are no separately-compiled modules that could
+hide effects.</p>
+<h3 id="%23deny-%E2%80%94-restricting-effects" tabindex="-1"><a class="doc-anchor" href="#%23deny-%E2%80%94-restricting-effects" aria-hidden="true">#</a> <code>#deny</code> — Restricting Effects</h3>
+<p><code>#deny</code> is a directive on a function or module declaration. It takes a
+comma-separated list of effect categories:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">,</span> trap<span class="token punctuation">)</span>
+format_string <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token comment">// compile error if anything reachable from here</span>
+    <span class="token comment">// touches %mrs, %msr, %svc, %hvc, etc.</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4>Function-level <code>#deny</code></h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>interrupt_mask<span class="token punctuation">)</span>
+allocator_alloc <span class="token operator">::</span> <span class="token punctuation">(</span>size <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token comment">// uses atomics — that's fine, `atomic` is not denied</span>
+    lock <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span>
+    <span class="token comment">// ...</span>
+    <span class="token comment">// but if someone adds %daif_clr here, compile error</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4>Module-level <code>#deny</code></h4>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> userspace_lib
+
+<span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">,</span> trap<span class="token punctuation">,</span> interrupt_mask<span class="token punctuation">,</span> exception_return<span class="token punctuation">,</span> cache_maintenance<span class="token punctuation">,</span> tlb_maintenance<span class="token punctuation">)</span>
+<span class="token comment">// everything in this module is guaranteed to be</span>
+<span class="token comment">// EL0-safe — no privileged operations anywhere</span>
+</code></pre>
+<p>A module-level <code>#deny</code> applies to every function in the module. A
+function-level <code>#deny</code> within such a module is additive — it can deny
+additional categories but cannot un-deny a module-level restriction.</p>
+<h4>Error Diagnostics</h4>
+<p>When a <code>#deny</code> violation is detected, the compiler traces the full call
+chain from the denied function to the leaf runtime primitive:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">error: effect `sysreg` denied on `format_string`
+  --> fmt.wyst:8:5
+   | result = helper(buf, len)
+   |          ^^^^^^ calls `helper`
+  --> util.wyst:22:9
+   |     el = %mrs(CurrentEL)
+   |          ^^^ introduces `sysreg` effect
+   |
+note: denied at:
+  --> fmt.wyst:1:1
+   | #deny(sysreg, trap)
+</code></pre>
+<p>The trace includes every intermediate call site so the programmer can
+see exactly how the forbidden effect leaked in.</p>
+<h4>Interaction with <code>#asm</code></h4>
+<p>An unannotated <code>#asm</code> block is conservatively treated as introducing all
+effect categories. This means any <code>#deny</code> restriction on a function
+containing an unannotated <code>#asm</code> block will fire. The programmer
+resolves this by annotating the <code>#asm</code> block:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">)</span>
+fast_memcpy <span class="token operator">::</span> <span class="token punctuation">(</span>dst <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> src <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token directive macro">#asm</span><span class="token punctuation">(</span>effects<span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// pure register-to-register computation</span>
+        <span class="token comment">// no system register access</span>
+        body <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>The available <code>#asm</code> effect annotations are:</p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#asm(effects: none)</code></td>
+<td>no recognized <code>#deny</code> effect categories (checked against the inline-asm instruction table)</td>
+</tr>
+<tr>
+<td><code>#asm(effects: atomic)</code></td>
+<td>only atomic operations</td>
+</tr>
+<tr>
+<td><code>#asm(effects: sysreg, trap)</code></td>
+<td>only system register access and traps</td>
+</tr>
+<tr>
+<td><code>#asm { ... }</code> (no annotation)</td>
+<td>conservatively: all effects</td>
+</tr>
+</tbody>
+</table>
+<p><code>effects: none</code> is distinct from <code>#asm(pure)</code>. The <code>pure</code> annotation
+controls the memory fence and clobber model (see
+<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.9</a>); the <code>effects</code> annotation controls
+which effect categories the block introduces for <code>#deny</code> checking. They
+are orthogonal and may be combined: <code>#asm(pure, effects: none)</code>.</p>
+<p>For <code>effects: none</code>, the compiler rejects recognized effectful ARM64
+instructions such as <code>mrs</code>/<code>msr</code>, exception/trap instructions, cache
+maintenance, TLB maintenance, barriers, exclusive or atomic memory operations,
+ordinary loads/stores, floating-point/SIMD instructions, and CPU-wait
+instructions. Use an explicit non-<code>none</code> effect list, or omit the effect
+annotation and accept the conservative all-effects default, when the body does
+perform architectural effects.</p>
+<p>Stack-pointer state is verified separately from the <code>#deny</code> effect system.
+<code>#asm(sets_sp, effects: none)</code> may establish <code>sp</code> in a <code>#naked</code> function when
+the <code>sets_sp</code> verifier contract is satisfied. A
+<code>#asm(preserves_sp, effects: none)</code> block may inspect <code>sp</code> when the
+<code>preserves_sp</code> verifier contract proves the stack pointer is unchanged. These
+stack-state contracts do not introduce a separate effect category, and denying
+<code>stack_alloc</code> or every other effect category does not by itself reject a
+verifier-approved stack-state block.</p>
+<h3 id="what-%23deny-does-not-do" tabindex="-1"><a class="doc-anchor" href="#what-%23deny-does-not-do" aria-hidden="true">#</a> What <code>#deny</code> Does Not Do</h3>
+<ul>
+<li><strong>No runtime checks.</strong> <code>#deny</code> is pure compile-time analysis. It
+adds zero instructions to the output.</li>
+<li><strong>No effect declarations on functions.</strong> The programmer never writes
+&quot;this function has effect X.&quot; The compiler infers that automatically.
+<code>#deny</code> is the only programmer-facing surface.</li>
+<li><strong>No effect polymorphism.</strong> A function has a single inferred effect
+set. There are no effect-generic functions or effect parameters. This
+keeps the system simple and avoids the complexity of effect algebras.</li>
+<li><strong>No transitive un-deny.</strong> A function cannot remove a <code>#deny</code>
+restriction inherited from its module. The restriction is monotonic —
+it can only grow, never shrink.</li>
+</ul>
+<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inferred effects, not declared</td>
+<td>Wyst has a closed runtime primitive set and whole-program compilation — the compiler already knows what every function does. Declarations would be redundant noise.</td>
+</tr>
+<tr>
+<td><code>#deny</code> (restrictions) not <code>#effect</code> (declarations)</td>
+<td>The interesting question is never &quot;what does main do&quot; — it's &quot;does this utility function accidentally use a privileged primitive?&quot; Restrictions are the useful direction.</td>
+</tr>
+<tr>
+<td>Coarse categories</td>
+<td>Kernel code cares about architectural boundaries (EL0 vs EL1, Normal vs Device memory, atomic vs non-atomic), not individual instruction distinctions. Eight categories cover the useful restrictions.</td>
+</tr>
+<tr>
+<td>Module-level <code>#deny</code></td>
+<td>Enforcing &quot;this entire subsystem is EL0-safe&quot; as a single declaration is the highest-value use case. Without module-level <code>#deny</code>, every function would need its own annotation.</td>
+</tr>
+<tr>
+<td>Conservative <code>#asm</code> default</td>
+<td><code>#asm</code> is opaque to the compiler. Assuming all effects is the safe default; the programmer narrows it when needed.</td>
+</tr>
+<tr>
+<td>No entry-point accumulation</td>
+<td>Effects propagate upward but <code>main</code> (or <code>_start</code>) never needs an annotation because restrictions flow downward via <code>#deny</code>, not upward via declarations.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="alignment" tabindex="-1"><a class="doc-anchor" href="#alignment" aria-hidden="true">#</a> Alignment</h2>
+<p><code>#align(n)</code> constrains the assembler to place a label, function, or
+<code>.rodata</code> constant at an address that is a multiple of <code>n</code> bytes (power
+of two, compile-time constant).</p>
+<p>Canonical reference: <a href="/docs/chapter-14-exception-vectors/">chapter-14-exception-vectors.md §10.1</a>.</p>
+<hr>
+<h2 id="exception-vectors" tabindex="-1"><a class="doc-anchor" href="#exception-vectors" aria-hidden="true">#</a> Exception Vectors</h2>
+<p>ARM64 exception vectors have strict hardware requirements (2 KB table
+alignment, exactly 16 slots, 128 bytes per slot) that Wyst encodes
+directly via the <code>#exception_vector</code> / <code>#ventry</code> construct. Slot
+position determines architectural meaning; slot names are free-form.</p>
+<p>Canonical reference: <a href="/docs/chapter-14-exception-vectors/">chapter-14-exception-vectors.md §10.2</a>.
+Worked boot example using these vectors: <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>.</p>
+<hr>
+<h2 id="bitfields" tabindex="-1"><a class="doc-anchor" href="#bitfields" aria-hidden="true">#</a> Bitfields</h2>
+<p><code>bitfield(T)</code> declarations name bit ranges within a <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code>
+backing integer. Field reads lower to <code>ubfx</code>, writes to <code>bfi</code>. They are
+the primary tool for ARM64 system registers and hardware control words.
+Field writes are register-level RMW and are <strong>not</strong> atomic on memory; use
+<a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a> atomics for shared state.</p>
+<p>Canonical reference: <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>.</p>
+<hr>
+<h2 id="compile-time-assertions" tabindex="-1"><a class="doc-anchor" href="#compile-time-assertions" aria-hidden="true">#</a> Compile-Time Assertions</h2>
+<p><code>#static_assert(expr, &quot;message&quot;)</code> halts compilation with a diagnostic if
+the expression is false. <code>#size_of(T)</code>, <code>#align_of(T)</code>, and <code>#len(array)</code> are
+compile-time queries for layout verification and fixed storage contracts
+(hardware contracts, exception-frame stability, C ABI compatibility).</p>
+<p>Canonical reference: <a href="/docs/chapter-06-types/">chapter-06-types.md §1.15</a>.</p>
+<hr>
+<h2 id="scheduling-semantics" tabindex="-1"><a class="doc-anchor" href="#scheduling-semantics" aria-hidden="true">#</a> Scheduling Semantics</h2>
+<p><code>#schedule(strict | relaxed)</code> are enforceable ordering constraints
+(reproducible). <code>#schedule(throughput | latency)</code> are optimization hints
+(deterministic within one compiler binary but not stable across compiler
+versions; never use in <code>#ventry</code> bodies).</p>
+<p>Canonical reference: <a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a>.</p>
+<hr>
+<h2 id="simd-and-vector-semantics" tabindex="-1"><a class="doc-anchor" href="#simd-and-vector-semantics" aria-hidden="true">#</a> SIMD and Vector Semantics</h2>
+<p><code>[T:N]</code> vector types are first-class with element-wise arithmetic that
+maps to a single NEON instruction when the vector fits in 16 bytes.
+Wyst reserves the <code>[T:N]</code> syntax for NEON-sized SIMD vectors; SVE/SVE2 are out
+of scope (see &quot;ARM64 Feature Scope&quot; above). <code>[N]T</code> is always an array.</p>
+<p>Canonical reference: <a href="/docs/chapter-12-simd/">chapter-12-simd.md</a>.</p>
+<hr>
+<h2 id="performance-transparency" tabindex="-1"><a class="doc-anchor" href="#performance-transparency" aria-hidden="true">#</a> Performance Transparency</h2>
+<p>Wyst exposes observable machine behavior.</p>
+<p>Examples:</p>
+<ul>
+<li>dependency chains</li>
+<li>cache behavior</li>
+<li>alignment effects</li>
+<li>issue utilization</li>
+<li>branch predictability</li>
+<li>memory ordering</li>
+<li>backend pressure</li>
+</ul>
+<p>Explain mode:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">Loop throughput: ~2.3 cycles
+
+Bottlenecks:
+- load-use latency
+- branch dependency
+</code></pre>
+<p>The goal is not cycle-perfect simulation.</p>
+<p>The goal is:</p>
+<blockquote>
+<p>observable computational behavior.</p>
+</blockquote>
+<hr>
+<h2 id="reproducibility-model" tabindex="-1"><a class="doc-anchor" href="#reproducibility-model" aria-hidden="true">#</a> Reproducibility Model</h2>
+<p>Wyst guarantees <strong>reproducible lowering</strong>: given the same source, the same
+compiler version, the same build optimization mode, the same canonical
+<code>#target(...)</code> configuration, the same source input manifest, and the same
+<code>#schedule</code> modes, the compiler always produces identical output.
+Reproducibility is scoped to these inputs; it is not guaranteed across compiler
+versions, build optimization modes, target configurations, source manifests, or
+different <code>#schedule</code> modes.</p>
+<p>The <code>#target</code> input is the entire canonical <code>#target(...)</code> argument list, not
+only <code>arch</code> and <code>cpu</code>. Fields such as <code>features</code>, <code>el</code>, and <code>cache_line</code>
+participate in reproducibility because they can change compile-time queries,
+layout checks, intrinsic availability, and instruction lowering. An omitted
+field participates through its specified default value.</p>
+<p>Requirements for reproducibility:</p>
+<ul>
+<li>same compiler version</li>
+<li>same build optimization mode (<code>--optimization</code> or the project manifest's
+<code>optimization</code> field, defaulting to <code>reproducible</code>)</li>
+<li>same source input manifest:
+<ul>
+<li>explicit source-list mode: the same ordered command-line source paths and
+file contents;</li>
+<li>explicit root-file mode with <code>--source-root</code>: the same root file, source
+roots, and import closure discovered by the project traversal rules;</li>
+<li>project mode: the same <code>wyst.project</code>, ordered <code>source_roots</code>, root module,
+layout path and contents, and import-closure traversal described in
+<a href="/docs/chapter-03-project-builds/">chapter-03-project-builds.md</a></li>
+</ul>
+</li>
+<li>same canonical target configuration, including the full <code>#target(...)</code>
+argument list and defaults</li>
+<li>same <code>#schedule</code> mode</li>
+</ul>
+<p><strong>Optimization hint modes are same-binary deterministic but cross-version
+unstable.</strong> <code>#schedule(throughput)</code> and <code>#schedule(latency)</code> must produce the
+same output for the same source input manifest, compiler binary, build
+optimization mode, and target across invocations. They may produce different
+output across compiler versions or microarchitecture targets. Use them only in
+paths where cross-version instruction-order stability is not required.</p>
+<p>Register allocation is a pure function of the source, compiler version, and
+target. The same inputs always produce the same allocation.</p>
+<hr>
+<h2 id="abi-strategy" tabindex="-1"><a class="doc-anchor" href="#abi-strategy" aria-hidden="true">#</a> ABI Strategy</h2>
+<p>Wyst has two calling conventions: the <strong>Native Wyst ABI</strong> (default,
+Wyst-to-Wyst) and <strong>AAPCS64</strong> (opt-in via <code>[aapcs]</code>, used for C interop
+and OS boundaries). Native diverges from AAPCS64 in three areas for
+performance: <code>v8</code>–<code>v15</code> are fully caller-saved, up to four integer return
+values use <code>x0</code>–<code>x3</code>, and large-struct argument addresses use the next
+available <code>xN</code> rather than the fixed <code>x8</code> slot. Variadic Wyst functions
+do not exist; use explicit count-and-pointer parameters.</p>
+<p>Canonical reference: <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md</a>. Function-pointer type
+discipline (<code>@(args) -&gt; ret</code> vs <code>@[aapcs] (args) -&gt; ret</code>):
+<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.6</a> and <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md §B.5</a>.</p>
+<hr>
+<h2 id="tooling-philosophy" tabindex="-1"><a class="doc-anchor" href="#tooling-philosophy" aria-hidden="true">#</a> Tooling Philosophy</h2>
+<p>Tooling is a core language feature.</p>
+<p>Wyst tooling should expose:</p>
+<ul>
+<li>CFGs</li>
+<li>dependency graphs</li>
+<li>cacheline visualization</li>
+<li>PMU correlation</li>
+<li>scheduling analysis</li>
+<li>generated instruction streams</li>
+</ul>
+<p>Example commands:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">wync build &lt;project-dir|path/to/wyst.project>
+wync check &lt;project-dir|path/to/wyst.project>
+wync explain E####
+wync explain lowering &lt;project-dir|path/to/wyst.project>
+wync rebuild-benchmark &lt;project-dir|path/to/wyst.project>
+</code></pre>
+<hr>
+<h2 id="syntax-direction" tabindex="-1"><a class="doc-anchor" href="#syntax-direction" aria-hidden="true">#</a> Syntax Direction</h2>
+<p>Wyst syntax should prioritize:</p>
+<ul>
+<li>explicit structure</li>
+<li>parse determinism</li>
+<li>IR visibility</li>
+<li>machine readability</li>
+<li>human readability</li>
+</ul>
+<p>Canonical block syntax:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> cond <span class="token punctuation">{</span>
+    body
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Indentation-based syntax may exist as optional sugar, but brace-delimited syntax should remain canonical for tooling stability and CFG clarity.</p>
+<hr>
+<h2 id="compiler-architecture" tabindex="-1"><a class="doc-anchor" href="#compiler-architecture" aria-hidden="true">#</a> Compiler Architecture</h2>
+<h3 id="default-optimization-profile" tabindex="-1"><a class="doc-anchor" href="#default-optimization-profile" aria-hidden="true">#</a> Default Optimization Profile</h3>
+<p>The default build profile is a reproducible lowering profile, not an
+optimizing release profile. It may perform deterministic local
+canonicalization required for compilation or directly implied by source:
+compile-time constant evaluation, syntax-to-IR lowering, deterministic
+instruction selection, deterministic register allocation, removal of unused
+pure temporaries, and required object/relocation emission.</p>
+<p>Default lowering must not perform hidden global optimization,
+profile-guided optimization, hidden vectorization, hidden branch conversion,
+hidden allocation or lifetime rewrites, hidden data-structure substitution,
+or alias/UB-backed load-store rewrites.</p>
+<p>Non-default build optimization modes must be explicit in the command or build
+profile, and each mode must document whether it is byte-for-byte reproducible
+under the Reproducibility Model's input catalog. Source-level <code>#schedule</code>
+directives are a separate scheduling input, not build optimization modes.
+Aggressive optimization passes need an explain/pass-trace story before they can
+become candidates for any default profile.</p>
+<p>This profile follows the explicit build optimization mode policy documented in
+<a href="/docs/chapter-17-optimization-modes/">chapter-17-optimization-modes.md</a>.</p>
+<h3 id="high-level-pipeline" tabindex="-1"><a class="doc-anchor" href="#high-level-pipeline" aria-hidden="true">#</a> High-Level Pipeline</h3>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">Lexer
+  ↓
+Parser
+  ↓
+AST
+  ↓
+Semantic Analysis
+  ↓
+Typed IR
+  ↓
+Dependency Graph
+  ↓
+ARM64 Lowering
+  ↓
+Scheduling
+  ↓
+Encoding
+  ↓
+Object File
+</code></pre>
+<h3 id="stage-detail" tabindex="-1"><a class="doc-anchor" href="#stage-detail" aria-hidden="true">#</a> Stage Detail</h3>
+<p><strong>Parse → AST.</strong> Source becomes a typed AST. Function bodies, control flow,
+memory accesses, compile-time forms (<code>#addr_of</code>, <code>#len</code>), and runtime primitives
+(<code>%atomic_load</code>, <code>%mrs</code>, etc.) are recognisable but not yet lowered.</p>
+<p><strong>Constant Folding.</strong> Compile-time expressions are evaluated. <code>#start()</code> /
+<code>#end()</code> symbols are recorded as pending; resolved in the placement stage.</p>
+<p><strong>Register Allocation.</strong> Variables are assigned to ARM64 registers. <code>#pin</code>
+constraints apply first; remaining variables are allocated by the compiler.
+Register allocation is a pure function of source, compiler version, and
+target triple. Tie-breaking must not use hash-based ordering, pointer-
+derived ordering, or any input that varies across invocations — the same
+source compiled with the same compiler version against the same target
+produces the same register assignment on every invocation. This is a
+specified invariant; reproducible lowering depends on it. Full algorithm
+and tie-breaks in <a href="/docs/appendix-a-ir/">appendix-a-ir.md §11</a>.</p>
+<p><strong>Instruction Selection.</strong> Semantic operations become ARM64 instructions.</p>
+<p><strong>Scheduling.</strong> Constrained scheduling per the <code>#schedule</code> directive in
+scope: <code>strict</code> preserves source order exactly; <code>relaxed</code> reorders only
+independent instructions; <code>throughput</code> and <code>latency</code> are optimization hints
+whose output is deterministic within one compiler binary but may vary across
+compiler versions or microarchitecture targets.</p>
+<p><strong>Symbol Placement and Relocation.</strong> The integrated linker assigns final
+addresses to all symbols, satisfying <code>#region</code>, <code>#section</code>, and <code>#entry</code>
+constraints from the layout module. Pending <code>#addr_of</code> references and
+cross-module symbols are resolved. Slot size enforcement for <code>#ventry</code>
+bodies is verified after placement.</p>
+<p><strong>Binary Emission.</strong> Machine code emitted. Output is reproducible under the
+Reproducibility Model above: the same source input manifest, compiler version,
+build optimization mode, canonical <code>#target(...)</code> configuration, and
+<code>#schedule</code> modes produce identical output.</p>
+<hr>
+<h2 id="arm64-feature-scope" tabindex="-1"><a class="doc-anchor" href="#arm64-feature-scope" aria-hidden="true">#</a> ARM64 Feature Scope</h2>
+<p>Wyst targets the <strong>ARMv8-A baseline</strong> instruction set. Three
+modern ARM64 features are explicitly out of scope for this version of the
+language: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
+specific instructions in these families can be exposed through the checked
+<code>#asm</code> subset as encoder support is added.</p>
+<h3 id="sve-%2F-sve2-(scalable-vector-extension)" tabindex="-1"><a class="doc-anchor" href="#sve-%2F-sve2-(scalable-vector-extension)" aria-hidden="true">#</a> SVE / SVE2 (Scalable Vector Extension)</h3>
+<p>SVE introduces variable-length vector registers (128–2048 bits, hardware-
+determined at runtime). Wyst's fixed-width <code>[T:N]</code> vector type cannot
+express SVE — the lane count is a compile-time constant in the type,
+which is incompatible with runtime-determined vector lengths. Wyst code
+targeting platforms with SVE hardware compiles to NEON (fixed-width)
+vector operations only.</p>
+<p><strong>Extension point:</strong> a future <code>[T:?]</code> or <code>#sve</code> region type that defers
+lane count to runtime, with separate runtime primitives for SVE predicate
+registers.</p>
+<h3 id="pac-(pointer-authentication)" tabindex="-1"><a class="doc-anchor" href="#pac-(pointer-authentication)" aria-hidden="true">#</a> PAC (Pointer Authentication)</h3>
+<p>PAC instructions (<code>pacia</code>, <code>autia</code>, etc.) sign and authenticate pointer
+values using address bits above the VA range. Wyst's address model treats
+addresses as plain <code>u64</code> integers, incompatible with PAC-tagged pointers
+without explicit top-byte handling. The compiler does not emit <code>paciasp</code>
+or <code>autiasp</code> in prologues/epilogues by default.</p>
+<p>Full PAC support would require: prologue/epilogue generation controlled
+by a <code>#pac</code> function attribute; an address type carrying PAC tag state
+(e.g. <code>@signed(T)</code>); explicit <code>%sign</code> / <code>%auth</code> / <code>%strip</code> runtime primitives.</p>
+<p><strong>Extension point:</strong> a <code>#pac</code> function-level directive that enables
+<code>paciasp</code> / <code>autiasp</code> emission, plus <code>@signed(@T)</code> for authenticated
+pointers across trust boundaries. See <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md §A.7</a>
+for the ABI-level PAC behaviour already locked in.</p>
+<h3 id="mte-(memory-tagging-extension)" tabindex="-1"><a class="doc-anchor" href="#mte-(memory-tagging-extension)" aria-hidden="true">#</a> MTE (Memory Tagging Extension)</h3>
+<p>MTE stores a 4-bit tag in the top byte of a pointer and checks it against
+a tag in memory-granule metadata on every load/store. Wyst's <code>@T</code> address
+type uses the full 64-bit value with no provision for tag bits.</p>
+<p><strong>Extension point:</strong> a <code>@tagged(@T)</code> address type whose top byte is
+managed by the language, with runtime primitives for tag allocation and the
+<code>stg</code> / <code>ldg</code> instructions.</p>
+<h3 id="using-these-features-today" tabindex="-1"><a class="doc-anchor" href="#using-these-features-today" aria-hidden="true">#</a> Using These Features Today</h3>
+<p>All three remain inline-assembly territory rather than language-level
+features. Code that requires SVE vector operations, PAC signing, or MTE tag
+manipulation should use <code>#asm</code> once the required mnemonic has checked encoder
+support in the compiler. By default, <code>#asm</code> blocks are full two-way compiler
+memory fences (see <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.9</a>); operations within
+them are invisible to alias analysis and reordering. <code>#asm(pure)</code> opts out
+for register-only computations but is unsafe for code that touches memory or
+system state.</p>
+<hr>
+<h2 id="internal-ir" tabindex="-1"><a class="doc-anchor" href="#internal-ir" aria-hidden="true">#</a> Internal IR</h2>
+<p>The IR should be:</p>
+<ul>
+<li>SSA-inspired</li>
+<li>typed</li>
+<li>dependency-aware</li>
+<li>memory-aware</li>
+<li>scheduling-aware</li>
+</ul>
+<p>The IR should not become:</p>
+<ul>
+<li>LLVM-complex</li>
+<li>transformation-heavy</li>
+<li>optimizer-centric</li>
+</ul>
+<p>The full IR specification — type system, op vocabulary, region tree,
+textual form, verifier invariants — lives in <a href="/docs/appendix-a-ir/">appendix-a-ir.md</a>. This section
+states design intent only.</p>
+<hr>
+<h2 id="cpu-modeling-strategy" tabindex="-1"><a class="doc-anchor" href="#cpu-modeling-strategy" aria-hidden="true">#</a> CPU Modeling Strategy</h2>
+<p>Wyst models observable performance characteristics rather than hidden microarchitectural internals.</p>
+<p>Expose:</p>
+<ul>
+<li>cache behavior</li>
+<li>latency estimates</li>
+<li>dependency depth</li>
+<li>branch predictability</li>
+<li>bandwidth pressure</li>
+<li>scheduling constraints</li>
+<li>TMA bucket analysis</li>
+</ul>
+<p>Avoid:</p>
+<ul>
+<li>cycle-perfect simulation</li>
+<li>exact predictor modeling</li>
+<li>architecture-specific hidden heuristics</li>
+</ul>
+<p>The performance model should remain:</p>
+<ul>
+<li>approximate</li>
+<li>inspectable</li>
+<li>measurable</li>
+<li>architecture-aware</li>
+</ul>
+<h3 id="tma-vocabulary" tabindex="-1"><a class="doc-anchor" href="#tma-vocabulary" aria-hidden="true">#</a> TMA Vocabulary</h3>
+<p>Future <code>wync explain</code> performance reports use the <strong>Top-down Microarchitecture
+Analysis (TMA)</strong> vocabulary. TMA classifies every cycle into one of four
+top-level buckets:</p>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Retiring</strong></td>
+<td>Useful work — ops that produce results the program consumes</td>
+</tr>
+<tr>
+<td><strong>Frontend Bound</strong></td>
+<td>Pipeline starved because the frontend cannot deliver ops fast enough (i-cache misses, decode bottlenecks)</td>
+</tr>
+<tr>
+<td><strong>Backend Bound: Memory</strong></td>
+<td>Pipeline stalled waiting for data (cache misses, load-use latency, store-buffer pressure)</td>
+</tr>
+<tr>
+<td><strong>Backend Bound: Core</strong></td>
+<td>Pipeline stalled on execution resources (divider, FP unit contention)</td>
+</tr>
+<tr>
+<td><strong>Bad Speculation</strong></td>
+<td>Work discarded due to branch misprediction or machine clears</td>
+</tr>
+</tbody>
+</table>
+<p>These buckets are the output schema for future performance explain reports.
+The compiler will <strong>estimate</strong> (not measure) which bucket dominates, based on
+static analysis of IR dependency chains (<a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.9</a>),
+branch hints (<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.7.2</a>),
+memory access patterns (<a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.10</a>),
+and the target descriptor (<a href="/docs/appendix-a-ir/">appendix-a-ir.md §14</a>).</p>
+<p>The vocabulary aligns with ARM's top-down methodology (topdown-tool, SPE)
+so that <code>wync explain</code> estimates can be validated against runtime PMU data.</p>
+<hr>
+<h2 id="pmu-and-runtime-analysis" tabindex="-1"><a class="doc-anchor" href="#pmu-and-runtime-analysis" aria-hidden="true">#</a> PMU and Runtime Analysis</h2>
+<p>Wyst should integrate runtime performance analysis.</p>
+<p>Potential metrics:</p>
+<ul>
+<li>cache misses</li>
+<li>branch misses</li>
+<li>backend stalls</li>
+<li>IPC</li>
+<li>bandwidth pressure</li>
+<li>TLB misses</li>
+</ul>
+<p>These measurements should correlate directly back to:</p>
+<ul>
+<li>source lines</li>
+<li>dependency graphs</li>
+<li>memory regions</li>
+<li>scheduling regions</li>
+</ul>
+<hr>
+<h2 id="visualization-goals" tabindex="-1"><a class="doc-anchor" href="#visualization-goals" aria-hidden="true">#</a> Visualization Goals</h2>
+<p>Wyst should support first-class performance visualization.</p>
+<p>Examples:</p>
+<h3 id="dependency-graphs" tabindex="-1"><a class="doc-anchor" href="#dependency-graphs" aria-hidden="true">#</a> Dependency Graphs</h3>
+<p>Visualize:</p>
+<ul>
+<li>instruction dependencies</li>
+<li>critical paths</li>
+<li>scheduling freedom</li>
+</ul>
+<h3 id="cache-heatmaps" tabindex="-1"><a class="doc-anchor" href="#cache-heatmaps" aria-hidden="true">#</a> Cache Heatmaps</h3>
+<p>Visualize:</p>
+<ul>
+<li>locality</li>
+<li>cacheline usage</li>
+<li>false sharing</li>
+</ul>
+<h3 id="pipeline-visualization" tabindex="-1"><a class="doc-anchor" href="#pipeline-visualization" aria-hidden="true">#</a> Pipeline Visualization</h3>
+<p>Visualize:</p>
+<ul>
+<li>issue width</li>
+<li>bubbles</li>
+<li>stalls</li>
+<li>backend pressure</li>
+</ul>
+<h3 id="memory-traffic" tabindex="-1"><a class="doc-anchor" href="#memory-traffic" aria-hidden="true">#</a> Memory Traffic</h3>
+<p>Visualize:</p>
+<ul>
+<li>load/store density</li>
+<li>streaming behavior</li>
+<li>bandwidth pressure</li>
+</ul>
+<hr>
+<h2 id="explainability" tabindex="-1"><a class="doc-anchor" href="#explainability" aria-hidden="true">#</a> Explainability</h2>
+<p>Performance analysis should be integrated into normal development. A future
+<code>wync explain performance</code> surface can use the TMA vocabulary (see CPU
+Modeling Strategy above) to present bottleneck analysis in a structured,
+actionable format.</p>
+<p>Example:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">wync explain performance memcpy.wyst:12-18
+
+  Estimated throughput: ~2.3 cycles/iteration
+  TMA breakdown:
+    Retiring           ~43%
+    Backend Bound      ~45%  (Memory ~40%, Core ~5%)
+    Frontend Bound     ~10%
+    Bad Speculation     ~2%
+
+  Bottlenecks:
+    - load-use latency (4 cycles) — Backend:Memory
+    - loop-exit misprediction     — Bad Speculation
+
+  Suggestions:
+    - %prefetch for sequential access pattern (see chapter-11-intrinsics.md §1.3.8)
+    - consider %ldnp/%stnp for streaming stores
+    - select() for branchless loop-exit if condition is unpredictable
+</code></pre>
+<p>This analysis is:</p>
+<ul>
+<li><strong>estimated</strong> — derived from the target descriptor (<a href="/docs/appendix-a-ir/">appendix-a-ir.md §14</a>)
+and dependency chain analysis (<a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.9</a>), not from runtime
+measurement</li>
+<li><strong>architecture-aware</strong> — latency and throughput values come from the
+target descriptor, which varies by <code>#target</code></li>
+<li><strong>source-correlated</strong> — line ranges map directly to IR regions and
+scheduling blocks</li>
+<li><strong>actionable</strong> — suggestions reference specific Wyst features that address
+the identified bottleneck category</li>
+</ul>
+<hr>
+<h2 id="long-term-vision" tabindex="-1"><a class="doc-anchor" href="#long-term-vision" aria-hidden="true">#</a> Long-Term Vision</h2>
+<p>Wyst is not merely an assembler.</p>
+<p>It is:</p>
+<ul>
+<li>a semantic systems language</li>
+<li>a machine-observability platform</li>
+<li>a performance reasoning environment</li>
+<li>a human-oriented machine IR</li>
+</ul>
+<p>Potential future roles:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Future</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>semantic assembly</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>educational platform</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>profiling environment</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>systems research platform</td>
+<td>possible</td>
+</tr>
+<tr>
+<td>architecture exploration tool</td>
+<td>possible</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="final-principle" tabindex="-1"><a class="doc-anchor" href="#final-principle" aria-hidden="true">#</a> Final Principle</h2>
+<p>The central principle of Wyst is:</p>
+<blockquote>
+<p>Make computational behavior visible.</p>
+</blockquote>
+<p>Not:</p>
+<ul>
+<li>magical</li>
+<li>hidden</li>
+<li>compiler-driven</li>
+</ul>
+<p>But:</p>
+<ul>
+<li>explicit</li>
+<li>inspectable</li>
+<li>explainable</li>
+<li>measurable</li>
+</ul>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<span></span>
+					<a class="doc-pager-link next" href="/docs/chapter-02-targets/"><span class="dir">Next →</span><span class="lbl">Target Descriptors</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-3"><a href="#core-identity">Core Identity</a></li>
+				<li class="lvl-2"><a href="#design-constraints">Design Constraints</a></li>
+				<li class="lvl-2"><a href="#no-compiler-exploitable-undefined-behavior">No Compiler-Exploitable Undefined Behavior</a></li>
+				<li class="lvl-3"><a href="#principles">Principles</a></li>
+				<li class="lvl-3"><a href="#what-this-means">What This Means</a></li>
+				<li class="lvl-3"><a href="#contrast-with-c%2Fc%2B%2B">Contrast with C/C++</a></li>
+				<li class="lvl-3"><a href="#integer-wrapping">Integer Wrapping</a></li>
+				<li class="lvl-3"><a href="#relationship-to-reproducibility">Relationship to Reproducibility</a></li>
+				<li class="lvl-2"><a href="#semantic-model">Semantic Model</a></li>
+				<li class="lvl-3"><a href="#variable-model-and-register-affinity">Variable Model and Register Affinity</a></li>
+				<li class="lvl-2"><a href="#memory-model">Memory Model</a></li>
+				<li class="lvl-2"><a href="#structured-control-flow">Structured Control Flow</a></li>
+				<li class="lvl-2"><a href="#effect-system">Effect System</a></li>
+				<li class="lvl-3"><a href="#design">Design</a></li>
+				<li class="lvl-3"><a href="#effect-categories">Effect Categories</a></li>
+				<li class="lvl-3"><a href="#inference">Inference</a></li>
+				<li class="lvl-3"><a href="#%23deny-%E2%80%94-restricting-effects">#deny — Restricting Effects</a></li>
+				<li class="lvl-3"><a href="#what-%23deny-does-not-do">What #deny Does Not Do</a></li>
+				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
+				<li class="lvl-2"><a href="#alignment">Alignment</a></li>
+				<li class="lvl-2"><a href="#exception-vectors">Exception Vectors</a></li>
+				<li class="lvl-2"><a href="#bitfields">Bitfields</a></li>
+				<li class="lvl-2"><a href="#compile-time-assertions">Compile-Time Assertions</a></li>
+				<li class="lvl-2"><a href="#scheduling-semantics">Scheduling Semantics</a></li>
+				<li class="lvl-2"><a href="#simd-and-vector-semantics">SIMD and Vector Semantics</a></li>
+				<li class="lvl-2"><a href="#performance-transparency">Performance Transparency</a></li>
+				<li class="lvl-2"><a href="#reproducibility-model">Reproducibility Model</a></li>
+				<li class="lvl-2"><a href="#abi-strategy">ABI Strategy</a></li>
+				<li class="lvl-2"><a href="#tooling-philosophy">Tooling Philosophy</a></li>
+				<li class="lvl-2"><a href="#syntax-direction">Syntax Direction</a></li>
+				<li class="lvl-2"><a href="#compiler-architecture">Compiler Architecture</a></li>
+				<li class="lvl-3"><a href="#default-optimization-profile">Default Optimization Profile</a></li>
+				<li class="lvl-3"><a href="#high-level-pipeline">High-Level Pipeline</a></li>
+				<li class="lvl-3"><a href="#stage-detail">Stage Detail</a></li>
+				<li class="lvl-2"><a href="#arm64-feature-scope">ARM64 Feature Scope</a></li>
+				<li class="lvl-3"><a href="#sve-%2F-sve2-(scalable-vector-extension)">SVE / SVE2 (Scalable Vector Extension)</a></li>
+				<li class="lvl-3"><a href="#pac-(pointer-authentication)">PAC (Pointer Authentication)</a></li>
+				<li class="lvl-3"><a href="#mte-(memory-tagging-extension)">MTE (Memory Tagging Extension)</a></li>
+				<li class="lvl-3"><a href="#using-these-features-today">Using These Features Today</a></li>
+				<li class="lvl-2"><a href="#internal-ir">Internal IR</a></li>
+				<li class="lvl-2"><a href="#cpu-modeling-strategy">CPU Modeling Strategy</a></li>
+				<li class="lvl-3"><a href="#tma-vocabulary">TMA Vocabulary</a></li>
+				<li class="lvl-2"><a href="#pmu-and-runtime-analysis">PMU and Runtime Analysis</a></li>
+				<li class="lvl-2"><a href="#visualization-goals">Visualization Goals</a></li>
+				<li class="lvl-3"><a href="#dependency-graphs">Dependency Graphs</a></li>
+				<li class="lvl-3"><a href="#cache-heatmaps">Cache Heatmaps</a></li>
+				<li class="lvl-3"><a href="#pipeline-visualization">Pipeline Visualization</a></li>
+				<li class="lvl-3"><a href="#memory-traffic">Memory Traffic</a></li>
+				<li class="lvl-2"><a href="#explainability">Explainability</a></li>
+				<li class="lvl-2"><a href="#long-term-vision">Long-Term Vision</a></li>
+				<li class="lvl-2"><a href="#final-principle">Final Principle</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>
