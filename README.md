@@ -31,10 +31,10 @@ Cloudflare's side.
 
 ## Brand asset source
 
-Website-ready brand exports come from `wystlang/brand`. The site still serves
-assets from stable `/assets/...` URLs; `tools/sync-brand-assets.mjs` copies the
-approved exports from a local checkout of the brand repo into this repo's
-`assets/` directory.
+Website-ready brand exports and source design-system CSS snapshots come from
+`wystlang/brand`. The site still serves assets from stable `/assets/...` URLs;
+`tools/sync-brand-assets.mjs` copies the approved files from a local checkout
+of the brand repo into this repo's `assets/` directory.
 
 The brand repo is not a submodule here. That keeps Cloudflare Pages deploys
 from needing access to the private `wystlang/brand` repository during checkout.
@@ -49,8 +49,9 @@ git add assets
 git commit -m "Update brand assets"
 ```
 
-Only copy web-consumed exports into `assets/`. Keep source artwork, brand
-guidelines, licensing notes, and marketing source materials in `wystlang/brand`.
+Only copy web-consumed exports and CSS into `assets/`. Keep source artwork,
+brand guidelines, licensing notes, and marketing source materials in
+`wystlang/brand`.
 
 ## Documentation source
 

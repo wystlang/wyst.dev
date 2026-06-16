@@ -39,6 +39,8 @@ const files = [
 	["web-icons/favicon.svg", "favicon.svg"],
 	["marketing/social-card.png", "social-card.png"],
 	["typography/jetbrains-mono-700-latin.woff2", "jetbrains-mono-700-latin.woff2"],
+	["design-system/wyst.dev/wyst.css", "wyst.css"],
+	["design-system/wyst.dev/docs.css", "docs.css"],
 
 	["artwork/winston/mark/winston-mark-40.avif", "winston-mark-40.avif"],
 	["artwork/winston/mark/winston-mark-40.png", "winston-mark-40.png"],
