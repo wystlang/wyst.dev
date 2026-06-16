@@ -8,7 +8,8 @@
     "build": "node build/generate.mjs",
     "docs": "node build/generate.mjs",
     "build:worker-assets": "node tools/prepare-worker-assets.mjs",
-    "sync:brand": "node tools/sync-brand-assets.mjs"
+    "sync:brand": "node tools/sync-brand-assets.mjs",
+    "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "markdown-it": "^14.1.0",

@@ -97,6 +97,27 @@ npm run build:worker-assets
 git add .worker-assets
 ```
 
+### Automatic regeneration (git hook)
+
+A tracked `pre-commit` hook in `.githooks/` runs the two steps above for you:
+whenever a commit touches `index.html`, `assets/`, `docs/`, or `roadmap/`, it
+regenerates `.worker-assets/` and stages it, so the deploy artifact can never
+fall out of sync with the source (the cause of "I pushed but the live site
+didn't change").
+
+The hook is activated by pointing git at `.githooks/`, which the `prepare`
+script does automatically on `npm install`. To enable it manually in an existing
+checkout:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Note: the hook regenerates from your working tree, so commit the source change
+and its artifact together (avoid committing a partial `git add -p` of a source
+file without its matching artifact). Hooks don't run on Cloudflare — only the
+committed artifact is deployed.
+
 ## Build
 
 ```sh
