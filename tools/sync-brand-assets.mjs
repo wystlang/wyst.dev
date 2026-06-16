@@ -7,7 +7,6 @@ const assetsDir = path.join(root, "assets");
 
 const candidates = [
 	process.env.WYST_BRAND_DIR,
-	path.join(root, "vendor", "brand"),
 	path.resolve(root, "..", "brand"),
 ].filter(Boolean);
 
@@ -30,7 +29,7 @@ async function resolveBrandRoot() {
 	}
 
 	throw new Error(
-		`Could not find wystlang/brand. Set WYST_BRAND_DIR or run: git submodule update --init vendor/brand`,
+		`Could not find wystlang/brand. Set WYST_BRAND_DIR or clone it next to this repo as ../brand`,
 	);
 }
 

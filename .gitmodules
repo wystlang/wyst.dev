@@ -1,6 +1,3 @@
 [submodule "vendor/wyst"]
 	path = vendor/wyst
 	url = git@github.com:wystlang/wyst.git
-[submodule "vendor/brand"]
-	path = vendor/brand
-	url = git@github.com:wystlang/brand.git

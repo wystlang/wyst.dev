@@ -21,7 +21,6 @@ build/
 tools/
   normalize-docs.py     One-time docs source migration (see below)
 vendor/wyst/            Docs source — git submodule of wystlang/wyst (see below)
-vendor/brand/           Brand source — git submodule of wystlang/brand
 ```
 
 The landing page and the docs share **one** design system (`assets/wyst.css`),
@@ -31,17 +30,21 @@ Cloudflare's side.
 
 ## Brand asset source
 
-Website-ready brand exports come from `wystlang/brand`, pinned here as the
-`vendor/brand` submodule. The site still serves assets from stable
-`/assets/...` URLs; `tools/sync-brand-assets.mjs` copies the approved exports
-from the brand repo into this repo's `assets/` directory.
+Website-ready brand exports come from `wystlang/brand`. The site still serves
+assets from stable `/assets/...` URLs; `tools/sync-brand-assets.mjs` copies the
+approved exports from a local checkout of the brand repo into this repo's
+`assets/` directory.
+
+The brand repo is not a submodule here. That keeps Cloudflare Pages deploys
+from needing access to the private `wystlang/brand` repository during checkout.
+Deploys use the committed static files in `assets/`.
 
 To update website brand assets:
 
 ```sh
-git submodule update --remote vendor/brand
+gh repo clone wystlang/brand ../brand # first time only, or set WYST_BRAND_DIR
 npm run sync:brand
-git add assets vendor/brand
+git add assets
 git commit -m "Update brand assets"
 ```
 
@@ -70,10 +73,9 @@ git submodule add git@github.com:wystlang/wyst.git vendor/wyst
 ```
 
 A fresh checkout of this repo needs `git submodule update --init` to populate
-submodules. Cloudflare's build environment needs access to private submodules
-(a deploy key or token) if it fetches them during deploy; since generated HTML
-and website-ready assets are committed, deploys that don't regenerate or sync
-don't need to read submodule contents.
+the docs submodule. Cloudflare's build environment needs access to
+`vendor/wyst` if it fetches submodules during deploy; website brand assets are
+committed directly, so Cloudflare does not need access to `wystlang/brand`.
 
 ## Build
 
