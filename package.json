@@ -6,7 +6,8 @@
   "description": "wyst.dev landing page and generated documentation site",
   "scripts": {
     "build": "node build/generate.mjs",
-    "docs": "node build/generate.mjs"
+    "docs": "node build/generate.mjs",
+    "sync:brand": "node tools/sync-brand-assets.mjs"
   },
   "devDependencies": {
     "markdown-it": "^14.1.0",

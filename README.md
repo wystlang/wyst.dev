@@ -21,12 +21,32 @@ build/
 tools/
   normalize-docs.py     One-time docs source migration (see below)
 vendor/wyst/            Docs source — git submodule of wystlang/wyst (see below)
+vendor/brand/           Brand source — git submodule of wystlang/brand
 ```
 
 The landing page and the docs share **one** design system (`assets/wyst.css`),
 so they stay visually consistent. Generated HTML under `docs/` and `roadmap/`
 is committed, so deploys remain plain static files with no build step on
 Cloudflare's side.
+
+## Brand asset source
+
+Website-ready brand exports come from `wystlang/brand`, pinned here as the
+`vendor/brand` submodule. The site still serves assets from stable
+`/assets/...` URLs; `tools/sync-brand-assets.mjs` copies the approved exports
+from the brand repo into this repo's `assets/` directory.
+
+To update website brand assets:
+
+```sh
+git submodule update --remote vendor/brand
+npm run sync:brand
+git add assets vendor/brand
+git commit -m "Update brand assets"
+```
+
+Only copy web-consumed exports into `assets/`. Keep source artwork, brand
+guidelines, licensing notes, and marketing source materials in `wystlang/brand`.
 
 ## Documentation source
 
@@ -49,10 +69,11 @@ https):
 git submodule add git@github.com:wystlang/wyst.git vendor/wyst
 ```
 
-A fresh checkout of this repo needs `git submodule update --init` to populate it.
-Cloudflare's build environment needs access to that repo (a deploy key or token)
-to fetch the submodule; since generated HTML is committed, deploys that don't
-regenerate don't need it.
+A fresh checkout of this repo needs `git submodule update --init` to populate
+submodules. Cloudflare's build environment needs access to private submodules
+(a deploy key or token) if it fetches them during deploy; since generated HTML
+and website-ready assets are committed, deploys that don't regenerate or sync
+don't need to read submodule contents.
 
 ## Build
 
