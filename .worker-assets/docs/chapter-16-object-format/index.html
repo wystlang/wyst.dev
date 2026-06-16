@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries." />
+		<title>Object Format · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-16-object-format/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/" aria-current="page"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 16</span>
+						<h1>Chapter 16: Wyst Object Format</h1>
+						<p class="doc-lede">Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries.</p>
+					</header>
+					<div class="doc-body">
+<blockquote>
+<p><strong>Canonical scope:</strong> binary output format, section catalog, symbol table, relocation vocabulary.
+<strong>Cross-references:</strong> <a href="/docs/chapter-06-types/">chapter-06-types.md</a>, <a href="/docs/chapter-08-functions/">chapter-08-functions.md</a>, <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>, <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>, <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>, <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> (Reproducibility Model, ABI Strategy), and <a href="/docs/appendix-b-grammar/">appendix-b-grammar.md</a>.</p>
+</blockquote>
+<p>Object format describes emitted artifacts, not source syntax. It builds on
+modules, layout declarations, boot entry, and ABI classification.</p>
+<p>Wyst's integrated compiler reads a set of source modules and emits a single
+binary image. There is no separate assembler, no separate linker, no
+intermediate object files written to disk. This chapter specifies the emitted
+artifact.</p>
+<hr>
+<h2 id="1.-scope-and-goals" tabindex="-1"><a class="doc-anchor" href="#1.-scope-and-goals" aria-hidden="true">#</a> 1. Scope and Goals</h2>
+<p>The Wyst compiler is <strong>whole-program, single-pass with respect to its output</strong>:</p>
+<ul>
+<li>The compiler ingests every source module named explicitly or discovered from
+the project/root import closure in one invocation (see
+<a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>).</li>
+<li>All cross-module symbol resolution, layout, relocation, and image
+construction happen inside that one invocation.</li>
+<li>No per-module relocatable <code>.o</code> files are written to disk.</li>
+<li>No external <code>ld</code> is invoked.</li>
+<li>No <code>ar</code> archive format is defined.</li>
+</ul>
+<p>The output of a successful compilation is exactly one <strong>ELF64
+little-endian AArch64 executable</strong>.</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">wync src/boot/hello.wyst src/runtime/uart.wyst src/boot/layout.wyst -o kernel.elf
+</code></pre>
+<p><code>kernel.elf</code> is a complete, statically linked image. It has no dependencies on
+a dynamic loader, no GOT, no PLT, no <code>DT_NEEDED</code> entries.</p>
+<hr>
+<h2 id="2.-output-format" tabindex="-1"><a class="doc-anchor" href="#2.-output-format" aria-hidden="true">#</a> 2. Output Format</h2>
+<h3 id="2.1-elf-discipline" tabindex="-1"><a class="doc-anchor" href="#2.1-elf-discipline" aria-hidden="true">#</a> 2.1 ELF Discipline</h3>
+<p>The output is ELF64 (<code>EI_CLASS = ELFCLASS64</code>), little-endian
+(<code>EI_DATA = ELFDATA2LSB</code>), AArch64 (<code>e_machine = EM_AARCH64 = 183</code>), executable
+(<code>e_type = ET_EXEC</code>).</p>
+<p>Position-independent executable output (<code>ET_DYN</code> with PIE semantics) is <strong>not
+supported</strong>. All addresses are resolved to absolute values at compile time,
+driven by the layout module's <code>#entry</code>, <code>#region</code>, and <code>#section</code> constraints.</p>
+<h3 id="2.2-elf-header" tabindex="-1"><a class="doc-anchor" href="#2.2-elf-header" aria-hidden="true">#</a> 2.2 ELF Header</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>e_ident[EI_MAG]</code></td>
+<td><code>0x7F 'E' 'L' 'F'</code></td>
+</tr>
+<tr>
+<td><code>e_ident[EI_CLASS]</code></td>
+<td><code>ELFCLASS64</code> (2)</td>
+</tr>
+<tr>
+<td><code>e_ident[EI_DATA]</code></td>
+<td><code>ELFDATA2LSB</code> (1)</td>
+</tr>
+<tr>
+<td><code>e_ident[EI_VERSION]</code></td>
+<td><code>EV_CURRENT</code> (1)</td>
+</tr>
+<tr>
+<td><code>e_ident[EI_OSABI]</code></td>
+<td><code>ELFOSABI_NONE</code> (0) — bare-metal default</td>
+</tr>
+<tr>
+<td><code>e_type</code></td>
+<td><code>ET_EXEC</code> (2)</td>
+</tr>
+<tr>
+<td><code>e_machine</code></td>
+<td><code>EM_AARCH64</code> (183)</td>
+</tr>
+<tr>
+<td><code>e_entry</code></td>
+<td>absolute address of the layout module's <code>#entry</code> symbol</td>
+</tr>
+<tr>
+<td><code>e_flags</code></td>
+<td><code>0</code> — no AArch64-specific ABI flags defined by this contract</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2.3-program-headers" tabindex="-1"><a class="doc-anchor" href="#2.3-program-headers" aria-hidden="true">#</a> 2.3 Program Headers</h3>
+<p>The compiler emits one <code>PT_LOAD</code> segment per contiguous run of sections that
+share load attributes (executable, writable, readable). Section-to-segment
+mapping is deterministic and driven by the layout module:</p>
+<ul>
+<li>A run of executable sections (<code>.text</code>, <code>.wyst.vectors.*</code>) → one
+<code>PT_LOAD</code> with <code>p_flags = PF_R | PF_X</code>.</li>
+<li>A run of read-only data (<code>.rodata</code>) → one <code>PT_LOAD</code> with <code>p_flags = PF_R</code>.</li>
+<li>Non-<code>ALLOC</code> debug sections (<code>.debug_*</code>) are present only in the section
+table and are not mapped into a <code>PT_LOAD</code> segment.</li>
+<li>A run of read-write initialized data (<code>.data</code>) → one <code>PT_LOAD</code> with
+<code>p_flags = PF_R | PF_W</code>.</li>
+<li>A <code>.bss</code>-style zero-initialized run → one <code>PT_LOAD</code> with
+<code>p_flags = PF_R | PF_W</code> and <code>p_filesz &lt; p_memsz</code>.</li>
+</ul>
+<p><code>PT_NOTE</code>, <code>PT_TLS</code>, <code>PT_GNU_STACK</code>, and <code>PT_GNU_EH_FRAME</code> are outside the
+base image model.</p>
+<h3 id="2.4-section-headers" tabindex="-1"><a class="doc-anchor" href="#2.4-section-headers" aria-hidden="true">#</a> 2.4 Section Headers</h3>
+<p>A full section header table is emitted to support <code>readelf</code>, <code>objdump</code>, GDB,
+and <code>gdb-multiarch</code> workflows. Section header content is informational; the
+ELF program headers are authoritative for loading.</p>
+<hr>
+<h2 id="3.-section-catalog" tabindex="-1"><a class="doc-anchor" href="#3.-section-catalog" aria-hidden="true">#</a> 3. Section Catalog</h2>
+<p>Section names are <strong>canonical</strong>. The compiler emits its built-in artifacts
+into the section names listed below; the layout module places those sections
+but <strong>cannot rename them</strong>. User-defined section attributes (per Phase 6.3)
+may add additional sections alongside this set; they cannot collide with
+canonical names.</p>
+<p>| Section               | Contents                                             | Flags         |
+| --------------------- | ---------------------------------------------------- | ------------- | ---------- | ------- |
+| <code>.text</code>               | Function bodies (default) and code from labels       | <code>ALLOC        | EXECINSTR</code> |
+| <code>.rodata</code>             | Compile-time constants, string literals, jump tables | <code>ALLOC</code>       |
+| <code>.initcalls</code>          | Kernel initcall metadata entries                     | <code>ALLOC</code>       |
+| <code>.data</code>               | Initialized mutable globals                          | <code>ALLOC        | WRITE</code>     |
+| <code>.bss</code>                | Zero-initialized mutable globals                     | <code>ALLOC        | WRITE      | NOBITS</code> |
+| <code>.percpu</code>             | <code>#percpu</code> master images (template per CPU)           | <code>ALLOC        | WRITE</code>     |
+| <code>.tls</code>                | <code>#tls</code> master images (template per thread)           | <code>ALLOC        | WRITE      | TLS</code>    |
+| <code>.wyst.vectors.&lt;name&gt;</code> | One section per <code>#exception_vector</code> declaration      | <code>ALLOC        | EXECINSTR</code> |
+| <code>.debug_info</code>         | DWARF 5 compilation unit DIE tree                    | (non-<code>ALLOC</code>) |
+| <code>.debug_abbrev</code>       | DWARF 5 abbreviation tables for <code>.debug_info</code>        | (non-<code>ALLOC</code>) |
+| <code>.debug_line</code>         | DWARF 5 line number program                          | (non-<code>ALLOC</code>) |
+| <code>.debug_line_str</code>     | DWARF 5 line-program string table (file names)       | (non-<code>ALLOC</code>) |
+| <code>.debug_str</code>          | DWARF 5 string table for <code>.debug_info</code>               | (non-<code>ALLOC</code>) |
+| <code>.debug_loc</code>          | DWARF 5 location lists                               | (non-<code>ALLOC</code>) |
+| <code>.debug_aranges</code>      | DWARF 5 PC → compilation-unit range table            | (non-<code>ALLOC</code>) |
+| <code>.symtab</code>             | Symbol table (see §4)                                | (non-<code>ALLOC</code>) |
+| <code>.strtab</code>             | Symbol name strings                                  | (non-<code>ALLOC</code>) |
+| <code>.shstrtab</code>           | Section header name strings                          | (non-<code>ALLOC</code>) |</p>
+<p><code>.wyst.vectors.&lt;name&gt;</code> is named after the declaration: an
+<code>#exception_vector</code> declared <code>el1_vectors :: #exception_vector = { ... }</code>
+emits to <code>.wyst.vectors.el1_vectors</code>. Each such section carries the 2KB
+alignment dictated by §10.2.</p>
+<p><code>.percpu</code> and <code>.tls</code> master images are the bytes the runtime allocator copies
+per CPU / per thread at bring-up. They are placed once in the image; the
+runtime is responsible for replication. See §7 for the access lowering.</p>
+<hr>
+<h2 id="4.-symbol-table" tabindex="-1"><a class="doc-anchor" href="#4.-symbol-table" aria-hidden="true">#</a> 4. Symbol Table</h2>
+<p>The <code>.symtab</code> includes one entry per:</p>
+<ul>
+<li><code>#export</code>ed top-level declaration (function, label, constant, mutable
+global, type — types emit no payload but contribute symbols for tooling).</li>
+<li>Layout module export (<code>__text_start</code>, <code>__bss_end</code>, etc.).</li>
+<li>Compiler-created initcall metadata symbols named as specified in §4.3.</li>
+<li>Section start symbol (synthesized: <code>_section.text_start</code>, etc., for
+debugger convenience). These are local symbols.</li>
+<li>Function and label body starts (private and public alike), to enable
+source/debug lookup. Private functions and labels get <code>STB_LOCAL</code>.</li>
+</ul>
+<h3 id="4.1-binding" tabindex="-1"><a class="doc-anchor" href="#4.1-binding" aria-hidden="true">#</a> 4.1 Binding</h3>
+<table>
+<thead>
+<tr>
+<th>Binding</th>
+<th>When emitted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STB_LOCAL</code></td>
+<td>Private declarations (no <code>#export</code>), synthesized symbols</td>
+</tr>
+<tr>
+<td><code>STB_GLOBAL</code></td>
+<td><code>#export</code>ed declarations, compiler-created initcall metadata</td>
+</tr>
+<tr>
+<td><code>STB_WEAK</code></td>
+<td><strong>Not used.</strong> <code>#weak</code> is outside the symbol model.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4.2-type" tabindex="-1"><a class="doc-anchor" href="#4.2-type" aria-hidden="true">#</a> 4.2 Type</h3>
+<table>
+<thead>
+<tr>
+<th>Symbol kind</th>
+<th><code>st_type</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Function</td>
+<td><code>STT_FUNC</code></td>
+</tr>
+<tr>
+<td>Mutable global</td>
+<td><code>STT_OBJECT</code></td>
+</tr>
+<tr>
+<td>Constant in <code>.rodata</code></td>
+<td><code>STT_OBJECT</code></td>
+</tr>
+<tr>
+<td>Initcall metadata</td>
+<td><code>STT_OBJECT</code></td>
+</tr>
+<tr>
+<td>Label (§2.4)</td>
+<td><code>STT_NOTYPE</code> — executable text symbol, but not a callable function symbol</td>
+</tr>
+<tr>
+<td>Section start</td>
+<td><code>STT_NOTYPE</code></td>
+</tr>
+<tr>
+<td>Layout export</td>
+<td><code>STT_NOTYPE</code></td>
+</tr>
+</tbody>
+</table>
+<p>A label symbol's section index points at an executable text section and its
+size covers the emitted label body. Tools must not infer function-call
+prologue, epilogue, or return semantics from a label symbol; source-level
+<code>goto</code> legality comes from the Wyst symbol kind, not from ELF <code>STT_FUNC</code>.</p>
+<p><code>STT_TLS</code> is <strong>not</strong> used. <code>#tls</code> and <code>#percpu</code> symbols are emitted as
+ordinary <code>STT_OBJECT</code> whose value is the offset within <code>.tls</code> / <code>.percpu</code>;
+access goes through the intrinsic-generated <code>mrs</code> + <code>add</code> sequence, not
+through ELF TLS relocations.</p>
+<h3 id="4.3-mangling" tabindex="-1"><a class="doc-anchor" href="#4.3-mangling" aria-hidden="true">#</a> 4.3 Mangling</h3>
+<p>Wyst does not mangle ordinary monomorphic declarations. The symbol name
+written to <code>.symtab</code> is exactly the declaration name from the source. Module
+names do <strong>not</strong> appear in the ordinary declaration symbol: a function <code>init</code>
+exported by module <code>runtime.uart</code> is the symbol <code>init</code>. Cross-module collisions
+on <code>#export</code>ed names are a compile error at import resolution (see
+<a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>), so the ordinary declaration
+symbol table can afford to be flat.</p>
+<p>Compiler-created initcall metadata symbols are an explicit exception. Every
+<code>#initcall(order)</code> function emits one 16-byte <code>.initcalls</code> entry and one
+metadata symbol whose value is the address of that entry and whose size is 16:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">InitcallSymbol = "__initcall_" OrderHex "_" QualifiedFunction
+OrderHex       = 16 lowercase hexadecimal digits for the `u64` order
+QualifiedFunction = PathComponent ("__" PathComponent)* "__" FunctionComponent
+</code></pre>
+<p><code>QualifiedFunction</code> uses the source module path components followed by the
+function name. Each component is encoded as ASCII alphanumeric bytes unchanged,
+<code>_</code> as <code>_u</code>, and any other byte as <code>_x</code> plus two lowercase hexadecimal digits.
+The module separator <code>.</code> is structural and becomes the <code>__</code> component separator,
+not an encoded byte. For example, <code>early_console_init :: () #initcall(10)</code> in
+module <code>drivers.uart</code> emits:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">__initcall_000000000000000a_drivers__uart__early_uconsole_uinit
+</code></pre>
+<p>Concrete generic instantiations are the other mandatory encoding exception.
+Every implementation must write the same <code>.symtab</code> name for the same generic
+declaration and canonical concrete type-argument tuple:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">GenericSymbol = DeclarationName "__wg" Arity "__" TypeComponent
+                ("__" TypeComponent)*
+Arity         = decimal count of type arguments
+</code></pre>
+<p>Examples:</p>
+<table>
+<thead>
+<tr>
+<th>Source-facing instantiation</th>
+<th>ELF symbol name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>identity&lt;u64&gt;</code></td>
+<td><code>identity__wg1__u64</code></td>
+</tr>
+<tr>
+<td><code>Pair&lt;u64, bool&gt;</code></td>
+<td><code>Pair__wg2__u64__bool</code></td>
+</tr>
+<tr>
+<td><code>wrap&lt;Box&lt;u64&gt;&gt;</code></td>
+<td><code>wrap__wg1__Box__wg1__u64</code></td>
+</tr>
+<tr>
+<td><code>same&lt;Mode&gt;</code></td>
+<td><code>same__wg1__t_Mode</code></td>
+</tr>
+</tbody>
+</table>
+<p>The marker <code>__wg</code> is reserved for compiler-generated generic instantiation
+symbols. Source top-level declarations must not contain <code>__wg</code>, including
+names such as <code>swap__wg1__u64</code>, because those names occupy the generated
+symbol namespace.</p>
+<p>Type components use this canonical ASCII encoding:</p>
+<table>
+<thead>
+<tr>
+<th>Type argument shape</th>
+<th>Type component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Built-in scalar type</td>
+<td>The built-in spelling, such as <code>u64</code>, <code>bool</code></td>
+</tr>
+<tr>
+<td>Monomorphic nominal type</td>
+<td><code>t_</code> plus the escaped canonical declaration name</td>
+</tr>
+<tr>
+<td>Concrete generic nominal type</td>
+<td>That type's own <code>GenericSymbol</code></td>
+</tr>
+<tr>
+<td>Pointer <code>@T</code></td>
+<td><code>ptr_</code> plus <code>T</code>'s component</td>
+</tr>
+<tr>
+<td>Volatile pointer <code>@volatile T</code></td>
+<td><code>vptr_</code> plus <code>T</code>'s component</td>
+</tr>
+<tr>
+<td>Slice <code>[]T</code></td>
+<td><code>slice_</code> plus <code>T</code>'s component</td>
+</tr>
+<tr>
+<td>Dynamic array <code>[dynamic]T</code></td>
+<td><code>dyn_</code> plus <code>T</code>'s component</td>
+</tr>
+<tr>
+<td>Fixed array <code>[N]T</code></td>
+<td><code>array_</code> plus escaped <code>N</code>, <code>_</code>, then <code>T</code></td>
+</tr>
+<tr>
+<td>Vector <code>[T:N]</code></td>
+<td><code>vec_</code> plus escaped <code>N</code>, <code>_</code>, then <code>T</code></td>
+</tr>
+<tr>
+<td>Tuple <code>(name: T, ...)</code></td>
+<td><code>tuple</code> plus arity, then escaped field/type pairs</td>
+</tr>
+<tr>
+<td>Function pointer <code>@(A, B) -&gt; R</code></td>
+<td><code>fn</code> plus arity, parameters, and optional return</td>
+</tr>
+<tr>
+<td>Calling-convention function pointer</td>
+<td><code>fn_</code> plus escaped convention before the arity</td>
+</tr>
+</tbody>
+</table>
+<p>Escaping leaves ASCII letters and digits unchanged, writes <code>_</code> as <code>_u</code>, <code>.</code>
+as <code>_m</code>, and writes any other byte as <code>_xHH</code> using lowercase hexadecimal.
+Imported exported type names first canonicalize to their declaring type name
+before component encoding, so <code>flags.Mode</code> and the same type reached through
+an import alias do not produce distinct ABI symbols.</p>
+<p>This decision keeps <code>readelf -s kernel.elf</code> legible for normal source names
+while still making generic instantiations stable for linkers, debuggers, and
+out-of-tree tooling. Longer generic names increase <code>.strtab</code> size, but they do
+not duplicate machine code beyond the monomorphizations already required by
+the source program and do not add runtime-loaded data by themselves.</p>
+<hr>
+<h2 id="5.-relocation-vocabulary" tabindex="-1"><a class="doc-anchor" href="#5.-relocation-vocabulary" aria-hidden="true">#</a> 5. Relocation Vocabulary</h2>
+<p>Because the compiler is whole-program single-pass, <strong>no relocations are
+serialized to disk</strong>. The output ELF has no <code>.rela.*</code> sections.</p>
+<p>The relocation types below are the <strong>internal</strong> alphabet used during the
+final link phase, between code generation and image write-out. They are
+enumerated here so that:</p>
+<ul>
+<li>The IR specification (Phase 5.2) can reference them precisely.</li>
+<li>An external tool (linker, disassembler, debugger) that ever needs to
+inspect partially-linked Wyst output knows the closed set it might see.</li>
+<li>The <code>#addr_of</code> relocation discipline (§6) can name them.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Internal name</th>
+<th>ELF type code (AArch64 spec)</th>
+<th>Lowered from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ADR_PG_HI21</code></td>
+<td><code>R_AARCH64_ADR_PREL_PG_HI21</code> (275)</td>
+<td><code>adrp xN, sym</code> (high 21 bits of page-relative offset)</td>
+</tr>
+<tr>
+<td><code>ADD_LO12</code></td>
+<td><code>R_AARCH64_ADD_ABS_LO12_NC</code> (277)</td>
+<td><code>add xN, xN, :lo12:sym</code> (low 12 bits, no overflow check)</td>
+</tr>
+<tr>
+<td><code>LDST8_LO12</code></td>
+<td><code>R_AARCH64_LDST8_ABS_LO12_NC</code> (278)</td>
+<td>byte load/store with <code>:lo12:</code> offset</td>
+</tr>
+<tr>
+<td><code>LDST16_LO12</code></td>
+<td><code>R_AARCH64_LDST16_ABS_LO12_NC</code> (284)</td>
+<td>halfword load/store</td>
+</tr>
+<tr>
+<td><code>LDST32_LO12</code></td>
+<td><code>R_AARCH64_LDST32_ABS_LO12_NC</code> (285)</td>
+<td>word load/store</td>
+</tr>
+<tr>
+<td><code>LDST64_LO12</code></td>
+<td><code>R_AARCH64_LDST64_ABS_LO12_NC</code> (286)</td>
+<td>doubleword load/store</td>
+</tr>
+<tr>
+<td><code>LDST128_LO12</code></td>
+<td><code>R_AARCH64_LDST128_ABS_LO12_NC</code> (299)</td>
+<td>128-bit load/store (NEON, <code>ldp</code>/<code>stp</code>)</td>
+</tr>
+<tr>
+<td><code>CALL26</code></td>
+<td><code>R_AARCH64_CALL26</code> (283)</td>
+<td><code>bl sym</code> direct call</td>
+</tr>
+<tr>
+<td><code>JUMP26</code></td>
+<td><code>R_AARCH64_JUMP26</code> (282)</td>
+<td><code>b sym</code> unconditional branch (<code>goto</code>)</td>
+</tr>
+<tr>
+<td><code>CONDBR19</code></td>
+<td><code>R_AARCH64_CONDBR19</code> (280)</td>
+<td><code>b.&lt;cond&gt; sym</code> (intra-function only — rarely needs relocation)</td>
+</tr>
+<tr>
+<td><code>ABS64</code></td>
+<td><code>R_AARCH64_ABS64</code> (257)</td>
+<td>64-bit absolute pointer in <code>.data</code> / <code>.rodata</code> (function pointers, <code>#addr_of</code> stored as data)</td>
+</tr>
+<tr>
+<td><code>PREL32</code></td>
+<td><code>R_AARCH64_PREL32</code> (261)</td>
+<td>DWARF section-relative references</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Out of scope</strong> (reserved slots for future object-format extensions):</p>
+<ul>
+<li><code>R_AARCH64_GOT_*</code> family — no GOT in static linking.</li>
+<li><code>R_AARCH64_TLSGD_*</code>, <code>R_AARCH64_TLSDESC_*</code> — no dynamic TLS.</li>
+<li><code>R_AARCH64_TLSLE_*</code> — <code>#tls</code> uses direct <code>TPIDR_EL0</code> + offset, computed
+by the compiler from <code>#start(.tls)</code>; see §7.</li>
+<li><code>R_AARCH64_TLSIE_*</code> — initial-exec model not used.</li>
+<li><code>R_AARCH64_COPY</code>, <code>R_AARCH64_GLOB_DAT</code>, <code>R_AARCH64_JUMP_SLOT</code> — dynamic linker only.</li>
+</ul>
+<p>If future Wyst versions add dynamic linking, the GOT family slots in here
+without breaking the static-only contract.</p>
+<h3 id="5.1-page-pair-discipline" tabindex="-1"><a class="doc-anchor" href="#5.1-page-pair-discipline" aria-hidden="true">#</a> 5.1 Page-Pair Discipline</h3>
+<p>Every code-to-data and code-to-code reference longer than ±128 MB uses the
+<code>ADR_PG_HI21</code> + <code>ADD_LO12</code> page pair. Sub-±128 MB code-to-code calls use
+<code>CALL26</code> or <code>JUMP26</code> directly. The choice is determined at codegen time
+based on final-placement distance, which is known because the compiler is
+whole-program.</p>
+<p>The compiler synthesizes deterministic veneers for direct symbol <code>CALL26</code> and
+<code>JUMP26</code> branches whose targets are outside the architectural branch range
+after final placement. Each far direct symbol branch gets one veneer after the
+source text chunk; the original branch targets that near veneer, and the veneer
+materializes the final target address through the existing <code>ADR_PG_HI21</code> +
+<code>ADD_LO12</code> relocation path before <code>br x16</code>.
+Out-of-range local backend <code>B26</code>, <code>CBNZ19</code>, and future <code>CONDBR19</code> forms still
+emit hard errors until their own veneer policies are designed.</p>
+<p>The compiler does not use literal pools for integer constants. Integer constants are
+materialized deterministically with <code>movz</code> plus <code>movk</code> lanes from low to high,
+omitting lanes that are zero. Symbol addresses use the page-pair discipline
+above.</p>
+<p>This means the spec <strong>does not</strong> define a <code>R_AARCH64_LDR_*</code> GOT-load encoding
+for <code>#addr_of</code> — the load is always materialized as an <code>adrp</code> + <code>add</code> (or
+<code>adrp</code> + <code>ldr</code> with <code>LDST*_LO12</code>) pair against the absolute symbol address.</p>
+<hr>
+<h2 id="6.-%23addr_of-and-relocation-emission" tabindex="-1"><a class="doc-anchor" href="#6.-%23addr_of-and-relocation-emission" aria-hidden="true">#</a> 6. <code>#addr_of</code> and Relocation Emission</h2>
+<p><code>#addr_of(symbol)</code> (§7.1 of <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>) is <strong>the only
+language-level expression that introduces a code-or-data symbol reference</strong>.
+<code>%addr_of(local)</code> materializes a stack-frame address at runtime and therefore
+does not participate in relocation emission. Every other address in Wyst is
+either a literal (<code>0x0900_0000</code>) or computed at runtime from values whose
+provenance the compiler cannot trace.</p>
+<p>The integrated linker uses this distinction directly:</p>
+<table>
+<thead>
+<tr>
+<th>Expression form</th>
+<th>Relocation behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#addr_of(sym)</code> in an expression</td>
+<td>Codegen emits <code>adrp</code> + <code>add</code> against <code>sym</code>. Linker resolves at final placement.</td>
+</tr>
+<tr>
+<td><code>#addr_of(sym) + N</code> (constant <code>N</code>)</td>
+<td>One page-pair relocation against <code>sym</code> with addend <code>N</code> folded into the <code>ADD_LO12</code> immediate (or into the <code>ABS64</code> slot when stored to data).</td>
+</tr>
+<tr>
+<td><code>#addr_of(sym) + i</code> (runtime <code>i</code>)</td>
+<td>Page-pair relocation for <code>sym</code>'s base only; the runtime <code>add</code> of <code>i</code> is a plain <code>add</code> instruction with no relocation.</td>
+</tr>
+<tr>
+<td><code>#addr_of(sym)</code> in a constant initializer for a global</td>
+<td>Codegen emits an <code>ABS64</code> slot in <code>.data</code> / <code>.rodata</code>. Linker writes the resolved <code>sym + addend</code> into that slot.</td>
+</tr>
+<tr>
+<td><code>[]T{data = #addr_of(sym), len = N}</code> in a global initializer</td>
+<td>Codegen emits a 16-byte slice pair: an <code>ABS64</code> relocation in the <code>data</code> slot and a constant <code>u64</code> length.</td>
+</tr>
+<tr>
+<td><code>%addr_of(local)</code></td>
+<td>No relocation. Codegen emits ordinary stack-relative address materialization.</td>
+</tr>
+<tr>
+<td>Integer literal cast <code>0x40000000 as @T</code></td>
+<td>No relocation. The address is the literal.</td>
+</tr>
+<tr>
+<td>Computed <code>@T</code> (<code>base + i</code>, <code>ptr as @u32</code>, <code>%mrs(TPIDR_EL1) as @T</code>)</td>
+<td>No relocation. The address is a runtime value.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Consequence:</strong> Wyst does not have the C/C++ problem of &quot;is this pointer a
+relocatable symbol reference or an integer?&quot; The two are syntactically
+distinct: only <code>#addr_of(name)</code> references a symbol, and only the codegen
+path for <code>#addr_of</code> emits relocations. <code>%addr_of(local)</code> is explicit but local
+to the stack frame; everything else compiles to plain arithmetic.</p>
+<p>This is the contract that lets the integrated linker avoid carrying a full
+relocation table to disk: every relocation site is a direct lowering of a
+specific <code>#addr_of(...)</code> AST node, fully resolved before write-out.</p>
+<p>See Phase 5.4 for the cross-link from <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address
+Types).</p>
+<hr>
+<h2 id="7.-per-cpu-and-thread-local-lowering" tabindex="-1"><a class="doc-anchor" href="#7.-per-cpu-and-thread-local-lowering" aria-hidden="true">#</a> 7. Per-CPU and Thread-Local Lowering</h2>
+<p>The intrinsics in <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.7</a> are lowered without using
+ELF TLS relocations. The mechanism:</p>
+<ol>
+<li>The compiler computes <code>#percpu_offset_of(var)</code> and
+<code>#tls_offset_of(var)</code> at compile time, as integers in the
+<code>.percpu</code> / <code>.tls</code> section.
+These integers are final image layout facts: deterministic for one
+complete build input, but not stable across source, import-order,
+alignment, or layout-policy changes. The compiler emits warning
+<code>W0203</code> when source asks for one explicitly.</li>
+<li>Access lowers to <code>mrs xT, TPIDR_EL1</code> (or <code>TPIDR_EL0</code>) + <code>add xN, xT, #offset</code> — the immediate offset is filled in by codegen, not by an ELF
+relocation.</li>
+<li>Section sizes are exported as ordinary symbols (<code>__percpu_size</code>,
+<code>__tls_size</code>) for the runtime allocator to size per-CPU / per-thread
+blocks.</li>
+<li>The runtime is responsible for setting <code>TPIDR_EL1</code> / <code>TPIDR_EL0</code> to the
+base of each CPU's / thread's instance before any access.</li>
+</ol>
+<p>This decision keeps the static-only contract intact and avoids dragging in
+the ELF TLS model (<code>PT_TLS</code>, <code>R_AARCH64_TLSLE_*</code>, <code>__tls_get_addr</code>) which
+exists for dynamic loaders Wyst doesn't have. If a future Wyst version adds
+dynamic linking, an opt-in ELF TLS lowering can be added per
+<code>#target(... features = (elf-tls))</code>.</p>
+<hr>
+<h2 id="8.-sections-from-user-declarations" tabindex="-1"><a class="doc-anchor" href="#8.-sections-from-user-declarations" aria-hidden="true">#</a> 8. Sections from User Declarations</h2>
+<p>User code places a declaration in a custom section with the
+<code>#section(.name)</code> attribute:</p>
+<p>This source-level section request is checked against the layout. Under the
+default documentation layout, <code>.modinfo</code> is intentionally absent, so this
+contract fails until a layout declares the section:</p>
+<!-- wyst-contract: check-fail -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> object_demo
+
+<span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>
+modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"abcd"</span>
+</code></pre>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>   uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1\0\0\0"</span>
+</code></pre>
+<p>The full semantics — legal placements, section-name constraints,
+flag derivation, bookend synthesis, cross-module aggregation — are
+specified in <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> under &quot;Custom Sections from User
+Declarations&quot;. The rules relevant to the object format are:</p>
+<ul>
+<li><strong>Reserved names:</strong> all section names listed in §3 (<code>.text</code>,
+<code>.rodata</code>, <code>.data</code>, <code>.bss</code>, <code>.percpu</code>, <code>.tls</code>, the <code>.debug_*</code> family,
+<code>.symtab</code>, <code>.strtab</code>, <code>.shstrtab</code>) and any name starting with <code>.wyst.</code>
+are reserved. User code cannot target them with <code>#section(...)</code> —
+canonical sections are written by <em>omitting</em> the attribute.</li>
+<li><strong>Flags are derived</strong> from the declaration kind (function → <code>ALLOC | EXECINSTR</code>; constant → <code>ALLOC</code>; mutable initialized → <code>ALLOC | WRITE</code>;
+mutable uninitialized → <code>ALLOC | WRITE | NOBITS</code>). The ELF section
+header's <code>sh_flags</code> is computed from this derivation, not from a
+user-supplied flag list.</li>
+<li><strong>Bookend symbols</strong> <code>__&lt;section&gt;_start</code> / <code>__&lt;section&gt;_end</code> are
+auto-synthesized with <code>STB_LOCAL</code> for every used custom section.
+Dots in the section name become underscores; the leading dot is
+dropped. Layout-module exports referencing the same range override
+these.</li>
+<li><strong>Concatenation order</strong> is source-declaration order within a module,
+then deterministic module-import order across modules, matching the
+determinism contract in §11.</li>
+</ul>
+<hr>
+<h2 id="9.-out-of-scope" tabindex="-1"><a class="doc-anchor" href="#9.-out-of-scope" aria-hidden="true">#</a> 9. Out of Scope</h2>
+<p>These are explicit non-features of the object format. Each has a
+documented path if needed.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Boundary</th>
+<th>Future path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Per-module <code>.o</code> relocatable output</td>
+<td>Outside base image model</td>
+<td>Could be added as <code>wync -c</code> mode; would serialize the §5 relocation vocabulary into <code>.rela.*</code> sections</td>
+</tr>
+<tr>
+<td>Dynamic linking (<code>ld.so</code>, <code>PT_INTERP</code>)</td>
+<td>Outside base image model</td>
+<td>Requires GOT/PLT relocations, <code>R_AARCH64_GLOB_DAT</code>, <code>R_AARCH64_JUMP_SLOT</code>, dynamic symbol table</td>
+</tr>
+<tr>
+<td>Position-independent executables (<code>ET_DYN</code>)</td>
+<td>Outside base image model</td>
+<td>Base output lowers against absolute addresses</td>
+</tr>
+<tr>
+<td>Shared objects (<code>.so</code>)</td>
+<td>Outside base image model</td>
+<td>Same dependency on dynamic linking</td>
+</tr>
+<tr>
+<td>COMDAT / section groups</td>
+<td>Outside base image model</td>
+<td><code>#inline</code> is the only deduplication mechanism; multiply-defined exports are a hard error</td>
+</tr>
+<tr>
+<td><code>#weak</code> symbols, <code>#hidden</code> visibility</td>
+<td>Outside symbol model</td>
+<td>Could add <code>STB_WEAK</code> and <code>STV_HIDDEN</code> once language semantics are defined</td>
+</tr>
+<tr>
+<td><code>init_array</code> / <code>fini_array</code></td>
+<td>Outside base image model</td>
+<td>Wyst has no implicit static constructors; the layout module's <code>#entry</code> is the only entry point</td>
+</tr>
+<tr>
+<td>Exception unwinding (<code>.eh_frame</code>, <code>.ARM.exidx</code>)</td>
+<td>Outside base image model</td>
+<td>Wyst has no exceptions in the language sense; <code>#exception_vector</code> is hardware-level only</td>
+</tr>
+<tr>
+<td>ar archives, static libraries</td>
+<td>Outside base image model</td>
+<td>The compiler reads source modules directly</td>
+</tr>
+<tr>
+<td>Mach-O, PE, COFF output</td>
+<td>Outside base image model</td>
+<td>See §11.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="10.-determinism" tabindex="-1"><a class="doc-anchor" href="#10.-determinism" aria-hidden="true">#</a> 10. Determinism</h2>
+<p>Object format output is <strong>bit-for-bit reproducible</strong> under the
+reproducibility contract (<code>chapter-01-language-design.md</code>, Reproducibility Model):
+same compiler version, same build optimization mode, same target, same
+<code>#schedule</code> modes, and the same source input manifest produce byte-identical
+ELF output.</p>
+<p>Specific determinism requirements:</p>
+<ul>
+<li>Section order is determined by the layout module (<code>in</code> / <code>after</code>
+constraints), then by declaration order within a section. There is no
+topological-sort tie-break dependent on hashtable iteration.</li>
+<li>Symbol table order is: layout exports, then user <code>#export</code>ed symbols in
+module-then-declaration order, then private functions in
+module-then-declaration order. Module order is the compiler source input
+order: explicit multi-file builds use command-line source order, while
+project and explicit-root import-closure builds use the canonical traversal
+from <a href="/docs/chapter-03-project-builds/">chapter-03-project-builds.md</a>.
+Declaration order is source-text order.</li>
+<li>The <code>.shstrtab</code> and <code>.strtab</code> are emitted in symbol-table order (no
+string-pool deduplication that depends on hash order). String
+deduplication is allowed only when it's an exact prefix-suffix sharing
+computed deterministically.</li>
+<li>No timestamps. The ELF header's <code>e_ident[EI_VERSION]</code> is the only field
+derived from &quot;build state&quot;; everything else is content-derived.</li>
+</ul>
+<hr>
+<h2 id="11.-future-object-formats" tabindex="-1"><a class="doc-anchor" href="#11.-future-object-formats" aria-hidden="true">#</a> 11. Future Object Formats</h2>
+<p>ELF64 is the base object format. Mach-O (Darwin) and PE (Windows / UEFI) are
+plausible future targets — both have AArch64 variants and both are well-
+documented. The §5 relocation vocabulary maps cleanly to each:</p>
+<ul>
+<li>Mach-O: <code>ARM64_RELOC_PAGE21</code>, <code>ARM64_RELOC_PAGEOFF12</code>, <code>ARM64_RELOC_BRANCH26</code>,
+<code>ARM64_RELOC_UNSIGNED</code>.</li>
+<li>PE (COFF): <code>IMAGE_REL_ARM64_PAGEBASE_REL21</code>, <code>IMAGE_REL_ARM64_PAGEOFFSET_12A</code>,
+<code>IMAGE_REL_ARM64_BRANCH26</code>, <code>IMAGE_REL_ARM64_ADDR64</code>.</li>
+</ul>
+<p>Adding a new format does <strong>not</strong> require changes to the language, the IR, or
+the relocation vocabulary — it requires only a new writer module that maps
+§5's internal types to the foreign format's codes. The single-pass
+whole-program model is preserved: the writer is the last stage.</p>
+<p>No commitment to a release date for non-ELF formats. Listed here so that
+section naming, generic-symbol encoding, and ABI choices are not made in ways
+that would prevent a future port.</p>
+<hr>
+<h2 id="12.-cross-references" tabindex="-1"><a class="doc-anchor" href="#12.-cross-references" aria-hidden="true">#</a> 12. Cross-References</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Canonical location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Module model and import resolution</td>
+<td><a href="/docs/chapter-04-modules/">chapter-04-modules.md</a></td>
+</tr>
+<tr>
+<td>Layout module syntax</td>
+<td><a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> (&quot;Layout&quot;)</td>
+</tr>
+<tr>
+<td>Exception vector sections (alignment, slot rules)</td>
+<td><a href="/docs/chapter-14-exception-vectors/">chapter-14-exception-vectors.md §10.2</a></td>
+</tr>
+<tr>
+<td><code>#percpu</code> / <code>#tls</code> access lowering</td>
+<td><a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.7</a></td>
+</tr>
+<tr>
+<td><code>#addr_of</code> semantics</td>
+<td><a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a>; this document §6</td>
+</tr>
+<tr>
+<td>ABI (calling convention, register usage)</td>
+<td><code>chapter-15-abi-spec.md</code></td>
+</tr>
+<tr>
+<td>Reproducibility contract</td>
+<td><code>chapter-01-language-design.md</code>, &quot;Reproducibility Model&quot;</td>
+</tr>
+<tr>
+<td>IR ↔ object-format interaction</td>
+<td><code>appendix-a-ir.md</code> (Phase 5.2)</td>
+</tr>
+<tr>
+<td>DWARF emission (dialect, DIE set, determinism)</td>
+<td><a href="/docs/chapter-23-debug-info/">chapter-23-debug-info.md</a></td>
+</tr>
+</tbody>
+</table>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-15-abi-spec/"><span class="dir">← Previous</span><span class="lbl">ABI Specification</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-17-optimization-modes/"><span class="dir">Next →</span><span class="lbl">Build Optimization Modes</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#1.-scope-and-goals">1. Scope and Goals</a></li>
+				<li class="lvl-2"><a href="#2.-output-format">2. Output Format</a></li>
+				<li class="lvl-3"><a href="#2.1-elf-discipline">2.1 ELF Discipline</a></li>
+				<li class="lvl-3"><a href="#2.2-elf-header">2.2 ELF Header</a></li>
+				<li class="lvl-3"><a href="#2.3-program-headers">2.3 Program Headers</a></li>
+				<li class="lvl-3"><a href="#2.4-section-headers">2.4 Section Headers</a></li>
+				<li class="lvl-2"><a href="#3.-section-catalog">3. Section Catalog</a></li>
+				<li class="lvl-2"><a href="#4.-symbol-table">4. Symbol Table</a></li>
+				<li class="lvl-3"><a href="#4.1-binding">4.1 Binding</a></li>
+				<li class="lvl-3"><a href="#4.2-type">4.2 Type</a></li>
+				<li class="lvl-3"><a href="#4.3-mangling">4.3 Mangling</a></li>
+				<li class="lvl-2"><a href="#5.-relocation-vocabulary">5. Relocation Vocabulary</a></li>
+				<li class="lvl-3"><a href="#5.1-page-pair-discipline">5.1 Page-Pair Discipline</a></li>
+				<li class="lvl-2"><a href="#6.-%23addr_of-and-relocation-emission">6. #addr_of and Relocation Emission</a></li>
+				<li class="lvl-2"><a href="#7.-per-cpu-and-thread-local-lowering">7. Per-CPU and Thread-Local Lowering</a></li>
+				<li class="lvl-2"><a href="#8.-sections-from-user-declarations">8. Sections from User Declarations</a></li>
+				<li class="lvl-2"><a href="#9.-out-of-scope">9. Out of Scope</a></li>
+				<li class="lvl-2"><a href="#10.-determinism">10. Determinism</a></li>
+				<li class="lvl-2"><a href="#11.-future-object-formats">11. Future Object Formats</a></li>
+				<li class="lvl-2"><a href="#12.-cross-references">12. Cross-References</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

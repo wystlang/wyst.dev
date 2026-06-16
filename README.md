@@ -20,7 +20,8 @@ build/
   serve.mjs             Tiny static server for local preview
 tools/
   normalize-docs.py     One-time docs source migration (see below)
-vendor/wyst/            Docs source — git submodule of wystlang/wyst (see below)
+  prepare-worker-assets.mjs
+                          Copies committed site files into .worker-assets/
 ```
 
 The landing page and the docs share **one** design system (`assets/wyst.css`),
@@ -54,28 +55,46 @@ guidelines, licensing notes, and marketing source materials in `wystlang/brand`.
 ## Documentation source
 
 The manual lives in the **compiler repo** (`wystlang/wyst`) under `design/`,
-versioned alongside the compiler. This repo *consumes* it; never edit docs here.
+versioned alongside the compiler. This repo consumes generated HTML snapshots;
+never edit docs here.
 
 The generator resolves the docs directory in this order:
 
 1. `WYST_DOCS_DIR` (env override)
-2. `vendor/wyst/design` (submodule — the production wiring)
-3. `../wyst/design` (a sibling checkout — convenient for local work)
+2. `../wyst/design` (a sibling checkout)
 
-### Submodule
+### Local docs source
 
-`vendor/wyst` is a submodule of `wystlang/wyst`, pinned to a specific commit.
-It was added with the SSH remote (the repo isn't anonymously cloneable over
-https):
+Keep `wystlang/wyst` checked out next to this repo, or set `WYST_DOCS_DIR`:
 
 ```sh
-git submodule add git@github.com:wystlang/wyst.git vendor/wyst
+gh repo clone wystlang/wyst ../wyst
+# or:
+WYST_DOCS_DIR=/path/to/wyst/design npm run build
 ```
 
-A fresh checkout of this repo needs `git submodule update --init` to populate
-the docs submodule. Cloudflare's build environment needs access to
-`vendor/wyst` if it fetches submodules during deploy; website brand assets are
-committed directly, so Cloudflare does not need access to `wystlang/brand`.
+A fresh checkout of this repo does not need private submodule access. Cloudflare
+deploys committed static files directly and does not regenerate docs during
+deployment.
+
+## Cloudflare deployment
+
+Cloudflare Workers Builds deploys the static Worker named `wyst`.
+
+The current Cloudflare trigger runs:
+
+```sh
+npx wrangler deploy
+```
+
+Wrangler deploys `.worker-assets/` as static Worker assets. That directory is a
+committed deploy artifact containing only `index.html`, `assets/`, `docs/`, and
+`roadmap/`. Regenerate and commit it whenever those source files change:
+
+```sh
+npm run build:worker-assets
+git add .worker-assets
+```
 
 ## Build
 
@@ -83,6 +102,7 @@ committed directly, so Cloudflare does not need access to `wystlang/brand`.
 npm install
 npm run build        # regenerates docs/ and roadmap/
 npm run docs         # alias for build
+npm run build:worker-assets # refreshes committed Worker deploy artifact
 node build/serve.mjs # preview at http://localhost:8347
 ```
 
@@ -92,16 +112,16 @@ Docs are edited in the compiler repo. To publish those changes here:
 
 ```sh
 # 1. edit + commit docs in the wystlang/wyst repo, then:
-git submodule update --remote vendor/wyst   # bump to the latest docs commit
-npm run build                               # regenerate
-git add docs roadmap vendor/wyst
+WYST_DOCS_DIR=/path/to/wyst/design npm run build
+npm run build:worker-assets
+git add docs roadmap
+git add .worker-assets
 git commit -m "Update docs to <description>"
 git push                                    # Cloudflare deploys
 ```
 
-The submodule SHA committed here is an explicit, reviewable pin: the site
-documents exactly the docs commit you chose. The site only changes when you
-deliberately bump it.
+The generated HTML committed here is the reviewable deploy artifact. The site
+only changes when you deliberately regenerate and commit it.
 
 ## One-time docs normalization
 

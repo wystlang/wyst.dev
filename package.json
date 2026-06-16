@@ -7,6 +7,7 @@
   "scripts": {
     "build": "node build/generate.mjs",
     "docs": "node build/generate.mjs",
+    "build:worker-assets": "node tools/prepare-worker-assets.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs"
   },
   "devDependencies": {

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Scale measurement, deterministic rebuild benchmarking, and non-goals." />
+		<title>Scale And Measurement · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-24-scale/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/" aria-current="page"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 24</span>
+						<h1>Chapter 24: Wyst Scale And Measurement</h1>
+						<p class="doc-lede">Scale measurement, deterministic rebuild benchmarking, and non-goals.</p>
+					</header>
+					<div class="doc-body">
+<p>Wyst starts with a measurement contract before incremental behavior. The
+benchmark surface is intentionally small: it measures project rebuilds and
+requires repeated whole-project output to be
+byte-for-byte stable.</p>
+<p>Scale work starts with evidence, not cache machinery. The deterministic rebuild
+benchmark defines the measurement boundary.</p>
+<h2 id="deterministic-rebuild-benchmark" tabindex="-1"><a class="doc-anchor" href="#deterministic-rebuild-benchmark" aria-hidden="true">#</a> Deterministic Rebuild Benchmark</h2>
+<p>Command:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">wync rebuild-benchmark &lt;project-dir|path/to/wyst.project>
+</code></pre>
+<p>The command accepts the same project input forms as <code>wync build</code>. It reads
+<code>wyst.project</code>, performs two project builds using the same manifest-owned
+target, output path, and selected build optimization mode, reads the generated
+ELF after each iteration, and fails if the bytes differ.</p>
+<p>On success, stdout is JSON:</p>
+<pre class="wyst-code language-json" data-lang="json"><code class="language-json"><span class="token punctuation">{</span>
+	<span class="token property">"schema"</span><span class="token operator">:</span> <span class="token string">"wync.rebuildBenchmark.v0"</span><span class="token punctuation">,</span>
+	<span class="token property">"compilerVersion"</span><span class="token operator">:</span> <span class="token string">"0.3.0"</span><span class="token punctuation">,</span>
+	<span class="token property">"workload"</span><span class="token operator">:</span> <span class="token string">"project"</span><span class="token punctuation">,</span>
+	<span class="token property">"target"</span><span class="token operator">:</span> <span class="token string">"qemu-virt-aarch64-el2"</span><span class="token punctuation">,</span>
+	<span class="token property">"optimization"</span><span class="token operator">:</span> <span class="token string">"reproducible"</span><span class="token punctuation">,</span>
+	<span class="token property">"output"</span><span class="token operator">:</span> <span class="token string">"build/kernel.elf"</span><span class="token punctuation">,</span>
+	<span class="token property">"sourceCount"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
+	<span class="token property">"layout"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+		<span class="token property">"path"</span><span class="token operator">:</span> <span class="token string">"layout.wyst"</span><span class="token punctuation">,</span>
+		<span class="token property">"fingerprint"</span><span class="token operator">:</span> <span class="token string">"fnv1a64:0000000000000000"</span>
+	<span class="token punctuation">}</span><span class="token punctuation">,</span>
+	<span class="token property">"modules"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+		<span class="token punctuation">{</span>
+			<span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"boot"</span><span class="token punctuation">,</span>
+			<span class="token property">"path"</span><span class="token operator">:</span> <span class="token string">"src/boot.wyst"</span><span class="token punctuation">,</span>
+			<span class="token property">"fingerprint"</span><span class="token operator">:</span> <span class="token string">"fnv1a64:0000000000000000"</span><span class="token punctuation">,</span>
+			<span class="token property">"imports"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"drivers.uart"</span><span class="token punctuation">]</span>
+		<span class="token punctuation">}</span><span class="token punctuation">,</span>
+		<span class="token punctuation">{</span>
+			<span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"drivers.uart"</span><span class="token punctuation">,</span>
+			<span class="token property">"path"</span><span class="token operator">:</span> <span class="token string">"src/drivers/uart.wyst"</span><span class="token punctuation">,</span>
+			<span class="token property">"fingerprint"</span><span class="token operator">:</span> <span class="token string">"fnv1a64:0000000000000000"</span><span class="token punctuation">,</span>
+			<span class="token property">"imports"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+		<span class="token punctuation">}</span>
+	<span class="token punctuation">]</span><span class="token punctuation">,</span>
+	<span class="token property">"iterations"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+		<span class="token punctuation">{</span> <span class="token property">"index"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token property">"elapsedMicros"</span><span class="token operator">:</span> <span class="token number">1000</span><span class="token punctuation">,</span> <span class="token property">"outputBytes"</span><span class="token operator">:</span> <span class="token number">4096</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+		<span class="token punctuation">{</span> <span class="token property">"index"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token property">"elapsedMicros"</span><span class="token operator">:</span> <span class="token number">900</span><span class="token punctuation">,</span> <span class="token property">"outputBytes"</span><span class="token operator">:</span> <span class="token number">4096</span> <span class="token punctuation">}</span>
+	<span class="token punctuation">]</span><span class="token punctuation">,</span>
+	<span class="token property">"byteIdentical"</span><span class="token operator">:</span> <span class="token boolean">true</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><code>optimization</code> records the build-level <code>--optimization</code> mode used for both
+iterations. It is not a source <code>#schedule</code> mode and not an incremental-build
+mode. <code>elapsedMicros</code> is an observation, not a pass/fail threshold. The
+reproducibility check is the stable contract: byte-identical outputs are
+required.</p>
+<p>Module and layout fingerprints use a stable <code>fnv1a64:</code> prefix. They are not
+cryptographic hashes; they are deterministic build-unit identifiers for local
+change detection and incremental-checking analysis.</p>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<ul>
+<li>No persistent build cache.</li>
+<li>No incremental codegen.</li>
+<li>No performance threshold policy.</li>
+<li>No cross-machine benchmark comparison.</li>
+</ul>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-23-debug-info/"><span class="dir">← Previous</span><span class="lbl">Debug Information</span></a>
+					<a class="doc-pager-link next" href="/docs/appendix-a-ir/"><span class="dir">Next →</span><span class="lbl">Intermediate Representation</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#deterministic-rebuild-benchmark">Deterministic Rebuild Benchmark</a></li>
+				<li class="lvl-2"><a href="#non-goals">Non-Goals</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

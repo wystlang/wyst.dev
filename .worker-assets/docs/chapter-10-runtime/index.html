@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries." />
+		<title>Runtime And Allocation · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-10-runtime/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/" aria-current="page"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 10</span>
+						<h1>Chapter 10: Wyst Runtime And Allocation</h1>
+						<p class="doc-lede">Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries.</p>
+					</header>
+					<div class="doc-body">
+<p>The runtime and allocation boundary is expressed through library and runtime
+contracts. Storage contracts, dynamic-array descriptors, typed handles, and
+buffer/string APIs remain ordinary explicit Wyst source calls rather than hidden
+allocation or runtime-owned containers.</p>
+<p>After the memory model, allocation is described as visible storage contracts
+rather than hidden language behavior. Storage contracts and library direction
+remain separate concerns.</p>
+<h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-hidden="true">#</a> Thesis</h2>
+<p>Wyst should preserve explicit control over storage. Allocation belongs in visible
+APIs, generated bindings, standard-library modules, or target/runtime profiles,
+not in implicit language behavior.</p>
+<h2 id="core-rules" tabindex="-1"><a class="doc-anchor" href="#core-rules" aria-hidden="true">#</a> Core Rules</h2>
+<ul>
+<li>Generated code must not perform hidden global allocation.</li>
+<li>The language must not add implicit region inference, garbage collection,
+allocator replacement, or hidden lifetime extension.</li>
+<li>Allocation vocabulary starts as library/API contracts, not core syntax.</li>
+<li>Storage context should be passed explicitly when an API needs caller-owned
+memory.</li>
+<li>Generic allocator interfaces may exist later, but they must not erase the
+lifetime and reset behavior that make arenas useful.</li>
+</ul>
+<h2 id="arena-first-vocabulary" tabindex="-1"><a class="doc-anchor" href="#arena-first-vocabulary" aria-hidden="true">#</a> Arena-First Vocabulary</h2>
+<p>The allocation vocabulary makes arena contracts concrete:</p>
+<ul>
+<li>backing storage or growth policy;</li>
+<li>alignment requirements;</li>
+<li>zeroed or uninitialized allocation behavior;</li>
+<li>failure behavior;</li>
+<li>reset, pop, clear, or checkpoint behavior;</li>
+<li>scratch arena conflicts and nesting rules.</li>
+</ul>
+<p>These facts are visible to diagnostics, examples, and <code>wync explain storage</code>.</p>
+<h2 id="storage-contracts" tabindex="-1"><a class="doc-anchor" href="#storage-contracts" aria-hidden="true">#</a> Storage Contracts</h2>
+<p>Storage contracts are expressed as explicit standard-library-shaped API calls
+plus <code>wync explain storage</code> facts. These calls remain ordinary Wyst functions in
+source and do not become hidden language allocation:</p>
+<ul>
+<li><code>arena_storage_init</code> names a caller-visible storage identity, capacity,
+alignment, zero/no-zero policy, and failure policy.</li>
+<li><code>byte_storage_init</code> binds a shared byte-storage core to an explicit arena or
+storage context with capacity, alignment, zeroing, growth, and failure facts.</li>
+<li><code>byte_storage_push_zero</code> and <code>byte_storage_push_nozero</code> keep initialized and
+uninitialized byte ranges distinct.</li>
+<li><code>byte_storage_reserve</code> separates capacity reservation from byte
+construction.</li>
+<li><code>byte_storage_reset</code> makes cursor reset visible and invalidates previous
+allocations by contract.</li>
+</ul>
+<p>Arena-first is not arena-only. The storage vocabulary deliberately leaves named
+space for fixed buffers, pools, per-CPU storage, DMA-coherent storage, and
+target/runtime storage sources without implementing them as hidden core
+language allocation.</p>
+<h2 id="dynamic-array-descriptors" tabindex="-1"><a class="doc-anchor" href="#dynamic-array-descriptors" aria-hidden="true">#</a> Dynamic Array Descriptors</h2>
+<p><code>[dynamic]T</code> is a concrete descriptor type. The descriptor is storage for
+facts, not an allocation trigger: annotation-time allocation is <code>none</code>, and
+initialization must happen through a visible typed wrapper such as
+<code>dyn_array_init_Token</code>. The checked ergonomic surface also accepts
+<code>arr : [dynamic]u8 = dyn_array_init&lt;u8&gt;(arena, capacity = ..., growth = ...)</code>;
+subsequent repeated operations can use <code>arr.push(value)</code>,
+<code>arr.push_from_address(ptr)</code>, <code>arr.reserve(capacity = ..., growth = ...)</code>,
+<code>arr.alloc_slot()</code>, <code>arr.init_slot(slot)</code>, and <code>arr.commit_slot(slot)</code> on any
+assignable <code>[dynamic]T</code> descriptor storage path, including locals, globals, and
+aggregate fields. Temporaries and constants are not valid mutating receivers.</p>
+<p>Where labels appear (<code>reserve</code> and <code>dyn_array_init&lt;T&gt;</code>), they are
+load-bearing and position-independent: the compiler accepts any order of
+labeled arguments and rejects misspelled, unknown, duplicate, or missing
+required labels. The remaining dot-syntax forms take positional arguments
+only — labels on <code>push</code>, <code>push_from_address</code>, <code>init_slot</code>, or
+<code>commit_slot</code> are a compile error.</p>
+<p>The descriptor layout carries data pointer, length, capacity, storage identity,
+growth policy, failure policy, and movement/address-stability policy. Typed
+wrappers are monomorphic in the bootstrap surface and report their shared
+byte-storage provenance for initialization, push-by-value, push-from-address,
+reserve-only, allocate-slot, initialize-slot, and commit-slot operations.
+The narrow <code>dyn_array_init&lt;T&gt;</code> source spelling reports as a deterministic typed
+wrapper instance rather than hidden runtime type erasure.</p>
+<p>Descriptor state is read through read-only dot projections such as <code>arr.data</code>,
+<code>arr.len</code>, <code>arr.capacity</code>, <code>arr.storage_identity</code>, <code>arr.growth_policy</code>,
+<code>arr.failure_policy</code>, and <code>arr.movement_policy</code>. These projections are not
+assignment targets, and Wyst does not provide typed getter APIs for descriptor
+state.</p>
+<p><code>arr[i]</code> is direct unchecked access to initialized dynamic-array element
+storage. It lowers through the descriptor's data pointer and performs no hidden
+length or capacity check. Access to capacity-only storage remains explicit
+through reserve and slot allocation/initialization/commit operations.</p>
+<p><code>arr[:]</code> produces a non-owning <code>[]T</code> view over initialized elements by using
+the descriptor data pointer and current length. Dynamic-array range slicing is
+unchecked; omitted end bounds use <code>arr.len</code>, not <code>arr.capacity</code>. A <code>[dynamic]T</code>
+never binds implicitly to a <code>[]T</code>; call and assignment sites use <code>arr[:]</code> when
+they want the initialized-element view.</p>
+<p>Same-type <code>[dynamic]T</code> equality compares descriptor state only: data pointer,
+length, capacity, storage identity, growth policy, failure policy, and movement
+policy. It does not compare elements, and dynamic arrays have no ordered
+comparison or integer-zero comparison.</p>
+<h2 id="typed-handles" tabindex="-1"><a class="doc-anchor" href="#typed-handles" aria-hidden="true">#</a> Typed Handles</h2>
+<p>Stable-index typed-handle contracts use monomorphic
+<code>typed_handle_&lt;operation&gt;_&lt;T&gt;</code> wrapper calls for report facts. The wrappers
+remain ordinary Wyst functions and do not imply a runtime-owned container.</p>
+<p>The initial contract covers stable-index container initialization, handle
+creation, valid access, and stale-handle rejection. Each fact names the
+container identity, population identity, capacity when present, handle value
+when present, slot index when present, expected generation, observed
+generation, failure policy, movement policy, address-stability policy,
+stale-check rule, and outcome. Stale-slot detection is explicit: a stale
+rejection must show the generation or population identity evidence used to
+reject the handle.</p>
+<p>This surface proves one stable-index container contract only. Broad collection
+APIs, pointer-stable containers, unordered swap-back arrays, dense/sparse sets,
+hidden bounds checks, and general generic container syntax remain outside the
+typed-handle surface.</p>
+<h2 id="buffer-and-string-api-contracts" tabindex="-1"><a class="doc-anchor" href="#buffer-and-string-api-contracts" aria-hidden="true">#</a> Buffer And String API Contracts</h2>
+<p>The buffer/string contract covers length/capacity-carrying byte buffers and
+explicit string-to-C-string conversion costs. As with the earlier storage
+surfaces, ordinary standard-library-shaped calls provide report facts; Wyst does
+not synthesize a runtime buffer implementation or hidden allocation path.</p>
+<p>The API surface uses monomorphic byte-buffer wrappers such as
+<code>buffer_init_u8</code>, <code>buffer_append_slice_u8</code>, <code>buffer_append_string_u8</code>, and
+<code>c_string_from_string_u8</code>. String API boundaries are explicit byte pointer plus
+carried length. The report distinguishes the string boundary from a raw slice
+and records the copy, scan, sentinel, capacity, storage identity, growth, and
+failure facts.</p>
+<p>C-string conversion is always explicit. The report names the embedded-NUL scan,
+the byte copy, the trailing NUL sentinel write, and the failure policy; Wyst
+strings remain length-carrying byte strings and do not become implicitly
+NUL-terminated at ABI boundaries.</p>
+<h2 id="target-and-runtime-boundary" tabindex="-1"><a class="doc-anchor" href="#target-and-runtime-boundary" aria-hidden="true">#</a> Target And Runtime Boundary</h2>
+<p>Page reserve/commit, guard pages, TLS or per-CPU arenas, interrupt-time
+storage, firmware services, and OS allocation calls are target or runtime
+contracts. They should be exposed through profiles, standard-library modules,
+or generated bindings with stable provenance instead of special core-language
+rules.</p>
+<h2 id="effect-boundary" tabindex="-1"><a class="doc-anchor" href="#effect-boundary" aria-hidden="true">#</a> Effect Boundary</h2>
+<p>Allocation effects should initially be reportable through known APIs,
+diagnostics, and explain output. A separate language design change is required
+before allocation becomes a core <code>#deny</code> effect category.</p>
+<h2 id="kernel-initcalls%2C-panic%2C-and-logging" tabindex="-1"><a class="doc-anchor" href="#kernel-initcalls%2C-panic%2C-and-logging" aria-hidden="true">#</a> Kernel Initcalls, Panic, And Logging</h2>
+<p>A small kernel-runtime metadata contract provides initcall tables without
+introducing a hidden runtime. A function marked <code>#initcall(order)</code> contributes one inspectable
+<code>.initcalls</code> entry. Entries are written deterministically as
+<code>u64 order</code> plus <code>u64 function_address</code>, sorted by order and then by function
+symbol name. Each entry also has a compiler-created ELF metadata symbol whose
+name includes the fixed-width <code>u64</code> order and source module-qualified function
+identity; see <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §4.3</a>.
+The function must have signature <code>()</code>, must use the native calling convention,
+must not be <code>#inline</code>, <code>#naked</code>, or <code>#noreturn</code>, and must return so the next
+table entry can run.</p>
+<p>The runtime invocation path is ordinary Wyst code. A layout file publishes
+<code>__initcalls_start :: u64 = #start(.initcalls)</code> and
+<code>__initcalls_end :: u64 = #end(.initcalls)</code>. Boot code walks the table with
+explicit loads, constructs a <code>@()</code> function pointer with
+<code>#trusted_cast&lt;@()&gt;(addr)</code>, and calls it. There is no hidden constructor pass, no
+link-time rewrite, and no implicit allocation.</p>
+<p>Panic and logging stay target-profile conventions. Early kernels should expose
+plain, inspectable entry points such as <code>panic_code(code : u64) #noreturn</code> and
+<code>log_event(code : u64)</code>. Formatting, buffers, UART routing, and persistence are
+chosen by the profile or example; they are not variadic and do not allocate
+unless a visible logging API takes explicit storage.</p>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<ul>
+<li>Do not add a borrow checker or mandatory ownership system as part of this
+runtime design.</li>
+<li>Do not make a global allocator part of the core language.</li>
+<li>Do not hide allocation behind syntax, implicit temporaries, or library magic.</li>
+<li>Do not make page management, TLS, or device memory portable source semantics.</li>
+</ul>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-09-memory-model/"><span class="dir">← Previous</span><span class="lbl">Memory Model</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-11-intrinsics/"><span class="dir">Next →</span><span class="lbl">Runtime Primitives</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#thesis">Thesis</a></li>
+				<li class="lvl-2"><a href="#core-rules">Core Rules</a></li>
+				<li class="lvl-2"><a href="#arena-first-vocabulary">Arena-First Vocabulary</a></li>
+				<li class="lvl-2"><a href="#storage-contracts">Storage Contracts</a></li>
+				<li class="lvl-2"><a href="#dynamic-array-descriptors">Dynamic Array Descriptors</a></li>
+				<li class="lvl-2"><a href="#typed-handles">Typed Handles</a></li>
+				<li class="lvl-2"><a href="#buffer-and-string-api-contracts">Buffer And String API Contracts</a></li>
+				<li class="lvl-2"><a href="#target-and-runtime-boundary">Target And Runtime Boundary</a></li>
+				<li class="lvl-2"><a href="#effect-boundary">Effect Boundary</a></li>
+				<li class="lvl-2"><a href="#kernel-initcalls%2C-panic%2C-and-logging">Kernel Initcalls, Panic, And Logging</a></li>
+				<li class="lvl-2"><a href="#non-goals">Non-Goals</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

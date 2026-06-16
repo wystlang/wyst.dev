@@ -6,7 +6,7 @@
 // the source stays valid when viewed on GitHub.
 //
 //   WYST_DOCS_DIR  override for the docs source directory
-//   default order: ./vendor/wyst/design  →  ../wyst/design
+//   default order: ../wyst/design
 
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -40,14 +40,13 @@ const SITE = "https://wyst.dev";
 function resolveDocsDir() {
 	const candidates = [
 		process.env.WYST_DOCS_DIR,
-		path.join(ROOT, "vendor", "wyst", "design"),
 		path.join(ROOT, "..", "wyst", "design"),
 	].filter(Boolean);
 	for (const c of candidates) {
 		if (fs.existsSync(path.join(c, "README.md"))) return path.resolve(c);
 	}
 	throw new Error(
-		"Could not locate the Wyst design docs. Set WYST_DOCS_DIR or add the vendor/wyst submodule.",
+		"Could not locate the Wyst design docs. Set WYST_DOCS_DIR or clone wystlang/wyst next to this repo as ../wyst.",
 	);
 }
 

@@ -1,0 +1,1291 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Expression syntax, arithmetic, comparison, casts, precedence, and branchless selection." />
+		<title>Operator Specification · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-07-operators/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/" aria-current="page"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 7</span>
+						<h1>Chapter 7: Wyst Operator Specification</h1>
+						<p class="doc-lede">Expression syntax, arithmetic, comparison, casts, precedence, and branchless selection.</p>
+					</header>
+					<div class="doc-body">
+<blockquote>
+<p>Formal specification of Wyst operators, precedence, and arithmetic semantics.</p>
+<p><strong>Canonical scope.</strong> This document is the canonical reference for operator
+set, precedence, and arithmetic semantics (overflow, division, shift,
+floating-point). Type conversions and the rules for crossing types under
+operators (mixed-signedness, mixed-width, address arithmetic) live in
+<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a>. The operator-with-ARM64-lowering summary
+table at <a href="/docs/chapter-06-types/">chapter-06-types.md §1.12</a> points back here for full
+semantics.</p>
+</blockquote>
+<p>Operators build on the type names and conversion rules from the previous
+chapter. Read them before functions so expressions, casts, comparisons, and
+precedence are familiar in control-flow examples.</p>
+<hr>
+<h2 id="overview" tabindex="-1"><a class="doc-anchor" href="#overview" aria-hidden="true">#</a> Overview</h2>
+<p>Wyst operators are categorized as:</p>
+<ul>
+<li><strong>unary</strong> — one operand, prefix position</li>
+<li><strong>binary</strong> — two operands, infix position</li>
+<li><strong>compound assignment</strong> — binary operation fused with assignment</li>
+</ul>
+<p>All operators provide two guarantees:</p>
+<p><strong>No compiler-exploitable undefined behavior.</strong> The compiler never uses an unspecified
+program state as a license to transform code. If the source says <code>x + 1</code>, the compiler
+emits <code>add</code>. It does not reason about whether <code>x + 1</code> can overflow or use that assumption
+to delete branches.</p>
+<p><strong>Hardware-determined behavior for invalid operations.</strong> Operations whose outcomes depend
+on hardware state — such as accessing unmapped memory — produce results determined by the
+hardware, not the compiler. The compiler emits the instruction the source describes.</p>
+<p>Arithmetic overflow, wrap, division, and shift semantics are fully specified below.
+Memory access behavior is specified in the memory model.</p>
+<hr>
+<h2 id="unary-operators" tabindex="-1"><a class="doc-anchor" href="#unary-operators" aria-hidden="true">#</a> Unary Operators</h2>
+<p>Unary operators have <strong>higher precedence than all binary operators</strong>.</p>
+<p>They appear in prefix position: <code>op x</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+</code></td>
+<td>identity</td>
+<td><code>0 + x</code></td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>negation</td>
+<td><code>0 - x</code></td>
+</tr>
+<tr>
+<td><code>~</code></td>
+<td>bitwise complement</td>
+<td>every bit of <code>x</code> flipped; equivalent to <code>-(x + 1)</code> for signed <code>x</code></td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>logical NOT</td>
+<td><code>false</code> if <code>x</code> is true, <code>true</code> if <code>x</code> is false</td>
+</tr>
+</tbody>
+</table>
+<p>The complement operator <code>~</code> flips every bit of its operand. For an unsigned
+integer <code>x</code> of width <code>n</code>, the result is <code>(2ⁿ - 1) ^ x</code> — all bits inverted.
+For a signed integer <code>x</code>, the result is always <code>-(x + 1)</code>.</p>
+<hr>
+<h2 id="binary-operators" tabindex="-1"><a class="doc-anchor" href="#binary-operators" aria-hidden="true">#</a> Binary Operators</h2>
+<h3 id="arithmetic" tabindex="-1"><a class="doc-anchor" href="#arithmetic" aria-hidden="true">#</a> Arithmetic</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+</code></td>
+<td>sum</td>
+<td>integers, floats</td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>subtraction</td>
+<td>integers, floats</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>multiplication</td>
+<td>integers, floats</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>division</td>
+<td>integers, floats</td>
+</tr>
+<tr>
+<td><code>%</code></td>
+<td>modulo (truncated)</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>%%</code></td>
+<td>remainder (floored)</td>
+<td>integers</td>
+</tr>
+</tbody>
+</table>
+<p>These operators are available in runtime expressions after type checking.
+Compile-time constant folding currently covers integer arithmetic and boolean
+logic. Floating-point literal binding is supported, but floating-point
+arithmetic inside <code>::</code>, <code>::=</code>, <code>#static_assert</code>, layout expressions, and other
+compile-time constant contexts is a future surface:</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> ops
+
+compute <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">40</span>
+    y <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
+    <span class="token keyword">return</span> x <span class="token operator">+</span> y
+<span class="token punctuation">}</span>
+</code></pre>
+<!-- wyst-contract: future -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">SCALE <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">1.5</span> <span class="token operator">*</span> <span class="token number">2.0</span>
+</code></pre>
+<h3 id="bitwise" tabindex="-1"><a class="doc-anchor" href="#bitwise" aria-hidden="true">#</a> Bitwise</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>|</code></td>
+<td>bitwise OR</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>^</code></td>
+<td>bitwise XOR</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td>bitwise AND</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>&amp;^</code></td>
+<td>bitwise AND-NOT</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>&lt;&lt;</code></td>
+<td>left shift</td>
+<td>integers</td>
+</tr>
+<tr>
+<td><code>&gt;&gt;</code></td>
+<td>right shift</td>
+<td>integers</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>&amp;^</code> operator computes <code>a &amp; (~b)</code> — AND with the complement of the right
+operand. It is provided as a single operator for clarity and direct lowering
+to <code>bic</code> on ARM64. The <code>~</code> symbol is reserved exclusively for unary complement;
+it does not appear as a binary operator.</p>
+<h3 id="comparison" tabindex="-1"><a class="doc-anchor" href="#comparison" aria-hidden="true">#</a> Comparison</h3>
+<p>Comparison operators produce a <code>bool</code> result.</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>==</code></td>
+<td>equal</td>
+</tr>
+<tr>
+<td><code>!=</code></td>
+<td>not equal</td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>less than</td>
+</tr>
+<tr>
+<td><code>&lt;=</code></td>
+<td>less or equal</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>greater than</td>
+</tr>
+<tr>
+<td><code>&gt;=</code></td>
+<td>greater or equal</td>
+</tr>
+</tbody>
+</table>
+<p>Both operands must have the <strong>same concrete type</strong>. Mixed-signedness
+(<code>i32 &lt; u32</code>) and mixed-width (<code>u8 &lt; u64</code>) comparisons are compile errors;
+the programmer must cast explicitly. There is no implicit promotion. See
+<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> for the full conversion model. Address, enum,
+slice, dynamic-array, and function-pointer comparisons are equality-only.
+<code>@T == @T</code>, <code>[]T == []T</code>, <code>[dynamic]T == [dynamic]T</code>,
+<code>@(u64) -&gt; u64 == @(u64) -&gt; u64</code>, and their <code>!=</code> forms are valid, but ordered
+checks require explicit numeric casts or field comparisons such as
+<code>(a as u64) &lt; (b as u64)</code>, <code>s.len &lt; t.len</code>, or <code>arr.capacity &lt; other.capacity</code>.
+Enum equality is tag equality for payload-less enums and tag-plus-active-payload
+equality for payload enums; inactive payload bytes are not compared.
+Slice equality is descriptor equality (<code>data</code> and <code>len</code>), not element-wise
+memory comparison. Dynamic-array equality is descriptor-state equality
+(<code>data</code>, <code>len</code>, <code>capacity</code>, <code>storage_identity</code>, <code>growth_policy</code>,
+<code>failure_policy</code>, and <code>movement_policy</code>), not element-wise memory comparison.
+Untyped integer constants may bind to the data-address lens for equality checks,
+so <code>addr == 0</code> is valid. Function pointers may also compare with the untyped
+integer constant <code>0</code>, so <code>callback == 0</code> is valid; nonzero integer comparisons
+still require an explicit numeric cast. Slices and dynamic arrays do not compare
+with integer zero; use an explicit descriptor projection such as <code>s.data == 0</code>,
+<code>s.len == 0</code>, <code>arr.data == 0</code>, or <code>arr.len == 0</code> to say which sentinel is
+intended. Comparing addresses, slices, or dynamic arrays of different element
+types, enums of different types, or function pointers of different shapes or
+calling conventions, is a compile error unless the program retargets or casts
+explicitly.</p>
+<h3 id="logical" tabindex="-1"><a class="doc-anchor" href="#logical" aria-hidden="true">#</a> Logical</h3>
+<p>Logical operators operate on <code>bool</code> values and short-circuit: the right
+operand is only evaluated if the result is not determined by the left operand
+alone.</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Name</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&amp;&amp;</code></td>
+<td>logical AND</td>
+<td><code>b</code> if <code>a</code> is true, else <code>false</code></td>
+</tr>
+<tr>
+<td><code>||</code></td>
+<td>logical OR</td>
+<td><code>true</code> if <code>a</code> is true, else <code>b</code></td>
+</tr>
+</tbody>
+</table>
+<p>Short-circuit behavior is observable: if evaluating the right operand has
+side effects (e.g. a volatile load), those side effects are suppressed when
+the result is determined by the left operand.</p>
+<h3 id="vector" tabindex="-1"><a class="doc-anchor" href="#vector" aria-hidden="true">#</a> Vector</h3>
+<p>SIMD vector operators use the <code>[T:N]</code> spelling. <code>[N]T</code> is always a fixed array.</p>
+<p>For <code>[T:N]</code> types that fit within one ARM64 SIMD register (<code>N * sizeof(T) &lt;= 16</code>),
+the arithmetic and bitwise binary operators are defined <strong>element-wise</strong>. Each
+maps to a single ARM64 SIMD instruction. No loops, no unrolling.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">2.0</span><span class="token punctuation">,</span> <span class="token number">3.0</span><span class="token punctuation">,</span> <span class="token number">4.0</span><span class="token punctuation">}</span>
+b <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">5.0</span><span class="token punctuation">,</span> <span class="token number">6.0</span><span class="token punctuation">,</span> <span class="token number">7.0</span><span class="token punctuation">,</span> <span class="token number">8.0</span><span class="token punctuation">}</span>
+c <span class="token operator">:</span><span class="token operator">=</span> a <span class="token operator">+</span> b    <span class="token comment">// [6.0, 8.0, 10.0, 12.0]  — fadd v0.4s, v1.4s, v2.4s</span>
+</code></pre>
+<p>Element-wise operators by operand kind:</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Float vectors</th>
+<th>Integer vectors</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+</code></td>
+<td>yes</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>yes</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>yes</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>yes</td>
+<td>no</td>
+<td>no ARM64 integer SIMD divide</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td>no</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>|</code></td>
+<td>no</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>^</code></td>
+<td>no</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>&amp;^</code></td>
+<td>no</td>
+<td>yes</td>
+<td>AND-NOT; lowers to <code>bic</code></td>
+</tr>
+<tr>
+<td><code>&lt;&lt;</code></td>
+<td>no</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>&gt;&gt;</code></td>
+<td>no</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>All compound assignment forms apply: <code>a += b</code> is <code>a = a + b</code>, element-wise.</p>
+<p><strong>The 16-byte constraint is hard.</strong> Element-wise operators are not defined for
+<code>[T:N]</code> where <code>N * sizeof(T) &gt; 16</code>. A <code>[f32:32] + [f32:32]</code> expression is a
+compile error — write the loop so the iteration cost is visible.</p>
+<p>Valid element-wise vector types:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Bytes</th>
+<th>ARM64 arrangement</th>
+<th>Signed variant</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[u8:16]</code></td>
+<td>16</td>
+<td><code>.16b</code></td>
+<td><code>[i8:16]</code></td>
+</tr>
+<tr>
+<td><code>[u16:8]</code></td>
+<td>16</td>
+<td><code>.8h</code></td>
+<td><code>[i16:8]</code></td>
+</tr>
+<tr>
+<td><code>[u32:4]</code></td>
+<td>16</td>
+<td><code>.4s</code></td>
+<td><code>[i32:4]</code></td>
+</tr>
+<tr>
+<td><code>[u64:2]</code></td>
+<td>16</td>
+<td><code>.2d</code></td>
+<td><code>[i64:2]</code></td>
+</tr>
+<tr>
+<td><code>[f32:4]</code></td>
+<td>16</td>
+<td><code>.4s</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>[f64:2]</code></td>
+<td>16</td>
+<td><code>.2d</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>[u8:8]</code></td>
+<td>8</td>
+<td><code>.8b</code></td>
+<td><code>[i8:8]</code></td>
+</tr>
+<tr>
+<td><code>[u16:4]</code></td>
+<td>8</td>
+<td><code>.4h</code></td>
+<td><code>[i16:4]</code></td>
+</tr>
+<tr>
+<td><code>[u32:2]</code></td>
+<td>8</td>
+<td><code>.2s</code></td>
+<td><code>[i32:2]</code></td>
+</tr>
+<tr>
+<td><code>[f32:2]</code></td>
+<td>8</td>
+<td><code>.2s</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Signed variants affect <code>&gt;&gt;</code> (arithmetic shift rather than logical) and
+comparison operators. Addition, subtraction, multiplication, and bitwise
+operators produce the same bit pattern regardless of signed/unsigned
+interpretation.</p>
+<hr>
+<h2 id="operator-precedence" tabindex="-1"><a class="doc-anchor" href="#operator-precedence" aria-hidden="true">#</a> Operator Precedence</h2>
+<p>Unary operators have the highest precedence and always bind tighter than any
+binary operator.</p>
+<p>Binary operators are grouped into five precedence levels. Higher numbers bind
+more tightly.</p>
+<table>
+<thead>
+<tr>
+<th>Precedence</th>
+<th>Operators</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code> <code>&amp;</code> <code>&amp;^</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>+</code> <code>-</code> <code>|</code> <code>^</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>&amp;&amp;</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>||</code></td>
+</tr>
+</tbody>
+</table>
+<p>Binary operators of equal precedence associate <strong>left to right</strong>:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">/</span> y <span class="token operator">*</span> z     <span class="token comment">// same as (x / y) * z</span>
+a <span class="token operator">+</span> b <span class="token operator">-</span> c     <span class="token comment">// same as (a + b) - c</span>
+a <span class="token operator">&amp;</span> b <span class="token operator">&amp;</span> c     <span class="token comment">// same as (a &amp; b) &amp; c</span>
+</code></pre>
+<p>Parentheses override precedence in the standard way.</p>
+<h4>Common Expressions</h4>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// UART flag check — &amp; binds before !=</span>
+volatile<span class="token punctuation">.</span><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span>   <span class="token comment">// same as (volatile.u32@[UARTFR] &amp; TXFF) != 0</span>
+
+<span class="token comment">// Bit manipulation</span>
+x <span class="token operator">&amp;</span><span class="token operator">^</span> mask                           <span class="token comment">// clear bits in mask</span>
+x <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> n<span class="token punctuation">)</span>                        <span class="token comment">// set bit n</span>
+<span class="token punctuation">(</span>x <span class="token operator">>></span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token number">0xF</span>                      <span class="token comment">// extract nibble</span>
+x <span class="token operator">^</span> y                               <span class="token comment">// toggle bits in x that are set in y</span>
+</code></pre>
+<hr>
+<h2 id="compound-assignment-operators" tabindex="-1"><a class="doc-anchor" href="#compound-assignment-operators" aria-hidden="true">#</a> Compound Assignment Operators</h2>
+<p>All binary operators have a compound assignment form. <code>a op= b</code> is exactly
+equivalent to <code>a = a op b</code>. The left operand <code>a</code> is evaluated once.</p>
+<h3 id="arithmetic-compound-assignment" tabindex="-1"><a class="doc-anchor" href="#arithmetic-compound-assignment" aria-hidden="true">#</a> Arithmetic Compound Assignment</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+=</code></td>
+<td><code>a = a + b</code></td>
+</tr>
+<tr>
+<td><code>-=</code></td>
+<td><code>a = a - b</code></td>
+</tr>
+<tr>
+<td><code>*=</code></td>
+<td><code>a = a * b</code></td>
+</tr>
+<tr>
+<td><code>/=</code></td>
+<td><code>a = a / b</code></td>
+</tr>
+<tr>
+<td><code>%=</code></td>
+<td><code>a = a % b</code></td>
+</tr>
+<tr>
+<td><code>%%=</code></td>
+<td><code>a = a %% b</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="bitwise-compound-assignment" tabindex="-1"><a class="doc-anchor" href="#bitwise-compound-assignment" aria-hidden="true">#</a> Bitwise Compound Assignment</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>|=</code></td>
+<td><code>a = a | b</code></td>
+</tr>
+<tr>
+<td><code>^=</code></td>
+<td><code>a = a ^ b</code></td>
+</tr>
+<tr>
+<td><code>&amp;=</code></td>
+<td><code>a = a &amp; b</code></td>
+</tr>
+<tr>
+<td><code>&amp;^=</code></td>
+<td><code>a = a &amp;^ b</code></td>
+</tr>
+<tr>
+<td><code>&lt;&lt;=</code></td>
+<td><code>a = a &lt;&lt; b</code></td>
+</tr>
+<tr>
+<td><code>&gt;&gt;=</code></td>
+<td><code>a = a &gt;&gt; b</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="logical-compound-assignment" tabindex="-1"><a class="doc-anchor" href="#logical-compound-assignment" aria-hidden="true">#</a> Logical Compound Assignment</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&amp;&amp;=</code></td>
+<td><code>a = a &amp;&amp; b</code></td>
+</tr>
+<tr>
+<td><code>||=</code></td>
+<td><code>a = a || b</code></td>
+</tr>
+</tbody>
+</table>
+<p>Short-circuit semantics are preserved in <code>&amp;&amp;=</code> and <code>||=</code>. If <code>a</code> is <code>false</code>,
+<code>b</code> is not evaluated in <code>&amp;&amp;=</code>. If <code>a</code> is <code>true</code>, <code>b</code> is not evaluated in <code>||=</code>.</p>
+<hr>
+<h2 id="integer-arithmetic" tabindex="-1"><a class="doc-anchor" href="#integer-arithmetic" aria-hidden="true">#</a> Integer Arithmetic</h2>
+<h3 id="division-and-modulo-%E2%80%94-truncated-(%2F%2C-%25)" tabindex="-1"><a class="doc-anchor" href="#division-and-modulo-%E2%80%94-truncated-(%2F%2C-%25)" aria-hidden="true">#</a> Division and Modulo — Truncated (<code>/</code>, <code>%</code>)</h3>
+<p>For integer values <code>x</code> and <code>y</code>, the quotient <code>q = x / y</code> and remainder
+<code>r = x % y</code> satisfy:</p>
+<pre class="wyst-code"><code class="">x = q * y + r     and     |r| &lt; |y|
+</code></pre>
+<p>Division truncates toward zero. The remainder has the same sign as the dividend:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"> <span class="token number">7</span> <span class="token operator">/</span>  <span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">2</span>      <span class="token number">7</span> <span class="token operator">%</span>  <span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">1</span>
+<span class="token operator">-</span><span class="token number">7</span> <span class="token operator">/</span>  <span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">2</span>     <span class="token operator">-</span><span class="token number">7</span> <span class="token operator">%</span>  <span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span>
+ <span class="token number">7</span> <span class="token operator">/</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">2</span>      <span class="token number">7</span> <span class="token operator">%</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">1</span>
+<span class="token operator">-</span><span class="token number">7</span> <span class="token operator">/</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">2</span>     <span class="token operator">-</span><span class="token number">7</span> <span class="token operator">%</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span>
+</code></pre>
+<h3 id="division-and-remainder-%E2%80%94-floored-(%2F%2C-%25%25)" tabindex="-1"><a class="doc-anchor" href="#division-and-remainder-%E2%80%94-floored-(%2F%2C-%25%25)" aria-hidden="true">#</a> Division and Remainder — Floored (<code>/</code>, <code>%%</code>)</h3>
+<p>For integer values <code>x</code> and <code>y</code>, the floored remainder <code>r = x %% y</code> satisfies:</p>
+<pre class="wyst-code"><code class="">r = x - y * floor(x / y)
+</code></pre>
+<p>The floored remainder has the same sign as the divisor. This matches
+mathematical modulo behavior:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"> <span class="token number">7</span> <span class="token operator">%%</span>  <span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">1</span>
+<span class="token operator">-</span><span class="token number">7</span> <span class="token operator">%%</span>  <span class="token number">3</span>  <span class="token operator">==</span>  <span class="token number">2</span>
+ <span class="token number">7</span> <span class="token operator">%%</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">2</span>
+<span class="token operator">-</span><span class="token number">7</span> <span class="token operator">%%</span> <span class="token operator">-</span><span class="token number">3</span>  <span class="token operator">==</span> <span class="token operator">-</span><span class="token number">1</span>
+</code></pre>
+<h3 id="overflow-exception-%E2%80%94-most-negative-value" tabindex="-1"><a class="doc-anchor" href="#overflow-exception-%E2%80%94-most-negative-value" aria-hidden="true">#</a> Overflow Exception — Most Negative Value</h3>
+<p>The single exception to integer division semantics applies when the dividend
+<code>x</code> is the most negative representable value for its signed type, and the
+divisor <code>y</code> is <code>-1</code>. In this case, the mathematical quotient overflows the
+type:</p>
+<pre class="wyst-code"><code class="">q = x / -1  ==  x          (two's complement wraps)
+r or m = 0
+</code></pre>
+<p>No panic occurs. The result is defined as the wrapped value.</p>
+<h3 id="division-by-zero" tabindex="-1"><a class="doc-anchor" href="#division-by-zero" aria-hidden="true">#</a> Division by Zero</h3>
+<p>Integer divide by zero is defined and does not trap. <code>x / 0</code> produces <code>0</code>.
+Modulo by zero is also defined: <code>x % 0</code> and <code>x %% 0</code> produce <code>x</code>.</p>
+<p>The same rules apply at compile time and runtime.</p>
+<p>For <code>%%</code>, this is a semantic result, not permission to expose the target's
+native divide-by-zero behavior. A backend may use any lowering that is proven to
+produce <code>x</code> when the divisor is zero. It does not have to emit a separate
+divisor-zero guard when the selected instruction sequence is already zero-safe.</p>
+<hr>
+<h2 id="integer-overflow" tabindex="-1"><a class="doc-anchor" href="#integer-overflow" aria-hidden="true">#</a> Integer Overflow</h2>
+<h3 id="unsigned-integers" tabindex="-1"><a class="doc-anchor" href="#unsigned-integers" aria-hidden="true">#</a> Unsigned Integers</h3>
+<p>For unsigned integers, the operators <code>+</code>, <code>-</code>, <code>*</code>, and <code>&lt;&lt;</code> are computed
+modulo <code>2ⁿ</code>, where <code>n</code> is the bit width of the type. High bits are silently
+discarded. Programs may rely on wrap-around behavior:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">255</span>
+x <span class="token operator">+=</span> <span class="token number">1</span>   <span class="token comment">// x == 0, defined wrap</span>
+</code></pre>
+<h3 id="signed-integers" tabindex="-1"><a class="doc-anchor" href="#signed-integers" aria-hidden="true">#</a> Signed Integers</h3>
+<p>For signed integers, the operators <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, and <code>&lt;&lt;</code> may overflow.
+Overflow is <strong>defined behavior</strong> in Wyst. The result is the value produced by
+two's complement arithmetic for the given type width.</p>
+<p>No runtime panic occurs on signed overflow. The assembler may not assume
+overflow does not occur and may not optimize code on that basis:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// The assembler may NOT assume (x &lt; x + 1) is always true</span>
+<span class="token comment">// because x + 1 may wrap to a smaller value</span>
+</code></pre>
+<p>This means, in particular, that <code>x &lt; x + 1</code> is not a tautology and must be
+evaluated as written.</p>
+<hr>
+<h2 id="shift-operators" tabindex="-1"><a class="doc-anchor" href="#shift-operators" aria-hidden="true">#</a> Shift Operators</h2>
+<p>The shift operators <code>&lt;&lt;</code> and <code>&gt;&gt;</code> shift the left operand by the count given
+by the right operand. The shift count must be <strong>non-negative</strong>.</p>
+<p>Operand typing:</p>
+<ul>
+<li>The left operand may be any integer (<code>u8</code>–<code>u64</code>, <code>i8</code>–<code>i64</code>).</li>
+<li>The right operand must be a non-negative integer. If untyped, it is
+bound to <code>u32</code>. If typed, it must be one of <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> —
+signed shift counts are a compile error.</li>
+<li>The result type is the type of the left operand.</li>
+</ul>
+<p>Shift behavior:</p>
+<table>
+<thead>
+<tr>
+<th>Left operand</th>
+<th>Shift kind</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>signed integer</td>
+<td>arithmetic</td>
+<td>sign bit is extended on right shifts</td>
+</tr>
+<tr>
+<td>unsigned integer</td>
+<td>logical</td>
+<td>zeros are shifted in on right shifts</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shift-count-is-modular" tabindex="-1"><a class="doc-anchor" href="#shift-count-is-modular" aria-hidden="true">#</a> Shift Count is Modular</h3>
+<p>The shift count is reduced modulo <code>max(32, width(T))</code>, where <code>T</code> is the type of
+the left operand, before the shift is performed. The result is then stored in
+the left operand type. This matches ARM64 scalar register-shift behavior:
+8-bit, 16-bit, and 32-bit scalar shifts use the 32-bit count domain; 64-bit
+scalar shifts use the 64-bit count domain.</p>
+<table>
+<thead>
+<tr>
+<th>Left operand width</th>
+<th>Count taken modulo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>64-bit</td>
+<td>64</td>
+</tr>
+<tr>
+<td>32-bit</td>
+<td>32</td>
+</tr>
+<tr>
+<td>16-bit</td>
+<td>32</td>
+</tr>
+<tr>
+<td>8-bit</td>
+<td>32</td>
+</tr>
+</tbody>
+</table>
+<p>Examples for <code>u64</code>:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
+x <span class="token operator">&lt;&lt;</span> <span class="token number">63</span>   <span class="token comment">// 0x8000_0000_0000_0000</span>
+x <span class="token operator">&lt;&lt;</span> <span class="token number">64</span>   <span class="token comment">// same as x &lt;&lt; 0  →  1        (64 mod 64 == 0)</span>
+x <span class="token operator">&lt;&lt;</span> <span class="token number">65</span>   <span class="token comment">// same as x &lt;&lt; 1  →  2        (65 mod 64 == 1)</span>
+x <span class="token operator">>></span> <span class="token number">64</span>   <span class="token comment">// same as x >> 0  →  x</span>
+</code></pre>
+<p>Examples for narrow scalar integers:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">b <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">1</span>
+b <span class="token operator">&lt;&lt;</span> <span class="token number">8</span>    <span class="token comment">// 0: 8 mod 32 == 8, then the u8 result keeps the low 8 bits</span>
+b <span class="token operator">&lt;&lt;</span> <span class="token number">32</span>   <span class="token comment">// 1: 32 mod 32 == 0</span>
+</code></pre>
+<p>This is what ARM64 register shifts produce: <code>lsl wD, wA, wB</code> for scalar
+integer widths up to 32 bits and <code>lsl xD, xA, xB</code> for 64-bit scalar integers.
+There is no hidden range check and no synthetic mask for narrow scalar counts.</p>
+<p>Programs that require &quot;zero result for large shift count&quot; semantics must write
+the condition explicitly:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">=</span> <span class="token keyword">if</span> shift_count <span class="token operator">&lt;</span> <span class="token number">64</span> <span class="token punctuation">{</span> x <span class="token operator">&lt;&lt;</span> shift_count <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span> <span class="token number">0</span> <span class="token punctuation">}</span>
+</code></pre>
+<p>This makes the behavior visible and the cost of the range check explicit,
+consistent with Wyst's principle of exposing computational behavior rather
+than hiding it.</p>
+<h3 id="shift-relationships-to-arithmetic" tabindex="-1"><a class="doc-anchor" href="#shift-relationships-to-arithmetic" aria-hidden="true">#</a> Shift Relationships to Arithmetic</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">&lt;&lt;</span> <span class="token number">1</span>    <span class="token comment">// same as x * 2</span>
+x <span class="token operator">>></span> <span class="token number">1</span>    <span class="token comment">// same as x / 2, truncated toward negative infinity (arithmetic shift)</span>
+</code></pre>
+<hr>
+<h2 id="floating-point-operators" tabindex="-1"><a class="doc-anchor" href="#floating-point-operators" aria-hidden="true">#</a> Floating-Point Operators</h2>
+<p>Floating-point arithmetic follows IEEE 754 semantics with the following
+clarifications.</p>
+<h3 id="unary" tabindex="-1"><a class="doc-anchor" href="#unary" aria-hidden="true">#</a> Unary</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token operator">+</span>x    <span class="token comment">// identity: same as x</span>
+<span class="token operator">-</span>x    <span class="token comment">// negation: flips the sign bit</span>
+</code></pre>
+<h3 id="arithmetic-1" tabindex="-1"><a class="doc-anchor" href="#arithmetic-1" aria-hidden="true">#</a> Arithmetic</h3>
+<p>Standard IEEE 754 binary operations: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>.</p>
+<p>Floating-point arithmetic follows IEEE 754 semantics throughout, including
+for exceptional cases. Division by zero produces <code>+Inf</code>, <code>-Inf</code>, or <code>NaN</code>
+as defined by IEEE 754 — no runtime panic occurs. Programs that need to
+detect these conditions should check the result explicitly:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> a <span class="token operator">/</span> b
+
+<span class="token keyword">if</span> result <span class="token operator">==</span> result <span class="token punctuation">{</span>   <span class="token comment">// NaN check: NaN != NaN by IEEE 754</span>
+    <span class="token comment">// result is a valid finite or infinite value</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Runtime floating-point arithmetic, comparisons, casts, unary negation, and
+<code>%fma</code> introduce the <code>fp_state</code> effect category. Floating-point literals and
+pure register moves do not introduce <code>fp_state</code> by themselves.</p>
+<h3 id="fused-operations" tabindex="-1"><a class="doc-anchor" href="#fused-operations" aria-hidden="true">#</a> Fused Operations</h3>
+<p>Floating-point operations are <strong>not fused by default</strong>. <code>a * b + c</code> is always
+two operations with two roundings, matching the written source expression.</p>
+<p>To explicitly request a fused multiply-add (single rounding, using ARM64
+<code>fmadd</code>/<code>fmsub</code>), use the <code>%fma</code> intrinsic:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> c<span class="token punctuation">)</span>     <span class="token comment">// a * b + c, fused — single rounding</span>
+result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> <span class="token operator">-</span>c<span class="token punctuation">)</span>    <span class="token comment">// a * b - c, fused — lowers to fmsub</span>
+</code></pre>
+<p>The distinction matters for:</p>
+<ul>
+<li><strong>Reproducibility</strong>: <code>a * b + c</code> always produces the two-rounded result,
+regardless of platform or compiler version.</li>
+<li><strong>Checksums</strong>: sequential rounding is exact and consistent.</li>
+<li><strong>Performance-sensitive paths</strong>: <code>%fma</code> is explicitly faster where available
+and the programmer has decided the rounding difference is acceptable.</li>
+</ul>
+<p>There is no opt-out mechanism for accidental fusion. If the source does not
+use <code>%fma</code>, the compiler does not fuse.</p>
+<hr>
+<h2 id="disambiguation-notes" tabindex="-1"><a class="doc-anchor" href="#disambiguation-notes" aria-hidden="true">#</a> Disambiguation Notes</h2>
+<p>Several operator symbols appear in multiple roles. The parser resolves them
+by syntactic position and token sequence.</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Unary context</th>
+<th>Binary context</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>~</code></td>
+<td>bitwise complement</td>
+<td><em>(no binary use)</em></td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>negation</td>
+<td>subtraction</td>
+</tr>
+<tr>
+<td><code>+</code></td>
+<td>identity</td>
+<td>addition</td>
+</tr>
+<tr>
+<td><code>^</code></td>
+<td><em>(no unary use)</em></td>
+<td>bitwise XOR</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td><em>(no unary use)</em></td>
+<td>bitwise AND</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>~</code> symbol is <strong>unary only</strong>. It never appears as a binary infix operator.
+This makes it unambiguous in all positions.</p>
+<p>The <code>&amp;^</code> binary operator is always parsed as a two-token sequence in infix
+position. It is never ambiguous with unary <code>~</code> because <code>~</code> does not appear
+after <code>&amp;</code> in any valid expression.</p>
+<hr>
+<h2 id="branchless-conditional-selection" tabindex="-1"><a class="doc-anchor" href="#branchless-conditional-selection" aria-hidden="true">#</a> Branchless Conditional Selection</h2>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>cond<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
+</code></pre>
+<p><code>select(cond, a, b)</code> evaluates <code>cond</code> first, then evaluates <code>a</code>, then
+evaluates <code>b</code>. It returns <code>a</code> if <code>cond</code> is true, <code>b</code> otherwise. It is
+<strong>always branchless</strong> — it lowers to a <code>cmp</code> + <code>csel</code> sequence (one instruction
+after the compare). The compiler never expands <code>select</code> into a branch.</p>
+<p><strong>Signature:</strong> <code>select(cond : bool, a : T, b : T) -&gt; T</code></p>
+<p><strong>Supported types for T:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unsigned integers</td>
+<td><code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code></td>
+</tr>
+<tr>
+<td>Signed integers</td>
+<td><code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code></td>
+</tr>
+<tr>
+<td>Floating point</td>
+<td><code>f32</code>, <code>f64</code></td>
+</tr>
+<tr>
+<td>Other scalars</td>
+<td><code>bool</code>, <code>@T</code> (any pointer)</td>
+</tr>
+</tbody>
+</table>
+<p>For vector lane selection, use bitwise
+masking.</p>
+<p><strong>Semantics:</strong></p>
+<ul>
+<li>Both arms are evaluated unconditionally. Side effects in both arms (memory
+loads, volatile accesses) always occur, with <code>a</code>'s effects observed before
+<code>b</code>'s effects.</li>
+<li>The result type matches the arm types exactly — no implicit widening or
+conversion.</li>
+<li><code>cond</code> must be <code>bool</code> (the result of a comparison or logical operation),
+not an integer.</li>
+</ul>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Branchless min</span>
+min <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>a <span class="token operator">&lt;</span> b<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
+
+<span class="token comment">// Branchless absolute value (signed)</span>
+abs <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>x <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token operator">-</span>x<span class="token punctuation">,</span> x<span class="token punctuation">)</span>
+
+<span class="token comment">// Branchless clamp</span>
+clamped <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">&lt;</span> lo<span class="token punctuation">,</span> lo<span class="token punctuation">,</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">></span> hi<span class="token punctuation">,</span> hi<span class="token punctuation">,</span> v<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<p><strong>When to use <code>select</code> vs <code>if</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Use <code>select</code> when</th>
+<th>Use <code>if</code> when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Both arms are cheap (register-to-register)</td>
+<td>One arm is expensive (memory access, function call)</td>
+</tr>
+<tr>
+<td>Branch misprediction is likely (unpredictable condition)</td>
+<td>Condition is highly predictable</td>
+</tr>
+<tr>
+<td>The result is a single scalar value</td>
+<td>The body has side effects that should be conditional</td>
+</tr>
+</tbody>
+</table>
+<p><code>select</code> surfaces the existing <code>select</code> IR op from <a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.6</a>. It is
+a built-in function form, not a ternary operator — this avoids syntactic
+conflicts with existing operators and is grep-friendly.</p>
+<hr>
+<h2 id="arm64-lowering-correspondence" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-correspondence" aria-hidden="true">#</a> ARM64 Lowering Correspondence</h2>
+<table>
+<thead>
+<tr>
+<th>Wyst expression</th>
+<th>ARM64 instruction(s)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>a + b</code></td>
+<td><code>add xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a - b</code></td>
+<td><code>sub xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a * b</code></td>
+<td><code>mul xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a / b</code></td>
+<td><code>sdiv</code> / <code>udiv</code></td>
+<td>signed or unsigned by type</td>
+</tr>
+<tr>
+<td><code>a % b</code></td>
+<td><code>sdiv</code> + <code>msub</code></td>
+<td>truncated remainder; 2 instructions</td>
+</tr>
+<tr>
+<td><code>a %% b</code></td>
+<td><code>sdiv</code> + <code>msub</code> + adjust</td>
+<td>floored remainder; signed forms include conditional adjustment; zero divisor must still produce <code>a</code></td>
+</tr>
+<tr>
+<td><code>a | b</code></td>
+<td><code>orr xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a ^ b</code></td>
+<td><code>eor xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a &amp; b</code></td>
+<td><code>and xD, xA, xB</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>a &amp;^ b</code></td>
+<td><code>bic xD, xA, xB</code></td>
+<td>direct ARM64 instruction</td>
+</tr>
+<tr>
+<td><code>a &lt;&lt; b</code></td>
+<td><code>lsl wD/xD, wA/xA, wB/xB</code></td>
+<td>count taken modulo <code>max(32,width(T))</code>; single instruction</td>
+</tr>
+<tr>
+<td><code>a &gt;&gt; b</code></td>
+<td><code>asr</code> / <code>lsr</code></td>
+<td>signed → <code>asr</code>, unsigned → <code>lsr</code>; same count domain as <code>&lt;&lt;</code></td>
+</tr>
+<tr>
+<td><code>%fma(a,b,c)</code></td>
+<td><code>fmadd dD, dA, dB, dC</code></td>
+<td>explicit fused multiply-add; single rounding</td>
+</tr>
+<tr>
+<td><code>-x</code></td>
+<td><code>neg xD, xA</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>~x</code></td>
+<td><code>mvn xD, xA</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>!x</code></td>
+<td><code>cmp xA, #0</code> + <code>cset</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>select(c,a,b)</code></td>
+<td><code>cmp</code> + <code>csel xD, xA, xB, cc</code></td>
+<td>branchless conditional; always one instruction after compare</td>
+</tr>
+</tbody>
+</table>
+<p>Vector element-wise lowering (examples; arrangement suffix determined by type):</p>
+<table>
+<thead>
+<tr>
+<th>Wyst expression</th>
+<th>ARM64 instruction</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[f32:4]: a + b</code></td>
+<td><code>fadd vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[f32:4]: a - b</code></td>
+<td><code>fsub vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[f32:4]: a * b</code></td>
+<td><code>fmul vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[f32:4]: a / b</code></td>
+<td><code>fdiv vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[f64:2]: a + b</code></td>
+<td><code>fadd vD.2d, vA.2d, vB.2d</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[i32:4]: a + b</code></td>
+<td><code>add  vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[i32:4]: a * b</code></td>
+<td><code>mul  vD.4s, vA.4s, vB.4s</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[u8:16]: a + b</code></td>
+<td><code>add  vD.16b, vA.16b, vB.16b</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[u8:16]: a &amp; b</code></td>
+<td><code>and  vD.16b, vA.16b, vB.16b</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[u8:16]: a | b</code></td>
+<td><code>orr  vD.16b, vA.16b, vB.16b</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[u8:16]: a ^ b</code></td>
+<td><code>eor  vD.16b, vA.16b, vB.16b</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[u8:16]: a &amp;^ b</code></td>
+<td><code>bic  vD.16b, vA.16b, vB.16b</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-06-types/"><span class="dir">← Previous</span><span class="lbl">Type System</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-08-functions/"><span class="dir">Next →</span><span class="lbl">Functions, Control Flow, and Inline Assembly</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#overview">Overview</a></li>
+				<li class="lvl-2"><a href="#unary-operators">Unary Operators</a></li>
+				<li class="lvl-2"><a href="#binary-operators">Binary Operators</a></li>
+				<li class="lvl-3"><a href="#arithmetic">Arithmetic</a></li>
+				<li class="lvl-3"><a href="#bitwise">Bitwise</a></li>
+				<li class="lvl-3"><a href="#comparison">Comparison</a></li>
+				<li class="lvl-3"><a href="#logical">Logical</a></li>
+				<li class="lvl-3"><a href="#vector">Vector</a></li>
+				<li class="lvl-2"><a href="#operator-precedence">Operator Precedence</a></li>
+				<li class="lvl-2"><a href="#compound-assignment-operators">Compound Assignment Operators</a></li>
+				<li class="lvl-3"><a href="#arithmetic-compound-assignment">Arithmetic Compound Assignment</a></li>
+				<li class="lvl-3"><a href="#bitwise-compound-assignment">Bitwise Compound Assignment</a></li>
+				<li class="lvl-3"><a href="#logical-compound-assignment">Logical Compound Assignment</a></li>
+				<li class="lvl-2"><a href="#integer-arithmetic">Integer Arithmetic</a></li>
+				<li class="lvl-3"><a href="#division-and-modulo-%E2%80%94-truncated-(%2F%2C-%25)">Division and Modulo — Truncated (/, %)</a></li>
+				<li class="lvl-3"><a href="#division-and-remainder-%E2%80%94-floored-(%2F%2C-%25%25)">Division and Remainder — Floored (/, %%)</a></li>
+				<li class="lvl-3"><a href="#overflow-exception-%E2%80%94-most-negative-value">Overflow Exception — Most Negative Value</a></li>
+				<li class="lvl-3"><a href="#division-by-zero">Division by Zero</a></li>
+				<li class="lvl-2"><a href="#integer-overflow">Integer Overflow</a></li>
+				<li class="lvl-3"><a href="#unsigned-integers">Unsigned Integers</a></li>
+				<li class="lvl-3"><a href="#signed-integers">Signed Integers</a></li>
+				<li class="lvl-2"><a href="#shift-operators">Shift Operators</a></li>
+				<li class="lvl-3"><a href="#shift-count-is-modular">Shift Count is Modular</a></li>
+				<li class="lvl-3"><a href="#shift-relationships-to-arithmetic">Shift Relationships to Arithmetic</a></li>
+				<li class="lvl-2"><a href="#floating-point-operators">Floating-Point Operators</a></li>
+				<li class="lvl-3"><a href="#unary">Unary</a></li>
+				<li class="lvl-3"><a href="#arithmetic-1">Arithmetic</a></li>
+				<li class="lvl-3"><a href="#fused-operations">Fused Operations</a></li>
+				<li class="lvl-2"><a href="#disambiguation-notes">Disambiguation Notes</a></li>
+				<li class="lvl-2"><a href="#branchless-conditional-selection">Branchless Conditional Selection</a></li>
+				<li class="lvl-2"><a href="#arm64-lowering-correspondence">ARM64 Lowering Correspondence</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

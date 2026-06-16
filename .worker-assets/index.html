@@ -1,0 +1,2000 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta
+			name="description"
+			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+		/>
+		<title>Wyst: a semantic ARM64 systems language</title>
+		<link rel="canonical" href="https://wyst.dev/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://wyst.dev/" />
+		<meta
+			property="og:title"
+			content="Wyst: a semantic ARM64 systems language"
+		/>
+		<meta
+			property="og:description"
+			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+		/>
+		<meta
+			property="og:image"
+			content="https://wyst.dev/assets/social-card.png"
+		/>
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta
+			property="og:image:alt"
+			content="Wyst: semantic ARM64 systems language"
+		/>
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta
+			name="twitter:title"
+			content="Wyst: a semantic ARM64 systems language"
+		/>
+		<meta
+			name="twitter:description"
+			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+		/>
+		<meta
+			name="twitter:image"
+			content="https://wyst.dev/assets/social-card.png"
+		/>
+		<meta
+			name="twitter:image:alt"
+			content="Wyst: semantic ARM64 systems language"
+		/>
+		<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+		<link
+			rel="icon"
+			type="image/png"
+			sizes="48x48"
+			href="assets/favicon-48.png"
+		/>
+		<link
+			rel="apple-touch-icon"
+			sizes="180x180"
+			href="assets/apple-touch-icon.png"
+		/>
+		<link rel="stylesheet" href="assets/wyst.css" />
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<header class="site">
+			<div class="wrap nav">
+				<a class="brand" href="/">
+					<span class="mark" aria-hidden="true"></span>
+					<span class="word">wyst<span class="cc">::</span></span>
+					<span class="tag">lang</span>
+					<span class="ver">v0.7</span>
+				</a>
+				<button
+					class="nav-toggle"
+					type="button"
+					aria-label="Open primary navigation"
+					aria-controls="primary-nav"
+					aria-expanded="false"
+				>
+					<span class="nav-toggle-lines" aria-hidden="true">
+						<span></span>
+						<span></span>
+						<span></span>
+					</span>
+				</button>
+				<nav id="primary-nav" class="nav-links" aria-label="Primary">
+					<a href="#philosophy">Philosophy</a>
+					<a href="#compare">Examples</a>
+					<a href="#inspect">Inspect</a>
+					<a href="#explain">Explain</a>
+					<a href="#not">Non-goals</a>
+					<a href="#faq">FAQ</a>
+					<a href="/docs/">Docs</a>
+					<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+				</nav>
+			</div>
+		</header>
+
+		<main id="main">
+			<section class="hero">
+				<div class="grid-bg" aria-hidden="true"></div>
+				<div class="glow-bg" aria-hidden="true"></div>
+				<div class="wrap hero-grid">
+					<div class="hero-copy">
+						<h1>
+							Low-level programming you can
+							<span class="accent">actually read</span> and reason
+							about.
+						</h1>
+						<p class="lede">
+							Wyst is a semantic ARM64 systems language and
+							assembler. It sits between C and assembly:
+							<strong
+								>more expressive than raw AArch64, with none of
+								the hidden magic of a C compiler.</strong
+							>
+							Memory ordering and overflow behavior are explicit
+							in the source; machine effects are inferred from
+							known primitives and surfaced for inspection.
+						</p>
+						<div class="cta-row">
+							<a class="btn btn-primary" href="/docs/"
+								>Read the Docs
+								<span class="arrow" aria-hidden="true"
+									>→</span
+								></a
+							>
+						</div>
+					</div>
+
+					<div class="hero-card">
+						<div class="hero-peek" aria-hidden="true"></div>
+						<div class="code-card">
+							<div class="code-head">
+								<span class="lights" aria-hidden="true"
+									><i></i><i></i><i></i
+								></span>
+								<span class="fname">uart.wyst</span>
+								<span class="badge">explicit MMIO</span>
+							</div>
+							<pre
+								aria-label="Wyst source example"
+							><code data-code="hero-uart"></code></pre>
+						</div>
+						<p class="code-note">
+							Hardware access is visible. <b>@volatile</b> marks
+							MMIO, <b>u32@[UARTFR]</b> performs the load, and
+							<b>%nop()</b> is the explicit wait-loop instruction.
+						</p>
+					</div>
+				</div>
+			</section>
+			<section class="sec" id="philosophy">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Core principles</span>
+						<h2>No magic. No surprises.</h2>
+						<p>
+							Wyst makes a single promise: what you write is what
+							the machine does. The compiler's job is to lower it
+							faithfully, not to outsmart you.
+						</p>
+					</div>
+
+					<div class="cards">
+						<article class="card">
+							<span class="idx">01</span>
+							<div class="ico" aria-hidden="true">↻</div>
+							<h3>Reproducible Lowering</h3>
+							<p>
+								The same source compiles to the same bytes,
+								every time. Release tests build twice and
+								compare the ELF byte-for-byte.
+							</p>
+						</article>
+						<article class="card">
+							<span class="idx">02</span>
+							<div class="ico" aria-hidden="true">∎</div>
+							<h3>Explicit Semantics</h3>
+							<p>
+								Data widths, arithmetic behavior, memory
+								ordering, and effect boundaries are visible.
+								Inferred effects are surfaced for inspection.
+							</p>
+						</article>
+						<article class="card">
+							<span class="idx">03</span>
+							<div class="ico" aria-hidden="true">⊘</div>
+							<h3>Zero UB Exploitation</h3>
+							<p>
+								There is no compiler-exploitable undefined
+								behavior to mine for "optimizations." Defined
+								inputs produce defined output.
+							</p>
+						</article>
+						<article class="card">
+							<span class="idx">04</span>
+							<div class="ico" aria-hidden="true">≈</div>
+							<h3>Performance Transparency</h3>
+							<p>
+								Cost is visible at the source. No implicit
+								vectorization, no hidden allocation, no passes
+								you didn't ask for.
+							</p>
+						</article>
+						<article class="card">
+							<span class="idx">05</span>
+							<div class="ico" aria-hidden="true">▦</div>
+							<h3>Deterministic Output</h3>
+							<p>
+								Layout, symbols, and relocations are emitted
+								deterministically. The ELF is a function of your
+								source, not the machine that built it.
+							</p>
+						</article>
+						<article class="card">
+							<span class="idx">06</span>
+							<div class="ico" aria-hidden="true">◎</div>
+							<h3>Architecture-Aware</h3>
+							<p>
+								System registers, exception vectors, and AAPCS64
+								interop are first-class, close to the metal by
+								design and not by escape hatch.
+							</p>
+						</article>
+					</div>
+				</div>
+			</section>
+			<section class="sec sec--flush" id="compare">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Side by side</span>
+						<h2>See what you're actually doing.</h2>
+						<p>
+							The same routine, summing integers
+							<code class="hl">0…n</code>, across three levels of
+							the stack. C hides the machine; assembly buries the
+							intent. Wyst keeps both.
+						</p>
+					</div>
+
+					<div class="compare">
+						<div class="panel">
+							<div class="panel-head">
+								<span class="lang">C</span>
+								<span class="qual"
+									>familiar,<br />opaque to the machine</span
+								>
+							</div>
+							<pre
+								aria-label="C implementation of sum_to function"
+							><code data-code="compare-c"></code></pre>
+						</div>
+						<div class="panel">
+							<div class="panel-head">
+								<span class="lang">ARM64</span>
+								<span class="qual"
+									>explicit,<br />hard to read at scale</span
+								>
+							</div>
+							<pre
+								aria-label="ARM64 assembly implementation of sum_to"
+							><code data-code="compare-arm64"></code></pre>
+						</div>
+						<div class="panel wyst">
+							<div class="panel-head">
+								<span class="lang">Wyst</span>
+								<span class="qual"
+									>explicit semantics,<br />human-readable</span
+								>
+							</div>
+							<pre
+								aria-label="Wyst implementation of sum_to function"
+							><code data-code="compare-wyst"></code></pre>
+						</div>
+
+						<p class="note">
+							<b>What's different:</b> the declaration, the
+							widths, and the control flow are all written out.
+							Nothing is promoted or inferred. Signed
+							<code>+</code> has defined overflow semantics, so
+							there's no undefined behavior for the compiler to
+							reason from; the loop can't be silently deleted or
+							rewritten into something you didn't author. The
+							<code>while</code> lowers to the exact
+							compare-and-branch
+							<span class="note-right">on the right</span
+							><span class="note-above">above</span>, with a
+							direct, inspectable correspondence to AArch64.
+						</p>
+					</div>
+				</div>
+			</section>
+			<section class="sec sec--flush" id="inspect">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Source ↔ machine</span>
+						<h2>Read it. Then read what the machine reads.</h2>
+						<p>
+							Because Wyst is a semantic IR, compiler reports keep
+							source spans, typed IR, AArch64 lowering, and
+							emitted bytes linked by provenance. Switch samples
+							and inspect how each source shape maps into report
+							facts for the selected profile.
+						</p>
+					</div>
+
+					<div
+						class="inspector"
+						role="region"
+						aria-label="Source and assembly inspector"
+					>
+						<input
+							type="radio"
+							name="sample"
+							id="sm-uart"
+							aria-label="uart.wyst"
+							checked=""
+						/>
+						<input
+							type="radio"
+							name="sample"
+							id="sm-exc"
+							aria-label="el1_vectors.wyst"
+						/>
+						<input
+							type="radio"
+							name="sample"
+							id="sm-atm"
+							aria-label="atomic.wyst"
+						/>
+
+						<div class="insp-head">
+							<div class="insp-tabs" role="tablist">
+								<label
+									for="sm-uart"
+									role="tab"
+									id="tab-uart"
+									aria-selected="true"
+									aria-controls="pane-uart"
+									>uart.wyst</label
+								>
+								<label
+									for="sm-exc"
+									role="tab"
+									id="tab-exc"
+									aria-selected="false"
+									aria-controls="pane-exc"
+									>el1_vectors.wyst</label
+								>
+								<label
+									for="sm-atm"
+									role="tab"
+									id="tab-atm"
+									aria-selected="false"
+									aria-controls="pane-atm"
+									>atomic.wyst</label
+								>
+							</div>
+							<div class="insp-meta">
+								<span
+									>profile:
+									<span class="insp-meta-val"
+										>qemu-virt-aarch64-el2</span
+									></span
+								>
+								<span class="ok">● report view</span>
+							</div>
+						</div>
+
+						<div class="insp-body">
+							<div
+								class="insp-pane p-uart"
+								id="pane-uart"
+								role="tabpanel"
+								aria-labelledby="tab-uart"
+							>
+								<div class="insp-split">
+									<div class="insp-src">
+										<div class="insp-col-head">
+											<span>SOURCE · uart.wyst</span
+											><span>volatile MMIO write</span>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="uart-source"
+										></div>
+									</div>
+									<div class="insp-asm">
+										<div class="insp-col-head">
+											<span>LOWERED · aarch64</span
+											><span>5 insn · 0 spills</span>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="uart-asm"
+										></div>
+									</div>
+								</div>
+								<div class="insp-foot">
+									<span
+										><span class="ck" aria-hidden="true"
+											>✓</span
+										>
+										source spans stay linked to lowering
+										rows</span
+									>
+									<span>current-run provenance</span>
+								</div>
+							</div>
+							<div
+								class="insp-pane p-exc"
+								id="pane-exc"
+								role="tabpanel"
+								aria-labelledby="tab-exc"
+							>
+								<div class="insp-split">
+									<div class="insp-src">
+										<div class="insp-col-head">
+											<span
+												>SOURCE · el1_vectors.wyst</span
+											><span
+												>abbreviated vector sketch</span
+											>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="vectors-source"
+										></div>
+									</div>
+									<div class="insp-asm">
+										<div class="insp-col-head">
+											<span>LOWERED · aarch64</span
+											><span
+												>excerpt · full table is 16
+												slots</span
+											>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="vectors-asm"
+										></div>
+									</div>
+								</div>
+								<div class="insp-foot">
+									<span
+										><span class="ck" aria-hidden="true"
+											>✓</span
+										>
+										abbreviated excerpt; real tables must
+										declare all 16 slots</span
+									>
+									<span>slot overflow is a hard error</span>
+								</div>
+							</div>
+							<div
+								class="insp-pane p-atm"
+								id="pane-atm"
+								role="tabpanel"
+								aria-labelledby="tab-atm"
+							>
+								<div class="insp-split">
+									<div class="insp-src">
+										<div class="insp-col-head">
+											<span>SOURCE · atomic.wyst</span
+											><span
+												>load-acquire /
+												store-release</span
+											>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="atomic-source"
+										></div>
+									</div>
+									<div class="insp-asm">
+										<div class="insp-col-head">
+											<span>LOWERED · aarch64</span
+											><span>4 insn · 0 spills</span>
+										</div>
+										<div
+											class="insp-code"
+											data-snippet="atomic-asm"
+										></div>
+									</div>
+								</div>
+								<div class="insp-foot">
+									<span
+										><span class="ck" aria-hidden="true"
+											>✓</span
+										>
+										#release / #acquire are written, never
+										inferred</span
+									>
+									<span
+										>effect report records the
+										ordering</span
+									>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="sec sec--flush" id="explain">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Built-in tooling</span>
+						<h2>Ask the compiler to explain itself.</h2>
+						<p>
+							<code class="hl">wync explain lowering</code> emits
+							source-to-machine reports for project builds,
+							connecting source spans to typed IR, AArch64
+							lowering, relocations, and emitted bytes. No
+							objdump, no disassembler, no separate toolchain
+							step.
+						</p>
+					</div>
+
+					<div
+						class="terminal"
+						role="region"
+						aria-label="wync explain lowering output example"
+					>
+						<div class="term-head">
+							<span class="lights" aria-hidden="true"
+								><i></i><i></i><i></i
+							></span>
+							<span class="term-prompt">$</span>
+							<span class="term-cmd"
+								>wync explain lowering path/to/wyst.project
+								--function sum_to</span
+							>
+						</div>
+						<div class="term-info">
+							<span>wyst.project</span>
+							<span class="sep">→</span>
+							<span>qemu-virt-aarch64-el2</span>
+							<span class="dot">·</span>
+							<span class="ok">9 insn</span>
+							<span class="dot">·</span>
+							<span>0 spills</span>
+							<span class="dot">·</span>
+							<span>freshness: current-run</span>
+						</div>
+						<div class="insp-split">
+							<div class="insp-src">
+								<div class="insp-col-head">
+									<span>SOURCE · demo/math.wyst</span
+									><span>fn sum_to</span>
+								</div>
+								<div
+									class="insp-code"
+									data-snippet="sumto-source"
+								></div>
+							</div>
+							<div class="insp-asm">
+								<div class="insp-col-head">
+									<span>LOWERED · aarch64</span
+									><span>9 insn · 0 spills</span>
+								</div>
+								<div
+									class="insp-code"
+									data-snippet="sumto-asm"
+								></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="sec not-sec" id="not">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Non-goals</span>
+						<h2>What Wyst deliberately leaves out.</h2>
+						<p>
+							Every omission below is a choice. A compiler that
+							does less to your code is a compiler you can trust
+							to do exactly what you asked.
+						</p>
+					</div>
+
+					<div class="not-grid">
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Hidden optimization passes</span
+								>
+								<span class="why"
+									>Default lowering is fixed and inspectable.
+									Optimization is opt-in and documents its own
+									reproducibility contract.</span
+								>
+							</span>
+						</div>
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Automatic algorithmic rewrites</span
+								>
+								<span class="why"
+									>Your algorithm is your algorithm. The
+									compiler won't swap your structure or loop
+									shape for one it prefers.</span
+								>
+							</span>
+						</div>
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Implicit vectorization</span
+								>
+								<span class="why"
+									>SIMD is written explicitly with fixed-width
+									vector types, never conjured from a scalar
+									loop.</span
+								>
+							</span>
+						</div>
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Hidden allocation semantics</span
+								>
+								<span class="why"
+									>No allocation you didn't write. Storage is
+									explicit, arena-first, with no mandatory
+									runtime.</span
+								>
+							</span>
+						</div>
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Opaque compiler behavior</span
+								>
+								<span class="why"
+									>Effects are inferred conservatively and
+									surfaced;
+									<code>#deny</code>
+									lets you forbid the ones you don't
+									want.</span
+								>
+							</span>
+						</div>
+						<div class="not-item">
+							<span class="x" aria-hidden="true">✕</span>
+							<span class="body">
+								<span class="struck"
+									>Compiler-exploitable UB</span
+								>
+								<span class="why"
+									>There's no undefined-behavior loophole to
+									reason from. Defined in, defined out. Full
+									stop.</span
+								>
+							</span>
+						</div>
+					</div>
+
+					<div
+						class="sec-head"
+						style="
+							margin-top: 48px;
+							margin-bottom: 24px;
+							max-width: 640px;
+						"
+					>
+						<span class="eyebrow">What you give up</span>
+						<p style="color: var(--muted); font-size: 16px">
+							These are deliberate tradeoffs, not oversights.
+							Knowing them up front is the point.
+						</p>
+					</div>
+
+					<div class="not-grid">
+						<div class="not-item tradeoff">
+							<span class="x" aria-hidden="true">⇌</span>
+							<span class="body">
+								<span class="struck"
+									>Implicit integer promotion</span
+								>
+								<span class="why"
+									>Widths are explicit. You write the cast;
+									the compiler never silently promotes a
+									narrower type to a wider one. Expressions
+									are more verbose as a result.</span
+								>
+							</span>
+						</div>
+						<div class="not-item tradeoff">
+							<span class="x" aria-hidden="true">⇌</span>
+							<span class="body">
+								<span class="struck"
+									>Portability across architectures</span
+								>
+								<span class="why"
+									>Wyst targets ARM64 only. The ARM memory
+									model, register classes, and barrier
+									semantics are first-class, not abstracted
+									over. An x86 or RISC-V port would be a
+									different project.</span
+								>
+							</span>
+						</div>
+						<div class="not-item tradeoff">
+							<span class="x" aria-hidden="true">⇌</span>
+							<span class="body">
+								<span class="struck">A standard library</span>
+								<span class="why"
+									>There are no built-in containers,
+									allocators, or I/O abstractions. Wyst
+									provides the primitives; you compose the
+									structures. Equivalent functionality is more
+									code than idiomatic C++ or Rust.</span
+								>
+							</span>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="sec" id="faq">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Frequently asked</span>
+						<h2>Straight answers.</h2>
+						<p>
+							What Wyst does today, where its limits genuinely
+							are, and the lines it won't cross.
+						</p>
+					</div>
+
+					<div class="faq">
+						<div class="faq-item">
+							<span class="faq-num">01</span>
+							<div>
+								<p class="faq-q">
+									What does Wyst actually produce today?
+								</p>
+								<p class="faq-a">
+									Deterministic AArch64 ELF binaries for
+									bare-metal and small-kernel work, tested
+									under QEMU. The compiler, <b>wync</b>, is a
+									zero-dependency Rust bootstrap with no LLVM
+									or host linker in the emit path. It also
+									ships an LSP server, a canonical formatter
+									(<code>wync fmt</code>), project builds, and
+									built-in lowering, effect, and storage
+									reports.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">02</span>
+							<div>
+								<p class="faq-q">
+									How does it sit between C and assembly?
+								</p>
+								<p class="faq-a">
+									Above assembly: structured control flow,
+									named bindings, typed memory access,
+									modules, monomorphized generics, enums,
+									packed structs, and a register allocator.
+									Below C: no undefined behavior to exploit,
+									no implicit promotions, no hidden
+									allocation, no aliasing rules to trip over.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">03</span>
+							<div>
+								<p class="faq-q">Why ARM64 only?</p>
+								<p class="faq-a">
+									A single ISA lets Wyst expose the real
+									memory model, register classes, and barriers
+									without inventing a portable abstraction
+									over things that don't map cleanly between
+									architectures. x86 or RISC-V would be a
+									different project.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">04</span>
+							<div>
+								<p class="faq-q">
+									What does "no compiler-exploitable UB" mean
+									in practice?
+								</p>
+								<p class="faq-a">
+									Signed overflow wraps. Out-of-bounds reads
+									return what the hardware returns. The
+									compiler is never allowed to delete a branch
+									on the grounds that the only way to reach it
+									was undefined. <code>#deny</code> lets you
+									forbid effects outright.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">05</span>
+							<div>
+								<p class="faq-q">Is Wyst memory-safe?</p>
+								<p class="faq-a">
+									No, and it doesn't claim to be. You can
+									still dereference garbage. The promise is
+									narrower: the compiler won't
+									<b>exploit</b> the possibility that you did.
+									That's a transparency property, not a safety
+									one.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">06</span>
+							<div>
+								<p class="faq-q">
+									Will there be an LLVM backend?
+								</p>
+								<p class="faq-a">
+									No. The lowering is meant to be the spec.
+									Routing through a backend that performs
+									UB-based optimization would defeat the
+									entire point of the language.
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="sec status-sec" id="status">
+				<div class="wrap status-wrap">
+					<div
+						class="mascot"
+						role="img"
+						aria-label="Winston, the Wyst mascot, waving hello"
+					></div>
+					<div class="status-card">
+						<span class="eyebrow">Project status</span>
+						<h2>Built in the open. Early, but real.</h2>
+						<p>
+							Wyst is a serious hobby project in active
+							development. The current v0.7 compiler,
+							<strong>wync</strong>, is a zero-dependency Rust
+							bootstrap with an LSP server, canonical formatter,
+							project builds, and built-in lowering, effect, and
+							storage reports, targeting ARM64 kernel and
+							bare-metal experiments.
+						</p>
+						<p>
+							It's not finished. The ideas are real, the semantics
+							are written down, and the output is deterministic.
+						</p>
+						<div class="cta-row">
+							<a class="btn btn-primary" href="/docs/"
+								>Read the Docs
+								<span class="arrow" aria-hidden="true"
+									>→</span
+								></a
+							>
+						</div>
+						<div class="status-meta">
+							<span
+								><b>Current:</b> v0.7 · storage contracts &amp;
+								typed handles</span
+							>
+							<span
+								><b>Tooling:</b> LSP · formatter · explain
+								reports</span
+							>
+							<span><b>Tested on:</b> QEMU AArch64 fixtures</span>
+							<span
+								><b>Compiler:</b> written in Rust · not yet
+								self-hosting</span
+							>
+							<span><b>License:</b> open source</span>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+		<footer class="site">
+			<div class="wrap">
+				<div class="foot-grid">
+					<div class="foot-brand">
+						<a class="brand brand-lg" href="/">
+							<span class="mark" aria-hidden="true"></span>
+							<span class="word"
+								>wyst<span class="cc">::</span
+								><span class="res">_start</span></span
+							>
+						</a>
+						<p>
+							A semantic ARM64 systems language and assembler. A
+							human-readable IR for machine-oriented programming
+							with deterministic output.
+						</p>
+						<div class="foot-mascot">
+							<span>Mascot: <b>Winston</b></span>
+						</div>
+					</div>
+					<div class="foot-links">
+						<div class="foot-col">
+							<div class="foot-title">Project</div>
+							<a href="/docs/">Docs</a>
+							<a href="/roadmap/">Roadmap</a>
+							<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+						</div>
+						<div class="foot-col">
+							<div class="foot-title">Reference</div>
+							<a href="/docs/chapter-01-language-design/">Language Design</a>
+							<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+							<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+						</div>
+					</div>
+				</div>
+				<div class="foot-bottom">
+					<span
+						>Wyst · semantic ARM64 IR · no magic, no
+						surprises.</span
+					>
+					<span>wync · zero-dependency Rust bootstrap</span>
+				</div>
+			</div>
+		</footer>
+
+		<script>
+			(() => {
+				const nav = document.querySelector(".nav");
+				const toggle = document.querySelector(".nav-toggle");
+				const links = document.querySelector(".nav-links");
+
+				if (!nav || !toggle || !links) return;
+
+				const mobile = window.matchMedia("(max-width: 720px)");
+				document.documentElement.classList.add("nav-ready");
+
+				function setOpen(open) {
+					nav.classList.toggle("is-open", open);
+					toggle.setAttribute("aria-expanded", String(open));
+					toggle.setAttribute(
+						"aria-label",
+						open
+							? "Close primary navigation"
+							: "Open primary navigation",
+					);
+
+					if (mobile.matches) {
+						links.setAttribute("aria-hidden", String(!open));
+					} else {
+						links.removeAttribute("aria-hidden");
+					}
+				}
+
+				function syncMode() {
+					setOpen(
+						mobile.matches && nav.classList.contains("is-open"),
+					);
+				}
+
+				toggle.addEventListener("click", () => {
+					setOpen(!nav.classList.contains("is-open"));
+				});
+
+				links.addEventListener("click", (event) => {
+					if (mobile.matches && event.target.closest("a")) {
+						setOpen(false);
+					}
+				});
+
+				document.addEventListener("click", (event) => {
+					if (
+						mobile.matches &&
+						nav.classList.contains("is-open") &&
+						!nav.contains(event.target)
+					) {
+						setOpen(false);
+					}
+				});
+
+				document.addEventListener("keydown", (event) => {
+					if (
+						event.key === "Escape" &&
+						nav.classList.contains("is-open")
+					) {
+						setOpen(false);
+						toggle.focus();
+					}
+				});
+
+				if (mobile.addEventListener) {
+					mobile.addEventListener("change", syncMode);
+				} else {
+					mobile.addListener(syncMode);
+				}
+
+				syncMode();
+			})();
+
+			(() => {
+				const token = (className, content) => [className, content];
+
+				const appendParts = (target, parts) => {
+					for (const part of parts) {
+						if (typeof part === "string") {
+							target.append(document.createTextNode(part));
+							continue;
+						}
+
+						const [className, content] = part;
+						const span = document.createElement("span");
+						span.className = className;
+
+						if (Array.isArray(content)) {
+							appendParts(span, content);
+						} else {
+							span.textContent = content;
+						}
+
+						target.append(span);
+					}
+				};
+
+				const renderCodeLines = (target, snippet) => {
+					const highlighted = new Set(snippet.highlight ?? []);
+					const fragment = document.createDocumentFragment();
+
+					snippet.lines.forEach((line, index) => {
+						const row = document.createElement("span");
+						row.className = snippet.lineClass;
+
+						if (highlighted.has(index)) {
+							row.classList.add("hl");
+						}
+
+						appendParts(row, line);
+						fragment.append(row);
+					});
+
+					target.replaceChildren(fragment);
+				};
+
+				const renderCodeBlock = (target, lines) => {
+					const fragment = document.createDocumentFragment();
+
+					lines.forEach((line, index) => {
+						if (index > 0) {
+							fragment.append(document.createTextNode("\n"));
+						}
+
+						appendParts(fragment, line);
+					});
+
+					target.replaceChildren(fragment);
+				};
+
+				const codeBlocks = {
+					"hero-uart": [
+						[token("m", "#module"), " drivers.uart"],
+						[],
+						[
+							token("var", "UARTDR"),
+							" :: ",
+							token("t", "@volatile u32"),
+							" ",
+							token("o", "="),
+							" ",
+							token("n", "0x0900_0000"),
+						],
+						[
+							token("var", "UARTFR"),
+							" :: ",
+							token("t", "@volatile u32"),
+							" ",
+							token("o", "="),
+							" ",
+							token("n", "0x0900_0018"),
+						],
+						[
+							token("var", "TXFF"),
+							" :: ",
+							token("t", "u32"),
+							" ",
+							token("o", "="),
+							" ",
+							token("n", "0x20"),
+						],
+						[],
+						[
+							token("f", "uart_write"),
+							" :: (",
+							token("param", "byte"),
+							" : ",
+							token("t", "u8"),
+							") ",
+							token("o", "="),
+							" {",
+						],
+						[
+							"    ",
+							token("k", "while"),
+							" (",
+							token("t", "u32"),
+							token("o", "@"),
+							"[",
+							token("var", "UARTFR"),
+							"] ",
+							token("o", "&"),
+							" ",
+							token("var", "TXFF"),
+							") ",
+							token("o", "!="),
+							" ",
+							token("n", "0"),
+							" {",
+						],
+						["        ", token("o", "%"), "nop()"],
+						["    }"],
+						[
+							"    ",
+							token("t", "u32"),
+							token("o", "@"),
+							"[",
+							token("var", "UARTDR"),
+							"] ",
+							token("o", "="),
+							" ",
+							token("param", "byte"),
+							" ",
+							token("k", "as"),
+							" ",
+							token("t", "u32"),
+						],
+						["}"],
+					],
+					"compare-c": [
+						[
+							token("t", "int"),
+							" ",
+							token("f", "sum_to"),
+							token("p", "("),
+							token("t", "int"),
+							" n",
+							token("p", ")"),
+							" ",
+							token("p", "{"),
+						],
+						[
+							"  ",
+							token("t", "int"),
+							" acc ",
+							token("o", "="),
+							" ",
+							token("n", "0"),
+							token("p", ";"),
+						],
+						[
+							"  ",
+							token("k", "for"),
+							" ",
+							token("p", "("),
+							token("t", "int"),
+							" i ",
+							token("o", "="),
+							" ",
+							token("n", "0"),
+							token("p", ";"),
+							" i ",
+							token("o", "<"),
+							" n",
+							token("p", ";"),
+							" i",
+							token("o", "++"),
+							token("p", ")"),
+						],
+						["    acc ", token("o", "+="), " i", token("p", ";")],
+						["  ", token("k", "return"), " acc", token("p", ";")],
+						[token("p", "}")],
+						[],
+						[token("c", "// signed overflow here is")],
+						[token("c", "// undefined; the compiler")],
+						[token("c", "// may assume it never happens.")],
+					],
+					"compare-arm64": [
+						[token("f", "sum_to:")],
+						[
+							"  ",
+							token("k", "mov"),
+							"   ",
+							token("t", "w1"),
+							token("p", ","),
+							" ",
+							token("n", "#0"),
+							"      ",
+							token("c", "// acc"),
+						],
+						[
+							"  ",
+							token("k", "mov"),
+							"   ",
+							token("t", "w2"),
+							token("p", ","),
+							" ",
+							token("n", "#0"),
+							"      ",
+							token("c", "// i"),
+						],
+						[token("f", ".Lloop:")],
+						[
+							"  ",
+							token("k", "cmp"),
+							"   ",
+							token("t", "w2"),
+							token("p", ","),
+							" ",
+							token("t", "w0"),
+						],
+						["  ", token("k", "b.ge"), "  ", token("f", ".Ldone")],
+						[
+							"  ",
+							token("k", "add"),
+							"   ",
+							token("t", "w1"),
+							token("p", ","),
+							" ",
+							token("t", "w1"),
+							token("p", ","),
+							" ",
+							token("t", "w2"),
+						],
+						[
+							"  ",
+							token("k", "add"),
+							"   ",
+							token("t", "w2"),
+							token("p", ","),
+							" ",
+							token("t", "w2"),
+							token("p", ","),
+							" ",
+							token("n", "#1"),
+						],
+						["  ", token("k", "b"), "     ", token("f", ".Lloop")],
+						[token("f", ".Ldone:")],
+						[
+							"  ",
+							token("k", "mov"),
+							"   ",
+							token("t", "w0"),
+							token("p", ","),
+							" ",
+							token("t", "w1"),
+						],
+						["  ", token("k", "ret")],
+					],
+					"compare-wyst": [
+						[token("m", "#module"), " demo.math"],
+						[],
+						[
+							token("f", "sum_to"),
+							" :: (",
+							token("param", "n"),
+							" : ",
+							token("t", "i32"),
+							") -> ",
+							token("t", "i32"),
+							" ",
+							token("o", "="),
+							" {",
+						],
+						[
+							"    ",
+							token("var", "acc"),
+							" : ",
+							token("t", "i32"),
+							" ",
+							token("o", "="),
+							" ",
+							token("n", "0"),
+						],
+						[
+							"    ",
+							token("var", "i"),
+							" : ",
+							token("t", "i32"),
+							" ",
+							token("o", "="),
+							" ",
+							token("n", "0"),
+						],
+						[],
+						[
+							"    ",
+							token("k", "while"),
+							" ",
+							token("var", "i"),
+							" ",
+							token("o", "<"),
+							" ",
+							token("param", "n"),
+							" {",
+						],
+						[
+							"        ",
+							token("var", "acc"),
+							" ",
+							token("o", "+="),
+							" ",
+							token("var", "i"),
+						],
+						[
+							"        ",
+							token("var", "i"),
+							" ",
+							token("o", "+="),
+							" ",
+							token("n", "1"),
+						],
+						["    }"],
+						[],
+						[
+							"    ",
+							token("k", "return"),
+							" ",
+							token("var", "acc"),
+						],
+						["}"],
+					],
+				};
+
+				const snippets = {
+					"uart-source": {
+						lineClass: "cl",
+						highlight: [9],
+						lines: [
+							[token("m", "#module"), " drivers.uart"],
+							[],
+							[
+								token(
+									"c",
+									"// @volatile marks MMIO: every access is a compiler barrier.",
+								),
+							],
+							[
+								token("var", "UART0_BASE"),
+								" :: ",
+								token("t", "u64"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0x0900_0000"),
+							],
+							[
+								token("var", "UARTDR"),
+								" :: ",
+								token("t", "@volatile u32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("var", "UART0_BASE"),
+								" ",
+								token("o", "+"),
+								" ",
+								token("n", "0x00"),
+							],
+							[
+								token("var", "UARTFR"),
+								" :: ",
+								token("t", "@volatile u32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("var", "UART0_BASE"),
+								" ",
+								token("o", "+"),
+								" ",
+								token("n", "0x18"),
+							],
+							[
+								token("var", "TXFF"),
+								" :: ",
+								token("t", "u32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0x20"),
+							],
+							[],
+							[
+								token("f", "uart_write"),
+								" :: (",
+								token("param", "byte"),
+								" : ",
+								token("t", "u8"),
+								") ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"    ",
+								token("k", "while"),
+								" (",
+								token("t", "u32"),
+								token("o", "@"),
+								"[",
+								token("var", "UARTFR"),
+								"] ",
+								token("o", "&"),
+								" ",
+								token("var", "TXFF"),
+								") ",
+								token("o", "!="),
+								" ",
+								token("n", "0"),
+								" {",
+							],
+							["        ", token("o", "%"), "nop()"],
+							["    }"],
+							[
+								"    ",
+								token("t", "u32"),
+								token("o", "@"),
+								"[",
+								token("var", "UARTDR"),
+								"] ",
+								token("o", "="),
+								" ",
+								token("param", "byte"),
+								" ",
+								token("k", "as"),
+								" ",
+								token("t", "u32"),
+							],
+							["}"],
+						],
+					},
+					"uart-asm": {
+						lineClass: "al",
+						highlight: [3, 4],
+						lines: [
+							[token("asm-lbl", "uart_write:")],
+							[
+								token("asm-addr", "0x00 "),
+								token("k", "movz"),
+								" x1, ",
+								token("n", "#0x0900"),
+								", lsl ",
+								token("n", "#16"),
+								"  ",
+								token("asm-note", "// @volatile base"),
+							],
+							[token("asm-lbl", ".Lwait:")],
+							[
+								token("asm-addr", "0x04 "),
+								token("k", "ldr"),
+								" w2, [x1, ",
+								token("n", "#0x18"),
+								"]  ",
+								token("asm-note", "// volatile load · UARTFR"),
+							],
+							[
+								token("asm-addr", "0x08 "),
+								token("k", "tbnz"),
+								" w2, ",
+								token("n", "#5"),
+								", .Lwait  ",
+								token("asm-note", "// spin while TXFF set"),
+							],
+							[
+								token("asm-addr", "0x0c "),
+								token("k", "str"),
+								" w0, [x1]  ",
+								token("asm-note", "// volatile store · UARTDR"),
+							],
+							[token("asm-addr", "0x10 "), token("k", "ret")],
+						],
+					},
+					"vectors-source": {
+						lineClass: "cl",
+						highlight: [12, 13, 14],
+						lines: [
+							[token("m", "#module"), " traps.vectors"],
+							[],
+							[
+								token(
+									"c",
+									"// Abbreviated EL1 vector sketch; real tables have 16 slots.",
+								),
+							],
+							[
+								token(
+									"c",
+									"// #exception_vector enforces 2 KB alignment and slot size.",
+								),
+							],
+							[
+								token("f", "el1_vectors"),
+								" :: ",
+								token("m", "#exception_vector"),
+								" ",
+								token("m", "#align"),
+								"(",
+								token("n", "0x800"),
+								") ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"    ",
+								token("f", "sp0_sync"),
+								" : ",
+								token("m", "#ventry"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"        ",
+								token("k", "goto"),
+								" ",
+								token("f", "unexpected"),
+							],
+							["    }"],
+							[
+								"    ",
+								token("f", "sp0_irq"),
+								" : ",
+								token("m", "#ventry"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"        ",
+								token("k", "goto"),
+								" ",
+								token("f", "unexpected"),
+							],
+							["    }"],
+							["    ", token("c", "// slots 2-3 omitted here")],
+							[
+								"    ",
+								token("f", "spx_sync"),
+								" : ",
+								token("m", "#ventry"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"        ",
+								token("k", "goto"),
+								" ",
+								token("f", "handle_sync"),
+							],
+							["    }"],
+							[
+								"    ",
+								token("f", "spx_irq"),
+								" : ",
+								token("m", "#ventry"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"        ",
+								token("k", "goto"),
+								" ",
+								token("f", "handle_irq"),
+							],
+							["    }"],
+							["    ", token("c", "// slots 6-15 omitted here")],
+							["}"],
+							[],
+							[
+								token("f", "unexpected"),
+								" :: ",
+								token("k", "label"),
+								" ",
+								token("m", "#noreturn"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							["    ", token("k", "loop"), " {"],
+							["        ", token("o", "%"), "wfe()"],
+							["    }"],
+							["}"],
+							[],
+							[
+								token("f", "handle_sync"),
+								" :: ",
+								token("k", "label"),
+								" ",
+								token("m", "#noreturn"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							["    ", token("k", "loop"), " {"],
+							["        ", token("o", "%"), "wfe()"],
+							["    }"],
+							["}"],
+							[],
+							[
+								token("f", "handle_irq"),
+								" :: ",
+								token("k", "label"),
+								" ",
+								token("m", "#noreturn"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							["    ", token("k", "loop"), " {"],
+							["        ", token("o", "%"), "wfe()"],
+							["    }"],
+							["}"],
+						],
+					},
+					"vectors-asm": {
+						lineClass: "al",
+						highlight: [4],
+						lines: [
+							[
+								token("asm-lbl", "el1_vectors:"),
+								"  ",
+								token("asm-note", "// .align 0x800"),
+							],
+							[
+								token("asm-addr", "0x800 "),
+								token("k", "b"),
+								" unexpected  ",
+								token("asm-note", "// slot 0 · sp0_sync"),
+							],
+							[
+								token("asm-addr", "0x804 "),
+								token("k", ".fill"),
+								" 31, 4, ",
+								token("n", "0xd503201f"),
+							],
+							[
+								token("asm-addr", "      "),
+								token("asm-note", "; ... slots 1‑3"),
+							],
+							[
+								token("asm-addr", "0xa00 "),
+								token("k", "b"),
+								" handle_sync  ",
+								token("asm-note", "// slot 4 · spx_sync"),
+							],
+							[
+								token("asm-addr", "0xa04 "),
+								token("k", ".fill"),
+								" 31, 4, ",
+								token("n", "0xd503201f"),
+							],
+							[
+								token("asm-addr", "0xa80 "),
+								token("k", "b"),
+								" handle_irq  ",
+								token("asm-note", "// slot 5 · spx_irq"),
+							],
+							[
+								token("asm-addr", "      "),
+								token("asm-note", "; ... slots 6‑15"),
+							],
+						],
+					},
+					"atomic-source": {
+						lineClass: "cl",
+						highlight: [4],
+						lines: [
+							[token("m", "#module"), " sync.atomic"],
+							[],
+							[
+								token(
+									"c",
+									"// ordering is part of the access, not inferred.",
+								),
+							],
+							[
+								token("f", "publish"),
+								" :: (",
+								token("param", "flag"),
+								" : ",
+								token("t", "@u32"),
+								", ",
+								token("param", "v"),
+								" : ",
+								token("t", "u32"),
+								") ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"    ",
+								token("m", "#release"),
+								" ",
+								token("t", "u32"),
+								token("o", "@"),
+								"[",
+								token("param", "flag"),
+								"] ",
+								token("o", "="),
+								" ",
+								token("param", "v"),
+							],
+							["}"],
+							[],
+							[
+								token("f", "observe"),
+								" :: (",
+								token("param", "flag"),
+								" : ",
+								token("t", "@u32"),
+								") -> ",
+								token("t", "u32"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"    ",
+								token("k", "return"),
+								" ",
+								token("m", "#acquire"),
+								" ",
+								token("t", "u32"),
+								token("o", "@"),
+								"[",
+								token("param", "flag"),
+								"]",
+							],
+							["}"],
+						],
+					},
+					"atomic-asm": {
+						lineClass: "al",
+						highlight: [1],
+						lines: [
+							[token("asm-lbl", "publish:")],
+							[
+								token("asm-addr", "0x00 "),
+								token("k", "stlr"),
+								" w1, [x0]  ",
+								token("asm-note", "// store-release"),
+							],
+							[token("asm-addr", "0x04 "), token("k", "ret")],
+							[token("asm-lbl", "observe:")],
+							[
+								token("asm-addr", "0x08 "),
+								token("k", "ldar"),
+								" w0, [x0]  ",
+								token("asm-note", "// load-acquire"),
+							],
+							[token("asm-addr", "0x0c "), token("k", "ret")],
+						],
+					},
+					"sumto-source": {
+						lineClass: "cl",
+						highlight: [6, 11],
+						lines: [
+							[token("m", "#module"), " demo.math"],
+							[],
+							[
+								token("f", "sum_to"),
+								" :: (",
+								token("param", "n"),
+								" : ",
+								token("t", "i32"),
+								") -> ",
+								token("t", "i32"),
+								" ",
+								token("o", "="),
+								" {",
+							],
+							[
+								"    ",
+								token("var", "acc"),
+								" : ",
+								token("t", "i32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+							],
+							[
+								"    ",
+								token("var", "i"),
+								" : ",
+								token("t", "i32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+							],
+							[],
+							[
+								"    ",
+								token("k", "while"),
+								" ",
+								token("var", "i"),
+								" ",
+								token("o", "<"),
+								" ",
+								token("param", "n"),
+								" {",
+							],
+							[
+								"        ",
+								token("var", "acc"),
+								" ",
+								token("o", "+="),
+								" ",
+								token("var", "i"),
+							],
+							[
+								"        ",
+								token("var", "i"),
+								" ",
+								token("o", "+="),
+								" ",
+								token("n", "1"),
+							],
+							["    }"],
+							[],
+							[
+								"    ",
+								token("k", "return"),
+								" ",
+								token("var", "acc"),
+							],
+							["}"],
+						],
+					},
+					"sumto-asm": {
+						lineClass: "al",
+						highlight: [4, 5, 10, 11],
+						lines: [
+							[
+								token("asm-lbl", "sum_to:"),
+								"  ",
+								token(
+									"asm-note",
+									"// [w0 = n] · leaf fn, no frame",
+								),
+							],
+							[
+								token("asm-addr", "0x00 "),
+								token("k", "mov"),
+								" w1, ",
+								token("n", "#0"),
+								"  ",
+								token("asm-note", "// acc → w1"),
+							],
+							[
+								token("asm-addr", "0x04 "),
+								token("k", "mov"),
+								" w2, ",
+								token("n", "#0"),
+								"  ",
+								token("asm-note", "// i → w2"),
+							],
+							[token("asm-lbl", ".Lloop:")],
+							[
+								token("asm-addr", "0x08 "),
+								token("k", "cmp"),
+								" w2, w0  ",
+								token("asm-note", "// while i < n"),
+							],
+							[
+								token("asm-addr", "0x0c "),
+								token("k", "b.ge"),
+								" .Ldone",
+							],
+							[
+								token("asm-addr", "0x10 "),
+								token("k", "add"),
+								" w1, w1, w2  ",
+								token("asm-note", "// acc += i"),
+							],
+							[
+								token("asm-addr", "0x14 "),
+								token("k", "add"),
+								" w2, w2, ",
+								token("n", "#1"),
+								"  ",
+								token("asm-note", "// i += 1"),
+							],
+							[
+								token("asm-addr", "0x18 "),
+								token("k", "b"),
+								" .Lloop",
+							],
+							[token("asm-lbl", ".Ldone:")],
+							[
+								token("asm-addr", "0x1c "),
+								token("k", "mov"),
+								" w0, w1  ",
+								token("asm-note", "// return acc"),
+							],
+							[token("asm-addr", "0x20 "), token("k", "ret")],
+						],
+					},
+				};
+
+				document.querySelectorAll("[data-code]").forEach((target) => {
+					const lines = codeBlocks[target.dataset.code];
+
+					if (lines) {
+						renderCodeBlock(target, lines);
+					}
+				});
+
+				document
+					.querySelectorAll("[data-snippet]")
+					.forEach((target) => {
+						const snippet = snippets[target.dataset.snippet];
+
+						if (snippet) {
+							renderCodeLines(target, snippet);
+						}
+					});
+			})();
+
+			(() => {
+				const tabs = Array.from(
+					document.querySelectorAll(".insp-tabs [role='tab']"),
+				);
+				const radios = tabs.map((t) =>
+					document.getElementById(t.getAttribute("for")),
+				);
+
+				function syncState() {
+					tabs.forEach((tab, i) => {
+						const selected = radios[i].checked;
+						tab.setAttribute("aria-selected", String(selected));
+						const pane = document.getElementById(
+							tab.getAttribute("aria-controls"),
+						);
+						if (pane)
+							pane.setAttribute("aria-hidden", String(!selected));
+					});
+				}
+
+				radios.forEach((r) => r.addEventListener("change", syncState));
+
+				syncState();
+			})();
+
+			(() => {
+				const updates = [];
+
+				document
+					.querySelectorAll(".insp-src, .insp-asm")
+					.forEach((pane) => {
+						const code = pane.querySelector(".insp-code");
+
+						if (!code) return;
+
+						const update = () => {
+							const more =
+								code.scrollWidth -
+									code.clientWidth -
+									code.scrollLeft >
+								4;
+							pane.classList.toggle("scroll-more", more);
+						};
+
+						code.addEventListener("scroll", update, {
+							passive: true,
+						});
+						updates.push(update);
+						update();
+					});
+
+				const updateAll = () =>
+					requestAnimationFrame(() => updates.forEach((fn) => fn()));
+
+				window.addEventListener("resize", updateAll);
+				document
+					.querySelectorAll(".inspector input[type='radio']")
+					.forEach((radio) =>
+						radio.addEventListener("change", updateAll),
+					);
+			})();
+		</script>
+	</body>
+</html>

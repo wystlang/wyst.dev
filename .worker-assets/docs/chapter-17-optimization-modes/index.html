@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Optimization modes and the boundary between explicit source behavior and compiler choices." />
+		<title>Build Optimization Modes · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-17-optimization-modes/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/" aria-current="page"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 17</span>
+						<h1>Chapter 17: Wyst Build Optimization Modes</h1>
+						<p class="doc-lede">Optimization modes and the boundary between explicit source behavior and compiler choices.</p>
+					</header>
+					<div class="doc-body">
+<p>Wyst defines two build optimization modes, selected by <code>--optimization</code> or
+the project manifest's <code>optimization = &quot;...&quot;</code> setting:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">--optimization reproducible
+--optimization switch-dispatch
+</code></pre>
+<p><code>reproducible</code> is also the default when no build optimization mode is supplied.
+It is a direct lowering profile, not a general optimizer. It may perform only
+the deterministic lowering work needed to produce the output image:</p>
+<ul>
+<li>compile-time constant evaluation already required by the language;</li>
+<li>syntax-to-IR lowering;</li>
+<li>deterministic instruction selection;</li>
+<li>deterministic register allocation;</li>
+<li>deterministic branch and symbol emission.</li>
+</ul>
+<p>Wyst rejects unknown build optimization modes. Additional non-default build
+optimization modes must be explicit in the command or build profile, and must
+document whether they preserve byte-for-byte reproducibility.
+The selected build optimization mode is part of the reproducibility input
+manifest described in
+<a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a>.</p>
+<p>Build optimization modes are distinct from the source-level <code>#schedule</code>
+directive described in <a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a>.
+<code>#schedule(strict | relaxed | throughput | latency)</code> controls instruction
+scheduling permissions inside source regions; it does not select a build
+optimization mode.</p>
+<h2 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-hidden="true">#</a> Semantic Boundary</h2>
+<p>Build optimization modes choose lowering strategy inside the already-defined
+source semantics. They must not introduce hidden allocation, hidden cache
+maintenance, weaker memory ordering, or source-observable behavior that was
+not requested by the program or build profile.</p>
+<h2 id="mode-selection-boundary" tabindex="-1"><a class="doc-anchor" href="#mode-selection-boundary" aria-hidden="true">#</a> Mode Selection Boundary</h2>
+<p>Builds carry the selected build optimization mode into IR lowering. Explicit
+root-file builds default to <code>reproducible</code> unless <code>--optimization</code> is supplied.
+Project builds may name an <code>optimization = &quot;...&quot;</code> mode in <code>wyst.project</code>, and a
+command-line <code>--optimization</code> value overrides that manifest setting for the
+build. Non-default modes branch from that explicit boundary instead of changing
+the default path in place.</p>
+<h2 id="relationship-to-%23schedule" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23schedule" aria-hidden="true">#</a> Relationship to <code>#schedule</code></h2>
+<p><code>--optimization</code> and <code>#schedule</code> are independent inputs at different levels:</p>
+<ul>
+<li><code>--optimization</code> is a build-level lowering policy chosen by the command line
+or project manifest.</li>
+<li><code>#schedule</code> is a source-level directive that constrains or hints instruction
+ordering inside a source region.</li>
+</ul>
+<p>A build optimization mode must respect every applicable <code>#schedule</code> region.
+For example, <code>--optimization switch-dispatch</code> may change enum-switch lowering,
+but it must not move instructions across a <code>#schedule(strict)</code> boundary or
+reinterpret <code>#schedule(throughput)</code> as a build-wide optimization request.</p>
+<h2 id="switch-dispatch" tabindex="-1"><a class="doc-anchor" href="#switch-dispatch" aria-hidden="true">#</a> <code>switch-dispatch</code></h2>
+<p><code>switch-dispatch</code> is an opt-in, deterministic mode for enum switch dispatch. It
+replaces the default equality-value chain with an IR <code>switch</code>
+terminator that the ARM64 backend lowers as a linear compare/conditional-branch
+sequence. It preserves source-order case testing, grouped-case targets,
+exhaustive invalid defaults, and partial-switch fallthrough behavior.</p>
+<p>For this selected build optimization mode, output is byte-for-byte
+reproducible under the input catalog in
+<a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a>. It is not a
+promise of optimal dispatch shape: no jump tables, dispatch tables, decision
+trees, or target-tuned heuristics are part of this mode.</p>
+<h2 id="reproducible-switch-dispatch-baseline" tabindex="-1"><a class="doc-anchor" href="#reproducible-switch-dispatch-baseline" aria-hidden="true">#</a> Reproducible Switch Dispatch Baseline</h2>
+<p>In <code>reproducible</code>, enum <code>switch</code> still lowers through the direct deterministic
+chain used before build optimization modes were named:</p>
+<ul>
+<li>the selector, or the payload enum tag field, is evaluated once before
+dispatch;</li>
+<li>cases are tested in source order with equality checks and branch
+terminators;</li>
+<li>grouped cases share the same <code>switch.case</code> block;</li>
+<li>exhaustive switches without <code>else</code> keep an unreachable <code>switch.invalid</code>
+default block;</li>
+<li>partial switches without <code>else</code> fall through to <code>switch.after</code>;</li>
+<li>no jump tables, dispatch tables, or decision trees are introduced by the
+default mode.</li>
+</ul>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<ul>
+<li>No <code>fast</code>, <code>small</code>, or target-tuned build optimization mode.</li>
+<li>No hidden global optimization in default builds.</li>
+<li>No profile-guided optimization.</li>
+<li>No source scheduling semantics in this build optimization mode chapter.</li>
+</ul>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-16-object-format/"><span class="dir">← Previous</span><span class="lbl">Object Format</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-18-check-format-diagnostics/"><span class="dir">Next →</span><span class="lbl">Check, Format, And Diagnostics</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#semantic-boundary">Semantic Boundary</a></li>
+				<li class="lvl-2"><a href="#mode-selection-boundary">Mode Selection Boundary</a></li>
+				<li class="lvl-2"><a href="#relationship-to-%23schedule">Relationship to #schedule</a></li>
+				<li class="lvl-2"><a href="#switch-dispatch">switch-dispatch</a></li>
+				<li class="lvl-2"><a href="#reproducible-switch-dispatch-baseline">Reproducible Switch Dispatch Baseline</a></li>
+				<li class="lvl-2"><a href="#non-goals">Non-Goals</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor." />
+		<title>Check, Format, And Diagnostics · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-18-check-format-diagnostics/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.7</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/" aria-current="page"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 18</span>
+						<h1>Chapter 18: Wyst Check, Format, And Diagnostics</h1>
+						<p class="doc-lede">Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor.</p>
+					</header>
+					<div class="doc-body">
+<p>The tooling contract for validation-oriented commands is intentionally smaller
+than the full language-server contract in
+<a href="/docs/chapter-20-editor-integration/">chapter-20-editor-integration.md</a>.</p>
+<p>Start with the CLI behavior for <code>check</code> and <code>fmt</code>, then read the diagnostic
+schemas. Editor delivery and long-form learning explanations build on this
+contract in the next chapters.</p>
+<h2 id="check-mode" tabindex="-1"><a class="doc-anchor" href="#check-mode" aria-hidden="true">#</a> Check Mode</h2>
+<p><code>wync check</code> validates the same frontend build inputs as <code>wync build</code>, then
+stops before IR lowering and output emission.</p>
+<p>Accepted project inputs:</p>
+<pre class="wyst-code language-sh" data-lang="sh"><code class="language-sh">wync check <span class="token builtin class-name">.</span>
+wync check path/to/project
+wync check path/to/wyst.project
+</code></pre>
+<p>Accepted explicit root-file inputs:</p>
+<pre class="wyst-code language-sh" data-lang="sh"><code class="language-sh">wync check src/boot.wyst <span class="token punctuation">\</span>
+  --source-root src <span class="token punctuation">\</span>
+  <span class="token parameter variable">--layout</span> layout.wyst <span class="token punctuation">\</span>
+  <span class="token parameter variable">--target</span> qemu-virt-aarch64-el2
+</code></pre>
+<p>The explicit mode also accepts the legacy explicit source-list shape:</p>
+<pre class="wyst-code language-sh" data-lang="sh"><code class="language-sh">wync check boot.wyst uart.wyst <span class="token parameter variable">--layout</span> layout.wyst
+</code></pre>
+<p>Validation includes:</p>
+<ul>
+<li>manifest parsing and manifest field validation in project mode;</li>
+<li>import-closure source discovery for project and explicit root-file modes;</li>
+<li>target profile validation and module <code>#target</code> compatibility checks;</li>
+<li>layout module parsing and semantic checking;</li>
+<li>source graph parsing and semantic checking with layout exports available.</li>
+</ul>
+<p>Check mode does not:</p>
+<ul>
+<li>lower source to IR;</li>
+<li>create output directories;</li>
+<li>emit ELF or object files;</li>
+<li>write the manifest <code>output</code> path;</li>
+<li>run QEMU or perform binary inspection.</li>
+</ul>
+<p>Exit behavior:</p>
+<ul>
+<li><code>0</code>: validation succeeded; stdout is empty. Stderr is empty unless the
+compiler emitted warnings.</li>
+<li><code>1</code>: frontend validation failed; stderr contains a rendered diagnostic.</li>
+<li><code>2</code>: CLI arguments were invalid; stderr contains the usage diagnostic.</li>
+</ul>
+<p><code>wync check</code> accepts <code>--diagnostic-format text|json|lsp-json</code>. Text is the
+default. JSON diagnostics are emitted to stderr as one object with a
+deterministic <code>diagnostics</code> array, including non-fatal warnings when validation
+succeeds. The <code>json</code> schema mirrors the in-process diagnostic model: severity,
+code, message, optional primary label, secondary labels, and notes. The
+<code>lsp-json</code> schema emits LSP-style diagnostic objects for editor adapters:
+document URI, zero-based UTF-16 ranges, numeric severity, code, source, message,
+related information, and notes data.</p>
+<h2 id="diagnostics-floor" tabindex="-1"><a class="doc-anchor" href="#diagnostics-floor" aria-hidden="true">#</a> Diagnostics Floor</h2>
+<p>The compiler uses the stable plain-text diagnostic renderer:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">error[E0001]: message
+  --> path/to/file.wyst:line:column
+line | source text
+     | ^^^^^ label
+  ::: path/to/file.wyst:other-line:other-column
+line | source text
+     | ^^^^^ secondary label
+  note: supporting note
+</code></pre>
+<p>Warnings use the same renderer with <code>warning[W####]</code> as the header. Warnings do
+not change check-mode exit status when no errors are present.</p>
+<p>The renderer and JSON payloads support one primary source label, zero
+or more secondary source labels, and zero or more notes. Diagnostic
+suppression policy and richer machine-readable payloads are outside this
+surface.</p>
+<h2 id="lsp-compatible-diagnostic-json" tabindex="-1"><a class="doc-anchor" href="#lsp-compatible-diagnostic-json" aria-hidden="true">#</a> LSP-Compatible Diagnostic JSON</h2>
+<p><code>--diagnostic-format lsp-json</code> is the first editor-protocol bridge. It is not a
+full <code>textDocument/publishDiagnostics</code> notification and does not start a
+language server; it is a stable adapter payload that can be grouped by <code>uri</code>
+and forwarded into an editor client.</p>
+<p>Each diagnostic entry contains:</p>
+<ul>
+<li><code>uri</code>: file URI for the primary diagnostic label.</li>
+<li><code>range</code>: LSP-style zero-based range. Character offsets are UTF-16 code units.</li>
+<li><code>severity</code>: numeric LSP severity. <code>1</code> is error and <code>2</code> is warning.</li>
+<li><code>code</code>: Wyst diagnostic code.</li>
+<li><code>source</code>: always <code>wync</code>.</li>
+<li><code>message</code>: diagnostic message.</li>
+<li><code>relatedInformation</code>: secondary labels as LSP locations plus messages.</li>
+<li><code>data.primaryLabel</code>: the primary label message, when present.</li>
+<li><code>data.notes</code>: supporting diagnostic notes.</li>
+</ul>
+<p>The LSP-compatible payload is driven by the same <code>Diagnostic</code> values rendered
+by text and snapshot JSON mode. Editor integrations must not reparse source to
+invent diagnostics.</p>
+<h2 id="editor-completion-and-hover-catalog" tabindex="-1"><a class="doc-anchor" href="#editor-completion-and-hover-catalog" aria-hidden="true">#</a> Editor Completion And Hover Catalog</h2>
+<p><code>wync editor-catalog</code> emits a deterministic JSON catalog for editor adapters.
+It is intentionally a compiler-owned data surface rather than a second
+editor-local vocabulary.</p>
+<p>The catalog contains:</p>
+<ul>
+<li><code>schema</code>: <code>wync.editorCatalog.v0</code>.</li>
+<li><code>completionItems</code>: keyword, directive, intrinsic, builtin type, and reserved
+register entries.</li>
+<li><code>label</code>: completion/hover lookup text.</li>
+<li><code>category</code>: stable Wyst category such as <code>keyword</code>, <code>directive</code>,
+<code>intrinsic</code>, <code>builtin-type</code>, or <code>register</code>.</li>
+<li><code>lspCompletionKind</code>: numeric LSP completion kind that an adapter can forward
+directly.</li>
+<li><code>insertText</code>: default insertion text.</li>
+<li><code>detail</code>: short completion detail.</li>
+<li><code>hoverMarkdown</code>: markdown hover text for the same label.</li>
+</ul>
+<p>This catalog is lexical and built-in only. It does not include user-defined
+modules, functions, constants, globals, structs, enums, bitfields, labels, or
+layout exports. Project-aware symbol completion is outside the lexical catalog
+surface.</p>
+<p>Diagnostic recovery is intentionally narrow: <code>wync check</code> can report
+multiple diagnostics from early top-level semantic validation, such as
+duplicate top-level names and duplicate module declarations in the same source
+graph. Parser errors, layout failures, target-profile failures, item-body
+checking, IR lowering, and build output still stop at the first fatal
+diagnostic.</p>
+<h2 id="editor-syntax-highlighting" tabindex="-1"><a class="doc-anchor" href="#editor-syntax-highlighting" aria-hidden="true">#</a> Editor Syntax Highlighting</h2>
+<p>Editor syntax-highlighting foundations should mirror the compiler lexer
+vocabulary:</p>
+<ul>
+<li>a small lexical Tree-sitter grammar whose tokens mirror the compiler lexer
+vocabulary;</li>
+<li>editor adapters that use the grammar and query captures for Wyst comments,
+strings, numbers, keywords, directives, intrinsics, registers, and builtin
+type names.</li>
+</ul>
+<p>These editor assets do not validate programs and do not define a second Wyst
+syntax. <code>wync check</code> remains the source of truth for diagnostics. Editor
+grammars should track the compiler's keyword, directive, intrinsic, register,
+type, comment, and string highlighting floor.</p>
+<h2 id="format-mode" tabindex="-1"><a class="doc-anchor" href="#format-mode" aria-hidden="true">#</a> Format Mode</h2>
+<p><code>wync fmt &lt;input.wyst&gt;</code> parses one source file and prints the canonical source
+form to stdout. It does not rewrite the input file.</p>
+<p><code>wync fmt &lt;input.wyst&gt; --check</code> parses the same source, compares it with the
+canonical form, exits <code>0</code> for already formatted input, and exits <code>1</code> with a
+source diagnostic when the file differs.</p>
+<p>The formatter is AST-backed:</p>
+<ul>
+<li>it supports one source file at a time;</li>
+<li>it renders function-level directives such as <code>#inline</code>, <code>#naked</code>, and
+<code>#noreturn</code> as prefix lines before the function signature;</li>
+<li>it preserves one intentional blank line between block statements and collapses
+larger vertical gaps to one blank line;</li>
+<li>it keeps top-level constant/global facts and <code>#static_assert</code> runs dense
+instead of inserting a blank line between each declaration;</li>
+<li>it keeps layout-module placement and symbol groups dense instead of inserting
+a blank line between every top-level layout declaration;</li>
+<li>it preserves line and block comments that sit between declarations, fields,
+switch arms, or statements, including same-line trailing comments;</li>
+<li>it rejects only comment placements the AST-backed printer cannot safely
+attach yet, such as comments embedded inside expressions;</li>
+<li>it rejects syntax placeholders that the parser cannot round-trip;</li>
+<li>it does not run semantic analysis or require a layout file;</li>
+<li>it does not format project manifests;</li>
+<li>it does not modify files in place.</li>
+</ul>
+<p>The long-term formatter direction is rustfmt-level precision: a richer
+token/trivia model should eventually preserve comments, blank-line intent, and
+awkward edge placements without relying on AST-only attachment heuristics.
+Project-wide formatting and in-place rewrite flags are outside the formatter
+surface. <code>wync check</code> remains validation-only and does not rewrite
+source files or report style-only failures.</p>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/chapter-17-optimization-modes/"><span class="dir">← Previous</span><span class="lbl">Build Optimization Modes</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-19-learning-diagnostics/"><span class="dir">Next →</span><span class="lbl">Learning Diagnostics And Source Insights</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#check-mode">Check Mode</a></li>
+				<li class="lvl-2"><a href="#diagnostics-floor">Diagnostics Floor</a></li>
+				<li class="lvl-2"><a href="#lsp-compatible-diagnostic-json">LSP-Compatible Diagnostic JSON</a></li>
+				<li class="lvl-2"><a href="#editor-completion-and-hover-catalog">Editor Completion And Hover Catalog</a></li>
+				<li class="lvl-2"><a href="#editor-syntax-highlighting">Editor Syntax Highlighting</a></li>
+				<li class="lvl-2"><a href="#format-mode">Format Mode</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="/roadmap/">Roadmap</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>
