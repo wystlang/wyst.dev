@@ -261,6 +261,18 @@ header.site {
 	text-decoration: underline;
 	text-underline-offset: 4px;
 }
+.nav-links a.nav-icon {
+	display: inline-flex;
+	align-items: center;
+	padding: 8px;
+}
+.nav-links a.nav-icon svg {
+	display: block;
+}
+.nav-links a.nav-icon:hover,
+.nav-links a.nav-icon:focus-visible {
+	text-decoration: none;
+}
 @media (max-width: 720px) {
 	html {
 		scroll-padding-top: 188px;
@@ -446,6 +458,24 @@ header.site {
 	background: var(--accent-2);
 	transform: translateY(-1px);
 	box-shadow: 0 8px 28px -10px var(--accent);
+}
+.btn-secondary {
+	background: rgba(255, 255, 255, 0.035);
+	color: var(--text);
+	border-color: var(--line-2);
+}
+.btn-secondary:hover {
+	border-color: color-mix(
+		in srgb,
+		var(--accent) 48%,
+		var(--line-2)
+	);
+	background: rgba(245, 166, 35, 0.1);
+	color: var(--accent-2);
+	transform: translateY(-1px);
+}
+.btn-icon {
+	display: block;
 }
 .btn .arrow {
 	transition: transform 0.16s ease;
