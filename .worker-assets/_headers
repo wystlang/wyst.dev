@@ -48,5 +48,5 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/winston-wave-840.webp
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.1e5a2e1a.css
+/assets/wyst.aad393e1.css
   Cache-Control: public, max-age=31536000, immutable
