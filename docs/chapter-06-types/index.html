@@ -157,7 +157,7 @@ single irreducible scalar value.</p>
 <tbody>
 <tr>
 <td>string</td>
-<td>built-in <code>{ ptr : @u8, len : u64 }</code>, size 16, alignment 8</td>
+<td>built-in <code>{ data : @u8, len : u64 }</code>, size 16, alignment 8</td>
 </tr>
 <tr>
 <td>@T</td>
@@ -2121,7 +2121,7 @@ path, movement policy, and address-stability policy.</p>
 <p>Example:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// `string` is built in with this representation:</span>
-<span class="token comment">// { ptr : @u8, len : u64 }</span>
+<span class="token comment">// { data : @u8, len : u64 }</span>
 </code></pre>
 <p>Field access:</p>
 <!-- wyst-contract: sketch -->
@@ -3081,7 +3081,7 @@ The compiler must not exploit that invalid read as C-style undefined behavior.</
 <p>Compile-time interpretation:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// `string` is built in with this representation:</span>
-<span class="token comment">// { ptr : @u8, len : u64 }</span>
+<span class="token comment">// { data : @u8, len : u64 }</span>
 </code></pre>
 <p>Strings are:</p>
 <ul>
@@ -3227,7 +3227,7 @@ simple <span class="token operator">::</span> <span class="token string">"""just
 </code></pre>
 <p>Multiline strings compile to the same built-in <code>string</code> representation:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// { ptr : @u8, len : u64 }</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// { data : @u8, len : u64 }</span>
 </code></pre>
 <p>The <code>len</code> is the exact byte count of the string content (excluding the <code>&quot;&quot;&quot;</code> delimiters).
 For UTF-8 text, this may be larger than the number of Unicode scalar values or
@@ -3270,7 +3270,7 @@ strips common leading whitespace at compile time:</p>
 Indentation before the closing <code>&quot;&quot;&quot;</code> is allowed after a trailing <code>\</code> and is
 not part of the string.</li>
 <li>Operates before the string is placed in <code>.rodata</code></li>
-<li>Result is the same <code>string</code> struct (<code>ptr</code> + <code>len</code>)</li>
+<li>Result is the same <code>string</code> struct (<code>data</code> + <code>len</code>)</li>
 </ul>
 <hr>
 <h2 id="1.12-operators" tabindex="-1"><a class="doc-anchor" href="#1.12-operators" aria-hidden="true">#</a> 1.12 Operators</h2>

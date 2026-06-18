@@ -229,7 +229,6 @@ DirectiveName &lt;- ( 'export' / 'import' / 'module' / 'target'
                  / 'percpu_offset_of' / 'tls_offset_of'
                  / 'trusted_cast'
                  / 'deny'
-                 / 'volatile'                  // legacy per-access form — diagnosed
                  / 'dedent'
                  / 'percpu' / 'tls'
                  ) !IdentCont
@@ -806,7 +805,6 @@ label bodies). The full directive list above:</p>
      / CompileTimeIf
      / AcquireDirective                                      // legacy form — see §1.3.1
      / ReleaseDirective                                      // legacy form — see §1.3.1
-     / VolatileDirective                                     // diagnosed: prefer @volatile T
 
 StaticAssert
     &lt;- '#static_assert' '(' Expr ',' StringLiteral ')'
@@ -817,17 +815,15 @@ CompileTimeElseIf
 
 AcquireDirective &lt;- '#acquire' MemoryLoad
 ReleaseDirective &lt;- '#release' AssignTarget '=' Expr
-VolatileDirective &lt;- '#volatile' (MemoryLoad / (AssignTarget '=' Expr))
 </code></pre>
 <p><code>CompileTimeIf</code> selects a compile-time branch. Compile-time checks use
 <code>#static_assert</code> and the query forms in §3.4.</p>
 <p>Barriers are runtime primitives (<code>%dsb(domain)</code>, <code>%dmb(domain)</code>, <code>%isb()</code>,
 <code>%compiler_barrier()</code>), not directives.</p>
-<p>The <code>#volatile</code> form is the legacy per-access volatility directive
-(Phase 0.2). The parser accepts it for diagnosis but the semantic phase
-emits &quot;use @volatile T at the address-type level instead.&quot; <code>#acquire</code>
-and <code>#release</code> remain valid per-access annotations for explicit
-synchronization (Phase 0.2 disposition).</p>
+<p><code>#acquire</code> and <code>#release</code> remain valid per-access annotations for
+explicit synchronization. There is no per-access <code>#volatile</code> directive:
+per-access volatility was removed, so declare volatility at the
+address-type level with <code>@volatile T</code> (see chapter-09 §1.3).</p>
 <h3 id="4.6-inline-assembly-statement" tabindex="-1"><a class="doc-anchor" href="#4.6-inline-assembly-statement" aria-hidden="true">#</a> 4.6 Inline Assembly Statement</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">AsmBlock
     &lt;- '#asm' AsmOptions? '{' AsmSection* AsmBody '}'

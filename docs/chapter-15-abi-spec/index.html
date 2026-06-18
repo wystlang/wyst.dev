@@ -260,11 +260,11 @@ Wyst-native helper, it saves and restores <code>d8</code>-<code>d15</code> aroun
 <p>A struct whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), the second holds the remaining bytes (zero-padded to 8 bytes if the struct is not a multiple of 8 bytes in size):</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">string</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-    ptr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>   <span class="token comment">// offset 0, 8 bytes</span>
-    len <span class="token operator">:</span> <span class="token builtin type">u64</span>   <span class="token comment">// offset 8, 8 bytes</span>
+    data <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>   <span class="token comment">// offset 0, 8 bytes</span>
+    len <span class="token operator">:</span> <span class="token builtin type">u64</span>    <span class="token comment">// offset 8, 8 bytes</span>
 <span class="token punctuation">}</span>
 
-<span class="token comment">// passed as: x0 = ptr, x1 = len</span>
+<span class="token comment">// passed as: x0 = data, x1 = len</span>
 <span class="token comment">// consumes two argument register slots</span>
 </code></pre>
 <p>If only one integer argument register remains when a medium struct is to be passed, the struct is passed on the stack instead (see §A.5). Structs are not split across the register/stack boundary.</p>

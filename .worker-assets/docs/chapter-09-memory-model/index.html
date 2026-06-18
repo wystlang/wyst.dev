@@ -311,7 +311,7 @@ val <span class="token operator">:</span><span class="token operator">=</span> <
 <h4>Struct Addresses</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// `string` is a built-in value with this representation:</span>
-<span class="token comment">// { ptr : @u8, len : u64 }</span>
+<span class="token comment">// { data : @u8, len : u64 }</span>
 
 <span class="token address-qualifier type">@string</span>  <span class="token comment">// address into strings (stride 16)</span>
 </code></pre>
@@ -320,7 +320,7 @@ val <span class="token operator">:</span><span class="token operator">=</span> <
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">msgs <span class="token operator">:</span> <span class="token address-qualifier type">@string</span> <span class="token operator">=</span> <span class="token number">0x6000</span>
 
 first_len <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msgs <span class="token operator">+</span> <span class="token number">8</span><span class="token punctuation">]</span>       <span class="token comment">// access .len field of first string (offset 8)</span>
-second_ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msgs <span class="token operator">+</span> <span class="token number">16</span><span class="token punctuation">]</span>     <span class="token comment">// access .ptr field of second string (offset 16)</span>
+second_data <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msgs <span class="token operator">+</span> <span class="token number">16</span><span class="token punctuation">]</span>    <span class="token comment">// access .data field of second string (offset 16)</span>
 </code></pre>
 <h4>Vector Addresses</h4>
 <!-- wyst-contract: sketch -->

@@ -237,7 +237,7 @@ lower-level address operations use byte offsets.</p>
 </tr>
 <tr>
 <td><code>[]T</code></td>
-<td>Type-erasure pass; lowered to <code>struct {ptr: @T, len: u64}</code></td>
+<td>Type-erasure pass; lowered to <code>struct {data: @T, len: u64}</code></td>
 </tr>
 <tr>
 <td><code>[T:N]</code></td>
@@ -255,7 +255,7 @@ lower-level address operations use byte offsets.</p>
 <li>All <code>struct</code> types are dissolved; field accesses become <code>gep</code> + scalar load/store.</li>
 <li>All <code>bitfield(T)</code> types are dissolved; field reads become <code>ubfx</code>-shaped ops, field writes become <code>bfi</code>-shaped ops.</li>
 <li>All <code>enum</code> types are dissolved into <code>{tag, payload}</code> accesses.</li>
-<li>All <code>[]T</code> slices are dissolved into <code>{ptr, len}</code> pairs.</li>
+<li>All <code>[]T</code> slices are dissolved into <code>{data, len}</code> pairs.</li>
 <li><code>[N]T</code> arrays remain (they're already a pointer + size at the language level).</li>
 <li>Address types <code>@T</code> collapse to <code>@u8</code> (the element lens has done its job).</li>
 <li>Endian-aware load/store ops retain their byte-order attribute until

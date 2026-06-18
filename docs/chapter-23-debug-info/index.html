@@ -302,7 +302,7 @@ does not appear in this table is a compiler bug.</p>
 </tr>
 <tr>
 <td><code>DW_TAG_array_type</code></td>
-<td><code>[N]T</code>, <code>[T:N]</code>, <code>[]T</code> slice (slice modeled as struct of <code>ptr</code>+<code>len</code> — see §11.5)</td>
+<td><code>[N]T</code>, <code>[T:N]</code>, <code>[]T</code> slice (slice modeled as struct of <code>data</code>+<code>len</code> — see §11.5)</td>
 </tr>
 <tr>
 <td><code>DW_TAG_subrange_type</code></td>
@@ -344,7 +344,7 @@ of attribute, Wyst picks one and uses only that form.</p>
 <code>DW_TAG_structure_type</code> whose <code>DW_AT_byte_size</code> is the backing
 <code>size_of(T)</code>.</p>
 <p><strong>Slices.</strong> A <code>[]T</code> slice is emitted as a <code>DW_TAG_structure_type</code> with two
-members: <code>ptr : @T</code> (offset 0) and <code>len : u64</code> (offset 8), matching the
+members: <code>data : @T</code> (offset 0) and <code>len : u64</code> (offset 8), matching the
 ABI layout. The struct's <code>DW_AT_name</code> is <code>&quot;[]T&quot;</code> with <code>T</code> substituted.</p>
 <p><strong>Tagged-union enums.</strong> A Wyst <code>enum</code> with payload variants emits a
 <code>DW_TAG_structure_type</code> containing one <code>DW_TAG_member</code> for the
