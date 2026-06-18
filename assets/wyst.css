@@ -1759,3 +1759,78 @@ code.hl {
 .foot-mascot .cc {
 	color: var(--accent);
 }
+
+/* ---- 404 / error page ---------------------------------------------------- */
+.nf {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(var(--space-lg), 5vw, var(--space-3xl));
+	min-height: 56vh;
+	padding-block: var(--space-3xl);
+}
+
+.nf .mascot {
+	align-self: center;
+}
+
+.nf-body {
+	flex: 1 1 340px;
+	max-width: 460px;
+}
+
+.nf-body h1 {
+	margin: var(--space-xs) 0 var(--space-md);
+}
+
+/* A monospace fault line under the heading — EFAULT is the POSIX errno for a
+   bad address, doubling as the systems-language gag on a missing page. */
+.nf-fault {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	margin-bottom: var(--space-lg);
+	font-family: var(--mono);
+	font-size: var(--text-sm);
+	color: var(--faint);
+}
+
+.nf-fault code {
+	font-family: inherit;
+	color: var(--accent);
+	background: var(--surface-subtle);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	padding: var(--space-3xs) var(--space-xs);
+}
+
+.nf-body p {
+	color: var(--muted);
+	line-height: 1.65;
+}
+
+.nf-body p + p {
+	margin-top: var(--space-md);
+}
+
+.nf-body a {
+	color: var(--accent);
+	border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+	transition: border-color 0.15s ease;
+}
+
+.nf-body a:hover {
+	border-bottom-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+	.nf {
+		min-height: 0;
+		text-align: center;
+	}
+
+	.nf-fault {
+		justify-content: center;
+	}
+}

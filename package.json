@@ -7,13 +7,16 @@
   "scripts": {
     "build": "node build/generate.mjs",
     "docs": "node build/generate.mjs",
-    "build:worker-assets": "node tools/prepare-worker-assets.mjs",
+    "build:404": "node build/generate-404.mjs",
+    "build:worker-assets": "node build/generate-404.mjs && node tools/prepare-worker-assets.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
+    "deploy": "wrangler deploy",
     "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^9.2.0",
-    "prismjs": "^1.29.0"
+    "prismjs": "^1.29.0",
+    "wrangler": "^4.102.0"
   }
 }

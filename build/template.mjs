@@ -274,6 +274,31 @@ export function docIndexPage({
 	return shell({ title, description, canonical, bodyClass: "docs", body });
 }
 
+// A friendly error page (e.g. 404): the waving mascot beside a short recovery
+// message. Reuses the shared shell — no sidebar or doc chrome. `fault` is an
+// optional { code, text } shown as a monospace fault line under the heading.
+export function errorPage({ title, description, eyebrow, fault, h1, bodyHtml }) {
+	const faultHtml = fault
+		? `<p class="nf-fault"><code>${escapeHtml(fault.code)}</code><span>${escapeHtml(fault.text)}</span></p>`
+		: "";
+	const body = `		<main id="main">
+			<div class="wrap nf">
+				<div
+					class="mascot"
+					role="img"
+					aria-label="Winston, the Wyst mascot, waving"
+				></div>
+				<div class="nf-body">
+					<span class="eyebrow">${escapeHtml(eyebrow)}</span>
+					<h1>${escapeHtml(h1)}</h1>
+					${faultHtml}
+					${bodyHtml}
+				</div>
+			</div>
+		</main>`;
+	return shell({ title, description, body });
+}
+
 // A simpler full-width page (roadmap, etc.) with no sidebar.
 export function simplePage({ title, description, canonical, eyebrow, h1, articleHtml }) {
 	const body = `		<main id="main" class="doc">
