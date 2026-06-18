@@ -1,7 +1,7 @@
 /* Documentation pages — layout + prose, built on the tokens in wyst.css. */
 
 :root {
-	--syn-str: #8fbf8a;
+	/* --syn-str and other --syn-* tokens live in wyst.css */
 	--doc-maxw: 1280px;
 	--doc-sidebar-w: 252px;
 	--doc-toc-w: 196px;
@@ -15,7 +15,7 @@
 	content: "";
 	display: block;
 	height: 2px;
-	margin-top: 2px;
+	margin-top: var(--space-3xs);
 	border-radius: 2px;
 	background: var(--accent);
 }
@@ -27,7 +27,7 @@
 	gap: clamp(28px, 4vw, 56px);
 	max-width: var(--doc-maxw);
 	align-items: start;
-	padding-top: 44px;
+	padding-top: var(--space-2xl);
 	padding-bottom: clamp(64px, 9vw, 120px);
 }
 .doc-wrap--solo {
@@ -40,14 +40,14 @@
 	grid-column: 1 / -1;
 	justify-self: start;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-xs);
 	font-family: var(--mono);
-	font-size: 13px;
+	font-size: var(--text-sm);
 	color: var(--text);
-	background: rgba(255, 255, 255, 0.035);
+	background: var(--surface-subtle);
 	border: 1px solid var(--line-2);
-	border-radius: 8px;
-	padding: 9px 16px;
+	border-radius: var(--radius-md);
+	padding: var(--space-sm) var(--space-md);
 	cursor: pointer;
 }
 
@@ -57,34 +57,34 @@
 	top: 88px;
 	max-height: calc(100vh - 108px);
 	overflow-y: auto;
-	padding-right: 8px;
-	font-size: 14px;
+	padding-right: var(--space-xs);
+	font-size: var(--text-base);
 }
 .doc-sidebar-home {
 	display: block;
 	font-family: var(--mono);
-	font-size: 11px;
+	font-size: var(--text-2xs);
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--faint);
-	padding: 6px 10px;
-	margin-bottom: 14px;
-	border-radius: 6px;
+	padding: var(--space-xs) var(--space-sm);
+	margin-bottom: var(--space-md);
+	border-radius: var(--radius-sm);
 }
 .doc-sidebar-home:hover,
 .doc-sidebar-home[aria-current="page"] {
 	color: var(--accent);
 }
 .doc-nav-group {
-	margin-bottom: 22px;
+	margin-bottom: var(--space-lg);
 }
 .doc-nav-title {
 	font-family: var(--mono);
-	font-size: 11px;
+	font-size: var(--text-2xs);
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--faint);
-	margin: 0 10px 8px;
+	margin: 0 var(--space-sm) var(--space-xs);
 }
 .doc-sidebar ul {
 	list-style: none;
@@ -92,18 +92,18 @@
 .doc-sidebar li a {
 	display: flex;
 	align-items: baseline;
-	gap: 10px;
+	gap: var(--space-sm);
 	color: var(--muted);
-	padding: 6px 10px;
-	border-radius: 6px;
+	padding: var(--space-xs) var(--space-sm);
+	border-radius: var(--radius-sm);
 	line-height: 1.4;
 	transition:
-		color 0.15s ease,
-		background 0.15s ease;
+		color var(--dur-fast) var(--ease),
+		background var(--dur-fast) var(--ease);
 }
 .doc-sidebar li a:hover {
 	color: var(--text);
-	background: rgba(255, 255, 255, 0.04);
+	background: var(--surface-subtle);
 }
 .doc-sidebar li a[aria-current="page"] {
 	color: var(--accent);
@@ -114,7 +114,7 @@
 	flex: none;
 	min-width: 1.4em;
 	font-family: var(--mono);
-	font-size: 11.5px;
+	font-size: var(--text-2xs);
 	color: var(--faint);
 	text-align: right;
 }
@@ -127,12 +127,12 @@
 	min-width: 0;
 }
 .doc-article-head {
-	margin-bottom: 34px;
-	padding-bottom: 26px;
+	margin-bottom: var(--space-xl);
+	padding-bottom: var(--space-lg);
 	border-bottom: 1px solid var(--line);
 }
 .doc-article-head .eyebrow {
-	margin-bottom: 16px;
+	margin-bottom: var(--space-md);
 }
 .doc-article-head h1 {
 	font-size: clamp(30px, 4vw, 44px);
@@ -140,15 +140,15 @@
 	letter-spacing: -0.02em;
 }
 .doc-lede {
-	margin-top: 16px;
+	margin-top: var(--space-md);
 	color: var(--muted);
-	font-size: 17px;
+	font-size: var(--text-xl);
 	max-width: 60ch;
 }
 
 /* ---- prose --------------------------------------------------------------- */
 .doc-body {
-	font-size: 16px;
+	font-size: var(--text-lg);
 	line-height: 1.72;
 	color: var(--text);
 }
@@ -160,31 +160,31 @@
 	position: relative;
 }
 .doc-body h2 {
-	font-size: 26px;
-	margin: 52px 0 18px;
-	padding-top: 14px;
+	font-size: var(--text-4xl);
+	margin: 52px 0 var(--space-md);
+	padding-top: var(--space-md);
 	border-top: 1px solid var(--line);
 }
 .doc-body h3 {
-	font-size: 20px;
-	margin: 36px 0 14px;
+	font-size: var(--text-3xl);
+	margin: var(--space-xl) 0 var(--space-md);
 }
 .doc-body h4 {
-	font-size: 16.5px;
-	margin: 28px 0 12px;
+	font-size: var(--text-lg);
+	margin: var(--space-xl) 0 var(--space-sm);
 	color: var(--muted);
 }
 .doc-body p,
 .doc-body ul,
 .doc-body ol {
-	margin: 0 0 18px;
+	margin: 0 0 var(--space-md);
 }
 .doc-body ul,
 .doc-body ol {
-	padding-left: 24px;
+	padding-left: var(--space-lg);
 }
 .doc-body li {
-	margin: 6px 0;
+	margin: var(--space-xs) 0;
 }
 .doc-body li::marker {
 	color: var(--faint);
@@ -205,7 +205,7 @@
 .doc-body hr {
 	border: none;
 	border-top: 1px solid var(--line);
-	margin: 40px 0;
+	margin: var(--space-2xl) 0;
 }
 
 /* heading anchor link */
@@ -216,7 +216,7 @@
 	opacity: 0;
 	text-decoration: none;
 	font-weight: 400;
-	transition: opacity 0.15s ease;
+	transition: opacity var(--dur-fast) var(--ease);
 }
 .doc-body h2:hover .doc-anchor,
 .doc-body h3:hover .doc-anchor {
@@ -229,18 +229,18 @@
 	font-size: 0.86em;
 	color: var(--accent);
 	background: color-mix(in srgb, var(--accent) 8%, transparent);
-	padding: 1px 6px;
-	border-radius: 4px;
+	padding: 1px var(--space-xs);
+	border-radius: var(--radius-xs);
 	white-space: nowrap;
 }
 
 /* blockquote callouts (chapters use these for canonical-scope notes) */
 .doc-body blockquote {
-	margin: 22px 0;
-	padding: 14px 20px;
+	margin: var(--space-lg) 0;
+	padding: var(--space-md) var(--space-lg);
 	border-left: 2px solid var(--accent);
 	background: var(--bg-elev);
-	border-radius: 0 8px 8px 0;
+	border-radius: 0 var(--radius-md) var(--radius-md) 0;
 	color: var(--muted);
 }
 .doc-body blockquote p:last-child {
@@ -254,22 +254,22 @@
 .doc-body table {
 	width: 100%;
 	border-collapse: collapse;
-	margin: 22px 0;
-	font-size: 14.5px;
+	margin: var(--space-lg) 0;
+	font-size: var(--text-base);
 	display: block;
 	overflow-x: auto;
 }
 .doc-body th,
 .doc-body td {
 	text-align: left;
-	padding: 10px 14px;
+	padding: var(--space-sm) var(--space-md);
 	border: 1px solid var(--line);
 	vertical-align: top;
 }
 .doc-body th {
 	background: var(--bg-elev);
 	font-family: var(--mono);
-	font-size: 12.5px;
+	font-size: var(--text-xs);
 	letter-spacing: 0.03em;
 	color: var(--text);
 	font-weight: 600;
@@ -282,12 +282,12 @@
 .doc-body .wyst-code {
 	background: linear-gradient(180deg, var(--bg-code) 0%, var(--bg-code-2) 100%);
 	border: 1px solid var(--line-2);
-	border-radius: 10px;
-	padding: 16px 18px;
-	margin: 22px 0;
+	border-radius: var(--radius-lg);
+	padding: var(--space-md) var(--space-md);
+	margin: var(--space-lg) 0;
 	overflow-x: auto;
 	font-family: var(--mono);
-	font-size: 13.3px;
+	font-size: var(--text-sm);
 	line-height: 1.72;
 	tab-size: 2;
 }
@@ -340,29 +340,29 @@
 	color: var(--syn-punct);
 }
 .wyst-code .token.label {
-	color: #74c08a;
+	color: var(--success);
 }
 
 /* ---- prev/next pager ----------------------------------------------------- */
 .doc-pager {
 	display: flex;
 	justify-content: space-between;
-	gap: 16px;
-	margin-top: 56px;
-	padding-top: 26px;
+	gap: var(--space-md);
+	margin-top: var(--space-3xl);
+	padding-top: var(--space-lg);
 	border-top: 1px solid var(--line);
 }
 .doc-pager-link {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var(--space-2xs);
 	max-width: 48%;
-	padding: 14px 18px;
+	padding: var(--space-md) var(--space-md);
 	border: 1px solid var(--line);
-	border-radius: 10px;
+	border-radius: var(--radius-lg);
 	transition:
-		border-color 0.16s ease,
-		background 0.16s ease;
+		border-color var(--dur-fast) var(--ease),
+		background var(--dur-fast) var(--ease);
 }
 .doc-pager-link:hover {
 	border-color: var(--line-2);
@@ -374,12 +374,12 @@
 }
 .doc-pager-link .dir {
 	font-family: var(--mono);
-	font-size: 11.5px;
+	font-size: var(--text-2xs);
 	color: var(--faint);
 }
 .doc-pager-link .lbl {
 	color: var(--text);
-	font-size: 15px;
+	font-size: var(--text-md);
 	font-weight: 500;
 }
 
@@ -389,15 +389,15 @@
 	top: 88px;
 	max-height: calc(100vh - 108px);
 	overflow-y: auto;
-	font-size: 13px;
+	font-size: var(--text-sm);
 }
 .doc-toc-title {
 	font-family: var(--mono);
-	font-size: 11px;
+	font-size: var(--text-2xs);
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--faint);
-	margin-bottom: 12px;
+	margin-bottom: var(--space-sm);
 }
 .doc-toc-list {
 	list-style: none;
@@ -406,15 +406,15 @@
 .doc-toc-list li a {
 	display: block;
 	color: var(--muted);
-	padding: 5px 0 5px 14px;
+	padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
 	margin-left: -1px;
 	border-left: 1px solid transparent;
 	line-height: 1.4;
-	transition: color 0.15s ease;
+	transition: color var(--dur-fast) var(--ease);
 }
 .doc-toc-list li.lvl-3 a {
-	padding-left: 26px;
-	font-size: 12.5px;
+	padding-left: var(--space-lg);
+	font-size: var(--text-xs);
 }
 .doc-toc-list li a:hover {
 	color: var(--text);
@@ -429,46 +429,46 @@
 }
 .doc-index-head {
 	max-width: 680px;
-	margin-bottom: 48px;
+	margin-bottom: var(--space-2xl);
 }
 .doc-index-head h1 {
 	font-size: clamp(32px, 4.6vw, 52px);
-	margin: 14px 0 18px;
+	margin: var(--space-md) 0 var(--space-md);
 	letter-spacing: -0.02em;
 }
 .doc-index-lede p {
 	color: var(--muted);
-	font-size: 17.5px;
+	font-size: var(--text-xl);
 	line-height: 1.65;
-	margin-bottom: 12px;
+	margin-bottom: var(--space-sm);
 }
 .doc-index-group {
-	margin-top: 44px;
+	margin-top: var(--space-2xl);
 }
 .doc-index-group > h2 {
 	font-family: var(--mono);
-	font-size: 12.5px;
+	font-size: var(--text-xs);
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
 	color: var(--faint);
-	margin-bottom: 20px;
+	margin-bottom: var(--space-lg);
 }
 .doc-index-grid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 14px;
+	gap: var(--space-md);
 }
 .doc-index-card {
 	display: block;
 	position: relative;
-	padding: 22px 22px 24px;
+	padding: var(--space-lg) var(--space-lg) var(--space-lg);
 	background: var(--bg-code);
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
 	transition:
-		border-color 0.18s ease,
-		background 0.18s ease,
-		transform 0.18s ease;
+		border-color var(--dur-base) var(--ease),
+		background var(--dur-base) var(--ease),
+		transform var(--dur-base) var(--ease);
 }
 .doc-index-card:hover {
 	background: var(--bg-elev);
@@ -477,20 +477,20 @@
 }
 .doc-index-card .num {
 	font-family: var(--mono);
-	font-size: 12px;
+	font-size: var(--text-xs);
 	color: var(--accent);
 	letter-spacing: 0.04em;
 }
 .doc-index-card h3 {
-	font-size: 16.5px;
+	font-size: var(--text-lg);
 	font-weight: 600;
 	letter-spacing: -0.01em;
-	margin: 8px 0 8px;
+	margin: var(--space-xs) 0 var(--space-xs);
 	color: var(--text);
 }
 .doc-index-card p {
 	color: var(--muted);
-	font-size: 13.5px;
+	font-size: var(--text-sm);
 	line-height: 1.55;
 }
 @media (max-width: 900px) {
@@ -524,10 +524,10 @@
 		position: static;
 		max-height: none;
 		display: none;
-		margin-bottom: 24px;
-		padding: 16px;
+		margin-bottom: var(--space-lg);
+		padding: var(--space-md);
 		border: 1px solid var(--line-2);
-		border-radius: 10px;
+		border-radius: var(--radius-lg);
 		background: var(--bg-elev);
 	}
 	.doc-sidebar.is-open {

@@ -2,7 +2,7 @@
 # Cache policy for static assets served by Cloudflare Workers Assets.
 /assets/apple-touch-icon.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/docs.bdf6bbb2.css
+/assets/docs.8225a59c.css
   Cache-Control: public, max-age=31536000, immutable
 /assets/favicon-48.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
@@ -48,5 +48,5 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/winston-wave-840.webp
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.aad393e1.css
+/assets/wyst.da14e159.css
   Cache-Control: public, max-age=31536000, immutable
