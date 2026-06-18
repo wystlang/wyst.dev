@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.da14e159.css" />
-		<link rel="stylesheet" href="/assets/docs.8225a59c.css" />
+		<link rel="stylesheet" href="/assets/wyst.322e9048.css" />
+		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -101,10 +101,11 @@ model.</li>
 topic area, requires concrete verification before release planning, and should
 not be repeated under exploration.</p>
 <ol>
-<li>Target/artifact/linking foundation: implement explicit target facts, checked
-target descriptors, relocatable object output, unresolved external AAPCS
-symbols, deterministic static linking, archive/library distribution, and
-artifact reports for multi-unit kernels and foreign object linkage.</li>
+<li>Target/artifact/linking foundation: promoted to release planning as the
+R8 / v0.8 milestone. Full scope, non-goals, dependency order, release
+targets, verification, and exit criteria now live in
+<a href="#release-milestones">Release Milestones</a>; this remains the highest-priority
+work and its scope is not repeated here.</li>
 <li>Diagnostics, conformance, and effect enforcement: write the
 required-diagnostics and conformance-test plan covering warnings, ABI edges,
 layout/order-sensitive behavior, public symbol contracts, <code>#asm</code> effect
@@ -128,6 +129,187 @@ normalize <code>dyn_array_init&lt;T&gt;(...)</code>.</li>
 components, design and ship allocation-explicit verified primitives and
 recipes without hidden runtime behavior.</li>
 </ol>
+<h2 id="release-milestones" tabindex="-1"><a class="doc-anchor" href="#release-milestones" aria-hidden="true">#</a> Release Milestones</h2>
+<p>Per the Tracking States, priority work that enters release planning graduates
+here with scope, non-goals, dependency order, numbered release targets,
+verification, exit criteria, and the design docs that will change. Completed
+releases move to <a href="CHANGELOG.md">CHANGELOG.md</a>. v0.7 shipped the Standard Library
+Runtime And Data Contracts release (R7) through target <code>31-buffer-api-contracts</code>;
+the next release is R8 / v0.8 and numbered targets resume at 32.</p>
+<h3 id="candidate-r8%3A-target%2Fartifact%2Flinking-foundation" tabindex="-1"><a class="doc-anchor" href="#candidate-r8%3A-target%2Fartifact%2Flinking-foundation" aria-hidden="true">#</a> Candidate R8: Target/Artifact/Linking Foundation</h3>
+<p>Confidence: committed. Promoted from Priority Work Queue item 1.</p>
+<p>Theme: turn the relocation machinery the backend already computes for the final
+image into a real object/link toolchain — relocatable objects, external symbols,
+explicit binding/visibility, and deterministic multi-unit static linking — so
+&quot;these units link into one inspectable image&quot; is as explicit as the
+instruction-level semantics already are.</p>
+<p>Scope:</p>
+<ul>
+<li>Finalize explicit target facts and checked target descriptors as the carrier
+for object, relocation, symbol, and link policy, building on the existing
+<code>#target(...)</code> facts and named profiles (for example <code>qemu-virt-aarch64-el2</code>).</li>
+<li>Relocatable object output: a <code>wync -c</code> / <code>--emit-object</code> mode that emits
+deterministic AArch64 <code>ET_REL</code> ELF, serializing the existing internal
+<code>R_AARCH64_*</code> relocation vocabulary into <code>.rela.*</code> sections with a real
+<code>.symtab</code> / <code>.strtab</code>, replacing the current &quot;object-file output is not
+available&quot; refusal.</li>
+<li>Unresolved external AAPCS symbols: <code>SHN_UNDEF</code> references so a unit can call
+or read symbols it does not define, making <code>gen-c-decls</code> no-body declarations
+actually linkable rather than only describable.</li>
+<li>Symbol binding and visibility model: <code>STB_GLOBAL</code> / <code>STB_WEAK</code> / <code>STB_LOCAL</code>
+and <code>STV_DEFAULT</code> / <code>STV_HIDDEN</code> with explicit source spelling, diagnostics,
+and symbol-table evidence (today only default binding exists).</li>
+<li>Deterministic static linking: combine multiple objects plus the layout into a
+byte-reproducible <code>ET_EXEC</code>, with cross-object and external-symbol
+branch-veneer extension beyond the direct-symbol <code>CALL26</code> / <code>JUMP26</code> veneers
+the backend already synthesizes.</li>
+<li>Debug-section relocation serialization: emit the debug-section relocations
+that already exist (for example <code>R_AARCH64_PREL32</code>) into the object, with
+DWARF content otherwise unchanged.</li>
+<li>Archive/library distribution: a static-archive format for distributing
+compiled units (the existing <code>release.wystar</code> is a release-evidence bundle,
+not a linker archive; <code>ar</code>-compatible vs Wyst-native is an open fork below).</li>
+<li>Foreign object linkage: link Wyst objects against externally produced AArch64
+ELF objects (clang / gcc / as), at least as a binary-inspected smoke proof.</li>
+<li>Artifact reports: a deterministic manifest describing target, relocations,
+defined/undefined symbols with binding/visibility, and link result for
+multi-unit kernels and foreign linkage.</li>
+</ul>
+<p>Non-goals (each deferred to its own contract):</p>
+<ul>
+<li>Dynamic linking, GOT/PLT, PIE/<code>ET_DYN</code>, shared objects, and ELF TLS
+(object-format/linker extensions topic).</li>
+<li>Non-ELF object formats — this foundation is ELF-only, so PE/COFF
+(object-format/linker extensions) and the Mach-O artifact-mode proof
+(target-environments topic) are out.</li>
+<li>init/fini-array and COMDAT/section-group handling (foreign-object
+compatibility; pairs with generics and monomorphization).</li>
+<li>DWARF debug-information content beyond relocating the sections that already
+exist (debug/trace topic).</li>
+<li>JIT/in-memory output, broad C/C++ interop, and the full AAPCS aggregate /
+variadic / vector surface (C-and-foreign-interface-widening topic).</li>
+<li>Execution-environment profiles beyond bare-metal kernel — Linux userspace,
+UEFI, EL1 freestanding (target-environments topic).</li>
+</ul>
+<p>Dependency order: target descriptors -&gt; relocatable object output (with
+binding/visibility and debug-reloc serialization) -&gt; external symbols -&gt;
+deterministic static linking with cross-object veneers -&gt; archives and foreign
+object linkage -&gt; artifact reports.</p>
+<p>Release targets:</p>
+<ul>
+<li><code>32-relocatable-object-mode</code>: <code>wync -c</code> emits one deterministic <code>ET_REL</code> per
+source file with <code>.rela.*</code>, <code>.symtab</code> / <code>.strtab</code>, and serialized
+debug-section relocations; proven by <code>readelf</code> / <code>objdump</code> snapshots and a
+build-twice byte compare. See the Target 32 sub-spec below.</li>
+<li><code>33-symbol-binding-visibility</code>: global / weak / local and default / hidden
+binding with source spelling, accept/reject diagnostics, and symbol-table
+evidence.</li>
+<li><code>34-external-symbols</code>: <code>SHN_UNDEF</code> external AAPCS references resolve at link
+time; <code>gen-c-decls</code> no-body declarations become linkable.</li>
+<li><code>35-static-link-multiunit</code>: the teaching kernel built as separate objects
+links deterministically into a byte-reproducible <code>ET_EXEC</code>, with cross-object
+veneers, and boots in QEMU with identical UART to the single-image build.</li>
+<li><code>36-foreign-object-linkage</code>: a Wyst image links against an externally produced
+AArch64 ELF object; binary-inspected and booted in QEMU.</li>
+<li><code>37-archive-and-artifact-reports</code>: static-archive distribution plus a
+deterministic artifact/link manifest reporting target, relocations, symbols,
+and link result.</li>
+</ul>
+<p>Verification:</p>
+<ul>
+<li><code>readelf -r</code> / <code>objdump</code> snapshot tests on emitted objects (relocations,
+symbol binding, visibility).</li>
+<li>Round-trip an existing QEMU virt fixture and the teaching kernel as multiple
+objects -&gt; linked <code>ET_EXEC</code> -&gt; booted in QEMU with byte-identical expected
+UART.</li>
+<li>External-linker cross-check: the same objects linked with system <code>ld</code> / <code>lld</code>
+as an ABI-well-formedness oracle (the shipped link path stays in-tree to keep
+determinism).</li>
+<li>Build twice and compare bytes for every emitted object and linked image
+(Roadmap Rule 3).</li>
+<li>No silent acceptance: unsupported object/link requests fail loudly with a
+diagnostic (Roadmap Rule 4).</li>
+</ul>
+<p>Exit criteria:</p>
+<ul>
+<li><code>wync -c</code> emits deterministic, externally inspectable <code>ET_REL</code> objects whose
+relocations and symbols match the documented vocabulary.</li>
+<li>A multi-object Wyst kernel links deterministically into a byte-reproducible
+<code>ET_EXEC</code> and boots in QEMU with output identical to the single-image build.</li>
+<li>External-symbol references resolve against both Wyst and foreign AArch64 ELF
+objects; unresolved symbols fail loudly.</li>
+<li>Symbol binding and visibility are source-spellable, diagnosed, and visible in
+the symbol table.</li>
+<li>Every supported artifact mode reports target, relocation, symbol, and link
+status in a manifest; unsupported modes fail loudly or are documented
+non-goals.</li>
+<li>Existing static-ELF / QEMU targets remain reproducible (no regression).</li>
+</ul>
+<p>Design docs to update (Roadmap Rule 8):</p>
+<ul>
+<li><a href="design/chapter-16-object-format.md">chapter-16-object-format.md</a> — <code>ET_REL</code>
+output, <code>.rela.*</code>, symbol table, binding/visibility, cross-object veneers, and
+the archive format (primary).</li>
+<li><a href="design/chapter-15-abi-spec.md">chapter-15-abi-spec.md</a> — external AAPCS
+symbols and link-time ABI edges.</li>
+<li><a href="design/chapter-02-targets.md">chapter-02-targets.md</a> — target facts and
+descriptors for object/link policy.</li>
+<li><a href="design/chapter-03-project-builds.md">chapter-03-project-builds.md</a> —
+multi-unit object and archive builds.</li>
+<li><a href="design/chapter-23-debug-info.md">chapter-23-debug-info.md</a> — debug-section
+relocation serialization.</li>
+<li><a href="design/chapter-22-generated-manifest.md">chapter-22-generated-manifest.md</a> —
+artifact and link reports.</li>
+</ul>
+<p>Open forks to settle during the milestone:</p>
+<ul>
+<li>Archive format: <code>ar</code>-compatible vs Wyst-native, and how it relates to the
+existing <code>release.wystar</code> evidence bundle.</li>
+<li>Whether the shipped linking path is wync's own deterministic linker or shells
+out to <code>lld</code> / <code>ld</code> (the determinism principle favors in-tree; external stays
+a verification oracle).</li>
+<li>Visibility source spelling (for example <code>#weak</code> / <code>#hidden</code>) and its
+interaction with <code>#export</code>.</li>
+<li>Cross-object veneer placement determinism.</li>
+</ul>
+<h4>Target 32 sub-spec: relocatable object output</h4>
+<p>Condensed contract for <code>32-relocatable-object-mode</code>. Decisions are settled; the
+chapter-16 deltas land with the code per Rule 8.</p>
+<ul>
+<li>CLI: <code>wync -c</code> / <code>--emit-object</code> replaces the current &quot;object-file output is
+not available&quot; refusal. Per-file translation units — each input <code>.wyst</code> file
+emits its own <code>ET_REL</code> object (output names derived from source basenames;
+<code>-o</code> requires a single input). Cross-file references (same module or imported)
+become <code>SHN_UNDEF</code> externals resolved at link time; sema still resolves the
+referenced declarations for types and ABI, but only the target file's
+definitions are emitted. <code>-c</code> is layout-independent and rejects <code>--layout</code>
+(placement is a link-time concern; no silent acceptance).</li>
+<li>Shape: <code>e_type = ET_REL</code>, no program headers, <code>e_entry = 0</code>, <code>sh_addr = 0</code>;
+reuses the existing ELF writer, symbol, and string-table machinery.</li>
+<li>Relocations: the executable path applies relocations, object mode emits them.
+The existing §5 vocabulary serializes to <code>.rela.text</code> / <code>.rela.data</code> /
+<code>.rela.rodata</code> / <code>.rela.debug_*</code> — <code>ADR_PREL_PG_HI21</code> + <code>ADD_ABS_LO12_NC</code> and
+<code>ADR_PREL_PG_HI21</code> + <code>LDSTn_ABS_LO12_NC</code> pairs split into two entries, plus
+<code>CALL26</code>, <code>JUMP26</code>, <code>CONDBR19</code>, <code>ABS64</code>, and <code>PREL32</code>. Wyst-internal offset
+kinds with no ELF equivalent (<code>#tls</code> / <code>#percpu</code> <code>mrs</code>+<code>add</code>) stay resolved at
+emit time, not emitted as relocations.</li>
+<li>Symbols: referenced-but-undefined symbols become <code>STB_GLOBAL</code> / <code>SHN_UNDEF</code>
+entries (this makes <code>gen-c-decls</code> no-body declarations and cross-file
+references linkable). Relocations are defined-symbol-preferred, with a
+<code>STT_SECTION</code> + addend fallback for section-internal targets. Binding is
+unchanged (<code>#export</code> -&gt; <code>STB_GLOBAL</code>, private -&gt; <code>STB_LOCAL</code>); <code>#weak</code> /
+<code>#hidden</code> stay deferred to target 33.</li>
+<li>Determinism: <code>.rela</code> entries sorted by <code>r_offset</code> (split pairs keep
+instruction order); undefined externals appended after defined globals in the
+existing §10 order; build-twice-and-compare-bytes applies to every emitted
+object.</li>
+<li>Out of this target: multi-object linking and cross-object veneers (35),
+foreign-object consumption (36), archives (37), and <code>#weak</code> / <code>#hidden</code>
+spelling (33).</li>
+<li>Chapter-16 landing (Rule 8, with the code): remove the &quot;Per-module <code>.o</code>
+relocatable output&quot; out-of-scope row in §9, add a Relocatable Object Output
+section, and extend §10 with the <code>.rela</code> ordering rules.</li>
+</ul>
 <h2 id="tracking-states" tabindex="-1"><a class="doc-anchor" href="#tracking-states" aria-hidden="true">#</a> Tracking States</h2>
 <p>Roadmap items use two buckets: priority work and exploration topics.</p>
 <ul>
@@ -161,10 +343,10 @@ rank lower.</p>
 <ul>
 <li>Object-format and linker extensions beyond deterministic static linking:
 dynamic linking, GOT/PLT relocation families, PIE/<code>ET_DYN</code>, shared objects,
-ELF TLS, COMDAT/section groups, <code>#weak</code>/<code>#hidden</code> visibility, init/fini
-arrays, PE/COFF output, and local branch veneer policies beyond direct-symbol
-<code>CALL26</code>/<code>JUMP26</code>. <em>(Each needs a language/linker contract before
-promotion.)</em></li>
+ELF TLS, COMDAT/section groups, init/fini arrays, and PE/COFF output. Symbol
+binding/visibility and cross-object/external-symbol branch veneers are
+promoted into Priority #1 and tracked there. <em>(Each remaining item needs a
+language/linker contract before promotion.)</em></li>
 <li>Explain and reporting surface: the <code>wyst explain</code> / report family, without
 hidden optimizer behavior, across three facets. (a) Performance/layout:
 static/profile/PMU/layout reports backed by a per-core microarchitectural
