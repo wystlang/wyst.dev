@@ -1593,6 +1593,41 @@ code.hl {
 	}
 }
 
+/* Winston's 404 poses — shrug (at rest) and the searching pose (on hover).
+   Displayed at a fixed 240px, so 240/480/720 cover DPR 1x/2x/3x. */
+:root {
+	--win-shrug: url("/assets/winston-shrug-480.png");
+	--win-search: url("/assets/winston-confused-480.png");
+}
+
+@supports (background-image: image-set(url("x.avif") type("image/avif") 1x)) {
+	:root {
+		--win-shrug: image-set(
+			url("/assets/winston-shrug-240.avif") type("image/avif") 1x,
+			url("/assets/winston-shrug-240.webp") type("image/webp") 1x,
+			url("/assets/winston-shrug-240.png") type("image/png") 1x,
+			url("/assets/winston-shrug-480.avif") type("image/avif") 2x,
+			url("/assets/winston-shrug-480.webp") type("image/webp") 2x,
+			url("/assets/winston-shrug-480.png") type("image/png") 2x,
+			url("/assets/winston-shrug-720.avif") type("image/avif") 3x,
+			url("/assets/winston-shrug-720.webp") type("image/webp") 3x,
+			url("/assets/winston-shrug-720.png") type("image/png") 3x
+		);
+
+		--win-search: image-set(
+			url("/assets/winston-confused-240.avif") type("image/avif") 1x,
+			url("/assets/winston-confused-240.webp") type("image/webp") 1x,
+			url("/assets/winston-confused-240.png") type("image/png") 1x,
+			url("/assets/winston-confused-480.avif") type("image/avif") 2x,
+			url("/assets/winston-confused-480.webp") type("image/webp") 2x,
+			url("/assets/winston-confused-480.png") type("image/png") 2x,
+			url("/assets/winston-confused-720.avif") type("image/avif") 3x,
+			url("/assets/winston-confused-720.webp") type("image/webp") 3x,
+			url("/assets/winston-confused-720.png") type("image/png") 3x
+		);
+	}
+}
+
 .brand .mark {
 	width: 30px;
 	height: 30px;
@@ -1761,76 +1796,158 @@ code.hl {
 }
 
 /* ---- 404 / error page ---------------------------------------------------- */
-.nf {
+/* The error page is a full-height flex column (header / hero / footer) so the
+   footer pins to the bottom and the hero sits optically centred. */
+.nf-page {
+	min-height: 100vh;
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
+}
+
+.nf-main {
+	position: relative;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: clamp(var(--space-lg), 5vw, var(--space-3xl));
-	min-height: 56vh;
-	padding-block: var(--space-3xl);
+	text-align: center;
+	padding: clamp(40px, 6vw, 56px) var(--pad) clamp(56px, 8vw, 72px);
+	overflow: hidden;
 }
 
-.nf .mascot {
-	align-self: center;
+/* Faint engineering grid behind the hero, masked to fade out toward the edges. */
+.nf-grid {
+	position: absolute;
+	inset: 0;
+	background-image:
+		linear-gradient(var(--line) 1px, transparent 1px),
+		linear-gradient(90deg, var(--line) 1px, transparent 1px);
+	background-size: 56px 56px;
+	-webkit-mask-image: radial-gradient(
+		120% 60% at 50% 0%,
+		#000 0%,
+		transparent 64%
+	);
+	mask-image: radial-gradient(120% 60% at 50% 0%, #000 0%, transparent 64%);
+	pointer-events: none;
 }
 
-.nf-body {
-	flex: 1 1 340px;
-	max-width: 460px;
+.nf-glow {
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(50% 42% at 50% -6%, var(--glow), transparent 72%);
+	pointer-events: none;
 }
 
-.nf-body h1 {
-	margin: var(--space-xs) 0 var(--space-md);
-}
-
-/* A monospace fault line under the heading — EFAULT is the POSIX errno for a
-   bad address, doubling as the systems-language gag on a missing page. */
-.nf-fault {
+.nf {
+	position: relative;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: var(--space-sm);
-	margin-bottom: var(--space-lg);
+}
+
+.nf-eyebrow {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--accent);
+	margin-bottom: 18px;
+}
+
+/* Winston came back empty-pawed (shrug); hover cross-fades to the searching
+   pose. Two stacked layers keep the swap a pure opacity fade — no reflow. */
+.nf-winston {
+	position: relative;
+	width: 240px;
+	max-width: 72vw;
+	cursor: default;
+}
+
+.nf-winston-img {
+	width: 100%;
+	aspect-ratio: 1122 / 1402;
+	background: center / contain no-repeat;
+	filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.55));
+}
+
+.nf-winston-shrug {
+	background-image: var(--win-shrug);
+}
+
+.nf-winston-search {
+	position: absolute;
+	inset: 0;
+	background-image: var(--win-search);
+	opacity: 0;
+}
+
+.nf-winston-shrug,
+.nf-winston-search {
+	transition: opacity var(--dur-slow) var(--ease);
+}
+
+.nf-winston:hover .nf-winston-shrug {
+	opacity: 0;
+}
+
+.nf-winston:hover .nf-winston-search {
+	opacity: 1;
+}
+
+.nf h1 {
+	font-weight: 700;
+	font-size: clamp(34px, 7vw, 48px);
+	line-height: 1.04;
+	letter-spacing: -0.022em;
+	margin: 28px 0 0;
+}
+
+/* A monospace fault line under the heading — "translation fault" is the ARM MMU
+   abort for an unmapped address, doubling as the gag on a missing page. */
+.nf-fault {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 18px;
 	font-family: var(--mono);
 	font-size: var(--text-sm);
-	color: var(--faint);
 }
 
 .nf-fault code {
 	font-family: inherit;
 	color: var(--accent);
-	background: var(--surface-subtle);
-	border: 1px solid var(--line);
+	background: var(--bg-code);
+	border: 1px solid var(--line-2);
 	border-radius: var(--radius-sm);
-	padding: var(--space-3xs) var(--space-xs);
+	padding: 3px 9px;
 }
 
-.nf-body p {
+.nf-fault span {
 	color: var(--muted);
+}
+
+.nf-lede {
+	max-width: 500px;
+	margin: 22px 0 0;
+	font-size: var(--text-lg);
 	line-height: 1.65;
+	color: var(--muted);
+	text-wrap: pretty;
 }
 
-.nf-body p + p {
-	margin-top: var(--space-md);
+.nf-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--space-sm);
+	margin-top: 30px;
 }
 
-.nf-body a {
-	color: var(--accent);
-	border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-	transition: border-color 0.15s ease;
-}
-
-.nf-body a:hover {
-	border-bottom-color: var(--accent);
-}
-
-@media (max-width: 720px) {
-	.nf {
-		min-height: 0;
-		text-align: center;
-	}
-
-	.nf-fault {
-		justify-content: center;
+@media (prefers-reduced-motion: reduce) {
+	.nf-winston-shrug,
+	.nf-winston-search {
+		transition: none;
 	}
 }

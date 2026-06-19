@@ -15,23 +15,22 @@ import { errorPage } from "./template.mjs";
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 
-const bodyHtml = `<p>
-				Winston went to fetch that page and trotted back empty-pawed — the
+const bodyHtml = `<p class="nf-lede">
+				Winston went to fetch that page and trotted back empty-pawed. The
 				address didn't resolve to anything here.
-			</p>
-			<p>
-				Head back <a href="/">home</a>, open the
-				<a href="/docs/">reference manual</a>, or check the
-				<a href="/roadmap/">roadmap</a>.
 			</p>`;
 
 const html = errorPage({
 	title: "Page not found · Wyst",
 	description: "The page you requested could not be found on wyst.dev.",
-	eyebrow: "Error 404",
-	fault: { code: "EFAULT", text: "no page mapped at this address" },
+	eyebrow: "Error 404 · Data abort",
+	fault: { code: "translation fault", text: "no page mapped at this address" },
 	h1: "Page not found",
 	bodyHtml,
+	actions: [
+		{ href: "/", label: "Back home", variant: "primary", arrow: true },
+		{ href: "/docs/", label: "Docs", variant: "secondary" },
+	],
 });
 
 const dest = path.join(ROOT, "404.html");

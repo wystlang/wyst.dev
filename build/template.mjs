@@ -274,29 +274,56 @@ export function docIndexPage({
 	return shell({ title, description, canonical, bodyClass: "docs", body });
 }
 
-// A friendly error page (e.g. 404): the waving mascot beside a short recovery
-// message. Reuses the shared shell — no sidebar or doc chrome. `fault` is an
-// optional { code, text } shown as a monospace fault line under the heading.
-export function errorPage({ title, description, eyebrow, fault, h1, bodyHtml }) {
+// A friendly error page (e.g. 404): a centered hero on a faded engineering grid
+// with Winston front and centre — at rest he shrugs (empty-pawed); on hover he
+// cross-fades to a searching pose. Reuses the shared shell (header + footer), so
+// the page is a full-height flex column that pins the footer to the bottom.
+// `fault` is an optional { code, text } monospace fault line; `actions` is an
+// optional array of { href, label, variant, arrow } CTA buttons.
+export function errorPage({
+	title,
+	description,
+	eyebrow,
+	fault,
+	h1,
+	bodyHtml,
+	actions = [],
+}) {
 	const faultHtml = fault
 		? `<p class="nf-fault"><code>${escapeHtml(fault.code)}</code><span>${escapeHtml(fault.text)}</span></p>`
 		: "";
-	const body = `		<main id="main">
-			<div class="wrap nf">
-				<div
-					class="mascot"
-					role="img"
-					aria-label="Winston, the Wyst mascot, waving"
-				></div>
-				<div class="nf-body">
-					<span class="eyebrow">${escapeHtml(eyebrow)}</span>
-					<h1>${escapeHtml(h1)}</h1>
-					${faultHtml}
-					${bodyHtml}
+	const actionsHtml = actions
+		.map((a) => {
+			const rel = /^https?:/i.test(a.href) ? ' rel="noopener"' : "";
+			const arrow = a.arrow
+				? ' <span class="arrow" aria-hidden="true">→</span>'
+				: "";
+			return `<a class="btn btn-${a.variant || "secondary"}" href="${a.href}"${rel}>${escapeHtml(a.label)}${arrow}</a>`;
+		})
+		.join("\n\t\t\t\t\t");
+	const actionsBlock = actionsHtml
+		? `<div class="nf-actions">\n\t\t\t\t\t${actionsHtml}\n\t\t\t\t</div>`
+		: "";
+	const body = `		<main id="main" class="nf-main">
+			<div class="nf-grid" aria-hidden="true"></div>
+			<div class="nf-glow" aria-hidden="true"></div>
+			<div class="nf">
+				<span class="nf-eyebrow">${escapeHtml(eyebrow)}</span>
+				<div class="nf-winston">
+					<div
+						class="nf-winston-img nf-winston-shrug"
+						role="img"
+						aria-label="Winston shrugging — he came back empty-pawed, the page wasn't there"
+					></div>
+					<div class="nf-winston-img nf-winston-search" aria-hidden="true"></div>
 				</div>
+				<h1>${escapeHtml(h1)}</h1>
+				${faultHtml}
+				${bodyHtml}
+				${actionsBlock}
 			</div>
 		</main>`;
-	return shell({ title, description, body });
+	return shell({ title, description, bodyClass: "nf-page", body });
 }
 
 // A simpler full-width page (roadmap, etc.) with no sidebar.

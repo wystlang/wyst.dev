@@ -61,6 +61,26 @@ const files = [
 	["artwork/winston/wave/winston-wave-840.avif", "winston-wave-840.avif"],
 	["artwork/winston/wave/winston-wave-840.png", "winston-wave-840.png"],
 	["artwork/winston/wave/winston-wave-840.webp", "winston-wave-840.webp"],
+
+	["artwork/winston/shrug/winston-shrug-240.avif", "winston-shrug-240.avif"],
+	["artwork/winston/shrug/winston-shrug-240.png", "winston-shrug-240.png"],
+	["artwork/winston/shrug/winston-shrug-240.webp", "winston-shrug-240.webp"],
+	["artwork/winston/shrug/winston-shrug-480.avif", "winston-shrug-480.avif"],
+	["artwork/winston/shrug/winston-shrug-480.png", "winston-shrug-480.png"],
+	["artwork/winston/shrug/winston-shrug-480.webp", "winston-shrug-480.webp"],
+	["artwork/winston/shrug/winston-shrug-720.avif", "winston-shrug-720.avif"],
+	["artwork/winston/shrug/winston-shrug-720.png", "winston-shrug-720.png"],
+	["artwork/winston/shrug/winston-shrug-720.webp", "winston-shrug-720.webp"],
+
+	["artwork/winston/confused/winston-confused-240.avif", "winston-confused-240.avif"],
+	["artwork/winston/confused/winston-confused-240.png", "winston-confused-240.png"],
+	["artwork/winston/confused/winston-confused-240.webp", "winston-confused-240.webp"],
+	["artwork/winston/confused/winston-confused-480.avif", "winston-confused-480.avif"],
+	["artwork/winston/confused/winston-confused-480.png", "winston-confused-480.png"],
+	["artwork/winston/confused/winston-confused-480.webp", "winston-confused-480.webp"],
+	["artwork/winston/confused/winston-confused-720.avif", "winston-confused-720.avif"],
+	["artwork/winston/confused/winston-confused-720.png", "winston-confused-720.png"],
+	["artwork/winston/confused/winston-confused-720.webp", "winston-confused-720.webp"],
 ];
 
 const brandRoot = await resolveBrandRoot();

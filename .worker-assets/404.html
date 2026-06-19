@@ -10,10 +10,10 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.a105f584.css" />
+		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
-	<body>
+	<body class="nf-page">
 		<a class="skip" href="#main">Skip to content</a>
 	<header class="site">
 		<div class="wrap nav">
@@ -43,26 +43,28 @@
 			</nav>
 		</div>
 	</header>
-		<main id="main">
-			<div class="wrap nf">
-				<div
-					class="mascot"
-					role="img"
-					aria-label="Winston, the Wyst mascot, waving"
-				></div>
-				<div class="nf-body">
-					<span class="eyebrow">Error 404</span>
-					<h1>Page not found</h1>
-					<p class="nf-fault"><code>EFAULT</code><span>no page mapped at this address</span></p>
-					<p>
-				Winston went to fetch that page and trotted back empty-pawed — the
+		<main id="main" class="nf-main">
+			<div class="nf-grid" aria-hidden="true"></div>
+			<div class="nf-glow" aria-hidden="true"></div>
+			<div class="nf">
+				<span class="nf-eyebrow">Error 404 · Data abort</span>
+				<div class="nf-winston">
+					<div
+						class="nf-winston-img nf-winston-shrug"
+						role="img"
+						aria-label="Winston shrugging — he came back empty-pawed, the page wasn't there"
+					></div>
+					<div class="nf-winston-img nf-winston-search" aria-hidden="true"></div>
+				</div>
+				<h1>Page not found</h1>
+				<p class="nf-fault"><code>translation fault</code><span>no page mapped at this address</span></p>
+				<p class="nf-lede">
+				Winston went to fetch that page and trotted back empty-pawed. The
 				address didn't resolve to anything here.
 			</p>
-			<p>
-				Head back <a href="/">home</a>, open the
-				<a href="/docs/">reference manual</a>, or check the
-				<a href="/roadmap/">roadmap</a>.
-			</p>
+				<div class="nf-actions">
+					<a class="btn btn-primary" href="/">Back home <span class="arrow" aria-hidden="true">→</span></a>
+					<a class="btn btn-secondary" href="/docs/">Docs</a>
 				</div>
 			</div>
 		</main>
