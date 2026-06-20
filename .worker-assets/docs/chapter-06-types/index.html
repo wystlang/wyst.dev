@@ -450,11 +450,11 @@ aliasing and reordering rules.</p>
 
 UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 
-identity_addr <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+identity_addr <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> addr
 <span class="token punctuation">}</span>
 
-literal_contexts <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+literal_contexts <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     local <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
     <span class="token keyword">return</span> <span class="token function">identity_addr</span><span class="token punctuation">(</span><span class="token number">0x5000</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>local <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">-</span> local <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -462,7 +462,7 @@ literal_contexts <span class="token operator">::</span> <span class="token punct
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-from_runtime_value <span class="token operator">::</span> <span class="token punctuation">(</span>raw <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+from_runtime_value <span class="token operator">::</span> <span class="token punctuation">(</span>raw <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> raw
 <span class="token punctuation">}</span>
 </code></pre>
@@ -644,7 +644,7 @@ first <span class="token operator">:</span> <span class="token builtin type">u16
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-read_byte <span class="token operator">::</span> <span class="token punctuation">(</span>packet <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_byte <span class="token operator">::</span> <span class="token punctuation">(</span>packet <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token primitive macro">%load_be</span><span class="token operator">&lt;</span><span class="token builtin type">u8</span><span class="token operator">></span><span class="token punctuation">(</span>packet<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -741,37 +741,37 @@ sentinel.&quot; The behavior of <em>accessing</em> address 0 is hardware-determi
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-advance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+advance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> base <span class="token operator">+</span> offset
 <span class="token punctuation">}</span>
 
-advance_small <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">u16</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+advance_small <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">u16</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> base <span class="token operator">+</span> offset
 <span class="token punctuation">}</span>
 
-advance_signed_prefix <span class="token operator">::</span> <span class="token punctuation">(</span>offset <span class="token operator">:</span> <span class="token builtin type">i8</span><span class="token punctuation">,</span> base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+advance_signed_prefix <span class="token operator">::</span> <span class="token punctuation">(</span>offset <span class="token operator">:</span> <span class="token builtin type">i8</span><span class="token punctuation">,</span> base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> offset <span class="token operator">+</span> base
 <span class="token punctuation">}</span>
 
-retreat <span class="token operator">::</span> <span class="token punctuation">(</span>cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+retreat <span class="token operator">::</span> <span class="token punctuation">(</span>cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> offset <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> cursor <span class="token operator">-</span> offset
 <span class="token punctuation">}</span>
 
-distance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+distance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> cursor <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">-</span> base <span class="token keyword">as</span> <span class="token builtin type">u64</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad_distance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad_distance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> cursor <span class="token operator">-</span> base
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad_offset <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> flag <span class="token operator">:</span> <span class="token builtin type">bool</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad_offset <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> flag <span class="token operator">:</span> <span class="token builtin type">bool</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> base <span class="token operator">+</span> flag
 <span class="token punctuation">}</span>
 </code></pre>
@@ -779,22 +779,24 @@ bad_offset <span class="token operator">::</span> <span class="token punctuation
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-same_addr <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+same_addr <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> a <span class="token operator">==</span> b
 <span class="token punctuation">}</span>
 
-is_zero <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+is_zero <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> addr <span class="token operator">==</span> <span class="token number">0</span>
 <span class="token punctuation">}</span>
 
-before <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> <span class="token punctuation">(</span>a <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token punctuation">(</span>b <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+before <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
+    a_addr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token keyword">as</span> <span class="token builtin type">u64</span>
+    b_addr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> b <span class="token keyword">as</span> <span class="token builtin type">u64</span>
+    <span class="token keyword">return</span> a_addr <span class="token operator">&lt;</span> b_addr
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad_order <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad_order <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> a <span class="token operator">&lt;</span> b
 <span class="token punctuation">}</span>
 </code></pre>
@@ -812,7 +814,7 @@ byte_addr <span class="token operator">:</span> <span class="token address-quali
 whole_bytes <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>bytes<span class="token punctuation">)</span>
 whole_words <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>words<span class="token punctuation">)</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     inferred_from_cast <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
     first <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole_bytes<span class="token punctuation">]</span>
     third <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole_bytes <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span>
@@ -825,7 +827,7 @@ main <span class="token operator">::</span> <span class="token punctuation">(</s
 
 buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
     <span class="token keyword">return</span> ptr
 <span class="token punctuation">}</span>
@@ -835,7 +837,7 @@ bad <span class="token operator">::</span> <span class="token punctuation">(</sp
 
 word <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span>
     <span class="token keyword">return</span> ptr
 <span class="token punctuation">}</span>
@@ -843,7 +845,7 @@ bad <span class="token operator">::</span> <span class="token punctuation">(</sp
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
     bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
     whole <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
@@ -854,7 +856,7 @@ main <span class="token operator">::</span> <span class="token punctuation">(</s
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     word <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
     ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>ptr<span class="token punctuation">]</span>
@@ -863,7 +865,7 @@ bad <span class="token operator">::</span> <span class="token punctuation">(</sp
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
     buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
     ptr <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>ptr<span class="token punctuation">]</span>
@@ -875,7 +877,7 @@ bad <span class="token operator">::</span> <span class="token punctuation">(</sp
 
 buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-read_word <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_word <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -885,7 +887,7 @@ read_word <span class="token operator">::</span> <span class="token punctuation"
 
 buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-read_word <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_word <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -897,15 +899,15 @@ read_word <span class="token operator">::</span> <span class="token punctuation"
 UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
 RAM_WORD <span class="token operator">::</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
-peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 
-poll <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+poll <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 
-explicit_boundary <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+explicit_boundary <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     plain <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> UARTFR <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
     mmio <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
     <span class="token keyword">return</span> <span class="token function">peek</span><span class="token punctuation">(</span>plain<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token function">poll</span><span class="token punctuation">(</span>mmio<span class="token punctuation">)</span>
@@ -916,11 +918,11 @@ explicit_boundary <span class="token operator">::</span> <span class="token punc
 
 UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
 
-peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 
-bad_strip <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad_strip <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token function">peek</span><span class="token punctuation">(</span>UARTFR<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -929,11 +931,11 @@ bad_strip <span class="token operator">::</span> <span class="token punctuation"
 
 RAM_WORD <span class="token operator">::</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
-poll <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+poll <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 
-bad_add <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+bad_add <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token function">poll</span><span class="token punctuation">(</span>RAM_WORD<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1202,6 +1204,17 @@ context; no context-sensitivity is required.</p>
 </tbody>
 </table>
 <p><code>N</code> must be a <strong>compile-time constant</strong>. No variable-length arrays.</p>
+<p>A string literal may initialize a fixed byte array whose element type is
+<code>u8</code>. The literal is decoded first, then copied into the first bytes of the
+array; if the decoded byte length is less than <code>N</code>, the remaining bytes are
+zero-filled. A decoded literal longer than <code>N</code> is a compile error that reports
+the array capacity, decoded byte length, and literal. This rule applies only to
+string-literal initializers for <code>[N]u8</code>; brace array literals, non-<code>u8</code> arrays,
+and the <code>string</code> type keep their existing behavior.</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">module_name <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_driver_v1"</span>  <span class="token comment">// two trailing zero bytes emitted</span>
+magic       <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span>  <span class="token operator">=</span> <span class="token string">"WYST"</span>            <span class="token comment">// exact fit</span>
+</code></pre>
 <h3 id="array-elements-and-memory-loads" tabindex="-1"><a class="doc-anchor" href="#array-elements-and-memory-loads" aria-hidden="true">#</a> Array Elements and Memory Loads</h3>
 <p>Loading a single element from a fixed array uses postfix index syntax:</p>
 <!-- wyst-contract: sketch -->
@@ -1217,7 +1230,7 @@ calculation:</p>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">}</span>
     <span class="token keyword">return</span> arr<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -1234,7 +1247,7 @@ val <span class="token operator">=</span> <span class="token builtin type">u64</
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     word <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">10</span>
     base <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base<span class="token punctuation">]</span>
@@ -1247,7 +1260,7 @@ address:</p>
 
 buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     ptr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> buf
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1293,7 +1306,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 
 buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     first <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> buf<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
     base <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
     same <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">0</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
@@ -1410,7 +1423,7 @@ symbol-backed storage:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">TABLE <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span><span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     base <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>TABLE<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">3</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -1438,7 +1451,7 @@ ldrb w0<span class="token punctuation">,</span> <span class="token punctuation">
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">TABLE <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
     base <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>TABLE<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -1649,25 +1662,23 @@ address only or a length-carrying slice.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">}</span>
 
-sum <span class="token operator">::</span> <span class="token punctuation">(</span>data <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+sum <span class="token operator">::</span> <span class="token punctuation">(</span>data <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
-    i <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-    <span class="token keyword">repeat</span> count <span class="token punctuation">{</span>
+    <span class="token keyword">repeat</span> count <span class="token keyword">as</span> i <span class="token punctuation">{</span>
         total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i<span class="token punctuation">]</span>
-        i <span class="token operator">+=</span> <span class="token number">1</span>
     <span class="token punctuation">}</span>
 
     <span class="token keyword">return</span> total
 <span class="token punctuation">}</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     result <span class="token operator">=</span> <span class="token function">sum</span><span class="token punctuation">(</span><span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>arr<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token comment">// explicit address-only call</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>For a length-carrying parameter, use a slice (<code>[]T</code>):</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum_slice <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum_slice <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
     i     <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
@@ -1682,7 +1693,7 @@ main <span class="token operator">::</span> <span class="token punctuation">(</s
 
 arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">}</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     result <span class="token operator">=</span> <span class="token function">sum_slice</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span><span class="token operator">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span>     <span class="token comment">// explicit whole-array slice</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1695,11 +1706,11 @@ the non-escaping contract:</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-fill <span class="token operator">::</span> <span class="token punctuation">(</span>out <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+fill <span class="token operator">::</span> <span class="token punctuation">(</span>out <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>out<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">42</span>
 <span class="token punctuation">}</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     value <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
     <span class="token function">fill</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span>
     <span class="token keyword">return</span> value
@@ -1801,7 +1812,7 @@ arr<span class="token punctuation">[</span><span class="token operator">:</span>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span>lo <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> hi <span class="token operator">:</span> <span class="token builtin type">i16</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span>lo <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> hi <span class="token operator">:</span> <span class="token builtin type">i16</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
     s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> arr<span class="token punctuation">[</span>lo<span class="token operator">:</span>hi<span class="token punctuation">]</span>
     t <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> s<span class="token punctuation">[</span><span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u8</span><span class="token operator">:</span>hi<span class="token punctuation">]</span>
@@ -1814,7 +1825,7 @@ bounds remain unchecked:</p>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">}</span>
     bad <span class="token operator">:</span><span class="token operator">=</span> arr<span class="token punctuation">[</span><span class="token number">2</span><span class="token operator">:</span><span class="token number">5</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -1848,7 +1859,7 @@ remain unchecked:</p>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
     s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> base<span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -1858,7 +1869,7 @@ explicitly so the lens is visible:</p>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1875,7 +1886,7 @@ s <span class="token operator">=</span> s<span class="token punctuation">[</span
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">}</span>
     s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> arr<span class="token punctuation">[</span><span class="token operator">:</span><span class="token punctuation">]</span>
 
@@ -1900,7 +1911,7 @@ descriptor-length mistakes without inserting a runtime branch:</p>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">}</span>
     s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> arr<span class="token punctuation">[</span><span class="token number">1</span><span class="token operator">:</span><span class="token number">3</span><span class="token punctuation">]</span>
     <span class="token keyword">return</span> s<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span>
@@ -1952,7 +1963,7 @@ write it:</p>
 <h3 id="passing-to-functions" tabindex="-1"><a class="doc-anchor" href="#passing-to-functions" aria-hidden="true">#</a> Passing to Functions</h3>
 <p>Slices are the idiomatic way to pass variable-length arrays to functions:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
     i     <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
@@ -1965,7 +1976,7 @@ write it:</p>
     <span class="token keyword">return</span> total
 <span class="token punctuation">}</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">40</span><span class="token punctuation">}</span>
     result  <span class="token operator">=</span> <span class="token function">sum</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span><span class="token operator">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span>         <span class="token comment">// whole array as []u64</span>
     partial <span class="token operator">=</span> <span class="token function">sum</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span><span class="token number">1</span><span class="token operator">:</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">)</span>       <span class="token comment">// elements 1 and 2</span>
@@ -2995,7 +3006,7 @@ manage the storage:</p>
     <span class="token function">Cons</span><span class="token punctuation">(</span><span class="token address-qualifier type">@List</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-build_list <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+build_list <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     n2 <span class="token operator">:</span> List <span class="token operator">=</span> List<span class="token punctuation">.</span>Nil
     n1 <span class="token operator">:</span> List <span class="token operator">=</span> List<span class="token punctuation">.</span><span class="token function">Cons</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>n2<span class="token punctuation">)</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -3073,7 +3084,10 @@ The compiler must not exploit that invalid read as C-style undefined behavior.</
 </table>
 <hr>
 <h2 id="1.7-strings" tabindex="-1"><a class="doc-anchor" href="#1.7-strings" aria-hidden="true">#</a> 1.7 Strings</h2>
-<p>String literals live in <code>.rodata</code>.</p>
+<p>Runtime <code>string</code> values produced from string literals live in <code>.rodata</code>.
+When a string literal initializes <code>[N]u8</code>, the decoded bytes are embedded in
+that fixed array's storage and zero-filled as described in the fixed-array
+section.</p>
 <p>Example:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">msg <span class="token operator">::</span> <span class="token string">"Hello\n"</span>
@@ -3108,7 +3122,7 @@ characters are accepted but truncated to <code>u8</code>.</p>
 <p>Because the type is <code>u8</code>, character literals participate in the normal
 type system with no implicit widening:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span> <span class="token comment">/* ... */</span> <span class="token punctuation">}</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment">/* ... */</span> <span class="token punctuation">}</span>
 <span class="token function">uart_write</span><span class="token punctuation">(</span>'h'<span class="token punctuation">)</span>              <span class="token comment">// OK: 'h' is u8</span>
 wide <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> 'A' <span class="token keyword">as</span> <span class="token builtin type">u64</span>     <span class="token comment">// explicit widen required</span>
 </code></pre>
@@ -3858,12 +3872,12 @@ so <code>#static_assert</code> is evaluated only in the selected branch.</p>
 <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token string">"u64 must be 8 bytes"</span><span class="token punctuation">)</span>
 
 <span class="token directive macro">#inline</span>
-helper <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+helper <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// checked at this definition, even if helper has no call sites</span>
     <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token string">"pointer must be 64-bit"</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-process <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+process <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// function scope — checked at this definition</span>
     <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token string">"pointer must be 64-bit"</span><span class="token punctuation">)</span>
     <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
@@ -3910,7 +3924,7 @@ Result<span class="token operator">&lt;</span>T<span class="token punctuation">,
 in type positions inside the generic declaration. They are not runtime values,
 not constants, and not permitted as array bounds.</p>
 <p>Generic type parameter lists are non-empty. <code>Box&lt;&gt; :: struct { ... }</code> and
-<code>noop&lt;&gt; :: () = { }</code> are rejected; if a declaration has no type parameters, it
+<code>noop&lt;&gt; :: () { }</code> are rejected; if a declaration has no type parameters, it
 should be written without <code>&lt;...&gt;</code>.</p>
 <p>Type parameter names are ordinary identifiers. Wyst does not enforce a casing
 convention, so <code>T</code>, <code>E</code>, <code>key</code>, and <code>value</code> are all valid parameter names.
@@ -3929,7 +3943,7 @@ access, enum tag tests, boolean conditions, casts, default construction,
 methods, or interface/trait members.</p>
 <p>A type parameter may carry one built-in compile-time capability bound:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">add_one<span class="token operator">&lt;</span>T<span class="token operator">:</span> integer<span class="token operator">></span> <span class="token operator">::</span> <span class="token punctuation">(</span>value <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> T <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">add_one<span class="token operator">&lt;</span>T<span class="token operator">:</span> integer<span class="token operator">></span> <span class="token operator">::</span> <span class="token punctuation">(</span>value <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> T <span class="token punctuation">{</span>
     <span class="token keyword">return</span> value <span class="token operator">+</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -4159,13 +4173,13 @@ the compile-time selection rule, not as a type-value mechanism.</p>
 operations (swap, min, max, byte-reverse), this is the path of least
 resistance.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">swap_u32 <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">swap_u32 <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     tmp <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
     <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
     <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span> <span class="token operator">=</span> tmp
 <span class="token punctuation">}</span>
 
-swap_u64 <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+swap_u64 <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     tmp <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
     <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
     <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span> <span class="token operator">=</span> tmp
@@ -4207,7 +4221,7 @@ fsr_el1   <span class="token operator">::</span> <span class="token keyword">bit
 arithmetic on it is element-scaled, address-walking code can be written over
 the <em>bit width</em> of the access by passing the address with the intended lens:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">zero_words <span class="token operator">::</span> <span class="token punctuation">(</span>start <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">zero_words <span class="token operator">::</span> <span class="token punctuation">(</span>start <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     i <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
     <span class="token keyword">while</span> i <span class="token operator">&lt;</span> count <span class="token punctuation">{</span>
         <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>start <span class="token operator">+</span> i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>

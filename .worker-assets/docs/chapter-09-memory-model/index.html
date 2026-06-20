@@ -179,7 +179,7 @@ str x0<span class="token punctuation">,</span> <span class="token punctuation">[
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> memory_demo
 
-read_word <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+read_word <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -725,7 +725,7 @@ instruction on ARMv8.1 LSE or an <code>ldaxr</code>/<code>stxr</code> loop on ba
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">LOCK_ADDR <span class="token operator">::</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x8000</span>
 
-spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
         _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
         <span class="token keyword">if</span> ok <span class="token punctuation">{</span> <span class="token keyword">return</span> <span class="token punctuation">}</span>
@@ -733,7 +733,7 @@ spin_lock <span class="token operator">::</span> <span class="token punctuation"
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
-spin_unlock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+spin_unlock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>LOCK_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>   <span class="token comment">// store-release clears the lock</span>
     <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span>                         <span class="token comment">// wake any waiters</span>
 <span class="token punctuation">}</span>
@@ -1336,7 +1336,7 @@ described above. The warning is intentionally conservative and local to visible
 source order. Implementations are not required to prove every path-sensitive
 initialization fact, but they must diagnose direct cases such as:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     x <span class="token operator">:</span> <span class="token builtin type">u64</span>
     <span class="token keyword">return</span> x        <span class="token comment">// warning: x may be read before initialization</span>
 <span class="token punctuation">}</span>
@@ -1705,7 +1705,7 @@ DCache line size is 128 bytes.</p>
 <hr>
 <h3 id="false-sharing-diagnostic" tabindex="-1"><a class="doc-anchor" href="#false-sharing-diagnostic" aria-hidden="true">#</a> False-Sharing Diagnostic</h3>
 <p>The compiler emits a warning when two mutable globals (at least one of which
-is <code>#export</code>ed or <code>#percpu</code>) land on the same cache line and neither is marked
+is public or <code>#percpu</code>) land on the same cache line and neither is marked
 <code>#shared</code>:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">warning: 'counter_a' and 'counter_b' may share a cache line
          both are mutable globals; consider #shared if accessed from multiple cores

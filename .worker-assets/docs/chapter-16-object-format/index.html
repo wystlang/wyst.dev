@@ -228,7 +228,7 @@ canonical names.</p>
 | <code>.strtab</code>             | Symbol name strings                                  | (non-<code>ALLOC</code>) |
 | <code>.shstrtab</code>           | Section header name strings                          | (non-<code>ALLOC</code>) |</p>
 <p><code>.wyst.vectors.&lt;name&gt;</code> is named after the declaration: an
-<code>#exception_vector</code> declared <code>el1_vectors :: #exception_vector = { ... }</code>
+<code>#exception_vector</code> declared <code>el1_vectors :: #exception_vector { ... }</code>
 emits to <code>.wyst.vectors.el1_vectors</code>. Each such section carries the 2KB
 alignment dictated by §10.2.</p>
 <p><code>.percpu</code> and <code>.tls</code> master images are the bytes the runtime allocator copies
@@ -238,7 +238,7 @@ runtime is responsible for replication. See §7 for the access lowering.</p>
 <h2 id="4.-symbol-table" tabindex="-1"><a class="doc-anchor" href="#4.-symbol-table" aria-hidden="true">#</a> 4. Symbol Table</h2>
 <p>The <code>.symtab</code> includes one entry per:</p>
 <ul>
-<li><code>#export</code>ed top-level declaration (function, label, constant, mutable
+<li>public top-level declaration (function, label, constant, mutable
 global, type — types emit no payload but contribute symbols for tooling).</li>
 <li>Layout module export (<code>__text_start</code>, <code>__bss_end</code>, etc.).</li>
 <li>Compiler-created initcall metadata symbols named as specified in §4.3.</li>
@@ -258,11 +258,11 @@ source/debug lookup. Private functions and labels get <code>STB_LOCAL</code>.</l
 <tbody>
 <tr>
 <td><code>STB_LOCAL</code></td>
-<td>Private declarations (no <code>#export</code>), synthesized symbols</td>
+<td>Private declarations (no <code>pub</code>), synthesized symbols</td>
 </tr>
 <tr>
 <td><code>STB_GLOBAL</code></td>
-<td><code>#export</code>ed declarations, compiler-created initcall metadata</td>
+<td>public declarations, compiler-created initcall metadata</td>
 </tr>
 <tr>
 <td><code>STB_WEAK</code></td>
@@ -322,7 +322,7 @@ through ELF TLS relocations.</p>
 written to <code>.symtab</code> is exactly the declaration name from the source. Module
 names do <strong>not</strong> appear in the ordinary declaration symbol: a function <code>init</code>
 exported by module <code>runtime.uart</code> is the symbol <code>init</code>. Cross-module collisions
-on <code>#export</code>ed names are a compile error at import resolution (see
+on public names are a compile error at import resolution (see
 <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>), so the ordinary declaration
 symbol table can afford to be flat.</p>
 <p>Compiler-created initcall metadata symbols are an explicit exception. Every
@@ -663,8 +663,8 @@ contract fails until a layout declares the section:</p>
 modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"abcd"</span>
 </code></pre>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
-<span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>   uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1\0\0\0"</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>   uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1"</span>
 </code></pre>
 <p>The full semantics — legal placements, section-name constraints,
 flag derivation, bookend synthesis, cross-module aggregation — are
@@ -766,7 +766,7 @@ ELF output.</p>
 <li>Section order is determined by the layout module (<code>in</code> / <code>after</code>
 constraints), then by declaration order within a section. There is no
 topological-sort tie-break dependent on hashtable iteration.</li>
-<li>Symbol table order is: layout exports, then user <code>#export</code>ed symbols in
+<li>Symbol table order is: layout exports, then user <code>pub</code> symbols in
 module-then-declaration order, then private functions in
 module-then-declaration order. Module order is the compiler source input
 order: explicit multi-file builds use command-line source order, while

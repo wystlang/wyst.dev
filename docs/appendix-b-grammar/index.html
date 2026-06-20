@@ -158,6 +158,9 @@ has the form <code>Name &lt;- expression</code>. Operators:</p>
 <p>Ordered choice is the key disambiguation device. Where the prose says
 &quot;<code>[</code> followed by a digit is an array type&quot;, the grammar encodes the same
 rule by trying <code>ArrayType</code> before any other <code>[</code>-prefixed production.</p>
+<p>Comma-separated lists written with a final <code>','?</code> accept one optional trailing
+comma. The trailing comma is semantically inert and does not create an empty
+element; leading commas and doubled commas remain malformed list syntax.</p>
 <p>Terminal text in single quotes is matched after whitespace/comment
 skipping (see §Lexical). Identifiers and reserved words are
 distinguished by a longest-match rule: <code>ifoo</code> is one identifier, not
@@ -192,7 +195,7 @@ Keyword &lt;- ( 'select'
            / 'goto' / 'return' / 'if' / 'else'
            / 'while' / 'loop' / 'repeat' / 'break' / 'continue'
            / 'struct' / 'bitfield' / 'label'
-           / 'as' / 'true' / 'false'
+           / 'as' / 'pub' / 'true' / 'false'
            ) !IdentCont
 </code></pre>
 <p><code>Keyword</code> matches only if the next character is not an <code>IdentCont</code>,
@@ -211,7 +214,7 @@ literal contents, but not in user-defined names.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Directive        &lt;- '#' DirectiveName
 RuntimePrimitive &lt;- '%' IdentStart IdentCont*
 
-DirectiveName &lt;- ( 'export' / 'import' / 'module' / 'target'
+DirectiveName &lt;- ( 'import' / 'module' / 'target'
                  / 'if' / 'else'
                  / 'static_assert' / 'align' / 'section' / 'region' / 'entry'
                  / 'naked' / 'noescape' / 'inline' / 'initcall' / 'noreturn'
@@ -280,6 +283,11 @@ constant-folding time.</p>
 The runtime <code>string</code> value stores the exact resulting bytes; byte length,
 code point counting, and grapheme handling are type/library concerns, not
 lexer behavior.</p>
+<p>In a typed initializer for <code>[N]u8</code>, a string literal initializes the fixed byte
+array after escape processing: decoded length less than <code>N</code> is zero-filled,
+decoded length equal to <code>N</code> is an exact fit, and decoded length greater than
+<code>N</code> is rejected. This is semantic binding of an existing <code>StringLiteral</code>
+expression, not a separate lexical form.</p>
 <h3 id="1.5.1-character-literals" tabindex="-1"><a class="doc-anchor" href="#1.5.1-character-literals" aria-hidden="true">#</a> 1.5.1 Character Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">CharLiteral &lt;- &quot;'&quot; (CharChar / CharEscape) &quot;'&quot;
 CharChar    &lt;- !(&quot;'&quot; / '\\' / Newline) .
@@ -338,10 +346,10 @@ SliceType   &lt;- '[' ']' Type                            // []u64, []u8
 DynamicArrayType &lt;- '[' 'dynamic' ']' Type             // [dynamic]Token
 
 GenericTypeParamList
-    &lt;- '&lt;' Identifier (',' Identifier)* '&gt;'            // type params; builtin/duplicate names rejected
+    &lt;- '&lt;' GenericTypeParam (',' GenericTypeParam)* ','? '&gt;' // type params; builtin/duplicate names rejected
 
 GenericTypeArgList
-    &lt;- '&lt;' Type (',' Type)* '&gt;'                        // type args; nesting allowed
+    &lt;- '&lt;' Type (',' Type)* ','? '&gt;'                   // type args; nesting allowed
 
 FnPointerType
     &lt;- '@' CallingConv? '(' ParamTypeList? ')' ('-&gt;' ReturnType)?
@@ -350,7 +358,7 @@ AddressType
     &lt;- '@' 'volatile' Type                             // @volatile T
      / '@' Type                                        // @T
 
-TupleType   &lt;- '(' NamedField (',' NamedField)* ')'    // for multi-return
+TupleType   &lt;- '(' NamedField (',' NamedField)* ','? ')' // for multi-return
 NamedField  &lt;- Identifier ':' Type
 
 NamedType   &lt;- Identifier ('.' Identifier)* GenericTypeArgList?
@@ -358,7 +366,7 @@ NamedType   &lt;- Identifier ('.' Identifier)* GenericTypeArgList?
 
 CallingConv &lt;- '[' Identifier ']'                      // [aapcs], etc.
 
-ParamTypeList &lt;- Type (',' Type)*
+ParamTypeList &lt;- Type (',' Type)* ','?
 ReturnType    &lt;- Type / TupleType
 </code></pre>
 <p><code>TupleType</code> is recognized by <code>Type</code> so diagnostics can point at the exact
@@ -366,7 +374,7 @@ shape, but semantic analysis currently accepts tuple types only as
 multi-return values and related result storage. Tuple parameters in ordinary
 functions or function pointer types are a future surface:</p>
 <!-- wyst-contract: future -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">accept_pair <span class="token operator">::</span> <span class="token punctuation">(</span>pair <span class="token operator">:</span> <span class="token punctuation">(</span>x<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> y<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">accept_pair <span class="token operator">::</span> <span class="token punctuation">(</span>pair <span class="token operator">:</span> <span class="token punctuation">(</span>x<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> y<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Wyst generics use angle-bracket type parameter and type argument lists.
@@ -381,7 +389,7 @@ and enum declarations. No casing convention is enforced, but built-in type
 names such as <code>u32</code>, <code>bool</code>, and <code>string</code> cannot be type parameter names, and
 duplicate parameter names such as <code>Pair&lt;T, T&gt;</code> are rejected. A declaration type
 parameter may include one built-in compile-time capability bound:</p>
-<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">GenericTypeParamList &lt;- '&lt;' GenericTypeParam (',' GenericTypeParam)* '&gt;'
+<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">GenericTypeParamList &lt;- '&lt;' GenericTypeParam (',' GenericTypeParam)* ','? '&gt;'
 GenericTypeParam     &lt;- Identifier (':' GenericBound)?
 GenericBound         &lt;- 'integer'
                       / 'unsigned_integer'
@@ -514,7 +522,7 @@ PostfixOp
      / '[' SliceOrIndex ']'                            // index or slice
      / '.' Identifier                                  // field access
 
-ArgList     &lt;- CallArg (',' CallArg)*
+ArgList     &lt;- CallArg (',' CallArg)* ','?
 CallArg     &lt;- Identifier '=' Expr                     // labeled (load-bearing on `dyn_array_init` and `reserve`)
              / OrderArg                                // intrinsic-only trailing marker
              / Expr
@@ -594,25 +602,25 @@ syntactic marker that makes the form an expression.</p>
 type.</p>
 <h3 id="3.4-compile-time%2Flayout-time-forms-and-runtime-primitive-calls" tabindex="-1"><a class="doc-anchor" href="#3.4-compile-time%2Flayout-time-forms-and-runtime-primitive-calls" aria-hidden="true">#</a> 3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">CompileTimeForm
-    &lt;- '#size_of' '(' Type ')'
-     / '#align_of' '(' Type ')'
-     / '#len' '(' StoragePath ')'
-     / '#field_offset' '(' Type ',' Identifier ')'
-     / '#addr_of' '(' BareName ')'
-     / '#start' '(' SectionName ')'
-     / '#end' '(' SectionName ')'
+    &lt;- '#size_of' '(' Type ','? ')'
+     / '#align_of' '(' Type ','? ')'
+     / '#len' '(' StoragePath ','? ')'
+     / '#field_offset' '(' Type ',' Identifier ','? ')'
+     / '#addr_of' '(' BareName ','? ')'
+     / '#start' '(' SectionName ','? ')'
+     / '#end' '(' SectionName ','? ')'
      / '#cache_line_width' '(' ')'
-     / '#tag_of' '(' Expr ')'
-     / '#percpu_offset_of' '(' Expr ')'
-     / '#tls_offset_of' '(' Expr ')'
-     / '#trusted_cast' '&lt;' FnPointerType '&gt;' '(' Expr ')'
+     / '#tag_of' '(' Expr ','? ')'
+     / '#percpu_offset_of' '(' Expr ','? ')'
+     / '#tls_offset_of' '(' Expr ','? ')'
+     / '#trusted_cast' '&lt;' FnPointerType '&gt;' '(' Expr ','? ')'
 
 StoragePath
     &lt;- BareName ('.' Identifier)*
 
 RuntimePrimitiveCall
-    &lt;- '%addr_of' '(' BareName ')'
-     / '%tag_of' '(' Expr ')'
+    &lt;- '%addr_of' '(' BareName ','? ')'
+     / '%tag_of' '(' Expr ','? ')'
      / EndianRuntimePrimitive '&lt;' PrimitiveIntType '&gt;' '(' ArgList? ')'
      / RuntimePrimitive '(' ArgList? ')'
 
@@ -635,7 +643,7 @@ reports the diagnostic on the type argument because byte order does not apply
 to single-byte values.</p>
 <h3 id="3.5-select-(branchless-conditional)" tabindex="-1"><a class="doc-anchor" href="#3.5-select-(branchless-conditional)" aria-hidden="true">#</a> 3.5 Select (Branchless Conditional)</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">SelectCall
-    &lt;- 'select' '(' Expr ',' Expr ',' Expr ')'
+    &lt;- 'select' '(' Expr ',' Expr ',' Expr ','? ')'
 </code></pre>
 <p><code>select</code> is a keyword, not a runtime primitive (no <code>%</code> prefix). It takes exactly
 three arguments: a <code>bool</code> condition, a true-arm expression, and a false-arm
@@ -648,14 +656,17 @@ type. See <a href="/docs/chapter-07-operators/">chapter-07-operators.md</a> for 
 <p>An <code>IfExpr</code> requires an <code>else</code> branch. <code>if</code> without <code>else</code> is only legal
 as a statement (§4).</p>
 <h3 id="3.7-literals-(composite)" tabindex="-1"><a class="doc-anchor" href="#3.7-literals-(composite)" aria-hidden="true">#</a> 3.7 Literals (Composite)</h3>
-<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ArrayLiteral   &lt;- '{' (Expr (',' Expr)*)? '}'
-StructLiteral  &lt;- NamedType '{' (FieldInit (',' FieldInit)*)? '}'
+<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ArrayLiteral   &lt;- '{' (Expr (',' Expr)* ','?)? '}'
+StructLiteral  &lt;- NamedType '{' (FieldInit (',' FieldInit)* ','?)? '}'
 FieldInit      &lt;- Identifier ':' Expr
-TupleLiteral   &lt;- '(' Expr ',' Expr (',' Expr)* ')'   // 2+ elements; (a) is ParenExpr
+TupleLiteral   &lt;- '(' Expr ',' Expr (',' Expr)* ','? ')' // 2+ elements; (a) is ParenExpr
 </code></pre>
 <p><code>{...}</code> is an array literal when its elements are homogeneous expressions
 with no <code>field:</code> prefix; a <code>StructLiteral</code> requires the type name first
 to disambiguate from a block.</p>
+<p>A <code>StringLiteral</code> may also appear as the initializer expression for a typed
+<code>[N]u8</code> declaration; semantic analysis expands it to the same byte array that
+an explicitly zero-padded brace literal would produce.</p>
 <h3 id="3.8-address-of" tabindex="-1"><a class="doc-anchor" href="#3.8-address-of" aria-hidden="true">#</a> 3.8 Address-Of</h3>
 <p><code>#addr_of(name)</code> is parsed by <code>CompileTimeForm</code> and is the only form that
 takes a function, label, global, or other compile-time symbol name as an
@@ -691,17 +702,17 @@ BranchHint  &lt;- '#likely' / '#unlikely'
 IfStmt      &lt;- 'if' BranchHint? Expr Block ('else' (IfStmt / Block))?
 WhileStmt   &lt;- 'while' BranchHint? Expr Block
 LoopStmt    &lt;- 'loop' Block
-RepeatStmt  &lt;- 'repeat' Expr Block
+RepeatStmt  &lt;- 'repeat' Expr ('as' Identifier)? Block
 SwitchStmt  &lt;- '#partial'? 'switch' Expr '{' SwitchArm* '}'
 SwitchArm   &lt;- SwitchCaseArm / SwitchElseArm
 SwitchCaseArm
-    &lt;- 'case' SwitchVariant (',' SwitchVariant)* ':' SwitchArmBody
+    &lt;- 'case' SwitchVariant (',' SwitchVariant)* ','? ':' SwitchArmBody
 SwitchElseArm
     &lt;- 'else' ':' SwitchArmBody
 SwitchVariant
     &lt;- (Identifier '.')? Identifier SwitchBindingList?
 SwitchBindingList
-    &lt;- '(' Identifier (',' Identifier)* ')'
+    &lt;- '(' Identifier (',' Identifier)* ','? ')'
 SwitchArmBody
     &lt;- Block / Statement
 
@@ -764,7 +775,7 @@ LocalDecl
      / TupleBindingList ':=' Expr                            // _, ok := %cas(...)
      / Identifier ':' Type '=' Expr                          // x : u64 = 0
 
-TupleBindingList &lt;- Identifier (',' Identifier)+
+TupleBindingList &lt;- Identifier (',' Identifier)+ ','?
 
 ConstDecl   &lt;- Identifier '::' Type '=' ConstExpr            // PI :: f64 = 3.14
              / Identifier '::=' ConstExpr                    // BASE ::= 0x4000
@@ -790,9 +801,13 @@ AssignOp
 identical to the read form; semantic analysis turns it into a store.
 Field-path assignment is also semantic: slice projections <code>.data</code> and <code>.len</code>
 are read-only, so changing either requires assigning a whole <code>[]T</code> value.</p>
+<p>For typed <code>LocalDecl</code>, <code>GlobalDecl</code>, and typed <code>ConstDecl</code>, a <code>StringLiteral</code>
+initializer is valid for <code>[N]u8</code> and is zero-filled to <code>N</code> bytes after escape
+processing. Other array element types require ordinary expressions or brace
+array literals.</p>
 <h3 id="4.4-tuple-destructuring" tabindex="-1"><a class="doc-anchor" href="#4.4-tuple-destructuring" aria-hidden="true">#</a> 4.4 Tuple Destructuring</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">TupleDecl
-    &lt;- '(' Identifier (',' Identifier)+ ')' '=' Expr
+    &lt;- '(' Identifier (',' Identifier)+ ','? ')' '=' Expr
 </code></pre>
 <p>The RHS must produce a tuple type whose arity matches the LHS. Used
 exclusively for multi-return function calls
@@ -807,7 +822,7 @@ label bodies). The full directive list above:</p>
      / ReleaseDirective                                      // legacy form — see §1.3.1
 
 StaticAssert
-    &lt;- '#static_assert' '(' Expr ',' StringLiteral ')'
+    &lt;- '#static_assert' '(' Expr ',' StringLiteral ','? ')'
 CompileTimeIf
     &lt;- '#if' Expr Block ('#else' (CompileTimeElseIf / Block))?
 CompileTimeElseIf
@@ -829,12 +844,12 @@ address-type level with <code>@volatile T</code> (see chapter-09 §1.3).</p>
     &lt;- '#asm' AsmOptions? '{' AsmSection* AsmBody '}'
 
 AsmOptions
-    &lt;- '(' AsmOption (',' AsmOption)* ')'
+    &lt;- '(' AsmOption (',' AsmOption)* ','? ')'
 AsmOption
     &lt;- 'pure'
      / 'sets_sp'                                             // #naked verifier
      / 'preserves_sp'                                        // #naked verifier
-     / 'align' '(' ConstExpr ')'
+     / 'align' '(' ConstExpr ','? ')'
      / 'effects' ':' EffectSpec
 
 EffectSpec
@@ -845,16 +860,16 @@ AsmSection
     &lt;- 'inputs'   '{' AsmOperandList? '}'
      / 'outputs'  '{' AsmOperandList? '}'
      / 'clobbers' '{' AsmClobberList? '}'
-     / 'options'  '{' AsmOption (',' AsmOption)* '}'
+     / 'options'  '{' AsmOption (',' AsmOption)* ','? '}'
 AsmBody
     &lt;- 'body' '{' AsmInstruction* '}'
 
-AsmOperandList &lt;- AsmOperand (',' AsmOperand)*
+AsmOperandList &lt;- AsmOperand (',' AsmOperand)* ','?
 AsmOperand     &lt;- Identifier '=' AsmConstraint
 AsmConstraint
-    &lt;- ('gpr' / 'inout_gpr' / 'fp' / 'inout_fp' / 'imm' / 'mem') '(' Expr ')'
+    &lt;- ('gpr' / 'inout_gpr' / 'fp' / 'inout_fp' / 'imm' / 'mem') '(' Expr ','? ')'
 
-AsmClobberList &lt;- AsmClobber (',' AsmClobber)*
+AsmClobberList &lt;- AsmClobber (',' AsmClobber)* ','?
 AsmClobber
     &lt;- RegisterName
      / 'memory'
@@ -881,16 +896,18 @@ the assembler back-end verbatim.</p>
 
 ModuleDecl   &lt;- '#module' DottedName
 ModuleDeny   &lt;- '#deny' '(' EffectList ')'                   // applies to all functions in module
-ImportDecl   &lt;- '#import' DottedName ('as' Identifier)?
+ImportDecl   &lt;- '#import' (ImportBlock / ImportItem)
+ImportBlock  &lt;- '(' ImportItem+ ')'                         // one item per line, no commas
+ImportItem   &lt;- DottedName ('as' Identifier)?
 TargetDecl   &lt;- '#target' '(' TargetAttrs ')'
 
 DottedName   &lt;- Identifier ('.' Identifier)*
-TargetAttrs  &lt;- TargetAttr (',' TargetAttr)*
+TargetAttrs  &lt;- TargetAttr (',' TargetAttr)* ','?
 TargetAttr   &lt;- Identifier '=' TargetValue
 TargetValue  &lt;- IntegerLiteral
              / HyphenatedName
              / StringLiteral
-             / '(' TargetValue (',' TargetValue)* ')'          // tuple features
+             / '(' TargetValue (',' TargetValue)* ','? ')'     // tuple features
 HyphenatedName &lt;- Identifier ('-' Identifier)*
 
 TopLevelItem
@@ -902,17 +919,31 @@ TopLevelItem
      / CompileTimeIf
 
 ExportableDecl
-    &lt;- '#export'? Annotation* DeclItem
+    &lt;- DeclAnnotation* Visibility? DeclItem
+
+Visibility &lt;- 'pub'
+
+DeclAnnotation
+    &lt;- Annotation / AnnotationGroup
 
 Annotation
-    &lt;- '#inline' / '#initcall' '(' ConstExpr ')' / '#naked' / '#noreturn' / '#cold'
-     / '#align' '(' ConstExpr ')'
+    &lt;- '#inline' / '#initcall' '(' ConstExpr ','? ')' / '#naked' / '#noreturn' / '#cold'
+     / '#align' '(' ConstExpr ','? ')'
      / '#percpu' / '#tls'                                  // per-instance mutable global storage; see chapter-11-intrinsics.md
-     / '#section' '(' DottedName ')'                         // per-declaration section attribute; see chapter-04-modules.md &quot;Custom Sections from User Declarations&quot;
+     / '#section' '(' DottedName ','? ')'                    // per-declaration section attribute; see chapter-04-modules.md &quot;Custom Sections from User Declarations&quot;
      / '#deny' '(' EffectList ')'                            // effect restriction; see chapter-01-language-design.md &quot;Effect System&quot;
      / CallingConv                                           // [aapcs], etc.
 
-EffectList &lt;- EffectName (',' EffectName)*
+AnnotationGroup
+    &lt;- '#[' GroupedAnnotation (',' GroupedAnnotation)* ','? ']'
+
+GroupedAnnotation
+    &lt;- Identifier ('(' AnnotationArgList? ')')?
+
+AnnotationArgList
+    &lt;- Expr (',' Expr)* ','?
+
+EffectList &lt;- EffectName (',' EffectName)* ','?
 EffectName &lt;- 'sysreg' / 'trap' / 'exception_return' / 'cache_maintenance'
             / 'tlb_maintenance' / 'atomic' / 'cpu_halt' / 'interrupt_mask'
             / 'mmio' / 'barrier' / 'stack_alloc' / 'fp_state'
@@ -928,19 +959,25 @@ DeclItem
      / GlobalDecl
      / ExceptionVectorDecl
 </code></pre>
+<p><code>AnnotationGroup</code> is the grouped spelling for declaration annotations. The
+group marker supplies the single <code>#</code>, so names inside the brackets are bare:
+<code>#[naked, noreturn]</code>, not <code>#[#naked, #noreturn]</code>. <code>pub</code> is a <code>Visibility</code>
+keyword and is never valid inside an annotation group. Parameter annotations
+such as <code>#pin(x0)</code> and <code>#noescape</code> stay on the parameter and are not
+<code>DeclAnnotation</code>s.</p>
 <h3 id="5.1-function-declaration" tabindex="-1"><a class="doc-anchor" href="#5.1-function-declaration" aria-hidden="true">#</a> 5.1 Function Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">FnDecl
-    &lt;- Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? Annotation* '=' Block
-     / Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? Annotation*   // forward decl
+    &lt;- Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? DeclAnnotation* Block
+     / Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? DeclAnnotation*   // forward decl
 
 ParamList
-    &lt;- Param (',' Param)*
+    &lt;- Param (',' Param)* ','?
 Param
     &lt;- Identifier ':' Type (PinAttr / NoEscapeAttr)*
 </code></pre>
 <p><code>#noescape</code> is valid only on address-typed parameters. It is not a type
 qualifier and is not legal on local declarations.</p>
-<p>Forward declarations (with no <code>= Block</code>) are valid only for <code>[aapcs]</code>
+<p>Forward declarations (with no body block) are valid only for <code>[aapcs]</code>
 declarations of foreign functions (<code>puts :: [aapcs] (s : @u8) -&gt; i32</code>).
 They do not declare Wyst-native functions, do not reserve same-module native
 function names for later bodies, and cannot be generic. The body must be
@@ -951,19 +988,19 @@ unresolved external declarations because it has no linker relocation target for
 them.</p>
 <h3 id="5.2-label-declaration" tabindex="-1"><a class="doc-anchor" href="#5.2-label-declaration" aria-hidden="true">#</a> 5.2 Label Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">LabelDecl
-    &lt;- Identifier '::' 'label' Annotation* '=' Block
+    &lt;- Identifier '::' 'label' DeclAnnotation* Block
 </code></pre>
 <p>A <code>label</code> body must terminate with <code>goto</code> or a <code>#noreturn</code> call (no
 fall-through). <code>#naked</code> is legal on labels used as architectural entry targets;
 the raw stack and register discipline is checked post-parse.</p>
 <h3 id="5.3-struct-and-bitfield-declarations" tabindex="-1"><a class="doc-anchor" href="#5.3-struct-and-bitfield-declarations" aria-hidden="true">#</a> 5.3 Struct and Bitfield Declarations</h3>
-<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ReprAttr    &lt;- '#repr' '(' 'field_order' ':' 'preserve' ')'
-TrapFrameAttr &lt;- '#trap_frame' '(' Identifier ')'
+<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ReprAttr    &lt;- '#repr' '(' 'field_order' ':' 'preserve' ','? ')'
+TrapFrameAttr &lt;- '#trap_frame' '(' Identifier ','? ')'
 StructDecl
     &lt;- Identifier GenericTypeParamList? '::' ReprAttr? TrapFrameAttr? '#packed'? 'struct' '{' StructField* '}'
 StructField
     &lt;- Identifier ':' Type AlignAttr?
-AlignAttr   &lt;- '#align' '(' ConstExpr ')'
+AlignAttr   &lt;- '#align' '(' ConstExpr ','? ')'
 
 EnumDecl
     &lt;- Identifier GenericTypeParamList? '::' 'enum' EnumTagType? '{' EnumVariant* '}'
@@ -972,12 +1009,12 @@ EnumTagType
 EnumVariant
     &lt;- Identifier EnumPayload? ('=' ConstExpr)? (',' / ';')?
 EnumPayload
-    &lt;- '(' Type (',' Type)* ')'
+    &lt;- '(' Type (',' Type)* ','? ')'
 
 BitfieldDecl
     &lt;- Identifier '::' 'bitfield' '(' PrimitiveIntType ')' '{' BitfieldField* '}'
 BitfieldField
-    &lt;- Identifier ':' 'bits' '(' ConstExpr ',' ConstExpr ')'
+    &lt;- Identifier ':' 'bits' '(' ConstExpr ',' ConstExpr ','? ')'
 </code></pre>
 <p>Enum variants without explicit values receive increasing tag values after
 parse. <code>EnumPayload</code> is parsed as a type list so diagnostics can point at
@@ -991,15 +1028,15 @@ StorageAttr &lt;- '#percpu' / '#tls' / '#shared'                // mutually excl
 ConstDecl   &lt;- Identifier '::' Type '=' ConstExpr            // immutable constant
              / Identifier '::=' ConstExpr                    // inferred immutable constant
 </code></pre>
-<p><code>#export GlobalDecl</code> is the externally-visible mutable global form
+<p><code>pub GlobalDecl</code> is the externally-visible mutable global form
 (<a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>). <code>#shared</code> aligns and pads the variable to a full
 cache line to prevent false sharing — see
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.12</a>.</p>
 <h3 id="5.5-exception-vector-declaration" tabindex="-1"><a class="doc-anchor" href="#5.5-exception-vector-declaration" aria-hidden="true">#</a> 5.5 Exception Vector Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ExceptionVectorDecl
-    &lt;- Identifier '::' '#exception_vector' AlignAttr? '=' '{' VEntrySlot* '}'
+    &lt;- Identifier '::' '#exception_vector' AlignAttr? '{' VEntrySlot* '}'
 VEntrySlot
-    &lt;- Identifier ':' '#ventry' '=' Block
+    &lt;- Identifier ':' '#ventry' Block
 </code></pre>
 <p>The slot count is checked post-parse (must be exactly 16). Each slot's
 body must fit in 128 bytes after lowering
@@ -1014,16 +1051,16 @@ trap-frame shape in chapter 14.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">RegionDecl
     &lt;- '#region' Identifier ':' RegionAttrs
 RegionAttrs
-    &lt;- RegionAttr (',' RegionAttr)*
+    &lt;- RegionAttr (',' RegionAttr)* ','?
 RegionAttr
-    &lt;- Identifier '=' '(' Identifier (',' Identifier)* ')'   // attrs = (readwrite, ...)
+    &lt;- Identifier '=' '(' Identifier (',' Identifier)* ','? ')' // attrs = (readwrite, ...)
      / Identifier '=' Expr                                    // origin = 0x..., size = 0x...
      / Identifier                                             // bare named attr: readonly
 
 SectionDecl
     &lt;- '#section' DottedName ':' SectionAttrs
 SectionAttrs
-    &lt;- SectionAttr (',' SectionAttr)*
+    &lt;- SectionAttr (',' SectionAttr)* ','?
 SectionAttr
     &lt;- Identifier '=' Expr                                    // region = ram, align = 0x...
 

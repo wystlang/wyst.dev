@@ -173,7 +173,7 @@ not a linker archive; <code>ar</code>-compatible vs Wyst-native is an open fork 
 ELF objects (clang / gcc / as), at least as a binary-inspected smoke proof.</li>
 <li>Artifact reports: a deterministic manifest describing target, relocations,
 defined/undefined symbols with binding/visibility, and link result for
-multi-unit kernels and foreign linkage.</li>
+multi-unit images and foreign linkage.</li>
 </ul>
 <p>Non-goals (each deferred to its own contract):</p>
 <ul>
@@ -188,7 +188,7 @@ compatibility; pairs with generics and monomorphization).</li>
 exist (debug/trace topic).</li>
 <li>JIT/in-memory output, broad C/C++ interop, and the full AAPCS aggregate /
 variadic / vector surface (C-and-foreign-interface-widening topic).</li>
-<li>Execution-environment profiles beyond bare-metal kernel — Linux userspace,
+<li>Execution-environment profiles beyond the current bare-metal profile — Linux userspace,
 UEFI, EL1 freestanding (target-environments topic).</li>
 </ul>
 <p>Dependency order: target descriptors -&gt; relocatable object output (with
@@ -206,7 +206,7 @@ binding with source spelling, accept/reject diagnostics, and symbol-table
 evidence.</li>
 <li><code>34-external-symbols</code>: <code>SHN_UNDEF</code> external AAPCS references resolve at link
 time; <code>gen-c-decls</code> no-body declarations become linkable.</li>
-<li><code>35-static-link-multiunit</code>: the teaching kernel built as separate objects
+<li><code>35-static-link-multiunit</code>: a project-graph fixture built as separate objects
 links deterministically into a byte-reproducible <code>ET_EXEC</code>, with cross-object
 veneers, and boots in QEMU with identical UART to the single-image build.</li>
 <li><code>36-foreign-object-linkage</code>: a Wyst image links against an externally produced
@@ -219,7 +219,7 @@ and link result.</li>
 <ul>
 <li><code>readelf -r</code> / <code>objdump</code> snapshot tests on emitted objects (relocations,
 symbol binding, visibility).</li>
-<li>Round-trip an existing QEMU virt fixture and the teaching kernel as multiple
+<li>Round-trip an existing QEMU virt fixture and the project-graph fixture as multiple
 objects -&gt; linked <code>ET_EXEC</code> -&gt; booted in QEMU with byte-identical expected
 UART.</li>
 <li>External-linker cross-check: the same objects linked with system <code>ld</code> / <code>lld</code>
@@ -234,7 +234,7 @@ diagnostic (Roadmap Rule 4).</li>
 <ul>
 <li><code>wync -c</code> emits deterministic, externally inspectable <code>ET_REL</code> objects whose
 relocations and symbols match the documented vocabulary.</li>
-<li>A multi-object Wyst kernel links deterministically into a byte-reproducible
+<li>A multi-object Wyst image links deterministically into a byte-reproducible
 <code>ET_EXEC</code> and boots in QEMU with output identical to the single-image build.</li>
 <li>External-symbol references resolve against both Wyst and foreign AArch64 ELF
 objects; unresolved symbols fail loudly.</li>
@@ -269,7 +269,7 @@ existing <code>release.wystar</code> evidence bundle.</li>
 out to <code>lld</code> / <code>ld</code> (the determinism principle favors in-tree; external stays
 a verification oracle).</li>
 <li>Visibility source spelling (for example <code>#weak</code> / <code>#hidden</code>) and its
-interaction with <code>#export</code>.</li>
+interaction with <code>pub</code>.</li>
 <li>Cross-object veneer placement determinism.</li>
 </ul>
 <h4>Target 32 sub-spec: relocatable object output</h4>
@@ -297,7 +297,7 @@ emit time, not emitted as relocations.</li>
 entries (this makes <code>gen-c-decls</code> no-body declarations and cross-file
 references linkable). Relocations are defined-symbol-preferred, with a
 <code>STT_SECTION</code> + addend fallback for section-internal targets. Binding is
-unchanged (<code>#export</code> -&gt; <code>STB_GLOBAL</code>, private -&gt; <code>STB_LOCAL</code>); <code>#weak</code> /
+unchanged (<code>pub</code> -&gt; <code>STB_GLOBAL</code>, private -&gt; <code>STB_LOCAL</code>); <code>#weak</code> /
 <code>#hidden</code> stay deferred to target 33.</li>
 <li>Determinism: <code>.rela</code> entries sorted by <code>r_offset</code> (split pairs keep
 instruction order); undefined externals appended after defined globals in the
@@ -338,7 +338,7 @@ direct ARM64 correspondence; tooling as a core language feature; and the
 verification-first working conventions. Topics that serve those principles
 directly, are foundational to other work, or have concrete byte-stable/snapshot
 verification rank higher. Topics that drift from the single-ISA,
-kernel/bare-metal core, brush the scope guardrails, or are large and speculative
+bare-metal systems core, brush the scope guardrails, or are large and speculative
 rank lower.</p>
 <ul>
 <li>Object-format and linker extensions beyond deterministic static linking:
@@ -475,7 +475,7 @@ semantics; keep editor/formatter scope at the workflow layer. Dependency:
 board/hardware validation builds on the target environments and OS surfaces
 profiles.)</em></li>
 <li>Target environments and OS surfaces: execution-environment profiles beyond
-bare-metal kernel — AArch64 + Linux userspace, AArch64 + UEFI, and AArch64 +
+the current bare-metal profile — AArch64 + Linux userspace, AArch64 + UEFI, and AArch64 +
 EL1 freestanding — with the syscall-only Apple Silicon Mach-O hello-world
 (<code>_start</code>, <code>svc</code>, rodata bytes, no external symbols, byte-stable
 binary-inspection/run verification) as the first concrete artifact-mode proof

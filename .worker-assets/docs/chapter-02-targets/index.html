@@ -138,8 +138,8 @@ layers instead of flattening everything into one target string.</p>
 </table>
 <h2 id="source-boundary" tabindex="-1"><a class="doc-anchor" href="#source-boundary" aria-hidden="true">#</a> Source Boundary</h2>
 <p><code>#target</code> remains the source-level declaration for target facts a module
-depends on. Project builds may bind that declaration to a named profile or
-manifest:</p>
+depends on. It is optional: if a module omits it, project builds may supply the
+same facts from <code>wyst.project</code>, and source-only builds use compiler defaults.</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> target_demo
 
@@ -152,14 +152,18 @@ project manifests with stable provenance.</p>
 <code>#target(...)</code>, but repeated declarations must describe the same normalized
 named-argument set; Wyst does not merge partial target declarations.</p>
 <h2 id="project-profile-floor" tabindex="-1"><a class="doc-anchor" href="#project-profile-floor" aria-hidden="true">#</a> Project Profile Floor</h2>
-<p>Project builds bind source-level target declarations to named target profiles.
-The teaching-kernel profile is:</p>
+<p>Project builds may bind source-level target declarations to named target
+profiles, explicit project target facts, or both. If both are present, they
+must agree. If a module declares <code>#target(...)</code>, it must be compatible with the
+project target facts. If it omits <code>#target(...)</code>, the project target facts act
+as semantic defaults.</p>
+<p>The QEMU <code>virt</code> profile is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">qemu-virt-aarch64-el2
 </code></pre>
 <p>It names the QEMU-oriented static ELF baseline: <code>arm64-v8a</code>, generic
 CPU, EL2 entry, Wyst native ABI, static AArch64 ELF output, and existing
 AAPCS64 interop support. Module-level <code>#target(...)</code> declarations must be
-compatible with the selected project profile.</p>
+compatible with the selected project profile when one is present.</p>
 <p>The board-emulation profile is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">qemu-raspi4b-aarch64-el2
 </code></pre>

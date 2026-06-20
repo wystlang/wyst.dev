@@ -272,10 +272,10 @@ decl := function | global | layout-symbol | type-declaration
 
 function := visibility attribute* name "::" signature "=" function-body
 global   := visibility attribute* name (":" | "::") type "=" const-expr
-layout-symbol := "#export" name "::" "u64" "=" "#start" "(" section-name ")"
+layout-symbol := "pub" name "::" "u64" "=" "#start" "(" section-name ")"
 type-declaration := visibility name "::" type-form
 </code></pre>
-<p><code>visibility</code> is <code>#export</code> or absent (private; see <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>).
+<p><code>visibility</code> is <code>pub</code> or absent (private; see <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>).
 <code>attribute</code> covers <code>#inline</code>, <code>#naked</code>, <code>#pin(reg)</code>, <code>#noreturn</code>, <code>#percpu</code>,
 <code>#tls</code>, <code>#section(...)</code>, <code>#align(N)</code>, and the calling-convention markers
 <code>[aapcs]</code> / <code>[wyst]</code>.</p>
@@ -942,7 +942,7 @@ attribute-block := "[" attribute-list "]"
 <h3 id="8.2-worked-example" tabindex="-1"><a class="doc-anchor" href="#8.2-worked-example" aria-hidden="true">#</a> 8.2 Worked Example</h3>
 <p>The Wyst surface code:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
         <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>

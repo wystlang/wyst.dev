@@ -233,15 +233,36 @@ form to stdout. It does not rewrite the input file.</p>
 <p><code>wync fmt &lt;input.wyst&gt; --check</code> parses the same source, compares it with the
 canonical form, exits <code>0</code> for already formatted input, and exits <code>1</code> with a
 source diagnostic when the file differs.</p>
+<p>Formatter canonicalization includes declaration annotations and imports:</p>
+<ul>
+<li>one declaration annotation stays as a bare <code>#name</code> line directly above the
+declaration;</li>
+<li>two or more declaration annotations become a single <code>#[a, b]</code> group directly
+above the declaration;</li>
+<li>one import stays as <code>#import module.path</code>;</li>
+<li>two or more adjacent imports become a sorted <code>#import (</code> block with one
+import item per line and no commas.</li>
+<li>in a string-literal initializer for <code>[N]u8</code>, trailing <code>\0</code> bytes that the
+zero-fill rule would supply are omitted; leading or interior null bytes are
+preserved.</li>
+<li>comma-separated lists accept one optional trailing comma. The formatter
+omits trailing commas in single-line lists and uses a trailing comma only
+when it renders a comma list one item per line.</li>
+</ul>
 <p>The formatter is AST-backed:</p>
 <ul>
 <li>it supports one source file at a time;</li>
 <li>it renders function-level directives such as <code>#inline</code>, <code>#naked</code>, and
 <code>#noreturn</code> as prefix lines before the function signature;</li>
+<li>it renders two or more declaration annotations as one grouped line such as
+<code>#[naked, noreturn]</code> directly above the declaration, while a single
+annotation remains in bare form such as <code>#cold</code>;</li>
 <li>it preserves one intentional blank line between block statements and collapses
 larger vertical gaps to one blank line;</li>
 <li>it keeps top-level constant/global facts and <code>#static_assert</code> runs dense
 instead of inserting a blank line between each declaration;</li>
+<li>it renders fixed byte-array string initializers in canonical unpadded form,
+while leaving <code>string</code>, non-<code>u8</code> arrays, and brace array literals unchanged;</li>
 <li>it keeps layout-module placement and symbol groups dense instead of inserting
 a blank line between every top-level layout declaration;</li>
 <li>it preserves line and block comments that sit between declarations, fields,
