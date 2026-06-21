@@ -453,12 +453,15 @@ shifting. The result preserves <code>T</code>.</li>
 </ul>
 <h4><code>cmp</code></h4>
 <ul>
-<li><strong>Signature:</strong> <code>(T, T) -&gt; bool</code> where T is integer for all comparison ops,
-or address/function-pointer for <code>eq</code> and <code>ne</code> only. Source-level function
-pointer comparisons against untyped integer <code>0</code> lower as comparison against
-a function-pointer-typed zero constant.</li>
+<li><strong>Signature:</strong> <code>(T, T) -&gt; bool</code> where T is integer or data address for all
+comparison ops, or function-pointer for <code>eq</code> and <code>ne</code> only. Source-level
+function pointer comparisons against untyped integer <code>0</code> lower as comparison
+against a function-pointer-typed zero constant.</li>
 <li><strong>Attribute:</strong> <code>op : { eq, ne, ult, ule, ugt, uge, slt, sle, sgt, sge }</code>.</li>
-<li><strong>Semantics:</strong> integer comparison, plus equality-only address and function-pointer comparison. Source-level ordered address or function-pointer checks lower through explicit <code>as u64</code> casts before comparison. Mixed-sign and mixed-width are forbidden (Phase 0.4 rules).</li>
+<li><strong>Semantics:</strong> integer comparison, unsigned ordered data-address comparison,
+and equality-only function-pointer comparison. Source-level ordered function
+pointer checks lower through explicit <code>as u64</code> casts before comparison.
+Mixed-sign and mixed-width are forbidden (Phase 0.4 rules).</li>
 <li><strong>Lowering:</strong> <code>cmp</code> + <code>cset</code>/<code>csel</code>.</li>
 </ul>
 <h3 id="6.2-memory" tabindex="-1"><a class="doc-anchor" href="#6.2-memory" aria-hidden="true">#</a> 6.2 Memory</h3>

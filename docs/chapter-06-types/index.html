@@ -725,13 +725,15 @@ explicit <code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code> construction 
 address. They do not support address arithmetic, ordered comparisons, nonzero
 integer comparisons, raw integer-to-function-pointer <code>as</code> casts, or
 <code>type[address]</code> memory access.</li>
-<li><code>@T</code> comparisons are equality-only: <code>==</code> and <code>!=</code> are defined for the same
-address lens. Untyped integer constants may bind to the address lens for
+<li><code>@T</code> comparisons are defined for the same address lens. <code>==</code> and <code>!=</code> test
+address equality. <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code> use unsigned numeric address
+ordering, which keeps address-walking loops typed as pointers instead of
+raw integers. Untyped integer constants may bind to the address lens for
 equality checks, which keeps <code>addr == 0</code> available as the conventional
-sentinel test. Ordered comparisons (<code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>) are compile errors
-for addresses; cast both sides to <code>u64</code> when numeric address ordering is
-intentional. Comparing addresses of different element types (<code>@u8 == @u32</code>)
-is also a compile error; retarget explicitly or compare <code>as u64</code> values.</li>
+sentinel test. Ordered comparisons against integer literals remain compile
+errors; cast both sides to <code>u64</code> when comparing against raw integer values.
+Comparing addresses of different element types (<code>@u8 == @u32</code>) is also a
+compile error; retarget explicitly or compare <code>as u64</code> values.</li>
 <li>There is no <code>null</code>. <code>@T = 0</code> is a legal value. <code>if addr == 0 { ... }</code>
 is the canonical check for &quot;address is the conventional unmapped
 sentinel.&quot; The behavior of <em>accessing</em> address 0 is hardware-determined
@@ -788,15 +790,13 @@ is_zero <span class="token operator">::</span> <span class="token punctuation">(
 <span class="token punctuation">}</span>
 
 before <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
-    a_addr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token keyword">as</span> <span class="token builtin type">u64</span>
-    b_addr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> b <span class="token keyword">as</span> <span class="token builtin type">u64</span>
-    <span class="token keyword">return</span> a_addr <span class="token operator">&lt;</span> b_addr
+    <span class="token keyword">return</span> a <span class="token operator">&lt;</span> b
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-bad_order <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
+bad_lens <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> a <span class="token operator">&lt;</span> b
 <span class="token punctuation">}</span>
 </code></pre>

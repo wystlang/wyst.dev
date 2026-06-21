@@ -309,12 +309,15 @@ it does not appear as a binary operator.</p>
 <p>Both operands must have the <strong>same concrete type</strong>. Mixed-signedness
 (<code>i32 &lt; u32</code>) and mixed-width (<code>u8 &lt; u64</code>) comparisons are compile errors;
 the programmer must cast explicitly. There is no implicit promotion. See
-<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> for the full conversion model. Address, enum,
-slice, dynamic-array, and function-pointer comparisons are equality-only.
-<code>@T == @T</code>, <code>[]T == []T</code>, <code>[dynamic]T == [dynamic]T</code>,
-<code>@(u64) -&gt; u64 == @(u64) -&gt; u64</code>, and their <code>!=</code> forms are valid, but ordered
-checks require explicit numeric casts or field comparisons such as
-<code>(a as u64) &lt; (b as u64)</code>, <code>s.len &lt; t.len</code>, or <code>arr.capacity &lt; other.capacity</code>.
+<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> for the full conversion model.
+Address comparisons are defined for the same address lens: <code>@T == @T</code>,
+<code>@T != @T</code>, <code>@T &lt; @T</code>, <code>@T &lt;= @T</code>, <code>@T &gt; @T</code>, and <code>@T &gt;= @T</code> are valid and
+use unsigned numeric address ordering. Slice, dynamic-array, enum, and
+function-pointer comparisons are equality-only. <code>[]T == []T</code>,
+<code>[dynamic]T == [dynamic]T</code>, <code>@(u64) -&gt; u64 == @(u64) -&gt; u64</code>, and their <code>!=</code>
+forms are valid, but ordered checks require explicit field comparisons or
+casts such as <code>s.len &lt; t.len</code>, <code>arr.capacity &lt; other.capacity</code>, or
+<code>(callback as u64) &lt; (other as u64)</code>.
 Enum equality is tag equality for payload-less enums and tag-plus-active-payload
 equality for payload enums; inactive payload bytes are not compared.
 Slice equality is descriptor equality (<code>data</code> and <code>len</code>), not element-wise
