@@ -217,17 +217,17 @@ block scoped, visible only after their declaration, and have no addressable
 stack storage:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">zero_bss <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    stride <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">8</span>
-    half <span class="token operator">::</span><span class="token operator">=</span> stride <span class="token operator">/</span> <span class="token number">2</span>
-    scratch <span class="token operator">:</span> <span class="token punctuation">[</span>half<span class="token punctuation">]</span><span class="token builtin type">u8</span>
-    lanes <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span> half<span class="token punctuation">]</span>
-    <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span>half <span class="token operator">==</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">"stride sanity"</span><span class="token punctuation">)</span>
+  stride <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">8</span>
+  half <span class="token operator">::</span><span class="token operator">=</span> stride <span class="token operator">/</span> <span class="token number">2</span>
+  scratch <span class="token operator">:</span> <span class="token punctuation">[</span>half<span class="token punctuation">]</span><span class="token builtin type">u8</span>
+  lanes <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span> half<span class="token punctuation">]</span>
+  <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span>half <span class="token operator">==</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">"stride sanity"</span><span class="token punctuation">)</span>
 
-    addr <span class="token operator">:</span><span class="token operator">=</span> __bss_start
-    <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> __bss_end <span class="token punctuation">{</span>
-        <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
-        addr <span class="token operator">+=</span> stride
-    <span class="token punctuation">}</span>
+  addr <span class="token operator">:</span><span class="token operator">=</span> __bss_start
+  <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> __bss_end <span class="token punctuation">{</span>
+    <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
+    addr <span class="token operator">+=</span> stride
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Local constants can feed later constant contexts such as fixed-array lengths,
@@ -290,13 +290,13 @@ name <span class="token operator">::</span> <span class="token punctuation">(</s
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum <span class="token operator">::</span> <span class="token punctuation">(</span>data <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
 
-    total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+  total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-    <span class="token keyword">repeat</span> count <span class="token keyword">as</span> i <span class="token punctuation">{</span>
-        total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i <span class="token operator">*</span> <span class="token number">8</span><span class="token punctuation">]</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">repeat</span> count <span class="token keyword">as</span> i <span class="token punctuation">{</span>
+    total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i <span class="token operator">*</span> <span class="token number">8</span><span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
 
-    <span class="token keyword">return</span> total
+  <span class="token keyword">return</span> total
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>return</code> is valid inside function blocks. It returns from the function's own stack frame.
@@ -315,7 +315,7 @@ does not have range syntax; write the count expression directly.</p>
 <p>Functions can return multiple values using a <strong>tuple return type</strong>:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">foo <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span>x<span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> y<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span>
+  <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <table>
@@ -356,7 +356,7 @@ the positional order for tuple destructuring. Use <code>_</code> to discard a fi
 <p>A single return value is just the plain type (no tuple needed):</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">get_count <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> <span class="token number">42</span>
+  <span class="token keyword">return</span> <span class="token number">42</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Tuples are only required for <strong>two or more</strong> return values.</p>
@@ -494,11 +494,11 @@ windows for pins line up with binding scopes, which keeps the conflict rules
 <h3 id="pinning-local-variables" tabindex="-1"><a class="doc-anchor" href="#pinning-local-variables" aria-hidden="true">#</a> Pinning Local Variables</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">setup <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
+  counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-    <span class="token keyword">repeat</span> <span class="token number">100</span> <span class="token punctuation">{</span>
-        counter <span class="token operator">+=</span> <span class="token number">1</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">repeat</span> <span class="token number">100</span> <span class="token punctuation">{</span>
+    counter <span class="token operator">+=</span> <span class="token number">1</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The assembler must place <code>counter</code> in <code>x19</code> for the lifetime of the binding.
@@ -512,12 +512,12 @@ or a foreign calling convention.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token comment">// dtb is guaranteed to be in x0 at entry</span>
-    <span class="token comment">// as placed there by QEMU/firmware at reset</span>
-    <span class="token function">kernel_init</span><span class="token punctuation">(</span>dtb<span class="token punctuation">)</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token comment">// dtb is guaranteed to be in x0 at entry</span>
+  <span class="token comment">// as placed there by QEMU/firmware at reset</span>
+  <span class="token function">kernel_init</span><span class="token punctuation">(</span>dtb<span class="token punctuation">)</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Multiple parameters can be pinned independently:</p>
@@ -539,13 +539,13 @@ to helper functions without forcing the storage into a global:</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 fill <span class="token operator">::</span> <span class="token punctuation">(</span>out <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>out<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">42</span>
+  <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>out<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">42</span>
 <span class="token punctuation">}</span>
 
 main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    value <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
-    <span class="token function">fill</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token keyword">return</span> value
+  value <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token function">fill</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token keyword">return</span> value
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Inside the callee, <code>#noescape</code> is a syntactic rule over the parameter value. A
@@ -566,7 +566,7 @@ observed as a condition or ordinary arithmetic/comparison value, or be exposed t
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 bad <span class="token operator">::</span> <span class="token punctuation">(</span>ptr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> ptr
+  <span class="token keyword">return</span> ptr
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>#noescape</code> is a parameter contract, not a pointer type and not a provenance
@@ -581,10 +581,10 @@ not depend on liveness analysis, on whether the function makes calls, or on
 how many paths through the body actually read the pin.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">setup <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
-    <span class="token comment">// prologue emits: stp x19, ..., [sp, #-N]!</span>
-    <span class="token comment">// epilogue emits: ldp x19, ..., [sp], #N</span>
-    counter <span class="token operator">+=</span> <span class="token number">1</span>
+  counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token comment">// prologue emits: stp x19, ..., [sp, #-N]!</span>
+  <span class="token comment">// epilogue emits: ldp x19, ..., [sp], #N</span>
+  counter <span class="token operator">+=</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The pin is treated as &quot;this function uses x19&quot; for the purpose of frame
@@ -603,11 +603,11 @@ clobbered across any <code>bl</code>/<code>blr</code>/<code>svc</code>/<code>hvc
 binding is live across such a call, the program is rejected at compile time:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">work <span class="token operator">::</span> <span class="token punctuation">(</span>handler <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    state <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0xdead</span> <span class="token comment">// pin to caller-saved x0</span>
-    result <span class="token operator">:</span><span class="token operator">=</span> <span class="token function">handler</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span> <span class="token comment">// x0 clobbered by call — state live across it</span>
-    <span class="token comment">// compile error: pinned variable `state` is live across a call that</span>
-    <span class="token comment">// clobbers its pinned register `x0`</span>
-    <span class="token function">use</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> result<span class="token punctuation">)</span>
+  state <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0xdead</span> <span class="token comment">// pin to caller-saved x0</span>
+  result <span class="token operator">:</span><span class="token operator">=</span> <span class="token function">handler</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span> <span class="token comment">// x0 clobbered by call — state live across it</span>
+  <span class="token comment">// compile error: pinned variable `state` is live across a call that</span>
+  <span class="token comment">// clobbers its pinned register `x0`</span>
+  <span class="token function">use</span><span class="token punctuation">(</span>state<span class="token punctuation">,</span> result<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The compiler <strong>does not</strong> silently spill the pinned variable around the call.
@@ -677,15 +677,15 @@ compiler not to mutate that architectural register while the binding is live.</p
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 exception_handler <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    saved_lr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>lr<span class="token punctuation">)</span> <span class="token comment">// snapshot of lr at entry</span>
+  saved_lr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>lr<span class="token punctuation">)</span> <span class="token comment">// snapshot of lr at entry</span>
 
-    <span class="token comment">// saved_lr is a normal u64 value; the compiler must not emit</span>
-    <span class="token comment">// any instruction that overwrites the architectural `lr` while</span>
-    <span class="token comment">// saved_lr is live.</span>
+  <span class="token comment">// saved_lr is a normal u64 value; the compiler must not emit</span>
+  <span class="token comment">// any instruction that overwrites the architectural `lr` while</span>
+  <span class="token comment">// saved_lr is live.</span>
 
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Read-only means assignment is rejected:</p>
@@ -748,16 +748,16 @@ explicitly:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 exception_save <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        clobbers <span class="token punctuation">{</span>
-            memory
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            stp x19<span class="token punctuation">,</span> x20<span class="token punctuation">,</span> <span class="token punctuation">[</span>sp<span class="token punctuation">,</span> #<span class="token operator">-</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token operator">!</span>
-            <span class="token comment">// ...</span>
-            ldp x19<span class="token punctuation">,</span> x20<span class="token punctuation">,</span> <span class="token punctuation">[</span>sp<span class="token punctuation">]</span><span class="token punctuation">,</span> #<span class="token number">16</span>
-        <span class="token punctuation">}</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    clobbers <span class="token punctuation">{</span>
+      memory
     <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      stp x19<span class="token punctuation">,</span> x20<span class="token punctuation">,</span> <span class="token punctuation">[</span>sp<span class="token punctuation">,</span> #<span class="token operator">-</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token operator">!</span>
+      <span class="token comment">// ...</span>
+      ldp x19<span class="token punctuation">,</span> x20<span class="token punctuation">,</span> <span class="token punctuation">[</span>sp<span class="token punctuation">]</span><span class="token punctuation">,</span> #<span class="token number">16</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
@@ -905,15 +905,15 @@ time.</p>
 <code>label</code> type. They are not nested inside functions.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">name <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token punctuation">{</span>
-    body
+  body
 <span class="token punctuation">}</span> <span class="token comment">// bare code region</span>
 
 name <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
-    body
+  body
 <span class="token punctuation">}</span> <span class="token comment">// never returns</span>
 
 name <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#naked</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
-    body
+  body
 <span class="token punctuation">}</span> <span class="token comment">// raw entry label</span>
 </code></pre>
 <p>A label:</p>
@@ -936,13 +936,13 @@ to other modules that <code>#import</code> the module.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>handlers
 
 pub handle_sync <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token punctuation">{</span>
-    <span class="token comment">// ...</span>
-    <span class="token keyword">goto</span> resume
+  <span class="token comment">// ...</span>
+  <span class="token keyword">goto</span> resume
 <span class="token punctuation">}</span>
 
 resume <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token punctuation">{</span>
-    <span class="token comment">// module-private</span>
-    <span class="token comment">// ...</span>
+  <span class="token comment">// module-private</span>
+  <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: sketch -->
@@ -951,10 +951,10 @@ resume <span class="token operator">::</span> <span class="token keyword">label<
 <span class="token directive macro">#import</span> boot<span class="token punctuation">.</span>handlers <span class="token comment">// brings `handle_sync` into scope</span>
 
 el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
-    spx_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token keyword">goto</span> handle_sync
-    <span class="token punctuation">}</span> <span class="token comment">// cross-module goto — OK</span>
-    <span class="token comment">// ...</span>
+  spx_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+    <span class="token keyword">goto</span> handle_sync
+  <span class="token punctuation">}</span> <span class="token comment">// cross-module goto — OK</span>
+  <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The integrated linker resolves the cross-module reference exactly as it
@@ -1494,23 +1494,23 @@ cast first if numeric address inspection is truly intended.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 handler <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> x
+  <span class="token keyword">return</span> x
 <span class="token punctuation">}</span>
 
 has_callback <span class="token operator">::</span> <span class="token punctuation">(</span>callback <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> callback <span class="token operator">!=</span> <span class="token number">0</span>
+  <span class="token keyword">return</span> callback <span class="token operator">!=</span> <span class="token number">0</span>
 <span class="token punctuation">}</span>
 
 main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
-    callback <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span>
-    <span class="token keyword">return</span> <span class="token number">0</span> <span class="token operator">!=</span> callback
+  callback <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span>
+  <span class="token keyword">return</span> <span class="token number">0</span> <span class="token operator">!=</span> callback
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 bad_compare <span class="token operator">::</span> <span class="token punctuation">(</span>callback <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> callback <span class="token operator">==</span> <span class="token number">1</span>
+  <span class="token keyword">return</span> callback <span class="token operator">==</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h3 id="calling-convention-in-the-type" tabindex="-1"><a class="doc-anchor" href="#calling-convention-in-the-type" aria-hidden="true">#</a> Calling Convention in the Type</h3>
@@ -1608,7 +1608,7 @@ is no silently degraded behavior.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 helper <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
+  <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Function-level directives appear as prefix lines on the function declaration.
@@ -1618,9 +1618,9 @@ return-type shape:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Names inside an annotation group are bare because the <code>#[</code> marker carries the
@@ -1648,14 +1648,14 @@ final loop whose body is recursively stackless.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>inline<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 idle <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
 #<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token function">idle</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token function">idle</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The final loop rule exists so reusable idle tails can be factored without
@@ -1714,26 +1714,26 @@ of the following conditions make inlining impossible:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 fact <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">if</span> n <span class="token operator">&lt;=</span> <span class="token number">1</span> <span class="token punctuation">{</span>
-        <span class="token keyword">return</span> <span class="token number">1</span>
-    <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> n <span class="token operator">*</span> <span class="token function">fact</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment">// ERROR: recursive #inline function</span>
+  <span class="token keyword">if</span> n <span class="token operator">&lt;=</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token number">1</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> n <span class="token operator">*</span> <span class="token function">fact</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment">// ERROR: recursive #inline function</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Indirect recursion is also rejected:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 a <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">if</span> n <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span>
-        <span class="token function">b</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment">// ERROR: indirect recursion through b → a</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">if</span> n <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span>
+    <span class="token function">b</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment">// ERROR: indirect recursion through b → a</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
 <span class="token directive macro">#inline</span>
 b <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">if</span> n <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span>
-        <span class="token function">a</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">if</span> n <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span>
+    <span class="token function">a</span><span class="token punctuation">(</span>n <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h4><code>#asm</code> Bodies</h4>
@@ -1793,13 +1793,13 @@ error fires at the <code>#inline</code> function definition:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 large_helper <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token comment">// ... worst-case lowering: 160 bytes after spills ...</span>
+  <span class="token comment">// ... worst-case lowering: 160 bytes after spills ...</span>
 <span class="token punctuation">}</span>
 
 el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
-    sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token function">large_helper</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+    <span class="token function">large_helper</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">error: #inline function 'large_helper' cannot fit in any #ventry slot
@@ -1829,15 +1829,15 @@ with a note pointing back to the <code>#inline</code> function:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 medium_helper <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token comment">// worst-case 100 bytes; under low pressure 80 bytes</span>
+  <span class="token comment">// worst-case 100 bytes; under low pressure 80 bytes</span>
 <span class="token punctuation">}</span>
 
 el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
-    sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token comment">// ... 50 bytes of preceding work ...</span>
-        <span class="token function">medium_helper</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// 80 bytes here; total 130 > 128</span>
-        <span class="token keyword">goto</span> handler
-    <span class="token punctuation">}</span>
+  sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+    <span class="token comment">// ... 50 bytes of preceding work ...</span>
+    <span class="token function">medium_helper</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// 80 bytes here; total 130 > 128</span>
+    <span class="token keyword">goto</span> handler
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">error: #ventry slot 'sp0_sync' exceeds 128-byte budget
@@ -1887,7 +1887,7 @@ must also be call-free.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 helper <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token function">other_function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// ERROR if `helper` is reachable from any #ventry slot</span>
+  <span class="token function">other_function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// ERROR if `helper` is reachable from any #ventry slot</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">error: #inline function 'helper' contains a call but is reachable from #ventry
@@ -1911,7 +1911,7 @@ body is emitted, and the helper is not an ABI-exported symbol.</p>
 
 <span class="token directive macro">#inline</span>
 pub helper <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
+  <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 
 <span class="token directive macro">#module</span> boot
@@ -1919,7 +1919,7 @@ pub helper <span class="token operator">::</span> <span class="token punctuation
 <span class="token directive macro">#import</span> helpers <span class="token keyword">as</span> h
 
 main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> h<span class="token punctuation">.</span><span class="token function">helper</span><span class="token punctuation">(</span><span class="token number">41</span><span class="token punctuation">)</span> <span class="token comment">// inlined here; no call to helper remains</span>
+  <span class="token keyword">return</span> h<span class="token punctuation">.</span><span class="token function">helper</span><span class="token punctuation">(</span><span class="token number">41</span><span class="token punctuation">)</span> <span class="token comment">// inlined here; no call to helper remains</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>If inlining is impossible at any importer call site, compilation fails
@@ -1933,12 +1933,12 @@ code address to capture:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 compare <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i64</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> a <span class="token keyword">as</span> <span class="token builtin type">i64</span> <span class="token operator">-</span> b <span class="token keyword">as</span> <span class="token builtin type">i64</span>
+  <span class="token keyword">return</span> a <span class="token keyword">as</span> <span class="token builtin type">i64</span> <span class="token operator">-</span> b <span class="token keyword">as</span> <span class="token builtin type">i64</span>
 <span class="token punctuation">}</span>
 
 sort <span class="token operator">::</span> <span class="token punctuation">(</span>data <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    cmp <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>compare<span class="token punctuation">)</span> <span class="token comment">// ERROR: address of #inline function taken</span>
-    <span class="token comment">// ...</span>
+  cmp <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>compare<span class="token punctuation">)</span> <span class="token comment">// ERROR: address of #inline function taken</span>
+  <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h3 id="design-rationale-2" tabindex="-1"><a class="doc-anchor" href="#design-rationale-2" aria-hidden="true">#</a> Design Rationale</h3>
@@ -2043,8 +2043,8 @@ condition expression in <code>if</code> and <code>while</code> statements only.<
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#cold</span>
 error_handler <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token function">log_error</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token function">panic</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token function">log_error</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token function">panic</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>#cold</code> is a function-level attribute indicating that the function is rarely
@@ -2526,28 +2526,28 @@ which encode register-name legality, access permissions, and reserved
 encodings in the type system rather than the assembler.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">read_tcr <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    raw <span class="token operator">:</span> <span class="token builtin type">u64</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        outputs <span class="token punctuation">{</span>
-            r <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>raw<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            mrs <span class="token punctuation">{</span>r<span class="token punctuation">}</span><span class="token punctuation">,</span> tcr_el1
-        <span class="token punctuation">}</span>
+  raw <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    outputs <span class="token punctuation">{</span>
+      r <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>raw<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> raw
+    body <span class="token punctuation">{</span>
+      mrs <span class="token punctuation">{</span>r<span class="token punctuation">}</span><span class="token punctuation">,</span> tcr_el1
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> raw
 <span class="token punctuation">}</span>
 
 write_tcr <span class="token operator">::</span> <span class="token punctuation">(</span>val <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        inputs <span class="token punctuation">{</span>
-            v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>val<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            msr tcr_el1<span class="token punctuation">,</span> <span class="token punctuation">{</span>v<span class="token punctuation">}</span>
-            isb
-        <span class="token punctuation">}</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    inputs <span class="token punctuation">{</span>
+      v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>val<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      msr tcr_el1<span class="token punctuation">,</span> <span class="token punctuation">{</span>v<span class="token punctuation">}</span>
+      isb
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The block is a full fence by default; the surrounding compiler cannot
@@ -2559,27 +2559,27 @@ interpolation and clobbers. <strong>Production code should use <code>%svc</code>
 (§1.3.4)</strong> with <code>#pin</code>'d locals to express the syscall ABI.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">syscall <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> a0 <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    ret <span class="token operator">:</span> <span class="token builtin type">u64</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        inputs <span class="token punctuation">{</span>
-            num <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>n<span class="token punctuation">)</span>
-            arg <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>a0<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        outputs <span class="token punctuation">{</span>
-            res <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>ret<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        clobbers <span class="token punctuation">{</span>
-            memory
-            cc
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            mov x8<span class="token punctuation">,</span> <span class="token punctuation">{</span>num<span class="token punctuation">}</span>
-            mov x0<span class="token punctuation">,</span> <span class="token punctuation">{</span>arg<span class="token punctuation">}</span>
-            svc #<span class="token number">0</span>
-            mov <span class="token punctuation">{</span>res<span class="token punctuation">}</span><span class="token punctuation">,</span> x0
-        <span class="token punctuation">}</span>
+  ret <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    inputs <span class="token punctuation">{</span>
+      num <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>n<span class="token punctuation">)</span>
+      arg <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>a0<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> ret
+    outputs <span class="token punctuation">{</span>
+      res <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>ret<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    clobbers <span class="token punctuation">{</span>
+      memory
+      cc
+    <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      mov x8<span class="token punctuation">,</span> <span class="token punctuation">{</span>num<span class="token punctuation">}</span>
+      mov x0<span class="token punctuation">,</span> <span class="token punctuation">{</span>arg<span class="token punctuation">}</span>
+      svc #<span class="token number">0</span>
+      mov <span class="token punctuation">{</span>res<span class="token punctuation">}</span><span class="token punctuation">,</span> x0
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> ret
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>memory</code> clobber: the supervisor handler may touch arbitrary memory on the
@@ -2592,34 +2592,34 @@ code should use <code>%cas</code> (§1.3.2)</strong>, which lowers to the same s
 ARMv8.0 and to a single <code>casa</code>/<code>casal</code> instruction on ARMv8.1 LSE.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">cas_u64 <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> old <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> new <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    result <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 0 on success, 1 on failure</span>
-    seen <span class="token operator">:</span> <span class="token builtin type">u64</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        inputs <span class="token punctuation">{</span>
-            a <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
-            old <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>old<span class="token punctuation">)</span>
-            new <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>new<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        outputs <span class="token punctuation">{</span>
-            s <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span>
-            v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>seen<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        clobbers <span class="token punctuation">{</span>
-            memory
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            ldaxr <span class="token punctuation">{</span>v<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>a<span class="token punctuation">}</span><span class="token punctuation">]</span>
-            cmp   <span class="token punctuation">{</span>v<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>old<span class="token punctuation">}</span>
-            b<span class="token punctuation">.</span>ne  1f
-            stlxr <span class="token punctuation">{</span>w<span class="token operator">:</span>s<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>new<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>a<span class="token punctuation">}</span><span class="token punctuation">]</span>
-            b     2f
-            <span class="token number">1</span><span class="token operator">:</span>
-            mov   <span class="token punctuation">{</span>w<span class="token operator">:</span>s<span class="token punctuation">}</span><span class="token punctuation">,</span> #<span class="token number">1</span>
-            clrex
-            <span class="token number">2</span><span class="token operator">:</span>
-        <span class="token punctuation">}</span>
+  result <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 0 on success, 1 on failure</span>
+  seen <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    inputs <span class="token punctuation">{</span>
+      a <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
+      old <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>old<span class="token punctuation">)</span>
+      new <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>new<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> result
+    outputs <span class="token punctuation">{</span>
+      s <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span>
+      v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>seen<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    clobbers <span class="token punctuation">{</span>
+      memory
+    <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      ldaxr <span class="token punctuation">{</span>v<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>a<span class="token punctuation">}</span><span class="token punctuation">]</span>
+      cmp   <span class="token punctuation">{</span>v<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>old<span class="token punctuation">}</span>
+      b<span class="token punctuation">.</span>ne  1f
+      stlxr <span class="token punctuation">{</span>w<span class="token operator">:</span>s<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>new<span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>a<span class="token punctuation">}</span><span class="token punctuation">]</span>
+      b     2f
+      <span class="token number">1</span><span class="token operator">:</span>
+      mov   <span class="token punctuation">{</span>w<span class="token operator">:</span>s<span class="token punctuation">}</span><span class="token punctuation">,</span> #<span class="token number">1</span>
+      clrex
+      <span class="token number">2</span><span class="token operator">:</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> result
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>{w:s}</code> selects the 32-bit <code>wN</code> view because <code>stlxr</code> writes a 32-bit
@@ -2632,20 +2632,20 @@ identical, but the intrinsic form is grep-able and the operand legality
 is checked.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">invalidate_tlb_va <span class="token operator">::</span> <span class="token punctuation">(</span>vaddr <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        inputs <span class="token punctuation">{</span>
-            v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>vaddr<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        clobbers <span class="token punctuation">{</span>
-            memory
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            dsb ishst
-            tlbi vaae1is<span class="token punctuation">,</span> <span class="token punctuation">{</span>v<span class="token punctuation">}</span>
-            dsb ish
-            isb
-        <span class="token punctuation">}</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    inputs <span class="token punctuation">{</span>
+      v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>vaddr<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
+    clobbers <span class="token punctuation">{</span>
+      memory
+    <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      dsb ishst
+      tlbi vaae1is<span class="token punctuation">,</span> <span class="token punctuation">{</span>v<span class="token punctuation">}</span>
+      dsb ish
+      isb
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>memory</code> clobber: invalidating a translation changes the meaning of every
@@ -2656,18 +2656,18 @@ address-to-value mapping survives this block.</p>
 use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">clean_cacheline <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
-        inputs <span class="token punctuation">{</span>
-            a <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
-        <span class="token punctuation">}</span>
-        clobbers <span class="token punctuation">{</span>
-            memory
-        <span class="token punctuation">}</span>
-        body <span class="token punctuation">{</span>
-            dc cvac<span class="token punctuation">,</span> <span class="token punctuation">{</span>a<span class="token punctuation">}</span>
-            dsb ish
-        <span class="token punctuation">}</span>
+  <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
+    inputs <span class="token punctuation">{</span>
+      a <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
+    clobbers <span class="token punctuation">{</span>
+      memory
+    <span class="token punctuation">}</span>
+    body <span class="token punctuation">{</span>
+      dc cvac<span class="token punctuation">,</span> <span class="token punctuation">{</span>a<span class="token punctuation">}</span>
+      dsb ish
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>

@@ -130,10 +130,10 @@ count, or cross-version instruction order must remain stable.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> scheduling_demo
 
 step <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-        sum <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
-        <span class="token keyword">return</span> sum
-    <span class="token punctuation">}</span>
+  <span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    sum <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
+    <span class="token keyword">return</span> sum
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h2 id="strict-scheduling" tabindex="-1"><a class="doc-anchor" href="#strict-scheduling" aria-hidden="true">#</a> Strict Scheduling</h2>

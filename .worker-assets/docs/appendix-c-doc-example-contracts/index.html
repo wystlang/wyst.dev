@@ -130,9 +130,9 @@ planned syntax that is expected not to compile yet.</p>
 <span class="token comment">// comments are preserved by the formatter</span>
 <span class="token directive macro">#noreturn</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This source is expected to pass frontend checking with the default documentation
@@ -142,9 +142,9 @@ layout:</p>
 
 <span class="token directive macro">#noreturn</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This source is expected to fail semantic checking:</p>
@@ -152,7 +152,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    value <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+  value <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token boolean">true</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This is a syntax sketch:</p>
@@ -160,7 +160,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> sketch<span class="token punctuation">.</span>generics
 
 identity<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token operator">::</span> <span class="token punctuation">(</span>value <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> T <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> value
+  <span class="token keyword">return</span> value
 <span class="token punctuation">}</span>
 </code></pre>
 

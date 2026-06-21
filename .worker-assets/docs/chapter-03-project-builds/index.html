@@ -151,9 +151,9 @@ root-file build surface when source roots are available.</p>
 
 <span class="token directive macro">#noreturn</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
+  <span class="token keyword">loop</span> <span class="token punctuation">{</span>
+    <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h2 id="project-manifest" tabindex="-1"><a class="doc-anchor" href="#project-manifest" aria-hidden="true">#</a> Project Manifest</h2>
@@ -250,8 +250,8 @@ also required to resolve inside the project directory.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#import</span> <span class="token punctuation">(</span>
-    drivers<span class="token punctuation">.</span>uart
-    panic
+  drivers<span class="token punctuation">.</span>uart
+  panic
 <span class="token punctuation">)</span>
 </code></pre>
 <p>The project build layer maps module names to files under explicit source roots:</p>
