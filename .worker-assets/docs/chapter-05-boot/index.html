@@ -142,7 +142,7 @@ uart_write <span class="token operator">::</span> <span class="token punctuation
 
 uart_print <span class="token operator">::</span> <span class="token punctuation">(</span>msg <span class="token operator">:</span> <span class="token builtin type">string</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 
-    base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> msg<span class="token punctuation">.</span>data
+    base <span class="token operator">:</span><span class="token operator">=</span> msg<span class="token punctuation">.</span>data
 
     i <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
@@ -295,8 +295,8 @@ primitives covered in earlier parts.</p>
 
 <span class="token directive macro">#entry</span> _start at <span class="token number">0x4008_0000</span>           <span class="token comment">// QEMU virt loads kernel here</span>
 
-pub __bss_start <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end   <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+pub __bss_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+pub __bss_end   <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
 pub __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>   <span class="token comment">// 1MB of stack, top-down</span>
 </code></pre>
 <h4>Kernel module (<code>boot</code>)</h4>
@@ -347,7 +347,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 <span class="token comment">// EL1 entry — runs after the drop. sp now refers to sp_el1.</span>
 el1_main <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
     <span class="token comment">// 10. Zero BSS now that we are at EL1 with a usable stack.</span>
-    addr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __bss_start
+    addr <span class="token operator">:</span><span class="token operator">=</span> __bss_start
     <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> __bss_end <span class="token punctuation">{</span>
         <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
         addr <span class="token operator">+=</span> <span class="token number">8</span>
@@ -388,7 +388,7 @@ under the <code>#naked</code> verifier.</p>
 
 handle_sync <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
     <span class="token comment">// Read ESR_EL1 to dispatch on exception class.</span>
-    esr <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>ESR_EL1<span class="token punctuation">)</span>
+    esr <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>ESR_EL1<span class="token punctuation">)</span>
     <span class="token comment">// ... full dispatch elided ...</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span> <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>

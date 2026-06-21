@@ -202,7 +202,7 @@ order, or in floating-point code where consistent rounding is required.</p>
 <h2 id="latency-scheduling" tabindex="-1"><a class="doc-anchor" href="#latency-scheduling" aria-hidden="true">#</a> Latency Scheduling</h2>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>latency<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    chain <span class="token operator">=</span> chain <span class="token operator">+</span> next
+    chain <span class="token operator">+=</span> next
 <span class="token punctuation">}</span>
 </code></pre>
 <p><strong>Optimization hint.</strong> The assembler attempts to schedule instructions to

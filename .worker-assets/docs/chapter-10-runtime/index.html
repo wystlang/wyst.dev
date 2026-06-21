@@ -242,8 +242,8 @@ The function must have signature <code>()</code>, must use the native calling co
 must not be <code>#inline</code>, <code>#naked</code>, or <code>#noreturn</code>, and must return so the next
 table entry can run.</p>
 <p>The runtime invocation path is ordinary Wyst code. A layout file publishes
-<code>__initcalls_start :: u64 = #start(.initcalls)</code> and
-<code>__initcalls_end :: u64 = #end(.initcalls)</code>. Boot code walks the table with
+<code>__initcalls_start ::= #start(.initcalls)</code> and
+<code>__initcalls_end ::= #end(.initcalls)</code>. Boot code walks the table with
 explicit loads, constructs a <code>@()</code> function pointer with
 <code>#trusted_cast&lt;@()&gt;(addr)</code>, and calls it. There is no hidden constructor pass, no
 link-time rewrite, and no implicit allocation.</p>

@@ -338,7 +338,7 @@ acquire/release alone cannot provide.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Relaxed read of a shared counter. Atomic at the word level; no ordering</span>
 <span class="token comment">// relative to surrounding code.</span>
-n <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%atomic_load</span><span class="token punctuation">(</span>counter_addr<span class="token punctuation">,</span> order<span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
+n <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%atomic_load</span><span class="token punctuation">(</span>counter_addr<span class="token punctuation">,</span> order<span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
 
 <span class="token comment">// seq_cst store. Participates in the total order with all other seq_cst</span>
 <span class="token comment">// operations.</span>
@@ -393,13 +393,13 @@ but the prior value is not recomputable from the new value alone.</p>
 </code></pre>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Reference counting:</span>
-prev <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span>refcount_addr<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> order<span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
+prev <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span>refcount_addr<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> order<span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
 
 <span class="token comment">// Lock-free flag union (set bits 3 and 5 atomically):</span>
 <span class="token primitive macro">%fetch_or</span><span class="token punctuation">(</span>flags_addr<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acqrel<span class="token punctuation">)</span>
 
 <span class="token comment">// Take the previous head of a singly-linked list and replace it with NEW:</span>
-old_head <span class="token operator">:</span> <span class="token address-qualifier type">@node</span> <span class="token operator">=</span> <span class="token primitive macro">%xchg</span><span class="token punctuation">(</span>head_addr<span class="token punctuation">,</span> new_head<span class="token punctuation">,</span> order<span class="token operator">:</span> acqrel<span class="token punctuation">)</span>
+old_head <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%xchg</span><span class="token punctuation">(</span>head_addr<span class="token punctuation">,</span> new_head<span class="token punctuation">,</span> order<span class="token operator">:</span> acqrel<span class="token punctuation">)</span>
 </code></pre>
 <hr>
 <h3 id="atomic-bit-operations" tabindex="-1"><a class="doc-anchor" href="#atomic-bit-operations" aria-hidden="true">#</a> Atomic Bit Operations</h3>
@@ -416,7 +416,7 @@ value of that bit <em>before</em> the operation. <code>bit</code> must be a comp
 constant less than <code>8 * #size_of(T)</code>; out-of-range is a compile error.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Test-and-set the lock bit:</span>
-was_locked <span class="token operator">:</span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token primitive macro">%atomic_bit_set</span><span class="token punctuation">(</span>status_addr<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
+was_locked <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%atomic_bit_set</span><span class="token punctuation">(</span>status_addr<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
 <span class="token keyword">if</span> was_locked <span class="token operator">==</span> <span class="token boolean">false</span> <span class="token punctuation">{</span>
     <span class="token comment">// we own the lock</span>
 <span class="token punctuation">}</span>
@@ -654,8 +654,8 @@ are disjoint:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">TCR_EL1 <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>   <span class="token comment">// TCR_EL1 is a type here</span>
 
-raw <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>           <span class="token comment">// TCR_EL1 is a register name here</span>
-tcr <span class="token operator">:</span> TCR_EL1 <span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1      <span class="token comment">// TCR_EL1 is a type here</span>
+raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>                <span class="token comment">// TCR_EL1 is a register name here</span>
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1               <span class="token comment">// TCR_EL1 is a type here</span>
 </code></pre>
 <p>Register names are conventionally lowercase to match the ARM Architecture
 Reference Manual mnemonics.</p>
@@ -704,8 +704,8 @@ architecture defines it. The caller converts to a bitfield via the
 standard <code>as</code> operator (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>):</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Read TCR_EL1, modify a field, write it back:</span>
-raw <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-tcr <span class="token operator">:</span> TCR_EL1 <span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
 tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span>
 tcr<span class="token punctuation">.</span>t1sz <span class="token operator">=</span> <span class="token number">25</span>
 <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
@@ -797,7 +797,7 @@ field widths: <code>op0</code> is 2 bits, <code>op1</code> is 3 bits, <code>crn<
 <code>msr S&lt;op0&gt;_&lt;op1&gt;_C&lt;crn&gt;_C&lt;crm&gt;_&lt;op2&gt;, xN</code> directly.</p>
 <p>Example — read the Apple silicon <code>APRR_EL1</code> register:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">raw <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs_s</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs_s</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
 </code></pre>
 <p>The compiler does not validate S-encoded register access against any
 table — by definition these registers are not architectural. The
@@ -807,8 +807,8 @@ programmer asserts the encoding is correct.</p>
 <h4>Read-modify-write of a configuration register</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">configure_tcr <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    raw <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-    tcr <span class="token operator">:</span> TCR_EL1 <span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+    raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
+    tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
     tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span>                       <span class="token comment">// 39-bit virtual addresses</span>
     tcr<span class="token punctuation">.</span>t1sz <span class="token operator">=</span> <span class="token number">25</span>
     tcr<span class="token punctuation">.</span>tg0  <span class="token operator">=</span> <span class="token number">0</span>                        <span class="token comment">// 4KB granule</span>
@@ -827,8 +827,8 @@ programmer asserts the encoding is correct.</p>
 <h4>SCTLR cache enable</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">enable_caches <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    raw <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">)</span>
-    sctlr <span class="token operator">:</span> SCTLR_EL1 <span class="token operator">=</span> raw <span class="token keyword">as</span> SCTLR_EL1
+    raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">)</span>
+    sctlr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> SCTLR_EL1
     sctlr<span class="token punctuation">.</span>c <span class="token operator">=</span> <span class="token number">1</span>                          <span class="token comment">// data cache enable</span>
     sctlr<span class="token punctuation">.</span>i <span class="token operator">=</span> <span class="token number">1</span>                          <span class="token comment">// instruction cache enable</span>
     sctlr<span class="token punctuation">.</span>m <span class="token operator">=</span> <span class="token number">1</span>                          <span class="token comment">// MMU enable</span>
@@ -1576,9 +1576,9 @@ still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">zero_page <span class="token operator">::</span> <span class="token punctuation">(</span>page_base <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     n     <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">4096</span>
-    addr  <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> page_base
-    line  <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%dczid_block_size</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    end   <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> page_base <span class="token operator">+</span> n
+    addr  <span class="token operator">:</span><span class="token operator">=</span> page_base
+    line  <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%dczid_block_size</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    end   <span class="token operator">:</span><span class="token operator">=</span> page_base <span class="token operator">+</span> n
     <span class="token keyword">if</span> line <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">{</span>
         <span class="token keyword">return</span>
     <span class="token punctuation">}</span>
@@ -1876,7 +1876,7 @@ sections.</p>
 <h3 id="access" tabindex="-1"><a class="doc-anchor" href="#access" aria-hidden="true">#</a> Access</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Read the current CPU's instance:</span>
-n <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> my_counter
+n <span class="token operator">:</span><span class="token operator">=</span> my_counter
 
 <span class="token comment">// Modify:</span>
 my_counter <span class="token operator">+=</span> <span class="token number">1</span>
@@ -1924,7 +1924,7 @@ numeric value as a cross-build protocol value.</p>
 <p>A cross-CPU access:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">peek_remote_counter <span class="token operator">::</span> <span class="token punctuation">(</span>cpu <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-    base <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu<span class="token punctuation">)</span>
+    base <span class="token operator">:</span><span class="token operator">=</span> <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu<span class="token punctuation">)</span>
     <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token directive macro">#percpu_offset_of</span><span class="token punctuation">(</span>my_counter<span class="token punctuation">)</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1943,8 +1943,8 @@ numeric value as a cross-build protocol value.</p>
 </code></pre>
 <p>The compiler additionally exports the section size for runtime use:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __percpu_size <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>percpu<span class="token punctuation">)</span>
-pub __tls_size    <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>tls<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __percpu_size <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>percpu<span class="token punctuation">)</span>
+pub __tls_size    <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>tls<span class="token punctuation">)</span>
 </code></pre>
 <p>The runtime's per-CPU bring-up sequence is then:</p>
 <ol>

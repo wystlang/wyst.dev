@@ -293,7 +293,7 @@ is the only way a name crosses a module boundary.</p>
 <li><strong>Compile-time constants</strong> (<code>name :: T = expr</code>, <code>name ::= expr</code>)</li>
 <li><strong>Mutable globals</strong> (<code>name : T = expr</code>)</li>
 <li><strong>Type declarations</strong> (<code>name :: struct { ... }</code>, <code>name :: bitfield(T) { ... }</code>)</li>
-<li><strong>Layout symbols</strong> (<code>pub __text_start :: u64 = #start(.text)</code>)</li>
+<li><strong>Layout symbols</strong> (<code>pub __text_start ::= #start(.text)</code>)</li>
 </ul>
 <p>When <code>pub</code> is combined with <code>#inline</code>, <code>pub</code> exports the Wyst module
 surface only: importers may call the helper, but every call must be inlined
@@ -448,10 +448,10 @@ frontend-time constants.</p>
 sequentially. Alignment is explicit.</p>
 <h3 id="exports" tabindex="-1"><a class="doc-anchor" href="#exports" aria-hidden="true">#</a> Exports</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __text_start <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __text_end   <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __bss_start  <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end    <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __text_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+pub __text_end   <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+pub __bss_start  <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+pub __bss_end    <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
 pub __stack_top  <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
 </code></pre>
 <p>Section boundaries are exported as typed <code>u64</code> layout-time constants. Their
@@ -472,10 +472,10 @@ section.</p>
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span>data   <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span>  after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span>bss    <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
 
-pub __text_start  <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __text_end    <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __bss_start   <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end     <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+pub __text_start  <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+pub __text_end    <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+pub __bss_start   <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+pub __bss_end     <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
 pub __stack_top   <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
 </code></pre>
 <h3 id="usage-from-source" tabindex="-1"><a class="doc-anchor" href="#usage-from-source" aria-hidden="true">#</a> Usage from Source</h3>
@@ -486,8 +486,8 @@ pub __stack_top   <span class="token operator">::</span> <span class="token buil
 
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// __bss_start, __bss_end are available as typed u64 values after layout</span>
-    bss_start <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __bss_start
-    bss_end   <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __bss_end
+    bss_start <span class="token operator">:</span><span class="token operator">=</span> __bss_start
+    bss_end   <span class="token operator">:</span><span class="token operator">=</span> __bss_end
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The compiler is invoked with <code>--layout boot.layout</code>. The layout module exports
@@ -635,8 +635,8 @@ dropped. So <code>.init.text</code> produces <code>__init_text_start</code> and
 of freeing <code>.init.text</code> after early bring-up:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">free_init_text <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    start <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __init_text_start
-    end   <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __init_text_end
+    start <span class="token operator">:</span><span class="token operator">=</span> __init_text_start
+    end   <span class="token operator">:</span><span class="token operator">=</span> __init_text_end
     <span class="token function">unmap_range</span><span class="token punctuation">(</span>start<span class="token punctuation">,</span> end <span class="token operator">-</span> start<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -676,8 +676,8 @@ main <span class="token operator">::</span> <span class="token punctuation">(</s
 <span class="token punctuation">}</span>
 
 free_init_section <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    start <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __init_text_start
-    end   <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> __init_text_end
+    start <span class="token operator">:</span><span class="token operator">=</span> __init_text_start
+    end   <span class="token operator">:</span><span class="token operator">=</span> __init_text_end
     <span class="token function">unmap_range</span><span class="token punctuation">(</span>start<span class="token punctuation">,</span> end <span class="token operator">-</span> start<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -705,11 +705,11 @@ that range.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> kernel<span class="token punctuation">.</span>modinfo_walk
 
 walk_modinfo <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> __modinfo_start <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
-    end  <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> __modinfo_end   <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
+    addr <span class="token operator">:</span><span class="token operator">=</span> __modinfo_start <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
+    end  <span class="token operator">:</span><span class="token operator">=</span> __modinfo_end   <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
     <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> end <span class="token punctuation">{</span>
         <span class="token function">announce_module</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
-        addr <span class="token operator">=</span> addr <span class="token operator">+</span> <span class="token number">16</span>
+        addr <span class="token operator">+=</span> <span class="token number">16</span>
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -866,7 +866,7 @@ with no special-cased compiler support beyond this attribute.</li>
 <tr>
 <td>Symbols</td>
 <td><code>__text_start = .</code></td>
-<td><code>pub :: u64 = #start()</code></td>
+<td><code>pub ::= #start()</code></td>
 </tr>
 <tr>
 <td>Type system</td>

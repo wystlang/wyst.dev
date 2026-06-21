@@ -867,8 +867,8 @@ two operations with two roundings, matching the written source expression.</p>
 <p>To explicitly request a fused multiply-add (single rounding, using ARM64
 <code>fmadd</code>/<code>fmsub</code>), use the <code>%fma</code> intrinsic:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> c<span class="token punctuation">)</span>     <span class="token comment">// a * b + c, fused — single rounding</span>
-result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> <span class="token operator">-</span>c<span class="token punctuation">)</span>    <span class="token comment">// a * b - c, fused — lowers to fmsub</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> c<span class="token punctuation">)</span>          <span class="token comment">// a * b + c, fused — single rounding</span>
+result <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> <span class="token operator">-</span>c<span class="token punctuation">)</span>         <span class="token comment">// a * b - c, fused — lowers to fmsub</span>
 </code></pre>
 <p>The distinction matters for:</p>
 <ul>
