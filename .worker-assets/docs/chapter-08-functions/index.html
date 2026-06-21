@@ -292,7 +292,7 @@ name <span class="token operator">::</span> <span class="token punctuation">(</s
 
   total <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-  <span class="token keyword">repeat</span> count <span class="token keyword">as</span> i <span class="token punctuation">{</span>
+  <span class="token keyword">repeat</span> count<span class="token punctuation">,</span> i <span class="token punctuation">{</span>
     total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i <span class="token operator">*</span> <span class="token number">8</span><span class="token punctuation">]</span>
   <span class="token punctuation">}</span>
 
@@ -306,8 +306,8 @@ its body contains a <code>break</code> that targets that loop. A <code>repeat 0<
 always falls through. A nonzero <code>repeat</code> statement can fall through when its
 body can reach the closing brace, <code>break</code> exits the repeat, or <code>continue</code>
 advances through the final iteration.</p>
-<p><code>repeat N as i { ... }</code> binds <code>i</code> as an immutable <code>u64</code> counter scoped to the
-loop body. The counter starts at <code>0</code> and reaches <code>N - 1</code>; <code>repeat 0 as i</code> never
+<p><code>repeat N, i { ... }</code> binds <code>i</code> as an immutable <code>u64</code> counter scoped to the
+loop body. The counter starts at <code>0</code> and reaches <code>N - 1</code>; <code>repeat 0, i { ... }</code> never
 executes its body. Unbound <code>repeat N { ... }</code> remains the same form. <code>repeat</code>
 does not have range syntax; write the count expression directly.</p>
 <hr>
@@ -1133,7 +1133,7 @@ before the next iteration runs, exactly as if the loop body had reached
 its closing brace.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Skip rows where the first byte is zero:</span>
-<span class="token keyword">repeat</span> <span class="token number">100</span> <span class="token keyword">as</span> i <span class="token punctuation">{</span>
+<span class="token keyword">repeat</span> <span class="token number">100</span><span class="token punctuation">,</span> i <span class="token punctuation">{</span>
     <span class="token keyword">if</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> i <span class="token operator">*</span> row_size<span class="token punctuation">]</span> <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">{</span> <span class="token keyword">continue</span> <span class="token punctuation">}</span>
     <span class="token function">process_row</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -1177,7 +1177,7 @@ they were in; this is the same as falling through to the loop's end).</p>
 </code></pre>
 <h3 id="repeat" tabindex="-1"><a class="doc-anchor" href="#repeat" aria-hidden="true">#</a> Repeat</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">repeat</span> count <span class="token keyword">as</span> i <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">repeat</span> count<span class="token punctuation">,</span> i <span class="token punctuation">{</span>
     total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i <span class="token operator">*</span> <span class="token number">8</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>

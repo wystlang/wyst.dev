@@ -701,7 +701,7 @@ BranchHint  &lt;- '#likely' / '#unlikely'
 IfStmt      &lt;- 'if' BranchHint? Expr Block ('else' (IfStmt / Block))?
 WhileStmt   &lt;- 'while' BranchHint? Expr Block
 LoopStmt    &lt;- 'loop' Block
-RepeatStmt  &lt;- 'repeat' Expr ('as' Identifier)? Block
+RepeatStmt  &lt;- 'repeat' Expr (',' Identifier)? Block
 SwitchStmt  &lt;- '#partial'? 'switch' Expr '{' SwitchArm* '}'
 SwitchArm   &lt;- SwitchCaseArm / SwitchElseArm
 SwitchCaseArm
