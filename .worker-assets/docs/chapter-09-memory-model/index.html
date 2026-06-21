@@ -149,7 +149,7 @@ appear only:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
 b <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
-c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b      <span class="token comment">// lowers to `add xD, xA, xB` for whichever GPRs the allocator picks</span>
+c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b <span class="token comment">// lowers to `add xD, xA, xB` for whichever GPRs the allocator picks</span>
 </code></pre>
 <p>If the operation must use specific registers (firmware contract, fixed ABI),
 pin the variables:</p>
@@ -692,7 +692,7 @@ ARM64, the CPU store buffer may reorder stores to different addresses. A
 device that requires its configuration registers to be written in a specific
 order requires explicit barriers between those writes.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR   <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
 UART_IBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
 UART_FBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
 </code></pre>
@@ -727,15 +727,17 @@ instruction on ARMv8.1 LSE or an <code>ldaxr</code>/<code>stxr</code> loop on ba
 
 spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-        _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
-        <span class="token keyword">if</span> ok <span class="token punctuation">{</span> <span class="token keyword">return</span> <span class="token punctuation">}</span>
+        _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
+        <span class="token keyword">if</span> ok <span class="token punctuation">{</span>
+            <span class="token keyword">return</span>
+        <span class="token punctuation">}</span>
         <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
 spin_unlock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>LOCK_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>   <span class="token comment">// store-release clears the lock</span>
-    <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span>                         <span class="token comment">// wake any waiters</span>
+    <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>LOCK_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// store-release clears the lock</span>
+    <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// wake any waiters</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This is the canonical spelling. An equivalent open-coded
@@ -1338,7 +1340,7 @@ initialization fact, but they must diagnose direct cases such as:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     x <span class="token operator">:</span> <span class="token builtin type">u64</span>
-    <span class="token keyword">return</span> x        <span class="token comment">// warning: x may be read before initialization</span>
+    <span class="token keyword">return</span> x <span class="token comment">// warning: x may be read before initialization</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
@@ -1592,7 +1594,7 @@ degrade throughput by 10–50×.</p>
 <h3 id="%23shared-%E2%80%94-cache-line-isolation" tabindex="-1"><a class="doc-anchor" href="#%23shared-%E2%80%94-cache-line-isolation" aria-hidden="true">#</a> <code>#shared</code> — Cache-Line Isolation</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
-flags   <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+flags <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 </code></pre>
 <p><code>#shared</code> is a placement attribute on mutable global variables and <code>#percpu</code>
 declarations. It guarantees:</p>
@@ -1654,8 +1656,10 @@ with <code>#acquire</code> / <code>#release</code> or barrier runtime primitives
 </ul>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Two per-CPU counters that will never false-share</span>
-<span class="token directive macro">#percpu</span> request_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
-<span class="token directive macro">#percpu</span> error_count   <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token directive macro">#percpu</span>
+request_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token directive macro">#percpu</span>
+error_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 </code></pre>
 <hr>
 <h3 id="%23cache_line_width()-%E2%80%94-compile-time-query" tabindex="-1"><a class="doc-anchor" href="#%23cache_line_width()-%E2%80%94-compile-time-query" aria-hidden="true">#</a> <code>#cache_line_width()</code> — Compile-Time Query</h3>

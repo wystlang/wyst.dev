@@ -732,6 +732,7 @@ hide effects.</p>
 comma-separated list of effect categories:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">,</span> trap<span class="token punctuation">)</span>
+
 format_string <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token comment">// compile error if anything reachable from here</span>
     <span class="token comment">// touches %mrs, %msr, %svc, %hvc, etc.</span>
@@ -740,6 +741,7 @@ format_string <span class="token operator">::</span> <span class="token punctuat
 <h4>Function-level <code>#deny</code></h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>interrupt_mask<span class="token punctuation">)</span>
+
 allocator_alloc <span class="token operator">::</span> <span class="token punctuation">(</span>size <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
     <span class="token comment">// uses atomics — that's fine, `atomic` is not denied</span>
     lock <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span>

@@ -374,8 +374,7 @@ shape, but semantic analysis currently accepts tuple types only as
 multi-return values and related result storage. Tuple parameters in ordinary
 functions or function pointer types are a future surface:</p>
 <!-- wyst-contract: future -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">accept_pair <span class="token operator">::</span> <span class="token punctuation">(</span>pair <span class="token operator">:</span> <span class="token punctuation">(</span>x<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> y<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-<span class="token punctuation">}</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">accept_pair <span class="token operator">::</span> <span class="token punctuation">(</span>pair <span class="token operator">:</span> <span class="token punctuation">(</span>x<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> y<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>Wyst generics use angle-bracket type parameter and type argument lists.
 Both list forms are non-empty; <code>Box&lt;&gt;</code> and <code>swap&lt;&gt;()</code> are rejected. The entries
@@ -969,7 +968,8 @@ group marker supplies the single <code>#</code>, so names inside the brackets ar
 <code>#[naked, noreturn]</code>, not <code>#[#naked, #noreturn]</code>. <code>pub</code> is a <code>Visibility</code>
 keyword and is never valid inside an annotation group. Parameter annotations
 such as <code>#pin(x0)</code> and <code>#noescape</code> stay on the parameter and are not
-<code>DeclAnnotation</code>s.</p>
+<code>DeclAnnotation</code>s. The formatter sorts grouped declaration annotations with the
+canonical order from <a href="/docs/chapter-18-check-format-diagnostics/">chapter-18-check-format-diagnostics.md</a>.</p>
 <h3 id="5.1-function-declaration" tabindex="-1"><a class="doc-anchor" href="#5.1-function-declaration" aria-hidden="true">#</a> 5.1 Function Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">FnDecl
     &lt;- Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? DeclAnnotation* Block

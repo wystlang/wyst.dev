@@ -238,7 +238,8 @@ source diagnostic when the file differs.</p>
 <li>one declaration annotation stays as a bare <code>#name</code> line directly above the
 declaration;</li>
 <li>two or more declaration annotations become a single <code>#[a, b]</code> group directly
-above the declaration;</li>
+above the declaration, sorted by this canonical directive order:
+<code>[aapcs, naked, inline, noreturn, trap_frame, initcall, cold, section, align, percpu, tls, weak, hidden]</code>;</li>
 <li>one import stays as <code>#import module.path</code>;</li>
 <li>two or more adjacent imports become a sorted <code>#import (</code> block with one
 import item per line and no commas.</li>
