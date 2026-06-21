@@ -318,14 +318,13 @@
 
 						<p class="note">
 							<b>What's different:</b> the declaration, the
-							widths, and the control flow are all written out.
-							Nothing is promoted or inferred. Signed
-							<code>+</code> has defined overflow semantics, so
-							there's no undefined behavior for the compiler to
-							reason from; the loop can't be silently deleted or
-							rewritten into something you didn't author. The
-							<code>while</code> lowers to the exact
-							compare-and-branch
+							widths, and the control flow are all visible.
+							Signed <code>+</code> has defined overflow
+							semantics, so there's no undefined behavior for the
+							compiler to reason from; the loop can't be silently
+							deleted or rewritten into something you didn't
+							author. The <code>repeat</code> loop lowers to the
+							exact counted branch
 							<span class="note-right">on the right</span
 							><span class="note-above">above</span>, with a
 							direct, inspectable correspondence to AArch64.
@@ -1231,8 +1230,12 @@
 							" i",
 							token("o", "++"),
 							token("p", ")"),
+							" ",
+							token("p", "{"),
 						],
 						["    acc ", token("o", "+="), " i", token("p", ";")],
+						["  }"],
+						[],
 						["  ", token("k", "return"), " acc", token("p", ";")],
 						[token("p", "}")],
 						[],
@@ -1337,24 +1340,13 @@
 						],
 						[
 							"  ",
-							token("var", "i"),
-							" : ",
-							token("t", "i32"),
-							" ",
-							token("o", "="),
-							" ",
-							token("n", "0"),
-						],
-						[],
-						[
-							"  ",
-							token("k", "while"),
-							" ",
-							token("var", "i"),
-							" ",
-							token("o", "<"),
+							token("k", "repeat"),
 							" ",
 							token("param", "n"),
+							" ",
+							token("k", "as"),
+							" ",
+							token("var", "i"),
 							" {",
 						],
 						[
@@ -1364,14 +1356,6 @@
 							token("o", "+="),
 							" ",
 							token("var", "i"),
-						],
-						[
-							"    ",
-							token("var", "i"),
-							" ",
-							token("o", "+="),
-							" ",
-							token("n", "1"),
 						],
 						["  }"],
 						[],
@@ -1791,7 +1775,7 @@
 					},
 					"sumto-source": {
 						lineClass: "cl",
-						highlight: [6, 11],
+						highlight: [5, 9],
 						lines: [
 							[token("m", "#module"), " demo.math"],
 							[],
@@ -1817,24 +1801,13 @@
 							],
 							[
 								"  ",
-								token("var", "i"),
-								" : ",
-								token("t", "i32"),
-								" ",
-								token("o", "="),
-								" ",
-								token("n", "0"),
-							],
-							[],
-							[
-								"  ",
-								token("k", "while"),
-								" ",
-								token("var", "i"),
-								" ",
-								token("o", "<"),
+								token("k", "repeat"),
 								" ",
 								token("param", "n"),
+								" ",
+								token("k", "as"),
+								" ",
+								token("var", "i"),
 								" {",
 							],
 							[
@@ -1844,14 +1817,6 @@
 								token("o", "+="),
 								" ",
 								token("var", "i"),
-							],
-							[
-								"    ",
-								token("var", "i"),
-								" ",
-								token("o", "+="),
-								" ",
-								token("n", "1"),
 							],
 							["  }"],
 							[],
