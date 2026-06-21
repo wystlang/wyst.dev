@@ -433,14 +433,14 @@ unambiguous by their first non-<code>[</code> token:</p>
 the parser tries <code>ArrayType</code> first and <code>VectorType</code> second, and lets the
 constant-expression parser reject non-constant bracket contents:</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ConstExpr &lt;- IntLiteral
-           / Identifier             // resolved to a `::`-bound constant in sema
+           / Identifier             // resolved to a visible `::`-bound constant in sema
            / '(' ConstExpr ')'
            / ConstExpr ConstBinOp ConstExpr
 ConstBinOp &lt;- '+' / '-' / '*' / '/' / '%' / '&lt;&lt;' / '&gt;&gt;' / '&amp;' / '|' / '^'
 </code></pre>
 <p>A bracket containing an identifier that turns out to be a <em>variable</em>
-rather than a <code>::</code>-bound constant is rejected as a semantic error
-(&quot;array length must be a compile-time constant&quot;,
+rather than a visible top-level or local <code>::</code>-bound constant is rejected as a
+semantic error (&quot;array length must be a compile-time constant&quot;,
 <a href="/docs/chapter-06-types/">chapter-06-types.md §1.5.1</a>).</p>
 <hr>
 <h2 id="3.-expressions" tabindex="-1"><a class="doc-anchor" href="#3.-expressions" aria-hidden="true">#</a> 3. Expressions</h2>
@@ -772,6 +772,8 @@ module or <code>#import</code>ed module).</li>
 LocalDecl
     &lt;- Identifier ':' Type PinAttr? ('=' Expr)?              // x : u64 #pin(x19) = 0
      / Identifier ':=' Expr                                  // x := expr
+     / Identifier '::' Type '=' ConstExpr                    // local constant
+     / Identifier '::=' ConstExpr                            // inferred local constant
      / TupleBindingList ':=' Expr                            // _, ok := %cas(...)
      / Identifier ':' Type '=' Expr                          // x : u64 = 0
 
@@ -805,6 +807,9 @@ are read-only, so changing either requires assigning a whole <code>[]T</code> va
 initializer is valid for <code>[N]u8</code> and is zero-filled to <code>N</code> bytes after escape
 processing. Other array element types require ordinary expressions or brace
 array literals.</p>
+<p><code>Identifier '::' Type '=' ConstExpr</code> and <code>Identifier '::=' ConstExpr</code> are
+context-sensitive declaration forms: in statement position they introduce
+block-scoped local constants; at top level they are <code>ConstDecl</code>.</p>
 <h3 id="4.4-tuple-destructuring" tabindex="-1"><a class="doc-anchor" href="#4.4-tuple-destructuring" aria-hidden="true">#</a> 4.4 Tuple Destructuring</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">TupleDecl
     &lt;- '(' Identifier (',' Identifier)+ ','? ')' '=' Expr

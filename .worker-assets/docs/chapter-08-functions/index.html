@@ -115,14 +115,15 @@ name ::= value          // inferred constant binding
 </code></pre>
 <p>The colon is the declaration point everywhere. Single <code>:</code> declares mutable
 storage: inside function bodies it declares locals, and at top level it
-declares mutable globals. Double <code>::</code> binds constants and other named top-level
-declarations such as functions, labels, and types. There is no <code>fn</code> keyword
+declares mutable globals. Double <code>::</code> binds constants wherever declarations are
+allowed; at top level it also introduces named declarations such as functions,
+labels, and types. There is no <code>fn</code> keyword
 prefix, no type-before-name ordering, and no dot-prefixed labels.</p>
 <hr>
 <h2 id="2.1-unified-declarations" tabindex="-1"><a class="doc-anchor" href="#2.1-unified-declarations" aria-hidden="true">#</a> 2.1 Unified Declarations</h2>
 <p>All declarations follow the same pattern:</p>
 <pre class="wyst-code"><code class="">name : type = value     // mutable storage (local or global by scope)
-name :: type = value    // constant binding (immutable)
+name :: type = value    // constant binding (local or top-level by scope)
 </code></pre>
 <h3 id="type-inference" tabindex="-1"><a class="doc-anchor" href="#type-inference" aria-hidden="true">#</a> Type Inference</h3>
 <p>The type annotation can be omitted. When absent, the compiler infers the type from the right-hand side:</p>
@@ -211,6 +212,28 @@ side must be a constant expression:</p>
 LIMIT <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">16</span>       <span class="token comment">// LIMIT :: i64 = 16</span>
 MASK <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>    <span class="token comment">// MASK :: i64 = 32</span>
 </code></pre>
+<p>Inside a function body, <code>::</code> and <code>::=</code> introduce <strong>local constants</strong>. They are
+block scoped, visible only after their declaration, and have no addressable
+stack storage:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">zero_bss <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    stride <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">8</span>
+    half <span class="token operator">::</span><span class="token operator">=</span> stride <span class="token operator">/</span> <span class="token number">2</span>
+    scratch <span class="token operator">:</span> <span class="token punctuation">[</span>half<span class="token punctuation">]</span><span class="token builtin type">u8</span>
+    lanes <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span>half<span class="token punctuation">]</span>
+    <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span>half <span class="token operator">==</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">"stride sanity"</span><span class="token punctuation">)</span>
+
+    addr <span class="token operator">:</span><span class="token operator">=</span> __bss_start
+    <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> __bss_end <span class="token punctuation">{</span>
+        <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
+        addr <span class="token operator">+=</span> stride
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Local constants can feed later constant contexts such as fixed-array lengths,
+vector lane counts, <code>#static_assert</code>, and <code>repeat</code> counts. They cannot be
+assigned, pinned with <code>#pin</code>, or passed to <code>%addr_of</code>, because they are
+immutable values rather than local storage slots.</p>
 <p>The current constant evaluator folds integer arithmetic, boolean logic, and
 the compile-time query forms. Floating-point literals may bind directly, but
 floating-point arithmetic in a constant expression is future work:</p>
@@ -439,12 +462,13 @@ parameter in a named ARM64 register. It is an explicit override of normal
 register allocation.</p>
 <p><code>#pin</code> is allowed on:</p>
 <ul>
-<li><strong>local variables</strong> — inside function bodies</li>
+<li><strong>local variables</strong> — mutable storage inside function bodies</li>
 <li><strong>function parameters</strong> — in the parameter list</li>
 </ul>
-<p><code>#pin</code> is not allowed on globals or constants. A pinned global would silently
-reserve that register for the entire program, conflicting with any calling
-convention and hiding a program-wide side effect from callers. If a platform
+<p><code>#pin</code> is not allowed on globals, top-level constants, or local constants. A
+pinned global would silently reserve that register for the entire program,
+conflicting with any calling convention and hiding a program-wide side effect
+from callers. A local constant has no storage slot to pin. If a platform
 requires a globally reserved register (e.g. a dedicated thread-pointer), that
 belongs in the ABI definition, not in a variable declaration.</p>
 <hr>
@@ -2076,7 +2100,7 @@ conventions.</p>
 </tr>
 <tr>
 <td><code>::</code> vs <code>:</code></td>
-<td><code>::</code> for constants and named top-level declarations such as functions, labels, and types; <code>:</code> for mutable storage (locals in function bodies, globals at top level)</td>
+<td><code>::</code> for constants in any declaration scope and named top-level declarations such as functions, labels, and types; <code>:</code> for mutable storage (locals in function bodies, globals at top level)</td>
 </tr>
 <tr>
 <td><code>:=</code> / <code>::=</code> are tokens</td>
