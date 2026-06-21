@@ -295,8 +295,11 @@ is the only way a name crosses a module boundary.</p>
 <li><strong>Type declarations</strong> (<code>name :: struct { ... }</code>, <code>name :: bitfield(T) { ... }</code>)</li>
 <li><strong>Layout symbols</strong> (<code>pub __text_start :: u64 = #start(.text)</code>)</li>
 </ul>
-<p><code>pub</code> on a function with <code>#inline</code> is a compile error (see <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.7.1</a> —
-<code>#inline</code> requires no addressable body).</p>
+<p>When <code>pub</code> is combined with <code>#inline</code>, <code>pub</code> exports the Wyst module
+surface only: importers may call the helper, but every call must be inlined
+and no ABI-callable body is emitted (see
+<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.7.1</a>). Taking the
+address of a public inline helper is still illegal.</p>
 <p><code>pub</code> is not legal on:</p>
 <ul>
 <li><strong>Local variables</strong> inside function bodies (they have no module-level name).</li>

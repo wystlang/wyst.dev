@@ -1688,11 +1688,6 @@ of the following conditions make inlining impossible:</p>
 <td>naked functions have no frame to inline into</td>
 <td>function definition</td>
 </tr>
-<tr>
-<td><code>pub</code> + <code>#inline</code></td>
-<td>externally visible symbols must have an addressable body</td>
-<td>function definition</td>
-</tr>
 </tbody>
 </table>
 <h4>Recursion</h4>
@@ -1887,16 +1882,30 @@ call inside <code>#ventry</code>, place it directly in the <code>#ventry</code> 
 an <code>#inline</code> helper. The <code>#ventry</code> body's own size analysis (Check 2)
 accounts for the call's clobber set; the <code>#inline</code> body's analysis
 (Check 1) does not.</p>
-<h4><code>pub</code> and <code>#inline</code> Are Incompatible</h4>
-<p>A function marked <code>pub</code> must have an addressable code body (it may be called
-from outside the compilation unit). An <code>#inline</code> function has no addressable
-body (every call is expanded). These are contradictory:</p>
+<h4>Public <code>#inline</code> Functions</h4>
+<p><code>pub</code> and <code>#inline</code> are compatible, but they control different surfaces.
+<code>pub</code> makes the helper visible to importing Wyst modules. <code>#inline</code> keeps it
+inline-only: every call must be expanded at the call site, no callable code
+body is emitted, and the helper is not an ABI-exported symbol.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
-pub helper <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>   <span class="token comment">// ERROR: pub and #inline are incompatible</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> helpers
+
+<span class="token directive macro">#inline</span>
+pub helper <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
+
+<span class="token directive macro">#module</span> boot
+<span class="token directive macro">#import</span> helpers <span class="token keyword">as</span> h
+
+main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> h<span class="token punctuation">.</span><span class="token function">helper</span><span class="token punctuation">(</span><span class="token number">41</span><span class="token punctuation">)</span>   <span class="token comment">// inlined here; no call to helper remains</span>
+<span class="token punctuation">}</span>
 </code></pre>
+<p>If inlining is impossible at any importer call site, compilation fails
+instead of falling back to a call. <code>#addr_of(helper)</code> remains illegal for
+both private and public inline helpers because there is no function address
+to capture.</p>
 <h4>Function Pointer Capture</h4>
 <p>If the address of an <code>#inline</code> function is taken (stored in a variable,
 passed as a callback, etc.), inlining is impossible because there is no

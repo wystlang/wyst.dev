@@ -1206,13 +1206,13 @@ vectorizable loops are outside the scheduling model.</li>
 <li><strong>DWARF emission lowering</strong>: spec locked at
 <a href="/docs/chapter-23-debug-info/">chapter-23-debug-info.md</a>; IR carries the source-location attributes
 consumed by DWARF emission.</li>
-<li><strong>Cross-module inlining of <code>#inline</code> functions</strong>: a future model may
-inline at IR construction time (before SSA), which means an <code>#inline</code>
-function from an imported module must be available as IR, not just as a
-declaration. Open question: does the compiler keep a per-module IR
-cache, or re-build IR from source on every invocation? The whole-program
-single-pass model (per <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>) favors the
-latter, but the question is unsettled.</li>
+<li><strong>Cross-module inlining of <code>#inline</code> functions</strong>: public inline helpers
+are available to importing modules during IR construction, before SSA.
+The compiler keeps their checked AST bodies available for expansion, but
+does not lower them into standalone <code>FunctionIr</code> bodies or exported ABI
+symbols. This matches the whole-program single-pass model in
+<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>: source bodies
+are available while imported call sites are lowered.</li>
 </ul>
 <hr>
 <h2 id="13.-cross-references" tabindex="-1"><a class="doc-anchor" href="#13.-cross-references" aria-hidden="true">#</a> 13. Cross-References</h2>
