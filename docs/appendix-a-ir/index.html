@@ -549,7 +549,9 @@ order.</li>
 </ul>
 <h4><code>unreachable</code></h4>
 <ul>
-<li><strong>Terminator-only.</strong> Generated for code following <code>%eret</code>, <code>%hvc</code>, etc. that are marked <code>#noreturn</code>, or for switch arms the verifier can prove dead.</li>
+<li><strong>Terminator-only.</strong> Generated for code following <code>%eret</code>, a direct
+<code>#noreturn</code> call, or another operation the verifier proves cannot return;
+also used for switch arms the verifier can prove dead.</li>
 </ul>
 <h3 id="6.5-addressing" tabindex="-1"><a class="doc-anchor" href="#6.5-addressing" aria-hidden="true">#</a> 6.5 Addressing</h3>
 <h4><code>addr_of</code></h4>
@@ -1082,8 +1084,9 @@ path makes them overlap.</li>
 over the class-specific graph. At each MCS step, select the unnumbered value
 with the highest current MCS score, then higher static use weight, then
 higher interference degree, then earlier definition position, then lower
-<code>%vN</code>. In that order, assign the lowest-numbered register not already used
-by an interfering colored neighbor.</li>
+<code>%vN</code>. In that order, assign the first register from the deterministic
+preferred list (§11.2) that is not already used by an interfering colored
+neighbor.</li>
 <li><strong>Spill fallback.</strong> If no register in the class is available, assign the
 value to stack. Pinned values are never spilled.</li>
 </ol>
@@ -1091,25 +1094,41 @@ value to stack. Pinned values are never spilled.</li>
 graph construction, ordering, register choice, and spill fallback above are part
 of conformance.</p>
 <h3 id="11.2-register-pool" tabindex="-1"><a class="doc-anchor" href="#11.2-register-pool" aria-hidden="true">#</a> 11.2 Register Pool</h3>
-<p>For the current AArch64 backend, the allocator-controlled pool is deliberately
-small and excludes registers hardwired by ABI call/return lowering:</p>
+<p>For the current AArch64 backend, the allocator-controlled pool is still
+deliberately constrained, but it is call-shape aware. These registers are never
+allocator-controlled automatic homes:</p>
 <ul>
 <li><code>xzr</code> / <code>wzr</code> — zero register, not allocatable.</li>
 <li><code>sp</code> — stack pointer, owned by the prologue.</li>
 <li><code>lr</code> (<code>x30</code>) — link register and return address carrier.</li>
 <li><code>x29</code> — frame pointer, owned by the prologue unless <code>#naked</code>.</li>
 <li><code>x18</code> — platform register; reserved by the AArch64 PCS for the platform.</li>
-<li><code>x0..x8</code> and <code>x16..x17</code> — ABI argument, return, indirect-result, and
-interprocedural-call registers.</li>
-<li><code>x9..x15</code> — transient instruction-selection and inline-assembly scratch
-registers. The allocator does not assign automatic homes here, so scratch
-lowering cannot clobber compiler-owned live values.</li>
+<li><code>x8</code> — indirect-result location register.</li>
+<li><code>x16..x17</code> — linker/interprocedural-call scratch registers.</li>
 <li>Any register named in an in-scope fixed pin.</li>
 </ul>
-<p>The scalar GPR pool is <code>{ x19..x28 }</code> minus active fixed pins. Any function
-that receives an automatic home in this pool saves the used register in its
-prologue and restores it in its epilogue, exactly as it does for an explicit
-callee-saved <code>#pin</code>.</p>
+<p>The baseline scalar GPR pool is <code>{ x19..x28 }</code> minus active fixed pins. Any
+function that receives an automatic home in this callee-saved pool saves the
+used register in its prologue and restores it in its epilogue, exactly as it
+does for an explicit callee-saved <code>#pin</code>.</p>
+<p>For functions with no <code>#asm</code>, no direct calls, and no indirect calls, the
+preferred scalar GPR pool is the caller-scratch set <code>{ x0..x7, x9..x15 }</code>.
+Native leaf parameters with no fixed pins prefer their incoming ABI registers
+<code>x0..x7</code>, and leaf <code>phi</code> values prefer <code>{ x1..x7, x9..x15 }</code>, so common leaf
+loops avoid avoidable moves and callee-saved frame traffic.</p>
+<p>For functions with direct calls but no <code>#asm</code> and no indirect calls, scalar GPR
+values proven not live across a call prefer <code>{ x0..x7, x9..x15 }</code> before the
+callee-saved pool. Values live across a call use only callee-saved automatic
+homes unless they are explicitly pinned and legal under the <code>#pin</code> rules.</p>
+<p>For reused same-block absolute address bases that feed multiple direct memory
+operations before any call or <code>#asm</code>, the preferred list moves <code>x10</code> to the
+front when <code>x10</code> is otherwise available. This matches the backend load/store
+base convention and keeps repeated global or symbol-address accesses from
+rematerializing the same address in the same block.</p>
+<p><code>xzr</code> / <code>wzr</code> may appear in allocation reports as <code>Register(Gpr(31))</code> for a
+pseudo-home. That marker means &quot;rematerialize this constant, string/slice
+descriptor, or absolute symbol address at the use site&quot;; it is not an
+allocatable live register and does not create an <code>xzr</code> value home.</p>
 <p>The automatic FPR/vector pool is empty in the current AArch64 backend. Wyst
 still permits <code>#pin(vN)</code> for the same reasons as <code>#pin(xN)</code>: SIMD code
 occasionally needs register stability for vector lanes, especially across an
@@ -1127,7 +1146,8 @@ construction.</li>
 <li><strong>MCS selection order</strong> is descending MCS score, descending static use
 weight, descending interference degree, ascending definition position, then
 ascending <code>%vN</code>.</li>
-<li><strong>Register choice</strong> is ascending register number inside the register class.</li>
+<li><strong>Register choice</strong> follows the deterministic preferred list for the value's
+class and call-shape (§11.2).</li>
 <li><strong>Spill choice</strong> is implicit: a value spills only when every register in its
 class is already occupied by an interfering colored neighbor.</li>
 </ul>
@@ -1189,9 +1209,12 @@ single-threaded by spec.</p>
 <ul>
 <li><strong>Live-range splitting after coloring.</strong> The allocator either colors a value
 for its whole SSA allocation range or assigns that value to stack.</li>
-<li><strong>Rematerialization.</strong> Constants and <code>addr_of</code> results that get spilled
-are stored to a slot rather than recomputed. Re-emitting constant loads is
-outside this allocator model.</li>
+<li><strong>General rematerialization.</strong> The current backend rematerializes scalar
+constants, string/slice descriptors, and absolute symbol-address expressions
+(<code>addr_of</code>, constant-address <code>gep</code>, and copy-like unpinned locals over those
+forms). It does not perform arbitrary expression rematerialization,
+rematerialize effect-dependent values, or use rematerialization as a substitute
+for live-range splitting.</li>
 <li><strong>Cross-function allocation.</strong> Each function is allocated independently.
 Whole-program allocation across <code>#inline</code> boundaries is implicit (inlined
 bodies are part of the caller's interval set), but no allocation flows

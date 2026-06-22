@@ -52,7 +52,7 @@
 						<h1>Wyst Compiler Roadmap</h1>
 					</header>
 					<div class="doc-body">
-<p>Updated: 2026-06-15</p>
+<p>Updated: 2026-06-22</p>
 <p>This roadmap tracks future compiler work and open exploration topics.</p>
 <h2 id="roadmap-rules" tabindex="-1"><a class="doc-anchor" href="#roadmap-rules" aria-hidden="true">#</a> Roadmap Rules</h2>
 <ol>
@@ -372,7 +372,8 @@ builds on the static mode/qualifier layer, and in-language PMU reporting
 depends on <code>%read_pmu_counter</code> from SIMD and machine-intrinsic expansion.)</em></li>
 <li>Scheduling and PGO extensions beyond schedule-hint provenance: numeric branch
 weights, <code>#schedule(parallel)</code> loop dependency annotations, profile-guided
-allocation/scheduling, rematerialization, arbitrary live-range splitting, and
+allocation/scheduling, rematerialization beyond the current source-shaped
+constant/descriptor/address cases, arbitrary live-range splitting, and
 cross-function allocation. <em>(Useful only if kept explicit and reproducible;
 must not become hidden optimizer behavior.)</em></li>
 <li>Debug/trace/reload/visualization: trace/debug/watch/visualizer tooling

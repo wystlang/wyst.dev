@@ -109,6 +109,14 @@ the deterministic lowering work needed to produce the output image:</p>
 <li>deterministic register allocation;</li>
 <li>deterministic branch and symbol emission.</li>
 </ul>
+<p>This includes local, source-shaped instruction selection improvements whose
+inputs are already visible in the IR: folded memory offsets, logical-immediate
+selection, branch-only condition fusion, direct use of call-result and argument
+registers, deterministic caller-scratch register homes, and pair chunks for
+eligible aggregate transfers. These choices are part of reproducible lowering,
+not hidden global optimization passes: they do not change source-observable
+effects, invent new control flow, infer aliasing contracts, or depend on
+profile feedback.</p>
 <p>Wyst rejects unknown build optimization modes. Additional non-default build
 optimization modes must be explicit in the command or build profile, and must
 document whether they preserve byte-for-byte reproducibility.

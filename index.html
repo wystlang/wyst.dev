@@ -241,8 +241,8 @@
 							<h3>Performance Transparency</h3>
 							<p>
 								Cost is visible at the source. No implicit
-								vectorization, no hidden allocation, no passes
-								you didn't ask for.
+								vectorization, no hidden allocation, no global
+								optimizer passes or profile-guided rewrites.
 							</p>
 						</article>
 						<article class="card">
@@ -630,8 +630,9 @@
 								>
 								<span class="why"
 									>Default lowering is fixed and inspectable.
-									Optimization is opt-in and documents its own
-									reproducibility contract.</span
+									Non-default build optimization modes are
+									opt-in and document their own reproducibility
+									contract.</span
 								>
 							</span>
 						</div>
@@ -805,7 +806,7 @@
 								<p class="faq-a">
 									Above assembly: structured control flow,
 									named bindings, typed memory access,
-									modules, monomorphized generics, enums,
+									modules, reserved generic syntax, enums,
 									packed structs, and a register allocator.
 									Below C: no undefined behavior to exploit,
 									no implicit promotions, no hidden
