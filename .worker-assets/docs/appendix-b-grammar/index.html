@@ -441,6 +441,10 @@ ConstBinOp &lt;- '+' / '-' / '*' / '/' / '%' / '&lt;&lt;' / '&gt;&gt;' / '&amp;'
 rather than a visible top-level or local <code>::</code>-bound constant is rejected as a
 semantic error (&quot;array length must be a compile-time constant&quot;,
 <a href="/docs/chapter-06-types/">chapter-06-types.md §1.5.1</a>).</p>
+<p>For top-level declarations, &quot;visible&quot; includes visible top-level constants
+declared later in source order; the compiler evaluates those references only
+if their dependency graph is acyclic. For block-scoped local constants,
+&quot;visible&quot; remains lexical and excludes later local declarations.</p>
 <hr>
 <h2 id="3.-expressions" tabindex="-1"><a class="doc-anchor" href="#3.-expressions" aria-hidden="true">#</a> 3. Expressions</h2>
 <p>Expressions are parsed with a Pratt-style precedence climbing layered
@@ -808,7 +812,10 @@ processing. Other array element types require ordinary expressions or brace
 array literals.</p>
 <p><code>Identifier '::' Type '=' ConstExpr</code> and <code>Identifier '::=' ConstExpr</code> are
 context-sensitive declaration forms: in statement position they introduce
-block-scoped local constants; at top level they are <code>ConstDecl</code>.</p>
+block-scoped local constants; at top level they are <code>ConstDecl</code>.
+Top-level <code>ConstDecl</code> references to other visible top-level constants are
+source-order independent when acyclic; block-scoped local constants are
+visible only after their declaration.</p>
 <h3 id="4.4-tuple-destructuring" tabindex="-1"><a class="doc-anchor" href="#4.4-tuple-destructuring" aria-hidden="true">#</a> 4.4 Tuple Destructuring</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">TupleDecl
     &lt;- '(' Identifier (',' Identifier)+ ','? ')' '=' Expr

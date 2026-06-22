@@ -3128,12 +3128,35 @@ wide <span class="token operator">:</span><span class="token operator">=</span> 
 <h2 id="1.8-compile-time-constants" tabindex="-1"><a class="doc-anchor" href="#1.8-compile-time-constants" aria-hidden="true">#</a> 1.8 Compile-Time Constants</h2>
 <p>Constant expressions use the arithmetic and type-conversion rules described in
 this design corpus.</p>
+<p>Top-level compile-time constants are evaluated by dependency graph, not source
+order. A top-level constant may refer to another visible top-level constant
+declared later in the same module or imported module, provided the dependency
+graph is acyclic. A cycle among top-level constants is a compile error.</p>
+<p>Local constants declared inside a function body remain lexical: a local
+constant is visible only after its declaration, and local forward references
+are rejected.</p>
 <p>Example:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x09_00_00_00</span>
 UART_CLOCK <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">24_000_000</span>
 UARTDR <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
 TXFF <span class="token operator">::</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
+</code></pre>
+<p>Forward top-level references are valid when acyclic:</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
+
+FIRST <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> SECOND <span class="token operator">+</span> <span class="token number">1</span>
+SECOND <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> THIRD <span class="token operator">+</span> <span class="token number">1</span>
+THIRD <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">40</span>
+<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span>FIRST <span class="token operator">==</span> <span class="token number">42</span><span class="token punctuation">,</span> <span class="token string">"forward constants"</span><span class="token punctuation">)</span>
+</code></pre>
+<p>Cycles are rejected:</p>
+<!-- wyst-contract: check-fail -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
+
+A <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> B
+B <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> A
 </code></pre>
 <p>Compile-time evaluation is part of the core language.</p>
 <hr>

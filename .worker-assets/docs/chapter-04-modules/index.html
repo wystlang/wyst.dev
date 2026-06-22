@@ -139,6 +139,16 @@ each other's declarations without <code>#import</code>. <code>drivers.uart</code
 <p>A module declaration has no body delimiters. Everything below a <code>#module</code>
 line and above any directive (other than <code>#import</code> or <code>#deny</code>) belongs to
 the module.</p>
+<h3 id="top-level-name-collection" tabindex="-1"><a class="doc-anchor" href="#top-level-name-collection" aria-hidden="true">#</a> Top-Level Name Collection</h3>
+<p>The compiler collects top-level declaration names across the participating
+files of a module before it evaluates top-level constants. This makes
+acyclic top-level constant dependencies order-independent within the visible
+module graph: a constant may name another top-level constant that appears
+later in source order.</p>
+<p>Source order still matters for forms that explicitly define placement or
+control flow through the file, such as import placement rules, layout section
+concatenation, and statement-local lexical scopes. Local constants inside
+function bodies are not part of the top-level dependency graph.</p>
 <h3 id="file-level-constraints" tabindex="-1"><a class="doc-anchor" href="#file-level-constraints" aria-hidden="true">#</a> File-Level Constraints</h3>
 <ul>
 <li><strong><code>#target</code></strong>: a module has one target contract. Any file in the
@@ -949,6 +959,7 @@ principle of making conflicts visible rather than silently resolving them.</p>
 				<li class="lvl-3"><a href="#modules-and-targets">Modules and Targets</a></li>
 				<li class="lvl-2"><a href="#modules">Modules</a></li>
 				<li class="lvl-3"><a href="#multi-file-modules">Multi-File Modules</a></li>
+				<li class="lvl-3"><a href="#top-level-name-collection">Top-Level Name Collection</a></li>
 				<li class="lvl-3"><a href="#file-level-constraints">File-Level Constraints</a></li>
 				<li class="lvl-3"><a href="#module-level-%23deny">Module-Level #deny</a></li>
 				<li class="lvl-2"><a href="#imports">Imports</a></li>
