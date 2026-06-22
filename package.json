@@ -5,6 +5,7 @@
   "type": "module",
   "description": "wyst.dev landing page and generated documentation site",
   "scripts": {
+    "test": "node --test tests/*.test.mjs",
     "build": "node build/generate.mjs",
     "docs": "node build/generate.mjs",
     "build:404": "node build/generate-404.mjs",

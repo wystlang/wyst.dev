@@ -446,7 +446,7 @@
 										source spans stay linked to lowering
 										rows</span
 									>
-									<span>current-run provenance</span>
+									<span>source-checked pattern</span>
 								</div>
 							</div>
 							<div
@@ -582,7 +582,7 @@
 							<span class="dot">·</span>
 							<span>0 spills</span>
 							<span class="dot">·</span>
-							<span>freshness: current-run</span>
+							<span>source-checked pattern</span>
 						</div>
 						<div class="insp-split">
 							<div class="insp-src">
@@ -1340,12 +1340,23 @@
 						],
 						[
 							"  ",
-							token("k", "repeat"),
+							token("var", "i"),
+							" : ",
+							token("t", "i32"),
 							" ",
-							token("param", "n"),
-							token("p", ","),
+							token("o", "="),
+							" ",
+							token("n", "0"),
+						],
+						[
+							"  ",
+							token("k", "while"),
 							" ",
 							token("var", "i"),
+							" ",
+							token("o", "<"),
+							" ",
+							token("param", "n"),
 							" {",
 						],
 						[
@@ -1355,6 +1366,14 @@
 							token("o", "+="),
 							" ",
 							token("var", "i"),
+						],
+						[
+							"    ",
+							token("var", "i"),
+							" ",
+							token("o", "+="),
+							" ",
+							token("n", "1"),
 						],
 						["  }"],
 						[],
@@ -1774,7 +1793,7 @@
 					},
 					"sumto-source": {
 						lineClass: "cl",
-						highlight: [5, 9],
+						highlight: [5, 10],
 						lines: [
 							[token("m", "#module"), " demo.math"],
 							[],
@@ -1800,12 +1819,23 @@
 							],
 							[
 								"  ",
-								token("k", "repeat"),
+								token("var", "i"),
+								" : ",
+								token("t", "i32"),
 								" ",
-								token("param", "n"),
-								token("p", ","),
+								token("o", "="),
+								" ",
+								token("n", "0"),
+							],
+							[
+								"  ",
+								token("k", "while"),
 								" ",
 								token("var", "i"),
+								" ",
+								token("o", "<"),
+								" ",
+								token("param", "n"),
 								" {",
 							],
 							[
@@ -1815,6 +1845,14 @@
 								token("o", "+="),
 								" ",
 								token("var", "i"),
+							],
+							[
+								"    ",
+								token("var", "i"),
+								" ",
+								token("o", "+="),
+								" ",
+								token("n", "1"),
 							],
 							["  }"],
 							[],
@@ -1836,7 +1874,7 @@
 								"  ",
 								token(
 									"asm-note",
-									"// [w0 = n] · leaf fn, no frame",
+									"// [w0 = n] runtime bound; leaf fn, no frame",
 								),
 							],
 							[
@@ -1845,7 +1883,7 @@
 								" w1, ",
 								token("n", "#0"),
 								"  ",
-								token("asm-note", "// acc → w1"),
+								token("asm-note", "// acc = 0"),
 							],
 							[
 								token("asm-addr", "0x04 "),
@@ -1853,7 +1891,7 @@
 								" w2, ",
 								token("n", "#0"),
 								"  ",
-								token("asm-note", "// i → w2"),
+								token("asm-note", "// i = 0"),
 							],
 							[token("asm-lbl", ".Lloop:")],
 							[
