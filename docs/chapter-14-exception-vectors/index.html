@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -538,7 +538,11 @@ must use a future named <code>#trap_frame</code> profile instead of weakening
 <code>#trap_frame(arm64)</code>.</p>
 <p>The halt path is also explicit: once the frame is complete, the entry label may
 switch to a known handler stack and call a <code>#noreturn</code> panic or exit routine.
-That path does not claim to resume the interrupted context.</p>
+That direct call is a terminal source statement and does not need a defensive
+fallback loop in the caller. The path does not claim to resume the interrupted
+context. Restore labels that end in checked <code>eret</code> assembly may still call an
+imported <code>#[inline, noreturn]</code> idle helper after the assembly block if the
+assembly unexpectedly returns control to source.</p>
 <h3 id="nested-interrupt-and-daif-policy" tabindex="-1"><a class="doc-anchor" href="#nested-interrupt-and-daif-policy" aria-hidden="true">#</a> Nested Interrupt And DAIF Policy</h3>
 <p>The checked ARM64 trap-frame profile keeps nested interrupts disabled while a
 trap frame is being populated or restored. Hardware exception entry supplies

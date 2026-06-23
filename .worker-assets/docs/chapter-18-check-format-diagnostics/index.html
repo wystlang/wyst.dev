@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -141,11 +141,14 @@ compiler emitted warnings.</li>
 <li><code>2</code>: CLI arguments were invalid; stderr contains the usage diagnostic.</li>
 </ul>
 <p><code>wync check</code> accepts <code>--diagnostic-format text|json|lsp-json</code>. Text is the
-default. JSON diagnostics are emitted to stderr as one object with schema
-<code>wync.diagnostics.v0</code> and a deterministic <code>diagnostics</code> array, including
-non-fatal warnings when validation succeeds. The <code>json</code> schema mirrors the
-in-process diagnostic model: severity, code, message, optional primary label,
-secondary labels, and notes. The <code>lsp-json</code> schema is
+default. It also accepts <code>--warn-effectful-nesting</code>, an opt-in lint that emits
+warning <code>W0204</code> when one expression nests multiple calls, volatile memory
+accesses, atomics, or traps; the warning asks the programmer to bind those
+subexpressions to locals before combining them. JSON diagnostics are emitted to
+stderr as one object with schema <code>wync.diagnostics.v0</code> and a deterministic
+<code>diagnostics</code> array, including non-fatal warnings when validation succeeds. The
+<code>json</code> schema mirrors the in-process diagnostic model: severity, code, message,
+optional primary label, secondary labels, and notes. The <code>lsp-json</code> schema is
 <code>wync.diagnostics.lsp.v0</code> and emits LSP-style diagnostic objects for editor
 adapters: document URI, zero-based UTF-16 ranges, numeric severity, code,
 source, message, related information, and notes data.</p>

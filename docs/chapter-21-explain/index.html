@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -114,6 +114,12 @@ same facts:</p>
 <li>source graph and source span for the selected function;</li>
 <li>typed IR for the selected function;</li>
 <li>Native ABI facts, register homes, and stack slots where the backend has them;</li>
+<li>final frame composition facts after ABI lowering and register allocation,
+including fixed frame bytes, maximum outgoing call bytes, maximum total stack
+bytes, spill-slot counts, and per-component source or ABI reasons for local
+stack objects, spill/reload slots, outgoing argument areas, caller-owned
+aggregate copies, indirect-result storage, alignment padding, and
+assembly-required save areas;</li>
 <li>ARM64 instruction offsets, encodings, emitted bytes, source-row provenance,
 and decoded operation names where the bootstrap decoder knows them;</li>
 <li>text relocations with symbolic and resolved operands;</li>
@@ -145,13 +151,25 @@ dependencies for those calls;</li>
 <li>volatile/MMIO loads and stores preserved as IR memory flags;</li>
 <li><code>pub</code> API/protocol boundaries and calls crossing those boundaries;</li>
 <li><code>[aapcs]</code> external ABI boundaries;</li>
-<li>provenance labels, freshness state, source spans, active denies, dependency
-reasons, and source lines for every reported effect fact.</li>
+<li>provenance labels, fact basis (<code>proven</code> or <code>asserted</code>), freshness state,
+source spans, active denies, dependency reasons, and source lines for every
+reported effect fact;</li>
+<li><code>trustedFact</code> labels on asserted trust-boundary facts, including
+<code>#trusted_cast</code>, raw-address assertions when represented in IR, foreign ABI
+declarations, ABI overrides, and inline-assembly effect/clobber assertions.</li>
 </ul>
 <p>The effects report does not use aliasing folklore, optimizer deductions, or
 undefined-behavior assumptions as evidence. Each reported fact is tied to source
 policy, source attributes, typed IR values, or target ABI declarations and uses
-<code>current-run</code> freshness.</p>
+<code>current-run</code> freshness. A <code>proven</code> fact is checked by the compiler pipeline for
+the current run. An <code>asserted</code> fact is an unverified programmer assertion under
+the Chapter 1 trust-boundary model; if it is false, the report does not treat it
+as general-purpose undefined behavior.</p>
+<p>The effects report does not report generated backend resources such as frame
+bytes, compiler-owned stack slots, spills, reloads, register-class usage, code
+size, veneers, or caller-owned aggregate copies. Those facts are post-lowering
+constraints and belong to lowering, ABI, object, generated-manifest, or storage
+reports.</p>
 <h2 id="storage-report" tabindex="-1"><a class="doc-anchor" href="#storage-report" aria-hidden="true">#</a> Storage Report</h2>
 <p><code>wync explain storage &lt;project-dir|path/to/wyst.project&gt;</code> emits the
 storage-contract, dynamic-array descriptor, typed-handle, and buffer/string API
@@ -194,14 +212,18 @@ buffer/string facts;</li>
 with fixed buffers, pools, per-CPU storage, DMA-coherent storage, and
 target/runtime storage sources reserved as visible contracts outside core
 allocation semantics;</li>
-<li>provenance labels, freshness state, and <code>artifact-writes: none</code>.</li>
+<li>provenance labels, fact basis, trusted-fact labels, freshness state, and
+<code>artifact-writes: none</code>.</li>
 </ul>
 <p>The storage report recognizes explicit <code>arena_storage_*</code>, <code>byte_storage_*</code>,
 <code>dyn_array_*</code>, <code>typed_handle_*</code>, <code>buffer_*</code>, and <code>c_string_*</code>
 standard-library-shaped API calls, plus the checked dot-syntax surface for
 <code>[dynamic]T</code> descriptors. It does not add core allocation semantics, infer
 allocation from type annotations, invent hidden handle checks, invent implicit
-C-string conversion, or treat allocation as a core <code>#deny</code> effect category.</p>
+C-string conversion, or treat allocation as a core <code>#deny</code> effect category.
+Recognized storage, dynamic-array, typed-handle, and buffer/string API facts are
+reported as <code>basis: asserted</code> with <code>trustedFact: library contract not proven from a body</code>; their source location identifies the assertion site under the Chapter 1
+trust-boundary model.</p>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">

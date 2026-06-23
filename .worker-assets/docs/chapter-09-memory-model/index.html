@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -225,17 +225,25 @@ x <span class="token operator">:</span><span class="token operator">=</span> <sp
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>
 </code></pre>
 <p>These are equivalent. The <code>:=</code> shorthand is simply <code>:</code> and <code>=</code> without whitespace.</p>
-<h3 id="device-access" tabindex="-1"><a class="doc-anchor" href="#device-access" aria-hidden="true">#</a> Device Access</h3>
-<p>Device (MMIO) accesses go through addresses typed <code>@volatile T</code>. Volatility
-is a property of the <strong>address type</strong>, not the access. There is no per-access
-<code>#volatile</code> directive in Wyst — declare the address as <code>@volatile T</code> once,
-and every load or store through it is automatically a compiler barrier.</p>
+<h3 id="volatile-and-mmio-intent-access" tabindex="-1"><a class="doc-anchor" href="#volatile-and-mmio-intent-access" aria-hidden="true">#</a> Volatile and MMIO-Intent Access</h3>
+<p>Volatility is a compiler-visible access contract on the <strong>address type</strong>.
+There is no per-access <code>#volatile</code> directive in Wyst: declare the address as
+<code>@volatile T</code> when every load or store through that value must be observable to
+the compiler and protected from elision, merging, or reordering across other
+compiler-visible memory effects.</p>
+<p><code>@mmio T</code> is a separate, greppable address form for programmer intent that the
+address denotes MMIO. It carries the same volatile-access contract as
+<code>@volatile T</code>, and accesses through it additionally introduce the <code>mmio</code> effect.
+Neither <code>@volatile T</code> nor <code>@mmio T</code> proves that the address is mapped as ARM
+Device memory. Normal-vs-Device memory type is established by page tables,
+firmware, or platform configuration; target descriptions may record known
+mapping facts, but a type conversion cannot create them.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 
-status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile load — derived from address type</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile store — derived from address type</span>
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile MMIO-intent load</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile MMIO-intent store</span>
 </code></pre>
 <p>A volatile access is a <strong>compiler barrier</strong>. The compiler may not:</p>
 <ul>
@@ -252,11 +260,11 @@ allows the CPU's store buffer to reorder writes to different addresses unless
 explicit barrier instructions are present. For MMIO sequences where access
 order must be observed by the device, use <code>%dsb</code> or <code>%dmb</code> between writes.
 See section 1.3.1 for barrier runtime primitives and MMIO ordering patterns.</p>
-<p><strong>Volatility does not control cacheability.</strong> Whether an address is cached
-or uncached is determined by the page-table entry for that address
+<p><strong>Volatility and MMIO intent do not control cacheability.</strong> Whether an address
+is cached or uncached is determined by the page-table entry for that address
 (specifically the MAIR index and the memory type attribute in the descriptor).
-A volatile access to an address mapped as Normal-Cacheable in the page
-tables will still go through the cache. Platform initialization code is
+A volatile or MMIO-intent access to an address mapped as Normal-Cacheable in the
+page tables will still go through the cache. Platform initialization code is
 responsible for configuring MMIO regions with Device memory attributes
 (e.g. Device-nGnRE) before accessing them.</p>
 <h3 id="address-types" tabindex="-1"><a class="doc-anchor" href="#address-types" aria-hidden="true">#</a> Address Types</h3>
@@ -274,30 +282,37 @@ one <code>u32</code> element, or four bytes. To step in raw bytes, cast to <code
 explicit numeric <code>u64</code> arithmetic. The formal arithmetic rules are in
 <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address Types subsection).
 Do not write <code>p + i * #size_of(T)</code> for element <code>i</code>; that double-scales the
-offset.</p>
-<h4>Volatile Addresses</h4>
-<p>The qualifier <code>@volatile T</code> marks an address as referring to device memory.
-Every load or store through such an address is a compiler barrier (see
-section 1.3.1). Volatility propagates through address arithmetic:</p>
+offset. The three distinct operations are <code>element_offset(p, i)</code> (<code>p + i</code>),
+<code>byte_offset(p, bytes)</code> (<code>(p as @u8) + bytes</code> or explicit <code>u64</code> arithmetic),
+and <code>field_addr(p, T.field)</code> (<code>(p as @u8) + #field_offset(T, field)</code> before an
+explicit cast to the field address lens).</p>
+<h4>Volatile and MMIO-Intent Addresses</h4>
+<p>The qualifier <code>@volatile T</code> marks an address with the volatile-access compiler
+contract. The qualifier <code>@mmio T</code> marks the same access contract plus programmer
+intent that the numeric address denotes an MMIO register or region. Every load
+or store through either qualified address is a compiler barrier (see section
+1.3.1). Only access through <code>@mmio T</code> introduces the <code>mmio</code> effect. Qualifiers
+propagate through address arithmetic:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
-GICD_CTLR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> GIC_BASE <span class="token operator">+</span> <span class="token number">0</span>    <span class="token comment">// still @volatile u32</span>
-GICD_TYPE <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> GIC_BASE <span class="token operator">+</span> <span class="token number">1</span>    <span class="token comment">// byte offset 4; still @volatile u32</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
+GICD_CTLR      <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+GICD_TYPER     <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_CTLR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile store</span>
-mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_TYPE<span class="token punctuation">]</span>            <span class="token comment">// volatile load</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_CTLR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile MMIO-intent store</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_TYPER<span class="token punctuation">]</span>           <span class="token comment">// volatile MMIO-intent load at byte offset 4</span>
 </code></pre>
-<p>There is no implicit conversion between <code>@T</code> and <code>@volatile T</code> in either
-direction. Stripping volatility requires an explicit <code>as</code> cast (<code>p as @T</code>),
-and adding volatility requires <code>p as @volatile T</code>. Both are visible source
-events; stripping volatility is almost always a bug.</p>
+<p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
+direction. Stripping volatility or MMIO intent requires an explicit <code>as</code> cast
+and emits a warning; adding either qualifier also requires an explicit cast.
+These are visible source events and do not perform memory access by themselves.</p>
 <p>Volatility is determined only by the static address type at the memory-access
 site. A load or store through an expression of type <code>@T</code> is a plain access; a
-load or store through an expression of type <code>@volatile T</code> is a volatile access.
+load or store through an expression of type <code>@volatile T</code> or <code>@mmio T</code> is a
+volatile access. Access through <code>@mmio T</code> additionally records MMIO intent.
 This access-site rule does not create separate alias classes. A plain access
-through <code>@T</code> and a volatile access through <code>@volatile T</code> may alias when their
-numeric address ranges can overlap, including when one address was produced by
-casting the other.</p>
+through <code>@T</code>, a volatile access through <code>@volatile T</code>, and an MMIO-intent access
+through <code>@mmio T</code> may alias when their numeric address ranges can overlap,
+including when one address was produced by casting the other.</p>
 <h4>Float Addresses</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token address-qualifier type">@f32</span>  <span class="token comment">// address into f32s (stride 4)</span>
@@ -343,8 +358,8 @@ total <span class="token operator">+=</span> <span class="token builtin type">u6
 </code></pre>
 <h3 id="mmio-example" tabindex="-1"><a class="doc-anchor" href="#mmio-example" aria-hidden="true">#</a> MMIO Example</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 TXFF   <span class="token operator">::</span> <span class="token builtin type">u32</span>          <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
 
 <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
@@ -353,8 +368,9 @@ TXFF   <span class="token operator">::</span> <span class="token builtin type">u
 
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte
 </code></pre>
-<p>Volatility comes from the address type. No per-access directive can be
-forgotten.</p>
+<p>MMIO intent and volatility come from the address type. No per-access directive
+can be forgotten, and the type does not replace the runtime page-table setup
+that maps the UART region as Device memory.</p>
 <h3 id="why-this-model-exists" tabindex="-1"><a class="doc-anchor" href="#why-this-model-exists" aria-hidden="true">#</a> Why This Model Exists</h3>
 <p>This syntax unifies:</p>
 <ul>
@@ -396,8 +412,13 @@ operations:</p>
 </thead>
 <tbody>
 <tr>
-<td>Volatility (MMIO)</td>
-<td><code>@volatile T</code> type</td>
+<td>Volatile access contract</td>
+<td><code>@volatile T</code> or <code>@mmio T</code> type</td>
+<td>every access through the typed address</td>
+</tr>
+<tr>
+<td>MMIO intent</td>
+<td><code>@mmio T</code> type</td>
 <td>every access through the typed address</td>
 </tr>
 <tr>
@@ -422,8 +443,9 @@ directive in Wyst. Acquire/release are per-access because synchronization
 sites are rare and explicit. Barriers are statement-level fences.</p>
 <hr>
 <h3 id="volatility-via-%40volatile-t" tabindex="-1"><a class="doc-anchor" href="#volatility-via-%40volatile-t" aria-hidden="true">#</a> Volatility via <code>@volatile T</code></h3>
-<p>An address of type <code>@volatile T</code> is an address into device memory.
-Every load or store through such an address is a <strong>compiler barrier</strong>:</p>
+<p>An address of type <code>@volatile T</code> carries a compiler-visible access contract,
+not a page-table memory-type fact. Every load or store through such an address
+is a <strong>compiler barrier</strong>:</p>
 <ul>
 <li>the compiler may not eliminate the access (no dead-store elimination,
 no load forwarding, no merging of consecutive accesses);</li>
@@ -434,11 +456,10 @@ no load forwarding, no merging of consecutive accesses);</li>
 <p>Two volatile accesses are never reordered relative to each other. A plain
 access may not be moved across a volatile access in either direction.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">READY_FLAG <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
 
-status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile load — guaranteed emitted</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile store — guaranteed emitted</span>
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>READY_FLAG<span class="token punctuation">]</span>      <span class="token comment">// volatile load — guaranteed emitted</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>READY_FLAG<span class="token punctuation">]</span> <span class="token operator">=</span> status <span class="token operator">|</span> <span class="token number">1</span>  <span class="token comment">// volatile store — guaranteed emitted</span>
 </code></pre>
 <p>A volatile access lowers to the same <code>ldr</code>/<code>str</code> instruction as a plain
 access. The &quot;device&quot; behavior comes from the page-table attributes for the
@@ -446,58 +467,76 @@ address, not from the instruction encoding. Volatility is a compiler
 contract, not a hardware contract — it guarantees the compiler does not
 optimize the access away.</p>
 <h4>Propagation</h4>
-<p>Volatility propagates through address arithmetic. If <code>p : @volatile u32</code>,
-then <code>p + 4</code> is <code>@volatile u32</code> at byte offset 16, because the offset is four
-<code>u32</code> elements. Use <code>p + 1</code> for byte offset 4, or cast through
-<code>@volatile u8</code> when hardware documentation gives byte offsets. Any access
-through the derived address is a compiler barrier:</p>
+<p>Volatility propagates through address arithmetic. If <code>p : @volatile u32</code>, then
+<code>p + 4</code> is <code>@volatile u32</code> at element offset 4, which means byte address
+<code>p + 16</code>. Use <code>p + 1</code> for the next <code>u32</code> element, or cast through <code>@volatile u8</code>
+when a byte view is needed. Any access through the derived address is a
+compiler barrier:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">STATUS_WORDS  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
 
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GIC_BASE <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>            <span class="token comment">// volatile store</span>
-mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GIC_BASE <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load at byte offset 4</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>             <span class="token comment">// volatile store, element offset 0</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load, element offset 1</span>
 
-type_addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>GIC_BASE <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+STATUS_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> STATUS_WORDS <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span>
+type_addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>STATUS_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 same_mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>type_addr<span class="token punctuation">]</span>         <span class="token comment">// same address, byte offset spelled explicitly</span>
 </code></pre>
-<p>Volatility is a property of the static result type of the arithmetic
-expression. If an integer operand was produced from an address with <code>as u64</code>,
-the source address's volatile qualifier must match the result address
-qualifier. Mixed-volatility address arithmetic is rejected unless the source
+<p>Volatility and MMIO intent are properties of the static result type of the
+arithmetic expression. If an integer operand was produced from an address with
+<code>as u64</code>, the source address's qualifiers must match the result address
+qualifiers. Mixed-qualifier address arithmetic is rejected unless the source
 first casts one address to the intended qualifier:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mmio  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 plain <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span>          <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
-bad  <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>                    <span class="token comment">// compile error</span>
-good <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token comment">// result is @volatile u32</span>
+bad  <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>                 <span class="token comment">// compile error</span>
+good <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>  <span class="token comment">// result is @mmio u32</span>
 </code></pre>
-<p>There is no implicit conversion between <code>@T</code> and <code>@volatile T</code> in either
-direction. To strip volatility (rare; almost always a mistake) use an explicit
-cast; to treat a plain address as volatile, use an explicit cast as well:</p>
+<p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
+direction. To strip volatility or MMIO intent use an explicit cast, which emits
+a warning. To treat a plain address as volatile or MMIO-intent, use an explicit
+cast as well. These casts do not perform an access and do not introduce
+<code>volatile_access</code> or <code>mmio</code> effects until a later load or store:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mmio <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-plain <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>             <span class="token comment">// volatility dropped; loads through `plain` are not barriers</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>             <span class="token comment">// qualifiers dropped; loads through `plain` are not barriers</span>
+volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 
 ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 </code></pre>
 <p>The static address type at the access site decides whether the access is
-plain or volatile, but it is not an alias boundary. If <code>plain</code> and <code>mmio</code>
-hold the same numeric address, the compiler must assume <code>u32@[plain]</code> and
-<code>u32@[mmio]</code> may touch the same bytes even though one access is plain and the
-other is volatile.</p>
-<h4>What <code>@volatile</code> Does Not Do</h4>
+plain, volatile, or MMIO-intent, but it is not an alias boundary. If <code>plain</code>
+and <code>device</code> hold the same numeric address, the compiler must assume
+<code>u32@[plain]</code> and <code>u32@[device]</code> may touch the same bytes even though one
+access is plain and the other is volatile with MMIO intent.</p>
+<h3 id="mmio-intent-via-%40mmio-t" tabindex="-1"><a class="doc-anchor" href="#mmio-intent-via-%40mmio-t" aria-hidden="true">#</a> MMIO Intent via <code>@mmio T</code></h3>
+<p><code>@mmio T</code> is the source-level marker for an address that the programmer intends
+to use as memory-mapped I/O. It is intentionally separate from the architectural
+memory type:</p>
+<ul>
+<li>converting an address to <code>@mmio T</code> records intent but does not perform MMIO;</li>
+<li>loading or storing through <code>@mmio T</code> introduces both <code>volatile_access</code> and
+<code>mmio</code> effects;</li>
+<li>target descriptors may report known Device-memory ranges, but those facts are
+mapping facts, not type conversions;</li>
+<li>the runtime or platform remains responsible for configuring page tables with
+Device memory attributes before MMIO is accessed.</li>
+</ul>
+<h4>What <code>@volatile</code> and <code>@mmio</code> Do Not Do</h4>
 <p><strong>Volatility does not emit CPU memory barriers.</strong> ARM64's weak memory model
 allows the CPU's store buffer to reorder writes to different addresses unless
 explicit barrier instructions are present. For MMIO initialization sequences
 where access order must be observed by the device, explicit barriers are
 required. See <strong>MMIO Ordering</strong> below.</p>
-<p><strong>Volatility does not control cacheability.</strong> Whether an address is cached
-or uncached is determined by the page-table entry for that address
+<p><strong>Volatility and MMIO intent do not control cacheability.</strong> Whether an address
+is cached or uncached is determined by the page-table entry for that address
 (specifically the MAIR index and the memory type attribute in the descriptor).
-A volatile access to an address mapped as Normal-Cacheable in the page
-tables will still go through the cache. Platform initialization code is
+A volatile or MMIO-intent access to an address mapped as Normal-Cacheable in the
+page tables will still go through the cache. Platform initialization code is
 responsible for configuring MMIO regions with Device memory attributes
 (e.g. Device-nGnRE) before accessing them.</p>
 <hr>
@@ -511,9 +550,9 @@ may have written.</p>
 </code></pre>
 <p>Lowers to <code>ldar xD, [xN]</code> on ARM64. <code>#acquire</code> is only valid on loads —
 applying it to a store is a compile error.</p>
-<p><code>#acquire</code> is independent of volatility: it is valid on both <code>@T</code> and
-<code>@volatile T</code> addresses, though acquire-on-MMIO is rare and indicates
-synchronization through a device register.</p>
+<p><code>#acquire</code> is independent of volatility and MMIO intent: it is valid on <code>@T</code>,
+<code>@volatile T</code>, and <code>@mmio T</code> addresses, though acquire-on-MMIO is rare and
+indicates synchronization through a device register.</p>
 <hr>
 <h3 id="%23release" tabindex="-1"><a class="doc-anchor" href="#%23release" aria-hidden="true">#</a> <code>#release</code></h3>
 <p><code>#release</code> is a store-release. It guarantees that all preceding memory
@@ -546,6 +585,11 @@ applying it to a load is a compile error.</p>
 <td>volatile (compiler barrier)</td>
 </tr>
 <tr>
+<td>load/store via <code>@mmio T</code></td>
+<td>valid</td>
+<td>volatile plus MMIO intent</td>
+</tr>
+<tr>
 <td><code>#acquire</code> on <code>@T</code> load</td>
 <td>valid</td>
 <td>acquire-release synchronization</td>
@@ -558,12 +602,22 @@ applying it to a load is a compile error.</p>
 <tr>
 <td><code>#acquire</code> on <code>@volatile T</code> load</td>
 <td>valid (rare)</td>
-<td>acquire-via-MMIO</td>
+<td>acquire-via-volatile</td>
 </tr>
 <tr>
 <td><code>#release</code> on <code>@volatile T</code> store</td>
 <td>valid (rare)</td>
-<td>release-via-MMIO</td>
+<td>release-via-volatile</td>
+</tr>
+<tr>
+<td><code>#acquire</code> on <code>@mmio T</code> load</td>
+<td>valid (rare)</td>
+<td>acquire-via-MMIO-intent</td>
+</tr>
+<tr>
+<td><code>#release</code> on <code>@mmio T</code> store</td>
+<td>valid (rare)</td>
+<td>release-via-MMIO-intent</td>
 </tr>
 <tr>
 <td><code>#acquire</code> on store</td>
@@ -697,14 +751,14 @@ flush pipelines, drain store buffers, order cache or TLB maintenance, or
 create a happens-before edge between agents.</p>
 <hr>
 <h3 id="mmio-ordering" tabindex="-1"><a class="doc-anchor" href="#mmio-ordering" aria-hidden="true">#</a> MMIO Ordering</h3>
-<p>Volatility alone is not sufficient for MMIO initialization sequences. On
-ARM64, the CPU store buffer may reorder stores to different addresses. A
+<p>Volatility and MMIO intent alone are not sufficient for MMIO initialization
+sequences. On ARM64, the CPU store buffer may reorder stores to different addresses. A
 device that requires its configuration registers to be written in a specific
 order requires explicit barriers between those writes.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
-UART_IBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
-UART_FBRD <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
+UART_IBRD <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
+UART_FBRD <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
 </code></pre>
 <p><strong>Incorrect</strong> (CPU may reorder stores even though every access is volatile):</p>
 <!-- wyst-contract: sketch -->
@@ -769,18 +823,20 @@ operations.</p>
 <p>Per-access <code>#volatile</code> directives have a known failure mode: a single
 forgotten annotation silently miscompiles, and the compiler issues no
 warning because both forms are legal at every access site. Wyst rejects
-that model. Volatility is a property of <em>what the address refers to</em>,
-not <em>how a particular line of code touches it</em>. Modelling it in the type
-makes the rule check-able:</p>
+that model. Volatility and MMIO intent are properties of <em>what the address
+value is meant to access</em>, not <em>how a particular line of code touches it</em>.
+Modelling them in the type makes the rule check-able:</p>
 <ul>
 <li>A function <code>read_reg(p : @volatile u32) -&gt; u32</code> cannot be called with
 a plain <code>@u32</code> argument without an explicit <code>as</code> cast.</li>
 <li>A function <code>peek(p : @u32) -&gt; u32</code> cannot be called with an
 <code>@volatile u32</code> argument without an explicit <code>as</code> cast.</li>
-<li>A struct field declared <code>@volatile u32</code> cannot be accessed as if it
-were a plain <code>u32</code>.</li>
-<li>Refactoring an MMIO access into a helper preserves the volatility
-through the parameter type.</li>
+<li>A function <code>read_mmio(p : @mmio u32) -&gt; u32</code> cannot be called with a plain or
+volatile-only address without an explicit <code>as @mmio u32</code> cast.</li>
+<li>A struct field declared <code>@volatile u32</code> or <code>@mmio u32</code> cannot be accessed as
+if it were a plain <code>u32</code>.</li>
+<li>Refactoring an MMIO access into a helper preserves MMIO intent through the
+parameter type.</li>
 </ul>
 <p>Code review can focus on the type declaration site, not on every access.</p>
 <hr>
@@ -823,7 +879,7 @@ relation between that agent's operations.</p>
 individually, though naturally aligned multi-byte accesses are always access-atomic with
 respect to their own width (see 9.4 Atomicity).</p>
 <h3 id="operations" tabindex="-1"><a class="doc-anchor" href="#operations" aria-hidden="true">#</a> Operations</h3>
-<p>The model recognizes six kinds of memory operation:</p>
+<p>The model recognizes these memory operation classes:</p>
 <table>
 <thead>
 <tr>
@@ -846,12 +902,22 @@ respect to their own width (see 9.4 Atomicity).</p>
 <tr>
 <td>Volatile load</td>
 <td><code>T@[addr]</code> where <code>addr : @volatile T</code></td>
-<td>Compiler-barrier load (MMIO)</td>
+<td>Compiler-barrier load</td>
 </tr>
 <tr>
 <td>Volatile store</td>
 <td><code>T@[addr] = val</code> where <code>addr : @volatile T</code></td>
-<td>Compiler-barrier store (MMIO)</td>
+<td>Compiler-barrier store</td>
+</tr>
+<tr>
+<td>MMIO-intent load</td>
+<td><code>T@[addr]</code> where <code>addr : @mmio T</code></td>
+<td>Compiler-barrier load with MMIO intent</td>
+</tr>
+<tr>
+<td>MMIO-intent store</td>
+<td><code>T@[addr] = val</code> where <code>addr : @mmio T</code></td>
+<td>Compiler-barrier store with MMIO intent</td>
 </tr>
 <tr>
 <td>Acquire load</td>
@@ -866,8 +932,9 @@ respect to their own width (see 9.4 Atomicity).</p>
 </tbody>
 </table>
 <p>Volatility is determined by the <strong>type</strong> of the address operand. There is
-no per-access <code>#volatile</code> form. An access through <code>@volatile T</code> is volatile;
-an access through <code>@T</code> is not.</p>
+no per-access <code>#volatile</code> form. An access through <code>@volatile T</code> or <code>@mmio T</code>
+is volatile; an access through <code>@T</code> is not. Access through <code>@mmio T</code> additionally
+introduces the <code>mmio</code> effect.</p>
 <p>Barrier runtime primitives (<code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>) and compiler barriers
 (<code>%compiler_barrier()</code>) are ordering constraints between operations, not
 memory operations themselves. All four participate in compiler ordering rules
@@ -883,6 +950,10 @@ no instruction and provide no hardware memory-ordering guarantee.</p>
 <p>The compiler ordering rules define which reorderings the Wyst compiler is permitted to
 perform. A <strong>reordering</strong> is any emission of an instruction sequence that differs from
 program order.</p>
+<p>The source evaluation order used by this table is defined in
+<a href="/docs/chapter-07-operators/">chapter-07-operators.md</a>. For an assignment, the
+address/storage-target side precedes the assigned value. For a call, argument
+effects are ordered left-to-right before the call effect.</p>
 <h3 id="the-reordering-table" tabindex="-1"><a class="doc-anchor" href="#the-reordering-table" aria-hidden="true">#</a> The Reordering Table</h3>
 <p>Given operation A before operation B in source order: may the compiler emit B before A?</p>
 <p>Row = A (earlier). Column = B (later). &quot;Strict boundary&quot; means either the
@@ -991,8 +1062,9 @@ scheduling.</p>
 assumed not to alias.</li>
 <li>Any access through a computed address (<code>T@[expr]</code>) is conservatively assumed to alias
 with any other computed-address access unless the compiler can prove disjoint ranges.</li>
-<li>Address volatility is not a non-aliasing fact. A plain access through <code>@T</code> and a
-volatile access through <code>@volatile T</code> are assumed to alias when their numeric address
+<li>Address volatility and MMIO intent are not non-aliasing facts. A plain access
+through <code>@T</code>, a volatile access through <code>@volatile T</code>, and an MMIO-intent
+access through <code>@mmio T</code> are assumed to alias when their numeric address
 ranges can overlap.</li>
 <li>Because Wyst addresses are plain integers with no provenance, the compiler cannot perform
 inter-procedural alias analysis on address-typed parameters. Two <code>@T</code> parameters are
@@ -1070,20 +1142,21 @@ L reads the value of the most recent store to X that happens-before L. If no suc
 exists, L reads the initial value of X at program startup (see 9.7 Initial Values).</p>
 <p><strong>Data race present:</strong>
 If a store to X from another agent is concurrent with L — not ordered by happens-before
-in either direction — the value L reads is <strong>hardware-determined</strong>: it is the value the
-ARM64 memory system delivers for that address at that time. The compiler emits the load
-and accepts whatever the hardware returns. It does not assume a particular value and does
-not optimize on the basis that the race cannot occur.</p>
-<p>What &quot;hardware-determined&quot; can be depends on whether the load is access-atomic
-(see §9.6):</p>
+in either direction — the behavior category depends on the access atomicity below. The
+compiler emits the load and accepts the value the ARM64 memory system delivers for that
+address at that time. It does not assume a particular value and does not optimize on the
+basis that the race cannot occur.</p>
+<p>The category depends on whether the load is access-atomic (see §9.6):</p>
 <ul>
 <li>
-<p><strong>Access-atomic loads</strong> (naturally aligned <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> on coherent normal
+<p><strong>Access-atomic loads</strong> are <code>Target-defined</code> (naturally aligned
+<code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> on coherent normal
 memory): the load returns either the pre-race value or one of the concurrently-written
 values. No intermediate state is observable.</p>
 </li>
 <li>
-<p><strong>Non-access-atomic loads</strong> (misaligned accesses; multi-word accesses emitted as
+<p><strong>Non-access-atomic loads</strong> observe <code>Indeterminate bits</code> (misaligned accesses;
+multi-word accesses emitted as
 multiple scalar chunks or explicit pair/vector instructions; bitfield
 read-modify-write spanning a wider backing word than the single-copy-atomic width
 — see §9.6): the load may observe a value that is <em>neither</em> the pre-race value
@@ -1095,7 +1168,7 @@ is a property of the hardware execution, not a compiler optimization.</p>
 </ul>
 <p>In both cases the compiler emits the load as written and does not synthesize an
 &quot;as-if&quot; value. The atomicity rules in §9.6 determine which case applies.</p>
-<p><strong>Volatile load (access through <code>@volatile T</code>):</strong>
+<p><strong>Volatile load (access through <code>@volatile T</code> or <code>@mmio T</code>):</strong>
 Reads the value at the address as presented by the hardware at the time of the load,
 subject to page-table memory type attributes. The compiler may not cache, forward, hoist,
 or speculate the result.</p>
@@ -1109,7 +1182,8 @@ or speculate the result.</p>
 <li>Neither M hb N nor N hb M.</li>
 </ol>
 <h3 id="behavior" tabindex="-1"><a class="doc-anchor" href="#behavior" aria-hidden="true">#</a> Behavior</h3>
-<p>A data race in Wyst produces <strong>hardware-determined behavior</strong>. The compiler:</p>
+<p>A data race in Wyst is either <code>Target-defined</code> for access-atomic operations or
+<code>Indeterminate bits</code> for tearing operations. The compiler:</p>
 <ul>
 <li>Emits both operations as written.</li>
 <li>Does not delete, merge, or reorder them on the assumption that a race cannot occur.</li>
@@ -1124,12 +1198,12 @@ hardware event the compiler does not exploit. Programs with data races on shared
 state are incorrect; the language does not make them safe, but it does not make them
 unpredictably wrong in ways that are not traceable to the hardware specification.</p>
 <h3 id="volatile-races" tabindex="-1"><a class="doc-anchor" href="#volatile-races" aria-hidden="true">#</a> Volatile Races</h3>
-<p>Concurrent volatile accesses (through <code>@volatile T</code>) from CPU and device to
-the same MMIO address are expected behavior for device-controlled registers.
-The device is an agent performing device-side writes; the hardware delivers
-the correct value because the page-table configures the address as device
+<p>Concurrent MMIO-intent accesses (through <code>@mmio T</code>) from CPU and device to the
+same MMIO address are expected behavior for device-controlled registers. The
+device is an agent performing device-side writes; the hardware delivers device
+semantics only when the runtime page table configures the address as Device
 memory.</p>
-<p>Two CPU agents concurrently performing volatile accesses to the same MMIO
+<p>Two CPU agents concurrently performing MMIO-intent accesses to the same MMIO
 register (at least one a store) constitute a race. The result is
 device-specific. Coordinate with external serialization or interrupt masking.</p>
 <h3 id="atomic-operations-and-races" tabindex="-1"><a class="doc-anchor" href="#atomic-operations-and-races" aria-hidden="true">#</a> Atomic Operations and Races</h3>
@@ -1281,8 +1355,8 @@ backing word, modifies the target field, and writes the backing word back. This 
 is <strong>not atomic</strong> with respect to concurrent writes to other fields of the same backing
 word.</p>
 <p>Two agents concurrently writing different fields of the same bitfield backing word race
-on the overlapping bytes. The result is hardware-determined and is likely to corrupt one
-or both writes.</p>
+on the overlapping bytes. The result observes <code>Indeterminate bits</code> and is likely to
+corrupt one or both writes.</p>
 <p>Programs must not allow concurrent writes to different fields of the same bitfield backing
 word without external serialization. For MMIO registers this means bitfield writes must
 not be used from interrupt handlers that share a register with the interrupted code, unless
@@ -1342,28 +1416,60 @@ flag <span class="token operator">=</span> <span class="token directive macro">#
 </code></pre>
 <hr>
 <h2 id="9.8-initial-values" tabindex="-1"><a class="doc-anchor" href="#9.8-initial-values" aria-hidden="true">#</a> 9.8 Initial Values</h2>
-<p>Memory locations not explicitly initialized have <strong>hardware-determined initial values</strong>:</p>
+<p>Memory locations not explicitly initialized contain <code>Indeterminate bits</code>:</p>
 <ul>
 <li>Memory zeroed by startup code (e.g. the <code>.bss</code> initialization loop) contains zero.</li>
 <li>Stack memory reused from a previous frame contains values written by that frame.</li>
 <li>Device registers contain device-specific power-on reset values.</li>
 <li>Memory from an allocator contains values from its previous occupant.</li>
 </ul>
-<p><strong>The Wyst compiler does not zero-initialize local variables.</strong> A local variable declared
-but not assigned before use reads whatever is in its stack slot. Programs must not rely on
-locals being zero-initialized.</p>
-<p>The compiler must emit a warning for syntactically obvious reads of a local
-variable before an initializer or prior assignment. This warning is not a
-compile error: the generated program still has the hardware-determined behavior
-described above. The warning is intentionally conservative and local to visible
-source order. Implementations are not required to prove every path-sensitive
-initialization fact, but they must diagnose direct cases such as:</p>
+<p><strong>The Wyst compiler does not zero-initialize local variables.</strong> A local
+variable declared but not assigned before use is not an implicit way to observe
+its stack slot or register home. An ordinary read of a local before
+initialization is a compile-time error.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   x <span class="token operator">:</span> <span class="token builtin type">u64</span>
-  <span class="token keyword">return</span> x <span class="token comment">// warning: x may be read before initialization</span>
+  <span class="token keyword">return</span> x <span class="token comment">// error[E0204]: local 'x' is read before it is initialized</span>
 <span class="token punctuation">}</span>
 </code></pre>
+<p>Programs that deliberately need raw machine storage must say so in the type and
+the operation:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  storage <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span>
+  first <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
+  <span class="token primitive macro">%write_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">)</span>
+  second <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
+  <span class="token keyword">return</span> first <span class="token operator">+</span> second
+<span class="token punctuation">}</span>
+</code></pre>
+<p><code>MaybeUninit&lt;T&gt;</code> reserves storage with the same layout, size, alignment, and
+calling-convention footprint as <code>T</code>, but it does not initialize a <code>T</code> value and
+does not imply automatic zeroing. <code>%read_uninit(storage)</code> is the explicit
+indeterminate read operation; it returns a <code>T</code> value whose bits come from the
+raw storage. <code>%write_uninit(storage, value)</code> writes a <code>T</code> value into that raw
+storage. After an indeterminate read is observed, the result is an ordinary
+typed value. It is never LLVM-style poison or <code>undef</code>, and the compiler must
+not use the read as a reason to delete or invent unrelated behavior.</p>
+<p>Initialization state is tracked for ordinary locals as a whole binding on each
+source path. Fields and array elements inherit the initialization state of
+their enclosing ordinary storage; assigning one field or element does not make
+the whole ordinary aggregate readable if the aggregate itself was never
+initialized. Current raw-storage intrinsics operate on the whole
+<code>MaybeUninit&lt;T&gt;</code> object. Future field- or element-granular raw APIs must keep
+the same explicit-read and explicit-write rule and must not introduce implicit
+zeroing.</p>
+<p>Moving <code>MaybeUninit&lt;T&gt;</code> moves the raw storage wrapper and its bytes. It does
+not initialize, read, or destroy a hidden <code>T</code>. Wyst currently has no implicit
+destructors or cleanup hooks for ordinary locals; <code>MaybeUninit&lt;T&gt;</code> therefore
+adds no hidden cleanup obligation. If a later language version adds destructors,
+the destructor for <code>T</code> must not run merely because <code>MaybeUninit&lt;T&gt;</code> storage
+goes out of scope.</p>
+<p>Register-resident and stack-resident storage have identical source semantics.
+<code>#pin(x19)</code> or allocator placement may change where the storage lives, but not
+whether an ordinary read is legal and not whether a raw read must be spelled
+with <code>%read_uninit</code>.</p>
 <hr>
 <h2 id="9.9-arm64-correspondence" tabindex="-1"><a class="doc-anchor" href="#9.9-arm64-correspondence" aria-hidden="true">#</a> 9.9 ARM64 Correspondence</h2>
 <p>The Wyst memory model is a restriction and formalization of the ARM64 VMSA memory model.
@@ -1388,12 +1494,12 @@ Every guarantee Wyst makes is backed by a specific ARM64 hardware mechanism:</p>
 <td>No ordering guarantee</td>
 </tr>
 <tr>
-<td>Volatile load (via <code>@volatile T</code>)</td>
+<td>Volatile load (via <code>@volatile T</code> or <code>@mmio T</code>)</td>
 <td><code>ldr</code></td>
 <td>Compiler barrier only; cacheability from page-table MAIR</td>
 </tr>
 <tr>
-<td>Volatile store (via <code>@volatile T</code>)</td>
+<td>Volatile store (via <code>@volatile T</code> or <code>@mmio T</code>)</td>
 <td><code>str</code></td>
 <td>Compiler barrier only; cacheability from page-table MAIR</td>
 </tr>
@@ -1600,7 +1706,7 @@ through a <code>@u64</code> at the same address.</li>
 <p>Given operation A before operation B in source, may the compiler emit B before A?</p>
 <p><strong>No</strong> if any of:</p>
 <ul>
-<li>A or B is a volatile access (via <code>@volatile T</code>)</li>
+<li>A or B is a volatile access (via <code>@volatile T</code> or <code>@mmio T</code>)</li>
 <li>A or B is <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, or <code>%compiler_barrier()</code></li>
 <li>B is a <code>#release</code> store (release stores may not be hoisted above anything)</li>
 <li>A is an <code>#acquire</code> load (acquire loads may not have anything after them moved before)</li>
@@ -1762,12 +1868,13 @@ spacing.</p>
 				<li class="lvl-2"><a href="#1.2-load%2Fstore-architecture">1.2 Load/Store Architecture</a></li>
 				<li class="lvl-2"><a href="#1.3-memory-interpretation-model">1.3 Memory Interpretation Model</a></li>
 				<li class="lvl-3"><a href="#normal-access">Normal Access</a></li>
-				<li class="lvl-3"><a href="#device-access">Device Access</a></li>
+				<li class="lvl-3"><a href="#volatile-and-mmio-intent-access">Volatile and MMIO-Intent Access</a></li>
 				<li class="lvl-3"><a href="#address-types">Address Types</a></li>
 				<li class="lvl-3"><a href="#mmio-example">MMIO Example</a></li>
 				<li class="lvl-3"><a href="#why-this-model-exists">Why This Model Exists</a></li>
 				<li class="lvl-2"><a href="#1.3.1-memory-access-directives-and-volatility">1.3.1 Memory Access Directives and Volatility</a></li>
 				<li class="lvl-3"><a href="#volatility-via-%40volatile-t">Volatility via @volatile T</a></li>
+				<li class="lvl-3"><a href="#mmio-intent-via-%40mmio-t">MMIO Intent via @mmio T</a></li>
 				<li class="lvl-3"><a href="#%23acquire">#acquire</a></li>
 				<li class="lvl-3"><a href="#%23release">#release</a></li>
 				<li class="lvl-3"><a href="#combination-rules">Combination Rules</a></li>

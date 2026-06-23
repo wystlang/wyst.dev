@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -101,8 +101,10 @@ of schedule blocks lives in <a href="/docs/appendix-a-ir/">appendix-a-ir.md §4.
 </blockquote>
 <h3 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-hidden="true">#</a> Semantic Boundary</h3>
 <p>Scheduling modes are permissions for instruction ordering, not a way to change
-source meaning. Optimization and IR rules build on the effects, memory
-ordering, and dependency rules established here.</p>
+source meaning. Optimization and IR rules build on the source evaluation order,
+effects, memory ordering, and dependency rules established here. Scheduling may
+move pure work only when the move is observationally equivalent under those
+rules.</p>
 <hr>
 <h3 id="scheduling-semantics" tabindex="-1"><a class="doc-anchor" href="#scheduling-semantics" aria-hidden="true">#</a> Scheduling Semantics</h3>
 <p>Wyst exposes scheduling permissions explicitly via the <code>#schedule</code> directive.

@@ -7,6 +7,15 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const docsSourceOfTruthHtml = await readFile(
+	new URL("../docs/source-of-truth/index.html", import.meta.url),
+	"utf8",
+);
+const roadmapHtml = await readFile(
+	new URL("../roadmap/index.html", import.meta.url),
+	"utf8",
+);
+const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
 );
@@ -38,6 +47,47 @@ function evaluateObject(name, endNeedle) {
 
 const codeBlocks = evaluateObject("codeBlocks", "const snippets = ");
 const snippets = evaluateObject("snippets", 'document.querySelectorAll("[data-code]")');
+
+test("landing page tracks the v0.8 draft language surface", () => {
+	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
+	assert.match(html, /The current v0\.8-draft compiler/);
+	assert.match(html, /<b>Current:<\/b> v0\.8-draft ·/);
+	assert.doesNotMatch(html, /The current v0\.7 compiler/);
+	assert.doesNotMatch(html, /<b>Current:<\/b> v0\.7 ·/);
+});
+
+test("generated pages track the v0.8 draft header badge", () => {
+	for (const [name, pageHtml] of [
+		["source-of-truth docs", docsSourceOfTruthHtml],
+		["roadmap", roadmapHtml],
+		["404", notFoundHtml],
+	]) {
+		assert.match(
+			pageHtml,
+			/<span class="ver">v0\.8-draft<\/span>/,
+			`${name} should use the draft header badge`,
+		);
+		assert.doesNotMatch(
+			pageHtml,
+			/<span class="ver">v0\.7<\/span>/,
+			`${name} should not use the old release badge`,
+		);
+	}
+});
+
+test("landing page describes the sum_to example as a while loop", () => {
+	assert.match(html, /The <code>while<\/code> loop lowers to the/);
+	assert.doesNotMatch(html, /The <code>repeat<\/code> loop lowers to the/);
+});
+
+test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {
+	assert.match(html, /<b>@mmio<\/b> records\s+MMIO intent/);
+	assert.doesNotMatch(html, /<b>@volatile<\/b> marks\s+MMIO/);
+
+	assert.match(codeBlockText("hero-uart"), /UARTDR :: @mmio u32 = 0x0900_0000/);
+	assert.match(codeBlockText("hero-uart"), /UARTFR :: @mmio u32 = 0x0900_0018/);
+	assert.doesNotMatch(codeBlockText("hero-uart"), /@volatile u32/);
+});
 
 function renderLines(lines) {
 	return lines.map((line) => line.join("")).join("\n");
@@ -222,7 +272,10 @@ test("sum_to examples use while for runtime n and match signed i32 assembly", ()
 test("other index source and assembly snippets advertise documented patterns", () => {
 	const uartSource = snippetText("uart-source");
 	const uartAsm = snippetText("uart-asm");
-	assert.match(uartSource, /@volatile marks MMIO/);
+	assert.match(uartSource, /@mmio records MMIO intent/);
+	assert.doesNotMatch(uartSource, /@volatile marks MMIO/);
+	assert.match(uartSource, /UARTDR :: @mmio u32/);
+	assert.match(uartSource, /UARTFR :: @mmio u32/);
 	assert.match(uartSource, /while u32@\[UARTFR\] & TXFF != 0/);
 	assert.match(uartAsm, /ldr w2, \[x1, #0x18\]/);
 	assert.match(uartAsm, /tbnz w2, #5, \.Lwait/);

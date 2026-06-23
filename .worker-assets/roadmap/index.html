@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -80,6 +80,11 @@ future sketches with the <code>future</code> documentation contract defined in
 contract, report schema, target/artifact/debug policy, or resolves a design
 fork, update <a href="design/source-of-truth.md">the source-of-truth registry</a> and
 the relevant design doc.</li>
+<li>Keep the conformance index aligned with promoted scope. A roadmap item,
+release target, or checklist item that adds, changes, implements, reserves,
+removes, or promotes a semantic clause must add or update
+<a href="design/conformance-index.md">the conformance index</a> before it can be marked
+complete.</li>
 </ol>
 <h2 id="scope-guardrails" tabindex="-1"><a class="doc-anchor" href="#scope-guardrails" aria-hidden="true">#</a> Scope Guardrails</h2>
 <p>Future promoted work must preserve these language and compiler boundaries:</p>
@@ -409,11 +414,10 @@ default wrapping operators, each lowering to its own inspectable sequence;
 consumed; plus narrow runtime numeric primitives such as <code>%fmod</code>. <em>(Extends
 the shipped wrapping default without adding hidden checks or optimizer license;
 each form is a byte-stable lowering with snapshot/disasm verification.)</em></li>
-<li>Compile-time language surface: floating-point constant arithmetic,
-compile-time <code>#if</code> value/body selection, same-typed configuration
-variation, and the constant-evaluator/reporting rules needed to keep those
-forms deterministic. <em>(Promote only with parser, formatter, sema, and
-snapshot coverage.)</em></li>
+<li>Compile-time language surface beyond implemented <code>#if</code>: floating-point
+constant arithmetic and the constant-evaluator/reporting expansion needed to
+keep future compile-time forms deterministic. <em>(Promote only with parser,
+formatter, sema, and snapshot coverage.)</em></li>
 <li>Type and value surface expansion: post-core type and value language surface
 across four facets. (a) Type system: traits, type aliases, value parameters,
 defaults, inference, and generic constraints beyond the implemented

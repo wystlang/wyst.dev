@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -120,11 +120,74 @@ precedence are familiar in control-flow examples.</p>
 program state as a license to transform code. If the source says <code>x + 1</code>, the compiler
 emits <code>add</code>. It does not reason about whether <code>x + 1</code> can overflow or use that assumption
 to delete branches.</p>
-<p><strong>Hardware-determined behavior for invalid operations.</strong> Operations whose outcomes depend
-on hardware state — such as accessing unmapped memory — produce results determined by the
-hardware, not the compiler. The compiler emits the instruction the source describes.</p>
+<p><strong>Named behavior categories for edge cases.</strong> Arithmetic edge cases in this
+chapter are <code>Defined</code> unless a subsection explicitly says the selected target
+or architecture defines the result. The behavior taxonomy in
+<a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> controls the
+optimizer consequence: edge cases do not imply impossible-state assumptions.</p>
 <p>Arithmetic overflow, wrap, division, and shift semantics are fully specified below.
 Memory access behavior is specified in the memory model.</p>
+<hr>
+<h2 id="evaluation-order" tabindex="-1"><a class="doc-anchor" href="#evaluation-order" aria-hidden="true">#</a> Evaluation Order</h2>
+<p>Expression evaluation is left-to-right in source order unless a construct in
+this section states otherwise. Precedence and associativity decide how tokens
+group into subexpressions; evaluation order decides when those subexpressions
+are evaluated.</p>
+<p>Binary operators evaluate the left operand first, then the right operand.
+Logical <code>&amp;&amp;</code> and <code>||</code> still short-circuit: the left operand is evaluated first,
+and the right operand is evaluated only when required to determine the result.</p>
+<p>Function calls evaluate the callee expression first for indirect calls, then
+evaluate arguments left-to-right. Direct calls have no runtime callee expression
+to evaluate; their arguments are evaluated left-to-right. Inline calls follow
+the same argument-evaluation rule before parameter binding and body expansion.</p>
+<p>Nested calls follow from the recursive rule. In <code>f(g(), h())</code>, <code>g()</code> is fully
+evaluated before <code>h()</code>, then the outer call to <code>f</code> is evaluated after both
+arguments are available.</p>
+<p>Indexing evaluates the base expression first, then the index expression, then
+performs the element address calculation and load or store implied by the
+surrounding context. Slicing uses the same base-first rule, then evaluates the
+start bound before the end bound when both bounds are present.</p>
+<p>Casts and conversions evaluate their operand first, then perform the explicit
+conversion. A conversion never permits the scheduler to move an observable
+effect from the operand across an adjacent observable effect.</p>
+<p>Aggregate constructors evaluate their written elements left-to-right. Tuple
+elements, array elements, vector lanes, slice-constructor operands, and enum
+payload arguments follow the order written in source. Struct field initializers
+also evaluate in written source order, even when the fields are written out of
+declaration order:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Pair <span class="token punctuation">{</span> b<span class="token operator">:</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> a<span class="token operator">:</span> <span class="token function">g</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token comment">// evaluates f() before g()</span>
+</code></pre>
+<p>Struct layout and storage still follow the struct declaration. Source-order
+initializer evaluation does not change field offsets, ABI classification, or
+the declaration-order field identity of the constructed value.</p>
+<p>Assignments evaluate the storage target first, then the assigned value, then
+perform the store or local rebinding. For memory assignments, the address side
+is evaluated before the value side. Compound assignments evaluate the storage
+target once, load the current value, then evaluate the right-hand expression,
+compute the operator result, and store or rebind the result. Logical compound
+assignments keep their short-circuit behavior after the target/current value is
+established.</p>
+<p>Runtime <code>if</code>, <code>while</code>, <code>repeat</code>, <code>switch</code>, and expression-valued <code>if</code>
+constructs evaluate their condition or selector before any branch body or arm
+body is entered. Branch bodies are not eagerly evaluated: only the selected
+runtime path evaluates its expressions. Expression-valued <code>if</code> follows the same
+condition-first branch rule; it is the branching counterpart to eager
+<code>select</code>.</p>
+<p>Scheduling may move pure work only when the move is observationally equivalent
+under the memory model, effect system, and active <code>#schedule</code> region. It may not
+change the order of observable effects such as volatile accesses, atomics,
+barriers, calls, inline assembly, floating-point state effects, traps, or
+short-circuit suppression.</p>
+<p>ABI argument placement is not expression evaluation order. The source argument
+list determines evaluation order; the Native ABI or AAPCS64 register/stack
+classification only determines where already-evaluated argument values are
+placed for the call.</p>
+<p><code>wync check --warn-effectful-nesting</code> enables an optional lint for expressions
+that compose multiple calls, volatile memory accesses, atomics, or traps in one
+expression tree. The lint is advisory: Wyst still defines left-to-right
+evaluation, but the warning asks programmers to bind effectful subexpressions
+to locals before combining them.</p>
 <hr>
 <h2 id="unary-operators" tabindex="-1"><a class="doc-anchor" href="#unary-operators" aria-hidden="true">#</a> Unary Operators</h2>
 <p>Unary operators have <strong>higher precedence than all binary operators</strong>.</p>
@@ -930,8 +993,9 @@ after <code>&amp;</code> in any valid expression.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>cond<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
 </code></pre>
-<p><code>select(cond, a, b)</code> evaluates <code>cond</code> first, then evaluates <code>a</code>, then
-evaluates <code>b</code>. It returns <code>a</code> if <code>cond</code> is true, <code>b</code> otherwise. It is
+<p><code>select(cond, a, b)</code> follows the general call-like evaluation order: it
+evaluates <code>cond</code> first, then evaluates <code>a</code>, then evaluates <code>b</code>. It returns <code>a</code>
+if <code>cond</code> is true, <code>b</code> otherwise. It is
 <strong>always branchless</strong> — it lowers to a <code>cmp</code> + <code>csel</code> sequence (one instruction
 after the compare). The compiler never expands <code>select</code> into a branch.</p>
 <p><strong>Signature:</strong> <code>select(cond : bool, a : T, b : T) -&gt; T</code></p>
@@ -1191,6 +1255,7 @@ conflicts with existing operators and is grep-friendly.</p>
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#overview">Overview</a></li>
+				<li class="lvl-2"><a href="#evaluation-order">Evaluation Order</a></li>
 				<li class="lvl-2"><a href="#unary-operators">Unary Operators</a></li>
 				<li class="lvl-2"><a href="#binary-operators">Binary Operators</a></li>
 				<li class="lvl-3"><a href="#arithmetic">Arithmetic</a></li>

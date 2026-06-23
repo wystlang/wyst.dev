@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -227,9 +227,11 @@ contracts. They should be exposed through profiles, standard-library modules,
 or generated bindings with stable provenance instead of special core-language
 rules.</p>
 <h2 id="effect-boundary" tabindex="-1"><a class="doc-anchor" href="#effect-boundary" aria-hidden="true">#</a> Effect Boundary</h2>
-<p>Allocation effects should initially be reportable through known APIs,
-diagnostics, and explain output. A separate language design change is required
-before allocation becomes a core <code>#deny</code> effect category.</p>
+<p>Dynamic storage acquisition through known runtime APIs is a semantic operation
+that can be reported by storage diagnostics and explain output. Compiler-owned
+frame slots, spills, reloads, register-class pressure, and caller-owned
+aggregate copies are generated backend resources instead; they belong in
+post-lowering constraints and reports, not in <code>#deny</code>.</p>
 <h2 id="kernel-initcalls%2C-panic%2C-and-logging" tabindex="-1"><a class="doc-anchor" href="#kernel-initcalls%2C-panic%2C-and-logging" aria-hidden="true">#</a> Kernel Initcalls, Panic, And Logging</h2>
 <p>A small kernel-runtime metadata contract provides initcall tables without
 introducing a hidden runtime. A function marked <code>#initcall(order)</code> contributes one inspectable

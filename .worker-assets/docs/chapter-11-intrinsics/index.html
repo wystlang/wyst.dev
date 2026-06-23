@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -96,12 +96,12 @@
 					<div class="doc-body">
 <blockquote>
 <p><strong>Canonical scope.</strong> The <code>%</code>-prefixed primitives that lower to runtime
-operations: stack-local address materialization, runtime enum tag projection,
-atomics (§1.3.2), system register access (§1.3.3), trap and exception entry
-(§1.3.4), cache and TLB maintenance (§1.3.5), CPU hints (§1.3.6), and per-CPU
-/ thread-local storage (§1.3.7).
-The memory-access qualifier/directive forms (<code>@volatile T</code>, <code>#acquire</code>,
-<code>#release</code>) live in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>. IR-level intrinsic
+operations: stack-local address materialization, explicit raw-storage reads
+and writes, runtime enum tag projection, atomics (§1.3.2), system register
+access (§1.3.3), trap and exception entry (§1.3.4), cache and TLB maintenance
+(§1.3.5), CPU hints (§1.3.6), and per-CPU / thread-local storage (§1.3.7).
+The memory-access qualifier/directive forms (<code>@volatile T</code>, <code>@mmio T</code>,
+<code>#acquire</code>, <code>#release</code>) live in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>. IR-level intrinsic
 representation lives in <a href="/docs/appendix-a-ir/">appendix-a-ir.md §6.8</a>.</p>
 <p><strong>Terminology.</strong> Source code uses <strong>runtime primitive</strong> for <code>%...</code> forms
 and <strong>compile-time form/directive</strong> for <code>#...</code> forms. The compiler's IR may
@@ -133,8 +133,10 @@ current function. It is the runtime counterpart to <code>#addr_of(symbol)</code>
 result is an ordinary stack-frame address, not a relocation and not a
 compile-time constant. It is illegal in <code>#naked</code> functions because those
 functions do not have a compiler-owned frame.</p>
-<p><strong>Effect category:</strong> <code>stack_alloc</code>. The primitive materializes a compiler-owned
-stack-frame address and is rejected under active <code>#deny(stack_alloc)</code>.</p>
+<p><strong>Effect category:</strong> none. The primitive materializes a compiler-owned
+stack-frame address, which is a generated backend resource fact rather than a
+semantic effect. Stack-address escape remains checked by the lifetime/authority
+rules; backend frame facts are reported after lowering.</p>
 <p><code>%addr_of(local)</code> does not choose a default lens in an inferred binding. Write
 an explicit annotation or cast:</p>
 <!-- wyst-contract: sketch -->
@@ -161,6 +163,29 @@ access and direct forwarding to another <code>#noescape</code> parameter are all
 casts, aliases, stores of the address value, indirect calls, and ordinary value
 observations are rejected. Use <code>#addr_of(symbol)</code> for globals, functions,
 labels, exception vectors, and other linkable storage.</p>
+<hr>
+<h3 id="explicit-raw-storage" tabindex="-1"><a class="doc-anchor" href="#explicit-raw-storage" aria-hidden="true">#</a> Explicit Raw Storage</h3>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span> <span class="token operator">-></span> T
+<span class="token primitive macro">%write_uninit</span><span class="token punctuation">(</span>storage <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">,</span> value <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">void</span>
+</code></pre>
+<p><code>MaybeUninit&lt;T&gt;</code> names raw storage with the same layout and storage class as
+<code>T</code> but without an initialized <code>T</code> value. <code>%read_uninit(storage)</code> is the only
+source-level way to deliberately observe the current bits of that raw storage
+as a <code>T</code>. <code>%write_uninit(storage, value)</code> writes a <code>T</code> value into the raw
+storage without changing the storage's type.</p>
+<p>These primitives do not zero memory, do not add fences, and do not introduce
+volatile or atomic ordering. The observed value from <code>%read_uninit</code> is an
+ordinary <code>T</code> value after the read, but the IR records the read as an explicit
+indeterminate-read operation rather than manufacturing an SSA value with no
+definition.</p>
+<p>The storage operand must be a local <code>MaybeUninit&lt;T&gt;</code> binding. Stack-resident
+and register-resident locals have identical source semantics; placement and
+<code>#pin</code> affect only where the storage lives. Special-register aliases remain
+read-only snapshots and cannot be used as mutable raw storage.</p>
+<p><strong>Effect category:</strong> none. These primitives operate on local raw storage and
+do not by themselves materialize an address, touch external memory, or cross an
+architectural boundary.</p>
 <hr>
 <h3 id="runtime-enum-tag-projection" tabindex="-1"><a class="doc-anchor" href="#runtime-enum-tag-projection" aria-hidden="true">#</a> Runtime Enum Tag Projection</h3>
 <!-- wyst-contract: sketch -->
@@ -314,16 +339,18 @@ instead. <code>%atomic_store</code> does not accept <code>release</code> — wri
 <hr>
 <h3 id="atomic-types" tabindex="-1"><a class="doc-anchor" href="#atomic-types" aria-hidden="true">#</a> Atomic Types</h3>
 <p>Atomic operations are defined on naturally aligned <code>u8</code>, <code>u16</code>, <code>u32</code>,
-<code>u64</code>, <code>s8</code>, <code>s16</code>, <code>s32</code>, <code>s64</code>, and address types (<code>@T</code>, <code>@volatile T</code>).
+<code>u64</code>, <code>s8</code>, <code>s16</code>, <code>s32</code>, <code>s64</code>, and address types (<code>@T</code>, <code>@volatile T</code>,
+<code>@mmio T</code>).
 The address argument has element type matching the value type:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span><span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>counter<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> order<span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
 </code></pre>
-<p>For RMW operations on <code>@volatile T</code>, the volatility of the address type
-propagates into the access — the compiler treats the RMW as both volatile
-<em>and</em> atomic and emits the appropriate ARM64 instruction without any
-additional <code>@volatile</code> machinery.</p>
+<p>For RMW operations on <code>@volatile T</code> or <code>@mmio T</code>, the volatility of the address
+type propagates into the access — the compiler treats the RMW as both volatile
+<em>and</em> atomic and emits the appropriate ARM64 instruction without any additional
+<code>@volatile</code> machinery. <code>@mmio T</code> additionally records MMIO intent; the actual
+architectural memory type still comes from the runtime mapping.</p>
 <p>Floating-point atomics are outside the atomic surface. The 128-bit pair atomics
 (<code>ldxp</code>/<code>stxp</code>, <code>casp</code>) are accessible only via <code>#asm</code>; the language does
 not model 128-bit value types.</p>
@@ -590,7 +617,7 @@ O is treated as a memory operation of the corresponding row/column.</p>
 <tbody>
 <tr>
 <td>Intrinsics for RMW; directives for ordered load/store</td>
-<td>Mirrors the language's existing modifier pattern for plain accesses (<code>@volatile T</code>, <code>#acquire</code>/<code>#release</code>). RMW has no plain-access equivalent so it gets a call form.</td>
+<td>Mirrors the language's existing modifier pattern for plain accesses (<code>@volatile T</code>, <code>@mmio T</code>, <code>#acquire</code>/<code>#release</code>). RMW has no plain-access equivalent so it gets a call form.</td>
 </tr>
 <tr>
 <td>One canonical spelling per (op, order)</td>
@@ -1306,7 +1333,7 @@ psci_cpu_off <span class="token operator">::</span> <span class="token punctuati
   <span class="token primitive macro">%hvc</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-  <span class="token punctuation">}</span> <span class="token comment">// unreachable; satisfy #noreturn</span>
+  <span class="token punctuation">}</span> <span class="token comment">// fallback if firmware returns from CPU_OFF</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h4>Exception return to userspace</h4>
@@ -1534,7 +1561,7 @@ dma_rx_line <span class="token operator">:</span> <span class="token punctuation
 <ol>
 <li>CPU prepares the receive buffer with <code>%dc_civac(#addr_of(dma_rx_line))</code>
 and <code>%dsb(sy)</code> before the simulated device writes it.</li>
-<li>CPU observes the completion word through a volatile address.</li>
+<li>CPU observes the completion word through a volatile or MMIO-intent address.</li>
 <li>CPU runs <code>%dc_civac(#addr_of(dma_rx_line))</code> and <code>%dsb(sy)</code> before
 reading the receive buffer.</li>
 </ol>
@@ -1692,7 +1719,7 @@ still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
 </tr>
 <tr>
 <td><code>%dc_zva</code> alignment unchecked statically</td>
-<td>The ZVA block size is hardware-determined (<code>DCZID_EL0</code>); not knowable from Wyst layout target facts. The convention is to query <code>%dczid_block_size()</code> at boot and align loops to that value.</td>
+<td>The ZVA block size is <code>Target-defined</code> (<code>DCZID_EL0</code>); not knowable from Wyst layout target facts. The convention is to query <code>%dczid_block_size()</code> at boot and align loops to that value.</td>
 </tr>
 <tr>
 <td>EL2 / EL3 TLBI variants gated by <code>#target</code></td>
@@ -2171,7 +2198,7 @@ the cache entirely on some implementations.</p>
 <p><strong>Supported types:</strong> <code>u32</code>, <code>u64</code>, <code>f32</code>, <code>f64</code>. The address must be
 naturally aligned for the pair width (8 bytes for <code>u32</code>/<code>f32</code> pairs,
 16 bytes for <code>u64</code>/<code>f64</code> pairs). Misaligned non-temporal access is a
-hardware-determined fault.</p>
+<code>Architectural fault or trap</code>.</p>
 <p><strong>ARM64 lowering:</strong></p>
 <table>
 <thead>
@@ -2254,7 +2281,8 @@ the compiler from moving measured work outside the timing window.</p>
 enabled via <code>PMUSERENR_EL0.EN = 1</code> and <code>PMCR_EL0.E = 1</code>. At EL1 and
 above, the counter is always accessible. The compiler does not check or
 enforce counter enablement — reading a disabled counter returns zero or
-traps (hardware-determined).</p>
+enters <code>Architectural fault or trap</code>, depending on the selected target and
+current PMU state.</p>
 <p><strong>ARM64 lowering:</strong></p>
 <table>
 <thead>
@@ -2330,6 +2358,7 @@ event counts).</p>
 				<ul class="doc-toc-list">
 				<li class="lvl-3"><a href="#checked-primitive-example">Checked Primitive Example</a></li>
 				<li class="lvl-3"><a href="#runtime-address-materialization">Runtime Address Materialization</a></li>
+				<li class="lvl-3"><a href="#explicit-raw-storage">Explicit Raw Storage</a></li>
 				<li class="lvl-3"><a href="#runtime-enum-tag-projection">Runtime Enum Tag Projection</a></li>
 				<li class="lvl-2"><a href="#1.3.2-atomic-operations">1.3.2 Atomic Operations</a></li>
 				<li class="lvl-3"><a href="#when-to-use-each-form">When to Use Each Form</a></li>

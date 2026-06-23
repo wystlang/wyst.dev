@@ -71,7 +71,7 @@
 					<span class="mark" aria-hidden="true"></span>
 					<span class="word">wyst<span class="cc">::</span></span>
 					<span class="tag">lang</span>
-					<span class="ver">v0.7</span>
+					<span class="ver">v0.8-draft</span>
 				</a>
 				<button
 					class="nav-toggle"
@@ -137,9 +137,10 @@
 								>more expressive than raw AArch64, with none of
 								the hidden magic of a C compiler.</strong
 							>
-							Memory ordering and overflow behavior are explicit
-							in the source; machine effects are inferred from
-							known primitives and surfaced for inspection.
+							Memory ordering, source requirements, and overflow
+							behavior are explicit in the source; semantic
+							effects and post-lowering resource facts are
+							surfaced for inspection.
 						</p>
 						<div class="cta-row">
 							<a class="btn btn-primary" href="/docs/"
@@ -185,9 +186,10 @@
 							><code data-code="hero-uart"></code></pre>
 						</div>
 						<p class="code-note">
-							Hardware access is visible. <b>@volatile</b> marks
-							MMIO, <b>u32@[UARTFR]</b> performs the load, and
-							<b>%nop()</b> is the explicit wait-loop instruction.
+							Hardware access is visible. <b>@mmio</b> records
+							MMIO intent, <b>u32@[UARTFR]</b> performs the load,
+							and <b>%nop()</b> is the explicit wait-loop
+							instruction.
 						</p>
 					</div>
 				</div>
@@ -323,7 +325,7 @@
 							semantics, so there's no undefined behavior for the
 							compiler to reason from; the loop can't be silently
 							deleted or rewritten into something you didn't
-							author. The <code>repeat</code> loop lowers to the
+							author. The <code>while</code> loop lowers to the
 							exact counted branch
 							<span class="note-right">on the right</span
 							><span class="note-above">above</span>, with a
@@ -806,8 +808,8 @@
 								<p class="faq-a">
 									Above assembly: structured control flow,
 									named bindings, typed memory access,
-									modules, reserved generic syntax, enums,
-									packed structs, and a register allocator.
+									modules, explicit generics, enums, packed
+									structs, and a register allocator.
 									Below C: no undefined behavior to exploit,
 									no implicit promotions, no hidden
 									allocation, no aliasing rules to trip over.
@@ -888,7 +890,7 @@
 						<h2>Built in the open. Early, but real.</h2>
 						<p>
 							Wyst is a serious hobby project in active
-							development. The current v0.7 compiler,
+							development. The current v0.8-draft compiler,
 							<strong>wync</strong>, is a zero-dependency Rust
 							bootstrap with an LSP server, canonical formatter,
 							project builds, and built-in lowering, effect, and
@@ -922,8 +924,8 @@
 						</div>
 						<div class="status-meta">
 							<span
-								><b>Current:</b> v0.7 · storage contracts &amp;
-								typed handles</span
+								><b>Current:</b> v0.8-draft · source
+								requirements &amp; MMIO intent</span
 							>
 							<span
 								><b>Tooling:</b> LSP · formatter · explain
@@ -1124,7 +1126,7 @@
 						[
 							token("var", "UARTDR"),
 							" :: ",
-							token("t", "@volatile u32"),
+							token("t", "@mmio u32"),
 							" ",
 							token("o", "="),
 							" ",
@@ -1133,7 +1135,7 @@
 						[
 							token("var", "UARTFR"),
 							" :: ",
-							token("t", "@volatile u32"),
+							token("t", "@mmio u32"),
 							" ",
 							token("o", "="),
 							" ",
@@ -1398,7 +1400,7 @@
 							[
 								token(
 									"c",
-									"// @volatile marks MMIO: every access is a compiler barrier.",
+									"// @mmio records MMIO intent and uses volatile access semantics.",
 								),
 							],
 							[
@@ -1413,7 +1415,7 @@
 							[
 								token("var", "UARTDR"),
 								" :: ",
-								token("t", "@volatile u32"),
+								token("t", "@mmio u32"),
 								" ",
 								token("o", "="),
 								" ",
@@ -1426,7 +1428,7 @@
 							[
 								token("var", "UARTFR"),
 								" :: ",
-								token("t", "@volatile u32"),
+								token("t", "@mmio u32"),
 								" ",
 								token("o", "="),
 								" ",
@@ -1503,7 +1505,7 @@
 								", lsl ",
 								token("n", "#16"),
 								"  ",
-								token("asm-note", "// @volatile base"),
+								token("asm-note", "// @mmio base"),
 							],
 							[token("asm-lbl", ".Lwait:")],
 							[
@@ -1512,7 +1514,7 @@
 								" w2, [x1, ",
 								token("n", "#0x18"),
 								"]  ",
-								token("asm-note", "// volatile load · UARTFR"),
+								token("asm-note", "// MMIO-intent load · UARTFR"),
 							],
 							[
 								token("asm-addr", "0x08 "),
@@ -1526,7 +1528,7 @@
 								token("asm-addr", "0x0c "),
 								token("k", "str"),
 								" w0, [x1]  ",
-								token("asm-note", "// volatile store · UARTDR"),
+								token("asm-note", "// MMIO-intent store · UARTDR"),
 							],
 							[token("asm-addr", "0x10 "), token("k", "ret")],
 						],

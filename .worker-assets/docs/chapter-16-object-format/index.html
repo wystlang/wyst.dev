@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -101,19 +101,25 @@
 <p>Object format describes emitted artifacts, not source syntax. It builds on
 modules, layout declarations, boot entry, and ABI classification.</p>
 <p>Wyst's integrated compiler reads a set of source modules and emits a single
-binary image. There is no separate assembler, no separate linker, no
-intermediate object files written to disk. This chapter specifies the emitted
-artifact.</p>
+binary image in the current implemented artifact mode. There is no separate
+assembler, no separate linker, and no intermediate object files written to disk
+for the implemented <code>ET_EXEC</code> mode. Relocatable object files are a
+future-version normative R8 surface (<code>wyst.language.v0.8</code> target 32) and do not
+override the current single-image rules until Chapter 16 is updated for that
+artifact mode.</p>
 <hr>
 <h2 id="1.-scope-and-goals" tabindex="-1"><a class="doc-anchor" href="#1.-scope-and-goals" aria-hidden="true">#</a> 1. Scope and Goals</h2>
-<p>The Wyst compiler is <strong>whole-program, single-pass with respect to its output</strong>:</p>
+<p>For the implemented <code>ET_EXEC</code> artifact mode, the Wyst compiler is
+<strong>whole-program, single-pass with respect to its output</strong>:</p>
 <ul>
 <li>The compiler ingests every source module named explicitly or discovered from
 the project/root import closure in one invocation (see
 <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>).</li>
 <li>All cross-module symbol resolution, layout, relocation, and image
 construction happen inside that one invocation.</li>
-<li>No per-module relocatable <code>.o</code> files are written to disk.</li>
+<li>No per-module relocatable <code>.o</code> files are written to disk in the current
+implemented mode. <code>wync -c</code> / <code>--emit-object</code> is reserved for the R8
+relocatable-object milestone.</li>
 <li>No external <code>ld</code> is invoked.</li>
 <li>No <code>ar</code> archive format is defined.</li>
 </ul>
@@ -585,15 +591,15 @@ provenance the compiler cannot trace.</p>
 <td>Codegen emits <code>adrp</code> + <code>add</code> against <code>sym</code>. Linker resolves at final placement.</td>
 </tr>
 <tr>
-<td><code>(#addr_of(sym) as @T) + N</code> (constant <code>N</code>)</td>
+<td><code>(#addr_of(sym) as @T) + N</code> (constant element count <code>N</code>)</td>
 <td>One page-pair relocation against <code>sym</code>; the byte addend is <code>N * #size_of(T)</code> folded into the <code>ADD_LO12</code> immediate (or into the <code>ABS64</code> slot when stored to data).</td>
 </tr>
 <tr>
-<td><code>((#addr_of(sym) as @u8) + B) as @T</code> (constant byte offset <code>B</code>)</td>
+<td><code>((#addr_of(sym) as @u8) + B) as @T</code> (constant byte count <code>B</code>)</td>
 <td>One page-pair relocation against <code>sym</code>; the byte addend is exactly <code>B</code>.</td>
 </tr>
 <tr>
-<td><code>(#addr_of(sym) as @T) + i</code> (runtime <code>i</code>)</td>
+<td><code>(#addr_of(sym) as @T) + i</code> (runtime element count <code>i</code>)</td>
 <td>Page-pair relocation for <code>sym</code>'s base only; runtime code scales <code>i</code> by <code>#size_of(T)</code> before the plain <code>add</code>, with no relocation on that add.</td>
 </tr>
 <tr>
@@ -618,11 +624,12 @@ provenance the compiler cannot trace.</p>
 </tr>
 </tbody>
 </table>
-<p>Plain <code>+</code> in source has exactly one meaning for addresses: element offsets.
-Do not multiply <code>N</code> or <code>i</code> by <code>#size_of(T)</code> before adding to <code>@T</code>; that creates
-a relocation addend or runtime offset scaled twice. Byte addends must be
-spelled with an <code>@u8</code> lens or with explicit <code>u64</code> arithmetic before casting
-back to the desired address type.</p>
+<p>Plain <code>+</code> in source has exactly one meaning for typed addresses: element
+offsets. Do not multiply <code>N</code> or <code>i</code> by <code>#size_of(T)</code> before adding to <code>@T</code>;
+that creates a relocation addend or runtime offset scaled twice, and the
+checker rejects the obvious <code>p + i * #size_of(T)</code> form. Relocation addends are
+always measured in bytes. Byte addends must be spelled with an <code>@u8</code> lens or
+with explicit <code>u64</code> arithmetic before casting back to the desired address type.</p>
 <p><strong>Consequence:</strong> Wyst does not have the C/C++ problem of &quot;is this pointer a
 relocatable symbol reference or an integer?&quot; The two are syntactically
 distinct: only <code>#addr_of(name)</code> references a symbol, and only the codegen
@@ -713,8 +720,8 @@ documented path if needed.</p>
 <tbody>
 <tr>
 <td>Per-module <code>.o</code> relocatable output</td>
-<td>Outside base image model</td>
-<td>Could be added as <code>wync -c</code> mode; would serialize the §5 relocation vocabulary into <code>.rela.*</code> sections</td>
+<td>Outside implemented base image model</td>
+<td>Future-version normative for R8 target 32 as <code>wync -c</code> / <code>--emit-object</code>; would serialize the §5 relocation vocabulary into <code>.rela.*</code> sections</td>
 </tr>
 <tr>
 <td>Dynamic linking (<code>ld.so</code>, <code>PT_INTERP</code>)</td>

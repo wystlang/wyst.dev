@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -235,10 +235,19 @@ output = "build/image.elf"
 </tr>
 </tbody>
 </table>
-<p>The target section is optional. A project with no target fields uses the same
-compiler defaults as a source module with no <code>#target(...)</code>. A project may use
-only a named <code>target</code>, only explicit target facts, or both. When both are
-present, explicit facts must agree with the named profile.</p>
+<p>These fields are build selections or selected target facts, not reusable source
+requirements. A library that needs an ISA extension should write
+<code>#requires(features = (...))</code>; the project decides which compatible CPU,
+tuning model, executable environment, object format, loader, device map,
+exception-level entry, and platform services provide those requirements.</p>
+<p>The target section is optional only for non-artifact analysis such as project
+checks. Project artifact builds, release evidence, rebuild benchmarks,
+generated manifests, and explain reports require either a named <code>target</code> or
+explicit target facts before they compute final legality, layout, or generated
+bytes. A project may use only a named <code>target</code>, only explicit target facts, or
+both. When both are present, explicit facts must agree with the named profile.
+Reports record the provenance of each selected target fact and include a build
+identity that changes when an explicit target fact changes.</p>
 <p>Wyst rejects unknown manifest keys. This keeps spelling mistakes from
 silently becoming ignored build metadata.</p>
 <p>Path-valued manifest fields (<code>source_roots</code>, <code>layout</code>, and <code>output</code>) must be
@@ -324,11 +333,15 @@ order supplied by the user.</p>
 <li>PL011 UART0 at <code>0xfe20_1000</code> checked through <code>-serial stdio</code></li>
 </ul>
 <p>Physical Raspberry Pi hardware validation is outside this profile.</p>
-<p>Source-level <code>#target(...)</code> declarations remain valid and optional. Project
-target facts become semantic defaults for modules that omit <code>#target(...)</code>.
-When a module declares <code>#target(...)</code>, its facts must be compatible with the
-selected project profile and explicit project target facts. A conflicting
-target fact is a diagnostic.</p>
+<p>Source-level <code>#requires(...)</code> declarations are valid and optional. Project
+target facts must satisfy every declared requirement: required features and ABI
+capabilities must be present, required architecture must match the implemented
+baseline, and the selected exception-level entry must be at least the required
+minimum. Source-level <code>#target(...)</code> declarations remain valid for exact
+target-bound modules. Project target facts become semantic defaults for modules
+that omit <code>#target(...)</code>. When a module declares <code>#target(...)</code>, its facts must
+be compatible with the selected project profile and explicit project target
+facts. A conflicting target fact or missing source requirement is a diagnostic.</p>
 <p>The full layered descriptor schema in <a href="/docs/chapter-02-targets/">chapter-02-targets.md</a> remains outside
 the project-manifest surface. The project manifest does not add device
 protocol manifests, SDK discovery, generated binding provenance, or
@@ -394,6 +407,7 @@ with existing language features.</li>
 <li>file <code>#module</code> mismatch;</li>
 <li>target profile unknown or incompatible project target facts;</li>
 <li>project target facts incompatible with a module <code>#target</code>;</li>
+<li>project target facts missing a module <code>#requires</code> capability;</li>
 <li>object-output request.</li>
 </ul>
 

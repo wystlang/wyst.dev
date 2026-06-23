@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -165,6 +165,10 @@ single irreducible scalar value.</p>
 <tr>
 <td>@volatile T</td>
 <td>volatile-qualified address into T</td>
+</tr>
+<tr>
+<td>@mmio T</td>
+<td>volatile-qualified address into T with MMIO intent</td>
 </tr>
 <tr>
 <td>[T:N]</td>
@@ -378,10 +382,10 @@ trap.</p>
 via <code>as</code>. Float-to-integer truncates toward zero. Integer-to-float rounds
 to nearest representable value (which may lose precision for <code>u64</code>/<code>i64</code>
 values above 2⁵³).</p>
-<p>Float-to-integer when the source is out-of-range, <code>NaN</code>, or <code>±Inf</code> produces
-a hardware-determined result (the ARM64 <code>fcvtzs</code>/<code>fcvtzu</code> instructions
-saturate; the compiler emits the instruction directly and does not insert
-checks).</p>
+<p>Float-to-integer when the source is out-of-range, <code>NaN</code>, or <code>±Inf</code> is
+<code>Target-defined</code>: the selected architecture's conversion instruction supplies
+the result. On ARM64, <code>fcvtzs</code>/<code>fcvtzu</code> saturate. The compiler emits the
+instruction directly and does not insert checks.</p>
 <h4><code>bool</code> ↔ Integer</h4>
 <p>There is <strong>no implicit conversion</strong> between <code>bool</code> and integers. Use <code>as</code>
 explicitly when needed:</p>
@@ -400,24 +404,29 @@ A <code>bool</code> <code>as</code> integer produces 1 for <code>true</code> and
 <thead>
 <tr>
 <th>Source ↓ \ Target →</th>
-<th><code>@T</code> / <code>@volatile T</code></th>
+<th><code>@T</code> / <code>@volatile T</code> / <code>@mmio T</code></th>
 <th><code>u64</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>@T</code></td>
-<td>identity, or explicit retargeting with <code>as @U</code> / <code>as @volatile U</code></td>
+<td>identity, or explicit retargeting with <code>as @U</code>, <code>as @volatile U</code>, or <code>as @mmio U</code></td>
 <td>bit-reinterpret</td>
 </tr>
 <tr>
 <td><code>@volatile T</code></td>
-<td>identity, or explicit retargeting/qualifier change with <code>as @U</code></td>
+<td>identity, or explicit retargeting/qualifier change with <code>as @U</code> / <code>as @mmio U</code></td>
+<td>bit-reinterpret</td>
+</tr>
+<tr>
+<td><code>@mmio T</code></td>
+<td>identity, or explicit retargeting/qualifier change with <code>as @U</code> / <code>as @volatile U</code></td>
 <td>bit-reinterpret</td>
 </tr>
 <tr>
 <td><code>u64</code></td>
-<td><code>as @T</code> for any <code>T</code> (no check)</td>
+<td><code>as @T</code>, <code>as @volatile T</code>, or <code>as @mmio T</code> for any <code>T</code> (no check)</td>
 <td>identity</td>
 </tr>
 </tbody>
@@ -426,26 +435,31 @@ A <code>bool</code> <code>as</code> integer produces 1 for <code>true</code> and
 zero-cost reinterpretation. Runtime values do not convert implicitly in either
 direction.</p>
 <p>Address constants get one ergonomic exception: an integer constant expression
-may bind directly when the expected type is explicit <code>@T</code> or <code>@volatile T</code>.
+may bind directly when the expected type is explicit <code>@T</code>, <code>@volatile T</code>, or
+<code>@mmio T</code>.
 The expected address type can come from an annotation or from a typed parameter
 position. This is still a compile-time address binding, not a runtime coercion:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
-UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
-UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x18</span>
+UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
+UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x18</span>
 </code></pre>
+<p><code>UART0_BASE</code> is a <code>u64</code>, so the <code>+ 0x18</code> expression above is ordinary numeric
+byte arithmetic before the constant is bound to <code>@mmio u32</code>. Once a value
+has type <code>@mmio u32</code>, plain <code>+</code> uses <code>u32</code> element offsets instead.</p>
 <p>Runtime integer values still require <code>as</code> for integer-to-address conversion.
 Even though <code>#addr_of(x)</code> returns a value usable as both <code>@T</code> and <code>u64</code>, only
 one type is selected at the site (from context or annotation), and the other
 requires an <code>as</code>.</p>
-<p>Changing between <code>@T</code> and <code>@volatile T</code> changes the access-site volatility
-rule; it does not prove that the two address values cannot alias. See
+<p>Changing among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> changes the access-site
+contract and MMIO intent; it does not prove that the two address values cannot
+alias or that a page table maps the address as ARM Device memory. See
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a> for the corresponding
 aliasing and reordering rules.</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 
 identity_addr <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> addr
@@ -470,25 +484,29 @@ write the retargeting cast at the point where the memory lens changes:</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">bytes <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0x4000</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
 words <span class="token operator">:</span><span class="token operator">=</span> bytes <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
 </code></pre>
-<p>Adding or stripping <code>volatile</code> is also explicit-only:</p>
+<p>Adding or stripping volatility or MMIO intent is also explicit-only:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mmio <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-plain <span class="token operator">:</span><span class="token operator">=</span> mmio <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
+volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 
 ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-treated_as_mmio <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+mmio_intent_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 </code></pre>
 <p>Implicit assignment, call-argument binding, comparison, and typed memory access
-never retarget an address or change its volatile qualifier. This makes the type
-punning and volatility boundary visible at the source level without requiring a
-noisy integer round-trip.</p>
+never retarget an address or change its volatile/MMIO-intent qualifier. This
+makes the type punning and access-intent boundary visible at the source level
+without requiring a noisy integer round-trip. A cast alone does not perform a
+load or store and does not introduce <code>volatile_access</code> or <code>mmio</code> effects; those
+effects arise only when a memory access occurs through the qualified address.</p>
 <h4><code>bool</code> ↔ <code>bool</code> and Other Identities</h4>
 <p><code>x as T</code> where <code>T</code> is already the type of <code>x</code> is allowed and is a no-op.
 It is occasionally useful for documenting intent at a call site.</p>
 <h4>What <code>as</code> Does Not Do</h4>
 <ul>
-<li><code>as</code> never traps and never branches at runtime (other than IEEE float
-conversion behavior for out-of-range floats, which is hardware-determined).</li>
+<li><code>as</code> never traps and never branches at runtime. Out-of-range float-to-integer
+conversion is <code>Target-defined</code> as described above.</li>
 <li><code>as</code> never invokes a user-defined conversion. Wyst has no operator
 overloading and no conversion operator.</li>
 <li><code>as</code> does not work between unrelated structured types (<code>struct A</code> to
@@ -625,7 +643,7 @@ byte.</li>
 in endian primitive syntax. Semantic analysis rejects those 8-bit type
 arguments and reports the diagnostic on the type argument.</li>
 <li><code>addr</code> may be a raw address integer (<code>u64</code>) or an address type such as
-<code>@u8</code>, <code>@u32</code>, or <code>@volatile u8</code>. Endian primitives treat the operand as a
+<code>@u8</code>, <code>@u32</code>, <code>@volatile u8</code>, or <code>@mmio u8</code>. Endian primitives treat the operand as a
 byte address; the primitive width comes from <code>T</code>, not from the address lens.</li>
 <li>The result is not an endian wrapper. Arithmetic, comparison, and bitwise
 operations use the ordinary rules for <code>T</code> immediately.</li>
@@ -646,20 +664,25 @@ read_byte <span class="token operator">::</span> <span class="token punctuation"
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="address-types-%E2%80%94-%40t-and-%40volatile-t" tabindex="-1"><a class="doc-anchor" href="#address-types-%E2%80%94-%40t-and-%40volatile-t" aria-hidden="true">#</a> Address Types — <code>@T</code> and <code>@volatile T</code></h3>
+<h3 id="address-types-%E2%80%94-%40t%2C-%40volatile-t%2C-and-%40mmio-t" tabindex="-1"><a class="doc-anchor" href="#address-types-%E2%80%94-%40t%2C-%40volatile-t%2C-and-%40mmio-t" aria-hidden="true">#</a> Address Types — <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code></h3>
 <p><code>@T</code> is the type of an address whose target is interpreted as <code>T</code>. The
-specification of <code>@volatile T</code> is in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3 and §1.3.1</a>. Type-system rules:</p>
+specification of <code>@volatile T</code> and <code>@mmio T</code> is in
+<a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3 and §1.3.1</a>.
+Type-system rules:</p>
 <ul>
 <li><code>@T</code> and <code>u64</code> have the same machine representation. Runtime conversion is
 by <code>as</code> in either direction; no implicit conversion exists for runtime
 values. An integer constant expression may bind to an explicit address
 context without <code>as</code>.</li>
-<li><code>@T</code>, <code>@volatile T</code>, <code>@U</code>, and <code>@volatile U</code> are distinct address lenses.
-Changing the lens or volatile qualifier is explicit: write <code>p as @U</code> or
-<code>p as @volatile U</code>. Assignments, function calls, comparisons, and
-<code>type[address]</code> memory access do not retarget addresses or change volatility
-implicitly. A cast whose target is <code>@volatile T</code> introduces the <code>mmio</code> effect
-at the cast expression, even before any load/store through the address.</li>
+<li><code>@T</code>, <code>@volatile T</code>, <code>@mmio T</code>, <code>@U</code>, <code>@volatile U</code>, and <code>@mmio U</code> are
+distinct address lenses. Changing the lens, volatility, or MMIO intent is
+explicit: write <code>p as @U</code>, <code>p as @volatile U</code>, or <code>p as @mmio U</code>.
+Assignments, function calls, comparisons, and <code>type[address]</code> memory access
+do not retarget addresses or change qualifiers implicitly. A cast to
+<code>@volatile T</code> or <code>@mmio T</code> records an address-intent assertion, but it is not
+a load or store and introduces no access effect until the resulting address is
+read or written. Casts that strip volatility or MMIO intent are explicit and
+produce warnings so the boundary is greppable in reviews.</li>
 <li><code>#addr_of(symbol)</code> returns a symbol-sourced address. For non-function
 symbols, the type is selected by explicit context (annotation,
 operand-position expectation, or <code>as</code> cast); inferred bindings such as
@@ -687,21 +710,31 @@ lens <code>@[N]T</code> in an explicit address context. Inferred bindings such a
 <code>p := %addr_of(word)</code> or <code>p := %addr_of(local_array)</code> are rejected; write an
 annotation or cast. Converting the runtime address to <code>u64</code> also requires an
 explicit <code>as u64</code>.</li>
-<li><code>@T</code> arithmetic (<code>p + offset</code>, <code>p - offset</code>) uses <strong>element offsets</strong>.
-The integer offset is multiplied by <code>#size_of(T)</code> before the address is
-advanced. <code>@u8</code> remains byte-stepped because <code>#size_of(u8) == 1</code>. Cast to
-<code>@u8</code> or to <code>u64</code> before arithmetic when raw byte offsets are intended.
-Do not pre-multiply the offset by <code>#size_of(T)</code> before applying <code>+</code>; that
-scales twice. Write <code>p + i</code> for element <code>i</code>, and write <code>(p as @u8) + bytes</code>
-or <code>((p as u64) + bytes) as @T</code> for byte offsets.</li>
-<li>The volatility of address arithmetic is the volatility of the static address
-operand that produces the result. <code>@volatile T + integer</code> produces
-<code>@volatile T</code>; <code>@T + integer</code> produces <code>@T</code>.</li>
+<li><code>@T</code> arithmetic (<code>p + offset</code>, <code>offset + p</code>, <code>p - offset</code>) has exactly one
+source meaning: <strong>element offsets</strong>. This is the <code>element_offset(p, element_count)</code> operation. The integer offset is multiplied by <code>#size_of(T)</code>
+before the address is advanced. <code>@u8</code> remains byte-stepped because
+<code>#size_of(u8) == 1</code>.</li>
+<li>Raw byte arithmetic is a distinct <code>byte_offset(p, byte_count)</code> operation.
+Spell it by changing the lens before the addition, <code>(p as @u8) + bytes</code>, or
+by doing explicit numeric arithmetic, <code>((p as u64) + bytes) as @T</code>. The cast
+back to <code>@T</code> is the point where the program asserts that the byte result is
+suitable for that typed access lens.</li>
+<li>Struct-field addressing is a distinct <code>field_addr(p, T.field)</code> operation.
+Spell it with a byte lens and <code>#field_offset</code>: <code>((p as @u8) + #field_offset(T, field)) as @FieldType</code>. <code>#field_offset</code> is always measured
+in bytes and is never an element count.</li>
+<li>Do not pre-multiply the offset by <code>#size_of(T)</code> before applying <code>+</code>; that
+scales twice. Write <code>p + i</code> for element <code>i</code>. The checker rejects obvious
+double-scaled forms such as <code>p + i * #size_of(T)</code> when <code>p</code> already has an
+address lens whose element type is <code>T</code>.</li>
+<li>The qualifiers of address arithmetic come from the static address operand
+that produces the result. <code>@volatile T + integer</code> produces <code>@volatile T</code>,
+<code>@mmio T + integer</code> produces <code>@mmio T</code>, and <code>@T + integer</code> produces <code>@T</code>.</li>
 <li>If an integer offset expression was produced from an address with <code>as u64</code>,
-its source volatile qualifier must match the address operand's qualifier.
-Mixed-volatility address arithmetic is a compile error. Cast one address to
-the intended qualifier before converting it to <code>u64</code>:
-<code>(plain as @volatile T) as u64</code> or <code>(mmio as @T) as u64</code>.</li>
+its source address qualifiers must match the address operand's qualifiers.
+Mixed volatility or MMIO intent in address arithmetic is a compile error.
+Cast one address to the intended qualifier before converting it to <code>u64</code>:
+<code>(plain as @volatile T) as u64</code>, <code>(plain as @mmio T) as u64</code>, or
+<code>(device as @T) as u64</code>.</li>
 <li>Array-address lenses are the one contextual access rule: for <code>p : @[N]T</code>,
 <code>T@[p]</code> accesses the first element and <code>p + offset</code> produces <code>@T</code>, scaling
 the offset by <code>#size_of(T)</code>. The explicit <code>@[N]T</code> lens preserves the storage
@@ -710,14 +743,28 @@ shape; arithmetic and element memory access step into the element lens.</li>
 value; unsigned offsets use their unsigned value. Scaling happens before the
 byte address calculation; the source offset type itself does not change in
 the type system.</li>
+<li>Runtime address arithmetic wraps modulo <code>2^64</code> after scaling. Conceptually,
+the compiler sign-extends signed offsets or zero-extends unsigned offsets to
+the 64-bit address width, computes <code>byte_delta = offset * #size_of(T)</code> with
+two's-complement wrapping, then adds or subtracts that byte delta from the
+base address bits with two's-complement wrapping. Constant symbol addends are
+kept as signed byte addends until relocation emission; the final materialized
+address is still a 64-bit address value.</li>
+<li>Address arithmetic does not prove or repair alignment. A value of type <code>@T</code>
+states the access lens the program intends to use. Loads, stores, atomics,
+vector operations, MMIO, and packed-field checks use the alignment required by
+that access operation. If the numeric address is misaligned, behavior is the
+target architecture's behavior for that access; volatile or MMIO-intent
+packed aggregate accesses that cannot satisfy the required natural alignment
+are rejected before lowering.</li>
 <li>Arithmetic on two <code>@T</code> values is not defined. <code>p + q</code> and <code>p - q</code> are
 compile errors. Use <code>(p as u64) - (q as u64)</code> when numeric byte distance is
 intentional.</li>
 <li><code>@T + integer</code> is <code>@T</code>; <code>integer + @T</code> is <code>@T</code>; <code>@T - integer</code> is <code>@T</code>.</li>
-<li>Arithmetic on address-derived integers with different volatile qualifiers is
-not defined. <code>(mmio as u64) - (plain as u64)</code> is a compile error when
-<code>mmio : @volatile T</code> and <code>plain : @T</code>; write <code>((mmio as @T) as u64) - (plain as u64)</code> or <code>(mmio as u64) - ((plain as @volatile T) as u64)</code> to make
-the intended result volatility explicit.</li>
+<li>Arithmetic on address-derived integers with different address qualifiers is
+not defined. <code>(device as u64) - (plain as u64)</code> is a compile error when
+<code>device : @mmio T</code> and <code>plain : @T</code>; write <code>((device as @T) as u64) - (plain as u64)</code> or <code>(device as u64) - ((plain as @mmio T) as u64)</code> to make
+the intended result qualifier explicit.</li>
 <li>Function pointer types such as <code>@(u64) -&gt; u64</code> are code addresses, not data
 address lenses. They support calls, same-type <code>==</code>/<code>!=</code>, equality/inequality
 with the untyped integer constant <code>0</code>, explicit <code>as u64</code> extraction, and
@@ -736,8 +783,9 @@ Comparing addresses of different element types (<code>@u8 == @u32</code>) is als
 compile error; retarget explicitly or compare <code>as u64</code> values.</li>
 <li>There is no <code>null</code>. <code>@T = 0</code> is a legal value. <code>if addr == 0 { ... }</code>
 is the canonical check for &quot;address is the conventional unmapped
-sentinel.&quot; The behavior of <em>accessing</em> address 0 is hardware-determined
-(typically a data abort, which is the desired semantics).</li>
+sentinel.&quot; <em>Accessing</em> address 0 is <code>Architectural fault or trap</code>: it may
+data-abort when address 0 is unmapped, or complete only if the active target
+mapping deliberately makes that address accessible.</li>
 </ul>
 <h4>Address Arithmetic</h4>
 <!-- wyst-contract: check-pass -->
@@ -892,11 +940,11 @@ read_word <span class="token operator">::</span> <span class="token punctuation"
   <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Explicit Volatile Qualification Changes</h4>
+<h4>Explicit Address-Qualifier Changes</h4>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
 RAM_WORD <span class="token operator">::</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
 peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
@@ -907,16 +955,20 @@ poll <span class="token operator">::</span> <span class="token punctuation">(</s
   <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 
+read_reg <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+
 explicit_boundary <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
-  plain <span class="token operator">:</span><span class="token operator">=</span> UARTFR <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
-  mmio <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
-  <span class="token keyword">return</span> <span class="token function">peek</span><span class="token punctuation">(</span>plain<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token function">poll</span><span class="token punctuation">(</span>mmio<span class="token punctuation">)</span>
+  volatile_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+  device_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+  <span class="token keyword">return</span> <span class="token function">poll</span><span class="token punctuation">(</span>volatile_view<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token function">read_reg</span><span class="token punctuation">(</span>device_view<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
-UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
 
 peek <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
@@ -971,19 +1023,25 @@ linker: only one kind ever emits a relocation.</p>
 <td>Emits an <code>adrp</code>+<code>add</code> page-pair relocation against <code>name</code></td>
 </tr>
 <tr>
-<td><code>(#addr_of(name) as @T) + N</code> (constant <code>N</code>)</td>
+<td><code>(#addr_of(name) as @T) + N</code> (constant element count <code>N</code>)</td>
 <td>Symbol-sourced with addend</td>
 <td><strong>Yes</strong></td>
 <td>One relocation against <code>name</code> with byte addend <code>N * #size_of(T)</code> folded in</td>
 </tr>
 <tr>
-<td><code>((#addr_of(name) as u64) + N) as @T</code> (constant <code>N</code>)</td>
+<td><code>((#addr_of(name) as @u8) + B) as @T</code> (constant byte count <code>B</code>)</td>
+<td>Symbol-sourced with byte addend</td>
+<td><strong>Yes</strong></td>
+<td>One relocation against <code>name</code> with byte addend <code>B</code> folded in</td>
+</tr>
+<tr>
+<td><code>((#addr_of(name) as u64) + B) as @T</code> (constant byte count <code>B</code>)</td>
 <td>Integer constant address</td>
 <td>No</td>
 <td>Numeric byte arithmetic first; no relocation is retained after the explicit integer computation</td>
 </tr>
 <tr>
-<td><code>(#addr_of(name) as @T) + i</code> (runtime <code>i</code>)</td>
+<td><code>(#addr_of(name) as @T) + i</code> (runtime element count <code>i</code>)</td>
 <td>Symbol-sourced base + runtime offset</td>
 <td><strong>Base only</strong></td>
 <td>Page-pair relocation for <code>name</code>; the runtime offset is scaled by <code>#size_of(T)</code> before the address add</td>
@@ -1018,10 +1076,12 @@ pointer constant is a &quot;symbol address&quot; or a &quot;magic integer that h
 equal an address.&quot; The syntax tells you. A reader, the compiler, and the
 linker all agree on whether a given expression introduces a relocation.</p>
 <p><strong>Constant-offset folding.</strong> <code>(#addr_of(uart_regs) as @uart_regs) + 1</code> (where
-the <code>1</code> is a compile-time constant) emits exactly one page-pair relocation
-with <code>#size_of(uart_regs)</code> as the ELF addend field. This is identical to what
-<code>#addr_of(uart_regs)</code> alone would emit, just with a non-zero byte addend.
-For raw byte offsets, use a byte lens such as <code>(#addr_of(uart_regs) as @u8) + 0x18</code> or explicit numeric arithmetic such as <code>((#addr_of(uart_regs) as u64) + 0x18) as @u8</code>.</p>
+the <code>1</code> is a compile-time element count) emits exactly one page-pair relocation
+with <code>#size_of(uart_regs)</code> as the ELF addend field. Relocation addends are
+always measured in bytes, even when the source expression used an element
+count. For raw byte offsets, use a byte lens such as
+<code>((#addr_of(uart_regs) as @u8) + 0x18) as @u32</code> or explicit numeric arithmetic
+such as <code>((#addr_of(uart_regs) as u64) + 0x18) as @u32</code>.</p>
 <p><strong>Runtime-offset arithmetic.</strong> <code>(#addr_of(buf) as @T) + i</code> (where <code>i</code> is a
 runtime value) emits one page-pair relocation for <code>buf</code>'s base address into a
 register, then runtime arithmetic to scale <code>i</code> by <code>#size_of(T)</code> and combine it
@@ -2187,7 +2247,7 @@ never reorders fields.</p>
 <td>8</td>
 </tr>
 <tr>
-<td><code>@T</code>, <code>@volatile T</code></td>
+<td><code>@T</code>, <code>@volatile T</code>, <code>@mmio T</code></td>
 <td>8</td>
 <td>8</td>
 </tr>
@@ -2301,14 +2361,15 @@ offset, regardless of natural alignment.</p>
 <span class="token comment">// size_of(header)  = 11</span>
 </code></pre>
 <p>A <code>#packed</code> struct is read via plain byte-wise loads. The compiler may use
-unaligned ARM64 loads where the architecture permits, but never on
-<code>@volatile</code> memory:</p>
+unaligned ARM64 loads where the architecture permits, but never on volatile or
+MMIO-intent memory:</p>
 <ul>
-<li>A <code>#packed</code> struct whose address is <code>@volatile</code> is rejected at the
+<li>A <code>#packed</code> struct whose address is <code>@volatile</code> or <code>@mmio</code> is rejected at the
 declaration site of the access (<code>T@[addr]</code> where <code>addr</code> has type
-<code>@volatile T</code> and <code>T</code> is <code>#packed</code>), because MMIO accesses require natural alignment and a
-<code>#packed</code> field is unlikely to land on one.</li>
-<li>A <code>#packed</code> struct field of type <code>@volatile U</code> (a <code>@volatile</code> pointer
+<code>@volatile T</code> or <code>@mmio T</code> and <code>T</code> is <code>#packed</code>), because volatile/MMIO
+accesses require an emitted access at the typed width and MMIO protocols
+usually require natural alignment.</li>
+<li>A <code>#packed</code> struct field of type <code>@volatile U</code> or <code>@mmio U</code> (a qualified pointer
 stored inside a packed aggregate) is allowed — the pointer itself is just
 bytes; only dereferencing it must satisfy alignment.</li>
 </ul>
@@ -2635,7 +2696,7 @@ that are accessed from multiple contexts. Instead:</p>
 <li>
 <p><strong>Write the full register value</strong> when the hardware permits it (no
 read-modify-write needed):</p>
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">CTRL_REG <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">CTRL_REG <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>CTRL_REG<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x0001</span>    <span class="token comment">// write known value directly</span>
 </code></pre>
 </li>
@@ -3032,7 +3093,8 @@ the matched variant carries a payload</li>
 a payload field of a variant other than the currently-active one is a compile
 error in <code>switch</code>/<code>is</code> patterns (the type system rules it out) and is an
 unchecked invalid-payload read if expressed through raw address manipulation.
-The compiler must not exploit that invalid read as C-style undefined behavior.</p>
+That raw read observes <code>Indeterminate bits</code>. The compiler must not exploit it
+as C-style undefined behavior or treat the value as optimizer poison.</p>
 <hr>
 <h3 id="design-rationale-4" tabindex="-1"><a class="doc-anchor" href="#design-rationale-4" aria-hidden="true">#</a> Design Rationale</h3>
 <table>
@@ -3219,7 +3281,7 @@ big <span class="token operator">:</span> <span class="token builtin type">f64</
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">/*
  * This block waits for the UART transmit
  * FIFO to drain before writing a byte.
- * UARTFR is declared `@volatile u32` elsewhere.
+ * UARTFR is declared `@mmio u32` elsewhere.
  */</span>
 <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -3546,7 +3608,7 @@ bind more tightly. Operators of equal precedence associate left to right.</p>
 <p>Common expressions and how they parse:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// &amp; binds before != — parentheses not needed</span>
-<span class="token comment">// (UARTFR is `@volatile u32`, so u32@[UARTFR]is a volatile load)</span>
+<span class="token comment">// (UARTFR is `@mmio u32`, so u32@[UARTFR] is a volatile MMIO-intent load)</span>
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span>             <span class="token comment">// (u32@[UARTFR] &amp; TXFF) != 0</span>
 
 <span class="token comment">// left-to-right at equal precedence</span>
@@ -4034,7 +4096,7 @@ are valid for every concrete type in that closed family:</p>
 </tr>
 <tr>
 <td><code>address</code></td>
-<td>pointer types such as <code>@T</code> and <code>@volatile T</code></td>
+<td>pointer types such as <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code></td>
 <td>pointer equality and address movement where pointer operations are already legal</td>
 </tr>
 <tr>
@@ -4191,11 +4253,12 @@ identity for generic structs/enums, canonical semantic function symbols per
 generic declaration/type tuple, canonical source-facing diagnostic/debug
 spelling, and no value parameters.</p>
 <hr>
-<h3 id="parametric-code-without-generic-instantiation" tabindex="-1"><a class="doc-anchor" href="#parametric-code-without-generic-instantiation" aria-hidden="true">#</a> Parametric Code Without Generic Instantiation</h3>
-<p>The patterns below cover the parametric cases Wyst code hits without generic
-instantiation: manual monomorphization, <code>bitfield(T)</code> declarations,
-address-lens code, and external code generation. <code>#if</code> is included here as
-the compile-time selection rule, not as a type-value mechanism.</p>
+<h3 id="non-generic-parametric-idioms" tabindex="-1"><a class="doc-anchor" href="#non-generic-parametric-idioms" aria-hidden="true">#</a> Non-Generic Parametric Idioms</h3>
+<p>The implemented generic model above is the normative type-parameter surface.
+The patterns below remain useful when a problem does not need a generic
+declaration: manual monomorphization, <code>bitfield(T)</code> declarations, address-lens
+code, and external code generation. <code>#if</code> is included here as the compile-time
+selection rule, not as a type-value mechanism.</p>
 <h4>Manual Monomorphization</h4>
 <p>Write one function per concrete type. For small, frequently-monomorphic
 operations (swap, min, max, byte-reverse), this is the path of least
@@ -4262,12 +4325,11 @@ the <em>bit width</em> of the access by passing the address with the intended le
 </code></pre>
 <p>The &quot;type-parametric&quot; axis here collapses to &quot;typed address arithmetic plus
 explicit access width,&quot; which is enough for most low-level kernel work.</p>
-<h4>Code Generation for the Rare Hard Case</h4>
-<p>If none of the above fits — for example, a parametric container that
-must work over many concrete types — generate the concrete code with an
-external script, build tool, or editor macro and keep the generated file in
-source control. This is concrete: the source you compile is exactly the source
-you see.</p>
+<h4>External Code Generation</h4>
+<p>External scripts, build tools, or editor macros may still generate concrete
+Wyst source for repetitive declarations or project-local conventions outside
+the generic model. Generated source has no special semantic status: the source
+the compiler checks is the concrete source in the build input.</p>
 <hr>
 <h3 id="design-rationale-5" tabindex="-1"><a class="doc-anchor" href="#design-rationale-5" aria-hidden="true">#</a> Design Rationale</h3>
 <table>
@@ -4368,7 +4430,7 @@ model rather than copying C++, Rust, or Zig.</li>
 				<li class="lvl-3"><a href="#bool-is-a-distinct-type">bool is a Distinct Type</a></li>
 				<li class="lvl-3"><a href="#raw-bit-patterns">Raw Bit Patterns</a></li>
 				<li class="lvl-3"><a href="#endian-aware-loads-and-stores">Endian-Aware Loads and Stores</a></li>
-				<li class="lvl-3"><a href="#address-types-%E2%80%94-%40t-and-%40volatile-t">Address Types — @T and @volatile T</a></li>
+				<li class="lvl-3"><a href="#address-types-%E2%80%94-%40t%2C-%40volatile-t%2C-and-%40mmio-t">Address Types — @T, @volatile T, and @mmio T</a></li>
 				<li class="lvl-3"><a href="#worked-cases">Worked Cases</a></li>
 				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
 				<li class="lvl-3"><a href="#tradeoffs">Tradeoffs</a></li>
@@ -4448,7 +4510,7 @@ model rather than copying C++, Rust, or Zig.</li>
 				<li class="lvl-3"><a href="#reserved-boundaries">Reserved Boundaries</a></li>
 				<li class="lvl-3"><a href="#generic-model">Generic Model</a></li>
 				<li class="lvl-3"><a href="#explicit-non-goals">Explicit Non-Goals</a></li>
-				<li class="lvl-3"><a href="#parametric-code-without-generic-instantiation">Parametric Code Without Generic Instantiation</a></li>
+				<li class="lvl-3"><a href="#non-generic-parametric-idioms">Non-Generic Parametric Idioms</a></li>
 				<li class="lvl-3"><a href="#design-rationale-5">Design Rationale</a></li>
 				<li class="lvl-3"><a href="#tradeoffs-2">Tradeoffs</a></li>
 			</ul>

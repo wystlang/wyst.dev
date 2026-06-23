@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -115,7 +115,7 @@ elsewhere, this chapter summarizes and links.</p>
 <td><a href="/docs/chapter-06-types/">chapter-06-types.md</a></td>
 </tr>
 <tr>
-<td>Address types (<code>@T</code>, <code>@volatile T</code>)</td>
+<td>Address types (<code>@T</code>, <code>@volatile T</code>, <code>@mmio T</code>)</td>
 <td><a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a></td>
 </tr>
 <tr>
@@ -314,16 +314,128 @@ never uses an unspecified program state as a license to transform, remove,
 or reorder code. In C, a compiler may assume signed overflow does not occur
 and delete branches on that basis. In Wyst, no such assumption is ever made.
 If the source says <code>x + 1</code>, the compiler emits <code>add</code>. Period.</p>
-<p><strong>Guarantee 2 — Hardware-determined behavior for invalid operations.</strong>
-When a program performs an operation whose outcome depends on hardware state
-— accessing an unmapped address, reading an uninitialized stack slot,
-dereferencing a stale pointer — the behavior is determined by the hardware,
-not by the compiler. The compiler emits the instruction the source describes.
-What the hardware does with that instruction is a property of the machine.</p>
+<p><strong>Guarantee 2 — Named behavior categories for invalid or unusual operations.</strong>
+Wyst does not place unrelated edge cases into one broad bucket. Every emitted
+invalid or unusual operation has exactly one behavior category from the
+taxonomy below. Ill-formed source that is rejected before emission is listed as
+<code>Defined</code> because the specified result is a diagnostic rather than a runtime
+instruction.</p>
 <p>This is not the same as memory safety. Wyst does not prevent invalid memory
 access. It guarantees the compiler will not exploit the possibility of such
 access to generate surprising code. The programmer retains responsibility for
 avoiding invalid operations in safety-critical paths.</p>
+<h3 id="behavior-taxonomy" tabindex="-1"><a class="doc-anchor" href="#behavior-taxonomy" aria-hidden="true">#</a> Behavior Taxonomy</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Meaning</th>
+<th>Optimizer consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Defined</td>
+<td>Wyst specifies the exact compile-time diagnostic or runtime result.</td>
+<td>The optimizer may use only the specified value or diagnostic rule. It gets no license to assume the edge case cannot occur.</td>
+</tr>
+<tr>
+<td>Target-defined</td>
+<td>The selected target descriptor, ABI profile, or architecture manual specifies the result.</td>
+<td>The optimizer may use only target facts that are explicitly selected for the current build. It gets no portable impossible-state assumption.</td>
+</tr>
+<tr>
+<td>Indeterminate bits</td>
+<td>The program observes a machine bit pattern whose exact bits are not specified by Wyst. The value is still an ordinary value of its static type.</td>
+<td>The optimizer may not treat the value as poison, undef, uninitialized IR, or a fact that justifies deleting unrelated code.</td>
+</tr>
+<tr>
+<td>Architectural fault or trap</td>
+<td>The emitted operation may synchronously fault, trap, or complete according to the selected architecture and current machine state.</td>
+<td>The optimizer must preserve the emitted operation and surrounding observable behavior unless a separate explicit rule permits motion or deletion.</td>
+</tr>
+<tr>
+<td>Trusted-contract violation</td>
+<td>The program supplied a false ABI, assembly, address, function-pointer, or foreign-interface assertion.</td>
+<td>The compiler may rely on the explicitly trusted contract only for the operation that needs it; the category itself does not imply arbitrary impossible-state assumptions.</td>
+</tr>
+</tbody>
+</table>
+<p>No category grants C-style undefined-behavior optimization power. Any optimizer
+permission must be separately and explicitly specified by a construct such as
+<code>#asm(pure)</code>, a checked <code>#schedule</code> region, or a documented target descriptor
+fact. In particular, <code>Indeterminate bits</code> values never behave like LLVM
+<code>poison</code> or <code>undef</code>; they are values with unspecified contents, not optimizer
+fuel.</p>
+<h3 id="trust-boundary-model" tabindex="-1"><a class="doc-anchor" href="#trust-boundary-model" aria-hidden="true">#</a> Trust-Boundary Model</h3>
+<p>A trust boundary is any construct where the program supplies a fact the compiler
+cannot prove from a Wyst body or checked target descriptor. The compiler records
+the fact as an assertion, not a proof. A false assertion is a
+<code>Trusted-contract violation</code>: the emitted operation may execute incorrectly at
+that boundary, but the assertion does not become general-purpose undefined
+behavior and does not let the optimizer assume unrelated impossible states.</p>
+<p>All trust-boundary constructs share this model:</p>
+<table>
+<thead>
+<tr>
+<th>Construct</th>
+<th>Asserted fact</th>
+<th>Compiler assumption</th>
+<th>If the assertion is false</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raw-address assertion, including an explicit raw integer to <code>@T</code>, <code>@volatile T</code>, or <code>@mmio T</code> boundary</td>
+<td>The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract.</td>
+<td>Later typed loads, stores, atomics, and address operations use the asserted address type at that use.</td>
+<td>The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout.</td>
+</tr>
+<tr>
+<td><code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code> or <code>#trusted_cast&lt;@[aapcs] (args) -&gt; ret&gt;(addr)</code></td>
+<td>The raw address, function signature, return type, and calling convention identify a callable function entry.</td>
+<td>The constructed function pointer has the asserted type; calls through it use that signature and ABI.</td>
+<td>The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses.</td>
+</tr>
+<tr>
+<td>Foreign declarations and object/header facts without a Wyst body</td>
+<td>The linked symbol exists and obeys the declared type, calling convention, and externally documented side effects.</td>
+<td>Calls and address-taking use the declaration as the boundary contract.</td>
+<td>The emitted call or data reference follows the declaration and may miscommunicate with the foreign code or object.</td>
+</tr>
+<tr>
+<td>Manually stated foreign effects and library contracts not proven from a body</td>
+<td>The named API has the stated effects, allocation behavior, storage identity, error behavior, and protocol constraints.</td>
+<td>Diagnostics and explain reports may use the stated contract only for that API boundary.</td>
+<td>Code at that API boundary may observe wrong effects or protocol behavior; other calls do not inherit the false fact.</td>
+</tr>
+<tr>
+<td>Inline assembly effects, clobbers, operands, stack options, and <code>#asm(pure)</code></td>
+<td>The assembly body performs only the declared effects, clobbers only the declared registers/memory state, and satisfies the stack and purity options.</td>
+<td>Register allocation, <code>#deny</code> propagation, scheduling, and report output use the checked declaration. Recognized contradictions are rejected before emission.</td>
+<td>The assembly may corrupt state or perform undeclared effects at that block; only the explicit <code>#asm</code> permissions apply.</td>
+</tr>
+<tr>
+<td>ABI overrides such as <code>[aapcs]</code> functions and function-pointer types</td>
+<td>The boundary obeys the selected ABI's register, stack, parameter, return, and ownership rules.</td>
+<td>Calls, prologues, epilogues, and function-pointer signatures are lowered for the asserted ABI.</td>
+<td>The call boundary may pass or receive values incorrectly; no unrelated optimizer assumption is created.</td>
+</tr>
+</tbody>
+</table>
+<p>Diagnostics for an operation that needs one of these facts must name the trusted
+fact required to accept the operation. For example, a raw integer-to-function
+pointer <code>as</code> cast is rejected until the program writes <code>#trusted_cast</code>, and the
+diagnostic identifies the required function-pointer address, signature, and ABI
+assertion.</p>
+<p>Explain reports label every reported fact as <code>proven</code> or <code>asserted</code>. Proven
+facts come from checked source structure, typed IR, target descriptors, or
+lowering artifacts. Asserted facts come from trust-boundary constructs and carry
+the source location of the assertion plus a <code>trustedFact</code> label in JSON reports.</p>
+<p>This version does not add a project or function switch that prohibits selected
+trust-boundary categories. If such a switch is added later, it must be a
+separate semantic feature row and must reject prohibited categories before IR
+lowering instead of silently ignoring them.</p>
 <h3 id="principles" tabindex="-1"><a class="doc-anchor" href="#principles" aria-hidden="true">#</a> Principles</h3>
 <ul>
 <li><strong>No compiler-exploitable UB.</strong> There is no program state the compiler may
@@ -332,70 +444,121 @@ operations are emitted as written.</li>
 <li><strong>Integer arithmetic wraps.</strong> Signed and unsigned overflow wraps two's
 complement on the type width. No runtime check, no hidden branch, no
 debug/release mode difference. Programs may rely on wrap-around.</li>
-<li><strong>The machine dictates the answer.</strong> When the architecture defines behavior
-(e.g. unaligned access on ARM64), Wyst exposes it directly.</li>
+<li><strong>Machine behavior is named.</strong> When the target architecture defines a result
+or fault condition, Wyst exposes that as <code>Target-defined</code> or
+<code>Architectural fault or trap</code>.</li>
 <li><strong>No silent compiler traps.</strong> The compiler does not insert panic, abort, or
 trap instructions unless the programmer explicitly requests them.</li>
 </ul>
-<h3 id="what-this-means" tabindex="-1"><a class="doc-anchor" href="#what-this-means" aria-hidden="true">#</a> What This Means</h3>
+<h3 id="operation-classification" tabindex="-1"><a class="doc-anchor" href="#operation-classification" aria-hidden="true">#</a> Operation Classification</h3>
 <table>
 <thead>
 <tr>
 <th>Operation</th>
-<th>C behavior</th>
+<th>Category</th>
 <th>Wyst behavior</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>signed overflow</td>
-<td>UB; compiler may delete branches</td>
-<td>two's complement wrap; emitted as written</td>
+<td>Signed or unsigned integer overflow in <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, or <code>&lt;&lt;</code></td>
+<td>Defined</td>
+<td>Two's-complement wrap at the type width.</td>
 </tr>
 <tr>
-<td>unsigned overflow</td>
-<td>wraps (defined in C)</td>
-<td>wraps; emitted as written</td>
+<td>Integer divide by zero</td>
+<td>Defined</td>
+<td><code>x / 0</code> produces <code>0</code>; <code>x % 0</code> and <code>x %% 0</code> produce <code>x</code>.</td>
 </tr>
 <tr>
-<td>out-of-bounds read</td>
-<td>UB; compiler may assume unreachable</td>
-<td>hardware read at that address</td>
+<td>Most-negative signed integer divided by <code>-1</code></td>
+<td>Defined</td>
+<td>Quotient wraps to the input value; remainder is <code>0</code>.</td>
 </tr>
 <tr>
-<td>out-of-bounds write</td>
-<td>UB; compiler may assume unreachable</td>
-<td>hardware write at that address</td>
+<td>Shift count outside the nominal element width</td>
+<td>Defined</td>
+<td>Count is reduced modulo <code>max(32, width(T))</code>; signed counts are rejected.</td>
 </tr>
 <tr>
-<td>uninitialized read</td>
-<td>UB; compiler may assume any value</td>
-<td>reads whatever the stack/register held</td>
+<td>Floating-point arithmetic exceptions</td>
+<td>Defined</td>
+<td>IEEE 754 result for the selected operation.</td>
 </tr>
 <tr>
-<td>null dereference</td>
-<td>UB; compiler may delete null checks</td>
-<td>data abort if address 0 is unmapped</td>
+<td>Float-to-integer conversion of out-of-range, <code>NaN</code>, or infinity</td>
+<td>Target-defined</td>
+<td>The selected architecture's conversion instruction defines the result.</td>
 </tr>
 <tr>
-<td>use after free</td>
-<td>UB</td>
-<td>hardware read/write at that address</td>
+<td>Access through an unmapped, stale, null, non-canonical, or otherwise invalid data address</td>
+<td>Architectural fault or trap</td>
+<td>The emitted load/store may fault or complete according to the active translation and memory attributes.</td>
 </tr>
 <tr>
-<td>dangling pointer</td>
-<td>UB</td>
-<td>valid integer; access is hardware-determined</td>
+<td>Misaligned ordinary scalar access</td>
+<td>Architectural fault or trap</td>
+<td>The emitted access may complete or fault according to the selected architecture, alignment controls, and memory type.</td>
 </tr>
 <tr>
-<td>aliasing</td>
-<td>UB under strict aliasing rules</td>
-<td>no strict aliasing; emitted as written</td>
+<td>Misaligned non-temporal pair, vector, exclusive, or other alignment-restricted access</td>
+<td>Architectural fault or trap</td>
+<td>The emitted instruction may fault according to the architecture.</td>
 </tr>
 <tr>
-<td>unaligned access</td>
-<td>UB or implementation-defined</td>
-<td>ARM64 hardware behavior, exposed directly</td>
+<td>Source <code>goto</code> that crosses an invalid boundary, enters a prologue, abandons a live frame, or targets a malformed label</td>
+<td>Defined</td>
+<td>The compiler rejects the source before emission.</td>
+</tr>
+<tr>
+<td>Function-pointer arithmetic, ordered comparison, memory access, or convention mismatch visible in source types</td>
+<td>Defined</td>
+<td>The compiler rejects the source before emission.</td>
+</tr>
+<tr>
+<td>Function pointer constructed with <code>#trusted_cast</code> from a false address, signature, or ABI assertion</td>
+<td>Trusted-contract violation</td>
+<td>The call is emitted according to the trusted type; a false assertion is the program's contract violation.</td>
+</tr>
+<tr>
+<td>Ordinary read of a local before initialization</td>
+<td>Defined</td>
+<td>The compiler rejects the source before emission; no implicit zeroing and no implicit indeterminate value are manufactured.</td>
+</tr>
+<tr>
+<td>Explicit raw read through <code>%read_uninit</code>, padding, or inactive payload bytes reached through raw memory</td>
+<td>Indeterminate bits</td>
+<td>The observed bits are ordinary typed values and never optimizer poison.</td>
+</tr>
+<tr>
+<td>Access-atomic data race</td>
+<td>Target-defined</td>
+<td>The load observes a value permitted by the ARM64 memory model for the selected memory type.</td>
+</tr>
+<tr>
+<td>Tearing data race on a non-access-atomic operation</td>
+<td>Indeterminate bits</td>
+<td>The observed bits may combine sub-access results and need not equal any whole value stored by an agent.</td>
+</tr>
+<tr>
+<td>Foreign ABI mismatch that is visible in Wyst declarations or function pointer types</td>
+<td>Defined</td>
+<td>The compiler rejects the mismatch before emission.</td>
+</tr>
+<tr>
+<td>False foreign declaration, C header fact, object symbol assertion, or variadic ABI assertion trusted by the program</td>
+<td>Trusted-contract violation</td>
+<td>The emitted boundary follows the declaration the program supplied.</td>
+</tr>
+<tr>
+<td>Unsupported inline assembly mnemonic, operand, branch target, clobber, or effect declaration recognized as contradictory</td>
+<td>Defined</td>
+<td>The compiler rejects the block before emission.</td>
+</tr>
+<tr>
+<td>False inline assembly declaration not provable by the compiler, including missing clobbers or a false <code>pure</code> assertion</td>
+<td>Trusted-contract violation</td>
+<td>The program broke the checked escape-hatch contract; only separately declared optimizer permissions apply.</td>
 </tr>
 </tbody>
 </table>
@@ -413,8 +576,9 @@ vulnerabilities.</p>
 <li>The compiler never transforms code based on &quot;this is UB, so it can't happen&quot;</li>
 </ul>
 <p>The tradeoff is that Wyst also does not prevent invalid memory access. It
-makes invalid access hardware-determined rather than compiler-determined.
-That is a meaningful improvement in predictability, not a safety guarantee.</p>
+classifies invalid access as <code>Architectural fault or trap</code>, <code>Target-defined</code>,
+or <code>Trusted-contract violation</code> depending on the actual operation. That is a
+meaningful improvement in predictability, not a safety guarantee.</p>
 <h3 id="integer-wrapping" tabindex="-1"><a class="doc-anchor" href="#integer-wrapping" aria-hidden="true">#</a> Integer Wrapping</h3>
 <p>All integer arithmetic — signed and unsigned — wraps on overflow. This is the default and only behavior.</p>
 <ul>
@@ -559,10 +723,12 @@ specification, and section 2.9 for the <code>#asm</code> specification.</p>
 <h2 id="memory-model" tabindex="-1"><a class="doc-anchor" href="#memory-model" aria-hidden="true">#</a> Memory Model</h2>
 <p>Wyst uses a memory-interpretation model instead of pointer-centric semantics.
 Addresses are typed values (<code>@T</code>) with a 64-bit machine representation; the
-qualifier <code>@volatile T</code> marks an address as device memory whose accesses
-are compiler barriers. ARM64's two memory attributes — Normal (cached,
-reorderable) and Device (uncached, strictly ordered) — are reflected
-directly in the type system rather than in per-access directives.</p>
+qualifier <code>@volatile T</code> marks an access contract whose loads and stores are
+observable to the compiler and cannot be elided, merged, or reordered across
+other compiler-visible memory effects. <code>@mmio T</code> adds programmer intent that
+the address denotes MMIO. ARM64's Normal and Device memory attributes are not
+created by either type; they come from page tables or target/runtime platform
+configuration and may also be recorded as target facts.</p>
 <p>Canonical references:</p>
 <ul>
 <li>Address types, arithmetic, conversion rules → <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a></li>
@@ -598,6 +764,50 @@ semantic analysis.</p>
 <p>The programmer does not annotate what a function <em>does</em> — the compiler
 already knows. The programmer annotates what a function <strong>must not do</strong>,
 using <code>#deny</code>.</p>
+<h3 id="effects%2C-authority%2C-and-generated-resources" tabindex="-1"><a class="doc-anchor" href="#effects%2C-authority%2C-and-generated-resources" aria-hidden="true">#</a> Effects, Authority, And Generated Resources</h3>
+<p><code>#deny</code> tracks semantic effects and the explicitly modeled authority facts that
+the compiler can check before lowering. It does not track generated backend
+resources.</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Examples</th>
+<th>Reporting surface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Semantic effects</td>
+<td>volatile accesses, MMIO-intent loads/stores, system-register access, traps, atomics, barriers, cache/TLB maintenance, CPU halt, interrupt-mask changes, floating-point state access, performance-counter reads</td>
+<td><code>#deny</code>, effect diagnostics, <code>wync explain effects</code></td>
+</tr>
+<tr>
+<td>Authority/trust facts</td>
+<td>raw address assertion, retagging an address for volatile/MMIO-intent use, raw function-pointer construction or invocation, required privilege level, trusted foreign or assembly contracts, stack-address escape permission, target-provided memory-map facts</td>
+<td>trust-boundary diagnostics and asserted facts in explain reports</td>
+</tr>
+<tr>
+<td>Generated resources</td>
+<td>frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots</td>
+<td><code>#frame(...)</code> post-lowering constraints, ABI/lowering reports, generated-manifest/object reports</td>
+</tr>
+</tbody>
+</table>
+<p>Retagging an address as <code>@volatile T</code> or <code>@mmio T</code> is an authority assertion.
+It is not a memory access and does not create the architectural page-table
+memory type. A later access through <code>@volatile T</code> introduces the
+<code>volatile_access</code> effect; a later access through <code>@mmio T</code> introduces both
+<code>volatile_access</code> and <code>mmio</code>. Ordinary local storage, tuple destructuring
+storage, and <code>%addr_of(local)</code> stack-address materialization are generated
+resource facts and do not introduce effect categories.</p>
+<p><code>#frame(max_bytes = N, max_spills = M)</code> is the function-level constraint for
+generated frame resources. The compiler checks it after ABI lowering and
+register allocation against the actual frame composition, including fixed frame
+objects, spills and reload slots, outgoing call areas, caller-owned aggregate
+copies, indirect-result storage, alignment padding, and assembly-required save
+areas. Diagnostics and lowering explain reports identify the source value or ABI
+rule that introduced each byte or spill.</p>
 <h3 id="effect-categories" tabindex="-1"><a class="doc-anchor" href="#effect-categories" aria-hidden="true">#</a> Effect Categories</h3>
 <table>
 <thead>
@@ -640,16 +850,16 @@ using <code>#deny</code>.</p>
 <td><code>%daif_set</code>, <code>%daif_clr</code></td>
 </tr>
 <tr>
+<td><code>volatile_access</code></td>
+<td>any load/store through <code>@volatile T</code> or <code>@mmio T</code></td>
+</tr>
+<tr>
 <td><code>mmio</code></td>
-<td>any load/store through <code>@volatile T</code></td>
+<td>any load/store through <code>@mmio T</code></td>
 </tr>
 <tr>
 <td><code>barrier</code></td>
 <td><code>%compiler_barrier</code>, <code>%dsb</code>, <code>%dmb</code>, <code>%isb</code></td>
-</tr>
-<tr>
-<td><code>stack_alloc</code></td>
-<td>ordinary local/tuple storage and <code>%addr_of(local)</code> stack-address materialization</td>
 </tr>
 <tr>
 <td><code>fp_state</code></td>
@@ -675,14 +885,16 @@ breaking existing <code>#deny</code> declarations.</p>
 runs after name resolution and type checking, before IR construction.</p>
 <ol>
 <li>
-<p><strong>Leaf assignment.</strong> Every runtime primitive call, every cast whose target
-type is <code>@volatile T</code>, and every <code>@volatile T</code> load/store is tagged with its
-effect categories from the table above. The volatile retag itself introduces
-<code>mmio</code>, even if the resulting address is not accessed in the same expression.
-Ordinary local and tuple bindings introduce <code>stack_alloc</code>; <code>%addr_of(local)</code>
-also introduces <code>stack_alloc</code> because it materializes a stack-frame address.
-Runtime floating-point operations introduce <code>fp_state</code>; floating-point
-literals and pure moves do not by themselves introduce <code>fp_state</code>.</p>
+<p><strong>Leaf assignment.</strong> Every runtime primitive call and every volatile or
+MMIO-intent load/store is tagged with its effect categories from the table
+above. A cast to <code>@volatile T</code> or <code>@mmio T</code> records an address-authority
+assertion but does not introduce an access effect until the resulting
+address is read or written. Target-provided Device-memory ranges are mapping
+facts, not effects. Ordinary local and tuple bindings and <code>%addr_of(local)</code>
+are backend resource facts, not semantic effects. Runtime floating-point
+operations introduce
+<code>fp_state</code>; floating-point literals and pure moves do not by themselves
+introduce <code>fp_state</code>.</p>
 </li>
 <li>
 <p><strong><code>#asm</code> blocks.</strong> An <code>#asm</code> block that does not carry an explicit
@@ -837,8 +1049,8 @@ the <code>sets_sp</code> verifier contract is satisfied. A
 <code>#asm(preserves_sp, effects: none)</code> block may inspect <code>sp</code> when the
 <code>preserves_sp</code> verifier contract proves the stack pointer is unchanged. These
 stack-state contracts do not introduce a separate effect category, and denying
-<code>stack_alloc</code> or every other effect category does not by itself reject a
-verifier-approved stack-state block.</p>
+every effect category does not by itself reject a verifier-approved stack-state
+block.</p>
 <h3 id="what-%23deny-does-not-do" tabindex="-1"><a class="doc-anchor" href="#what-%23deny-does-not-do" aria-hidden="true">#</a> What <code>#deny</code> Does Not Do</h3>
 <ul>
 <li><strong>No runtime checks.</strong> <code>#deny</code> is pure compile-time analysis. It
@@ -852,6 +1064,9 @@ keeps the system simple and avoids the complexity of effect algebras.</li>
 <li><strong>No transitive un-deny.</strong> A function cannot remove a <code>#deny</code>
 restriction inherited from its module. The restriction is monotonic —
 it can only grow, never shrink.</li>
+<li><strong>No backend resource budget.</strong> <code>#deny</code> does not reject compiler-generated
+stack use. Use <code>#frame(max_bytes = ..., max_spills = ...)</code> when a function
+must prove a post-lowering frame budget.</li>
 </ul>
 <h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
 <table>
@@ -872,7 +1087,7 @@ it can only grow, never shrink.</li>
 </tr>
 <tr>
 <td>Coarse categories</td>
-<td>Kernel code cares about architectural boundaries (EL0 vs EL1, Normal vs Device memory, atomic vs non-atomic), not individual instruction distinctions. Eight categories cover the useful restrictions.</td>
+<td>Kernel code cares about architectural boundaries (EL0 vs EL1, Normal vs Device memory, atomic vs non-atomic), not individual instruction distinctions. The closed category set covers useful semantic restrictions without treating backend resources as operations.</td>
 </tr>
 <tr>
 <td>Module-level <code>#deny</code></td>
@@ -1404,7 +1619,7 @@ the identified bottleneck category</li>
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">
 					<a class="doc-pager-link prev" href="/docs/source-of-truth/"><span class="dir">← Previous</span><span class="lbl">Source Of Truth</span></a>
-					<a class="doc-pager-link next" href="/docs/chapter-02-targets/"><span class="dir">Next →</span><span class="lbl">Target Descriptors</span></a>
+					<a class="doc-pager-link next" href="/docs/conformance-index/"><span class="dir">Next →</span><span class="lbl">Clause-To-Test Conformance Index</span></a>
 				</nav>
 				</article>
 				<aside class="doc-toc" aria-label="On this page">
@@ -1413,8 +1628,10 @@ the identified bottleneck category</li>
 				<li class="lvl-3"><a href="#core-identity">Core Identity</a></li>
 				<li class="lvl-2"><a href="#design-constraints">Design Constraints</a></li>
 				<li class="lvl-2"><a href="#no-compiler-exploitable-undefined-behavior">No Compiler-Exploitable Undefined Behavior</a></li>
+				<li class="lvl-3"><a href="#behavior-taxonomy">Behavior Taxonomy</a></li>
+				<li class="lvl-3"><a href="#trust-boundary-model">Trust-Boundary Model</a></li>
 				<li class="lvl-3"><a href="#principles">Principles</a></li>
-				<li class="lvl-3"><a href="#what-this-means">What This Means</a></li>
+				<li class="lvl-3"><a href="#operation-classification">Operation Classification</a></li>
 				<li class="lvl-3"><a href="#contrast-with-c%2Fc%2B%2B">Contrast with C/C++</a></li>
 				<li class="lvl-3"><a href="#integer-wrapping">Integer Wrapping</a></li>
 				<li class="lvl-3"><a href="#relationship-to-reproducibility">Relationship to Reproducibility</a></li>
@@ -1424,6 +1641,7 @@ the identified bottleneck category</li>
 				<li class="lvl-2"><a href="#structured-control-flow">Structured Control Flow</a></li>
 				<li class="lvl-2"><a href="#effect-system">Effect System</a></li>
 				<li class="lvl-3"><a href="#design">Design</a></li>
+				<li class="lvl-3"><a href="#effects%2C-authority%2C-and-generated-resources">Effects, Authority, And Generated Resources</a></li>
 				<li class="lvl-3"><a href="#effect-categories">Effect Categories</a></li>
 				<li class="lvl-3"><a href="#inference">Inference</a></li>
 				<li class="lvl-3"><a href="#%23deny-%E2%80%94-restricting-effects">#deny — Restricting Effects</a></li>

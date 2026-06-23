@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -217,7 +217,7 @@ literal contents, but not in user-defined names.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Directive        &lt;- '#' DirectiveName
 RuntimePrimitive &lt;- '%' IdentStart IdentCont*
 
-DirectiveName &lt;- ( 'import' / 'module' / 'target'
+DirectiveName &lt;- ( 'import' / 'module' / 'target' / 'requires'
                  / 'if' / 'else'
                  / 'static_assert' / 'align' / 'section' / 'region' / 'entry'
                  / 'naked' / 'noescape' / 'inline' / 'initcall' / 'noreturn'
@@ -245,7 +245,8 @@ The <code>@</code> prefix is reserved for address types and address qualifiers.
 Runtime-lowered compiler primitives use <code>%</code> (<code>%nop()</code>, <code>%mrs(...)</code>, etc.) and
 cannot be shadowed by user names. The full runtime primitive table lives in
 <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md</a> (§1.3.2 through §1.3.7) and
-<a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a> (the existing <code>@volatile</code> qualifier).</p>
+<a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a> (<code>@volatile</code>
+and <code>@mmio</code> address qualifiers).</p>
 <h3 id="1.4-numeric-literals" tabindex="-1"><a class="doc-anchor" href="#1.4-numeric-literals" aria-hidden="true">#</a> 1.4 Numeric Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">IntLiteral   &lt;- HexLiteral / BinLiteral / OctLiteral / DecLiteral
 HexLiteral   &lt;- '0x' HexDigit ('_'? HexDigit)*
@@ -317,7 +318,7 @@ match wins). The lexer commits to the longest token at each position:</p>
 are only valid in statement or declaration positions, while compile-time query
 forms such as <code>#size_of(T)</code> and <code>#len(arr)</code> are valid expressions. The <code>@</code>
 token at the start of a type position begins an address type or address qualifier (<code>@T</code>,
-<code>@volatile T</code>). The <code>%</code> token starts a runtime primitive in prefix expression
+<code>@volatile T</code>, <code>@mmio T</code>). The <code>%</code> token starts a runtime primitive in prefix expression
 position and remains the remainder operator in infix expression position.</p>
 <h3 id="1.7-boolean-and-null-literals" tabindex="-1"><a class="doc-anchor" href="#1.7-boolean-and-null-literals" aria-hidden="true">#</a> 1.7 Boolean and Null Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">BoolLiteral  &lt;- 'true' !IdentCont / 'false' !IdentCont
@@ -339,7 +340,7 @@ between <code>[N]T</code> (array type), <code>[T:N]</code> (vector type), <code>
      / VectorType                         // '[' ident ':' integer
      / ArrayType                          // '[' digit-or-const, no ':'
      / FnPointerType                      // '@' '(' ...
-     / AddressType                        // '@' Type    or  '@volatile' Type
+     / AddressType                        // '@' Type, '@volatile' Type, or '@mmio' Type
      / TupleType                          // '(' field-list ')'   (return position only)
      / NamedType
 
@@ -358,7 +359,8 @@ FnPointerType
     &lt;- '@' CallingConv? '(' ParamTypeList? ')' ('-&gt;' ReturnType)?
 
 AddressType
-    &lt;- '@' 'volatile' Type                             // @volatile T
+    &lt;- '@' 'mmio' Type                                 // @mmio T
+     / '@' 'volatile' Type                             // @volatile T
      / '@' Type                                        // @T
 
 TupleType   &lt;- '(' NamedField (',' NamedField)* ','? ')' // for multi-return
@@ -852,7 +854,8 @@ ReleaseDirective &lt;- '#release' AssignTarget '=' Expr
 <p><code>#acquire</code> and <code>#release</code> remain valid per-access annotations for
 explicit synchronization. There is no per-access <code>#volatile</code> directive:
 per-access volatility was removed, so declare volatility at the
-address-type level with <code>@volatile T</code> (see chapter-09 §1.3).</p>
+address-type level with <code>@volatile T</code> or MMIO intent with <code>@mmio T</code> (see
+chapter-09 §1.3).</p>
 <h3 id="4.6-inline-assembly-statement" tabindex="-1"><a class="doc-anchor" href="#4.6-inline-assembly-statement" aria-hidden="true">#</a> 4.6 Inline Assembly Statement</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">AsmBlock
     &lt;- '#asm' AsmOptions? '{' AsmSection* AsmBody '}'
@@ -905,7 +908,7 @@ the assembler back-end verbatim.</p>
     &lt;- ModuleDecl
        ModuleDeny?                                           // module-level effect restriction
        ImportDecl*
-       (TargetDecl)?                                         // layout/exec modules only
+       (TargetDecl / RequirementDecl)*                       // header metadata only
        TopLevelItem*
 
 ModuleDecl   &lt;- '#module' DottedName
@@ -914,10 +917,13 @@ ImportDecl   &lt;- '#import' (ImportBlock / ImportItem)
 ImportBlock  &lt;- '(' ImportItem+ ')'                         // one item per line, no commas
 ImportItem   &lt;- DottedName ('as' Identifier)?
 TargetDecl   &lt;- '#target' '(' TargetAttrs ')'
+RequirementDecl &lt;- '#requires' '(' RequirementAttrs ')'
 
 DottedName   &lt;- Identifier ('.' Identifier)*
 TargetAttrs  &lt;- TargetAttr (',' TargetAttr)* ','?
 TargetAttr   &lt;- Identifier '=' TargetValue
+RequirementAttrs &lt;- RequirementAttr (',' RequirementAttr)* ','?
+RequirementAttr  &lt;- Identifier '=' TargetValue
 TargetValue  &lt;- IntegerLiteral
              / HyphenatedName
              / StringLiteral
@@ -946,6 +952,7 @@ Annotation
      / '#percpu' / '#tls'                                  // per-instance mutable global storage; see chapter-11-intrinsics.md
      / '#section' '(' DottedName ','? ')'                    // per-declaration section attribute; see chapter-04-modules.md &quot;Custom Sections from User Declarations&quot;
      / '#deny' '(' EffectList ')'                            // effect restriction; see chapter-01-language-design.md &quot;Effect System&quot;
+     / '#frame' '(' FrameConstraintList ','? ')'              // post-lowering frame resource constraint; see chapter-01-language-design.md
      / CallingConv                                           // [aapcs], etc.
 
 AnnotationGroup
@@ -960,8 +967,10 @@ AnnotationArgList
 EffectList &lt;- EffectName (',' EffectName)* ','?
 EffectName &lt;- 'sysreg' / 'trap' / 'exception_return' / 'cache_maintenance'
             / 'tlb_maintenance' / 'atomic' / 'cpu_halt' / 'interrupt_mask'
-            / 'mmio' / 'barrier' / 'stack_alloc' / 'fp_state'
-            / 'perf_counter'
+            / 'volatile_access' / 'mmio' / 'barrier' / 'fp_state' / 'perf_counter'
+
+FrameConstraintList &lt;- FrameConstraint (',' FrameConstraint)* ','?
+FrameConstraint &lt;- 'max_bytes' '=' ConstExpr / 'max_spills' '=' ConstExpr
 
 DeclItem
     &lt;- FnDecl

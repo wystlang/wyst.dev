@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -229,13 +229,13 @@ range search instead of scanning every CU's <code>.debug_info</code>.</p>
 <code>.debug_rnglists</code> and <code>.debug_loclists</code> in their offset-list-header forms
 (the source-floor contract uses the inline forms in <code>.debug_loc</code>).</p>
 <p><strong>CFI rationale for deferral:</strong> AAPCS-Wyst already mandates a frame
-record (<code>stp x29, x30, [sp, #-N]!</code>) in debug builds and in any non-leaf
-function (see <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md §3.3</a>). Backtraces can walk the
-<code>x29</code> chain directly without consulting CFI. Wyst has no exceptions, so
-<code>.eh_frame</code> provides nothing Wyst needs. Leaf functions that omit the frame
-record are the only case CFI would help, and they are not permitted in debug
-builds. CFI may be added if optimized leaf
-prologues become useful.</p>
+record (<code>stp x29, x30, [sp, #-N]!</code>) in any non-leaf function (see
+<a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md §3.3</a>). A future debug-build
+mode will also mandate frame records in leaf functions. Backtraces can walk the
+<code>x29</code> chain directly without consulting CFI whenever those frame records are
+present. Wyst has no exceptions, so <code>.eh_frame</code> provides nothing Wyst needs.
+Leaf functions that omit the frame record are the only current case CFI would
+help. CFI may be added if optimized leaf prologues become useful.</p>
 <hr>
 <h2 id="11.4-die-vocabulary-(closed-set)" tabindex="-1"><a class="doc-anchor" href="#11.4-die-vocabulary-(closed-set)" aria-hidden="true">#</a> 11.4 DIE Vocabulary (Closed Set)</h2>
 <p>The compiler emits <strong>only</strong> the tags listed below. An emitted DIE that
@@ -286,7 +286,7 @@ does not appear in this table is a compiler bug.</p>
 </tr>
 <tr>
 <td><code>DW_TAG_volatile_type</code></td>
-<td><code>@volatile T</code></td>
+<td><code>@volatile T</code> and the volatile access contract inside <code>@mmio T</code></td>
 </tr>
 <tr>
 <td><code>DW_TAG_typedef</code></td>
@@ -353,10 +353,11 @@ the discriminator member. Each <code>DW_TAG_variant</code> carries
 <code>DW_AT_discr_value</code> equal to the variant's tag and contains the payload
 member(s).</p>
 <p><strong>Address types.</strong> <code>@T</code> emits <code>DW_TAG_pointer_type</code> with
-<code>DW_AT_type</code> referencing the DIE for <code>T</code>. <code>@volatile T</code> adds a
-<code>DW_TAG_volatile_type</code> qualifier wrapping the <code>T</code> DIE before the
-pointer-type DIE. The pointer DIE has <code>DW_AT_address_class = 0</code> (generic
-data).</p>
+<code>DW_AT_type</code> referencing the DIE for <code>T</code>. <code>@volatile T</code> and <code>@mmio T</code> add a
+<code>DW_TAG_volatile_type</code> qualifier wrapping the <code>T</code> DIE before the pointer-type
+DIE. The pointer DIE has <code>DW_AT_address_class = 0</code> (generic data). <code>@mmio T</code>
+does not imply a DWARF address class or architectural Device-memory proof; MMIO
+intent remains a Wyst source/report fact.</p>
 <p><strong>Function-pointer calling convention.</strong> <code>DW_TAG_subroutine_type</code>
 carries <code>DW_AT_calling_convention = DW_CC_normal</code> for <code>[wyst]</code> (the
 default) and <code>DW_AT_calling_convention = 0x50</code> for <code>[aapcs]</code>. Wyst reserves

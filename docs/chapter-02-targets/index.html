@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -96,8 +96,8 @@
 					<div class="doc-body">
 <p>Wyst uses a layered target model for project builds and hardware/runtime work.</p>
 <p>Runnable code depends on more than an ISA name. This chapter distinguishes
-source-level <code>#target</code> declarations, project profiles, and full target
-descriptors.</p>
+source-level <code>#requires</code> declarations, exact <code>#target</code> facts for target-bound
+modules, project profiles, and full target descriptors.</p>
 <h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-hidden="true">#</a> Thesis</h2>
 <p>A named ISA is not a complete machine contract. AArch64 code may share
 instructions while differing in ABI, exception level, binary format, loader
@@ -137,9 +137,55 @@ layers instead of flattening everything into one target string.</p>
 </tbody>
 </table>
 <h2 id="source-boundary" tabindex="-1"><a class="doc-anchor" href="#source-boundary" aria-hidden="true">#</a> Source Boundary</h2>
-<p><code>#target</code> remains the source-level declaration for target facts a module
-depends on. It is optional: if a module omits it, project builds may supply the
-same facts from <code>wyst.project</code>, and source-only builds use compiler defaults.</p>
+<p><code>#requires</code> is the reusable source-level declaration for target requirements a
+module depends on. It states minimum or required capabilities, not a complete
+machine selection. A reusable library should use <code>#requires(...)</code> when it needs
+an ISA baseline, ISA feature, minimum exception level, or ABI capability.</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> source_requirement_demo
+
+<span class="token directive macro">#requires</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> abi <span class="token operator">=</span> <span class="token punctuation">(</span> aapcs64 <span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+spin_once <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><code>#requires</code> accepts these source requirement fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>arch</code></td>
+<td>Minimum architecture revision. <code>arm64-v8a</code> is the current implemented baseline.</td>
+</tr>
+<tr>
+<td><code>features</code></td>
+<td>Required ISA feature set, such as <code>lse</code> or <code>pmu</code>.</td>
+</tr>
+<tr>
+<td><code>el</code></td>
+<td>Minimum ARM Exception Level required by the module. A higher selected entry level is compatible.</td>
+</tr>
+<tr>
+<td><code>abi</code></td>
+<td>Required ABI capability set, currently <code>wyst-native</code> and <code>aapcs64</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Build-selection fields such as <code>cpu</code>, tuning model, object format, loader,
+device map, platform services, and artifact handoff do not belong in
+<code>#requires</code>. They are selected by a project profile, project manifest, or
+future artifact configuration.</p>
+<p><code>#target</code> remains accepted for exact source-level target facts in target-bound
+boot/runtime modules and compatibility source. It is optional for reusable
+source: if a module omits exact target facts, project artifact builds must
+supply artifact-affecting facts from <code>wyst.project</code>, while source-only and
+loose-file checks may use compiler analysis defaults.</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> target_demo
 
@@ -148,22 +194,45 @@ same facts from <code>wyst.project</code>, and source-only builds use compiler d
 <p>The source declaration should stay compact. Larger platform and device facts
 belong in target profiles, generated artifacts, standard-library modules, or
 project manifests with stable provenance.</p>
-<p>A module has one target contract. Multi-file modules may repeat
-<code>#target(...)</code>, but repeated declarations must describe the same normalized
-named-argument set; Wyst does not merge partial target declarations.</p>
+<p>Compact source-level mapping facts may be stated when a module needs to expose
+known architectural memory type ranges to diagnostics or reports:</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> target_memory_demo
+
+<span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> device_memory <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token number">0x0900_0000</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token number">0x0900_1000</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<p><code>device_memory</code> records a target-provided fact that the named numeric range is
+configured as Device memory by the selected platform/runtime. It does not come
+from <code>@volatile T</code>, <code>@mmio T</code>, or any cast in source code; address qualifiers
+describe compiler-visible access semantics and programmer intent, not the
+page-table property.</p>
+<p>A module has one exact target contract and one source requirement contract.
+Multi-file modules may repeat <code>#target(...)</code> or <code>#requires(...)</code>, but repeated
+declarations of the same construct must describe the same normalized
+named-argument set; Wyst does not merge partial declarations.</p>
 <h2 id="project-profile-floor" tabindex="-1"><a class="doc-anchor" href="#project-profile-floor" aria-hidden="true">#</a> Project Profile Floor</h2>
-<p>Project builds may bind source-level target declarations to named target
-profiles, explicit project target facts, or both. If both are present, they
-must agree. If a module declares <code>#target(...)</code>, it must be compatible with the
-project target facts. If it omits <code>#target(...)</code>, the project target facts act
-as semantic defaults.</p>
+<p>Project builds bind source requirements and exact source target facts to named
+target profiles, explicit project target facts, or both. If both profile and
+explicit project facts are present, they must agree. If a module declares
+<code>#requires(...)</code>, the selected project target must provide every required
+capability. If a module declares <code>#target(...)</code>, it must be compatible with the
+project target facts exactly, except that feature tuples remain subset-checked.
+If it omits <code>#target(...)</code>, the project target facts act as semantic defaults.
+Project artifact, evidence, and explain-report commands require an explicit
+project target selection before final legality, layout, or emitted bytes are
+computed; they do not silently consume EL, cache-line, feature, ABI, object
+format, or loader defaults. Target reports record whether facts came from an
+explicit profile/custom project facts, source requirements, permitted analysis
+defaults, or unverified assumptions. Current project artifact reports must have
+no unverified target assumptions.</p>
 <p>The QEMU <code>virt</code> profile is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">qemu-virt-aarch64-el2
 </code></pre>
 <p>It names the QEMU-oriented static ELF baseline: <code>arm64-v8a</code>, generic
 CPU, EL2 entry, Wyst native ABI, static AArch64 ELF output, and existing
-AAPCS64 interop support. Module-level <code>#target(...)</code> declarations must be
-compatible with the selected project profile when one is present.</p>
+AAPCS64 interop support. Module-level <code>#requires(...)</code> declarations must be
+satisfied, and module-level <code>#target(...)</code> declarations must be compatible with
+the selected project profile when one is present.</p>
 <p>The board-emulation profile is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">qemu-raspi4b-aarch64-el2
 </code></pre>
@@ -198,7 +267,7 @@ emitted code.</li>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">
-					<a class="doc-pager-link prev" href="/docs/chapter-01-language-design/"><span class="dir">← Previous</span><span class="lbl">Language Design</span></a>
+					<a class="doc-pager-link prev" href="/docs/conformance-index/"><span class="dir">← Previous</span><span class="lbl">Clause-To-Test Conformance Index</span></a>
 					<a class="doc-pager-link next" href="/docs/chapter-03-project-builds/"><span class="dir">Next →</span><span class="lbl">Project Builds</span></a>
 				</nav>
 				</article>

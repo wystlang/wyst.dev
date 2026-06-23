@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -94,10 +94,17 @@
 						<p class="doc-lede">Versioned authority, conflict resolution, feature states, and schema versions.</p>
 					</header>
 					<div class="doc-body">
-<p>This document is the single versioned authority for Wyst language status,
-manual conflict resolution, and public schema version names. Detailed rules
-still live in the chapters and appendices; this page defines which rule wins
-when two documents disagree.</p>
+<p>This document is the human-readable view of the versioned Wyst semantic
+authority. The machine-readable registry is
+<a href="semantic-db.json"><code>design/semantic-db.json</code></a>; it owns enumerated semantic
+facts such as feature states, version identifiers, operator spellings, effect
+names, public vocabularies, ABI classifications, and schema names. Detailed
+rules still live in the chapters and appendices under the precedence order
+below.</p>
+<p>Clause-to-test traceability is tracked in
+<a href="/docs/conformance-index/"><code>design/conformance-index.md</code></a>. A semantic clause is not
+complete merely because prose, examples, or compiler code changed; the clause's
+conformance row must be added or updated at the same time.</p>
 <p>Current manual snapshot:</p>
 <table>
 <thead>
@@ -122,13 +129,19 @@ when two documents disagree.</p>
 <td>Chapter 15 owns the detailed Native and AAPCS64 rules.</td>
 </tr>
 <tr>
+<td>Object/interface schema bundle</td>
+<td><code>wyst.objectInterface.v0</code></td>
+<td>implemented plus future-version rows</td>
+<td>Chapter 16 and the semantic database own object artifact, relocation, symbol, and emitted-interface classifications.</td>
+</tr>
+<tr>
 <td>Report schema bundle</td>
 <td><code>wync.reports.v0</code></td>
 <td>implemented</td>
 <td>Groups the report schemas listed below. Individual report payloads still carry their own <code>schema</code> field.</td>
 </tr>
 <tr>
-<td>Interface schema bundle</td>
+<td>Editor/diagnostic interface schema bundle</td>
 <td><code>wync.interfaces.v0</code></td>
 <td>implemented</td>
 <td>Groups CLI/editor/LSP adapter payloads listed below.</td>
@@ -139,32 +152,32 @@ when two documents disagree.</p>
 Rows marked implemented below refer to the current repository snapshot unless
 they explicitly name a released version.</p>
 <h2 id="authority-order" tabindex="-1"><a class="doc-anchor" href="#authority-order" aria-hidden="true">#</a> Authority Order</h2>
-<p>When prose, grammar, IR documentation, ABI rules, examples, or roadmap text
-conflict, use this order:</p>
+<p>When normative prose, grammar, IR documentation, ABI rules, object schemas,
+checked examples, or roadmap text conflict, use this order:</p>
 <ol>
-<li>This file wins for feature state, version names, authority rules, and
-whether material is implemented, future-version normative, experimental,
-reserved, deprecated, or removed.</li>
-<li>Chapter prose wins for user-visible language semantics in its scoped area.
-Chapter 15 wins for the Wyst Native ABI and AAPCS64 interop. Chapter 16
-wins for emitted object/image format once an artifact mode is implemented.</li>
-<li>Appendix B wins for lexical grammar, parseability, disambiguation, and
-reserved tokens. A grammar production does not make a feature available
-unless this registry or the owning chapter marks it implemented or
+<li>versioned semantic clauses: this file, <code>design/semantic-db.json</code>, and the
+owning chapter section for the specific semantic rule.</li>
+<li>syntax grammar: Appendix B for lexical grammar, parseability,
+disambiguation, and reserved tokens. A grammar production does not make a
+feature available unless the semantic registry marks it implemented or
 future-version normative.</li>
-<li>Appendix A wins only for compiler-internal IR shape and verifier
-invariants. If Appendix A conflicts with user language semantics or ABI
-rules, the chapter rule wins and Appendix A must be corrected.</li>
-<li>Appendix C controls example categories. Examples never create language
-semantics by themselves.</li>
-<li><code>roadmap.md</code> is planning material. It may propose or promote work, but it
-does not override this file or a chapter. A roadmap milestone becomes
-future-version normative only when this file marks that surface
-future-version normative.</li>
-<li>Compiler tests and snapshots are implementation evidence. If tests and docs
-disagree, treat it as a bug in one of them and update this file plus the
-owning chapter or implementation together.</li>
+<li>ABI and object schemas: Chapter 15 for Wyst Native ABI and AAPCS64 interop,
+Chapter 16 for emitted artifact/object schemas, and this registry for
+schema version names.</li>
+<li>conformance tests: checked examples, compiler tests, snapshots, and
+fixtures. Tests are implementation evidence; if they disagree with a
+higher authority, update the test, implementation, or semantic rule
+together.</li>
+<li>explanatory examples: Appendix C governs example categories. Examples
+never create language semantics by themselves.</li>
+<li>roadmap material: <code>roadmap.md</code> is planning material only. A roadmap
+milestone becomes future-version normative only when this registry marks
+that surface future-version normative for a named version or target.</li>
 </ol>
+<p>Appendix A wins only for compiler-internal IR shape and verifier invariants.
+If Appendix A conflicts with user-visible semantics, ABI rules, or object
+schemas, the higher-authority semantic, ABI, or object rule wins and Appendix A
+must be corrected.</p>
 <h2 id="feature-states" tabindex="-1"><a class="doc-anchor" href="#feature-states" aria-hidden="true">#</a> Feature States</h2>
 <p>Every feature row uses one of these states:</p>
 <table>
@@ -224,6 +237,24 @@ milestone must add or update a row in this registry.</p>
 <td>Chapter 1</td>
 </tr>
 <tr>
+<td>Behavior taxonomy for Defined, Target-defined, Indeterminate bits, Architectural fault or trap, and Trusted-contract violation, with no category granting optimizer impossible-state assumptions</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 1</td>
+</tr>
+<tr>
+<td>Trust-boundary model for <code>#trusted_cast</code>, raw-address assertions, raw function-pointer construction, foreign declarations, manually stated foreign effects, inline-assembly effects and clobbers, ABI overrides, and unproven library contracts</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 1; Chapter 21</td>
+</tr>
+<tr>
+<td>Ordinary local reads require initialization; deliberate raw storage uses <code>MaybeUninit&lt;T&gt;</code>, <code>%read_uninit</code>, <code>%write_uninit</code>, and explicit indeterminate-read IR</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 9; Chapter 11; Appendix A</td>
+</tr>
+<tr>
 <td>UTF-8 source, ASCII identifiers, comments, string literals, character literals, numeric literal separators</td>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
@@ -252,6 +283,24 @@ milestone must add or update a row in this registry.</p>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
 <td>Chapters 6, 8, 9, 11, and 16</td>
+</tr>
+<tr>
+<td>Typed address arithmetic model: <code>+</code>/<code>-</code> use element offsets, byte offsets use an explicit <code>@u8</code> or <code>u64</code> lens, field offsets are byte counts, relocation addends are bytes, and obvious double scaling is diagnosed</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapters 6, 9, and 16; Appendix A</td>
+</tr>
+<tr>
+<td>Effects, authority/trust facts, and generated backend resources are separate; <code>#deny</code> and effect diagnostics cover semantic effects, while <code>#frame</code> and frame/spill/register/code-size/veneer/caller-copy facts are post-lowering resources</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 1; Chapter 21</td>
+</tr>
+<tr>
+<td>Volatile access semantics, MMIO intent, and architectural memory type are separate; <code>@volatile T</code> records compiler-visible access ordering, <code>@mmio T</code> records programmer MMIO intent, and Device/Normal memory type comes from target/runtime mapping facts</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapters 6 and 9; Appendix A</td>
 </tr>
 <tr>
 <td>Arrays <code>[N]T</code>, slices <code>[]T</code>, dynamic descriptors <code>[dynamic]T</code>, <code>#len</code>, array-to-slice views</td>
@@ -296,6 +345,12 @@ milestone must add or update a row in this registry.</p>
 <td>Chapter 6 and Chapter 8</td>
 </tr>
 <tr>
+<td><code>is</code> enum pattern tests for implemented enum variants</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 8; nested patterns and compound/negated payload bindings remain reserved below.</td>
+</tr>
+<tr>
 <td>Multi-field enum payload variants, tuple payload patterns, nested patterns, payload bindings in compound or negated <code>is</code> patterns</td>
 <td>Reserved</td>
 <td>none</td>
@@ -320,9 +375,15 @@ milestone must add or update a row in this registry.</p>
 <td>Chapter 6</td>
 </tr>
 <tr>
-<td>Runtime <code>if</code>, if expressions, <code>repeat</code>, <code>while</code>, <code>loop</code>, <code>break</code>, <code>continue</code>, <code>goto</code>, statement calls, expression calls</td>
+<td>Left-to-right expression evaluation order, short-circuiting <code>&amp;&amp;</code>/`</td>
+<td></td>
+<td><code>, eager </code>select`, source-order effect preservation, and optional effectful-nesting lint</td>
 <td>Implemented</td>
-<td><code>wyst.language.v0.7</code></td>
+</tr>
+<tr>
+<td>Runtime <code>if</code>, if expressions, <code>repeat</code>, <code>while</code>, <code>loop</code>, <code>break</code>, <code>continue</code>, <code>goto</code>, statement calls, expression calls, and direct <code>#noreturn</code> calls as block terminators for functions and labels</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
 <td>Chapter 8</td>
 </tr>
 <tr>
@@ -423,6 +484,12 @@ milestone must add or update a row in this registry.</p>
 <td>Chapters 2, 3, and 4</td>
 </tr>
 <tr>
+<td>Separate source requirements and build selections with <code>#requires(...)</code>, project/profile compatibility checks, explicit target facts for project artifact builds, target-fact provenance reports, and reusable modules compiling under multiple compatible target selections</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapters 2, 3, and 4</td>
+</tr>
+<tr>
 <td>Layered target descriptor schema beyond current manifest/profile facts</td>
 <td>Future-version normative</td>
 <td><code>wyst.language.v0.8</code> target 32</td>
@@ -462,6 +529,12 @@ milestone must add or update a row in this registry.</p>
 <td>Exception vectors, <code>#ventry</code>, <code>#trap_frame</code>, trap-frame ABI, EL gating</td>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
+<td>Chapters 5, 11, and 14</td>
+</tr>
+<tr>
+<td>Per-callable execution-level facts for ARM64 functions, labels, <code>#ventry</code> entries, callbacks, <code>%eret</code> transitions, and exception-vector entries</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
 <td>Chapters 5, 11, and 14</td>
 </tr>
 <tr>
@@ -572,6 +645,18 @@ milestone must add or update a row in this registry.</p>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
 <td>Chapter 23</td>
+</tr>
+<tr>
+<td>Debug build mode that forces frame records independent of leaf/non-leaf status</td>
+<td>Future-version normative</td>
+<td><code>wyst.nativeAbi.next</code></td>
+<td>Chapter 15 names the ABI consequence; current CLI has no debug-build mode.</td>
+</tr>
+<tr>
+<td><code>#backtrace</code> source attribute for forcing frame records</td>
+<td>Reserved</td>
+<td>none</td>
+<td>Chapter 15 may discuss this as a future condition only; the current parser/editor vocabulary does not accept <code>#backtrace</code>.</td>
 </tr>
 <tr>
 <td>DWARF-4 bitfield attribute fallback (<code>DW_AT_bit_offset</code>)</td>
@@ -764,6 +849,66 @@ milestone must add or update a row in this registry.</p>
 </table>
 <p>Schema version changes require updating this registry, the owning chapter, the
 producer, and the snapshot tests in the same change.</p>
+<h2 id="compatibility-and-change-process" tabindex="-1"><a class="doc-anchor" href="#compatibility-and-change-process" aria-hidden="true">#</a> Compatibility And Change Process</h2>
+<p>A change is source-compatible when existing accepted source continues to parse,
+check, format, and lower with the same user-visible meaning under the same
+language version. A change is source-breaking when it rejects previously
+accepted source, changes parse structure, changes overload/operator meaning,
+changes default target facts, or changes diagnostics relied on by checked
+fixtures. Source-breaking changes require a new language version row, a
+deprecation or removal row for the affected feature, and conformance tests for
+old and new behavior.</p>
+<p>A change is ABI-compatible when existing compiled interfaces keep the same
+calling convention, register ownership, stack layout, aggregate
+classification, symbol spelling, relocation meaning, section contract, and
+debug/unwind implication under the same Native ABI version. ABI-breaking
+changes require a new Native ABI version, an owning Chapter 15 or Chapter 16
+rule update, and binary-inspection or QEMU evidence.</p>
+<p>A change is schema-compatible when existing JSON/report/interface consumers can
+ignore added fields and continue to read all previously documented fields with
+the same type and meaning. Removing fields, renaming fields, changing field
+types, changing enum string values, or changing required/optional status is
+schema-breaking and requires a new schema version plus snapshot updates.</p>
+<p>Deprecation requires an explicit feature row with state <code>Deprecated</code>, a named
+replacement or removal condition, diagnostics or documentation explaining the
+transition, and at least one release line where the deprecated surface remains
+recognized unless the row states that the feature is already removed. Removed
+features must be deleted from normative examples or marked only as diagnostic
+examples.</p>
+<p>Documentation CI rejects contradictory normative claims by checking
+<code>design/semantic-db.json</code>, this file, checked <code>wyst</code> contract fences, and
+compiler-visible vocabulary together. New compiler-visible features must add a
+semantic database feature row before they can be documented as implemented,
+future-version normative, experimental, reserved, deprecated, or removed.</p>
+<h2 id="conformance-completion-gate" tabindex="-1"><a class="doc-anchor" href="#conformance-completion-gate" aria-hidden="true">#</a> Conformance Completion Gate</h2>
+<p>Every semantic database feature row is a normative semantic clause for
+traceability purposes. Each clause must have an entry in
+<a href="/docs/conformance-index/"><code>design/conformance-index.md</code></a> with, as applicable:</p>
+<ul>
+<li>a positive source test;</li>
+<li>a negative diagnostic test;</li>
+<li>an execution test;</li>
+<li>an IR snapshot;</li>
+<li>a lowering or disassembly snapshot;</li>
+<li>an ELF/object/relocation snapshot;</li>
+<li>an explain-report snapshot;</li>
+<li>a reproducibility test.</li>
+</ul>
+<p>A missing evidence class must be written as <code>untested:</code> with a concrete reason,
+not left implied. An evidence class that cannot apply to the clause must be
+written as <code>not-applicable:</code> with a concrete reason. Covered evidence must link
+to a real test file, test symbol, or snapshot fixture so documentation CI can
+verify the link.</p>
+<p>Future-version normative, reserved, deprecated, removed, unsupported, and
+experimental syntax or modes must fail loudly when they are compiler-visible.
+They must not be accepted and ignored. If no spelling or mode exists yet, the
+conformance index must say why the negative diagnostic evidence class is not
+applicable or remains untested.</p>
+<p>This is the completion gate for the external checklist items 3-72 and for every
+later checklist item: an item that adds, changes, implements, reserves, removes,
+promotes, or documents a semantic clause is not complete until its conformance
+row is added or updated. Documentation CI enforces row presence,
+coverage-category presence, and covered test-link validity.</p>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">
@@ -784,6 +929,8 @@ producer, and the snapshot tests in the same change.</p>
 				<li class="lvl-2"><a href="#schema-registry">Schema Registry</a></li>
 				<li class="lvl-3"><a href="#report-schemas">Report Schemas</a></li>
 				<li class="lvl-3"><a href="#interface-schemas">Interface Schemas</a></li>
+				<li class="lvl-2"><a href="#compatibility-and-change-process">Compatibility And Change Process</a></li>
+				<li class="lvl-2"><a href="#conformance-completion-gate">Conformance Completion Gate</a></li>
 			</ul>
 			</aside>
 			</div>

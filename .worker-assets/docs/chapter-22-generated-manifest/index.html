@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -111,6 +111,9 @@ discovered source modules in canonical import-closure traversal order with
 byte counts and FNV-1a fingerprints;</li>
 <li>source-map status for compiler source spans;</li>
 <li>provenance and freshness for the generated build-configuration artifact;</li>
+<li>target fact provenance, including a target-sensitive <code>buildIdentity</code>,
+explicit profile/custom project facts, source requirements, permitted
+analysis defaults, and unverified assumptions;</li>
 <li>cache-purity/freshness status, including <code>not-used</code> and <code>current-run</code>;</li>
 <li>observed host/tool facts: <code>wync</code> version, host OS, host architecture, host
 family, target profile, and optimization mode;</li>
@@ -122,6 +125,10 @@ freshness.</li>
 output paths, environment-dependent discovery, path-sensitive debug-data hashes,
 and retained cache state. Two identical project builds followed by two
 generated-manifest runs must produce byte-identical manifests.</p>
+<p>The <code>buildIdentity</code> value is a deterministic local fingerprint over the
+resolved target display, optimization mode, and ordered target facts. It is not
+a cryptographic hash, but changing an explicit target fact changes this
+identity so reports cannot hide target-sensitive build selection changes.</p>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">

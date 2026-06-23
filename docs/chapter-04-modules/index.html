@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -96,7 +96,7 @@
 					<div class="doc-body">
 <blockquote>
 <p><strong>Canonical scope.</strong> Module declaration, import resolution, symbol
-visibility (<code>pub</code>), <code>#target</code> declarations, layout modules, custom
+visibility (<code>pub</code>), source requirements, <code>#target</code> declarations, layout modules, custom
 sections (<code>#section</code>), and the layout-vs-GNU-LD comparison. Output
 object format lives in <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>; ABI is
 in <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md</a>.</p>
@@ -151,7 +151,12 @@ concatenation, and statement-local lexical scopes. Local constants inside
 function bodies are not part of the top-level dependency graph.</p>
 <h3 id="file-level-constraints" tabindex="-1"><a class="doc-anchor" href="#file-level-constraints" aria-hidden="true">#</a> File-Level Constraints</h3>
 <ul>
-<li><strong><code>#target</code></strong>: a module has one target contract. Any file in the
+<li><strong><code>#requires</code></strong>: a module has one source requirement contract. Any file in the
+module may declare <code>#requires(...)</code>, but multiple declarations must describe
+the same normalized named-argument set. Wyst does not merge partial
+requirement declarations across files; a missing argument in one declaration
+and an explicit argument in another is a compile error.</li>
+<li><strong><code>#target</code></strong>: a module has one exact target contract. Any file in the
 module may declare <code>#target(...)</code>, but multiple declarations must
 describe the same normalized named-argument set. Wyst does not merge
 partial target declarations across files; a missing argument in one
@@ -334,7 +339,23 @@ visibility control), and no symbol-alias mechanism.</p>
 patches and default implementations) and <code>#hidden</code> (for shared-library
 ABIs). They are not required for kernel-only or freestanding code.</p>
 <hr>
-<h2 id="target-declaration" tabindex="-1"><a class="doc-anchor" href="#target-declaration" aria-hidden="true">#</a> Target Declaration</h2>
+<h2 id="source-requirements-and-target-declaration" tabindex="-1"><a class="doc-anchor" href="#source-requirements-and-target-declaration" aria-hidden="true">#</a> Source Requirements And Target Declaration</h2>
+<p>Reusable modules state source requirements with <code>#requires(...)</code>. This
+construct accepts minimum architecture revision, required ISA features, minimum
+exception level, and required ABI capabilities. It does not select a CPU or a
+complete machine profile.</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> reusable_spin
+
+<span class="token directive macro">#requires</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> abi <span class="token operator">=</span> <span class="token punctuation">(</span> aapcs64 <span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+spin_once <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Build selections such as ABI selection, executable environment, object format,
+CPU model, tuning model, loader, device map, exception-level entry, and
+platform services belong in project or artifact configuration.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Baseline module target:</span>
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">)</span>
@@ -415,9 +436,11 @@ arguments do matter: <code>#target(arch = arm64-v8a, cpu = generic)</code> and
 different declarations, not a merge.</p>
 <p>Descriptor direction:</p>
 <ul>
-<li><code>#target</code> remains the source-level declaration for target facts a module
-depends on.</li>
-<li>Project builds may bind <code>#target</code> to a named profile or manifest.</li>
+<li><code>#requires</code> is the preferred source-level declaration for reusable module
+requirements.</li>
+<li><code>#target</code> remains the exact target-fact declaration for target-bound modules
+and compatibility source.</li>
+<li>Project builds bind <code>#requires</code> and <code>#target</code> to a named profile or manifest.</li>
 <li>Target information is modeled as layered descriptors:
 host/tool facts, ISA facts, execution-environment facts, and
 platform/device facts.</li>
@@ -969,7 +992,7 @@ principle of making conflicts visible rather than silently resolving them.</p>
 				<li class="lvl-3"><a href="#what-can-be-exported">What Can Be Exported</a></li>
 				<li class="lvl-3"><a href="#mutable-exports">Mutable Exports</a></li>
 				<li class="lvl-2"><a href="#symbol-visibility">Symbol Visibility</a></li>
-				<li class="lvl-2"><a href="#target-declaration">Target Declaration</a></li>
+				<li class="lvl-2"><a href="#source-requirements-and-target-declaration">Source Requirements And Target Declaration</a></li>
 				<li class="lvl-2"><a href="#layout">Layout</a></li>
 				<li class="lvl-3"><a href="#entry-point">Entry Point</a></li>
 				<li class="lvl-3"><a href="#regions">Regions</a></li>

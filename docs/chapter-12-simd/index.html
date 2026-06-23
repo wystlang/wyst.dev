@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -164,7 +164,7 @@ vector type <code>[T:N]</code> serves as the load type prefix:</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">base <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 v <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token operator">@</span><span class="token punctuation">[</span>base<span class="token punctuation">]</span>     <span class="token comment">// load 4 f32s from base</span>
-w <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token comment">// next vector; byte offset 16</span>
+w <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token comment">// element offset 1; byte address +16</span>
 </code></pre>
 <p>Lowering:</p>
 <pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm">ldr q0<span class="token punctuation">,</span> <span class="token punctuation">[</span>x0<span class="token punctuation">]</span>

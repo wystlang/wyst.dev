@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -115,6 +115,21 @@ ELF after each iteration, and fails if the bytes differ.</p>
 	<span class="token property">"workload"</span><span class="token operator">:</span> <span class="token string">"project"</span><span class="token punctuation">,</span>
 	<span class="token property">"target"</span><span class="token operator">:</span> <span class="token string">"qemu-virt-aarch64-el2"</span><span class="token punctuation">,</span>
 	<span class="token property">"optimization"</span><span class="token operator">:</span> <span class="token string">"reproducible"</span><span class="token punctuation">,</span>
+	<span class="token property">"buildIdentity"</span><span class="token operator">:</span> <span class="token string">"fnv1a64:0000000000000000"</span><span class="token punctuation">,</span>
+	<span class="token property">"targetFacts"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+		<span class="token property">"buildIdentity"</span><span class="token operator">:</span> <span class="token string">"fnv1a64:0000000000000000"</span><span class="token punctuation">,</span>
+		<span class="token property">"facts"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+			<span class="token punctuation">{</span>
+				<span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"arch"</span><span class="token punctuation">,</span>
+				<span class="token property">"value"</span><span class="token operator">:</span> <span class="token string">"arm64-v8a"</span><span class="token punctuation">,</span>
+				<span class="token property">"provenance"</span><span class="token operator">:</span> <span class="token string">"explicit-profile"</span><span class="token punctuation">,</span>
+				<span class="token property">"source"</span><span class="token operator">:</span> <span class="token string">"profile:qemu-virt-aarch64-el2"</span>
+			<span class="token punctuation">}</span>
+		<span class="token punctuation">]</span><span class="token punctuation">,</span>
+		<span class="token property">"sourceRequirements"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+		<span class="token property">"analysisDefaults"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+		<span class="token property">"unverifiedAssumptions"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+	<span class="token punctuation">}</span><span class="token punctuation">,</span>
 	<span class="token property">"output"</span><span class="token operator">:</span> <span class="token string">"build/kernel.elf"</span><span class="token punctuation">,</span>
 	<span class="token property">"sourceCount"</span><span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span>
 	<span class="token property">"layout"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
@@ -149,7 +164,10 @@ reproducibility check is the stable contract: byte-identical outputs are
 required.</p>
 <p>Module and layout fingerprints use a stable <code>fnv1a64:</code> prefix. They are not
 cryptographic hashes; they are deterministic build-unit identifiers for local
-change detection and incremental-checking analysis.</p>
+change detection and incremental-checking analysis.
+The <code>buildIdentity</code> field uses the same stable prefix for resolved target facts
+and selected optimization mode, so target profile changes are visible even when
+the benchmarked source files do not change.</p>
 <h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
 <ul>
 <li>No persistent build cache.</li>

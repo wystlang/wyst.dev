@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -151,9 +151,9 @@ restrictions that hold from SSA construction onward:</p>
 <li>Aggregate types (<code>struct</code>, <code>[]T</code> slices, <code>[N]T</code> arrays, <code>bitfield(T)</code>,
 <code>enum</code>) survive into the IR. They are lowered to scalar ops only by the
 type-erasure pass.</li>
-<li><code>@volatile T</code> is <strong>distinct</strong> from <code>@T</code> everywhere — no IR op accepts both
-interchangeably. A pass that ignores the volatile-ness must reject any IR
-involving <code>@volatile T</code>.</li>
+<li><code>@volatile T</code> and <code>@mmio T</code> are <strong>distinct</strong> from <code>@T</code> everywhere — no IR op
+accepts them interchangeably. A pass that ignores volatility or MMIO intent
+must reject IR involving those qualifiers.</li>
 </ul>
 <h3 id="2.1-scalar-types" tabindex="-1"><a class="doc-anchor" href="#2.1-scalar-types" aria-hidden="true">#</a> 2.1 Scalar Types</h3>
 <table>
@@ -205,6 +205,10 @@ loads/stores (<code>load.v16i8</code> etc.) and live in vector types.</p>
 <tr>
 <td><code>@volatile T</code></td>
 <td>Volatile-qualified address. Stores and loads through this type cannot be reordered or elided.</td>
+</tr>
+<tr>
+<td><code>@mmio T</code></td>
+<td>Volatile-qualified address with MMIO intent. Accesses also carry the <code>mmio</code> effect; architectural memory type still comes from mapping facts.</td>
 </tr>
 </tbody>
 </table>
@@ -312,6 +316,9 @@ exit (the terminator). No fall-through except via explicit <code>jmp</code>.</p>
 <h3 id="4.2-ssa-discipline" tabindex="-1"><a class="doc-anchor" href="#4.2-ssa-discipline" aria-hidden="true">#</a> 4.2 SSA Discipline</h3>
 <ul>
 <li>Every value is defined exactly once.</li>
+<li>Even values whose source bits are indeterminate have an explicit defining
+instruction such as <code>indeterminate_read</code>; the IR never represents an
+ordinary SSA value by omitting its definition.</li>
 <li>A value is in scope from its defining instruction to the end of the
 function. <strong>Liveness</strong> is computed separately and is not part of the IR.</li>
 <li>Phis are the only mechanism for control-dependent values. Phi operands
@@ -403,7 +410,7 @@ materialized as a separate <code>const</code> op:</p>
 <p>This makes the cost of materializing a constant visible in the IR.</p>
 <hr>
 <h2 id="6.-op-vocabulary" tabindex="-1"><a class="doc-anchor" href="#6.-op-vocabulary" aria-hidden="true">#</a> 6. Op Vocabulary</h2>
-<p>The IR has <strong>31 op kinds</strong>, grouped below. Each op section lists:</p>
+<p>The IR has <strong>32 op kinds</strong>, grouped below. Each op section lists:</p>
 <ul>
 <li><strong>Signature</strong> — input types, output type.</li>
 <li><strong>Semantics</strong> — what it computes.</li>
@@ -414,6 +421,9 @@ only at the type-erasure boundary; passes above that boundary need not
 agree.)</li>
 </ul>
 <h3 id="6.1-arithmetic-and-logical" tabindex="-1"><a class="doc-anchor" href="#6.1-arithmetic-and-logical" aria-hidden="true">#</a> 6.1 Arithmetic and Logical</h3>
+<p>All binary op operands are produced in source evaluation order before the op is
+created: left operand first, then right operand. A pass may reorder pure
+producer ops only when the move is legal under Chapter 9 and Chapter 13.</p>
 <h4><code>add</code> / <code>sub</code> / <code>mul</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T) -&gt; T</code> where <code>T</code> is integer (signed or unsigned, any width).</li>
@@ -480,6 +490,8 @@ for acquire/seq_cst.</li>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, T) -&gt; void</code>.</li>
 <li><strong>Attributes:</strong> <code>volatile : bool</code>, <code>order : { plain, release, seq_cst }</code>, <code>align : u32</code>.</li>
+<li><strong>Operand production order:</strong> source assignment lowering produces the address
+operand before the stored value operand, then emits the store.</li>
 <li><strong>Lowering:</strong> scalar <code>str</code>/<code>strb</code>/<code>strh</code> family for scalar values;
 deterministic scalar chunks for aggregate values per
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.6</a>; <code>stlr</code>/<code>stlxr</code>
@@ -501,6 +513,20 @@ integer.</li>
 <li><strong>Semantics:</strong> stores a host-order integer value using the requested byte
 order.</li>
 <li><strong>Lowering:</strong> <code>rev</code>/<code>rev16</code> as needed before native <code>str</code>/<code>strh</code>.</li>
+</ul>
+<h4><code>indeterminate_read</code></h4>
+<ul>
+<li><strong>Signature:</strong> <code>(storage : T) -&gt; T</code>.</li>
+<li><strong>Source spelling:</strong> <code>%read_uninit(storage)</code> where <code>storage</code> is
+<code>MaybeUninit&lt;T&gt;</code>.</li>
+<li><strong>Semantics:</strong> observes the current bits of explicit raw local storage as an
+ordinary <code>T</code> value. The result is unspecified by Wyst but is not poison,
+<code>undef</code>, or a missing SSA definition.</li>
+<li><strong>Legality:</strong> only generated for explicit raw-storage reads; ordinary local
+reads before initialization are source diagnostics and must not reach IR as
+definitionless SSA values.</li>
+<li><strong>Lowering:</strong> copy or load the storage home into a normal result home using
+the same storage class and type-erased representation as <code>T</code>.</li>
 </ul>
 <h3 id="6.3-atomic-rmw" tabindex="-1"><a class="doc-anchor" href="#6.3-atomic-rmw" aria-hidden="true">#</a> 6.3 Atomic RMW</h3>
 <h4><code>atomic.cas</code></h4>
@@ -536,6 +562,9 @@ order.</li>
 <ul>
 <li><strong>Signature:</strong> <code>(fn(T0, T1, ...) -&gt; R, T0, T1, ...) -&gt; R</code>.</li>
 <li><strong>Attributes:</strong> <code>cc : { wyst, aapcs }</code>, <code>tail : bool</code>.</li>
+<li><strong>Operand production order:</strong> indirect calls produce the callee expression
+first, then call arguments left-to-right. Direct calls produce arguments
+left-to-right before the call op.</li>
 <li><strong>Effects:</strong> AAPCS or Wyst-native register clobber per <code>cc</code>; full compiler memory fence unless attribute <code>pure : bool = true</code> (rare; only for pure-function intrinsics).</li>
 </ul>
 <h4><code>tail</code></h4>
@@ -601,7 +630,10 @@ effectful arm producers retain that order.</li>
 <h4><code>aggregate</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T0, T1, ...) -&gt; S</code> where <code>S</code> is a struct, slice, or enum variant.</li>
-<li><strong>Semantics:</strong> constructs an aggregate from its parts. Used pre-type-erasure.</li>
+<li><strong>Semantics:</strong> constructs an aggregate from its parts. Used pre-type-erasure.
+Aggregate part producers run in source order. Struct aggregate fields are
+stored in declaration order after their initializer expressions have been
+evaluated in written source order.</li>
 <li><strong>Lowering:</strong> decomposed by type erasure; no direct ARM64 lowering.</li>
 </ul>
 <h4><code>extract</code></h4>
@@ -776,16 +808,16 @@ System) to enforce architectural boundaries at compile time:</p>
 <td><code>%daif_set</code>, <code>%daif_clr</code></td>
 </tr>
 <tr>
+<td><code>volatile_access</code></td>
+<td>any load/store through <code>@volatile T</code> or <code>@mmio T</code></td>
+</tr>
+<tr>
 <td><code>mmio</code></td>
-<td>any load/store through <code>@volatile T</code></td>
+<td>any load/store through <code>@mmio T</code></td>
 </tr>
 <tr>
 <td><code>barrier</code></td>
 <td><code>%compiler_barrier</code>, <code>%dsb</code>, <code>%dmb</code>, <code>%isb</code></td>
-</tr>
-<tr>
-<td><code>stack_alloc</code></td>
-<td><code>local</code> storage ops and <code>stack_addr_of</code> / <code>%addr_of(local)</code></td>
 </tr>
 <tr>
 <td><code>fp_state</code></td>
@@ -801,6 +833,10 @@ System) to enforce architectural boundaries at compile time:</p>
 <code>sysreg</code> and <code>interrupt_mask</code>. The categories are deliberately coarse —
 they represent architectural boundaries (privilege level, memory type,
 synchronization domain), not individual instruction distinctions.</p>
+<p>Generated resources such as local stack slots, frame bytes, spill and reload
+counts, register-class pressure, veneers, code size, and caller-owned aggregate
+copies are not IR effect categories. They are backend facts checked and reported
+by ABI, lowering, object, and generated-manifest surfaces after lowering.</p>
 <p>Effects propagate through the call graph automatically during semantic
 analysis (see <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> Effect System).
 The <code>effect</code> attribute on intrinsic ops is the leaf source; the compiler
@@ -843,7 +879,7 @@ construction and after every pass that mutates IR.</p>
 <li><strong>Phi block agreement</strong>: a phi in <code>bb</code> has exactly one operand per CFG predecessor of <code>bb</code>.</li>
 <li><strong>Region containment</strong>: every basic block belongs to exactly one leaf region; nested regions form a tree.</li>
 <li><strong>Reachability</strong>: every block is reachable from the entry block (or marked <code>unreachable</code>).</li>
-<li><strong>Volatility flow</strong>: an op of type <code>@volatile T</code> may only be consumed by <code>load</code>/<code>store</code> with <code>volatile=true</code>, by <code>cast</code>, or by <code>gep</code>. Casting away <code>@volatile</code> requires an explicit <code>cast { kind: bitcast }</code>.</li>
+<li><strong>Address qualifier flow</strong>: an op of type <code>@volatile T</code> or <code>@mmio T</code> may only be consumed by <code>load</code>/<code>store</code> with <code>volatile=true</code>, by <code>cast</code>, or by <code>gep</code>. Casting away <code>@volatile</code> or <code>@mmio</code> requires an explicit <code>cast { kind: bitcast }</code>. Casting alone never introduces a volatile or MMIO access effect.</li>
 <li><strong>Calling convention agreement</strong>: a <code>call %f, ...</code> where <code>%f</code> has type <code>fn(...) [@cc]</code> must have <code>call.cc = @cc</code>.</li>
 <li><strong>Intrinsic effect respect</strong>: a pass that reorders any op past an <code>intrinsic</code> op without consulting the intrinsic's effect attributes is a verifier-detected bug.</li>
 <li><strong>Volatile store preservation</strong>: no pass may elide, duplicate, or reorder a <code>store</code> with <code>volatile=true</code> relative to any other <code>volatile=true</code> load or store. Volatile stores are never dead-store eliminated, even if a subsequent volatile store writes the same address. This invariant is verified structurally: within any basic block, the relative order of volatile ops in IR must match the order after every pass.</li>
@@ -965,12 +1001,12 @@ func uart_write [cc=wyst] (byte: u8) -> void {
 
   region schedule.default body {
     bb0:
-      %fr_addr = addr_of @volatile u32 "UARTFR"
+      %fr_addr = addr_of @mmio u32 "UARTFR"
       jmp bb1
 
     region loop spin {
       bb1:
-        %fr = load @volatile u32, %fr_addr [volatile=true, order=plain, align=4]
+        %fr = load @mmio u32, %fr_addr [volatile=true, order=plain, align=4]
         %txff = const u32 0x20
         %busy_mask = and u32 %fr, %txff
         %busy = cmp u32 %busy_mask, 0 [op=ne]
@@ -982,9 +1018,9 @@ func uart_write [cc=wyst] (byte: u8) -> void {
     }
 
     bb3:
-      %dr_addr = addr_of @volatile u32 "UARTDR"
+      %dr_addr = addr_of @mmio u32 "UARTDR"
       %byte_u32 = cast u32 %byte [kind=zext]
-      store @volatile u32, %dr_addr, %byte_u32 [volatile=true, order=plain, align=4]
+      store @mmio u32, %dr_addr, %byte_u32 [volatile=true, order=plain, align=4]
       ret
   }
 }
@@ -993,10 +1029,10 @@ func uart_write [cc=wyst] (byte: u8) -> void {
 <ul>
 <li><code>loop</code> region nests inside <code>schedule.default</code>; the IR makes the
 reorder-legality scope syntactically visible.</li>
-<li>The volatile loads and stores carry the <code>volatile=true</code> attribute even
-though the type already records it; this is <strong>deliberate redundancy</strong> so
-that an alias-analysis pass that touches a load doesn't need to look up
-the type to see if it's volatile.</li>
+<li>The volatile/MMIO loads and stores carry the <code>volatile=true</code> attribute even
+though the type already records it; this is <strong>deliberate redundancy</strong> so that
+an alias-analysis pass that touches a load doesn't need to look up the type to
+see if it's volatile. MMIO intent remains in the address type and effect facts.</li>
 <li><code>intrinsic wfe</code> is opaque: a pass that doesn't know what <code>wfe</code> does still
 knows its declared <code>fence=none</code> and can reorder around it (subject to the
 block boundary).</li>

@@ -22,7 +22,7 @@
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
 				<span class="tag">lang</span>
-				<span class="ver">v0.7</span>
+				<span class="ver">v0.8-draft</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -301,11 +301,15 @@ name <span class="token operator">::</span> <span class="token punctuation">(</s
 </code></pre>
 <p><code>return</code> is valid inside function blocks. It returns from the function's own stack frame.
 After a statement that cannot fall through, later statements in the same block
-are unreachable and are rejected. A <code>loop</code> statement can fall through only if
-its body contains a <code>break</code> that targets that loop. A <code>repeat 0</code> statement
-always falls through. A nonzero <code>repeat</code> statement can fall through when its
-body can reach the closing brace, <code>break</code> exits the repeat, or <code>continue</code>
-advances through the final iteration.</p>
+are unreachable and are rejected. Non-fallthrough statements include
+<code>return</code>, <code>goto</code>, <code>%eret()</code>, unbreakable <code>loop</code> statements, and direct calls to
+functions declared <code>#noreturn</code>. A direct <code>#noreturn</code> call is a terminal
+statement in ordinary functions, <code>#naked</code> functions after their stack contract
+permits the call, and labels. A <code>loop</code> statement can fall through only if its
+body contains a <code>break</code> that targets that loop. A <code>repeat 0</code> statement always
+falls through. A nonzero <code>repeat</code> statement can fall through when its body can
+reach the closing brace, <code>break</code> exits the repeat, or <code>continue</code> advances
+through the final iteration.</p>
 <p><code>repeat N, i { ... }</code> binds <code>i</code> as an immutable <code>u64</code> counter scoped to the
 loop body. The counter starts at <code>0</code> and reaches <code>N - 1</code>; <code>repeat 0, i { ... }</code> never
 executes its body. Unbound <code>repeat N { ... }</code> remains the same form. <code>repeat</code>
@@ -1595,6 +1599,11 @@ lists the known candidate target or explains that the target is unknown.</p>
 <td>functions, modules</td>
 <td>restrict which architectural effects may appear in the graph(see <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> Effect System)</td>
 </tr>
+<tr>
+<td><code>#frame(...)</code></td>
+<td>functions, labels</td>
+<td>constrain post-lowering frame bytes and spill slots(see <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> Generated Resources)</td>
+</tr>
 </tbody>
 </table>
 <hr>
@@ -2458,9 +2467,8 @@ the stack state as unknown after the block.</p>
 <p>These stack-state contracts are not effect categories. A
 <code>#asm(sets_sp, effects: none)</code> block is legal when it satisfies the <code>sets_sp</code>
 verifier and contains no instruction rejected by the <code>effects: none</code> table. A
-module may deny <code>stack_alloc</code> or every other effect category and still use a
-verifier-approved <code>sets_sp</code> block to establish the initial stack in <code>#naked</code>
-entry code.</p>
+module may deny every effect category and still use a verifier-approved
+<code>sets_sp</code> block to establish the initial stack in <code>#naked</code> entry code.</p>
 <hr>
 <h3 id="memory-fence-semantics" tabindex="-1"><a class="doc-anchor" href="#memory-fence-semantics" aria-hidden="true">#</a> Memory Fence Semantics</h3>
 <p><strong>Default behavior: every <code>#asm</code> block is a full two-way compiler memory
