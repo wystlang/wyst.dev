@@ -12,7 +12,6 @@ assets/
   docs.css              Documentation layout + prose + syntax-highlight colors
   …                     Fonts, icons, mascot art
 docs/                   GENERATED — one folder per chapter/appendix (commit this)
-roadmap/                GENERATED — from the compiler repo's roadmap.md
 build/
   generate.mjs          Markdown → HTML generator
   template.mjs          Shared page shell (header/footer/sidebar)
@@ -25,9 +24,8 @@ tools/
 ```
 
 The landing page and the docs share **one** design system (`assets/wyst.css`),
-so they stay visually consistent. Generated HTML under `docs/` and `roadmap/`
-is committed, so deploys remain plain static files with no build step on
-Cloudflare's side.
+so they stay visually consistent. Generated HTML under `docs/` is committed,
+so deploys remain plain static files with no build step on Cloudflare's side.
 
 ## Brand asset source
 
@@ -89,8 +87,8 @@ npx wrangler deploy
 ```
 
 Wrangler deploys `.worker-assets/` as static Worker assets. That directory is a
-committed deploy artifact containing only `index.html`, `assets/`, `docs/`, and
-`roadmap/`. Regenerate and commit it whenever those source files change:
+committed deploy artifact containing only `index.html`, `404.html`, `assets/`,
+and `docs/`. Regenerate and commit it whenever those source files change:
 
 ```sh
 npm run build:worker-assets
@@ -100,7 +98,7 @@ git add .worker-assets
 ### Automatic regeneration (git hook)
 
 A tracked `pre-commit` hook in `.githooks/` runs the two steps above for you:
-whenever a commit touches `index.html`, `assets/`, `docs/`, or `roadmap/`, it
+whenever a commit touches `index.html`, `404.html`, `assets/`, or `docs/`, it
 regenerates `.worker-assets/` and stages it, so the deploy artifact can never
 fall out of sync with the source (the cause of "I pushed but the live site
 didn't change").
@@ -122,7 +120,7 @@ committed artifact is deployed.
 
 ```sh
 npm install
-npm run build        # regenerates docs/ and roadmap/
+npm run build        # regenerates docs/
 npm run docs         # alias for build
 npm run build:worker-assets # refreshes committed Worker deploy artifact
 node build/serve.mjs # preview at http://localhost:8347
@@ -136,7 +134,7 @@ Docs are edited in the compiler repo. To publish those changes here:
 # 1. edit + commit docs in the wystlang/wyst repo, then:
 WYST_DOCS_DIR=/path/to/wyst/design npm run build
 npm run build:worker-assets
-git add docs roadmap
+git add docs
 git add .worker-assets
 git commit -m "Update docs to <description>"
 git push                                    # Cloudflare deploys

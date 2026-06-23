@@ -385,7 +385,7 @@ functions or function pointer types are a future surface:</p>
 Both list forms are non-empty; <code>Box&lt;&gt;</code> and <code>swap&lt;&gt;()</code> are rejected. The entries
 in declaration <code>&lt;...&gt;</code> lists are type-parameter names; the entries in
 instantiation <code>&lt;...&gt;</code> lists are full <code>Type</code> forms, so nested generic type
-arguments such as <code>Result&lt;Box&lt;u64&gt;, Error&gt;</code> are allowed. Generic instantiations
+arguments such as <code>Pair&lt;Box&lt;u64&gt;, Error&gt;</code> are allowed. Generic instantiations
 require explicit type arguments; Wyst does not infer omitted type arguments from
 value arguments. Type argument arity is exact: no defaults and no omitted
 arguments are supported. Type parameter lists may appear on function, struct,
@@ -403,6 +403,7 @@ GenericBound         &lt;- 'integer'
                       / 'scalar'
                       / 'address'
                       / 'bitfield'
+                      / 'payload_word'
 </code></pre>
 <p>The bound names are recognized only in generic bound position, not as global
 keywords. User-defined bounds such as <code>T: Comparable</code> are not part of Wyst's
@@ -953,6 +954,7 @@ Annotation
      / '#section' '(' DottedName ','? ')'                    // per-declaration section attribute; see chapter-04-modules.md &quot;Custom Sections from User Declarations&quot;
      / '#deny' '(' EffectList ')'                            // effect restriction; see chapter-01-language-design.md &quot;Effect System&quot;
      / '#frame' '(' FrameConstraintList ','? ')'              // post-lowering frame resource constraint; see chapter-01-language-design.md
+     / '#exact' '(' ExactCodeConstraintList ','? ')'          // post-lowering exact-code artifact constraint; see chapter-13-scheduling.md
      / CallingConv                                           // [aapcs], etc.
 
 AnnotationGroup
@@ -971,6 +973,17 @@ EffectName &lt;- 'sysreg' / 'trap' / 'exception_return' / 'cache_maintenance'
 
 FrameConstraintList &lt;- FrameConstraint (',' FrameConstraint)* ','?
 FrameConstraint &lt;- 'max_bytes' '=' ConstExpr / 'max_spills' '=' ConstExpr
+
+ExactCodeConstraintList &lt;- ExactCodeConstraint (',' ExactCodeConstraint)* ','?
+ExactCodeConstraint &lt;- 'instructions' '=' ConstExpr
+                     / 'families' '=' StringLiteral
+                     / 'bytes' '=' StringLiteral
+                     / 'registers' '=' StringLiteral
+                     / 'prologue' '=' StringLiteral
+                     / 'spills' '=' ConstExpr
+                     / 'veneers' '=' ConstExpr
+                     / 'section' '=' StringLiteral
+                     / 'align' '=' ConstExpr
 
 DeclItem
     &lt;- FnDecl
@@ -1043,9 +1056,10 @@ BitfieldField
 <p>Enum variants without explicit values receive increasing tag values after
 parse. <code>EnumPayload</code> is parsed as a type list so diagnostics can point at
 the precise payload shape; semantic analysis currently accepts zero or one
-word-sized scalar/address payload per variant and rejects tuple payloads or
-recursive by-value payloads. Generic type parameters are legal on enum
-declarations and are checked with the same nominal generic rules as structs.</p>
+payload-word value per variant and rejects tuple payloads, structures, slices,
+floating-point payloads, and nested enum payloads. Generic type parameters are
+legal on enum declarations, but direct generic enum payload parameters must
+declare a payload-compatible bound such as <code>payload_word</code>.</p>
 <h3 id="5.4-global-%2F-constant-declarations" tabindex="-1"><a class="doc-anchor" href="#5.4-global-%2F-constant-declarations" aria-hidden="true">#</a> 5.4 Global / Constant Declarations</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">GlobalDecl  &lt;- Identifier ':' StorageAttr* Type '=' Expr
 StorageAttr &lt;- '#percpu' / '#tls' / '#shared'                // mutually exclusive; see §9.12
@@ -1320,7 +1334,6 @@ that precede it, and the conflict order in
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

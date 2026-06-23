@@ -843,381 +843,655 @@ parameter type.</li>
 <h3 id="memory-model" tabindex="-1"><a class="doc-anchor" href="#memory-model" aria-hidden="true">#</a> Memory Model</h3>
 <hr>
 <h2 id="overview" tabindex="-1"><a class="doc-anchor" href="#overview" aria-hidden="true">#</a> Overview</h2>
-<p>Wyst's memory model defines two things:</p>
+<p>Wyst's memory model is language-level: it describes source executions before
+production SMP runtime policy is added. It defines which values loads may
+observe, which operations synchronize across agents, how barriers participate
+in ordering, and which compiler transformations are legal.</p>
+<p>The model has three distinct orders:</p>
 <ol>
-<li>
-<p><strong>Compiler ordering</strong> — what reorderings the Wyst compiler is permitted to perform on
-memory operations in the emitted instruction sequence.</p>
-</li>
-<li>
-<p><strong>Hardware visibility</strong> — under what conditions a store performed by one execution agent
-becomes visible to a load performed by another.</p>
-</li>
+<li><strong>Source event order</strong>: the evaluation order required by Wyst source inside
+one execution agent.</li>
+<li><strong>Compiler event order</strong>: the order of memory and effect events in the
+emitted instruction stream after optimization.</li>
+<li><strong>Architectural event order</strong>: the order in which the selected target may
+make those emitted events visible to agents under the target memory model.</li>
 </ol>
-<p>The two levels are distinct. The compiler ordering rules constrain the instruction sequence
-the compiler emits. The hardware visibility rules describe what the ARM64 CPU guarantees
-about the order in which those instructions take effect. Both levels are required to reason
-correctly about concurrent Wyst programs.</p>
-<p>This model is compatible with and references the ARM64 Architecture Reference Manual
-(DDI 0487, VMSA memory model). Where ARM64 terminology is used (inner shareable, outer
-shareable, etc.) it carries the ARM64 meaning.</p>
+<p>The compiler may change compiler event order only when the transformation is
+allowed by this chapter. The architecture may still observe events in an order
+permitted by ARM64 unless Wyst emits acquire, release, <code>seq_cst</code>, or barrier
+instructions that constrain it. Where ARM64 terminology is used (inner
+shareable, outer shareable, full system, Device memory, Normal memory), it
+carries the ARM64 Architecture Reference Manual meaning.</p>
 <hr>
 <h2 id="9.1-execution-model" tabindex="-1"><a class="doc-anchor" href="#9.1-execution-model" aria-hidden="true">#</a> 9.1 Execution Model</h2>
 <h3 id="agents" tabindex="-1"><a class="doc-anchor" href="#agents" aria-hidden="true">#</a> Agents</h3>
-<p>An <strong>execution agent</strong> is any unit of sequential execution that shares memory with others:</p>
+<p>An <strong>execution agent</strong> is any unit of sequential execution that shares memory
+with others:</p>
 <ul>
-<li>A hardware CPU core</li>
-<li>An interrupt handler executing on a CPU core (preempting the interrupted thread)</li>
-<li>A DMA controller or bus master with write access to system memory</li>
+<li>a hardware CPU core;</li>
+<li>an interrupt handler executing on a CPU core;</li>
+<li>a DMA controller or other bus master that can read or write system memory;</li>
+<li>an external device that owns or updates MMIO-visible state.</li>
 </ul>
-<p>Each agent executes a sequence of memory operations in <strong>program order</strong>: the order the
-operations appear in the source. Within a single agent, program order is the sequencing
-relation between that agent's operations.</p>
-<h3 id="memory-locations" tabindex="-1"><a class="doc-anchor" href="#memory-locations" aria-hidden="true">#</a> Memory Locations</h3>
-<p>A memory location is a single byte of addressable memory. Operations on multi-byte types
-(e.g. <code>u32</code>, <code>u64</code>) affect a contiguous sequence of bytes. The model applies to each byte
-individually, though naturally aligned multi-byte accesses are always access-atomic with
-respect to their own width (see 9.4 Atomicity).</p>
-<h3 id="operations" tabindex="-1"><a class="doc-anchor" href="#operations" aria-hidden="true">#</a> Operations</h3>
-<p>The model recognizes these memory operation classes:</p>
+<p>Each agent has a <strong>source event order</strong>: the order induced by Wyst evaluation
+rules in <a href="/docs/chapter-07-operators/">chapter-07-operators.md</a>, statement order,
+and control flow. For an assignment, the address/storage-target side precedes
+the assigned value. For a call, argument effects are ordered left-to-right
+before the call effect.</p>
+<h3 id="memory-locations-and-access-ranges" tabindex="-1"><a class="doc-anchor" href="#memory-locations-and-access-ranges" aria-hidden="true">#</a> Memory Locations and Access Ranges</h3>
+<p>A <strong>byte location</strong> is one byte of addressable memory. An <strong>access range</strong> is
+the contiguous byte range touched by one source load, store, or atomic
+operation. Two events <strong>conflict</strong> when their access ranges overlap and at
+least one event writes.</p>
+<p>A <strong>coherence location</strong> is the exact access range of an access-atomic scalar
+or atomic operation. Naturally aligned <code>u8</code>/<code>i8</code>, <code>u16</code>/<code>i16</code>, <code>u32</code>/<code>i32</code>,
+<code>u64</code>/<code>i64</code>, address-width, <code>f32</code>, and <code>f64</code> scalar accesses are
+access-atomic as described in §9.6. Wider aggregate, pair, vector, and
+misaligned accesses are modeled as a deterministic sequence of smaller memory
+events; each sub-event has its own access range.</p>
+<h3 id="memory-events" tabindex="-1"><a class="doc-anchor" href="#memory-events" aria-hidden="true">#</a> Memory Events</h3>
+<p>The model recognizes these source memory events:</p>
 <table>
 <thead>
 <tr>
-<th>Kind</th>
-<th>Wyst syntax</th>
-<th>Description</th>
+<th>Event kind</th>
+<th>Wyst surface</th>
+<th>Writes?</th>
+<th>Synchronizing?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Plain load</td>
 <td><code>T@[addr]</code> where <code>addr : @T</code></td>
-<td>Ordinary load; no ordering annotation</td>
+<td>no</td>
+<td>no</td>
 </tr>
 <tr>
 <td>Plain store</td>
 <td><code>T@[addr] = val</code> where <code>addr : @T</code></td>
-<td>Ordinary store; no ordering annotation</td>
+<td>yes</td>
+<td>no</td>
 </tr>
 <tr>
 <td>Volatile load</td>
 <td><code>T@[addr]</code> where <code>addr : @volatile T</code></td>
-<td>Compiler-barrier load</td>
+<td>no</td>
+<td>compiler-only fence</td>
 </tr>
 <tr>
 <td>Volatile store</td>
 <td><code>T@[addr] = val</code> where <code>addr : @volatile T</code></td>
-<td>Compiler-barrier store</td>
+<td>yes</td>
+<td>compiler-only fence</td>
 </tr>
 <tr>
 <td>MMIO-intent load</td>
 <td><code>T@[addr]</code> where <code>addr : @mmio T</code></td>
-<td>Compiler-barrier load with MMIO intent</td>
+<td>no</td>
+<td>compiler-only fence plus <code>mmio</code> effect</td>
 </tr>
 <tr>
 <td>MMIO-intent store</td>
 <td><code>T@[addr] = val</code> where <code>addr : @mmio T</code></td>
-<td>Compiler-barrier store with MMIO intent</td>
+<td>yes</td>
+<td>compiler-only fence plus <code>mmio</code> effect</td>
 </tr>
 <tr>
 <td>Acquire load</td>
 <td><code>#acquire T@[addr]</code></td>
-<td>Load-acquire (synchronization)</td>
+<td>no</td>
+<td>acquire</td>
 </tr>
 <tr>
 <td>Release store</td>
 <td><code>#release T@[addr] = val</code></td>
-<td>Store-release (synchronization)</td>
+<td>yes</td>
+<td>release</td>
+</tr>
+<tr>
+<td>Relaxed atomic load/store</td>
+<td><code>%atomic_load</code> / <code>%atomic_store</code> with <code>order: relaxed</code></td>
+<td>load: no, store: yes</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Seq-cst atomic load/store</td>
+<td><code>%atomic_load</code> / <code>%atomic_store</code> with <code>order: seq_cst</code></td>
+<td>load: no, store: yes</td>
+<td>acquire/release plus SC</td>
+</tr>
+<tr>
+<td>Atomic RMW</td>
+<td><code>%cas</code>, <code>%fetch_*</code>, <code>%xchg</code>, <code>%atomic_bit_*</code></td>
+<td>success/RMW: yes; failed <code>%cas</code>: no</td>
+<td>by <code>order:</code></td>
 </tr>
 </tbody>
 </table>
-<p>Volatility is determined by the <strong>type</strong> of the address operand. There is
-no per-access <code>#volatile</code> form. An access through <code>@volatile T</code> or <code>@mmio T</code>
-is volatile; an access through <code>@T</code> is not. Access through <code>@mmio T</code> additionally
-introduces the <code>mmio</code> effect.</p>
-<p>Barrier runtime primitives (<code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>) and compiler barriers
-(<code>%compiler_barrier()</code>) are ordering constraints between operations, not
-memory operations themselves. All four participate in compiler ordering rules
-as full two-way fences. Only <code>%dsb</code>, <code>%dmb</code>, and <code>%isb()</code> emit hardware
-barrier instructions.</p>
-<p><code>#schedule(strict)</code> block boundaries are also compiler ordering constraints.
-The opening and closing braces of a strict schedule block are hard scheduling
-boundaries: operations outside the block must not move inside it, and
-operations inside the block must not move outside it. These boundaries emit
-no instruction and provide no hardware memory-ordering guarantee.</p>
+<p>An <strong>atomic event</strong> is a <code>#acquire</code> load, a <code>#release</code> store, a relaxed or
+<code>seq_cst</code> atomic load/store, or an atomic RMW. Atomic events on the same
+coherence location are single-copy atomic and do not tear. A read-modify-write
+(RMW) event contains a read part and, when it succeeds or is an unconditional
+RMW, a write part. A successful RMW's read and write are adjacent in the
+location's modification order. A failed <code>%cas</code> is an atomic read with no write.</p>
+<p>Volatility is determined only by the static address type at the access site.
+Volatile and MMIO-intent accesses are observable compiler events, but they are
+not synchronization events unless the access also uses <code>#acquire</code>, <code>#release</code>,
+or an atomic intrinsic order that synchronizes.
+An atomic intrinsic whose address operand has type <code>@volatile T</code> or <code>@mmio T</code>
+is both atomic and volatile; <code>@mmio T</code> also adds MMIO intent. The strictest
+compiler-ordering, synchronizes-with, and data-race rules for the combined
+event all apply.</p>
+<p>Barrier runtime primitives (<code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>) and
+<code>%compiler_barrier()</code> are <strong>barrier events</strong>, not loads or stores. They are in
+source event order, constrain compiler event order, and have the hardware
+meaning described in §9.9. <code>%compiler_barrier()</code> has no architectural event.
+<code>#schedule(strict)</code> boundaries are compiler scheduling boundaries only.</p>
 <hr>
-<h2 id="9.2-compiler-ordering-rules" tabindex="-1"><a class="doc-anchor" href="#9.2-compiler-ordering-rules" aria-hidden="true">#</a> 9.2 Compiler Ordering Rules</h2>
-<p>The compiler ordering rules define which reorderings the Wyst compiler is permitted to
-perform. A <strong>reordering</strong> is any emission of an instruction sequence that differs from
-program order.</p>
-<p>The source evaluation order used by this table is defined in
-<a href="/docs/chapter-07-operators/">chapter-07-operators.md</a>. For an assignment, the
-address/storage-target side precedes the assigned value. For a call, argument
-effects are ordered left-to-right before the call effect.</p>
-<h3 id="the-reordering-table" tabindex="-1"><a class="doc-anchor" href="#the-reordering-table" aria-hidden="true">#</a> The Reordering Table</h3>
-<p>Given operation A before operation B in source order: may the compiler emit B before A?</p>
-<p>Row = A (earlier). Column = B (later). &quot;Strict boundary&quot; means either the
-opening or closing brace of a <code>#schedule(strict)</code> block.</p>
+<h2 id="9.2-modification-order%2C-reads-from%2C-and-coherence" tabindex="-1"><a class="doc-anchor" href="#9.2-modification-order%2C-reads-from%2C-and-coherence" aria-hidden="true">#</a> 9.2 Modification Order, Reads-From, and Coherence</h2>
+<h3 id="modification-order" tabindex="-1"><a class="doc-anchor" href="#modification-order" aria-hidden="true">#</a> Modification Order</h3>
+<p>Every byte location has a <strong>modification order</strong>: a total order of all writes
+to that byte, including an initial write representing the byte's startup
+contents. For an access-atomic write to a multi-byte coherence location, the
+write appears as one indivisible modification of that exact range and as one
+write in each covered byte's modification order.</p>
+<p>For each coherence location used by atomic events, Wyst also defines a
+per-location modification order for that exact byte range, written <strong>mo(X)</strong>.
+<code>mo(X)</code> is a total order of the initial write, every access-atomic write to X,
+and every successful atomic RMW write to X. That includes plain, volatile,
+MMIO-intent, <code>#release</code>, atomic-store, and RMW writes when they touch the exact
+range X as one access-atomic event. Non-access-atomic writes appear only in the
+per-byte modification orders for their sub-accesses.</p>
+<p><code>mo(X)</code> is consistent with the per-byte modification orders for X. RMW events
+are linearized at one point in <code>mo(X)</code>: their read part reads the immediately
+preceding value in <code>mo(X)</code>, and their write part, if any, follows that read
+without an intervening write to X. This is what makes the canonical <code>%cas</code> lock
+/ <code>#release</code> unlock pattern a defined synchronization pattern rather than an
+illicit mixed access.</p>
+<h3 id="reads-from" tabindex="-1"><a class="doc-anchor" href="#reads-from" aria-hidden="true">#</a> Reads-From</h3>
+<p>Each load-like event has a <strong>reads-from</strong> relation:</p>
+<ul>
+<li>An access-atomic scalar or atomic load from X reads from exactly one write W
+to X.</li>
+<li>A successful RMW reads from the write immediately before it in <code>mo(X)</code>.</li>
+<li>A failed <code>%cas</code> reads from one write in <code>mo(X)</code> and performs no write.</li>
+<li>A non-access-atomic load reads from one write per sub-access. A wider load
+may therefore observe bytes from different writes.</li>
+<li>A volatile or MMIO-intent load reads from the hardware-presented value at its
+architectural event, subject to the same access-atomic or tearing rules.</li>
+</ul>
+<p>The result of a load is assembled from its reads-from write or writes. A
+tearing read observes <code>Indeterminate bits</code>; those bits become an ordinary typed
+value and are never optimizer poison.</p>
+<h3 id="per-location-coherence" tabindex="-1"><a class="doc-anchor" href="#per-location-coherence" aria-hidden="true">#</a> Per-Location Coherence</h3>
+<p>For one coherence location X, executions must satisfy these coherence rules:</p>
+<ol>
+<li>If write A to X happens-before write B to X, then A precedes B in <code>mo(X)</code>.</li>
+<li>If write A to X happens-before load L from X, then L may not read from a
+write that precedes A in <code>mo(X)</code>.</li>
+<li>If load L from X reads from write A, and L happens-before write B to X, then
+A precedes B in <code>mo(X)</code>.</li>
+<li>If load L1 from X happens-before load L2 from X, and L1 reads from A while
+L2 reads from B, then B must not precede A in <code>mo(X)</code>.</li>
+</ol>
+<p>When no conflicting concurrent write exists, a load reads the latest write to
+its location that happens-before the load, or the initial write when no such
+write exists. When a conflicting concurrent write exists, §9.5 determines
+whether the result is target-defined or indeterminate.</p>
+<hr>
+<h2 id="9.3-synchronizes-with%2C-happens-before%2C-and-sc-order" tabindex="-1"><a class="doc-anchor" href="#9.3-synchronizes-with%2C-happens-before%2C-and-sc-order" aria-hidden="true">#</a> 9.3 Synchronizes-With, Happens-Before, and SC Order</h2>
+<h3 id="atomic-order-meanings" tabindex="-1"><a class="doc-anchor" href="#atomic-order-meanings" aria-hidden="true">#</a> Atomic Order Meanings</h3>
+<p>Every atomic order has this language-level meaning:</p>
 <table>
 <thead>
 <tr>
-<th>A ↓ / B →</th>
-<th>Plain</th>
-<th>Volatile</th>
-<th>Acquire load</th>
-<th>Release store</th>
-<th>Barrier</th>
-<th>Strict boundary</th>
+<th>Order</th>
+<th>Language meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Plain</strong></td>
-<td>✓ (1)</td>
-<td>✗</td>
-<td>✓ (1)</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
+<td><code>relaxed</code></td>
+<td>Atomicity and participation in <code>mo(X)</code> only. No synchronizes-with edge and no cross-location ordering.</td>
 </tr>
 <tr>
-<td><strong>Volatile</strong></td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
+<td><code>acquire</code></td>
+<td>The read side is an acquire operation. Later source events in the same agent may not be observed before it. If it reads from a release sequence, it synchronizes with that release sequence's head.</td>
 </tr>
 <tr>
-<td><strong>Acquire load</strong></td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
+<td><code>release</code></td>
+<td>The write side is a release operation. Earlier source events in the same agent may not be observed after it. It can head a release sequence.</td>
 </tr>
 <tr>
-<td><strong>Release store</strong></td>
-<td>✓ (1)</td>
-<td>✗</td>
-<td>✓ (1)</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
+<td><code>acqrel</code></td>
+<td>RMW-only. The event is both acquire and release; it can synchronize as a read and head or extend a release sequence as a write.</td>
 </tr>
 <tr>
-<td><strong>Barrier</strong></td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-</tr>
-<tr>
-<td><strong>Strict boundary</strong></td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
+<td><code>seq_cst</code></td>
+<td>The event has acquire/release strength as applicable and participates in the single global sequentially consistent order.</td>
 </tr>
 </tbody>
 </table>
-<p>&quot;Barrier&quot; includes <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, and <code>%compiler_barrier()</code>.</p>
-<p><strong>(1)</strong> Permitted only when the compiler can prove A and B access non-overlapping addresses
-and B does not depend on the value produced by A. See Alias Analysis below.</p>
-<h3 id="rule-explanations" tabindex="-1"><a class="doc-anchor" href="#rule-explanations" aria-hidden="true">#</a> Rule Explanations</h3>
-<p><strong>Plain → Plain (✓ with proof):</strong> Loads and stores to provably non-aliased, non-dependent
-locations may be freely reordered. Standard compiler freedom for sequential code.</p>
-<p><strong>Plain → Volatile (✗):</strong> A volatile access may not be moved before a preceding plain
-access. The plain access may be preparing data (e.g. writing a DMA buffer) that must be
-complete before the volatile access triggers device action.</p>
-<p><strong>Plain → Release store (✗):</strong> A release store may not be hoisted above anything before
-it. This is the definition of release: all preceding memory operations are ordered before
-it.</p>
-<p><strong>Volatile → anything (✗):</strong> Volatile accesses are a full two-way compiler fence. No
-operation may cross a volatile access in either direction.</p>
-<p><strong>Acquire load → anything after it (✗):</strong> An acquire load is a one-way downward fence.
-Nothing sequenced after the acquire may be moved before it. Operations before the acquire
-may be hoisted above it (row Plain → Acquire = ✓).</p>
-<p><strong>Barrier → anything (✗) / anything → Barrier (✗):</strong> <code>%dsb</code>, <code>%dmb</code>,
-<code>%isb()</code>, and <code>%compiler_barrier()</code> are full two-way compiler fences. No
-operation crosses a barrier in either direction.</p>
-<p><strong>Strict boundary → anything (✗) / anything → Strict boundary (✗):</strong> The opening
-and closing braces of a <code>#schedule(strict)</code> block are full two-way compiler
-scheduling fences. No operation crosses the boundary in either direction.
-Unlike <code>%dsb</code>, <code>%dmb</code>, or <code>%isb()</code>, a strict schedule boundary emits no
-instruction and does not affect hardware visibility. Use <code>%compiler_barrier()</code>
-when a statement-level compiler fence is needed without exact strict-block
-scheduling.</p>
-<h3 id="alias-analysis" tabindex="-1"><a class="doc-anchor" href="#alias-analysis" aria-hidden="true">#</a> Alias Analysis</h3>
-<p>The compiler may reorder two plain accesses only when it can prove they are non-aliased:</p>
-<ul>
-<li>Two accesses to the same named variable are assumed to alias.</li>
-<li>Two accesses to different named variables with no address derivation in common are
-assumed not to alias.</li>
-<li>Any access through a computed address (<code>T@[expr]</code>) is conservatively assumed to alias
-with any other computed-address access unless the compiler can prove disjoint ranges.</li>
-<li>Address volatility and MMIO intent are not non-aliasing facts. A plain access
-through <code>@T</code>, a volatile access through <code>@volatile T</code>, and an MMIO-intent
-access through <code>@mmio T</code> are assumed to alias when their numeric address
-ranges can overlap.</li>
-<li>Because Wyst addresses are plain integers with no provenance, the compiler cannot perform
-inter-procedural alias analysis on address-typed parameters. Two <code>@T</code> parameters are
-always assumed to potentially alias.</li>
-</ul>
-<p><strong>Consequence:</strong> Wyst compilers do not perform alias-based optimizations across call
-boundaries. Specifically, two optimizations C compilers routinely perform are <em>not</em>
-available to a Wyst compiler:</p>
+<p><code>%atomic_load</code> supports only <code>relaxed</code> and <code>seq_cst</code>; acquire loads use
+<code>#acquire</code>. <code>%atomic_store</code> supports only <code>relaxed</code> and <code>seq_cst</code>; release
+stores use <code>#release</code>. RMW intrinsics support the full order set.</p>
+<h3 id="release-sequences" tabindex="-1"><a class="doc-anchor" href="#release-sequences" aria-hidden="true">#</a> Release Sequences</h3>
+<p>Wyst supports release sequences. A <strong>release sequence</strong> on coherence location X
+is the maximal contiguous sequence in <code>mo(X)</code> that starts with a release write
+or release RMW H and continues through atomic RMW events on X, from any agent,
+where each RMW reads from the immediately previous member of the sequence.
+Plain stores, relaxed atomic stores, failed <code>%cas</code> reads, or writes to another
+location end the sequence.</p>
+<p>The sequence head H may be a <code>#release</code> store, a <code>seq_cst</code> store, or a
+<code>release</code>/<code>acqrel</code>/<code>seq_cst</code> RMW. RMW operations that extend a release sequence
+do not need release ordering themselves; their read-from chain carries the
+sequence.</p>
+<h3 id="synchronizes-with" tabindex="-1"><a class="doc-anchor" href="#synchronizes-with" aria-hidden="true">#</a> Synchronizes-With</h3>
+<p>The <strong>synchronizes-with</strong> relation, written <strong>sw</strong>, contains these edges:</p>
 <ol>
-<li><strong>No <code>restrict</code>-style load elimination across parameters.</strong> A load through one <code>@T</code>
-parameter after a store through another may not be eliminated on the grounds that the
-two parameters cannot alias.</li>
-<li><strong>No store-to-load forwarding across an opaque call.</strong> A store before a call followed
-by a load of the same location after the call is emitted as two memory operations.
-The call is assumed to potentially read or write the location.</li>
+<li>A release sequence head H on X synchronizes-with an acquire read A on X when
+A reads from any member of that release sequence. <code>seq_cst</code> loads and RMWs
+count as acquire reads; <code>acquire</code>, <code>acqrel</code>, and <code>seq_cst</code> RMWs count as
+acquire reads.</li>
+<li>A release-side architectural barrier B1 synchronizes-with an acquire-side
+architectural barrier B2 when all of these hold:
+<ul>
+<li>B1 is <code>%dmb</code> or <code>%dsb</code> with an all-access or store-covering domain.</li>
+<li>B2 is <code>%dmb</code> or <code>%dsb</code> with an all-access or load-covering domain.</li>
+<li>B1 is source-ordered before a store S to flag location F.</li>
+<li>A load L from F reads-from S.</li>
+<li>L is source-ordered before B2.</li>
+<li>both barriers' shareability/access domains cover F and the protected
+locations.</li>
+</ul>
+</li>
 </ol>
-<p>This is a deliberate design choice rooted in Wyst's address model: addresses are plain
-integers with no provenance, so the analyses that would unlock these optimizations are
-not soundly available. The trade is predictable instruction sequences for optimization
-opportunities; Wyst chooses predictability.</p>
-<p>The <code>#noescape</code> parameter attribute does not change this model. It is a
-call-local syntactic contract over where the parameter expression may appear:
-direct memory address operands and direct forwarding to another <code>#noescape</code>
-parameter are allowed, while casts, value aliases, stores, returns, indirect
-calls, and other value observations are rejected. The compiler does not infer or
-preserve hidden provenance through <code>u64</code> values.</p>
-<hr>
-<h2 id="9.3-happens-before" tabindex="-1"><a class="doc-anchor" href="#9.3-happens-before" aria-hidden="true">#</a> 9.3 Happens-Before</h2>
-<p>Happens-before is the relation that determines which stores are visible to which loads.</p>
-<h3 id="definition" tabindex="-1"><a class="doc-anchor" href="#definition" aria-hidden="true">#</a> Definition</h3>
-<p>The <strong>happens-before</strong> relation (written <strong>A hb B</strong>) is the smallest relation satisfying:</p>
-<p><strong>Rule 1 — Program order (single agent):</strong>
-If A and B are operations of the same agent, and A precedes B in program order,
-then A hb B.</p>
-<p><strong>Rule 2 — Synchronizes-with (acquire-release pairs):</strong>
-If S is a <code>#release</code> store to address X with value V, and L is an <code>#acquire</code> load from
-address X that reads V (or a value written after S in the modification order of X),
-then S <strong>synchronizes-with</strong> L, and therefore S hb L.</p>
-<p><strong>Rule 3 — Transitivity:</strong>
-If A hb B and B hb C, then A hb C.</p>
-<h3 id="what-synchronizes-with-provides" tabindex="-1"><a class="doc-anchor" href="#what-synchronizes-with-provides" aria-hidden="true">#</a> What Synchronizes-With Provides</h3>
-<p>If S (<code>#release</code>) synchronizes-with L (<code>#acquire</code>), everything that happened-before S
-also happened-before L:</p>
+<p>Barrier-mediated synchronization is intentionally explicit and domain
+sensitive. Two agents issuing barriers without a read-from edge on a flag do
+not synchronize. <code>%compiler_barrier()</code> never synchronizes with another agent.
+<code>%isb()</code> orders instruction-side effects for one agent; by itself it does not
+create a memory synchronizes-with edge.</p>
+<h3 id="happens-before" tabindex="-1"><a class="doc-anchor" href="#happens-before" aria-hidden="true">#</a> Happens-Before</h3>
+<p>The <strong>happens-before</strong> relation, written <strong>hb</strong>, is the transitive closure of:</p>
+<ul>
+<li>source event order within one agent;</li>
+<li>every synchronizes-with edge;</li>
+<li>initialization order before the first event that can access initialized
+storage.</li>
+</ul>
+<p>If A hb B, every legal compiler event order and architectural execution must
+preserve the visibility consequences required by A before B. <code>hb</code> is not a
+claim that the emitted instructions are textually adjacent; it is the language
+ordering relation used by visible-value, race, and transformation checks.</p>
+<h3 id="global-sequentially-consistent-order" tabindex="-1"><a class="doc-anchor" href="#global-sequentially-consistent-order" aria-hidden="true">#</a> Global Sequentially Consistent Order</h3>
+<p>All <code>seq_cst</code> atomic events participate in one total order, written <strong>S</strong>. S
+contains every <code>%atomic_load(..., order: seq_cst)</code>, <code>%atomic_store(..., order: seq_cst)</code>, and RMW intrinsic with <code>order: seq_cst</code>. S must be consistent
+with:</p>
+<ul>
+<li>happens-before between <code>seq_cst</code> events;</li>
+<li>each location's <code>mo(X)</code> for <code>seq_cst</code> writes and successful <code>seq_cst</code> RMWs
+to X;</li>
+<li>each RMW's requirement that its read part observes the immediately preceding
+write in <code>mo(X)</code>.</li>
+</ul>
+<p>A <code>seq_cst</code> store is a release write in <code>mo(X)</code> and S. A <code>seq_cst</code> load is an
+acquire read in S. A <code>seq_cst</code> RMW is both acquire and release, participates in
+<code>mo(X)</code>, and participates in S as one indivisible event.</p>
+<h3 id="how-a-seq-cst-load-selects-its-value" tabindex="-1"><a class="doc-anchor" href="#how-a-seq-cst-load-selects-its-value" aria-hidden="true">#</a> How a Seq-Cst Load Selects Its Value</h3>
+<p>A <code>seq_cst</code> load L from X selects its value by first choosing a write W to X
+that is allowed by reads-from and per-location coherence. It must also satisfy
+the SC constraints:</p>
+<ol>
+<li>If W is <code>seq_cst</code>, W must precede L in S.</li>
+<li>If there is a <code>seq_cst</code> write Wsc to X that precedes L in S, W must not
+precede Wsc in <code>mo(X)</code>.</li>
+<li>If a write Whb to X happens-before L, W must not precede Whb in <code>mo(X)</code>.</li>
+</ol>
+<p>Thus an SC load never observes a value older than the latest SC write to that
+location before it in S, nor older than a write that already happens-before it.
+It may read a later non-SC write in <code>mo(X)</code> when the ordinary reads-from rules
+allow that write.</p>
+<h3 id="barrier-examples" tabindex="-1"><a class="doc-anchor" href="#barrier-examples" aria-hidden="true">#</a> Barrier Examples</h3>
+<p>Acquire/release synchronization is the preferred CPU-to-CPU spelling:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Agent 1</span>
-<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>              <span class="token operator">=</span> data   <span class="token comment">// (1) write data</span>
-<span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>    <span class="token operator">=</span> <span class="token number">1</span>      <span class="token comment">// (2) S — release store</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span> <span class="token operator">=</span> data
+<span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>
 
 <span class="token comment">// Agent 2</span>
-val  <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>      <span class="token comment">// (3) L — acquire load, reads 1</span>
-data <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>                <span class="token comment">// (4) guaranteed to observe (1)</span>
+seen <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>
+<span class="token keyword">if</span> seen <span class="token operator">==</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+    data <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
 </code></pre>
-<p>Because (1) hb (2) by program order, (2) synchronizes-with (3) by rule 2, and (3) hb (4)
-by program order, transitivity gives (1) hb (4). Agent 2 is guaranteed to observe
-Agent 1's write.</p>
-<p>If Agent 1 used a plain store at step (2), no synchronizes-with is established and step
-(4) may read a stale value.</p>
-<h3 id="barriers-and-happens-before" tabindex="-1"><a class="doc-anchor" href="#barriers-and-happens-before" aria-hidden="true">#</a> Barriers and Happens-Before</h3>
-<p><code>%dsb</code> and <code>%dmb</code> enforce hardware ordering within and around a single agent but do not
-themselves establish a synchronizes-with relationship with barriers on other agents. Two
-agents issuing <code>%dsb(sy)</code> independently do not synchronize with each other through the
-barriers alone.</p>
-<p>To synchronize across agents using barriers: one agent writes data, issues <code>%dsb(st)</code> to
-ensure the write is globally observable, then writes a plain-store flag. The other agent
-reads the flag, issues <code>%dsb(ld)</code> to ensure the flag read is complete, then reads the
-data. This establishes visibility through hardware ordering. It is correct but less
-composable than the acquire-release model.</p>
-<p><strong>Prefer <code>#acquire</code>/<code>#release</code> for CPU-to-CPU synchronization.</strong> Use barriers for MMIO
-ordering, cache maintenance, and cases where shareability domain specificity matters.</p>
+<p>The release store heads a release sequence on <code>flag</code>. The acquire load reads
+from that sequence, so the release synchronizes-with the acquire and the data
+write happens-before the final data read.</p>
+<p>Barrier-mediated synchronization is valid but less composable:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Agent 1</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span> <span class="token operator">=</span> data
+<span class="token primitive macro">%dmb</span><span class="token punctuation">(</span>ishst<span class="token punctuation">)</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>
+
+<span class="token comment">// Agent 2</span>
+seen <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>
+<span class="token primitive macro">%dmb</span><span class="token punctuation">(</span>ishld<span class="token punctuation">)</span>
+<span class="token keyword">if</span> seen <span class="token operator">==</span> <span class="token number">1</span> <span class="token punctuation">{</span>
+    data <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>If the flag load reads from the flag store and the inner-shareable domain covers
+both locations, the two barriers synchronize. If the flag load does not read
+from the store, or the domain is wrong, no inter-agent hb edge is created.</p>
+<h3 id="normative-litmus-outcomes" tabindex="-1"><a class="doc-anchor" href="#normative-litmus-outcomes" aria-hidden="true">#</a> Normative Litmus Outcomes</h3>
+<p>The following litmus outcomes are part of the normative concurrent memory-model
+suite. The executable form lives in
+<code>wync/tests/memory_model_litmus.rs</code>; a regression must fail by naming the
+semantic outcome that was wrongly admitted or rejected, not merely by noticing
+that an instruction mnemonic changed.</p>
+<table>
+<thead>
+<tr>
+<th>Litmus</th>
+<th>Program shape</th>
+<th>Outcome rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Message passing</td>
+<td>Agent 0 writes <code>data</code>, then release-stores <code>flag</code>; agent 1 acquire-loads <code>flag</code>, then reads <code>data</code>.</td>
+<td>If <code>flag == 1</code>, <code>data == 0</code> is forbidden; reading the release value synchronizes with the acquire and carries the payload write through hb.</td>
+</tr>
+<tr>
+<td>Store buffering</td>
+<td>Each agent stores one atomic location and then loads the other.</td>
+<td>With <code>relaxed</code>, <code>r0 == 0 &amp;&amp; r1 == 0</code> is allowed. With <code>seq_cst</code>, the same outcome is forbidden by the single SC order.</td>
+</tr>
+<tr>
+<td>Load buffering</td>
+<td>Each agent loads one atomic location and then stores the other.</td>
+<td>With <code>relaxed</code>, <code>r0 == 1 &amp;&amp; r1 == 1</code> is allowed. With <code>seq_cst</code>, the same outcome is forbidden because it creates an SC cycle.</td>
+</tr>
+<tr>
+<td>Independent reads of independent writes (IRIW)</td>
+<td>Two agents publish independent writes; two readers observe the locations in opposite orders.</td>
+<td>Release/acquire permits the split observation when the reads synchronize only per location. <code>seq_cst</code> forbids the split observation through the global SC order.</td>
+</tr>
+<tr>
+<td>Release sequence</td>
+<td>A release store to <code>flag</code> is followed in <code>mo(flag)</code> by a relaxed RMW that reads it; a later acquire load reads the RMW value.</td>
+<td>The acquire synchronizes with the release-sequence head, so stale protected data is forbidden.</td>
+</tr>
+<tr>
+<td>Barrier message passing</td>
+<td>Plain payload write, <code>%dmb(ishst)</code>, plain flag store; flag load, <code>%dmb(ishld)</code>, payload read.</td>
+<td>If the flag load reads from the flag store and the domain covers both locations, stale payload is forbidden. Replacing the barriers with <code>%compiler_barrier()</code> allows the stale payload because no inter-agent sw edge exists.</td>
+</tr>
+<tr>
+<td>Mixed atomic/plain access</td>
+<td>One agent performs a relaxed atomic store while another performs a plain load of the same scalar location without hb.</td>
+<td>The outcome is a data race classified as target-defined for access-atomic scalar accesses, not optimizer-undefined behavior.</td>
+</tr>
+<tr>
+<td>Compiler scheduling and aliasing</td>
+<td>A store followed by a load is compared with a load/store reordering.</td>
+<td>Reordering may-alias accesses is forbidden when it admits a stale-load outcome. Reordering proven disjoint accesses is allowed when the transformed outcomes are a subset of the source outcomes.</td>
+</tr>
+</tbody>
+</table>
+<p>ARM64 lowering validation for these litmus tests is semantic, not mnemonic
+based. The checked ARM64 contracts use architectural facts that correspond to
+the ARMv8 formal model: other-multi-copy atomicity, aligned scalar
+single-copy atomicity, the architectural ordering of a store-release before a
+following load-acquire, and either LSE single-event RMW behavior or baseline
+LL/SC retry-until-complete behavior. A lowering proof that only says &quot;<code>ldar</code>
+was emitted&quot; or &quot;<code>stlr</code> was emitted&quot; is incomplete for Wyst <code>seq_cst</code>.</p>
 <hr>
-<h2 id="9.4-visible-value-of-a-load" tabindex="-1"><a class="doc-anchor" href="#9.4-visible-value-of-a-load" aria-hidden="true">#</a> 9.4 Visible Value of a Load</h2>
-<p>Given a load L at address X:</p>
-<p><strong>No concurrent stores:</strong>
-L reads the value of the most recent store to X that happens-before L. If no such store
-exists, L reads the initial value of X at program startup (see 9.7 Initial Values).</p>
-<p><strong>Data race present:</strong>
-If a store to X from another agent is concurrent with L — not ordered by happens-before
-in either direction — the behavior category depends on the access atomicity below. The
-compiler emits the load and accepts the value the ARM64 memory system delivers for that
-address at that time. It does not assume a particular value and does not optimize on the
-basis that the race cannot occur.</p>
-<p>The category depends on whether the load is access-atomic (see §9.6):</p>
-<ul>
-<li>
-<p><strong>Access-atomic loads</strong> are <code>Target-defined</code> (naturally aligned
-<code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> on coherent normal
-memory): the load returns either the pre-race value or one of the concurrently-written
-values. No intermediate state is observable.</p>
-</li>
-<li>
-<p><strong>Non-access-atomic loads</strong> observe <code>Indeterminate bits</code> (misaligned accesses;
-multi-word accesses emitted as
-multiple scalar chunks or explicit pair/vector instructions; bitfield
-read-modify-write spanning a wider backing word than the single-copy-atomic width
-— see §9.6): the load may observe a value that is <em>neither</em> the pre-race value
-<em>nor</em> a value any agent ever stored as a whole. A misaligned access may decompose
-into sub-accesses, each independently racing; a 128-bit vector load or explicit
-pair load may observe one half pre-race and the other half post-race. Such tearing
-is a property of the hardware execution, not a compiler optimization.</p>
-</li>
-</ul>
-<p>In both cases the compiler emits the load as written and does not synthesize an
-&quot;as-if&quot; value. The atomicity rules in §9.6 determine which case applies.</p>
-<p><strong>Volatile load (access through <code>@volatile T</code> or <code>@mmio T</code>):</strong>
-Reads the value at the address as presented by the hardware at the time of the load,
-subject to page-table memory type attributes. The compiler may not cache, forward, hoist,
-or speculate the result.</p>
-<hr>
-<h2 id="9.5-data-races" tabindex="-1"><a class="doc-anchor" href="#9.5-data-races" aria-hidden="true">#</a> 9.5 Data Races</h2>
-<h3 id="definition-1" tabindex="-1"><a class="doc-anchor" href="#definition-1" aria-hidden="true">#</a> Definition</h3>
-<p>Two memory operations M and N from different agents constitute a <strong>data race</strong> if:</p>
+<h2 id="9.4-compiler-event-order%2C-alias-proofs%2C-and-transformations" tabindex="-1"><a class="doc-anchor" href="#9.4-compiler-event-order%2C-alias-proofs%2C-and-transformations" aria-hidden="true">#</a> 9.4 Compiler Event Order, Alias Proofs, and Transformations</h2>
+<h3 id="compiler-event-order" tabindex="-1"><a class="doc-anchor" href="#compiler-event-order" aria-hidden="true">#</a> Compiler Event Order</h3>
+<p>The compiler emits a <strong>compiler event order</strong> for each agent: the order of
+loads, stores, atomics, volatile accesses, barrier events, calls with memory
+effects, and opaque <code>#asm</code> effects in the instruction stream. A transformation
+is legal only when every source execution admitted by the emitted program has a
+corresponding source execution admitted by this chapter with the same observable
+volatile, MMIO, atomic, barrier, trap, call, and plain-memory effects.</p>
+<p>Compiler event order is more constrained than architectural event order. For
+example, a volatile load must remain textually ordered in compiler event order,
+but the target may still need <code>%dmb</code> or <code>%dsb</code> for hardware ordering relative to
+another agent. Conversely, <code>%compiler_barrier()</code> constrains compiler event
+order but produces no architectural event.</p>
+<h3 id="closed-alias-proof-list" tabindex="-1"><a class="doc-anchor" href="#closed-alias-proof-list" aria-hidden="true">#</a> Closed Alias Proof List</h3>
+<p>Wyst deliberately rejects strict-aliasing folklore. Different element types,
+different address qualifiers, casts through <code>u64</code>, and different parameter
+names are not alias proofs. Every nontrivial memory reordering, load
+forwarding, or dead-store removal must be justified by one of these closed
+proofs:</p>
 <ol>
-<li>M and N access at least one common byte.</li>
-<li>At least one of M or N is a store.</li>
-<li>Neither M hb N nor N hb M.</li>
+<li><strong>Distinct compiler-owned globals.</strong> Two mutable or immutable globals with
+distinct compiler-assigned storage allocations are disjoint for their
+allocated byte ranges. This proof does not apply to numeric address
+constants, foreign symbols, linker overlays, or target-described MMIO
+ranges.</li>
+<li><strong>Distinct non-escaping stack objects.</strong> Two stack objects in the same
+function are disjoint for their allocated byte ranges while neither
+object's address has escaped through a store, return, indirect call,
+ordinary call without a precise no-memory contract, inline assembly, or cast
+to a value that can outlive the proof.</li>
+<li><strong>Statically disjoint byte ranges.</strong> Two accesses derived from the same
+proven base are disjoint when their byte offsets and widths are compile-time
+known and the ranges do not overlap. Typed element offsets, byte-lens casts,
+and <code>#field_offset</code> may be used to compute the ranges.</li>
+<li><strong>Explicit future uniqueness guarantees.</strong> A later language version may add
+a source feature that states uniqueness or no-aliasing. Such a feature is an
+alias proof only after it has its own semantic-db row, chapter rule, and
+conformance evidence. Current <code>#noescape</code> is not a uniqueness guarantee.</li>
 </ol>
-<h3 id="behavior" tabindex="-1"><a class="doc-anchor" href="#behavior" aria-hidden="true">#</a> Behavior</h3>
-<p>A data race in Wyst is either <code>Target-defined</code> for access-atomic operations or
-<code>Indeterminate bits</code> for tearing operations. The compiler:</p>
+<p>If none of these proofs applies, the compiler must assume the ranges may alias.
+This includes two <code>@T</code> parameters, a <code>@T</code> access and an <code>@volatile T</code> access,
+two computed numeric addresses, and two differently typed views of the same
+bytes.</p>
+<h3 id="reordering-table" tabindex="-1"><a class="doc-anchor" href="#reordering-table" aria-hidden="true">#</a> Reordering Table</h3>
+<p>Given source event A before source event B, may the compiler emit B before A?</p>
+<table>
+<thead>
+<tr>
+<th>Earlier A / later B</th>
+<th>Plain</th>
+<th>Volatile/MMIO</th>
+<th>Acquire</th>
+<th>Release</th>
+<th>Atomic relaxed</th>
+<th>Atomic SC</th>
+<th>Barrier/opaque</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Volatile/MMIO</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Acquire</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Atomic relaxed</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>yes, with alias proof and no dependency</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Atomic SC</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Barrier/opaque</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p>&quot;Barrier/opaque&quot; includes <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, <code>%compiler_barrier()</code>,
+strict schedule boundaries, calls whose memory effects are not proven absent,
+and opaque <code>#asm</code> blocks. A data, control, or address dependency is always a
+separate reason that reordering is illegal.</p>
+<h3 id="allowed-transformations" tabindex="-1"><a class="doc-anchor" href="#allowed-transformations" aria-hidden="true">#</a> Allowed Transformations</h3>
+<p>The following transformations are allowed when their listed proof obligations
+are met:</p>
 <ul>
-<li>Emits both operations as written.</li>
-<li>Does not delete, merge, or reorder them on the assumption that a race cannot occur.</li>
-<li>Does not synthesize stores the programmer did not write.</li>
+<li>Reorder two plain or relaxed-atomic events only when the closed alias proof
+list proves their ranges do not overlap, there is no dependency, and no
+intervening event imposes ordering.</li>
+<li>Forward a plain store to a later plain load only when the stored range fully
+covers the loaded range, no intervening event may write any overlapping byte,
+and the storage is proven private or otherwise non-observable by another
+agent for that interval.</li>
+<li>Delete a plain store only when a later write fully overwrites it before any
+possible read, volatile/MMIO access, atomic event, barrier, opaque call, or
+escaping use can observe it.</li>
+<li>Combine adjacent plain scalar accesses into an aggregate copy only when the
+resulting chunking is exactly the deterministic aggregate-copy rule in §9.6
+and no volatile, MMIO, atomic, barrier, or opaque event is crossed.</li>
+<li>Keep ordinary scalar values in registers when the source object is a
+non-escaping local or another closed alias proof shows no event can observe
+the memory slot.</li>
 </ul>
-<p>The hardware executes both operations under ARM64 memory model rules for the relevant
-memory type. For normal cacheable memory the coherence protocol ensures eventual
-visibility; for device memory (MMIO) behavior is device-specific.</p>
-<p>This differs from C, where a data race is compiler-undefined behavior the compiler may
-exploit to eliminate branches or generate incorrect code. In Wyst a data race is a
-hardware event the compiler does not exploit. Programs with data races on shared mutable
-state are incorrect; the language does not make them safe, but it does not make them
-unpredictably wrong in ways that are not traceable to the hardware specification.</p>
-<h3 id="volatile-races" tabindex="-1"><a class="doc-anchor" href="#volatile-races" aria-hidden="true">#</a> Volatile Races</h3>
-<p>Concurrent MMIO-intent accesses (through <code>@mmio T</code>) from CPU and device to the
-same MMIO address are expected behavior for device-controlled registers. The
-device is an agent performing device-side writes; the hardware delivers device
-semantics only when the runtime page table configures the address as Device
-memory.</p>
-<p>Two CPU agents concurrently performing MMIO-intent accesses to the same MMIO
-register (at least one a store) constitute a race. The result is
-device-specific. Coordinate with external serialization or interrupt masking.</p>
-<h3 id="atomic-operations-and-races" tabindex="-1"><a class="doc-anchor" href="#atomic-operations-and-races" aria-hidden="true">#</a> Atomic Operations and Races</h3>
-<p>Atomic operations (§1.3.2) do <strong>not</strong> constitute a data race with each
-other on the same location, regardless of ordering. Two <code>%cas</code> operations
-on the same word from different agents are serialized by the architecture;
-neither tears nor produces an undefined result. Concurrent
-acqrel/seq_cst-ordered atomics participate in happens-before via Rule 2
-(synchronizes-with) and Rule 4 (seq_cst total order).</p>
-<p>A <em>plain</em> (non-atomic, non-directive) load or store concurrent with an
-atomic operation on the same byte IS a data race by the definition above
-— the plain access is the offending party. Shared mutable locations must
-be accessed only through atomic runtime primitives, <code>#acquire</code>/<code>#release</code>
-directives, or with all racing accesses synchronized by happens-before.</p>
+<h3 id="forbidden-transformations" tabindex="-1"><a class="doc-anchor" href="#forbidden-transformations" aria-hidden="true">#</a> Forbidden Transformations</h3>
+<p>The compiler must not:</p>
+<ul>
+<li>use a data race, indeterminate read, invalid address, false trusted contract,
+or architectural fault as an impossible-state assumption;</li>
+<li>treat a data race as optimizer poison or LLVM-style <code>undef</code>;</li>
+<li>infer non-aliasing from different Wyst element types, signedness, volatility,
+MMIO intent, <code>@T</code> parameter names, or source casts;</li>
+<li>eliminate, duplicate, merge, split, speculate, or reorder volatile or
+MMIO-intent accesses except as required by the explicit access itself;</li>
+<li>move any memory event across <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>,
+<code>%compiler_barrier()</code>, a strict schedule boundary, or an opaque memory-effect
+call or <code>#asm</code> block;</li>
+<li>weaken an atomic order, remove an atomic event, split one atomic RMW into
+separately observable source events, or synthesize an atomic event the source
+did not request;</li>
+<li>replace a racy source load with an arbitrary constant, cached value, or
+&quot;as-if&quot; value not delivered by the target execution;</li>
+<li>assume a plain access cannot race merely because racing would make the
+program incorrect.</li>
+</ul>
+<hr>
+<h2 id="9.5-data-races-and-mixed-accesses" tabindex="-1"><a class="doc-anchor" href="#9.5-data-races-and-mixed-accesses" aria-hidden="true">#</a> 9.5 Data Races and Mixed Accesses</h2>
+<h3 id="data-race-definition" tabindex="-1"><a class="doc-anchor" href="#data-race-definition" aria-hidden="true">#</a> Data Race Definition</h3>
+<p>Two memory events M and N constitute a <strong>data race</strong> if:</p>
+<ol>
+<li>they are from different agents;</li>
+<li>their access ranges overlap;</li>
+<li>at least one writes;</li>
+<li>neither M hb N nor N hb M; and</li>
+<li>they are not both atomic events on the same coherence location.</li>
+</ol>
+<p>Atomic events on the same coherence location are serialized by <code>mo(X)</code> even
+when their order is <code>relaxed</code>. They may fail to synchronize, but they do not
+data-race with each other.</p>
+<h3 id="data-race-behavior" tabindex="-1"><a class="doc-anchor" href="#data-race-behavior" aria-hidden="true">#</a> Data Race Behavior</h3>
+<p>A data race in Wyst is never compiler undefined behavior. It is:</p>
+<ul>
+<li><code>Target-defined</code> when every racing access that supplies the observed value is
+access-atomic for its range and memory type; or</li>
+<li><code>Indeterminate bits</code> when any observed racing access can tear, decompose, or
+assemble bytes from independently racing sub-accesses.</li>
+</ul>
+<p>The compiler emits the source memory events subject only to the allowed
+transformations in §9.4. It does not delete, merge, invent, or reorder events
+because a race exists. The selected target then determines which value a racing
+access-atomic load observes. For Device memory and MMIO registers, the device
+specification also participates in the target-defined result.</p>
+<p>Programs with data races on shared mutable state are incorrect unless the race
+is the device protocol itself. Wyst makes that incorrectness traceable to the
+hardware execution rather than silently turning it into optimizer poison.</p>
+<h3 id="mixed-atomic-and-plain-access" tabindex="-1"><a class="doc-anchor" href="#mixed-atomic-and-plain-access" aria-hidden="true">#</a> Mixed Atomic and Plain Access</h3>
+<p>A plain, volatile, or MMIO-intent access that conflicts with an atomic event on
+the same bytes is a data race unless happens-before orders the two events. The
+plain side is the offending side; the atomic event keeps its own atomicity and
+modification-order meaning.</p>
+<p>The intended patterns are:</p>
+<ul>
+<li>use only atomic events for a shared synchronization location;</li>
+<li>use plain data writes before a release and plain data reads after a matching
+acquire;</li>
+<li>use plain flag accesses only with the barrier-mediated synchronization rule
+in §9.3;</li>
+<li>protect mixed plain/atomic maintenance code with interrupt masking, locks, or
+another hb edge.</li>
+</ul>
+<p>The canonical spinlock pattern is not a mixed-access race:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// acquire</span>
+_<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>lock<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
+
+<span class="token comment">// release</span>
+<span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
+</code></pre>
+<p>Both operations are atomic events on the same coherence location. The release
+store heads a release sequence; a later acquire <code>%cas</code> that reads the released
+value synchronizes with it.</p>
+<h3 id="volatile-and-mmio-races" tabindex="-1"><a class="doc-anchor" href="#volatile-and-mmio-races" aria-hidden="true">#</a> Volatile and MMIO Races</h3>
+<p>Volatile access is an observability contract for the compiler, not a
+data-race exemption. Two CPU agents concurrently accessing the same volatile
+location, at least one writing, race unless hb orders them or both accesses are
+also atomic events on the same coherence location.</p>
+<p>MMIO-intent accesses through <code>@mmio T</code> are expected for device-owned registers:
+the device is an agent and the register semantics are supplied by the device
+and the page-table memory type. Two CPU agents concurrently writing the same
+MMIO register still race at the language level unless externally serialized.</p>
 <hr>
 <h2 id="9.6-atomicity" tabindex="-1"><a class="doc-anchor" href="#9.6-atomicity" aria-hidden="true">#</a> 9.6 Atomicity</h2>
 <h3 id="natural-alignment" tabindex="-1"><a class="doc-anchor" href="#natural-alignment" aria-hidden="true">#</a> Natural Alignment</h3>
@@ -1706,15 +1980,19 @@ through a <code>@u64</code> at the same address.</li>
 <p>Given operation A before operation B in source, may the compiler emit B before A?</p>
 <p><strong>No</strong> if any of:</p>
 <ul>
-<li>A or B is a volatile access (via <code>@volatile T</code> or <code>@mmio T</code>)</li>
-<li>A or B is <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, or <code>%compiler_barrier()</code></li>
-<li>B is a <code>#release</code> store (release stores may not be hoisted above anything)</li>
-<li>A is an <code>#acquire</code> load (acquire loads may not have anything after them moved before)</li>
-<li>A and B alias (access overlapping addresses, or compiler cannot prove non-aliasing)</li>
-<li>B depends on the value produced by A (data dependency)</li>
+<li>A or B is a volatile or MMIO-intent access, unless the explicit access itself
+requires only its own lowered event.</li>
+<li>A or B is <code>%dsb</code>, <code>%dmb</code>, <code>%isb()</code>, <code>%compiler_barrier()</code>, a strict schedule
+boundary, an opaque <code>#asm</code>, or a call with unproven memory effects.</li>
+<li>B is a release event or <code>seq_cst</code> event that would be hoisted above A.</li>
+<li>A is an acquire event or <code>seq_cst</code> event that would have B moved before it.</li>
+<li>A and B access overlapping ranges, or the compiler lacks one of the closed
+alias proofs from §9.4.</li>
+<li>B depends on the value, address, control result, or effect produced by A.</li>
 </ul>
-<p><strong>Yes</strong> if all checks above are clear (both plain accesses, provably non-aliased,
-no data dependency).</p>
+<p><strong>Yes</strong> only for the cases allowed by the §9.4 reordering table: plain or
+relaxed-atomic events with a closed alias proof, no dependency, and no
+intervening event that imposes ordering.</p>
 <hr>
 <h2 id="9.12-cache-line-awareness" tabindex="-1"><a class="doc-anchor" href="#9.12-cache-line-awareness" aria-hidden="true">#</a> 9.12 Cache Line Awareness</h2>
 <p>Modern ARM64 processors transfer data between caches and main memory in
@@ -1887,22 +2165,32 @@ spacing.</p>
 				<li class="lvl-2"><a href="#overview">Overview</a></li>
 				<li class="lvl-2"><a href="#9.1-execution-model">9.1 Execution Model</a></li>
 				<li class="lvl-3"><a href="#agents">Agents</a></li>
-				<li class="lvl-3"><a href="#memory-locations">Memory Locations</a></li>
-				<li class="lvl-3"><a href="#operations">Operations</a></li>
-				<li class="lvl-2"><a href="#9.2-compiler-ordering-rules">9.2 Compiler Ordering Rules</a></li>
-				<li class="lvl-3"><a href="#the-reordering-table">The Reordering Table</a></li>
-				<li class="lvl-3"><a href="#rule-explanations">Rule Explanations</a></li>
-				<li class="lvl-3"><a href="#alias-analysis">Alias Analysis</a></li>
-				<li class="lvl-2"><a href="#9.3-happens-before">9.3 Happens-Before</a></li>
-				<li class="lvl-3"><a href="#definition">Definition</a></li>
-				<li class="lvl-3"><a href="#what-synchronizes-with-provides">What Synchronizes-With Provides</a></li>
-				<li class="lvl-3"><a href="#barriers-and-happens-before">Barriers and Happens-Before</a></li>
-				<li class="lvl-2"><a href="#9.4-visible-value-of-a-load">9.4 Visible Value of a Load</a></li>
-				<li class="lvl-2"><a href="#9.5-data-races">9.5 Data Races</a></li>
-				<li class="lvl-3"><a href="#definition-1">Definition</a></li>
-				<li class="lvl-3"><a href="#behavior">Behavior</a></li>
-				<li class="lvl-3"><a href="#volatile-races">Volatile Races</a></li>
-				<li class="lvl-3"><a href="#atomic-operations-and-races">Atomic Operations and Races</a></li>
+				<li class="lvl-3"><a href="#memory-locations-and-access-ranges">Memory Locations and Access Ranges</a></li>
+				<li class="lvl-3"><a href="#memory-events">Memory Events</a></li>
+				<li class="lvl-2"><a href="#9.2-modification-order%2C-reads-from%2C-and-coherence">9.2 Modification Order, Reads-From, and Coherence</a></li>
+				<li class="lvl-3"><a href="#modification-order">Modification Order</a></li>
+				<li class="lvl-3"><a href="#reads-from">Reads-From</a></li>
+				<li class="lvl-3"><a href="#per-location-coherence">Per-Location Coherence</a></li>
+				<li class="lvl-2"><a href="#9.3-synchronizes-with%2C-happens-before%2C-and-sc-order">9.3 Synchronizes-With, Happens-Before, and SC Order</a></li>
+				<li class="lvl-3"><a href="#atomic-order-meanings">Atomic Order Meanings</a></li>
+				<li class="lvl-3"><a href="#release-sequences">Release Sequences</a></li>
+				<li class="lvl-3"><a href="#synchronizes-with">Synchronizes-With</a></li>
+				<li class="lvl-3"><a href="#happens-before">Happens-Before</a></li>
+				<li class="lvl-3"><a href="#global-sequentially-consistent-order">Global Sequentially Consistent Order</a></li>
+				<li class="lvl-3"><a href="#how-a-seq-cst-load-selects-its-value">How a Seq-Cst Load Selects Its Value</a></li>
+				<li class="lvl-3"><a href="#barrier-examples">Barrier Examples</a></li>
+				<li class="lvl-3"><a href="#normative-litmus-outcomes">Normative Litmus Outcomes</a></li>
+				<li class="lvl-2"><a href="#9.4-compiler-event-order%2C-alias-proofs%2C-and-transformations">9.4 Compiler Event Order, Alias Proofs, and Transformations</a></li>
+				<li class="lvl-3"><a href="#compiler-event-order">Compiler Event Order</a></li>
+				<li class="lvl-3"><a href="#closed-alias-proof-list">Closed Alias Proof List</a></li>
+				<li class="lvl-3"><a href="#reordering-table">Reordering Table</a></li>
+				<li class="lvl-3"><a href="#allowed-transformations">Allowed Transformations</a></li>
+				<li class="lvl-3"><a href="#forbidden-transformations">Forbidden Transformations</a></li>
+				<li class="lvl-2"><a href="#9.5-data-races-and-mixed-accesses">9.5 Data Races and Mixed Accesses</a></li>
+				<li class="lvl-3"><a href="#data-race-definition">Data Race Definition</a></li>
+				<li class="lvl-3"><a href="#data-race-behavior">Data Race Behavior</a></li>
+				<li class="lvl-3"><a href="#mixed-atomic-and-plain-access">Mixed Atomic and Plain Access</a></li>
+				<li class="lvl-3"><a href="#volatile-and-mmio-races">Volatile and MMIO Races</a></li>
 				<li class="lvl-2"><a href="#9.6-atomicity">9.6 Atomicity</a></li>
 				<li class="lvl-3"><a href="#natural-alignment">Natural Alignment</a></li>
 				<li class="lvl-3"><a href="#misaligned-access">Misaligned Access</a></li>
@@ -1944,7 +2232,6 @@ spacing.</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

@@ -2846,7 +2846,7 @@ identifies which variant a value currently holds.</p>
 plain &quot;C-style enums&quot; (variants with no payload — just named tag values)
 and &quot;tagged unions&quot; (variants with payloads). Both are special cases of
 the single <code>enum</code> construct. The payload surface supports zero or one
-word-sized scalar/address payload per variant.</p>
+payload-word value per variant.</p>
 <p><code>union</code> is not a Wyst keyword. Untagged-overlay use cases that other
 languages spell as <code>union</code> are covered by <code>bitfield(T)</code> for register
 shapes and by explicit <code>as</code>-conversion between a struct type and a
@@ -2862,7 +2862,7 @@ Direction <span class="token operator">::</span> <span class="token keyword">enu
   West <span class="token operator">=</span> <span class="token number">3</span>
 <span class="token punctuation">}</span>
 
-<span class="token comment">// Sum-type enum — allowed for zero or one word-sized payload per variant.</span>
+<span class="token comment">// Sum-type enum — allowed for zero or one payload-word value per variant.</span>
 Message <span class="token operator">::</span> <span class="token keyword">enum</span><span class="token operator">:</span> <span class="token builtin type">u16</span> <span class="token punctuation">{</span>
   Quit <span class="token comment">// tag = 0, no payload</span>
   <span class="token function">Write</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token comment">// tag = 1, payload is one @u8</span>
@@ -2915,49 +2915,80 @@ Errno <span class="token operator">::</span> <span class="token keyword">enum</s
 <p>Duplicate tag values are a compile error.</p>
 <hr>
 <h3 id="layout-1" tabindex="-1"><a class="doc-anchor" href="#layout-1" aria-hidden="true">#</a> Layout</h3>
+<p>Wyst has exactly one enum representation rule. The presence of any payload
+variant selects the payload enum representation for the whole enum type.</p>
 <table>
 <thead>
 <tr>
-<th>Region</th>
-<th>Offset</th>
+<th>Enum shape</th>
+<th>Tag type and size</th>
+<th>Tag values</th>
+<th>Payload offset</th>
+<th>Payload storage size</th>
+<th>Alignment</th>
+<th>Total size</th>
+<th>Padding bytes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Tag</td>
-<td>0 .. size_of(tag_type)</td>
+<td>Payload-less enum</td>
+<td>The declared unsigned discriminator type, or the smallest unsigned integer type that contains all variant values. Its size is <code>size_of(tag_type)</code>.</td>
+<td>Explicit and implicit values are non-negative, unique, and must fit in <code>tag_type</code>.</td>
+<td>not applicable</td>
+<td>0</td>
+<td><code>align_of(tag_type)</code></td>
+<td><code>size_of(tag_type)</code></td>
+<td>none beyond the tag type itself</td>
 </tr>
 <tr>
-<td>(alignment padding)</td>
-<td>so payload area starts at <code>align_of(payload_area)</code></td>
-</tr>
-<tr>
-<td>Payload area</td>
-<td>size = max over variants of <code>size_of(payload_i)</code> (zero for payload-less variants)</td>
-</tr>
-<tr>
-<td>(trailing padding)</td>
-<td>to align total size to <code>align_of(enum)</code></td>
+<td>Payload enum</td>
+<td>The same declared-or-inferred discriminator type. The tag is stored in the first native word at byte offset 0; bytes <code>0..size_of(tag_type)</code> contain the tag value.</td>
+<td>Same as payload-less enums.</td>
+<td>offset 8</td>
+<td>one native word, exactly 8 bytes</td>
+<td>8</td>
+<td>16</td>
+<td>bytes <code>size_of(tag_type)..8</code> are tag-word padding; bytes after the active payload value inside the payload word are payload-word padding</td>
 </tr>
 </tbody>
 </table>
-<ul>
-<li><code>align_of(enum E)</code> = <code>max(align_of(tag_type), align_of(payload_1), align_of(payload_2), ...)</code></li>
-<li><code>size_of(enum E)</code> = the tag size + padding to payload alignment + the payload-area size + trailing padding to the enum's overall alignment</li>
-<li>Variant payloads share the same memory range; the active variant is determined entirely by the tag</li>
-</ul>
-<!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Layout of `Message`:</span>
-<span class="token comment">//   offset 0..2   : u16 tag</span>
-<span class="token comment">//   offset 2..8   : padding to align @u8</span>
-<span class="token comment">//   offset 8..16  : payload area (max is Write's @u8 = 8 bytes)</span>
-<span class="token comment">//   total size    : 16, align 8</span>
-<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span>Message<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">16</span><span class="token punctuation">,</span> <span class="token string">"Message layout regression"</span><span class="token punctuation">)</span>
+<p>Payload enum variants may carry zero or one payload-word value: <code>bool</code>,
+integer scalars, address types, function-pointer types, or bitfield types.
+<code>f32</code>, <code>f64</code>, structures, arrays, slices, dynamic arrays, tuples, and nested
+enum values are not payload-word values. A payload-bearing variant stores its
+payload at offset 8 using the payload type's normal byte width and byte order.
+A payload-less variant in a payload enum has no active payload value; the
+entire payload word is inactive storage.</p>
+<p>Padding bytes, inactive payload bytes, and bytes in a payload word outside the
+active payload type are not source-level values. A raw read of those bytes
+observes <code>Indeterminate bits</code> as defined by the behavior taxonomy. Enum
+equality compares only the tag and, when both values have the same active
+payload-bearing variant, the active payload value; it never compares padding or
+inactive payload bytes.</p>
+<p>All integer fields in the representation use the target's data endianness. On
+the current ARM64 targets this means little-endian tag and integer-payload
+bytes. Endianness does not change offsets, total size, alignment, tag values,
+or ABI classification.</p>
+<!-- wyst-contract: check-pass -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> enum_layout_contract
+
+Plain <span class="token operator">::</span> <span class="token keyword">enum</span><span class="token operator">:</span> <span class="token builtin type">u16</span> <span class="token punctuation">{</span>
+  A
+  B <span class="token operator">=</span> <span class="token number">9</span>
+<span class="token punctuation">}</span>
+
+Message <span class="token operator">::</span> <span class="token keyword">enum</span><span class="token operator">:</span> <span class="token builtin type">u16</span> <span class="token punctuation">{</span>
+  Quit
+  <span class="token function">Write</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span>
+  <span class="token function">Custom</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span>Plain<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">"Plain is represented by its tag"</span><span class="token punctuation">)</span>
+<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#align_of</span><span class="token punctuation">(</span>Plain<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">"Plain alignment is tag alignment"</span><span class="token punctuation">)</span>
+<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span>Message<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">16</span><span class="token punctuation">,</span> <span class="token string">"payload enum is two native words"</span><span class="token punctuation">)</span>
+<span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#align_of</span><span class="token punctuation">(</span>Message<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">8</span><span class="token punctuation">,</span> <span class="token string">"payload enum alignment is one native word"</span><span class="token punctuation">)</span>
 </code></pre>
-<p>The full design layout above is the target compact layout. The
-single-word payload layout uses a native two-word value layout for
-payload enums: tag word at offset 0, payload word at offset 8, size 16,
-alignment 8. Payload-less enums still lower as just their discriminator.</p>
 <p>Wyst does not define <code>#repr(C)</code> or other explicit layout
 overrides on enums. Layout is determined by the rules above. Programmers
 who need a specific binary shape (FFI, hardware descriptor, on-wire
@@ -4005,7 +4036,7 @@ Box<span class="token operator">&lt;</span>T<span class="token operator">></span
     value <span class="token operator">:</span> T
 <span class="token punctuation">}</span>
 
-Result<span class="token operator">&lt;</span>T<span class="token punctuation">,</span> E<span class="token operator">></span> <span class="token operator">::</span> <span class="token keyword">enum</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
+Result<span class="token operator">&lt;</span>T<span class="token operator">:</span> payload_word<span class="token punctuation">,</span> E<span class="token operator">:</span> payload_word<span class="token operator">></span> <span class="token operator">::</span> <span class="token keyword">enum</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
     <span class="token function">Ok</span><span class="token punctuation">(</span>T<span class="token punctuation">)</span>
     <span class="token function">Err</span><span class="token punctuation">(</span>E<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -4047,6 +4078,7 @@ GenericBound     &lt;- 'integer'
                   / 'scalar'
                   / 'address'
                   / 'bitfield'
+                  / 'payload_word'
 </code></pre>
 <p>The bound names are recognized only in generic type-parameter bound position.
 They are not global keywords and do not reserve ordinary value, type, field, or
@@ -4104,6 +4136,11 @@ are valid for every concrete type in that closed family:</p>
 <td>nominal <code>bitfield</code> types</td>
 <td>whole-value equality, storage, passing, returning, and address-taking</td>
 </tr>
+<tr>
+<td><code>payload_word</code></td>
+<td><code>bool</code>, integer scalar types, pointer types, function-pointer types, and nominal <code>bitfield</code> types</td>
+<td>equality, inequality, storage, passing, returning, address-taking, and use as a generic enum payload</td>
+</tr>
 </tbody>
 </table>
 <p>The built-in bound set is intentionally narrow. It is not a trait, concept,
@@ -4122,12 +4159,32 @@ inference, so <code>Pair&lt;u64&gt;</code> is rejected for <code>Pair&lt;T, U&gt
 If a type parameter has a bound, the corresponding type argument must satisfy
 that bound at the instantiation site. For example, <code>add_one&lt;bool&gt;(true)</code> is
 rejected because <code>bool</code> does not satisfy <code>integer</code>.</p>
+<p>Generic enum payloads are also a bounded capability. A payload variant that
+stores a type parameter directly, such as <code>Ok(T)</code>, must declare <code>T: payload_word</code> or a narrower payload-compatible bound: <code>integer</code>,
+<code>unsigned_integer</code>, <code>signed_integer</code>, <code>address</code>, or <code>bitfield</code>. The broader
+<code>scalar</code> and <code>numeric</code> bounds are not payload-compatible because they include
+floating-point types. Violations are rejected at the generic declaration or at
+the instantiation boundary:</p>
+<!-- wyst-contract: check-fail -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> generic_enum_payload_reject
+
+Error <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  code <span class="token operator">:</span> <span class="token builtin type">u64</span>
+<span class="token punctuation">}</span>
+
+Result<span class="token operator">&lt;</span>T<span class="token operator">:</span> payload_word<span class="token punctuation">,</span> E<span class="token operator">:</span> payload_word<span class="token operator">></span> <span class="token operator">::</span> <span class="token keyword">enum</span><span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
+  <span class="token function">Ok</span><span class="token punctuation">(</span>T<span class="token punctuation">)</span>
+  <span class="token function">Err</span><span class="token punctuation">(</span>E<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+bad <span class="token operator">:</span> Result<span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">,</span> Error<span class="token operator">></span> <span class="token operator">=</span> <span class="token number">0</span>
+</code></pre>
 <p>Generic type arguments are full types, so they may contain other instantiated
 generic types and existing type constructors:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Result<span class="token operator">&lt;</span>Box<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span><span class="token punctuation">,</span> Error<span class="token operator">></span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Pair<span class="token operator">&lt;</span>Box<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span><span class="token punctuation">,</span> Error<span class="token operator">></span>
 <span class="token punctuation">[</span><span class="token punctuation">]</span>Box<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span>
-<span class="token address-qualifier type">@Result</span><span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">,</span> Error<span class="token operator">></span>
+<span class="token address-qualifier type">@Box</span><span class="token operator">&lt;</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token operator">></span>
 </code></pre>
 <p>Every entry inside <code>&lt;...&gt;</code> must still be a concrete type. Compile-time values
 are not generic type arguments, so <code>Foo&lt;T, 4&gt;</code> is not accepted as a generic type
@@ -4153,7 +4210,7 @@ info, address identity, and symbol identity must still preserve the original
 generic declaration and type arguments.</p>
 <p>Diagnostics and debug info spell generic instantiations with the declaring path
 and the canonical type-argument list, for example
-<code>math.swap&lt;u64&gt;</code> or <code>collections.Result&lt;[]u8, AllocError&gt;</code>. ELF symbols for
+<code>math.swap&lt;u64&gt;</code> or <code>collections.Result&lt;@u8, AllocErrorCode&gt;</code>. ELF symbols for
 concrete generic instantiations use the required encoding in
 <a href="/docs/chapter-16-object-format/#43-mangling">chapter-16-object-format.md §4.3</a>, for
 example <code>swap__wg1__u64</code>, so tooling has one public ABI spelling while
@@ -4196,7 +4253,7 @@ anchored by source declaration rather than by alias expansion.</p>
 </tr>
 <tr>
 <td>Unbounded by default; closed built-in bounds only</td>
-<td>Useful storage, forwarding, and container patterns do not require bounds. Numeric/address/bitfield helpers get explicit compile-time capability checks without a trait/interface system.</td>
+<td>Useful storage, forwarding, and container patterns do not require bounds. Numeric/address/bitfield/payload-word helpers get explicit compile-time capability checks without a trait/interface system.</td>
 </tr>
 <tr>
 <td>Monomorphization, not erasure</td>
@@ -4370,11 +4427,11 @@ the compiler checks is the concrete source in the build input.</p>
 </tr>
 <tr>
 <td>Type arguments may nest</td>
-<td>Container/result patterns quickly need shapes such as <code>Result&lt;Box&lt;u64&gt;, Error&gt;</code>; allowing type arguments to be full types avoids a second generics syntax expansion later.</td>
+<td>Container patterns quickly need shapes such as <code>Pair&lt;Box&lt;u64&gt;, Error&gt;</code>; allowing type arguments to be full types avoids a second generics syntax expansion later.</td>
 </tr>
 <tr>
 <td><code>T</code> is unbounded by default, with narrow built-in bounds</td>
-<td>Storage, movement, forwarding, and descriptor code can be useful without bounds. Numeric, scalar, address, and bitfield helpers get explicit compile-time capability checks without a general interface system.</td>
+<td>Storage, movement, forwarding, and descriptor code can be useful without bounds. Numeric, scalar, address, bitfield, and payload-word helpers get explicit compile-time capability checks without a general interface system.</td>
 </tr>
 <tr>
 <td>No type-argument inference or defaults</td>
@@ -4536,7 +4593,6 @@ model rather than copying C++, Rust, or Zig.</li>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

@@ -17,7 +17,7 @@ const outDir = path.join(root, ".worker-assets");
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
-const entries = ["index.html", "404.html", "assets", "docs", "roadmap"];
+const entries = ["index.html", "404.html", "assets", "docs"];
 
 for (const entry of entries) {
 	await cp(path.join(root, entry), path.join(outDir, entry), {
@@ -64,7 +64,7 @@ for (const css of ["wyst.css", "docs.css"]) {
 	const hashed = `${stem}.${hash8(buf)}.css`;
 	await rename(src, path.join(assetsDir, hashed));
 	// References appear as both "assets/foo.css" (root, relative) and
-	// "/assets/foo.css" (docs/roadmap, absolute); the shared substring covers both.
+	// "/assets/foo.css" (docs, absolute); the shared substring covers both.
 	rewrites.push([`assets/${css}`, `assets/${hashed}`]);
 }
 

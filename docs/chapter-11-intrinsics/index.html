@@ -208,13 +208,14 @@ event_tag <span class="token operator">::</span> <span class="token punctuation"
   <span class="token keyword">return</span> <span class="token primitive macro">%tag_of</span><span class="token punctuation">(</span>event<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<p>Payload-less enum values usually lower as the discriminator value itself.
-Payload-carrying enum values lower to extraction of the tag field at offset 0.
+<p>Payload-less enum values lower as the discriminator value itself.
+Payload-carrying enum values lower to extraction of the tag word at offset 0
+from the fixed two-word enum representation.
 There is no inverse runtime primitive for constructing an enum from a raw tag
 and payload bytes.</p>
 <hr>
 <h2 id="1.3.2-atomic-operations" tabindex="-1"><a class="doc-anchor" href="#1.3.2-atomic-operations" aria-hidden="true">#</a> 1.3.2 Atomic Operations</h2>
-<p>Atomic operations are the language-level primitives for lock-free
+<p>Atomic operations are the language-level primitives for atomic
 inter-agent communication. Where <code>#acquire</code> and <code>#release</code> cover ordered
 plain loads and stores, atomic operations cover <strong>read-modify-write</strong> (RMW)
 sequences — compare-and-swap, fetch-and-add, exchange, and single-bit
@@ -580,11 +581,27 @@ variant is selected:</p>
 <li><code>release</code> → <code>l</code> suffix (<code>ldaddl</code>, <code>ldsetl</code>, <code>swpl</code>)</li>
 <li><code>acqrel</code> and <code>seq_cst</code> → <code>al</code> suffix (<code>ldaddal</code>, <code>ldsetal</code>, <code>swpal</code>)</li>
 </ul>
-<p>The LL/SC loops use a small constant retry budget; the architecture
-guarantees forward progress on contended loops, and the compiler does not
-insert any explicit backoff. If a user requires backoff, they write it in
-the source via <code>%yield()</code> or <code>%wfe()</code> between retries — but the inner LL/SC
-loop itself is the architectural minimum.</p>
+<p>The baseline exclusive-load/store lowering retries until the primitive's
+operation completes. The generated inner loop has no internal attempt counter,
+retry budget, timeout path, or synthetic &quot;gave up&quot; result. For <code>%cas</code>, an
+observed comparison mismatch is the ordinary <code>(prev, false)</code> result; a
+store-exclusive failure is not user-visible and branches back to the exclusive
+load. For <code>%fetch_*</code>, <code>%xchg</code>, and <code>%atomic_bit_*</code>, every store-exclusive
+failure similarly branches back to the exclusive load until the store succeeds.</p>
+<p>This is an operation-correctness contract, not a wait-free or lock-free
+progress guarantee. A non-LSE loop may retry indefinitely under hostile
+contention, interrupts, or implementation-defined exclusive-monitor loss; Wyst
+does not promise that one agent completes in a bounded number of steps, nor
+does it promise a global lock-free progress property for all contending agents.
+Target architecture forward-progress rules apply only under their documented
+conditions. The compiler does not insert explicit backoff. If a user requires
+backoff, they write it around the primitive with <code>%yield()</code>, <code>%wfe()</code>, or a
+source-level algorithmic retry policy.</p>
+<p>Wyst does not silently replace non-LSE atomic RMW operations with fallback
+locks or runtime helpers. If a future target or mode introduces lock-based or
+runtime-assisted atomics, that assistance must be explicit in the operation's
+effects, generated storage, and lowering reports rather than hidden behind the
+same infallible primitive surface.</p>
 <hr>
 <h3 id="interaction-with-the-memory-model" tabindex="-1"><a class="doc-anchor" href="#interaction-with-the-memory-model" aria-hidden="true">#</a> Interaction with the Memory Model</h3>
 <p>Atomic operations participate in the happens-before relation described in
@@ -593,17 +610,17 @@ the same footing as <code>#acquire</code>/<code>#release</code> directives:</p>
 <ul>
 <li>A <code>release</code>-ordered atomic write to address X synchronizes-with any
 subsequent <code>acquire</code>-ordered atomic read of X (or any acquire-ordered
-RMW on X) that observes its value, by the same Rule 2 as
+RMW on X) that observes its value, by the same synchronizes-with rule as
 <code>#release</code>/<code>#acquire</code>.</li>
 <li><code>acqrel</code> RMW operations are both the release-side and the acquire-side
 of a synchronizes-with edge — they participate as either party.</li>
-<li><code>seq_cst</code> operations on a given location participate in synchronizes-with
-the same way <code>acqrel</code> operations do, <em>and</em> are totally ordered with all
-other <code>seq_cst</code> operations across all locations.</li>
+<li><code>seq_cst</code> operations participate in synchronizes-with according to their
+load/store/RMW side, <em>and</em> are totally ordered with all other <code>seq_cst</code>
+operations across all locations by the global SC order.</li>
 <li><code>relaxed</code> operations contribute no synchronizes-with edges. They
 guarantee single-copy atomicity at the access only.</li>
 </ul>
-<p>The reordering table in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.2</a> applies unchanged: an atomic access of order
+<p>The reordering table in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.4</a> applies unchanged: an atomic access of order
 O is treated as a memory operation of the corresponding row/column.</p>
 <hr>
 <h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
@@ -646,6 +663,18 @@ O is treated as a memory operation of the corresponding row/column.</p>
 <tr>
 <td>LSE selected per-target, not per-call</td>
 <td>The LL/SC vs LSE choice is a CPU capability, not an algorithmic choice. Per-call opt-in would force every site to answer &quot;what if LSE isn't available?&quot;</td>
+</tr>
+<tr>
+<td>Non-LSE retry loops do not expose internal failure</td>
+<td>The public primitive surface has no fallible result type for store-exclusive retry exhaustion, so the lowered loop must retry until the operation completes instead of silently returning a partial or invented result.</td>
+</tr>
+<tr>
+<td>Progress guarantees are separate from atomicity</td>
+<td>Atomic RMW correctness says each completed operation is indivisible and returns the specified value. It does not promise wait-freedom or hidden lock-free progress under contention.</td>
+</tr>
+<tr>
+<td>No hidden fallback locks or helpers</td>
+<td>Hidden locks would add synchronization effects and storage that kernel code must be able to audit. Any future fallback mechanism has to appear in effects, storage, and lowering reports.</td>
 </tr>
 <tr>
 <td>Floating-point and 128-bit atomics excluded</td>
@@ -2431,7 +2460,6 @@ event counts).</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

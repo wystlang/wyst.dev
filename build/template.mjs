@@ -88,7 +88,6 @@ function footer() {
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="${GITHUB_URL}" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">
@@ -324,22 +323,4 @@ export function errorPage({
 			</div>
 		</main>`;
 	return shell({ title, description, bodyClass: "nf-page", body });
-}
-
-// A simpler full-width page (roadmap, etc.) with no sidebar.
-export function simplePage({ title, description, canonical, eyebrow, h1, articleHtml }) {
-	const body = `		<main id="main" class="doc">
-			<div class="wrap doc-wrap doc-wrap--solo">
-				<article class="doc-article">
-					<header class="doc-article-head">
-						${eyebrow ? `<span class="eyebrow">${escapeHtml(eyebrow)}</span>` : ""}
-						${h1 ? `<h1>${escapeHtml(h1)}</h1>` : ""}
-					</header>
-					<div class="doc-body">
-${articleHtml}
-					</div>
-				</article>
-			</div>
-		</main>`;
-	return shell({ title, description, canonical, bodyClass: "docs", body });
 }

@@ -11,10 +11,6 @@ const docsSourceOfTruthHtml = await readFile(
 	new URL("../docs/source-of-truth/index.html", import.meta.url),
 	"utf8",
 );
-const roadmapHtml = await readFile(
-	new URL("../roadmap/index.html", import.meta.url),
-	"utf8",
-);
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
@@ -59,7 +55,6 @@ test("landing page tracks the v0.8 draft language surface", () => {
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
-		["roadmap", roadmapHtml],
 		["404", notFoundHtml],
 	]) {
 		assert.match(

@@ -382,7 +382,8 @@ forms are valid, but ordered checks require explicit field comparisons or
 casts such as <code>s.len &lt; t.len</code>, <code>arr.capacity &lt; other.capacity</code>, or
 <code>(callback as u64) &lt; (other as u64)</code>.
 Enum equality is tag equality for payload-less enums and tag-plus-active-payload
-equality for payload enums; inactive payload bytes are not compared.
+equality for payload enums; inactive payload bytes and padding bytes are not
+compared.
 Slice equality is descriptor equality (<code>data</code> and <code>len</code>), not element-wise
 memory comparison. Dynamic-array equality is descriptor-state equality
 (<code>data</code>, <code>len</code>, <code>capacity</code>, <code>storage_identity</code>, <code>growth_policy</code>,
@@ -1309,7 +1310,6 @@ conflicts with existing operators and is grep-friendly.</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

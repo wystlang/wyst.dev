@@ -1176,7 +1176,8 @@ Bottlenecks:
 <p>Wyst guarantees <strong>reproducible lowering</strong>: given the same source, the same
 compiler version, the same build optimization mode, the same canonical
 <code>#target(...)</code> configuration, the same source input manifest, and the same
-<code>#schedule</code> modes, the compiler always produces identical output.
+selected scheduling modes including implicit <code>schedule.default</code>, the compiler
+always produces identical output.
 Reproducibility is scoped to these inputs; it is not guaranteed across compiler
 versions, build optimization modes, target configurations, source manifests, or
 different <code>#schedule</code> modes.</p>
@@ -1203,7 +1204,7 @@ layout path and contents, and import-closure traversal described in
 </li>
 <li>same canonical target configuration, including the full <code>#target(...)</code>
 argument list and defaults</li>
-<li>same <code>#schedule</code> mode</li>
+<li>same selected scheduling modes, including implicit <code>schedule.default</code></li>
 </ul>
 <p><strong>Optimization hint modes are same-binary deterministic but cross-version
 unstable.</strong> <code>#schedule(throughput)</code> and <code>#schedule(latency)</code> must produce the
@@ -1702,7 +1703,6 @@ the identified bottleneck category</li>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

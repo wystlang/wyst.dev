@@ -18,7 +18,6 @@ import { registerWyst } from "./prism-wyst.mjs";
 import {
 	docPage,
 	docIndexPage,
-	simplePage,
 	escapeHtml,
 	GITHUB_URL,
 } from "./template.mjs";
@@ -214,6 +213,9 @@ function main() {
 	const md = makeMd();
 	const outDir = path.join(ROOT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
+	// `roadmap.md` was retired in the compiler repo; clear the old generated
+	// route so rebuilds cannot preserve a stale checked-in artifact.
+	fs.rmSync(path.join(ROOT, "roadmap"), { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
 
 	let count = 0;
@@ -280,31 +282,6 @@ function main() {
 		fs.mkdirSync(path.dirname(dest), { recursive: true });
 		fs.writeFileSync(dest, html);
 		count++;
-	}
-
-	// extra standalone pages outside design/ (roadmap lives in the repo root)
-	const roadmap = path.join(DOCS, "..", "roadmap.md");
-	if (fs.existsSync(roadmap)) {
-		const text = fs.readFileSync(roadmap, "utf-8");
-		const { body } = parseFrontmatter(text);
-		let h1 = "Roadmap";
-		const stripped = body.replace(/^\s*#\s+(.+?)\s*$/m, (_, t) => {
-			h1 = t.trim();
-			return "";
-		});
-		const html = simplePage({
-			title: `${h1} · Wyst`,
-			description: "Wyst project roadmap.",
-			canonical: SITE + "/roadmap/",
-			eyebrow: "Project",
-			h1,
-			articleHtml: md.render(stripped),
-		});
-		const dest = path.join(ROOT, "roadmap", "index.html");
-		fs.mkdirSync(path.dirname(dest), { recursive: true });
-		fs.writeFileSync(dest, html);
-		count++;
-		console.log("wrote /roadmap/");
 	}
 
 	console.log(`generated ${count} pages -> ${path.relative(ROOT, outDir)}/`);

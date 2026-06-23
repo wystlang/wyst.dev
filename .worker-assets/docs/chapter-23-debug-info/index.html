@@ -346,12 +346,16 @@ of attribute, Wyst picks one and uses only that form.</p>
 <p><strong>Slices.</strong> A <code>[]T</code> slice is emitted as a <code>DW_TAG_structure_type</code> with two
 members: <code>data : @T</code> (offset 0) and <code>len : u64</code> (offset 8), matching the
 ABI layout. The struct's <code>DW_AT_name</code> is <code>&quot;[]T&quot;</code> with <code>T</code> substituted.</p>
-<p><strong>Tagged-union enums.</strong> A Wyst <code>enum</code> with payload variants emits a
-<code>DW_TAG_structure_type</code> containing one <code>DW_TAG_member</code> for the
-discriminator and one <code>DW_TAG_variant_part</code> whose <code>DW_AT_discr</code> references
-the discriminator member. Each <code>DW_TAG_variant</code> carries
-<code>DW_AT_discr_value</code> equal to the variant's tag and contains the payload
-member(s).</p>
+<p><strong>Payload enums.</strong> A Wyst <code>enum</code> with payload variants emits a
+<code>DW_TAG_structure_type</code> named after the enum with byte size 16. It contains
+<code>tag</code> at byte offset 0 with the enum's discriminator type. It also contains
+<code>payload</code> at byte offset 8 with the shared payload word type. Debuggers must
+use the source-level variant metadata to interpret which payload-word type is
+active for a given tag; arbitrary aggregate, slice, floating-point, and nested
+enum payloads are rejected by the language. Padding and inactive payload bytes
+are not source-level values.
+Payload-less enums emit a <code>DW_TAG_enumeration_type</code> with byte size equal to the
+discriminator type.</p>
 <p><strong>Address types.</strong> <code>@T</code> emits <code>DW_TAG_pointer_type</code> with
 <code>DW_AT_type</code> referencing the DIE for <code>T</code>. <code>@volatile T</code> and <code>@mmio T</code> add a
 <code>DW_TAG_volatile_type</code> qualifier wrapping the <code>T</code> DIE before the pointer-type
@@ -513,7 +517,6 @@ firmware development. The spec above is the design target.</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

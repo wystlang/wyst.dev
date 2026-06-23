@@ -624,6 +624,13 @@ provenance the compiler cannot trace.</p>
 </tr>
 </tbody>
 </table>
+<p>Global enum initializers are persisted using the representation in
+<a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.2</a>. A payload-less enum writes
+only the discriminator type's bytes. A payload enum writes 16 bytes: the tag
+word at offset 0 and the payload word at offset 8. If the active variant has no
+payload, the payload word is non-semantic inactive storage; the current writer
+zero-fills it as part of ordinary deterministic data emission, but programs
+must not rely on those bytes as a source-level value.</p>
 <p>Plain <code>+</code> in source has exactly one meaning for typed addresses: element
 offsets. Do not multiply <code>N</code> or <code>i</code> by <code>#size_of(T)</code> before adding to <code>@T</code>;
 that creates a relocation addend or runtime offset scaled twice, and the
@@ -915,7 +922,6 @@ that would prevent a future port.</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

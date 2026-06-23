@@ -164,13 +164,198 @@ labeled arguments and rejects misspelled, unknown, duplicate, or missing
 required labels. The remaining dot-syntax forms take positional arguments
 only — labels on <code>push</code>, <code>push_from_address</code>, <code>init_slot</code>, or
 <code>commit_slot</code> are a compile error.</p>
-<p>The descriptor layout carries data pointer, length, capacity, storage identity,
-growth policy, failure policy, and movement/address-stability policy. Typed
+<p>The descriptor representation is public and normative under
+<code>wyst.dynamicArrayDescriptor.v0</code>. A <code>[dynamic]T</code> value has total size 56 bytes and alignment 8.
+Its fields are fixed in this order:</p>
+<table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Field</th>
+<th>Type</th>
+<th>Offset</th>
+<th>Size</th>
+<th>Alignment</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>data</code></td>
+<td><code>@T</code></td>
+<td>0</td>
+<td>8</td>
+<td>8</td>
+<td>Base address of element storage, or <code>0</code> when no storage is attached.</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>len</code></td>
+<td><code>u64</code></td>
+<td>8</td>
+<td>8</td>
+<td>8</td>
+<td>Number of initialized elements available through indexing and slicing.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>capacity</code></td>
+<td><code>u64</code></td>
+<td>16</td>
+<td>8</td>
+<td>8</td>
+<td>Number of element slots in the attached storage.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>storage_identity</code></td>
+<td><code>u64</code></td>
+<td>24</td>
+<td>8</td>
+<td>8</td>
+<td>Storage source token naming an arena, fixed buffer, pool, target/runtime source, or <code>0</code> for no storage.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>growth_policy</code></td>
+<td><code>u64</code></td>
+<td>32</td>
+<td>8</td>
+<td>8</td>
+<td>Encoded growth rule used by reserve and push operations.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>failure_policy</code></td>
+<td><code>u64</code></td>
+<td>40</td>
+<td>8</td>
+<td>8</td>
+<td>Encoded behavior for allocation, capacity, or initialization failure.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>movement_policy</code></td>
+<td><code>u64</code></td>
+<td>48</td>
+<td>8</td>
+<td>8</td>
+<td>Encoded address-stability rule for element storage across growth.</td>
+</tr>
+</tbody>
+</table>
+<p>The descriptor invariants are part of the public contract: <code>len &lt;= capacity</code>;
+<code>capacity &gt; 0</code> requires <code>data != 0</code>; <code>data</code> must satisfy <code>T</code>'s alignment for
+every initialized element; and <code>storage_identity</code>, <code>growth_policy</code>,
+<code>failure_policy</code>, and <code>movement_policy</code> must be valid tokens for the selected
+storage contract. The descriptor address itself is stable only for the storage
+location that holds the descriptor value; element addresses follow
+<code>movement_policy</code>.</p>
+<p><code>storage_identity</code> encodings are storage-contract tokens, not raw allocator
+pointers unless the owning storage contract says so. <code>0</code> means no storage
+identity is attached. Nonzero values are compared as identities by descriptor
+equality and are interpreted only by the wrapper/storage contract that created
+the descriptor.</p>
+<p><code>growth_policy</code> encodings in <code>wyst.dynamicArrayDescriptor.v0</code> are:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>no growth; capacity is fixed and reserve beyond capacity fails</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>stable-storage growth; capacity may increase without moving existing element addresses</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>relocating growth; capacity may increase by moving elements and changing <code>data</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>failure_policy</code> encodings in <code>wyst.dynamicArrayDescriptor.v0</code> are:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>trap or panic according to the owning runtime contract</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>return explicit status from the wrapper operation</td>
+</tr>
+</tbody>
+</table>
+<p><code>movement_policy</code> encodings in <code>wyst.dynamicArrayDescriptor.v0</code> are:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>no attached element storage; element addresses are invalid</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>stable element addresses while the storage identity remains alive</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>element addresses may move on growth; callers must not retain them across mutating operations</td>
+</tr>
+</tbody>
+</table>
+<p>Other policy values are invalid descriptor state in this contract version unless
+a later named contract version defines them. The empty descriptor is all zero
+fields: <code>data = 0</code>, <code>len = 0</code>, <code>capacity = 0</code>, <code>storage_identity = 0</code>,
+<code>growth_policy = 0</code>, <code>failure_policy = 0</code>, and <code>movement_policy = 0</code>. It is a
+valid empty descriptor value, but indexing, slicing to nonzero length, reserve,
+push, slot allocation, and foreign inspection as live storage require
+initialization through an explicit storage contract first. Invalid descriptor
+state includes <code>len &gt; capacity</code>, nonzero capacity with zero data, misaligned
+data, unknown policy values, stale storage identity, or any state produced by a
+wrapper that does not satisfy <code>wyst.dynamicArrayDescriptor.v0</code>; using such a
+descriptor is a trusted-contract violation by the program or foreign producer.</p>
+<p>Resetting a descriptor to the all-zero empty descriptor drops the descriptor's
+attachment to storage but performs no hidden free, destructor, element drop, or
+allocator callback. The lifetime of the storage source is external to the
+descriptor; the descriptor never extends arena, fixed-buffer, pool, DMA, or
+foreign storage lifetime. Wrapper APIs that release or recycle storage must
+state that behavior as their own visible contract.</p>
+<p>Native ABI consequences follow the public aggregate layout: <code>[dynamic]T</code> is a
+56-byte, 8-aligned aggregate, and ABI classification uses the ordinary aggregate
+rules for that size and alignment. DWARF debug info emits the same member names,
+order, offsets, and field types. Persistence is not promised: descriptor values
+contain process-local addresses and storage tokens, so only the all-zero empty
+descriptor is portable across address spaces or program runs unless an external
+persistence contract translates the fields. Foreign inspection may read and
+write the fields only when it opts into <code>wyst.dynamicArrayDescriptor.v0</code>,
+knows the element type layout, and preserves every invariant above.</p>
+<p>The bootstrap wrapper operation metadata is <code>wyst.dynamicArrayOperation.v0</code>. Typed
 wrappers are monomorphic in the bootstrap surface and report their shared
 byte-storage provenance for initialization, push-by-value, push-from-address,
 reserve-only, allocate-slot, initialize-slot, and commit-slot operations.
-The narrow <code>dyn_array_init&lt;T&gt;</code> source spelling reports as a deterministic typed
-wrapper instance rather than hidden runtime type erasure.</p>
+Current compatibility wrapper spellings such as <code>dyn_array_init_Token</code> select
+entries from this versioned metadata table; the function name is not the
+contract authority. The narrow <code>dyn_array_init&lt;T&gt;</code> source spelling reports as a
+deterministic typed wrapper instance rather than hidden runtime type erasure.</p>
 <p>Descriptor state is read through read-only dot projections such as <code>arr.data</code>,
 <code>arr.len</code>, <code>arr.capacity</code>, <code>arr.storage_identity</code>, <code>arr.growth_policy</code>,
 <code>arr.failure_policy</code>, and <code>arr.movement_policy</code>. These projections are not
@@ -306,7 +491,6 @@ runtime design.</li>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">

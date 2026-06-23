@@ -139,8 +139,8 @@ item can be complete.</p>
 <td><code>language.generics.type-parameter-model</code></td>
 <td>implemented</td>
 <td><code>design/chapter-06-types.md</code></td>
-<td>covered: <code>wync/src/sema/tests/generics.rs::accepts_monomorphized_generic_functions_structs_and_enums</code></td>
-<td>covered: <code>wync/src/sema/tests/generics.rs::rejects_generic_type_argument_arity_mismatch</code></td>
+<td>covered: <code>wync/src/parse/tests/generics.rs::parses_generic_type_parameter_bounds</code><br>covered: <code>wync/src/sema/tests/generics.rs::accepts_monomorphized_generic_functions_structs_and_enums</code></td>
+<td>covered: <code>wync/src/parse/tests/generics.rs::rejects_unknown_generic_type_parameter_bounds</code><br>covered: <code>wync/src/sema/tests/generics.rs::rejects_generic_type_argument_arity_mismatch</code></td>
 <td>untested: no QEMU fixture isolates generic monomorphization as observable runtime behavior yet</td>
 <td>covered: <code>wync/src/ir/tests.rs::lowers_monomorphized_generic_symbols</code></td>
 <td>untested: no dedicated disassembly snapshot for generic instantiation lowering yet</td>
@@ -186,6 +186,45 @@ item can be complete.</p>
 <td>not-applicable: expression evaluation order does not define a distinct ELF/object/relocation schema</td>
 <td>not-applicable: current explain reports summarize effects and lowering facts but do not expose expression evaluation sequencing</td>
 <td>covered: <code>wync/src/arm64/backend/tests.rs::hint_schedule_modes_are_repeatable_within_same_binary</code></td>
+</tr>
+<tr>
+<td><code>language.default-scheduling-mode</code></td>
+<td>implemented</td>
+<td><code>design/chapter-13-scheduling.md</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests.rs::default_schedule_reorders_independent_pure_values</code></td>
+<td>not-applicable: implicit ordinary-code scheduling has no invalid source spelling to reject; explicit unknown <code>#schedule</code> spellings are covered by the directive parser tests</td>
+<td>untested: no QEMU fixture isolates default scheduling as a runtime-observable interleaving yet</td>
+<td>covered: <code>wync/src/ir/tests.rs::lowers_schedule_modes_to_explicit_ir_regions</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests.rs::default_schedule_reorders_independent_pure_values</code><br>covered: <code>wync/src/arm64/backend/tests.rs::default_schedule_keeps_memory_operations_as_barriers</code></td>
+<td>untested: no dedicated ELF byte snapshot isolates <code>schedule.default</code> instruction order yet</td>
+<td>covered: <code>wync/tests/cli/reports.rs::explain_lowering_writes_stable_text_and_json_without_changing_output</code><br>covered: <code>wync/tests/cli/reports.rs::generated_manifest_writes_stable_build_manifest_and_reproducible_metadata</code></td>
+<td>covered: <code>wync/tests/cli/reports.rs::generated_manifest_build_identity_changes_with_schedule_modes</code><br>covered: <code>wync/tests/cli/reports.rs::generated_manifest_writes_stable_build_manifest_and_reproducible_metadata</code></td>
+</tr>
+<tr>
+<td><code>language.strict-scheduling-mode</code></td>
+<td>implemented</td>
+<td><code>design/chapter-13-scheduling.md</code></td>
+<td>covered: <code>wync/src/parse/tests.rs::parses_all_schedule_modes_without_deferred_feature_marker</code><br>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_keeps_semantic_order_while_allowing_constant_folding</code></td>
+<td>covered: <code>wync/src/parse/tests.rs::rejects_unknown_schedule_modes</code></td>
+<td>untested: no QEMU fixture isolates strict scheduling as a runtime-observable call or volatile interleaving yet</td>
+<td>covered: <code>wync/src/ir/tests.rs::lowers_schedule_modes_to_explicit_ir_regions</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_keeps_semantic_order_while_allowing_constant_folding</code><br>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_allows_folded_address_modes</code><br>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_permits_register_spills</code><br>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_preserves_call_and_volatile_operation_order</code><br>covered: <code>wync/src/arm64/backend/tests.rs::strict_schedule_keeps_floating_point_intermediates_unfused</code></td>
+<td>untested: no dedicated ELF byte snapshot isolates strict scheduling support instructions from full text output yet</td>
+<td>covered: <code>wync/tests/cli/reports.rs::generated_manifest_build_identity_changes_with_schedule_modes</code></td>
+<td>covered: <code>wync/tests/cli/reports.rs::generated_manifest_build_identity_changes_with_schedule_modes</code><br>covered: <code>wync/tests/cli/reports.rs::generated_manifest_writes_stable_build_manifest_and_reproducible_metadata</code></td>
+</tr>
+<tr>
+<td><code>language.exact-code-contracts</code></td>
+<td>implemented</td>
+<td><code>design/chapter-13-scheduling.md</code></td>
+<td>covered: <code>wync/src/parse/tests.rs::parses_exact_code_attribute_without_deferred_feature_marker</code><br>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_accepts_emitted_instruction_bytes_and_placement</code><br>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_accepts_register_assignment_contracts</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_rejects_instruction_count_mismatch_with_required_resource</code><br>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_rejects_disallowed_instruction_family</code></td>
+<td>not-applicable: exact-code contracts are compile-time artifact requirements and do not define a distinct runtime behavior</td>
+<td>covered: <code>wync/src/ir/tests.rs::lowers_exact_code_contracts_to_ir_attributes</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_accepts_emitted_instruction_bytes_and_placement</code><br>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_accepts_register_assignment_contracts</code></td>
+<td>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_accepts_emitted_instruction_bytes_and_placement</code></td>
+<td>not-applicable: current explain reports do not expose exact-code verification facts</td>
+<td>covered: <code>wync/src/arm64/backend/tests/exact_code.rs::exact_code_contracts_are_repeatable</code></td>
 </tr>
 <tr>
 <td><code>language.function-label-control-flow</code></td>
@@ -253,6 +292,32 @@ item can be complete.</p>
 <td>covered: <code>wync/tests/cli/reports.rs::explain_effects_writes_stable_text_and_json_without_changing_output</code></td>
 </tr>
 <tr>
+<td><code>language.concurrent-memory-model</code></td>
+<td>implemented</td>
+<td><code>design/chapter-09-memory-model.md</code></td>
+<td>covered: <code>wync/src/sema/tests.rs::accepts_canonical_barrier_domains</code><br>covered: <code>wync/src/sema/tests/arm64_effects.rs::accepts_prefetch_non_temporal_pair_and_atomic_bit_intrinsics</code><br>covered: <code>wync/tests/cli/emit_ir/evaluation_order.rs::emit_ir_combines_assignment_calls_volatile_atomic_and_trap_in_source_order</code></td>
+<td>covered: <code>wync/src/sema/tests.rs::rejects_compiler_barrier_operands</code><br>covered: <code>wync/src/sema/tests/arm64_effects.rs::rejects_invalid_prefetch_non_temporal_pair_and_atomic_bit_intrinsics</code><br>covered: <code>wync/tests/cli/diagnostics.rs::atomic_intrinsics_report_stable_diagnostics</code></td>
+<td>covered: <code>wync/tests/memory_model_litmus.rs::litmus_message_passing_release_acquire_forbids_stale_payload</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_store_buffering_allows_relaxed_but_forbids_seq_cst_zero_zero</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_load_buffering_allows_relaxed_but_forbids_seq_cst_cycle</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_iriw_allows_release_acquire_split_but_forbids_seq_cst_split</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_release_sequences_synchronize_through_relaxed_rmw</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_barriers_synchronize_only_with_architectural_flag_read_edge</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_mixed_atomic_plain_access_reports_target_defined_race</code><br>covered: <code>wync/tests/memory_model_litmus.rs::litmus_compiler_scheduling_requires_closed_alias_proof</code></td>
+<td>covered: <code>wync/tests/cli/emit_ir/evaluation_order.rs::emit_ir_combines_assignment_calls_volatile_atomic_and_trap_in_source_order</code><br>covered: <code>wync/tests/cli/emit_ir.rs::emit_ir_lowers_remaining_atomic_rmw_intrinsics</code><br>covered: <code>wync/src/ir/tests.rs::lowers_schedule_modes_to_explicit_ir_regions</code></td>
+<td>covered: <code>wync/tests/memory_model_litmus.rs::arm64_acquire_release_mnemonics_without_sc_order_are_rejected</code><br>covered: <code>wync/tests/memory_model_litmus.rs::arm64_lse_and_non_lse_lowerings_preserve_litmus_semantics</code><br>covered: <code>wync/src/arm64/backend/tests.rs::lowers_non_lse_atomic_intrinsics_to_retry_until_success_exclusive_loops</code><br>covered: <code>wync/src/arm64/backend/tests/system_ops.rs::compiler_barrier_emits_no_arm64_instruction</code><br>covered: <code>wync/src/arm64/backend/tests/system_ops.rs::encodes_barriers_and_cache_tlb_maintenance</code><br>covered: <code>wync/src/arm64/backend/tests/backend_optimizations.rs::nonvolatile_aggregate_memory_copies_use_pair_chunks</code><br>covered: <code>wync/src/arm64/backend/tests/backend_optimizations.rs::volatile_aggregate_memory_copies_remain_scalar_chunks</code></td>
+<td>covered: <code>wync/tests/cli/projects.rs::build_spinlock_release_target_uses_ll_sc_baseline</code><br>covered: <code>wync/tests/cli/projects/fixture_smoke.rs::build_smp_smoke_qemu_fixture_uses_psci_and_barrier_recipe</code></td>
+<td>covered: <code>wync/src/explain.rs::renders_effects_text_report_for_compiled_module</code><br>covered: <code>wync/tests/cli/reports.rs::explain_effects_writes_stable_text_and_json_without_changing_output</code></td>
+<td>covered: <code>wync/tests/cli/projects.rs::build_spinlock_release_target_uses_ll_sc_baseline</code><br>covered: <code>wync/tests/cli/projects/fixture_smoke.rs::build_smp_smoke_qemu_fixture_uses_psci_and_barrier_recipe</code><br>covered: <code>wync/tests/cli/reports.rs::explain_effects_writes_stable_text_and_json_without_changing_output</code></td>
+</tr>
+<tr>
+<td><code>language.dynamic-array-descriptor-contract</code></td>
+<td>implemented</td>
+<td><code>design/chapter-10-runtime.md</code></td>
+<td>covered: <code>wync/src/sema/tests/slices.rs::accepts_dynamic_array_indexing_without_bounds_checks</code><br>covered: <code>wync/tests/fixtures/reports/dynamic-array-descriptor/src/boot.wyst</code></td>
+<td>covered: <code>wync/src/sema/tests/slices.rs::rejects_dynamic_array_descriptor_field_assignment</code><br>covered: <code>wync/src/sema/tests/slices.rs::rejects_implicit_dynamic_array_slice_conversions</code></td>
+<td>untested: no QEMU fixture exercises dynamic-array storage mutation at runtime; current bootstrap wrappers are report-contract evidence only</td>
+<td>covered: <code>wync/src/ir/tests.rs::lowers_dynamic_array_descriptor_fields_and_indexing_to_ir</code><br>covered: <code>wync/src/ir/tests.rs::lowers_dynamic_array_descriptor_equality_to_field_comparisons</code></td>
+<td>untested: no dedicated ARM64 disassembly snapshot isolates all seven dynamic-array descriptor field offsets yet</td>
+<td>covered: <code>wync/src/elf/debug.rs::builtin_descriptor_debug_members_match_ir_field_names</code></td>
+<td>covered: <code>wync/tests/cli/reports.rs::dynamic_array_descriptor_writes_typed_wrapper_storage_facts_without_changing_output</code></td>
+<td>covered: <code>wync/tests/cli/reports.rs::dynamic_array_descriptor_writes_typed_wrapper_storage_facts_without_changing_output</code></td>
+</tr>
+<tr>
 <td><code>language.execution-level-control-flow</code></td>
 <td>implemented</td>
 <td><code>design/chapter-11-intrinsics.md</code></td>
@@ -290,6 +355,19 @@ item can be complete.</p>
 <td>covered: <code>wync/src/arm64/backend/tests/text_emission.rs::folds_symbol_constant_offsets_into_text_relocation_addend</code></td>
 <td>not-applicable: current explain reports do not expose address-arithmetic unit decisions</td>
 <td>untested: no build-twice fixture isolates address arithmetic addends or runtime scaling yet</td>
+</tr>
+<tr>
+<td><code>language.enum-representation</code></td>
+<td>implemented</td>
+<td><code>design/chapter-06-types.md</code></td>
+<td>covered: <code>wync/src/sema/tests/enum_layout.rs::accepts_fixed_two_word_payload_enum_layout_contract</code><br>covered: <code>wync/src/sema/tests/enum_tags.rs::accepts_tag_of_for_payload_and_payloadless_enum_variants</code><br>covered: <code>wync/src/sema/tests/generics.rs::accepts_monomorphized_generic_functions_structs_and_enums</code></td>
+<td>covered: <code>wync/src/sema/tests/enum_layout.rs::rejects_payload_enum_shapes_outside_fixed_two_word_contract</code><br>covered: <code>wync/src/sema/tests/generics.rs::rejects_generic_enum_payloads_without_word_bounds</code><br>covered: <code>wync/src/sema/tests/generics.rs::rejects_generic_enum_payload_instantiations_outside_word_contract</code></td>
+<td>untested: no QEMU fixture isolates payload enum memory bytes, inactive payload bytes, or register-pair return behavior at runtime yet</td>
+<td>covered: <code>wync/src/ir/tests/global_intrinsics.rs::lowers_enum_global_initializers_to_const_ir</code><br>covered: <code>wync/src/ir/tests/global_intrinsics.rs::lowers_payload_enum_equality_to_tag_and_payload_branches</code><br>covered: <code>wync/src/ir/tests.rs::verifier_rejects_nested_enum_payload_words</code><br>covered: <code>wync/tests/cli/emit_ir.rs::emit_ir_accepts_payload_enum_constructors_and_switch_bindings</code></td>
+<td>covered: <code>wync/src/arm64/tests.rs::assigns_native_enum_arguments_and_returns_by_representation</code><br>covered: <code>wync/src/arm64/backend/tests.rs::lowers_payload_enum_values_as_fixed_two_word_pairs</code></td>
+<td>covered: <code>wync/src/elf/tests.rs::emits_per_instance_enum_master_initializers</code><br>covered: <code>wync/src/elf/debug.rs::debug_payload_enum_die_uses_fixed_two_word_members</code></td>
+<td>not-applicable: current explain reports do not expose enum representation fields or padding bytes</td>
+<td>untested: no build-twice fixture isolates payload enum representation bytes yet</td>
 </tr>
 <tr>
 <td><code>language.enum-is-patterns</code></td>
@@ -346,7 +424,7 @@ item can be complete.</p>
 <tr>
 <td><code>artifacts.relocatable-object-files</code></td>
 <td>future-version-normative</td>
-<td><code>roadmap.md#32-relocatable-object-mode</code></td>
+<td><code>design/chapter-16-object-format.md</code></td>
 <td>not-applicable: object output is not implemented in the current compiler</td>
 <td>covered: <code>wync/tests/cli/projects.rs::build_reports_deferred_object_output_request</code></td>
 <td>not-applicable: deferred object output has no executable artifact yet</td>
@@ -424,7 +502,7 @@ item can be complete.</p>
 <tr>
 <td><code>language.sve-sve2-mte-pac-broad-arch-extensions</code></td>
 <td>experimental</td>
-<td><code>roadmap.md</code></td>
+<td><code>design/chapter-01-language-design.md</code></td>
 <td>not-applicable: experimental architecture extensions are not normative source syntax</td>
 <td>untested: unsupported target feature spellings for SVE, SVE2, MTE, and PAC need focused reject tests if they become parser or target-profile vocabulary</td>
 <td>not-applicable: experimental surface has no runtime behavior</td>
@@ -465,7 +543,6 @@ item can be complete.</p>
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="/roadmap/">Roadmap</a>
 						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
 					</div>
 					<div class="foot-col">
