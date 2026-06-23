@@ -99,7 +99,8 @@ build configuration and the already-emitted project artifact, if present.</p>
 <p>The generated manifest records build provenance: what source and layout inputs
 were declared, what host/tool facts were observed, and what artifact facts were
 available after the build.</p>
-<p>The schema is <code>wync.generatedManifest.v0</code>. It covers one
+<p>The schema is <code>wync.generatedManifest.v0</code> in the <code>wync.reports.v0</code> report
+schema bundle. It covers one
 build-configuration artifact: the resolved project build described by
 <code>wyst.project</code>. The command is a reporting step, not a build step. It writes only
 the requested manifest file and does not rebuild or rewrite the project output.</p>

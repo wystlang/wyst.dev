@@ -100,7 +100,9 @@ metadata paths, and must not change emitted code, project output files, release
 artifacts, diagnostics, or source semantics.</p>
 <p>Read explain reports as inspection tools: they connect source code to IR,
 effects, storage, object placement, and emitted bytes. They should not be used
-as a second source of language semantics.</p>
+as a second source of language semantics. The report schema bundle is
+versioned as <code>wync.reports.v0</code> in <a href="/docs/source-of-truth/">source-of-truth.md</a>;
+individual report schemas are named below.</p>
 <h2 id="lowering-report" tabindex="-1"><a class="doc-anchor" href="#lowering-report" aria-hidden="true">#</a> Lowering Report</h2>
 <p><code>wync explain lowering &lt;project-dir|path/to/wyst.project&gt; --function &lt;name&gt;</code>
 emits the source-to-machine report for a project build. The report is

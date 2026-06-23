@@ -98,14 +98,14 @@
 <p><strong>Canonical scope.</strong> Scalar primitives, non-scalar built-in type forms,
 conversions, arrays, slices, structs, bitfields, enums, strings, numeric
 literals, comments, compile-time conditionals, <code>#static_assert</code>, and the
-reserved generic design.
+generic type-parameter model.
 Operator semantics live in <a href="/docs/chapter-07-operators/">chapter-07-operators.md</a>; grammar in
 <a href="/docs/appendix-b-grammar/">appendix-b-grammar.md</a>; memory access semantics in
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>.</p>
 </blockquote>
 <p>Read the scalar, literal, conversion, address, array, slice, struct, bitfield,
-and enum sections in that order. Generic syntax is a reserved design area and
-can be skipped on a first pass.</p>
+enum, compile-time conditional, and generic sections in that order. Generic
+syntax is implemented, but it can be skipped on a first pass.</p>
 <hr>
 <h2 id="1.4-scalar-primitive-types" tabindex="-1"><a class="doc-anchor" href="#1.4-scalar-primitive-types" aria-hidden="true">#</a> 1.4 Scalar Primitive Types</h2>
 <table>
@@ -168,7 +168,7 @@ single irreducible scalar value.</p>
 </tr>
 <tr>
 <td>[T:N]</td>
-<td>reserved SIMD vector syntax</td>
+<td>SIMD vector type</td>
 </tr>
 <tr>
 <td>[N]T</td>
@@ -3912,13 +3912,13 @@ process <span class="token operator">::</span> <span class="token punctuation">(
 A passing assertion disappears entirely from the output. A failing assertion
 halts compilation before any output is produced.</p>
 <hr>
-<h2 id="1.13-generics%3A-type-parameter-design-reserved%2C-syntax-locked" tabindex="-1"><a class="doc-anchor" href="#1.13-generics%3A-type-parameter-design-reserved%2C-syntax-locked" aria-hidden="true">#</a> 1.13 Generics: Type-Parameter Design Reserved, Syntax Locked</h2>
+<h2 id="1.13-generics%3A-type-parameter-model" tabindex="-1"><a class="doc-anchor" href="#1.13-generics%3A-type-parameter-model" aria-hidden="true">#</a> 1.13 Generics: Type-Parameter Model</h2>
 <p>This section defines Wyst's generic syntax and type-system model:
 type-parametric functions, structs, and enums with explicit type arguments.
 Generic aliases, traits, concepts, typeclasses, and compile-time value
 parameters are outside this model.</p>
 <hr>
-<h3 id="what-is-reserved" tabindex="-1"><a class="doc-anchor" href="#what-is-reserved" aria-hidden="true">#</a> What Is Reserved</h3>
+<h3 id="reserved-boundaries" tabindex="-1"><a class="doc-anchor" href="#reserved-boundaries" aria-hidden="true">#</a> Reserved Boundaries</h3>
 <p>The angle-bracket token pair <code>&lt;...&gt;</code> is <strong>reserved</strong> for generic type
 parameter and type argument syntax. Compile-time value parameters are not part
 of Wyst's generic model. Forms such as <code>RingBuffer&lt;T, Capacity&gt;</code> or <code>Foo&lt;T, 4&gt;</code>
@@ -4439,8 +4439,8 @@ model rather than copying C++, Rust, or Zig.</li>
 				<li class="lvl-3"><a href="#common-uses">Common Uses</a></li>
 				<li class="lvl-3"><a href="#placement">Placement</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering-3">ARM64 Lowering</a></li>
-				<li class="lvl-2"><a href="#1.13-generics%3A-type-parameter-design-reserved%2C-syntax-locked">1.13 Generics: Type-Parameter Design Reserved, Syntax Locked</a></li>
-				<li class="lvl-3"><a href="#what-is-reserved">What Is Reserved</a></li>
+				<li class="lvl-2"><a href="#1.13-generics%3A-type-parameter-model">1.13 Generics: Type-Parameter Model</a></li>
+				<li class="lvl-3"><a href="#reserved-boundaries">Reserved Boundaries</a></li>
 				<li class="lvl-3"><a href="#generic-model">Generic Model</a></li>
 				<li class="lvl-3"><a href="#explicit-non-goals">Explicit Non-Goals</a></li>
 				<li class="lvl-3"><a href="#parametric-code-without-generic-instantiation">Parametric Code Without Generic Instantiation</a></li>

@@ -141,13 +141,14 @@ compiler emitted warnings.</li>
 <li><code>2</code>: CLI arguments were invalid; stderr contains the usage diagnostic.</li>
 </ul>
 <p><code>wync check</code> accepts <code>--diagnostic-format text|json|lsp-json</code>. Text is the
-default. JSON diagnostics are emitted to stderr as one object with a
-deterministic <code>diagnostics</code> array, including non-fatal warnings when validation
-succeeds. The <code>json</code> schema mirrors the in-process diagnostic model: severity,
-code, message, optional primary label, secondary labels, and notes. The
-<code>lsp-json</code> schema emits LSP-style diagnostic objects for editor adapters:
-document URI, zero-based UTF-16 ranges, numeric severity, code, source, message,
-related information, and notes data.</p>
+default. JSON diagnostics are emitted to stderr as one object with schema
+<code>wync.diagnostics.v0</code> and a deterministic <code>diagnostics</code> array, including
+non-fatal warnings when validation succeeds. The <code>json</code> schema mirrors the
+in-process diagnostic model: severity, code, message, optional primary label,
+secondary labels, and notes. The <code>lsp-json</code> schema is
+<code>wync.diagnostics.lsp.v0</code> and emits LSP-style diagnostic objects for editor
+adapters: document URI, zero-based UTF-16 ranges, numeric severity, code,
+source, message, related information, and notes data.</p>
 <h2 id="diagnostics-floor" tabindex="-1"><a class="doc-anchor" href="#diagnostics-floor" aria-hidden="true">#</a> Diagnostics Floor</h2>
 <p>The compiler uses the stable plain-text diagnostic renderer:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">error[E0001]: message
@@ -169,7 +170,8 @@ surface.</p>
 <p><code>--diagnostic-format lsp-json</code> is the first editor-protocol bridge. It is not a
 full <code>textDocument/publishDiagnostics</code> notification and does not start a
 language server; it is a stable adapter payload that can be grouped by <code>uri</code>
-and forwarded into an editor client.</p>
+and forwarded into an editor client. The top-level object contains <code>schema</code>
+with value <code>wync.diagnostics.lsp.v0</code> and a <code>diagnostics</code> array.</p>
 <p>Each diagnostic entry contains:</p>
 <ul>
 <li><code>uri</code>: file URI for the primary diagnostic label.</li>

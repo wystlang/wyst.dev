@@ -109,8 +109,9 @@ in canonical <code>wync fmt</code> form.</li>
 pass <code>wync check</code> with the documented default layout.</li>
 <li><code>&lt;!-- wyst-contract: check-fail --&gt;</code>: the block is a complete source file and must
 fail <code>wync check</code> with a diagnostic.</li>
-<li><code>&lt;!-- wyst-contract: future --&gt;</code>: the block shows planned syntax that is not
-expected to compile yet.</li>
+<li><code>&lt;!-- wyst-contract: future --&gt;</code>: the block shows future-version normative
+syntax that is not expected to compile yet. The feature must also have a row
+in <a href="/docs/source-of-truth/">source-of-truth.md</a>.</li>
 <li><code>&lt;!-- wyst-contract: sketch --&gt;</code>: the block is a syntax sketch rather than a normative
 example.</li>
 </ul>
@@ -120,8 +121,9 @@ allowed in design docs.</p>
 <p>Each design chapter that contains Wyst source fences must keep at least one
 checked contract (<code>fmt</code>, <code>check-pass</code>, or <code>check-fail</code>) for current compiler
 behavior. Use <code>sketch</code> only for fragments, pseudocode, or examples that rely
-on features outside the current checker. Use <code>future</code> only for explicitly
-planned syntax that is expected not to compile yet.</p>
+on features outside the current checker. Use <code>future</code> only for syntax that is
+future-version normative in <a href="/docs/source-of-truth/">source-of-truth.md</a> and is
+expected not to compile yet.</p>
 <h2 id="checked-examples" tabindex="-1"><a class="doc-anchor" href="#checked-examples" aria-hidden="true">#</a> Checked Examples</h2>
 <p>This formatting example is a language contract:</p>
 <!-- wyst-contract: fmt -->

@@ -74,10 +74,12 @@ topic becomes concrete enough for priority work or release planning, create
 fresh scope with dependency order, non-goals, verification, and exit
 criteria.</li>
 <li>Use checked <code>wyst</code> design-contract fences for supported examples; mark
-future sketches explicitly as <code>wyst future</code>.</li>
+future sketches with the <code>future</code> documentation contract defined in
+<a href="design/appendix-c-doc-example-contracts.md">Appendix C</a>.</li>
 <li>Keep design docs aligned with promoted scope. When promoted work changes a
 contract, report schema, target/artifact/debug policy, or resolves a design
-fork, update the relevant design doc.</li>
+fork, update <a href="design/source-of-truth.md">the source-of-truth registry</a> and
+the relevant design doc.</li>
 </ol>
 <h2 id="scope-guardrails" tabindex="-1"><a class="doc-anchor" href="#scope-guardrails" aria-hidden="true">#</a> Scope Guardrails</h2>
 <p>Future promoted work must preserve these language and compiler boundaries:</p>
@@ -121,10 +123,6 @@ validation against an IR reference semantics would strengthen this property;
 not promoted scope.)</li>
 <li>Production SMP support: implement explicit secondary startup, per-CPU
 initialization, runtime handoff, and QEMU/hardware validation stories.</li>
-<li>Generic type parameters and monomorphization: implement explicit type
-parameters for functions, structs, and enums; define deterministic
-instantiation identity/order and diagnostics/debug spelling; then retire or
-normalize <code>dyn_array_init&lt;T&gt;(...)</code>.</li>
 <li>Thin standard library: after target/artifact/linking support can distribute
 components, design and ship allocation-explicit verified primitives and
 recipes without hidden runtime behavior.</li>
@@ -247,6 +245,8 @@ non-goals.</li>
 </ul>
 <p>Design docs to update (Roadmap Rule 8):</p>
 <ul>
+<li><a href="design/source-of-truth.md">source-of-truth.md</a> — feature and schema status
+rows for each promoted artifact and interface surface.</li>
 <li><a href="design/chapter-16-object-format.md">chapter-16-object-format.md</a> — <code>ET_REL</code>
 output, <code>.rela.*</code>, symbol table, binding/visibility, cross-object veneers, and
 the archive format (primary).</li>
@@ -311,7 +311,8 @@ relocatable output&quot; out-of-scope row in §9, add a Relocatable Object Outpu
 section, and extend §10 with the <code>.rela</code> ordering rules.</li>
 </ul>
 <h2 id="tracking-states" tabindex="-1"><a class="doc-anchor" href="#tracking-states" aria-hidden="true">#</a> Tracking States</h2>
-<p>Roadmap items use two buckets: priority work and exploration topics.</p>
+<p>Roadmap items use planning buckets. Language feature states live in
+<a href="design/source-of-truth.md">design/source-of-truth.md</a>, not in this file.</p>
 <ul>
 <li>Priority work is promoted roadmap scope with actionable ordering. It may be
 split into release milestones only after scope, non-goals, verification, and
@@ -324,7 +325,8 @@ rationale, an implementation-gap assessment, and a concrete verification
 strategy.</li>
 <li>When priority work becomes release planning, create a new release milestone
 with scope, target fixtures, exit criteria, and links to the design docs that
-will change.</li>
+will change. Also update the source-of-truth registry so readers can tell
+which future surfaces are normative and which remain experimental.</li>
 </ul>
 <h2 id="exploration-topics" tabindex="-1"><a class="doc-anchor" href="#exploration-topics" aria-hidden="true">#</a> Exploration Topics</h2>
 <p>These topics are planning memory only; each needs fresh design/compiler
@@ -414,8 +416,8 @@ forms deterministic. <em>(Promote only with parser, formatter, sema, and
 snapshot coverage.)</em></li>
 <li>Type and value surface expansion: post-core type and value language surface
 across four facets. (a) Type system: traits, type aliases, value parameters,
-defaults, inference, and generic constraints (excluded from the promoted
-generic-parameter work unless that model is reopened). (b) Conversions and
+defaults, inference, and generic constraints beyond the implemented
+type-parameter model. (b) Conversions and
 decay — two open language-design forks: a conversion taxonomy giving
 value-preserving numeric conversion, bit reinterpretation, and view/qualifier
 change each a distinct greppable form; and whether <code>[N]T</code> decays to <code>@T</code> at

@@ -97,7 +97,10 @@
 <h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-hidden="true">#</a> Appendix Scope</h2>
 <p>This is the formal parsing reference after the reader has learned the language
 concepts. Rules tagged as reserved document syntax that belongs to the grammar
-vocabulary but is not part of a chapter's core surface.</p>
+vocabulary but is not part of a chapter's core surface. The feature-state
+registry in <a href="/docs/source-of-truth/">source-of-truth.md</a> decides whether a parsed
+form is implemented, future-version normative, experimental, reserved,
+deprecated, or removed.</p>
 <h2 id="notation" tabindex="-1"><a class="doc-anchor" href="#notation" aria-hidden="true">#</a> Notation</h2>
 <p>The grammar is written as a <strong>Parsing Expression Grammar</strong> (PEG). Each rule
 has the form <code>Name &lt;- expression</code>. Operators:</p>
@@ -1234,8 +1237,9 @@ arguments on endian runtime primitives.</p>
 form appears in source.</p>
 <hr>
 <h2 id="8.-conformance" tabindex="-1"><a class="doc-anchor" href="#8.-conformance" aria-hidden="true">#</a> 8. Conformance</h2>
-<p>Parser conformance is defined by this grammar and the prose rules in the
-chapters that precede it.</p>
+<p>Parser conformance is defined by this grammar, the prose rules in the chapters
+that precede it, and the conflict order in
+<a href="/docs/source-of-truth/">source-of-truth.md</a>.</p>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">

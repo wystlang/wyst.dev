@@ -95,14 +95,14 @@
 					</header>
 					<div class="doc-body">
 <blockquote>
-<p><strong>Canonical scope:</strong> the typed SSA IR consumed by every compiler pass between semantic analysis and ARM64 instruction selection. Defines values, ops, regions, control flow, type system, textual form, and verifier invariants.
+<p><strong>Canonical scope:</strong> the typed SSA IR consumed by every compiler pass between semantic analysis and ARM64 instruction selection. Defines values, ops, regions, control flow, type system, textual form, and verifier invariants. It is authoritative for compiler-internal IR only; <a href="/docs/source-of-truth/">source-of-truth.md</a> defines how IR documentation is resolved against user-visible language and ABI rules.
 <strong>Cross-references:</strong> <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> (Compiler Architecture, Internal IR), <a href="/docs/chapter-06-types/">chapter-06-types.md</a>, <a href="/docs/chapter-08-functions/">chapter-08-functions.md</a>, <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>, <a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a>, <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a> (relocation vocabulary).</p>
 </blockquote>
 <h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-hidden="true">#</a> Appendix Scope</h2>
 <p>This is an advanced compiler-internal reference. It maps source concepts from
 earlier chapters into SSA, verifier invariants, scheduling regions, allocation,
 and lowering. It treats those source concepts as already established.</p>
-<p>The Wyst IR is the single source of truth between the semantic analyzer and
+<p>The Wyst IR is the compiler-internal source of truth between the semantic analyzer and
 the ARM64 backend. Every optimization, scheduling decision, and lowering rule
 is expressed against this representation. Its design priorities, in order:</p>
 <ol>
