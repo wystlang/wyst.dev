@@ -564,7 +564,11 @@ also used for switch arms the verifier can prove dead.</li>
 <h4><code>gep</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, i64) -&gt; @T</code>.</li>
-<li><strong>Semantics:</strong> byte-offset addressing. Source <code>@T</code> arithmetic is scaled to bytes before it reaches this op. Field offsets, array indexing, struct member access all compile to <code>gep</code> plus a compile-time-or-runtime byte offset.</li>
+<li><strong>Semantics:</strong> byte-offset addressing in IR. This is not the source-level
+<code>@T + n</code> rule: source address arithmetic uses element offsets and is scaled
+to bytes before it reaches this op. Field offsets, array indexing, struct
+member access, and byte-lens source arithmetic all compile to <code>gep</code> plus a
+compile-time-or-runtime byte offset.</li>
 <li><strong>Lowering:</strong> <code>add</code> with immediate or <code>add xN, xM, xK, lsl #s</code>.</li>
 </ul>
 <h3 id="6.6-casts-and-construction" tabindex="-1"><a class="doc-anchor" href="#6.6-casts-and-construction" aria-hidden="true">#</a> 6.6 Casts and Construction</h3>

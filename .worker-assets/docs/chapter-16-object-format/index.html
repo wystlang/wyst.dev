@@ -585,12 +585,16 @@ provenance the compiler cannot trace.</p>
 <td>Codegen emits <code>adrp</code> + <code>add</code> against <code>sym</code>. Linker resolves at final placement.</td>
 </tr>
 <tr>
-<td><code>#addr_of(sym) + N</code> (constant <code>N</code>)</td>
-<td>One page-pair relocation against <code>sym</code> with addend <code>N</code> folded into the <code>ADD_LO12</code> immediate (or into the <code>ABS64</code> slot when stored to data).</td>
+<td><code>(#addr_of(sym) as @T) + N</code> (constant <code>N</code>)</td>
+<td>One page-pair relocation against <code>sym</code>; the byte addend is <code>N * #size_of(T)</code> folded into the <code>ADD_LO12</code> immediate (or into the <code>ABS64</code> slot when stored to data).</td>
 </tr>
 <tr>
-<td><code>#addr_of(sym) + i</code> (runtime <code>i</code>)</td>
-<td>Page-pair relocation for <code>sym</code>'s base only; the runtime <code>add</code> of <code>i</code> is a plain <code>add</code> instruction with no relocation.</td>
+<td><code>((#addr_of(sym) as @u8) + B) as @T</code> (constant byte offset <code>B</code>)</td>
+<td>One page-pair relocation against <code>sym</code>; the byte addend is exactly <code>B</code>.</td>
+</tr>
+<tr>
+<td><code>(#addr_of(sym) as @T) + i</code> (runtime <code>i</code>)</td>
+<td>Page-pair relocation for <code>sym</code>'s base only; runtime code scales <code>i</code> by <code>#size_of(T)</code> before the plain <code>add</code>, with no relocation on that add.</td>
 </tr>
 <tr>
 <td><code>#addr_of(sym)</code> in a constant initializer for a global</td>
@@ -614,6 +618,11 @@ provenance the compiler cannot trace.</p>
 </tr>
 </tbody>
 </table>
+<p>Plain <code>+</code> in source has exactly one meaning for addresses: element offsets.
+Do not multiply <code>N</code> or <code>i</code> by <code>#size_of(T)</code> before adding to <code>@T</code>; that creates
+a relocation addend or runtime offset scaled twice. Byte addends must be
+spelled with an <code>@u8</code> lens or with explicit <code>u64</code> arithmetic before casting
+back to the desired address type.</p>
 <p><strong>Consequence:</strong> Wyst does not have the C/C++ problem of &quot;is this pointer a
 relocatable symbol reference or an integer?&quot; The two are syntactically
 distinct: only <code>#addr_of(name)</code> references a symbol, and only the codegen

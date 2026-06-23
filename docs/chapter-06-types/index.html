@@ -690,7 +690,10 @@ explicit <code>as u64</code>.</li>
 <li><code>@T</code> arithmetic (<code>p + offset</code>, <code>p - offset</code>) uses <strong>element offsets</strong>.
 The integer offset is multiplied by <code>#size_of(T)</code> before the address is
 advanced. <code>@u8</code> remains byte-stepped because <code>#size_of(u8) == 1</code>. Cast to
-<code>@u8</code> or to <code>u64</code> before arithmetic when raw byte offsets are intended.</li>
+<code>@u8</code> or to <code>u64</code> before arithmetic when raw byte offsets are intended.
+Do not pre-multiply the offset by <code>#size_of(T)</code> before applying <code>+</code>; that
+scales twice. Write <code>p + i</code> for element <code>i</code>, and write <code>(p as @u8) + bytes</code>
+or <code>((p as u64) + bytes) as @T</code> for byte offsets.</li>
 <li>The volatility of address arithmetic is the volatility of the static address
 operand that produces the result. <code>@volatile T + integer</code> produces
 <code>@volatile T</code>; <code>@T + integer</code> produces <code>@T</code>.</li>
@@ -1124,9 +1127,9 @@ common <code>arr[expr]</code> C-idiom bug where <code>expr</code> evaluates to <
 
 x <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>
 
-y <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">8</span><span class="token punctuation">]</span>
+y <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>
 
-<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">16</span><span class="token punctuation">]</span> <span class="token operator">=</span> x <span class="token operator">+</span> y
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span> <span class="token operator">=</span> x <span class="token operator">+</span> y
 </code></pre>
 <p>Lowering:</p>
 <pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm">ldr x0<span class="token punctuation">,</span> <span class="token punctuation">[</span>xbuf<span class="token punctuation">]</span>
@@ -1284,7 +1287,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 <tr>
 <td><code>u64@[base + off]</code></td>
 <td>memory load through an explicit address</td>
-<td>bytes</td>
+<td>elements of base</td>
 </tr>
 <tr>
 <td><code>#addr_of(arr)</code></td>
@@ -1306,7 +1309,7 @@ buf <span class="token operator">:</span> <span class="token punctuation">[</spa
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   first <span class="token operator">:</span><span class="token operator">=</span> buf<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
   base <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
-  same <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">0</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+  same <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>
   <span class="token keyword">return</span> first <span class="token operator">+</span> same
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1375,7 +1378,7 @@ a <span class="token operator">=</span> bytes<span class="token punctuation">[</
 b <span class="token operator">=</span> words<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span>          <span class="token comment">// element index 1</span>
 
 word_base <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>words<span class="token punctuation">)</span>
-c <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>word_base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>  <span class="token comment">// byte offset 8</span>
+c <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>word_base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>  <span class="token comment">// element offset 1; byte offset 8</span>
 </code></pre>
 <p>The <code>@T</code> type records the memory-access lens and element size for source-level
 arithmetic:</p>
@@ -1422,7 +1425,7 @@ symbol-backed storage:</p>
 
 read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
   base <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>TABLE<span class="token punctuation">)</span>
-  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">3</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">3</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Any const-array literal syntax that places initialized data directly in
@@ -1450,7 +1453,7 @@ ldrb w0<span class="token punctuation">,</span> <span class="token punctuation">
 
 read_table <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
   base <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>TABLE<span class="token punctuation">)</span>
-  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span> <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm">adrp  x0<span class="token punctuation">,</span> TABLE
@@ -2139,7 +2142,8 @@ path, movement policy, and address-stability policy.</p>
 </code></pre>
 <p>Lowering:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>msg <span class="token operator">+</span> <span class="token number">8</span><span class="token punctuation">]</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>msg<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+<span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>len_addr<span class="token punctuation">]</span>
 </code></pre>
 <hr>
 <h3 id="layout" tabindex="-1"><a class="doc-anchor" href="#layout" aria-hidden="true">#</a> Layout</h3>
@@ -2383,8 +2387,9 @@ constant expressions.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#field_offset</span><span class="token punctuation">(</span>uart_regs<span class="token punctuation">,</span> fr<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0x18</span><span class="token punctuation">,</span>
                <span class="token string">"fr must be at offset 0x18 per PL011 spec"</span><span class="token punctuation">)</span>
 
-<span class="token comment">// Manual field access via base + offset (when pointer arithmetic is needed)</span>
-fr_val <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span>uart_regs<span class="token punctuation">,</span> fr<span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token comment">// Manual field access via a byte lens (when pointer arithmetic is needed)</span>
+fr_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>base <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span>uart_regs<span class="token punctuation">,</span> fr<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
+fr_val <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>fr_addr<span class="token punctuation">]</span>
 </code></pre>
 <p><code>#field_offset</code> is useful for:</p>
 <ul>

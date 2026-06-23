@@ -900,9 +900,10 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
     }
 
     // Place a, b, c into the GP save area at the offsets va_list expects.
-    u64@[local_addr(gp_save) + 40] = a as u64    // gr_top - 24
-    u64@[local_addr(gp_save) + 48] = b as u64    // gr_top - 16
-    u64@[local_addr(gp_save) + 56] = c as u64    // gr_top - 8
+    gp_base : @u8 = local_addr(gp_save) as @u8
+    u64@[(gp_base + 40) as @u64] = a as u64    // gr_top - 24
+    u64@[(gp_base + 48) as @u64] = b as u64    // gr_top - 16
+    u64@[(gp_base + 56) as @u64] = c as u64    // gr_top - 8
 
     return vprintf(fmt, local_addr(ap))
 }
