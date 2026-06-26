@@ -10,7 +10,7 @@ index.html              Landing page
 assets/
   wyst.css              Shared design system (tokens, typography, components)
   docs.css              Documentation layout + prose + syntax-highlight colors
-  …                     Fonts, icons, mascot art
+  …                     Fonts, icons, social imagery
 docs/                   GENERATED — one folder per chapter/appendix (commit this)
 build/
   generate.mjs          Markdown → HTML generator

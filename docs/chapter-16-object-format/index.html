@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -348,7 +349,8 @@ module <code>drivers.uart</code> emits:</p>
 </code></pre>
 <p>Concrete generic instantiations are the other mandatory encoding exception.
 Every implementation must write the same <code>.symtab</code> name for the same generic
-declaration and canonical concrete type-argument tuple:</p>
+declaration and canonical concrete type-argument tuple in Wyst's current
+type-parameter-only generic model:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">GenericSymbol = DeclarationName "__wg" Arity "__" TypeComponent
                 ("__" TypeComponent)*
 Arity         = decimal count of type arguments
@@ -448,6 +450,11 @@ as <code>_m</code>, and writes any other byte as <code>_xHH</code> using lowerca
 Imported exported type names first canonicalize to their declaring type name
 before component encoding, so <code>flags.Mode</code> and the same type reached through
 an import alias do not produce distinct ABI symbols.</p>
+<p>The language-level canonical instantiation key also reserves a value-argument
+list, which is empty in the current model because generic value parameters are
+not part of Wyst. Any future feature that enables non-empty generic value
+arguments must extend this public symbol encoding before it can expose such
+instantiations in emitted artifacts.</p>
 <p>This decision keeps <code>readelf -s kernel.elf</code> legible for normal source names
 while still making generic instantiations stable for linkers, debuggers, and
 out-of-tree tooling. Longer generic names increase <code>.strtab</code> size, but they do
@@ -464,7 +471,8 @@ enumerated here so that:</p>
 <li>The IR specification (Phase 5.2) can reference them precisely.</li>
 <li>An external tool (linker, disassembler, debugger) that ever needs to
 inspect partially-linked Wyst output knows the closed set it might see.</li>
-<li>The <code>#addr_of</code> relocation discipline (§6) can name them.</li>
+<li>The relocation-origin discipline (§6) can name every source of patchable
+symbol, object, section, string, or future table references.</li>
 </ul>
 <table>
 <thead>
@@ -570,14 +578,61 @@ above.</p>
 for <code>#addr_of</code> — the load is always materialized as an <code>adrp</code> + <code>add</code> (or
 <code>adrp</code> + <code>ldr</code> with <code>LDST*_LO12</code>) pair against the absolute symbol address.</p>
 <hr>
-<h2 id="6.-%23addr_of-and-relocation-emission" tabindex="-1"><a class="doc-anchor" href="#6.-%23addr_of-and-relocation-emission" aria-hidden="true">#</a> 6. <code>#addr_of</code> and Relocation Emission</h2>
-<p><code>#addr_of(symbol)</code> (§7.1 of <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>) is <strong>the only
-language-level expression that introduces a code-or-data symbol reference</strong>.
-<code>%addr_of(local)</code> materializes a stack-frame address at runtime and therefore
-does not participate in relocation emission. Every other address in Wyst is
-either a literal (<code>0x0900_0000</code>) or computed at runtime from values whose
-provenance the compiler cannot trace.</p>
-<p>The integrated linker uses this distinction directly:</p>
+<h2 id="6.-relocation-origins-and-address-expression-emission" tabindex="-1"><a class="doc-anchor" href="#6.-relocation-origins-and-address-expression-emission" aria-hidden="true">#</a> 6. Relocation Origins and Address-Expression Emission</h2>
+<p>Every relocation-producing operation has an explicit origin before final image
+write-out. Current static <code>ET_EXEC</code> builds resolve these origins internally and
+do not serialize <code>.rela.*</code> sections, but the compiler still keeps the origin
+kind visible until the writer patches the emitted bytes.</p>
+<table>
+<thead>
+<tr>
+<th>Origin</th>
+<th>Produced by</th>
+<th>Internal patch/relocation behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Direct calls</td>
+<td>IR <code>call</code> with a symbol callee</td>
+<td>Emits a direct <code>CALL26</code> branch when in range; otherwise emits a deterministic veneer that materializes the target address with <code>ADR_PG_HI21</code> + <code>ADD_LO12</code>.</td>
+</tr>
+<tr>
+<td>Direct symbol branches</td>
+<td>IR <code>goto</code> / tail control transfer to a label or function symbol</td>
+<td>Emits a direct <code>JUMP26</code> branch when in range; otherwise emits a deterministic veneer that materializes the target address with <code>ADR_PG_HI21</code> + <code>ADD_LO12</code>.</td>
+</tr>
+<tr>
+<td>Symbol materialization</td>
+<td>IR <code>addr_of</code>, string-address materialization, and symbol-base materialization for constant-address <code>gep</code></td>
+<td>Emits <code>ADR_PG_HI21</code> + <code>ADD_LO12</code> page-pair patches in text, with byte addends folded only for constant offsets.</td>
+</tr>
+<tr>
+<td>Object references</td>
+<td>Global <code>ConstIr::Address</code>, slice/string descriptors, per-CPU/TLS current-instance references, and per-instance offset values</td>
+<td>Emits <code>ABS64</code> data patches or compiler-owned per-instance offset patches; the static image still avoids dynamic ELF TLS relocations.</td>
+</tr>
+<tr>
+<td>Jump tables</td>
+<td>Future explicit jump-table lowering records</td>
+<td>Table entries are relocation origins. Current <code>switch-dispatch</code> mode does not emit jump tables or serialized jump-table relocations.</td>
+</tr>
+<tr>
+<td>Address-bearing instructions</td>
+<td>Checked inline assembly memory/address operands and future load/store address forms that carry a symbol target</td>
+<td>Use the same address-materialization or low-12 load/store relocation records as ordinary compiler-generated instructions.</td>
+</tr>
+</tbody>
+</table>
+<p><code>#addr_of(symbol)</code> (§7.1 of <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>) is the
+only language-level address expression that introduces a symbol-sourced address
+value. That narrower rule does not make <code>#addr_of</code> the only
+relocation-producing origin in the compiler. <code>%addr_of(local)</code> materializes a
+stack-frame address at runtime and therefore does not participate in relocation
+emission. Every other address expression in Wyst is either a literal
+(<code>0x0900_0000</code>) or computed at runtime from values whose provenance the
+compiler cannot trace.</p>
+<p>The integrated linker uses the address-expression distinction directly:</p>
 <table>
 <thead>
 <tr>
@@ -591,15 +646,15 @@ provenance the compiler cannot trace.</p>
 <td>Codegen emits <code>adrp</code> + <code>add</code> against <code>sym</code>. Linker resolves at final placement.</td>
 </tr>
 <tr>
-<td><code>(#addr_of(sym) as @T) + N</code> (constant element count <code>N</code>)</td>
+<td><code>(#addr_of(sym) as.address @T) + N</code> (constant element count <code>N</code>)</td>
 <td>One page-pair relocation against <code>sym</code>; the byte addend is <code>N * #size_of(T)</code> folded into the <code>ADD_LO12</code> immediate (or into the <code>ABS64</code> slot when stored to data).</td>
 </tr>
 <tr>
-<td><code>((#addr_of(sym) as @u8) + B) as @T</code> (constant byte count <code>B</code>)</td>
+<td><code>((#addr_of(sym) as.address @u8) + B) as.lens @T</code> (constant byte count <code>B</code>)</td>
 <td>One page-pair relocation against <code>sym</code>; the byte addend is exactly <code>B</code>.</td>
 </tr>
 <tr>
-<td><code>(#addr_of(sym) as @T) + i</code> (runtime element count <code>i</code>)</td>
+<td><code>(#addr_of(sym) as.address @T) + i</code> (runtime element count <code>i</code>)</td>
 <td>Page-pair relocation for <code>sym</code>'s base only; runtime code scales <code>i</code> by <code>#size_of(T)</code> before the plain <code>add</code>, with no relocation on that add.</td>
 </tr>
 <tr>
@@ -615,11 +670,11 @@ provenance the compiler cannot trace.</p>
 <td>No relocation. Codegen emits ordinary stack-relative address materialization.</td>
 </tr>
 <tr>
-<td>Integer literal cast <code>0x40000000 as @T</code></td>
+<td>Integer literal conversion <code>0x40000000 as.address @T</code></td>
 <td>No relocation. The address is the literal.</td>
 </tr>
 <tr>
-<td>Computed <code>@T</code> (<code>base + i</code>, <code>ptr as @u32</code>, <code>%mrs(TPIDR_EL1) as @T</code>)</td>
+<td>Computed <code>@T</code> (<code>base + i</code>, <code>ptr as.lens @u32</code>, <code>%mrs(TPIDR_EL1) as.address @T</code>)</td>
 <td>No relocation. The address is a runtime value.</td>
 </tr>
 </tbody>
@@ -638,13 +693,18 @@ checker rejects the obvious <code>p + i * #size_of(T)</code> form. Relocation ad
 always measured in bytes. Byte addends must be spelled with an <code>@u8</code> lens or
 with explicit <code>u64</code> arithmetic before casting back to the desired address type.</p>
 <p><strong>Consequence:</strong> Wyst does not have the C/C++ problem of &quot;is this pointer a
-relocatable symbol reference or an integer?&quot; The two are syntactically
-distinct: only <code>#addr_of(name)</code> references a symbol, and only the codegen
-path for <code>#addr_of</code> emits relocations. <code>%addr_of(local)</code> is explicit but local
-to the stack frame; everything else compiles to plain arithmetic.</p>
+relocatable symbol reference or an integer?&quot; For address expressions, the
+syntax tells the compiler whether it is materializing a symbol-sourced address
+or ordinary address arithmetic. Direct calls, direct symbol branches, object
+references, veneers, future jump tables, and address-bearing instructions are
+separate relocation origins with separate patch records.</p>
 <p>This is the contract that lets the integrated linker avoid carrying a full
-relocation table to disk: every relocation site is a direct lowering of a
-specific <code>#addr_of(...)</code> AST node, fully resolved before write-out.</p>
+relocation table to disk: every relocation site is a direct lowering of an
+explicit IR node or lowering patch that names the target symbol, object,
+string, section, or future jump-table entry, fully resolved before write-out.
+Do not describe <code>#addr_of</code> or IR <code>addr_of</code> as the only relocation-producing
+operation; it is only the source address-expression form that creates a
+symbol-sourced address value.</p>
 <p>See Phase 5.4 for the cross-link from <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address
 Types).</p>
 <hr>
@@ -892,7 +952,7 @@ that would prevent a future port.</p>
 				<li class="lvl-3"><a href="#4.3-mangling">4.3 Mangling</a></li>
 				<li class="lvl-2"><a href="#5.-relocation-vocabulary">5. Relocation Vocabulary</a></li>
 				<li class="lvl-3"><a href="#5.1-page-pair-discipline">5.1 Page-Pair Discipline</a></li>
-				<li class="lvl-2"><a href="#6.-%23addr_of-and-relocation-emission">6. #addr_of and Relocation Emission</a></li>
+				<li class="lvl-2"><a href="#6.-relocation-origins-and-address-expression-emission">6. Relocation Origins and Address-Expression Emission</a></li>
 				<li class="lvl-2"><a href="#7.-per-cpu-and-thread-local-lowering">7. Per-CPU and Thread-Local Lowering</a></li>
 				<li class="lvl-2"><a href="#8.-sections-from-user-declarations">8. Sections from User Declarations</a></li>
 				<li class="lvl-2"><a href="#9.-out-of-scope">9. Out of Scope</a></li>
@@ -916,7 +976,7 @@ that would prevent a future port.</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

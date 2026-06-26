@@ -11,7 +11,7 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
+		<link rel="stylesheet" href="/assets/wyst.024ae4b0.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -379,8 +380,8 @@ use unsigned numeric address ordering. Slice, dynamic-array, enum, and
 function-pointer comparisons are equality-only. <code>[]T == []T</code>,
 <code>[dynamic]T == [dynamic]T</code>, <code>@(u64) -&gt; u64 == @(u64) -&gt; u64</code>, and their <code>!=</code>
 forms are valid, but ordered checks require explicit field comparisons or
-casts such as <code>s.len &lt; t.len</code>, <code>arr.capacity &lt; other.capacity</code>, or
-<code>(callback as u64) &lt; (other as u64)</code>.
+explicit comparisons such as <code>s.len &lt; t.len</code>, <code>arr.capacity &lt; other.capacity</code>,
+or <code>(callback as.address u64) &lt; (other as.address u64)</code>.
 Enum equality is tag equality for payload-less enums and tag-plus-active-payload
 equality for payload enums; inactive payload bytes and padding bytes are not
 compared.
@@ -594,42 +595,72 @@ interpretation.</p>
 <h2 id="operator-precedence" tabindex="-1"><a class="doc-anchor" href="#operator-precedence" aria-hidden="true">#</a> Operator Precedence</h2>
 <p>Unary operators have the highest precedence and always bind tighter than any
 binary operator.</p>
-<p>Binary operators are grouped into five precedence levels. Higher numbers bind
-more tightly.</p>
+<p>Binary operators use conventional systems-language precedence for arithmetic,
+shift, bitwise, comparison, and logical operators. Higher numbers bind more
+tightly.</p>
 <table>
 <thead>
 <tr>
 <th>Precedence</th>
 <th>Operators</th>
+<th>Associativity</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td>9</td>
+<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>+</code> <code>-</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>&amp;</code> <code>&amp;^</code></td>
+<td>left</td>
+</tr>
+<tr>
 <td>5</td>
-<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code> <code>&amp;</code> <code>&amp;^</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td><code>^</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>4</td>
-<td><code>+</code> <code>-</code> <code>|</code> <code>^</code></td>
+<td><code>|</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>3</td>
 <td><code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+<td>non-associative</td>
 </tr>
 <tr>
 <td>2</td>
 <td><code>&amp;&amp;</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>1</td>
 <td><code>||</code></td>
+<td>left</td>
 </tr>
 </tbody>
 </table>
-<p>Binary operators of equal precedence associate <strong>left to right</strong>:</p>
+<p>Binary operators of equal precedence associate <strong>left to right</strong>, except
+comparisons. Comparison operators are non-associative: <code>a &lt; b &lt; c</code> is rejected
+unless parentheses make the grouping explicit.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">/</span> y <span class="token operator">*</span> z     <span class="token comment">// same as (x / y) * z</span>
 a <span class="token operator">+</span> b <span class="token operator">-</span> c     <span class="token comment">// same as (a + b) - c</span>
+a <span class="token operator">&lt;&lt;</span> b <span class="token operator">>></span> c   <span class="token comment">// same as (a &lt;&lt; b) >> c</span>
 a <span class="token operator">&amp;</span> b <span class="token operator">&amp;</span> c     <span class="token comment">// same as (a &amp; b) &amp; c</span>
 </code></pre>
 <p>Parentheses override precedence in the standard way.</p>
@@ -643,6 +674,9 @@ x <span class="token operator">&amp;</span><span class="token operator">^</span>
 x <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> n<span class="token punctuation">)</span>                        <span class="token comment">// set bit n</span>
 <span class="token punctuation">(</span>x <span class="token operator">>></span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token number">0xF</span>                      <span class="token comment">// extract nibble</span>
 x <span class="token operator">^</span> y                               <span class="token comment">// toggle bits in x that are set in y</span>
+
+<span class="token comment">// Parenthesize when relying on a lower-precedence subexpression</span>
+<span class="token punctuation">(</span>x <span class="token operator">|</span> y<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span>
 </code></pre>
 <hr>
 <h2 id="compound-assignment-operators" tabindex="-1"><a class="doc-anchor" href="#compound-assignment-operators" aria-hidden="true">#</a> Compound Assignment Operators</h2>
@@ -1304,7 +1338,7 @@ conflicts with existing operators and is grep-friendly.</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

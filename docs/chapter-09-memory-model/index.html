@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -278,14 +279,14 @@ responsible for configuring MMIO regions with Device memory attributes
 </code></pre>
 <p>The &quot;stride N&quot; annotation describes what one <em>element</em> occupies, and source
 address arithmetic scales by that stride. <code>(p : @u32) + 1</code> is <code>p</code> advanced by
-one <code>u32</code> element, or four bytes. To step in raw bytes, cast to <code>@u8</code> or use
-explicit numeric <code>u64</code> arithmetic. The formal arithmetic rules are in
+one <code>u32</code> element, or four bytes. To step in raw bytes, convert to <code>@u8</code> with
+<code>as.lens</code> or use explicit numeric <code>u64</code> arithmetic. The formal arithmetic rules are in
 <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address Types subsection).
 Do not write <code>p + i * #size_of(T)</code> for element <code>i</code>; that double-scales the
 offset. The three distinct operations are <code>element_offset(p, i)</code> (<code>p + i</code>),
-<code>byte_offset(p, bytes)</code> (<code>(p as @u8) + bytes</code> or explicit <code>u64</code> arithmetic),
-and <code>field_addr(p, T.field)</code> (<code>(p as @u8) + #field_offset(T, field)</code> before an
-explicit cast to the field address lens).</p>
+<code>byte_offset(p, bytes)</code> (<code>(p as.lens @u8) + bytes</code> or explicit <code>u64</code> arithmetic),
+and <code>field_addr(p, T.field)</code> (<code>(p as.lens @u8) + #field_offset(T, field)</code> before an
+explicit <code>as.lens</code> conversion to the field address lens).</p>
 <h4>Volatile and MMIO-Intent Addresses</h4>
 <p>The qualifier <code>@volatile T</code> marks an address with the volatile-access compiler
 contract. The qualifier <code>@mmio T</code> marks the same access contract plus programmer
@@ -295,15 +296,16 @@ or store through either qualified address is a compiler barrier (see section
 propagate through address arithmetic:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
-GICD_CTLR      <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
-GICD_TYPER     <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+GICD_CTLR      <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+GICD_TYPER     <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_CTLR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile MMIO-intent store</span>
 mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_TYPER<span class="token punctuation">]</span>           <span class="token comment">// volatile MMIO-intent load at byte offset 4</span>
 </code></pre>
 <p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
-direction. Stripping volatility or MMIO intent requires an explicit <code>as</code> cast
-and emits a warning; adding either qualifier also requires an explicit cast.
+direction. Stripping volatility or MMIO intent requires an explicit
+<code>as.qualifier</code> conversion and emits a warning; adding either qualifier also
+requires an explicit <code>as.qualifier</code> conversion.
 These are visible source events and do not perform memory access by themselves.</p>
 <p>Volatility is determined only by the static address type at the memory-access
 site. A load or store through an expression of type <code>@T</code> is a plain access; a
@@ -336,8 +338,8 @@ val <span class="token operator">:</span><span class="token operator">=</span> <
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">msgs <span class="token operator">:</span> <span class="token address-qualifier type">@string</span> <span class="token operator">=</span> <span class="token number">0x6000</span>
 
-first_len_addr  <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
-second_len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+first_len_addr  <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
+second_len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 
 first_len  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>first_len_addr<span class="token punctuation">]</span>
 second_len <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>second_len_addr<span class="token punctuation">]</span>
@@ -478,35 +480,36 @@ compiler barrier:</p>
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>             <span class="token comment">// volatile store, element offset 0</span>
 mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load, element offset 1</span>
 
-STATUS_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> STATUS_WORDS <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span>
-type_addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>STATUS_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+STATUS_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> STATUS_WORDS <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span>
+type_addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>STATUS_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 same_mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>type_addr<span class="token punctuation">]</span>         <span class="token comment">// same address, byte offset spelled explicitly</span>
 </code></pre>
 <p>Volatility and MMIO intent are properties of the static result type of the
 arithmetic expression. If an integer operand was produced from an address with
-<code>as u64</code>, the source address's qualifiers must match the result address
+<code>as.address u64</code>, the source address's qualifiers must match the result address
 qualifiers. Mixed-qualifier address arithmetic is rejected unless the source
 first casts one address to the intended qualifier:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 plain <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span>          <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
-bad  <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>                 <span class="token comment">// compile error</span>
-good <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>  <span class="token comment">// result is @mmio u32</span>
+bad  <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>                 <span class="token comment">// compile error</span>
+good <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token comment">// result is @mmio u32</span>
 </code></pre>
 <p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
-direction. To strip volatility or MMIO intent use an explicit cast, which emits
-a warning. To treat a plain address as volatile or MMIO-intent, use an explicit
-cast as well. These casts do not perform an access and do not introduce
+direction. To strip volatility or MMIO intent use an explicit <code>as.qualifier</code>
+conversion, which emits a warning. To treat a plain address as volatile or
+MMIO-intent, use an explicit <code>as.qualifier</code> conversion as well. These
+conversions do not perform an access and do not introduce
 <code>volatile_access</code> or <code>mmio</code> effects until a later load or store:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>             <span class="token comment">// qualifiers dropped; loads through `plain` are not barriers</span>
-volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@u32</span>             <span class="token comment">// qualifiers dropped; loads through `plain` are not barriers</span>
+volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 
 ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
-device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 </code></pre>
 <p>The static address type at the access site decides whether the access is
 plain, volatile, or MMIO-intent, but it is not an alias boundary. If <code>plain</code>
@@ -791,7 +794,7 @@ instruction on ARMv8.1 LSE or an <code>ldaxr</code>/<code>stxr</code> loop on ba
 
 spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-    _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
+    _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
     <span class="token keyword">if</span> ok <span class="token punctuation">{</span>
       <span class="token keyword">return</span>
     <span class="token punctuation">}</span>
@@ -828,11 +831,11 @@ value is meant to access</em>, not <em>how a particular line of code touches it<
 Modelling them in the type makes the rule check-able:</p>
 <ul>
 <li>A function <code>read_reg(p : @volatile u32) -&gt; u32</code> cannot be called with
-a plain <code>@u32</code> argument without an explicit <code>as</code> cast.</li>
+a plain <code>@u32</code> argument without an explicit categorized conversion.</li>
 <li>A function <code>peek(p : @u32) -&gt; u32</code> cannot be called with an
-<code>@volatile u32</code> argument without an explicit <code>as</code> cast.</li>
+<code>@volatile u32</code> argument without an explicit categorized conversion.</li>
 <li>A function <code>read_mmio(p : @mmio u32) -&gt; u32</code> cannot be called with a plain or
-volatile-only address without an explicit <code>as @mmio u32</code> cast.</li>
+volatile-only address without an explicit <code>as.qualifier @mmio u32</code> conversion.</li>
 <li>A struct field declared <code>@volatile u32</code> or <code>@mmio u32</code> cannot be accessed as
 if it were a plain <code>u32</code>.</li>
 <li>Refactoring an MMIO access into a helper preserves MMIO intent through the
@@ -1475,7 +1478,7 @@ another hb edge.</li>
 <p>The canonical spinlock pattern is not a mixed-access race:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// acquire</span>
-_<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>lock<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
+_<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>lock<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
 
 <span class="token comment">// release</span>
 <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
@@ -1894,13 +1897,13 @@ store buffer entry. Common failure cases:</p>
 <tbody>
 <tr>
 <td>Width mismatch (narrow store, wider load)</td>
-<td><code>u8@[p8] = x</code> then <code>u32@[p8 as @u32]</code></td>
+<td><code>u8@[p8] = x</code> then <code>u32@[p8 as.lens @u32]</code></td>
 <td>Load spans bytes not in store buffer entry</td>
 </tr>
 <tr>
 <td>Width mismatch (wider store, narrower load)</td>
-<td><code>u64@[p64] = x</code> then <code>u32@[p64 as @u32]</code></td>
-<td>Some cores forward; others do not — non-portable</td>
+<td><code>u64@[p64] = x</code> then <code>u32@[p64 as.lens @u32]</code></td>
+<td>Some cores forward; others do not - non-portable</td>
 </tr>
 <tr>
 <td>Partial overlap</td>
@@ -1909,7 +1912,7 @@ store buffer entry. Common failure cases:</p>
 </tr>
 <tr>
 <td>Multiple stores</td>
-<td><code>u32@[p32] = a</code> then <code>u32@[p32 + 1] = b</code> then <code>u64@[p32 as @u64]</code></td>
+<td><code>u32@[p32] = a</code> then <code>u32@[p32 + 1] = b</code> then <code>u64@[p32 as.lens @u64]</code></td>
 <td>Load needs data from two store buffer entries</td>
 </tr>
 </tbody>
@@ -1919,12 +1922,12 @@ store buffer entry. Common failure cases:</p>
 buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span> <span class="token operator">=</span> flags
-combined <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>buf <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span> <span class="token comment">// penalty: ~10-20 cycle stall</span>
+combined <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>buf <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span> <span class="token comment">// penalty: ~10-20 cycle stall</span>
 
 <span class="token comment">// STLF failure: constructing a value from sub-word stores</span>
 p <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
-p32 <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> p <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
-p64 <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> p <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+p32 <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span>
+p64 <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>p32<span class="token punctuation">]</span>     <span class="token operator">=</span> lo
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>p32 <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">=</span> hi
@@ -1947,7 +1950,7 @@ differently-sized read of the backing integer can trigger STLF failure:</p>
 reg<span class="token punctuation">.</span>ready <span class="token operator">=</span> <span class="token number">1</span>
 reg<span class="token punctuation">.</span>error <span class="token operator">=</span> <span class="token number">0</span>
 reg<span class="token punctuation">.</span>count <span class="token operator">=</span> <span class="token number">42</span>
-raw <span class="token operator">:</span><span class="token operator">=</span> reg <span class="token keyword">as</span> <span class="token builtin type">u32</span>          <span class="token comment">// safe: all writes are full-width u32 RMW</span>
+raw <span class="token operator">:</span><span class="token operator">=</span> reg <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u32</span>     <span class="token comment">// safe: all writes are full-width u32 RMW</span>
 </code></pre>
 <p>In practice, bitfield field writes in Wyst are full-width RMW on the backing
 type, so they do not cause width-mismatch STLF failures by themselves. The
@@ -2226,7 +2229,7 @@ spacing.</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

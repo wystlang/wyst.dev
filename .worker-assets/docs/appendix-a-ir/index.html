@@ -11,7 +11,7 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
+		<link rel="stylesheet" href="/assets/wyst.024ae4b0.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -253,6 +254,24 @@ lower-level address operations use byte offsets.</p>
 </tr>
 </tbody>
 </table>
+<p>Fixed arrays are inline storage, not pointer-plus-size descriptors. A value of
+type <code>[N]T</code> has the same source layout as <code>N</code> adjacent elements of <code>T</code>, with
+<code>size_of([N]T) = N * size_of(T)</code> and <code>align_of([N]T) = align_of(T)</code>. The IR may
+use <code>stack_addr_of</code> or <code>addr_of</code> to form an address to that storage, and
+array-to-slice lowering may build a separate descriptor, but the fixed-array
+value itself never carries an implicit runtime length field.</p>
+<p>Slice values are descriptors with <code>data</code> and <code>len</code>. Dynamic arrays are
+seven-field descriptors matching <code>wyst.dynamicArrayDescriptor.v0</code>: <code>data</code>,
+<code>len</code>, <code>capacity</code>, <code>storage_identity</code>, <code>growth_policy</code>, <code>failure_policy</code>, and
+<code>movement_policy</code>. Payload-less enums are tag values; payload enums are fixed
+two-word values with tag at word 0 and payload at word 1. Aggregates preserve
+their source layout until type erasure so IR, ABI classification, debug info,
+and emitted data all agree on field order, size, alignment, and inactive bytes.</p>
+<p>Typed data addresses carry an element lens in the IR type (<code>@T</code>,
+<code>@volatile T</code>, or <code>@mmio T</code>) until source arithmetic has been lowered to byte
+offsets. Raw addresses are integers or <code>@u8</code> byte-lens addresses: once source
+chooses integer arithmetic or an <code>@u8</code> lens, later offsets are byte counts and
+do not regain element scaling automatically.</p>
 <h3 id="2.4-type-erasure" tabindex="-1"><a class="doc-anchor" href="#2.4-type-erasure" aria-hidden="true">#</a> 2.4 Type Erasure</h3>
 <p>After the type-erasure pass:</p>
 <ul>
@@ -267,7 +286,10 @@ lower-level address operations use byte offsets.</p>
 slices, floating-point values, and nested enum values must not appear as enum
 payload IR.</li>
 <li>All <code>[]T</code> slices are dissolved into <code>{data, len}</code> pairs.</li>
-<li><code>[N]T</code> arrays remain (they're already a pointer + size at the language level).</li>
+<li><code>[N]T</code> arrays remain inline aggregate storage until their indexed accesses,
+copies, or address projections are decomposed into <code>gep</code>, load/store, and
+chunk-copy operations. They are not descriptor values and do not become
+pointer-plus-size values unless source explicitly forms a slice.</li>
 <li>Address types <code>@T</code> collapse to <code>@u8</code> (the element lens has done its job).</li>
 <li>Endian-aware load/store ops retain their byte-order attribute until
 lowering picks the required native load/store and byte-swap sequence.</li>
@@ -477,7 +499,7 @@ against a function-pointer-typed zero constant.</li>
 <li><strong>Attribute:</strong> <code>op : { eq, ne, ult, ule, ugt, uge, slt, sle, sgt, sge }</code>.</li>
 <li><strong>Semantics:</strong> integer comparison, unsigned ordered data-address comparison,
 and equality-only function-pointer comparison. Source-level ordered function
-pointer checks lower through explicit <code>as u64</code> casts before comparison.
+pointer checks lower through explicit <code>as.address u64</code> conversions before comparison.
 Mixed-sign and mixed-width are forbidden (Phase 0.4 rules).</li>
 <li><strong>Lowering:</strong> <code>cmp</code> + <code>cset</code>/<code>csel</code>.</li>
 </ul>
@@ -594,7 +616,11 @@ also used for switch arms the verifier can prove dead.</li>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; @T</code>.</li>
 <li><strong>Operand:</strong> symbol reference (function name, label name, global name, or <code>#start(.section)</code>).</li>
-<li><strong>Semantics:</strong> materializes the address of a relocatable symbol. <strong>This is the only op that introduces an ELF relocation</strong> (see <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a> §6).</li>
+<li><strong>Semantics:</strong> materializes the address of a relocatable symbol as a typed
+address value. It is one relocation-producing origin; it is not the only one
+in the compiler. Direct calls, symbol branches, constant address
+initializers, per-instance object references, veneers, jump-table entries,
+and address-bearing instruction operands are represented separately.</li>
 <li><strong>Lowering:</strong> <code>adrp</code> + <code>add</code> page pair (or <code>adrp</code> + <code>ldr</code> when stored into data).</li>
 </ul>
 <h4><code>gep</code></h4>
@@ -607,6 +633,59 @@ member access, and byte-lens source arithmetic all compile to <code>gep</code> p
 compile-time-or-runtime byte offset.</li>
 <li><strong>Lowering:</strong> <code>add</code> with immediate or <code>add xN, xM, xK, lsl #s</code>.</li>
 </ul>
+<h4>Relocation-Producing Origins</h4>
+<p>Relocation-producing origins are explicit in IR or in the lowering artifact
+records that consume IR. The current compiler recognizes these origins:</p>
+<table>
+<thead>
+<tr>
+<th>Origin</th>
+<th>IR or lowering representation</th>
+<th>Emitted artifact consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>direct calls</td>
+<td><code>call</code> with a <code>SymbolId</code> callee, recorded as a direct call patch during ARM64 lowering</td>
+<td><code>CALL26</code> when in range, or a deterministic veneer whose body uses an address-materialization relocation</td>
+</tr>
+<tr>
+<td>symbol branches</td>
+<td><code>tail</code> / <code>goto</code> to a label or function symbol, recorded as a direct branch patch</td>
+<td><code>JUMP26</code> when in range, or a deterministic veneer whose body uses an address-materialization relocation</td>
+</tr>
+<tr>
+<td>address materialization</td>
+<td><code>addr_of</code>, string address materialization, and symbol-base materialization for constant-address <code>gep</code></td>
+<td><code>ADR_PG_HI21</code> + <code>ADD_LO12</code> page-pair relocation, with byte addends folded only for constant offsets</td>
+</tr>
+<tr>
+<td>constant address initializers</td>
+<td><code>ConstIr::Address</code> and slice/string/data descriptors containing an address constant</td>
+<td><code>ABS64</code> data slot patched during final image write-out</td>
+</tr>
+<tr>
+<td>per-instance object references</td>
+<td><code>current_instance_addr_of</code> and <code>per_instance_offset_of</code> values, plus <code>ConstIr::PerInstanceOffset</code></td>
+<td>compiler-owned per-CPU/TLS offset patching; no dynamic ELF TLS relocation is serialized in the static image</td>
+</tr>
+<tr>
+<td>jump tables</td>
+<td>future explicit jump-table records, if a lowering mode emits tables</td>
+<td>table entries are relocation origins; current <code>switch-dispatch</code> mode does not emit jump tables</td>
+</tr>
+<tr>
+<td>address-bearing inline assembly operands</td>
+<td>checked <code>#asm</code> memory/address operands that name a symbol-sourced address</td>
+<td>reuse the same address materialization records as ordinary operands before template emission</td>
+</tr>
+</tbody>
+</table>
+<p>Passes must not infer relocation provenance from arbitrary integer values or
+from later uses of a bound address local. A relocation origin is carried by the
+IR node or lowering patch that names the symbol, object, string, section, or
+future jump-table entry.</p>
 <h3 id="6.6-casts-and-construction" tabindex="-1"><a class="doc-anchor" href="#6.6-casts-and-construction" aria-hidden="true">#</a> 6.6 Casts and Construction</h3>
 <h4><code>cast</code></h4>
 <ul>
@@ -895,7 +974,7 @@ construction and after every pass that mutates IR.</p>
 <li><strong>Pin–calling-convention consistency</strong>: a <code>#pin(reg)</code> declaration must not name a register reserved by the function's calling convention (<code>sp</code>, <code>x29</code>, <code>x18</code>, <code>xzr</code>, <code>wzr</code>) unless the function is <code>#naked</code>. The verifier cross-checks all active pins against the register pool exclusion list from §11.2.</li>
 <li><strong>Effect deny satisfaction</strong>: when a function carries a <code>#deny(effect, ...)</code> attribute (see <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> Effect System), the inferred effect set of the function (computed from intrinsic usage and transitive call graph) must not intersect the denied set. A violation is a <strong>user diagnostic</strong> (not an internal error) citing the denied effect, the intrinsic or callee that introduced it, and the full call chain.</li>
 <li><strong>Branch target section legality</strong>: a <code>jmp</code>, <code>br</code>, or <code>tail</code> op whose target resolves to a symbol in a section without the executable attribute (<code>SHF_EXECINSTR</code>) is a <strong>user diagnostic</strong>. The verifier checks this after symbol placement, when section attributes are known, and reports the diagnostic at the preserved source span of the control-flow op. See §7.1.</li>
-<li><strong>Integer constant range</strong>: a <code>const</code> of integer type <code>T</code> must be canonical for <code>T</code> — an unsigned value in <code>[0, 2^bits)</code> and a signed value sign-extended into <code>[-2^(bits-1), 2^(bits-1))</code>. A narrowing <code>as</code> cast folds its operand literal into range during lowering, so an out-of-range integer constant reaching the verifier is an internal compiler error rather than a value the backend must defensively truncate.</li>
+<li><strong>Integer constant range</strong>: a <code>const</code> of integer type <code>T</code> must be canonical for <code>T</code> — an unsigned value in <code>[0, 2^bits)</code> and a signed value sign-extended into <code>[-2^(bits-1), 2^(bits-1))</code>. A narrowing <code>as.truncate</code> conversion folds its operand literal into range during lowering, so an out-of-range integer constant reaching the verifier is an internal compiler error rather than a value the backend must defensively truncate.</li>
 </ol>
 <p>A failed verifier check is an internal compiler error, never a user
 diagnostic — with two exceptions: invariant 16 (effect deny violation)
@@ -998,7 +1077,7 @@ attribute-block := "[" attribute-list "]"
   <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span>
-  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span> <span class="token builtin type">u32</span>
+  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Lowers (post-IR-construction, pre-type-erasure) to:</p>
@@ -1043,7 +1122,9 @@ see if it's volatile. MMIO intent remains in the address type and effect facts.<
 <li><code>intrinsic wfe</code> is opaque: a pass that doesn't know what <code>wfe</code> does still
 knows its declared <code>fence=none</code> and can reorder around it (subject to the
 block boundary).</li>
-<li><code>addr_of</code> is the only thing that becomes a relocation
+<li><code>addr_of</code> is the address-materialization origin in this example. Other
+relocation-producing origins, such as direct calls and symbol branches, are
+represented by their own IR terminators or lowering patch records
 (<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a> §6).</li>
 </ul>
 <hr>
@@ -1502,7 +1583,7 @@ If no descriptor is loaded, they report chain length in ops.</li>
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">
 					<a class="doc-pager-link prev" href="/docs/chapter-24-scale/"><span class="dir">← Previous</span><span class="lbl">Scale And Measurement</span></a>
-					<a class="doc-pager-link next" href="/docs/appendix-b-grammar/"><span class="dir">Next →</span><span class="lbl">Formal Grammar</span></a>
+					<a class="doc-pager-link next" href="/docs/chapter-25-compilation-phases/"><span class="dir">Next →</span><span class="lbl">Compilation Phases</span></a>
 				</nav>
 				</article>
 				<aside class="doc-toc" aria-label="On this page">
@@ -1573,7 +1654,7 @@ If no descriptor is loaded, they report chain length in ops.</li>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

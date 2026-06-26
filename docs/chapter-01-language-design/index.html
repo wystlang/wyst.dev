@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -386,7 +387,7 @@ behavior and does not let the optimizer assume unrelated impossible states.</p>
 </thead>
 <tbody>
 <tr>
-<td>Raw-address assertion, including an explicit raw integer to <code>@T</code>, <code>@volatile T</code>, or <code>@mmio T</code> boundary</td>
+<td>Raw-address assertion, including an explicit <code>as.address</code> raw integer to <code>@T</code>, <code>@volatile T</code>, or <code>@mmio T</code> boundary</td>
 <td>The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract.</td>
 <td>Later typed loads, stores, atomics, and address operations use the asserted address type at that use.</td>
 <td>The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout.</td>
@@ -425,7 +426,7 @@ behavior and does not let the optimizer assume unrelated impossible states.</p>
 </table>
 <p>Diagnostics for an operation that needs one of these facts must name the trusted
 fact required to accept the operation. For example, a raw integer-to-function
-pointer <code>as</code> cast is rejected until the program writes <code>#trusted_cast</code>, and the
+pointer <code>as.address</code> conversion is rejected until the program writes <code>#trusted_cast</code>, and the
 diagnostic identifies the required function-pointer address, signature, and ABI
 assertion.</p>
 <p>Explain reports label every reported fact as <code>proven</code> or <code>asserted</code>. Proven
@@ -924,7 +925,7 @@ arrays, returns, and parameters combine bounds by union. A pointer produced
 from <code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code>, an imported ABI table, external
 declaration without inspectable body, or otherwise unknown source is treated
 as all effect categories for <code>#deny</code> checking. Raw integer-to-function-pointer
-<code>as</code> casts are rejected; the explicit <code>#trusted_cast</code> spelling records the
+<code>as.address</code> conversions are rejected; the explicit <code>#trusted_cast</code> spelling records the
 programmer's ABI trust decision without claiming a narrower effect bound.
 This preserves the &quot;single inferred effect set per function&quot; model without
 adding user-written effect declarations to function-pointer types.</p>
@@ -1218,11 +1219,13 @@ target. The same inputs always produce the same allocation.</p>
 <h2 id="abi-strategy" tabindex="-1"><a class="doc-anchor" href="#abi-strategy" aria-hidden="true">#</a> ABI Strategy</h2>
 <p>Wyst has two calling conventions: the <strong>Native Wyst ABI</strong> (default,
 Wyst-to-Wyst) and <strong>AAPCS64</strong> (opt-in via <code>[aapcs]</code>, used for C interop
-and OS boundaries). Native diverges from AAPCS64 in three areas for
-performance: <code>v8</code>–<code>v15</code> are fully caller-saved, up to four integer return
-values use <code>x0</code>–<code>x3</code>, and large-struct argument addresses use the next
-available <code>xN</code> rather than the fixed <code>x8</code> slot. Variadic Wyst functions
-do not exist; use explicit count-and-pointer parameters.</p>
+and OS boundaries). Native diverges from AAPCS64 in two main areas for
+performance: <code>v8</code>–<code>v15</code> are fully caller-saved, and up to four integer
+return values use <code>x0</code>–<code>x3</code>. Large by-value aggregate arguments in both
+conventions use caller-owned copy storage and pass the copy address through
+ordinary integer argument allocation; <code>x8</code> is reserved for indirect results.
+Variadic Wyst functions do not exist; use explicit count-and-pointer
+parameters.</p>
 <p>Canonical reference: <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md</a>. Function-pointer type
 discipline (<code>@(args) -&gt; ret</code> vs <code>@[aapcs] (args) -&gt; ret</code>):
 <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.6</a> and <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md §B.5</a>.</p>
@@ -1697,7 +1700,7 @@ the identified bottleneck category</li>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

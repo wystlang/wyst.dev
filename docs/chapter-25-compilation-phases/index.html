@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta name="description" content="Compilation phase products, semantic fact ownership, dependency rules, and legacy adapters." />
+		<title>Compilation Phases · Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/docs/chapter-25-compilation-phases/" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+		<link rel="stylesheet" href="/assets/docs.css" />
+	</head>
+	<body class="docs">
+		<a class="skip" href="#main">Skip to content</a>
+	<header class="site">
+		<div class="wrap nav">
+			<a class="brand" href="/">
+				<span class="mark" aria-hidden="true"></span>
+				<span class="word">wyst<span class="cc">::</span></span>
+				<span class="tag">lang</span>
+				<span class="ver">v0.8-draft</span>
+			</a>
+			<button
+				class="nav-toggle"
+				type="button"
+				aria-label="Open primary navigation"
+				aria-controls="primary-nav"
+				aria-expanded="false"
+			>
+				<span class="nav-toggle-lines" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+			</button>
+			<nav id="primary-nav" class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active">Docs</a>
+				<a href="/#compare">Examples</a>
+				<a href="/#inspect">Inspect</a>
+				<a href="/#faq">FAQ</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub ↗</a>
+			</nav>
+		</div>
+	</header>
+		<main id="main" class="doc">
+			<div class="wrap doc-wrap">
+				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+<aside class="doc-sidebar" aria-label="Documentation">
+			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Chapters</div>
+				<ul>
+					<li><a href="/docs/chapter-01-language-design/"><span class="doc-nav-num">1</span><span>Language Design</span></a></li>
+					<li><a href="/docs/chapter-02-targets/"><span class="doc-nav-num">2</span><span>Target Descriptors</span></a></li>
+					<li><a href="/docs/chapter-03-project-builds/"><span class="doc-nav-num">3</span><span>Project Builds</span></a></li>
+					<li><a href="/docs/chapter-04-modules/"><span class="doc-nav-num">4</span><span>Modules, Targets, and Layout</span></a></li>
+					<li><a href="/docs/chapter-05-boot/"><span class="doc-nav-num">5</span><span>Boot Entry Contract</span></a></li>
+					<li><a href="/docs/chapter-06-types/"><span class="doc-nav-num">6</span><span>Type System</span></a></li>
+					<li><a href="/docs/chapter-07-operators/"><span class="doc-nav-num">7</span><span>Operator Specification</span></a></li>
+					<li><a href="/docs/chapter-08-functions/"><span class="doc-nav-num">8</span><span>Functions, Control Flow, and Inline Assembly</span></a></li>
+					<li><a href="/docs/chapter-09-memory-model/"><span class="doc-nav-num">9</span><span>Memory Model</span></a></li>
+					<li><a href="/docs/chapter-10-runtime/"><span class="doc-nav-num">10</span><span>Runtime And Allocation</span></a></li>
+					<li><a href="/docs/chapter-11-intrinsics/"><span class="doc-nav-num">11</span><span>Runtime Primitives</span></a></li>
+					<li><a href="/docs/chapter-12-simd/"><span class="doc-nav-num">12</span><span>SIMD and Vector Syntax</span></a></li>
+					<li><a href="/docs/chapter-13-scheduling/"><span class="doc-nav-num">13</span><span>Scheduling Semantics</span></a></li>
+					<li><a href="/docs/chapter-14-exception-vectors/"><span class="doc-nav-num">14</span><span>Alignment and Exception Vectors</span></a></li>
+					<li><a href="/docs/chapter-15-abi-spec/"><span class="doc-nav-num">15</span><span>ABI Specification</span></a></li>
+					<li><a href="/docs/chapter-16-object-format/"><span class="doc-nav-num">16</span><span>Object Format</span></a></li>
+					<li><a href="/docs/chapter-17-optimization-modes/"><span class="doc-nav-num">17</span><span>Build Optimization Modes</span></a></li>
+					<li><a href="/docs/chapter-18-check-format-diagnostics/"><span class="doc-nav-num">18</span><span>Check, Format, And Diagnostics</span></a></li>
+					<li><a href="/docs/chapter-19-learning-diagnostics/"><span class="doc-nav-num">19</span><span>Learning Diagnostics And Source Insights</span></a></li>
+					<li><a href="/docs/chapter-20-editor-integration/"><span class="doc-nav-num">20</span><span>Editor Integration</span></a></li>
+					<li><a href="/docs/chapter-21-explain/"><span class="doc-nav-num">21</span><span>Explain Reports</span></a></li>
+					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
+					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
+					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/" aria-current="page"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
+				</ul>
+			</div>
+			<div class="doc-nav-group">
+				<div class="doc-nav-title">Appendices</div>
+				<ul>
+					<li><a href="/docs/appendix-a-ir/"><span class="doc-nav-num">A</span><span>Intermediate Representation</span></a></li>
+					<li><a href="/docs/appendix-b-grammar/"><span class="doc-nav-num">B</span><span>Formal Grammar</span></a></li>
+					<li><a href="/docs/appendix-c-doc-example-contracts/"><span class="doc-nav-num">C</span><span>Documentation Example Contracts</span></a></li>
+				</ul>
+			</div>
+		</aside>
+				<article class="doc-article">
+					<header class="doc-article-head">
+						<span class="eyebrow">Chapter 25</span>
+						<h1>Chapter 25: Compilation Phases</h1>
+						<p class="doc-lede">Compilation phase products, semantic fact ownership, dependency rules, and legacy adapters.</p>
+					</header>
+					<div class="doc-body">
+<p>The compilation phase contract defines which compiler phase owns each
+semantic fact, which products later phases may consume, and which terminal
+products are reports only. The machine-readable registry is
+<a href="semantic-db.json"><code>semantic-db.json</code></a>, under <code>compilationPhases</code> and
+<code>semanticFactOwners</code>.</p>
+<p>This chapter adds no source syntax, CLI mode, ABI rule, object format, or
+report schema. It constrains compiler architecture and documentation authority
+for existing language and tool contracts.</p>
+<h2 id="compilation-phase-contract" tabindex="-1"><a class="doc-anchor" href="#compilation-phase-contract" aria-hidden="true">#</a> Compilation Phase Contract</h2>
+<p>Each phase has one stable <code>phase.*</code> identifier in the semantic database.
+Phase identifiers are sorted lexicographically in JSON so diffs are stable;
+the dependency graph below defines the compilation order.</p>
+<p>A phase may consume only the immutable products named by its
+<code>immutableInputs</code> and the phase products allowed by <code>permittedDependencies</code>.
+A phase must not consume products named in <code>forbiddenDependencies</code>.</p>
+<p>The target phase set is:</p>
+<table>
+<thead>
+<tr>
+<th>Phase ID</th>
+<th>Contract role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>phase.build_inputs</code></td>
+<td>Freeze the declared build input set.</td>
+</tr>
+<tr>
+<td><code>phase.source_acquisition</code></td>
+<td>Read and fingerprint declared source text.</td>
+</tr>
+<tr>
+<td><code>phase.parsing</code></td>
+<td>Produce tokens and module ASTs.</td>
+</tr>
+<tr>
+<td><code>phase.source_graph</code></td>
+<td>Own module identity and the import graph.</td>
+</tr>
+<tr>
+<td><code>phase.declaration_collection</code></td>
+<td>Own declaration identity.</td>
+</tr>
+<tr>
+<td><code>phase.name_resolution</code></td>
+<td>Own resolved symbols.</td>
+</tr>
+<tr>
+<td><code>phase.type_checking</code></td>
+<td>Produce checked declarations and bodies.</td>
+</tr>
+<tr>
+<td><code>phase.definite_initialization</code></td>
+<td>Prove ordinary reads are initialized.</td>
+</tr>
+<tr>
+<td><code>phase.ordinary_constant_evaluation</code></td>
+<td>Own ordinary constant values.</td>
+</tr>
+<tr>
+<td><code>phase.compile_time_selection</code></td>
+<td>Select active compile-time branches.</td>
+</tr>
+<tr>
+<td><code>phase.generic_canonicalization</code></td>
+<td>Produce canonical generic instantiation keys and substitutions.</td>
+</tr>
+<tr>
+<td><code>phase.generic_instantiation</code></td>
+<td>Produce concrete generic declarations.</td>
+</tr>
+<tr>
+<td><code>phase.layout_time_evaluation</code></td>
+<td>Own layout-time values.</td>
+</tr>
+<tr>
+<td><code>phase.type_layout</code></td>
+<td>Own type layout.</td>
+</tr>
+<tr>
+<td><code>phase.placement_constraints</code></td>
+<td>Collect placement obligations.</td>
+</tr>
+<tr>
+<td><code>phase.placement_solving</code></td>
+<td>Own concrete placement addresses.</td>
+</tr>
+<tr>
+<td><code>phase.effect_authority_analysis</code></td>
+<td>Own effect and authority summaries.</td>
+</tr>
+<tr>
+<td><code>phase.execution_level_analysis</code></td>
+<td>Own execution-level facts.</td>
+</tr>
+<tr>
+<td><code>phase.callable_abi_classification</code></td>
+<td>Own callable ABI classification.</td>
+</tr>
+<tr>
+<td><code>phase.ir_construction</code></td>
+<td>Own the IR module.</td>
+</tr>
+<tr>
+<td><code>phase.semantic_verification</code></td>
+<td>Verify cross-phase semantic products.</td>
+</tr>
+<tr>
+<td><code>phase.abi_lowering</code></td>
+<td>Lower verified call boundaries to ABI obligations.</td>
+</tr>
+<tr>
+<td><code>phase.machine_lowering</code></td>
+<td>Lower IR and ABI products to machine operations.</td>
+</tr>
+<tr>
+<td><code>phase.register_allocation</code></td>
+<td>Assign registers and backend stack resources.</td>
+</tr>
+<tr>
+<td><code>phase.final_resource_computation</code></td>
+<td>Own final resource summaries.</td>
+</tr>
+<tr>
+<td><code>phase.relocation_artifact_preparation</code></td>
+<td>Prepare artifact sections, symbols, and relocations.</td>
+</tr>
+<tr>
+<td><code>phase.report_only_fact_computation</code></td>
+<td>Own terminal report-only summaries.</td>
+</tr>
+<tr>
+<td><code>phase.diagnostic_rendering</code></td>
+<td>Render phase-owned diagnostics.</td>
+</tr>
+<tr>
+<td><code>phase.manifest_provenance_generation</code></td>
+<td>Render terminal provenance payloads.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-product-model" tabindex="-1"><a class="doc-anchor" href="#phase-product-model" aria-hidden="true">#</a> Phase Product Model</h2>
+<p>Phase products are immutable after their owner phase completes. A later phase
+may refine its own product using earlier products, but it must not rewrite the
+earlier product or become a second owner for the same semantic fact.</p>
+<p>The product model separates:</p>
+<ul>
+<li>source products: frozen build inputs, source documents, tokens, ASTs, and
+source graph products;</li>
+<li>semantic products: symbol, type, constant, layout, placement, effect,
+execution-level, ABI-classification, and IR facts;</li>
+<li>backend products: ABI obligations, machine operations, register assignments,
+final resource summaries, sections, symbols, and relocations;</li>
+<li>terminal products: report-only summaries, diagnostic renderings, generated
+manifest provenance, benchmark metadata, and release evidence.</li>
+</ul>
+<p>The semantic database names the authoritative output of each phase. If a
+compiler implementation stores the same fact in a broader carrier object for
+today, that carrier is an adapter and does not own the fact.</p>
+<h2 id="partial-order" tabindex="-1"><a class="doc-anchor" href="#partial-order" aria-hidden="true">#</a> Partial Order</h2>
+<p>The target dependency order is:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">build_inputs
+  -> source_acquisition
+  -> parsing
+  -> source_graph
+  -> declaration_collection
+  -> name_resolution
+  -> type_checking
+  -> definite_initialization
+  -> ordinary_constant_evaluation
+  -> compile_time_selection
+  -> generic_canonicalization
+  -> generic_instantiation
+  -> layout_time_evaluation
+  -> type_layout
+  -> placement_constraints
+  -> placement_solving
+  -> effect_authority_analysis
+  -> execution_level_analysis
+  -> callable_abi_classification
+  -> ir_construction
+  -> semantic_verification
+  -> abi_lowering
+  -> machine_lowering
+  -> register_allocation
+  -> final_resource_computation
+  -> relocation_artifact_preparation
+</code></pre>
+<p>Terminal products branch after their required inputs are complete:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">relocation_artifact_preparation -> report_only_fact_computation
+relocation_artifact_preparation -> manifest_provenance_generation
+any phase diagnostic record -> diagnostic_rendering
+</code></pre>
+<p>This is a partial order, not a required implementation loop shape. Independent
+work inside one phase may be parallelized if the observable products use the
+phase's deterministic ordering rule.</p>
+<h2 id="semantic-fact-ownership" tabindex="-1"><a class="doc-anchor" href="#semantic-fact-ownership" aria-hidden="true">#</a> Semantic Fact Ownership</h2>
+<p>Every semantic fact listed below has exactly one owner. Consumers may read the
+fact after the owner phase completes; consumers must not recompute it as a
+new authority.</p>
+<table>
+<thead>
+<tr>
+<th>Semantic fact</th>
+<th>Owner phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fact.target_fact</code></td>
+<td><code>phase.build_inputs</code></td>
+</tr>
+<tr>
+<td><code>fact.module_identity</code></td>
+<td><code>phase.source_graph</code></td>
+</tr>
+<tr>
+<td><code>fact.declaration_identity</code></td>
+<td><code>phase.declaration_collection</code></td>
+</tr>
+<tr>
+<td><code>fact.resolved_symbol</code></td>
+<td><code>phase.name_resolution</code></td>
+</tr>
+<tr>
+<td><code>fact.type</code></td>
+<td><code>phase.type_checking</code></td>
+</tr>
+<tr>
+<td><code>fact.ordinary_constant_value</code></td>
+<td><code>phase.ordinary_constant_evaluation</code></td>
+</tr>
+<tr>
+<td><code>fact.layout_time_value</code></td>
+<td><code>phase.layout_time_evaluation</code></td>
+</tr>
+<tr>
+<td><code>fact.type_layout</code></td>
+<td><code>phase.type_layout</code></td>
+</tr>
+<tr>
+<td><code>fact.placement_address</code></td>
+<td><code>phase.placement_solving</code></td>
+</tr>
+<tr>
+<td><code>fact.effect_authority_summary</code></td>
+<td><code>phase.effect_authority_analysis</code></td>
+</tr>
+<tr>
+<td><code>fact.execution_level</code></td>
+<td><code>phase.execution_level_analysis</code></td>
+</tr>
+<tr>
+<td><code>fact.callable_abi_classification</code></td>
+<td><code>phase.callable_abi_classification</code></td>
+</tr>
+<tr>
+<td><code>fact.ir_module</code></td>
+<td><code>phase.ir_construction</code></td>
+</tr>
+<tr>
+<td><code>fact.machine_code</code></td>
+<td><code>phase.machine_lowering</code></td>
+</tr>
+<tr>
+<td><code>fact.final_resource_summary</code></td>
+<td><code>phase.final_resource_computation</code></td>
+</tr>
+<tr>
+<td><code>fact.artifact_bytes</code></td>
+<td><code>phase.relocation_artifact_preparation</code></td>
+</tr>
+<tr>
+<td><code>fact.report_only_summary</code></td>
+<td><code>phase.report_only_fact_computation</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="dependency-rules-and-cycles" tabindex="-1"><a class="doc-anchor" href="#dependency-rules-and-cycles" aria-hidden="true">#</a> Dependency Rules And Cycles</h2>
+<p>The <code>cycleOwner</code> field names the phase responsible for detecting and reporting
+cycles in that phase's dependency domain. <code>none</code> means the phase must not
+create a cyclic dependency domain of its own.</p>
+<p>Dependency rules:</p>
+<ul>
+<li>A phase may read an earlier product only through an explicit permitted
+dependency.</li>
+<li>A phase must fail closed if a required product is absent, stale, or owned by
+a different phase than the semantic database says.</li>
+<li>A later phase may add diagnostics about its own product, but it must not
+reinterpret an earlier phase's accepted or rejected status.</li>
+<li>Backend resource facts are not semantic effects. They are owned by
+<code>phase.final_resource_computation</code>.</li>
+<li>Cycles are reported by the nearest owner phase for the cyclic product, not
+by an arbitrary later consumer.</li>
+</ul>
+<h2 id="report-only-facts-are-terminal" tabindex="-1"><a class="doc-anchor" href="#report-only-facts-are-terminal" aria-hidden="true">#</a> Report-Only Facts Are Terminal</h2>
+<p><code>phase.report_only_fact_computation</code> is terminal. Its outputs have
+<code>reportOnly: true</code>, <code>mayAffectAcceptedPrograms: false</code>, and
+<code>mayAffectEmittedBytes: false</code>.</p>
+<p>Report-only facts may describe compiler products for humans and tools, but
+they must not feed back into parsing, semantic checking, IR construction, ABI
+classification, lowering, register allocation, artifact preparation,
+diagnostic rendering, or build acceptance. Adding a report-only fact does not
+change source meaning or emitted bytes.</p>
+<h2 id="diagnostic-rendering" tabindex="-1"><a class="doc-anchor" href="#diagnostic-rendering" aria-hidden="true">#</a> Diagnostic Rendering</h2>
+<p>Diagnostic ownership belongs to the phase that detects the condition.
+<code>phase.diagnostic_rendering</code> only renders already produced diagnostic records
+into text, JSON, and LSP payloads.</p>
+<p>Diagnostic rendering must not:</p>
+<ul>
+<li>change whether a program is accepted;</li>
+<li>change emitted artifact bytes;</li>
+<li>invent a semantic fact;</li>
+<li>consume report-only summaries as evidence;</li>
+<li>define a new diagnostic or report schema.</li>
+</ul>
+<p>If rendering reveals that a diagnostic needs more structured data, the owning
+phase must add that data to its diagnostic record before rendering.</p>
+<h2 id="deferred-checklist-boundaries" tabindex="-1"><a class="doc-anchor" href="#deferred-checklist-boundaries" aria-hidden="true">#</a> Deferred Checklist Boundaries</h2>
+<p>Some phase products are named here before their final implementation work is
+complete. The semantic database records those dependencies in
+<code>laterChecklistDependencies</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Later item</th>
+<th>Affected phases</th>
+<th>Boundary in this chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>checklist.27.aapcs64-corrections</code></td>
+<td><code>phase.callable_abi_classification</code>, <code>phase.abi_lowering</code></td>
+<td>#23 names ABI phase ownership; #27 owns AAPCS64 correction details.</td>
+</tr>
+</tbody>
+</table>
+<p><code>checklist.24.generic-termination</code> is complete at the semantic-boundary level:
+Chapter 6 now owns canonical generic instantiation identity, exact-cycle
+termination, growing-chain rejection, deterministic traces, and resource-limit
+reporting.</p>
+<p><code>checklist.25.placement-solver</code> is complete at the semantic-boundary level:
+Chapter 4 now owns the deterministic placement constraint problem, region and
+section dependency solving, tie-breaking, padding and fill-byte policy, and
+required diagnostics for cycles, overlaps, conflicting fixed addresses, and
+overflow.</p>
+<p><code>checklist.26.ir-representation</code> is complete at the semantic-boundary level:
+Appendix A now owns the IR representation of fixed arrays, slices, dynamic
+arrays, enums, aggregates, typed addresses, raw addresses, explicit relocation
+origins, and the handoff to lowering and emitted artifacts. Chapter 16 owns the
+matching relocation-origin and artifact vocabulary.</p>
+<h2 id="legacy-adapter-register" tabindex="-1"><a class="doc-anchor" href="#legacy-adapter-register" aria-hidden="true">#</a> Legacy Adapter Register</h2>
+<p>Current implementation details below are adapters. They are documented so they
+can be removed or narrowed without treating them as target architecture.</p>
+<table>
+<thead>
+<tr>
+<th>Adapter ID</th>
+<th>Current carrier</th>
+<th>Allowed consumers</th>
+<th>Forbidden consumers</th>
+<th>Enforcement evidence</th>
+<th>Removal condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adapter.target_ast_injection</code></td>
+<td>Synthetic target AST items inserted from project target defaults.</td>
+<td>Current sema target collection and source requirement checks.</td>
+<td>Ordinary constants, report-only facts, artifact bytes, and generated machine code as semantic inputs.</td>
+<td>E1003 artifact-target provenance checks and target/profile CLI tests.</td>
+<td>Replace with an explicit build-input target fact product after source/product consolidation.</td>
+</tr>
+<tr>
+<td><code>adapter.layout_facts_via_sema_program</code></td>
+<td>Layout facts carried through <code>sema::Program</code> and symbol lookup.</td>
+<td>Source semantic checking, IR construction, and artifact preparation after the layout owner phase.</td>
+<td>Ordinary constants or <code>#if</code> consuming placement-owned <code>#start/#end</code> addresses.</td>
+<td>E1000 ordinary constant and compile-time selection tests.</td>
+<td>Replace with explicit layout-time and type-layout products after #25/post-#38.</td>
+</tr>
+<tr>
+<td><code>adapter.ast_to_ir_recomputation</code></td>
+<td>IR lowering recomputes from AST plus semantic carriers.</td>
+<td><code>phase.ir_construction</code> while consuming finalized source, type, constant, layout, placement, effect, and execution-level facts.</td>
+<td>Report-only facts, diagnostic rendering, and artifact bytes feeding IR construction.</td>
+<td>Rust phase dependency tests and pre-23 characterization.</td>
+<td>#26 replaces the IR representation and typed semantic product handoff.</td>
+</tr>
+<tr>
+<td><code>adapter.report_reconstruction</code></td>
+<td>Explain and provenance commands reconstruct report inputs from frontend, IR, and artifacts.</td>
+<td>Terminal report/provenance renderers.</td>
+<td>Parsing, semantic checking, diagnostics, IR, ABI classification, lowering, register allocation, artifacts, or build acceptance.</td>
+<td>Report isolation tests and E1002 contract classification.</td>
+<td>Post-#38 report products replace reconstruction from internal carriers.</td>
+</tr>
+<tr>
+<td><code>adapter.synthetic_build_inputs_span</code></td>
+<td>Synthetic <code>&lt;build inputs&gt;</code> display identity for concatenated sources.</td>
+<td>Diagnostic rendering and manifest/report provenance display.</td>
+<td>Module identity, declaration identity, semantic caches, IR identity, or artifact bytes.</td>
+<td>Source graph/design contract tests and pre-23 characterization.</td>
+<td>Source graph product carries file-span identity everywhere after post-#38 consolidation.</td>
+</tr>
+</tbody>
+</table>
+
+					</div>
+					<nav class="doc-pager" aria-label="Chapter navigation">
+					<a class="doc-pager-link prev" href="/docs/appendix-a-ir/"><span class="dir">← Previous</span><span class="lbl">Intermediate Representation</span></a>
+					<a class="doc-pager-link next" href="/docs/appendix-b-grammar/"><span class="dir">Next →</span><span class="lbl">Formal Grammar</span></a>
+				</nav>
+				</article>
+				<aside class="doc-toc" aria-label="On this page">
+				<div class="doc-toc-title">On this page</div>
+				<ul class="doc-toc-list">
+				<li class="lvl-2"><a href="#compilation-phase-contract">Compilation Phase Contract</a></li>
+				<li class="lvl-2"><a href="#phase-product-model">Phase Product Model</a></li>
+				<li class="lvl-2"><a href="#partial-order">Partial Order</a></li>
+				<li class="lvl-2"><a href="#semantic-fact-ownership">Semantic Fact Ownership</a></li>
+				<li class="lvl-2"><a href="#dependency-rules-and-cycles">Dependency Rules And Cycles</a></li>
+				<li class="lvl-2"><a href="#report-only-facts-are-terminal">Report-Only Facts Are Terminal</a></li>
+				<li class="lvl-2"><a href="#diagnostic-rendering">Diagnostic Rendering</a></li>
+				<li class="lvl-2"><a href="#deferred-checklist-boundaries">Deferred Checklist Boundaries</a></li>
+				<li class="lvl-2"><a href="#legacy-adapter-register">Legacy Adapter Register</a></li>
+			</ul>
+			</aside>
+			</div>
+		</main>
+	<footer class="site">
+		<div class="wrap">
+			<div class="foot-grid">
+				<div class="foot-brand">
+					<a class="brand brand-lg" href="/">
+						<span class="mark" aria-hidden="true"></span>
+						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
+					</a>
+					<p>
+						A semantic ARM64 systems language and assembler. A
+						human-readable IR for machine-oriented programming with
+						deterministic output.
+					</p>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
+				</div>
+				<div class="foot-links">
+					<div class="foot-col">
+						<div class="foot-title">Project</div>
+						<a href="/docs/">Docs</a>
+						<a href="https://github.com/wystlang/wyst" rel="noopener">Source ↗</a>
+					</div>
+					<div class="foot-col">
+						<div class="foot-title">Reference</div>
+						<a href="/docs/chapter-01-language-design/">Language Design</a>
+						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
+						<a href="/docs/appendix-b-grammar/">Grammar</a>
+						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
+					</div>
+				</div>
+			</div>
+			<div class="foot-bottom">
+				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
+				<span>wync · zero-dependency Rust bootstrap</span>
+			</div>
+		</div>
+	</footer>
+		<script>
+(() => {
+	const nav = document.querySelector(".nav");
+	const toggle = document.querySelector(".nav-toggle");
+	const links = document.querySelector(".nav-links");
+	if (!nav || !toggle || !links) return;
+	const mobile = window.matchMedia("(max-width: 720px)");
+	document.documentElement.classList.add("nav-ready");
+	function setOpen(open) {
+		nav.classList.toggle("is-open", open);
+		toggle.setAttribute("aria-expanded", String(open));
+		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
+		else links.removeAttribute("aria-hidden");
+	}
+	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
+	document.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
+	});
+	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
+	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
+	sync();
+})();
+(() => {
+	const t = document.querySelector(".doc-sidebar-toggle");
+	const sb = document.querySelector(".doc-sidebar");
+	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
+})();
+</script>
+	</body>
+</html>

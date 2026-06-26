@@ -11,7 +11,7 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
+		<link rel="stylesheet" href="/assets/wyst.024ae4b0.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -240,6 +241,18 @@ or update a row in this registry.</p>
 <td>Chapter 1</td>
 </tr>
 <tr>
+<td>Compilation Phase Contract for phase products, semantic fact ownership, terminal report-only facts, and legacy adapters (<code>language.compilation-phase-contract</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td><a href="/docs/chapter-25-compilation-phases/">chapter-25-compilation-phases.md</a></td>
+</tr>
+<tr>
+<td>IR/source semantic agreement for fixed arrays, slices, dynamic arrays, enums, aggregates, typed addresses, raw addresses, explicit relocation origins, and lowering/artifact alignment (<code>language.ir-source-semantic-agreement</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td><a href="/docs/appendix-a-ir/">appendix-a-ir.md</a>; Chapter 16</td>
+</tr>
+<tr>
 <td>Trust-boundary model for <code>#trusted_cast</code>, raw-address assertions, raw function-pointer construction, foreign declarations, manually stated foreign effects, inline-assembly effects and clobbers, ABI overrides, and unproven library contracts</td>
 <td>Implemented</td>
 <td><code>wyst.language.v0.8-draft</code></td>
@@ -252,10 +265,16 @@ or update a row in this registry.</p>
 <td>Chapter 9; Chapter 11; Appendix A</td>
 </tr>
 <tr>
-<td>UTF-8 source, ASCII identifiers, comments, string literals, character literals, numeric literal separators</td>
+<td>UTF-8 source, ASCII identifiers, comments, string literals, byte character literals with ASCII direct characters and explicit byte escapes, numeric literal separators (<code>language.lexical-literal-surface</code>)</td>
 <td>Implemented</td>
-<td><code>wyst.language.v0.7</code></td>
+<td><code>wyst.language.v0.8-draft</code></td>
 <td>Appendix B, Chapter 6</td>
+</tr>
+<tr>
+<td>Direct non-ASCII character literals truncated to <code>u8</code> (<code>language.truncating-non-ascii-character-literals</code>)</td>
+<td>Removed</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Appendix B; use string literals for UTF-8 text or explicit <code>\xNN</code> byte escapes.</td>
 </tr>
 <tr>
 <td>Scalar primitives, <code>bool</code>, fixed-width integers, <code>f32</code>/<code>f64</code>, <code>string</code>, untyped integer constants</td>
@@ -264,10 +283,10 @@ or update a row in this registry.</p>
 <td>Chapter 6</td>
 </tr>
 <tr>
-<td>Explicit <code>as</code> conversions and no implicit numeric conversion</td>
+<td>Categorized explicit <code>as.&lt;category&gt;</code> conversions and no implicit numeric conversion (<code>language.categorized-explicit-conversions</code>)</td>
 <td>Implemented</td>
-<td><code>wyst.language.v0.7</code></td>
-<td>Chapters 6 and 7</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapters 6 and 7; Appendix B</td>
 </tr>
 <tr>
 <td>Floating-point arithmetic in compile-time constants</td>
@@ -360,6 +379,12 @@ or update a row in this registry.</p>
 <td>Chapter 6 and Chapter 16</td>
 </tr>
 <tr>
+<td>Generic instantiation termination over canonical declaration identity plus complete type and value arguments, with exact canonical cycles permitted, strictly growing chains rejected, deterministic traces, and resource limits reported as resource failures</td>
+<td>Future-version normative</td>
+<td><code>wyst.language.next</code></td>
+<td>Chapter 6</td>
+</tr>
+<tr>
 <td>Generic aliases, type-argument inference, default type arguments, value parameters, traits, interfaces, concepts, typeclasses, higher-kinded parameters</td>
 <td>Reserved</td>
 <td>none</td>
@@ -376,6 +401,12 @@ or update a row in this registry.</p>
 <td></td>
 <td><code>, eager </code>select`, source-order effect preservation, and optional effectful-nesting lint</td>
 <td>Implemented</td>
+</tr>
+<tr>
+<td>Conventional arithmetic, shift, bitwise, comparison, and logical operator precedence, with non-associative comparison operators (<code>language.operator-precedence-and-comparison-associativity</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 7; Appendix B</td>
 </tr>
 <tr>
 <td>Distinct implicit <code>schedule.default</code> mode for ordinary code, with dependency-safe pure reordering, source-order effect and memory preservation, deterministic tie-breaking, report/build-identity recording, and no unstated implementation scheduling policy</td>
@@ -420,9 +451,9 @@ or update a row in this registry.</p>
 <td>Chapter 8</td>
 </tr>
 <tr>
-<td>Register pinning with <code>#pin</code>, <code>#noescape</code>, special-register restrictions, and call-boundary checks</td>
+<td>Register pinning with <code>#pin</code>, <code>#noescape</code>, special-register restrictions, pinned-entry address-taking restrictions, and call-boundary checks (<code>language.register-pinning</code>)</td>
 <td>Implemented</td>
-<td><code>wyst.language.v0.7</code></td>
+<td><code>wyst.language.v0.8-draft</code></td>
 <td>Chapters 1, 8, 15, Appendix A</td>
 </tr>
 <tr>
@@ -451,6 +482,12 @@ or update a row in this registry.</p>
 </tr>
 <tr>
 <td><code>pub</code> visibility for exported declarations</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 4</td>
+</tr>
+<tr>
+<td>Qualified imports by default, explicit selective imports and aliases, non-transitive imports, duplicate import rejection, and unsupported wildcard imports (<code>language.qualified-imports-default</code>)</td>
 <td>Implemented</td>
 <td><code>wyst.language.v0.8-draft</code></td>
 <td>Chapter 4</td>
@@ -491,6 +528,12 @@ or update a row in this registry.</p>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
 <td>Chapter 3</td>
+</tr>
+<tr>
+<td>Directory-anchored module discovery with anchor files, controlled sibling part files, deterministic enumeration, ignored/generated-file rules, duplicate-declaration diagnostics, stable module identity, and generated-manifest/editor parity (<code>language.module-discovery-model</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapters 3 and 4</td>
 </tr>
 <tr>
 <td>Target declarations and project profiles for <code>qemu-virt-aarch64-el2</code> and <code>qemu-raspi4b-aarch64-el2</code></td>
@@ -559,10 +602,22 @@ or update a row in this registry.</p>
 <td>Chapters 5, 11, and 14</td>
 </tr>
 <tr>
+<td>ARM64 exception-vector slots use canonical architectural identifiers, fixed declaration order, 0x800 table alignment, exact 128-byte padded slot emission, required explicit bodies for unused roles, duplicate/missing/out-of-order diagnostics, and separate non-semantic <code>#ventry(label = &quot;...&quot;)</code> metadata (<code>language.exception-vector-slots</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 14</td>
+</tr>
+<tr>
 <td>Per-callable execution-level facts for ARM64 functions, labels, <code>#ventry</code> entries, callbacks, <code>%eret</code> transitions, and exception-vector entries</td>
 <td>Implemented</td>
 <td><code>wyst.language.v0.8-draft</code></td>
 <td>Chapters 5, 11, and 14</td>
+</tr>
+<tr>
+<td>Named ARM64 system-register access uses exact canonical table spelling, rejects noncanonical case variants with canonical hints, preserves canonical spelling in formatting and reports, and exposes only canonical names through editor completion (<code>language.system-register-canonical-spelling</code>)</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 11</td>
 </tr>
 <tr>
 <td>Production SMP runtime beyond current explicit QEMU smoke recipe</td>
@@ -596,9 +651,9 @@ or update a row in this registry.</p>
 <td>Chapter 15</td>
 </tr>
 <tr>
-<td>AAPCS64 opt-in functions and function pointer type distinction</td>
+<td>AAPCS64 opt-in functions, function pointer type distinction, and official argument/result classification</td>
 <td>Implemented</td>
-<td><code>wyst.nativeAbi.v0.7</code></td>
+<td><code>wyst.nativeAbi.v0.8-draft</code></td>
 <td>Chapter 15</td>
 </tr>
 <tr>
@@ -624,6 +679,12 @@ or update a row in this registry.</p>
 <td>Implemented</td>
 <td><code>wyst.language.v0.7</code></td>
 <td>Chapter 16</td>
+</tr>
+<tr>
+<td>Deterministic layout placement solver for regions, sections, alignment, <code>after</code> dependencies, fixed addresses, inherited regions, overlap, overflow, empty sections, deterministic tie-breaking, padding/fill bytes, and required diagnostics</td>
+<td>Implemented</td>
+<td><code>wyst.language.v0.8-draft</code></td>
+<td>Chapter 4; Chapter 16</td>
 </tr>
 <tr>
 <td>Relocatable <code>ET_REL</code> object output (<code>wync -c</code> / <code>--emit-object</code>)</td>
@@ -975,7 +1036,7 @@ coverage-category presence, and covered test-link validity.</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

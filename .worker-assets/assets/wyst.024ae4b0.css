@@ -1560,89 +1560,47 @@ code.hl {
 	color: var(--faint);
 }
 
-:root {
-	--win-wave: url("/assets/winston-wave-560.png");
-	--win-face: url("/assets/winston-mark-120.png");
-}
-
-@supports (background-image: image-set(url("x.avif") type("image/avif") 1x)) {
-	:root {
-		--win-wave: image-set(
-			url("/assets/winston-wave-280.avif") type("image/avif") 1x,
-			url("/assets/winston-wave-280.webp") type("image/webp") 1x,
-			url("/assets/winston-wave-280.png") type("image/png") 1x,
-			url("/assets/winston-wave-560.avif") type("image/avif") 2x,
-			url("/assets/winston-wave-560.webp") type("image/webp") 2x,
-			url("/assets/winston-wave-560.png") type("image/png") 2x,
-			url("/assets/winston-wave-840.avif") type("image/avif") 3x,
-			url("/assets/winston-wave-840.webp") type("image/webp") 3x,
-			url("/assets/winston-wave-840.png") type("image/png") 3x
-		);
-
-		--win-face: image-set(
-			url("/assets/winston-mark-40.avif") type("image/avif") 1x,
-			url("/assets/winston-mark-40.webp") type("image/webp") 1x,
-			url("/assets/winston-mark-40.png") type("image/png") 1x,
-			url("/assets/winston-mark-80.avif") type("image/avif") 2x,
-			url("/assets/winston-mark-80.webp") type("image/webp") 2x,
-			url("/assets/winston-mark-80.png") type("image/png") 2x,
-			url("/assets/winston-mark-120.avif") type("image/avif") 3x,
-			url("/assets/winston-mark-120.webp") type("image/webp") 3x,
-			url("/assets/winston-mark-120.png") type("image/png") 3x
-		);
-	}
-}
-
-/* Winston's 404 poses — shrug (at rest) and the searching pose (on hover).
-   Displayed at a fixed 240px, so 240/480/720 cover DPR 1x/2x/3x. */
-:root {
-	--win-shrug: url("/assets/winston-shrug-480.png");
-	--win-search: url("/assets/winston-confused-480.png");
-}
-
-@supports (background-image: image-set(url("x.avif") type("image/avif") 1x)) {
-	:root {
-		--win-shrug: image-set(
-			url("/assets/winston-shrug-240.avif") type("image/avif") 1x,
-			url("/assets/winston-shrug-240.webp") type("image/webp") 1x,
-			url("/assets/winston-shrug-240.png") type("image/png") 1x,
-			url("/assets/winston-shrug-480.avif") type("image/avif") 2x,
-			url("/assets/winston-shrug-480.webp") type("image/webp") 2x,
-			url("/assets/winston-shrug-480.png") type("image/png") 2x,
-			url("/assets/winston-shrug-720.avif") type("image/avif") 3x,
-			url("/assets/winston-shrug-720.webp") type("image/webp") 3x,
-			url("/assets/winston-shrug-720.png") type("image/png") 3x
-		);
-
-		--win-search: image-set(
-			url("/assets/winston-confused-240.avif") type("image/avif") 1x,
-			url("/assets/winston-confused-240.webp") type("image/webp") 1x,
-			url("/assets/winston-confused-240.png") type("image/png") 1x,
-			url("/assets/winston-confused-480.avif") type("image/avif") 2x,
-			url("/assets/winston-confused-480.webp") type("image/webp") 2x,
-			url("/assets/winston-confused-480.png") type("image/png") 2x,
-			url("/assets/winston-confused-720.avif") type("image/avif") 3x,
-			url("/assets/winston-confused-720.webp") type("image/webp") 3x,
-			url("/assets/winston-confused-720.png") type("image/png") 3x
-		);
-	}
-}
-
 .brand .mark {
 	width: 30px;
 	height: 30px;
 	flex: none;
+	display: grid;
+	place-items: center;
 	border-radius: var(--radius-md);
-	background: var(--win-face) center / cover no-repeat;
+	background:
+		linear-gradient(180deg, var(--bg-elev), var(--bg-code));
+	border: 1px solid var(--line-2);
 	box-shadow:
-		0 0 0 1px var(--line-2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.045),
 		var(--shadow-sm);
-	transform-origin: 70% 70%;
-	transition: transform var(--dur-slow) var(--ease);
+	transition:
+		border-color var(--dur-base) var(--ease),
+		background var(--dur-base) var(--ease);
+}
+
+.brand .mark::before {
+	content: "";
+	display: block;
+	width: 7px;
+	height: 7px;
+	border-radius: 2px;
+	background: var(--accent);
+	/* Center the full four-cell footprint, including the shadow-drawn cells. */
+	transform: translate(-5.5px, -5.5px);
+	box-shadow:
+		11px 0 0 var(--accent),
+		0 11px 0 var(--accent),
+		11px 11px 0 var(--accent);
 }
 
 .brand:hover .mark {
-	animation: win-wag 0.62s ease;
+	border-color: color-mix(in srgb, var(--accent) 46%, var(--line-2));
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent) 8%, var(--bg-elev)),
+			var(--bg-code)
+		);
 }
 
 .brand-lg .mark {
@@ -1651,85 +1609,96 @@ code.hl {
 	border-radius: var(--radius-lg);
 }
 
-@keyframes win-wag {
-	0%,
-	100% {
-		transform: rotate(0);
-	}
-
-	22% {
-		transform: rotate(-10deg);
-	}
-
-	55% {
-		transform: rotate(8deg);
-	}
-
-	80% {
-		transform: rotate(-3deg);
-	}
+.brand-lg .mark::before {
+	width: 9px;
+	height: 9px;
+	border-radius: 2.5px;
+	transform: translate(-7.5px, -7.5px);
+	box-shadow:
+		15px 0 0 var(--accent),
+		0 15px 0 var(--accent),
+		15px 15px 0 var(--accent);
 }
 
 .status-wrap {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(180px, 260px) minmax(0, 760px);
 	align-items: center;
 	justify-content: center;
-	gap: clamp(6px, 3vw, 44px);
+	gap: clamp(28px, 5vw, 56px);
 }
 
 .status-wrap .status-card {
 	margin: 0;
 	max-width: 680px;
-	flex: 1 1 auto;
 }
 
-.mascot {
-	width: clamp(168px, 21vw, 264px);
-	aspect-ratio: 560 / 662;
-	background: var(--win-wave) center / contain no-repeat;
-	flex: none;
-	align-self: flex-end;
-	filter: drop-shadow(0 26px 34px rgba(0, 0, 0, 0.55));
-	animation: win-bob 5s ease-in-out infinite;
-	transform-origin: center bottom;
+.status-art {
+	position: relative;
+	width: min(100%, 260px);
+	aspect-ratio: 1;
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-xl);
+	background:
+		linear-gradient(var(--line) 1px, transparent 1px),
+		linear-gradient(90deg, var(--line) 1px, transparent 1px),
+		linear-gradient(180deg, var(--bg-elev), var(--bg-code));
+	background-size:
+		32px 32px,
+		32px 32px,
+		auto;
+	box-shadow: var(--shadow-lg);
+	overflow: hidden;
 }
 
-@keyframes win-bob {
-	0%,
-	100% {
-		transform: translateY(0) rotate(0);
-	}
+.status-art::before {
+	content: "";
+	position: absolute;
+	left: 34px;
+	top: 34px;
+	width: 18px;
+	height: 18px;
+	border-radius: 4px;
+	background: var(--accent);
+	box-shadow:
+		30px 0 0 var(--accent),
+		0 30px 0 var(--accent),
+		30px 30px 0 var(--accent);
+}
 
-	50% {
-		transform: translateY(-9px) rotate(-1.3deg);
-	}
+.status-art::after {
+	content: "";
+	position: absolute;
+	left: 34px;
+	right: 34px;
+	bottom: 38px;
+	height: 88px;
+	border-top: 1px solid var(--line-2);
+	border-bottom: 1px solid var(--line);
+	background:
+		linear-gradient(var(--accent), var(--accent)) 0 18px / 34% 2px no-repeat,
+		linear-gradient(var(--muted), var(--muted)) 0 42px / 78% 1px no-repeat,
+		linear-gradient(var(--muted), var(--muted)) 0 62px / 56% 1px no-repeat,
+		linear-gradient(var(--success), var(--success)) 0 82px / 44% 1px no-repeat;
+	opacity: 0.82;
 }
 
 @media (max-width: 860px) {
 	.status-wrap {
-		flex-direction: column;
+		grid-template-columns: 1fr;
 	}
 
 	.status-wrap .status-card {
 		max-width: 760px;
 	}
 
-	.mascot {
-		width: clamp(150px, 42vw, 210px);
-		align-self: center;
-		margin-bottom: -6px;
+	.status-art {
+		width: min(58vw, 220px);
+		justify-self: center;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.mascot {
-		animation: none;
-	}
-
-	.brand:hover .mark {
-		animation: none;
-	}
-
 	html {
 		scroll-behavior: auto;
 	}
@@ -1739,44 +1708,7 @@ code.hl {
 	z-index: 1;
 }
 
-.hero-peek {
-	position: absolute;
-	z-index: 0;
-	top: -104px;
-	right: 26px;
-	width: 172px;
-	aspect-ratio: 560 / 662;
-	background: var(--win-wave) top center / 100% auto no-repeat;
-	filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.55));
-	pointer-events: none;
-	transform-origin: center bottom;
-	animation: win-peek 5s ease-in-out infinite;
-}
-
-@keyframes win-peek {
-	0%,
-	100% {
-		transform: translateY(0) rotate(0);
-	}
-
-	50% {
-		transform: translateY(-7px) rotate(-2.2deg);
-	}
-}
-
-@media (max-width: 920px) {
-	.hero-peek {
-		display: none;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.hero-peek {
-		animation: none;
-	}
-}
-
-.foot-mascot {
+.foot-note {
 	display: flex;
 	align-items: center;
 	gap: var(--space-sm);
@@ -1786,12 +1718,12 @@ code.hl {
 	color: var(--faint);
 }
 
-.foot-mascot b {
+.foot-note b {
 	color: var(--muted);
 	font-weight: 500;
 }
 
-.foot-mascot .cc {
+.foot-note .cc {
 	color: var(--accent);
 }
 
@@ -1856,44 +1788,53 @@ code.hl {
 	margin-bottom: 18px;
 }
 
-/* Winston came back empty-pawed (shrug); hover cross-fades to the searching
-   pose. Two stacked layers keep the swap a pure opacity fade — no reflow. */
-.nf-winston {
+.nf-art {
 	position: relative;
-	width: 240px;
+	width: 230px;
 	max-width: 72vw;
-	cursor: default;
+	aspect-ratio: 1.25;
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-xl);
+	background:
+		linear-gradient(var(--line) 1px, transparent 1px),
+		linear-gradient(90deg, var(--line) 1px, transparent 1px),
+		linear-gradient(180deg, var(--bg-elev), var(--bg-code));
+	background-size:
+		32px 32px,
+		32px 32px,
+		auto;
+	box-shadow: var(--shadow-lg);
+	overflow: hidden;
 }
 
-.nf-winston-img {
-	width: 100%;
-	aspect-ratio: 1122 / 1402;
-	background: center / contain no-repeat;
-	filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.55));
-}
-
-.nf-winston-shrug {
-	background-image: var(--win-shrug);
-}
-
-.nf-winston-search {
+.nf-art::before {
+	content: "";
 	position: absolute;
-	inset: 0;
-	background-image: var(--win-search);
-	opacity: 0;
+	left: 32px;
+	top: 30px;
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	background: var(--accent);
+	box-shadow:
+		26px 0 0 var(--accent),
+		0 26px 0 var(--accent),
+		26px 26px 0 var(--accent);
 }
 
-.nf-winston-shrug,
-.nf-winston-search {
-	transition: opacity var(--dur-slow) var(--ease);
-}
-
-.nf-winston:hover .nf-winston-shrug {
-	opacity: 0;
-}
-
-.nf-winston:hover .nf-winston-search {
-	opacity: 1;
+.nf-art::after {
+	content: "0x0000_0000";
+	position: absolute;
+	left: 32px;
+	right: 32px;
+	bottom: 30px;
+	padding-top: 16px;
+	border-top: 1px solid var(--line-2);
+	color: var(--faint);
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	text-align: left;
+	letter-spacing: 0.04em;
 }
 
 .nf h1 {
@@ -1943,11 +1884,4 @@ code.hl {
 	justify-content: center;
 	gap: var(--space-sm);
 	margin-top: 30px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.nf-winston-shrug,
-	.nf-winston-search {
-		transition: none;
-	}
 }

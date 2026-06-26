@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -138,15 +139,15 @@ stack-frame address, which is a generated backend resource fact rather than a
 semantic effect. Stack-address escape remains checked by the lifetime/authority
 rules; backend frame facts are reported after lowering.</p>
 <p><code>%addr_of(local)</code> does not choose a default lens in an inferred binding. Write
-an explicit annotation or cast:</p>
+an explicit annotation or categorized conversion:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">word <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 word_ptr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span>
-word_ptr2 <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+word_ptr2 <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 
 bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
 whole <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
-bytes2 <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
+bytes2 <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span>
 </code></pre>
 <p>The resulting address may be used for direct memory operations inside the
 containing function:</p>
@@ -340,7 +341,7 @@ instead. <code>%atomic_store</code> does not accept <code>release</code> — wri
 <hr>
 <h3 id="atomic-types" tabindex="-1"><a class="doc-anchor" href="#atomic-types" aria-hidden="true">#</a> Atomic Types</h3>
 <p>Atomic operations are defined on naturally aligned <code>u8</code>, <code>u16</code>, <code>u32</code>,
-<code>u64</code>, <code>s8</code>, <code>s16</code>, <code>s32</code>, <code>s64</code>, and address types (<code>@T</code>, <code>@volatile T</code>,
+<code>u64</code>, <code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>, and address types (<code>@T</code>, <code>@volatile T</code>,
 <code>@mmio T</code>).
 The address argument has element type matching the value type:</p>
 <!-- wyst-contract: sketch -->
@@ -373,7 +374,7 @@ n <span class="token operator">:</span><span class="token operator">=</span> <sp
 
 <span class="token comment">// seq_cst store. Participates in the total order with all other seq_cst</span>
 <span class="token comment">// operations.</span>
-<span class="token primitive macro">%atomic_store</span><span class="token punctuation">(</span>flag_addr<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> order<span class="token operator">:</span> seq_cst<span class="token punctuation">)</span>
+<span class="token primitive macro">%atomic_store</span><span class="token punctuation">(</span>flag_addr<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u32</span><span class="token punctuation">,</span> order<span class="token operator">:</span> seq_cst<span class="token punctuation">)</span>
 </code></pre>
 <hr>
 <h3 id="compare-and-swap" tabindex="-1"><a class="doc-anchor" href="#compare-and-swap" aria-hidden="true">#</a> Compare-and-Swap</h3>
@@ -394,7 +395,7 @@ applies to both the read and the write, <code>release</code> likewise.</p>
 
 spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-    _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
+    _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
     <span class="token keyword">if</span> ok <span class="token punctuation">{</span>
       <span class="token keyword">return</span>
     <span class="token punctuation">}</span>
@@ -685,9 +686,11 @@ O is treated as a memory operation of the corresponding row/column.</p>
 <hr>
 <h2 id="1.3.3-system-register-access" tabindex="-1"><a class="doc-anchor" href="#1.3.3-system-register-access" aria-hidden="true">#</a> 1.3.3 System Register Access</h2>
 <p>The compiler's architectural system-register table is closed for the named
-<code>%mrs</code> / <code>%msr</code> forms: registers not listed there and lowercase spellings are
-rejected. Implementation-defined registers use the explicit S-encoded
-<code>%mrs_s</code> / <code>%msr_s</code> fallback form.</p>
+<code>%mrs</code> / <code>%msr</code> forms: registers not listed there and noncanonical case
+variants are rejected. Each named register has exactly one canonical spelling,
+the exact spelling stored in the compiler's system-register table. Diagnostics
+for case-only variants name the accepted replacement. Implementation-defined
+registers use the explicit S-encoded <code>%mrs_s</code> / <code>%msr_s</code> fallback form.</p>
 <p>ARM64 system registers (TCR_ELx, SCTLR_ELx, VBAR_ELx, TTBR0_ELx, MAIR_ELx,
 etc.) are the primary configuration surface for the CPU. Every non-trivial
 kernel reads and writes them constantly. Wyst provides direct intrinsics
@@ -716,10 +719,13 @@ are disjoint:</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">TCR_EL1 <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>   <span class="token comment">// TCR_EL1 is a type here</span>
 
 raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>                <span class="token comment">// TCR_EL1 is a register name here</span>
-tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1               <span class="token comment">// TCR_EL1 is a type here</span>
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1          <span class="token comment">// TCR_EL1 is a type here</span>
 </code></pre>
-<p>Register names are conventionally lowercase to match the ARM Architecture
-Reference Manual mnemonics.</p>
+<p>Register names use the exact canonical table spelling. Most names use
+uppercase architectural spelling such as <code>SCTLR_EL1</code>; architectural mixed-case
+names such as <code>CurrentEL</code> and <code>SPSel</code> keep that spelling. Formatting preserves
+accepted canonical names, diagnostics reject other case variants, and editor
+completion only suggests canonical names.</p>
 <hr>
 <h3 id="access-permissions" tabindex="-1"><a class="doc-anchor" href="#access-permissions" aria-hidden="true">#</a> Access Permissions</h3>
 <p>The system register table encodes each register's access permissions.
@@ -739,7 +745,7 @@ Wyst rejects illegal accesses:</p>
 <td>allowed</td>
 </tr>
 <tr>
-<td>Read-only (e.g. <code>ctr_el0</code>, <code>midr_el1</code>)</td>
+<td>Read-only (e.g. <code>DCZID_EL0</code>, <code>CurrentEL</code>)</td>
 <td>allowed</td>
 <td><strong>compile error</strong></td>
 </tr>
@@ -755,21 +761,21 @@ Wyst rejects illegal accesses:</p>
 </tr>
 </tbody>
 </table>
-<p>Permissions also depend on Exception Level. Reading <code>vbar_el2</code> from code
+<p>Permissions also depend on Exception Level. Reading <code>VBAR_EL2</code> from code
 running at EL1 traps at runtime; the compiler additionally rejects this
 statically when the target declares EL1 as its execution level.</p>
 <hr>
 <h3 id="return-type-discipline" tabindex="-1"><a class="doc-anchor" href="#return-type-discipline" aria-hidden="true">#</a> Return Type Discipline</h3>
 <p><code>%mrs</code> always returns <code>u64</code> — the raw register width as the ARM64
 architecture defines it. The caller converts to a bitfield via the
-standard <code>as</code> operator (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>):</p>
+standard <code>as.bits</code> conversion (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>):</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Read TCR_EL1, modify a field, write it back:</span>
 raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1
 tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span>
 tcr<span class="token punctuation">.</span>t1sz <span class="token operator">=</span> <span class="token number">25</span>
-<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>                                 <span class="token comment">// required when the write affects translation</span>
 </code></pre>
 <p>Returning a bitfield-typed value implicitly would couple the
@@ -777,14 +783,14 @@ sysreg-lookup table to the type-name lookup table — a register's intrinsic
 return type would depend on whether a same-named bitfield type happens to
 be in scope. The explicit <code>as</code> is one extra line per access and matches
 the strict typing discipline established in <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a>.</p>
-<p>The 32-bit-encoded system registers (e.g. <code>fpcr</code>, <code>fpsr</code> on some
+<p>The 32-bit-encoded system registers (e.g. <code>FPCR</code>, <code>FPSR</code> on some
 encodings) are zero-extended on <code>%mrs</code> and have their upper 32 bits
 ignored on <code>%msr</code>. The intrinsic interface is uniformly 64-bit.</p>
 <hr>
 <h3 id="no-implicit-synchronization" tabindex="-1"><a class="doc-anchor" href="#no-implicit-synchronization" aria-hidden="true">#</a> No Implicit Synchronization</h3>
 <p><code>%msr</code> does not emit <code>isb</code>, <code>dsb</code>, or any other barrier. Writes to
-fetch-affecting registers (<code>sctlr_elx</code>, <code>vbar_elx</code>, <code>tcr_elx</code>,
-<code>ttbr0_elx</code>, <code>ttbr1_elx</code>, <code>mair_elx</code>, etc.) require an explicit <code>%isb()</code>
+fetch-affecting registers (<code>SCTLR_ELx</code>, <code>VBAR_ELx</code>, <code>TCR_ELx</code>,
+<code>TTBR0_ELx</code>, <code>MAIR_ELx</code>, etc.) require an explicit <code>%isb()</code>
 before the new value takes effect for instruction fetch. Writes to
 translation-affecting registers require explicit <code>%dsb</code> + <code>%tlbi</code> +
 <code>%dsb</code> + <code>%isb()</code> (the canonical ARM synchronization sequence).</p>
@@ -869,19 +875,19 @@ programmer asserts the encoding is correct.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">configure_tcr <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-  tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+  tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1
   tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span> <span class="token comment">// 39-bit virtual addresses</span>
   tcr<span class="token punctuation">.</span>t1sz <span class="token operator">=</span> <span class="token number">25</span>
   tcr<span class="token punctuation">.</span>tg0 <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// 4KB granule</span>
   tcr<span class="token punctuation">.</span>tg1 <span class="token operator">=</span> <span class="token number">2</span> <span class="token comment">// 4KB granule</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <h4>VBAR install</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">install_vectors <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>VBAR_EL1<span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>VBAR_EL1<span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -889,11 +895,11 @@ programmer asserts the encoding is correct.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">enable_caches <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">)</span>
-  sctlr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> SCTLR_EL1
+  sctlr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits SCTLR_EL1
   sctlr<span class="token punctuation">.</span>c <span class="token operator">=</span> <span class="token number">1</span> <span class="token comment">// data cache enable</span>
   sctlr<span class="token punctuation">.</span>i <span class="token operator">=</span> <span class="token number">1</span> <span class="token comment">// instruction cache enable</span>
   sctlr<span class="token punctuation">.</span>m <span class="token operator">=</span> <span class="token number">1</span> <span class="token comment">// MMU enable</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">,</span> sctlr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">,</span> sctlr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -947,9 +953,10 @@ or barrier may be reordered across it. This matches the architectural
 reality that system-register state can affect arbitrary subsequent
 behavior (translation, exception handling, cache behavior).</p>
 <hr>
-<h3 id="supported-register-set" tabindex="-1"><a class="doc-anchor" href="#supported-register-set" aria-hidden="true">#</a> Supported Register Set</h3>
-<p>The architectural register table is large. A representative subset sufficient
-for kernel work:</p>
+<h3 id="named-register-set" tabindex="-1"><a class="doc-anchor" href="#named-register-set" aria-hidden="true">#</a> Named Register Set</h3>
+<p>The named <code>%mrs</code> / <code>%msr</code> forms currently accept this closed compiler table.
+Other architectural registers use <code>%mrs_s</code> / <code>%msr_s</code> with explicit
+S-encodings until a later feature adds named rows:</p>
 <table>
 <thead>
 <tr>
@@ -962,28 +969,21 @@ for kernel work:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>currentel</code></td>
+<td><code>CurrentEL</code></td>
 <td>64</td>
-<td>any</td>
+<td>1+</td>
 <td>R</td>
 <td>current exception level</td>
 </tr>
 <tr>
 <td><code>DAIF</code></td>
 <td>64</td>
-<td>any</td>
+<td>1+</td>
 <td>RW</td>
 <td>interrupt mask state</td>
 </tr>
 <tr>
-<td><code>nzcv</code></td>
-<td>64</td>
-<td>any</td>
-<td>RW</td>
-<td>condition flags</td>
-</tr>
-<tr>
-<td><code>spsel</code></td>
+<td><code>SPSel</code></td>
 <td>64</td>
 <td>1+</td>
 <td>RW</td>
@@ -995,13 +995,6 @@ for kernel work:</p>
 <td>1+</td>
 <td>RW</td>
 <td>system control</td>
-</tr>
-<tr>
-<td><code>cpacr_el1</code></td>
-<td>64</td>
-<td>1+</td>
-<td>RW</td>
-<td>coprocessor access control</td>
 </tr>
 <tr>
 <td><code>TCR_EL1</code></td>
@@ -1016,13 +1009,6 @@ for kernel work:</p>
 <td>1+</td>
 <td>RW</td>
 <td>translation table base 0</td>
-</tr>
-<tr>
-<td><code>ttbr1_el1</code></td>
-<td>64</td>
-<td>1+</td>
-<td>RW</td>
-<td>translation table base 1</td>
 </tr>
 <tr>
 <td><code>MAIR_EL1</code></td>
@@ -1042,14 +1028,14 @@ for kernel work:</p>
 <td><code>ESR_EL1</code></td>
 <td>64</td>
 <td>1+</td>
-<td>RW</td>
+<td>R</td>
 <td>exception syndrome</td>
 </tr>
 <tr>
-<td><code>far_el1</code></td>
+<td><code>FAR_EL1</code></td>
 <td>64</td>
 <td>1+</td>
-<td>RW</td>
+<td>R</td>
 <td>fault address</td>
 </tr>
 <tr>
@@ -1067,14 +1053,7 @@ for kernel work:</p>
 <td>saved program status</td>
 </tr>
 <tr>
-<td><code>SP_EL0</code></td>
-<td>64</td>
-<td>1+</td>
-<td>RW</td>
-<td>EL0 stack pointer</td>
-</tr>
-<tr>
-<td><code>sp_el1</code></td>
+<td><code>SP_EL1</code></td>
 <td>64</td>
 <td>2+</td>
 <td>RW</td>
@@ -1095,60 +1074,25 @@ for kernel work:</p>
 <td>thread pointer EL1</td>
 </tr>
 <tr>
-<td><code>CNTFRQ_EL0</code></td>
-<td>64</td>
-<td>any</td>
-<td>R</td>
-<td>timer frequency</td>
-</tr>
-<tr>
-<td><code>cntvct_el0</code></td>
+<td><code>CNTVCT_EL0</code></td>
 <td>64</td>
 <td>any</td>
 <td>R</td>
 <td>virtual count</td>
 </tr>
 <tr>
-<td><code>cntv_cval_el0</code></td>
+<td><code>PMCCNTR_EL0</code></td>
 <td>64</td>
 <td>any</td>
-<td>RW</td>
-<td>virtual timer compare</td>
-</tr>
-<tr>
-<td><code>cntv_tval_el0</code></td>
-<td>64</td>
-<td>any</td>
-<td>RW</td>
-<td>virtual timer value</td>
-</tr>
-<tr>
-<td><code>cntv_ctl_el0</code></td>
-<td>64</td>
-<td>any</td>
-<td>RW</td>
-<td>virtual timer control</td>
-</tr>
-<tr>
-<td><code>midr_el1</code></td>
-<td>64</td>
-<td>1+</td>
 <td>R</td>
-<td>main ID</td>
+<td>PMU cycle counter</td>
 </tr>
 <tr>
-<td><code>mpidr_el1</code></td>
+<td><code>MPIDR_EL1</code></td>
 <td>64</td>
 <td>1+</td>
 <td>R</td>
 <td>multiprocessor affinity</td>
-</tr>
-<tr>
-<td><code>ctr_el0</code></td>
-<td>64</td>
-<td>any</td>
-<td>R</td>
-<td>cache type</td>
 </tr>
 <tr>
 <td><code>DCZID_EL0</code></td>
@@ -1158,18 +1102,74 @@ for kernel work:</p>
 <td>DC ZVA block size and status</td>
 </tr>
 <tr>
-<td><code>id_aa64*_el1</code></td>
-<td>64</td>
-<td>1+</td>
-<td>R</td>
-<td>architectural feature ID family</td>
-</tr>
-<tr>
-<td><code>sctlr_el2</code>, <code>tcr_el2</code>, <code>ttbr0_el2</code>, <code>vbar_el2</code>, etc.</td>
+<td><code>SCTLR_EL2</code></td>
 <td>64</td>
 <td>2+</td>
 <td>RW</td>
-<td>EL2 mirrors</td>
+<td>EL2 system control</td>
+</tr>
+<tr>
+<td><code>TCR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 translation control</td>
+</tr>
+<tr>
+<td><code>TTBR0_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 translation table base 0</td>
+</tr>
+<tr>
+<td><code>MAIR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 memory attributes</td>
+</tr>
+<tr>
+<td><code>VBAR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 exception vector base</td>
+</tr>
+<tr>
+<td><code>ESR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 exception syndrome</td>
+</tr>
+<tr>
+<td><code>FAR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 fault address</td>
+</tr>
+<tr>
+<td><code>ELR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 exception link register</td>
+</tr>
+<tr>
+<td><code>SPSR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 saved program status</td>
+</tr>
+<tr>
+<td><code>CPTR_EL2</code></td>
+<td>64</td>
+<td>2+</td>
+<td>RW</td>
+<td>EL2 architectural trap control</td>
 </tr>
 <tr>
 <td><code>HCR_EL2</code></td>
@@ -1180,10 +1180,9 @@ for kernel work:</p>
 </tr>
 </tbody>
 </table>
-<p>EL3 and Secure-world registers (<code>scr_el3</code>, <code>vbar_el3</code>, etc.) are part of
-the table when <code>#target</code> declares EL3; rejected at lower ELs.</p>
-<p>The full register table is the appendix <code>design/sysregs.md</code> (TBD;
-populated from ARM ARM D17 — System Register Encoding).</p>
+<p>The full future register table belongs in appendix <code>design/sysregs.md</code> (TBD;
+populated from ARM ARM D17 - System Register Encoding). Until then, named
+system-register completion is generated only from the compiler table above.</p>
 <hr>
 <h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-hidden="true">#</a> Design Rationale</h3>
 <table>
@@ -1321,8 +1320,8 @@ intrinsic in <code>#asm</code> with a narrower clobber list.</p>
 all intrinsics that are legal at EL1.</p>
 <hr>
 <h3 id="%25eret-semantics" tabindex="-1"><a class="doc-anchor" href="#%25eret-semantics" aria-hidden="true">#</a> <code>%eret</code> Semantics</h3>
-<p><code>%eret</code> is <code>#noreturn</code>. Control transfers to the address in <code>elr_elx</code>
-with status <code>spsr_elx</code>, where <code>x</code> is the current EL. The compiler treats
+<p><code>%eret</code> is <code>#noreturn</code>. Control transfers to the address in <code>ELR_ELx</code>
+with status <code>SPSR_ELx</code>, where <code>x</code> is the current EL. The compiler treats
 the enclosing function as <code>#noreturn</code>:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
@@ -1983,8 +1982,8 @@ numeric value as a cross-build protocol value.</p>
 <p>A cross-CPU access:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">peek_remote_counter <span class="token operator">::</span> <span class="token punctuation">(</span>cpu <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
-  addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span>base <span class="token operator">+</span> <span class="token directive macro">#percpu_offset_of</span><span class="token punctuation">(</span>my_counter<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+  base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
+  addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span>base <span class="token operator">+</span> <span class="token directive macro">#percpu_offset_of</span><span class="token punctuation">(</span>my_counter<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
   <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -2323,11 +2322,11 @@ current PMU state.</p>
 <tbody>
 <tr>
 <td>yes</td>
-<td><code>mrs xN, pmccntr_el0</code></td>
+<td><code>mrs xN, PMCCNTR_EL0</code></td>
 </tr>
 <tr>
 <td>no (fallback)</td>
-<td><code>mrs xN, cntvct_el0</code></td>
+<td><code>mrs xN, CNTVCT_EL0</code></td>
 </tr>
 </tbody>
 </table>
@@ -2409,7 +2408,7 @@ event counts).</p>
 				<li class="lvl-3"><a href="#implementation-defined-registers">Implementation-Defined Registers</a></li>
 				<li class="lvl-3"><a href="#worked-examples">Worked Examples</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering-1">ARM64 Lowering</a></li>
-				<li class="lvl-3"><a href="#supported-register-set">Supported Register Set</a></li>
+				<li class="lvl-3"><a href="#named-register-set">Named Register Set</a></li>
 				<li class="lvl-3"><a href="#design-rationale-1">Design Rationale</a></li>
 				<li class="lvl-2"><a href="#1.3.4-trap-and-exception-intrinsics">1.3.4 Trap and Exception Intrinsics</a></li>
 				<li class="lvl-3"><a href="#operand-and-clobber-model">Operand and Clobber Model</a></li>
@@ -2454,7 +2453,7 @@ event counts).</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -140,8 +141,13 @@ explicit root-file mode.</p>
 </code></pre>
 <p>This mode keeps small tests and one-off experiments easy. The named root file
 is the root module. If <code>--source-root</code> is omitted, the root file's directory is
-the only source root. Imports are still resolved by module name through the
-same source-root convention used by project mode.</p>
+the only source root, but the root file remains a single explicit file so
+side-by-side fixture variants and <code>layout.wyst</code> are not pulled in by accident.
+Imports are still resolved by module name through the same source-root
+convention used by project mode. If one or more <code>--source-root</code> values are
+supplied, the named root file is the root module's anchor and the resolver uses
+the same directory-anchored part-file rules as project mode for the root and
+for imports.</p>
 <p>Explicit mode continues to support the explicit source-list path as
 compatibility input. Import-closure discovery is the preferred project and
 root-file build surface when source roots are available.</p>
@@ -271,16 +277,26 @@ drivers.uart -> src/drivers/uart.wyst
 <p>Rules:</p>
 <ul>
 <li>Dots in module names become path separators for source-root lookup.</li>
-<li>The loaded file's <code>#module</code> declaration must exactly match the requested
+<li>The anchor file's <code>#module</code> declaration must exactly match the requested
 module name.</li>
+<li>A module is directory-anchored. Once the resolver finds the anchor, every
+regular, non-hidden <code>.wyst</code> file in that anchor directory participates as a
+controlled part file, except build-owned ignored paths such as the selected
+layout file. Each participating file must declare the requested module.</li>
 <li>If a requested module maps to more than one existing file across source
 roots, compilation fails with an ambiguous-module diagnostic.</li>
 <li>If no file exists for an imported module, compilation fails with a
 module-not-found diagnostic.</li>
 <li>Project mode follows the import closure from <code>root</code>. It does not compile all
 <code>.wyst</code> files under <code>source_roots</code>.</li>
-<li>Generated modules and external source roots are outside project mode. Source roots
-must stay inside the project directory.</li>
+<li>Hidden files, non-<code>.wyst</code> files, non-regular files, files outside the import
+closure, and the selected layout file are ignored for module discovery.</li>
+<li>Generated source is never discovered from conventional <code>generated/</code> or build
+output directories. A build step that wants generated Wyst source must place
+the file under an explicitly listed source root before <code>wync</code> starts; it then
+follows the same anchor and part-file rules as hand-written source. External
+source roots are outside project mode, and source roots must stay inside the
+project directory.</li>
 </ul>
 <p>Filesystem layout is still not language semantics. Moving
 <code>src/drivers/uart.wyst</code> is allowed if the project source-root mapping still
@@ -295,9 +311,12 @@ part of the reproducibility input manifest:</p>
 separators and appending <code>.wyst</code> under each source root. If more than one
 source root contains the anchor, the import is ambiguous and the build
 fails.</li>
-<li>Once an anchor is found, every <code>.wyst</code> file in that anchor's directory that
-declares the same module participates in the module. Those files are ordered
-by normalized project-relative path using <code>/</code> separators.</li>
+<li>Once an anchor is found, every discoverable part file in that anchor's
+directory participates in the module. Discoverable part files are regular,
+non-hidden <code>.wyst</code> files after removing build-owned ignored paths such as
+the layout file. Those files are ordered by normalized project-relative path
+using <code>/</code> separators. Every participating file must declare the requested
+module exactly once.</li>
 <li>Imports are collected from the module's files in that file order and source
 text order. Duplicate imports of the same module are kept at their first
 encounter.</li>
@@ -450,7 +469,7 @@ with existing language features.</li>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

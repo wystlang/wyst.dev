@@ -11,7 +11,7 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
+		<link rel="stylesheet" href="/assets/wyst.024ae4b0.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -248,7 +249,7 @@ annotation — the compiler picks <strong><code>i64</code></strong> as the defau
 binding at that type:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0</span>            <span class="token comment">// counter : i64 (default)</span>
-counter <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u32</span>     <span class="token comment">// counter : u32 (explicit cast)</span>
+counter <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u32</span> <span class="token comment">// counter : u32 (explicit conversion)</span>
 counter <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0</span>       <span class="token comment">// counter : u32 (explicit annotation)</span>
 LIMIT <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">16</span>            <span class="token comment">// LIMIT :: i64 = 16 (inferred constant)</span>
 MASK <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>         <span class="token comment">// MASK :: i64 = 32 (inferred constant)</span>
@@ -269,9 +270,10 @@ ALL_U <span class="token operator">::</span> <span class="token builtin type">u6
 </code></pre>
 <p>Contextless integer constants outside the signed <code>i64</code> range that are not in
 that high-bit <code>u64</code> mask range remain compile errors. Write an explicit target
-type or <code>as</code> cast when the intended type is not the default.</p>
+type or categorized conversion when the intended type is not the default.</p>
 <p>Typed numeric literal suffixes (<code>0_u8</code>, <code>1.0_f32</code>, etc.) are not Wyst syntax.
-Use an annotation or <code>as</code> cast when a specific type is required.</p>
+Use an annotation or categorized <code>as.&lt;category&gt;</code> conversion when a specific
+type is required.</p>
 <p>The <code>:=</code> and <code>::=</code> forms infer from value expressions only. <code>::=</code> additionally
 requires a constant expression. Bare built-in type names and user-declared
 type names are type-context forms, not runtime values.</p>
@@ -287,18 +289,80 @@ value today; arithmetic in constant contexts is future work:</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GAIN <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">0.5</span> <span class="token operator">+</span> <span class="token number">0.25</span>
 </code></pre>
 <hr>
-<h3 id="the-as-operator" tabindex="-1"><a class="doc-anchor" href="#the-as-operator" aria-hidden="true">#</a> The <code>as</code> Operator</h3>
-<p><code>as</code> is the <strong>only</strong> form of explicit conversion in Wyst. It is a binary
-operator at unary precedence: <code>value as Type</code> produces a new value of the
-target type. Every conversion that crosses a type boundary uses <code>as</code>,
-including conversions the compiler could in principle prove safe.</p>
+<h3 id="the-as.%3Ccategory%3E-operators" tabindex="-1"><a class="doc-anchor" href="#the-as.%3Ccategory%3E-operators" aria-hidden="true">#</a> The <code>as.&lt;category&gt;</code> Operators</h3>
+<p>Explicit value conversions are written as <code>value as.&lt;category&gt; Type</code>. Plain
+expression-level <code>value as Type</code> is rejected; <code>as</code> without a category remains
+only the import-alias keyword in module import syntax. The category is part of
+the source contract and names the conversion's risk profile:</p>
+<table>
+<thead>
+<tr>
+<th>Syntax</th>
+<th>Conversion category</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>as.widen</code></td>
+<td>widening</td>
+<td>integer widening with the same signedness; zero-extend for unsigned, sign-extend for signed</td>
+</tr>
+<tr>
+<td><code>as.truncate</code></td>
+<td>truncation</td>
+<td>integer narrowing or untyped-integer binding that discards high bits</td>
+</tr>
+<tr>
+<td><code>as.signedness</code></td>
+<td>signedness reinterpretation</td>
+<td>same-width signed/unsigned integer reinterpretation</td>
+</tr>
+<tr>
+<td><code>as.numeric</code></td>
+<td>numeric conversion</td>
+<td>other integer/bool numeric conversions, including bool/integer and representable untyped integer constants</td>
+</tr>
+<tr>
+<td><code>as.bits</code></td>
+<td>bit reinterpretation</td>
+<td>bitfield-to-backing-integer and backing-integer-to-bitfield conversion</td>
+</tr>
+<tr>
+<td><code>as.address</code></td>
+<td>integer/address conversion</td>
+<td>data address, function pointer, and raw <code>u64</code> address-bit extraction or construction where permitted</td>
+</tr>
+<tr>
+<td><code>as.lens</code></td>
+<td>address-lens change</td>
+<td>retargeting <code>@T</code> to <code>@U</code> while keeping the same volatility/MMIO qualifier set</td>
+</tr>
+<tr>
+<td><code>as.qualifier</code></td>
+<td>volatility/MMIO qualifier change</td>
+<td>adding or stripping <code>@volatile</code> or <code>@mmio</code> intent on an address type</td>
+</tr>
+<tr>
+<td><code>as.float</code></td>
+<td>floating-point conversion</td>
+<td>any conversion involving <code>f32</code>, <code>f64</code>, or an untyped floating literal</td>
+</tr>
+</tbody>
+</table>
+<p>Dangerous and lossy conversions are therefore greppable: truncation uses
+<code>as.truncate</code>, raw address crossings use <code>as.address</code>, qualifier changes use
+<code>as.qualifier</code>, bit reinterpretation uses <code>as.bits</code>, and floating conversion
+uses <code>as.float</code>. Diagnostics and reports name these exact categories.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">small <span class="token operator">:</span> <span class="token builtin type">u8</span>  <span class="token operator">=</span> <span class="token number">5</span>
-big   <span class="token operator">:</span><span class="token operator">=</span> small <span class="token keyword">as</span> <span class="token builtin type">u64</span>             <span class="token comment">// explicit widen</span>
+big   <span class="token operator">:</span><span class="token operator">=</span> small <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span>
 </code></pre>
-<p>The complete conversion table is below. A cell value of <code>as</code> means the
-conversion is legal via <code>value as TargetType</code>; a value of <code>—</code> means the
-conversion is not defined (compile error). The diagonal is identity.</p>
+<p>The complete conversion table is below. A cell value names the required
+category for <code>value as.&lt;category&gt; TargetType</code>; a value of <code>—</code> means the
+conversion is not defined (compile error). The diagonal is identity and may be
+written with the category the checker assigns to that type family, but identity
+conversions are normally unnecessary.</p>
 <h4>Integer ↔ Integer</h4>
 <table>
 <thead>
@@ -348,7 +412,7 @@ conversion is not defined (compile error). The diagonal is identity.</p>
 </tr>
 </tbody>
 </table>
-<p>All integer <code>as</code> conversions are bit-level and never trap. Truncation
+<p>All integer conversions are bit-level and never trap. Truncation
 discards high bits; zero-extension fills high bits with zero; sign-extension
 fills high bits with the sign bit. Same-width signed↔unsigned is a
 no-op reinterpretation.</p>
@@ -374,31 +438,32 @@ no-op reinterpretation.</p>
 </tr>
 </tbody>
 </table>
-<p>Float widening (<code>f32 as f64</code>) is exact. Float narrowing (<code>f64 as f32</code>)
+<p>Float widening (<code>f32 as.float f64</code>) is exact. Float narrowing (<code>f64 as.float f32</code>)
 applies round-to-nearest-even (the IEEE 754 default rounding mode). No
 trap.</p>
 <h4>Float ↔ Integer</h4>
-<p><code>f as I</code> (float to integer) and <code>i as F</code> (integer to float) are both legal
-via <code>as</code>. Float-to-integer truncates toward zero. Integer-to-float rounds
-to nearest representable value (which may lose precision for <code>u64</code>/<code>i64</code>
-values above 2⁵³).</p>
+<p><code>f as.float I</code> (float to integer) and <code>i as.float F</code> (integer to float) are
+both legal. Float-to-integer truncates toward zero. Integer-to-float rounds to
+nearest representable value (which may lose precision for <code>u64</code>/<code>i64</code> values
+above 2⁵³).</p>
 <p>Float-to-integer when the source is out-of-range, <code>NaN</code>, or <code>±Inf</code> is
 <code>Target-defined</code>: the selected architecture's conversion instruction supplies
 the result. On ARM64, <code>fcvtzs</code>/<code>fcvtzu</code> saturate. The compiler emits the
 instruction directly and does not insert checks.</p>
 <h4><code>bool</code> ↔ Integer</h4>
-<p>There is <strong>no implicit conversion</strong> between <code>bool</code> and integers. Use <code>as</code>
-explicitly when needed:</p>
+<p>There is <strong>no implicit conversion</strong> between <code>bool</code> and integers. Use
+<code>as.numeric</code> explicitly when needed:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">flag <span class="token operator">:</span> <span class="token builtin type">bool</span> <span class="token operator">=</span> <span class="token boolean">true</span>
-n <span class="token operator">:</span><span class="token operator">=</span> flag <span class="token keyword">as</span> <span class="token builtin type">u8</span>             <span class="token comment">// 1</span>
-m <span class="token operator">:</span><span class="token operator">=</span> <span class="token boolean">false</span> <span class="token keyword">as</span> <span class="token builtin type">u8</span>            <span class="token comment">// 0</span>
+n <span class="token operator">:</span><span class="token operator">=</span> flag <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u8</span>     <span class="token comment">// 1</span>
+m <span class="token operator">:</span><span class="token operator">=</span> <span class="token boolean">false</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u8</span>    <span class="token comment">// 0</span>
 
 raw <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">1</span>
-b <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> <span class="token builtin type">bool</span>            <span class="token comment">// true if raw != 0, false if raw == 0</span>
+b <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">bool</span>    <span class="token comment">// true if raw != 0, false if raw == 0</span>
 </code></pre>
-<p>A non-zero integer <code>as bool</code> is <code>true</code>; zero <code>as bool</code> is <code>false</code>.
-A <code>bool</code> <code>as</code> integer produces 1 for <code>true</code> and 0 for <code>false</code>.</p>
+<p>A non-zero integer <code>as.numeric bool</code> is <code>true</code>; zero <code>as.numeric bool</code> is
+<code>false</code>. A <code>bool as.numeric</code> integer conversion produces 1 for <code>true</code> and 0
+for <code>false</code>.</p>
 <h4>Address ↔ Integer</h4>
 <table>
 <thead>
@@ -411,29 +476,29 @@ A <code>bool</code> <code>as</code> integer produces 1 for <code>true</code> and
 <tbody>
 <tr>
 <td><code>@T</code></td>
-<td>identity, or explicit retargeting with <code>as @U</code>, <code>as @volatile U</code>, or <code>as @mmio U</code></td>
-<td>bit-reinterpret</td>
+<td>identity, or retargeting with <code>as.lens @U</code>; qualifier changes use <code>as.qualifier @volatile U</code> or <code>as.qualifier @mmio U</code></td>
+<td><code>as.address u64</code></td>
 </tr>
 <tr>
 <td><code>@volatile T</code></td>
-<td>identity, or explicit retargeting/qualifier change with <code>as @U</code> / <code>as @mmio U</code></td>
-<td>bit-reinterpret</td>
+<td>identity, or retargeting with <code>as.lens @volatile U</code>; qualifier changes use <code>as.qualifier @U</code> / <code>as.qualifier @mmio U</code></td>
+<td><code>as.address u64</code></td>
 </tr>
 <tr>
 <td><code>@mmio T</code></td>
-<td>identity, or explicit retargeting/qualifier change with <code>as @U</code> / <code>as @volatile U</code></td>
-<td>bit-reinterpret</td>
+<td>identity, or retargeting with <code>as.lens @mmio U</code>; qualifier changes use <code>as.qualifier @U</code> / <code>as.qualifier @volatile U</code></td>
+<td><code>as.address u64</code></td>
 </tr>
 <tr>
 <td><code>u64</code></td>
-<td><code>as @T</code>, <code>as @volatile T</code>, or <code>as @mmio T</code> for any <code>T</code> (no check)</td>
+<td><code>as.address @T</code>, <code>as.address @volatile T</code>, or <code>as.address @mmio T</code> for any <code>T</code> (no check)</td>
 <td>identity</td>
 </tr>
 </tbody>
 </table>
-<p><code>@T</code> and <code>u64</code> have the same machine representation. <code>as</code> between them is a
-zero-cost reinterpretation. Runtime values do not convert implicitly in either
-direction.</p>
+<p><code>@T</code> and <code>u64</code> have the same machine representation. <code>as.address</code> between them
+is a zero-cost reinterpretation. Runtime values do not convert implicitly in
+either direction.</p>
 <p>Address constants get one ergonomic exception: an integer constant expression
 may bind directly when the expected type is explicit <code>@T</code>, <code>@volatile T</code>, or
 <code>@mmio T</code>.
@@ -447,10 +512,10 @@ UARTFR <span class="token operator">::</span> <span class="token address-qualifi
 <p><code>UART0_BASE</code> is a <code>u64</code>, so the <code>+ 0x18</code> expression above is ordinary numeric
 byte arithmetic before the constant is bound to <code>@mmio u32</code>. Once a value
 has type <code>@mmio u32</code>, plain <code>+</code> uses <code>u32</code> element offsets instead.</p>
-<p>Runtime integer values still require <code>as</code> for integer-to-address conversion.
+<p>Runtime integer values still require <code>as.address</code> for integer-to-address conversion.
 Even though <code>#addr_of(x)</code> returns a value usable as both <code>@T</code> and <code>u64</code>, only
 one type is selected at the site (from context or annotation), and the other
-requires an <code>as</code>.</p>
+requires an explicit conversion.</p>
 <p>Changing among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> changes the access-site
 contract and MMIO intent; it does not prove that the two address values cannot
 alias or that a page table maps the address as ARM Device memory. See
@@ -467,7 +532,7 @@ identity_addr <span class="token operator">::</span> <span class="token punctuat
 
 literal_contexts <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
   local <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
-  <span class="token keyword">return</span> <span class="token function">identity_addr</span><span class="token punctuation">(</span><span class="token number">0x5000</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>local <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">-</span> local <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token keyword">return</span> <span class="token function">identity_addr</span><span class="token punctuation">(</span><span class="token number">0x5000</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token punctuation">(</span>local <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span> <span class="token operator">-</span> local <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
@@ -481,18 +546,18 @@ from_runtime_value <span class="token operator">::</span> <span class="token pun
 explicit-only. To re-type a region (e.g., view a <code>@u8</code> buffer as <code>@u32</code>),
 write the retargeting cast at the point where the memory lens changes:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">bytes <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0x4000</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
-words <span class="token operator">:</span><span class="token operator">=</span> bytes <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">bytes <span class="token operator">:</span><span class="token operator">=</span> <span class="token number">0x4000</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
+words <span class="token operator">:</span><span class="token operator">=</span> bytes <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span>
 </code></pre>
 <p>Adding or stripping volatility or MMIO intent is also explicit-only:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
-volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@u32</span>
+volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 
 ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
-mmio_intent_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+mmio_intent_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 </code></pre>
 <p>Implicit assignment, call-argument binding, comparison, and typed memory access
 never retarget an address or change its volatile/MMIO-intent qualifier. This
@@ -500,18 +565,20 @@ makes the type punning and access-intent boundary visible at the source level
 without requiring a noisy integer round-trip. A cast alone does not perform a
 load or store and does not introduce <code>volatile_access</code> or <code>mmio</code> effects; those
 effects arise only when a memory access occurs through the qualified address.</p>
-<h4><code>bool</code> ↔ <code>bool</code> and Other Identities</h4>
-<p><code>x as T</code> where <code>T</code> is already the type of <code>x</code> is allowed and is a no-op.
-It is occasionally useful for documenting intent at a call site.</p>
-<h4>What <code>as</code> Does Not Do</h4>
+<h4>Identities</h4>
+<p><code>x as.&lt;category&gt; T</code> where <code>T</code> is already the type of <code>x</code> is allowed when the
+category matches the type family and is a no-op. It is occasionally useful for
+documenting intent at a call site.</p>
+<h4>What Conversion Does Not Do</h4>
 <ul>
-<li><code>as</code> never traps and never branches at runtime. Out-of-range float-to-integer
-conversion is <code>Target-defined</code> as described above.</li>
-<li><code>as</code> never invokes a user-defined conversion. Wyst has no operator
+<li>Categorized conversion never traps and never branches at runtime.
+Out-of-range float-to-integer conversion is <code>Target-defined</code> as described
+above.</li>
+<li>Conversion never invokes a user-defined conversion. Wyst has no operator
 overloading and no conversion operator.</li>
-<li><code>as</code> does not work between unrelated structured types (<code>struct A</code> to
+<li>Conversion does not work between unrelated structured types (<code>struct A</code> to
 <code>struct B</code> is a compile error even if their layouts match — go via
-memory: <code>u64@[addr_a as u64]</code> etc.).</li>
+memory: <code>u64@[addr_a as.address u64]</code> etc.).</li>
 </ul>
 <hr>
 <h3 id="implicit-conversion-rules-(there-are-none)" tabindex="-1"><a class="doc-anchor" href="#implicit-conversion-rules-(there-are-none)" aria-hidden="true">#</a> Implicit Conversion Rules (There Are None)</h3>
@@ -535,13 +602,13 @@ n    <span class="token operator">:</span> <span class="token builtin type">u64<
 </code></pre>
 <p>To make these compile, write the conversion explicitly:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>a <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">+</span> b              <span class="token comment">// OK</span>
-cmp <span class="token operator">:</span><span class="token operator">=</span> x <span class="token operator">&lt;</span> <span class="token punctuation">(</span>y <span class="token keyword">as</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span>              <span class="token comment">// OK (but see Mixed-Signedness Comparison below)</span>
-sum <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>flag <span class="token keyword">as</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> n            <span class="token comment">// OK</span>
-n   <span class="token operator">:</span><span class="token operator">=</span> addr <span class="token keyword">as</span> <span class="token builtin type">u64</span>                 <span class="token comment">// OK</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">sum <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>a <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">+</span> b              <span class="token comment">// OK</span>
+cmp <span class="token operator">:</span><span class="token operator">=</span> x <span class="token operator">&lt;</span> <span class="token punctuation">(</span>y <span class="token keyword">as</span><span class="token punctuation">.</span>signedness <span class="token builtin type">i32</span><span class="token punctuation">)</span>         <span class="token comment">// OK (but see Mixed-Signedness Comparison below)</span>
+sum <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>flag <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> n          <span class="token comment">// OK</span>
+n   <span class="token operator">:</span><span class="token operator">=</span> addr <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>               <span class="token comment">// OK</span>
 </code></pre>
 <p>The compiler points to the operator (or assignment) that lacks a common
-type, names both types involved, and suggests the canonical <code>as</code> form.</p>
+type, names both types involved, and suggests the canonical categorized form.</p>
 <hr>
 <h3 id="mixed-signedness-comparison" tabindex="-1"><a class="doc-anchor" href="#mixed-signedness-comparison" aria-hidden="true">#</a> Mixed-Signedness Comparison</h3>
 <p><code>i32 &lt; u32</code> is the most-asked-about C question for a reason: there is no
@@ -558,8 +625,8 @@ y <span class="token operator">:</span> <span class="token builtin type">u32</sp
 
 x <span class="token operator">&lt;</span> y                     <span class="token comment">// compile error</span>
 
-x <span class="token operator">&lt;</span> <span class="token punctuation">(</span>y <span class="token keyword">as</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span>            <span class="token comment">// OK: y as i32 == 1; expression == true</span>
-<span class="token punctuation">(</span>x <span class="token keyword">as</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> y            <span class="token comment">// OK: x as u32 == 0xFFFF_FFFF; expression == false</span>
+x <span class="token operator">&lt;</span> <span class="token punctuation">(</span>y <span class="token keyword">as</span><span class="token punctuation">.</span>signedness <span class="token builtin type">i32</span><span class="token punctuation">)</span>            <span class="token comment">// OK: converted y == 1; expression == true</span>
+<span class="token punctuation">(</span>x <span class="token keyword">as</span><span class="token punctuation">.</span>signedness <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> y            <span class="token comment">// OK: converted x == 0xFFFF_FFFF; expression == false</span>
 </code></pre>
 <p>The compiler will not pick one for you. The two answers differ; making the
 choice explicit is the point.</p>
@@ -616,7 +683,7 @@ rx_empty <span class="token operator">:</span><span class="token operator">=</sp
     rxfe <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-flags <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token keyword">as</span> UARTFR_BITS
+flags <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token keyword">as</span><span class="token punctuation">.</span>bits UARTFR_BITS
 tx_full <span class="token operator">:</span><span class="token operator">=</span> flags<span class="token punctuation">.</span>txff <span class="token operator">!=</span> <span class="token number">0</span>
 </code></pre>
 <hr>
@@ -671,12 +738,13 @@ specification of <code>@volatile T</code> and <code>@mmio T</code> is in
 Type-system rules:</p>
 <ul>
 <li><code>@T</code> and <code>u64</code> have the same machine representation. Runtime conversion is
-by <code>as</code> in either direction; no implicit conversion exists for runtime
-values. An integer constant expression may bind to an explicit address
-context without <code>as</code>.</li>
+by <code>as.address</code> in either direction; no implicit conversion exists for
+runtime values. An integer constant expression may bind to an explicit
+address context without a conversion.</li>
 <li><code>@T</code>, <code>@volatile T</code>, <code>@mmio T</code>, <code>@U</code>, <code>@volatile U</code>, and <code>@mmio U</code> are
-distinct address lenses. Changing the lens, volatility, or MMIO intent is
-explicit: write <code>p as @U</code>, <code>p as @volatile U</code>, or <code>p as @mmio U</code>.
+distinct address lenses. Changing only the lens is explicit with
+<code>as.lens</code>. Changing volatility or MMIO intent is explicit with
+<code>as.qualifier</code>.
 Assignments, function calls, comparisons, and <code>type[address]</code> memory access
 do not retarget addresses or change qualifiers implicitly. A cast to
 <code>@volatile T</code> or <code>@mmio T</code> records an address-intent assertion, but it is not
@@ -685,7 +753,7 @@ read or written. Casts that strip volatility or MMIO intent are explicit and
 produce warnings so the boundary is greppable in reviews.</li>
 <li><code>#addr_of(symbol)</code> returns a symbol-sourced address. For non-function
 symbols, the type is selected by explicit context (annotation,
-operand-position expectation, or <code>as</code> cast); inferred bindings such as
+operand-position expectation, or categorized conversion); inferred bindings such as
 <code>p := #addr_of(word)</code> are rejected. The operand must resolve to a
 compile-time symbol such as a global, function, label, exception vector, or
 fixed-array/global storage symbol. Function symbols have one natural
@@ -709,18 +777,18 @@ Fixed-array stack storage may bind to the element lens <code>@T</code> or the wh
 lens <code>@[N]T</code> in an explicit address context. Inferred bindings such as
 <code>p := %addr_of(word)</code> or <code>p := %addr_of(local_array)</code> are rejected; write an
 annotation or cast. Converting the runtime address to <code>u64</code> also requires an
-explicit <code>as u64</code>.</li>
+explicit <code>as.address u64</code>.</li>
 <li><code>@T</code> arithmetic (<code>p + offset</code>, <code>offset + p</code>, <code>p - offset</code>) has exactly one
 source meaning: <strong>element offsets</strong>. This is the <code>element_offset(p, element_count)</code> operation. The integer offset is multiplied by <code>#size_of(T)</code>
 before the address is advanced. <code>@u8</code> remains byte-stepped because
 <code>#size_of(u8) == 1</code>.</li>
 <li>Raw byte arithmetic is a distinct <code>byte_offset(p, byte_count)</code> operation.
-Spell it by changing the lens before the addition, <code>(p as @u8) + bytes</code>, or
-by doing explicit numeric arithmetic, <code>((p as u64) + bytes) as @T</code>. The cast
+Spell it by changing the lens before the addition, <code>(p as.lens @u8) + bytes</code>, or
+by doing explicit numeric arithmetic, <code>((p as.address u64) + bytes) as.address @T</code>. The cast
 back to <code>@T</code> is the point where the program asserts that the byte result is
 suitable for that typed access lens.</li>
 <li>Struct-field addressing is a distinct <code>field_addr(p, T.field)</code> operation.
-Spell it with a byte lens and <code>#field_offset</code>: <code>((p as @u8) + #field_offset(T, field)) as @FieldType</code>. <code>#field_offset</code> is always measured
+Spell it with a byte lens and <code>#field_offset</code>: <code>((p as.lens @u8) + #field_offset(T, field)) as.lens @FieldType</code>. <code>#field_offset</code> is always measured
 in bytes and is never an element count.</li>
 <li>Do not pre-multiply the offset by <code>#size_of(T)</code> before applying <code>+</code>; that
 scales twice. Write <code>p + i</code> for element <code>i</code>. The checker rejects obvious
@@ -729,12 +797,13 @@ address lens whose element type is <code>T</code>.</li>
 <li>The qualifiers of address arithmetic come from the static address operand
 that produces the result. <code>@volatile T + integer</code> produces <code>@volatile T</code>,
 <code>@mmio T + integer</code> produces <code>@mmio T</code>, and <code>@T + integer</code> produces <code>@T</code>.</li>
-<li>If an integer offset expression was produced from an address with <code>as u64</code>,
+<li>If an integer offset expression was produced from an address with <code>as.address u64</code>,
 its source address qualifiers must match the address operand's qualifiers.
 Mixed volatility or MMIO intent in address arithmetic is a compile error.
 Cast one address to the intended qualifier before converting it to <code>u64</code>:
-<code>(plain as @volatile T) as u64</code>, <code>(plain as @mmio T) as u64</code>, or
-<code>(device as @T) as u64</code>.</li>
+<code>(plain as.qualifier @volatile T) as.address u64</code>,
+<code>(plain as.qualifier @mmio T) as.address u64</code>, or
+<code>(device as.qualifier @T) as.address u64</code>.</li>
 <li>Array-address lenses are the one contextual access rule: for <code>p : @[N]T</code>,
 <code>T@[p]</code> accesses the first element and <code>p + offset</code> produces <code>@T</code>, scaling
 the offset by <code>#size_of(T)</code>. The explicit <code>@[N]T</code> lens preserves the storage
@@ -758,19 +827,21 @@ target architecture's behavior for that access; volatile or MMIO-intent
 packed aggregate accesses that cannot satisfy the required natural alignment
 are rejected before lowering.</li>
 <li>Arithmetic on two <code>@T</code> values is not defined. <code>p + q</code> and <code>p - q</code> are
-compile errors. Use <code>(p as u64) - (q as u64)</code> when numeric byte distance is
+compile errors. Use <code>(p as.address u64) - (q as.address u64)</code> when numeric byte distance is
 intentional.</li>
 <li><code>@T + integer</code> is <code>@T</code>; <code>integer + @T</code> is <code>@T</code>; <code>@T - integer</code> is <code>@T</code>.</li>
 <li>Arithmetic on address-derived integers with different address qualifiers is
-not defined. <code>(device as u64) - (plain as u64)</code> is a compile error when
-<code>device : @mmio T</code> and <code>plain : @T</code>; write <code>((device as @T) as u64) - (plain as u64)</code> or <code>(device as u64) - ((plain as @mmio T) as u64)</code> to make
+not defined. <code>(device as.address u64) - (plain as.address u64)</code> is a compile
+error when <code>device : @mmio T</code> and <code>plain : @T</code>; write
+<code>((device as.qualifier @T) as.address u64) - (plain as.address u64)</code> or
+<code>(device as.address u64) - ((plain as.qualifier @mmio T) as.address u64)</code> to make
 the intended result qualifier explicit.</li>
 <li>Function pointer types such as <code>@(u64) -&gt; u64</code> are code addresses, not data
 address lenses. They support calls, same-type <code>==</code>/<code>!=</code>, equality/inequality
-with the untyped integer constant <code>0</code>, explicit <code>as u64</code> extraction, and
+with the untyped integer constant <code>0</code>, explicit <code>as.address u64</code> extraction, and
 explicit <code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code> construction from a raw <code>u64</code>
 address. They do not support address arithmetic, ordered comparisons, nonzero
-integer comparisons, raw integer-to-function-pointer <code>as</code> casts, or
+integer comparisons, raw integer-to-function-pointer <code>as.address</code> conversions, or
 <code>type[address]</code> memory access.</li>
 <li><code>@T</code> comparisons are defined for the same address lens. <code>==</code> and <code>!=</code> test
 address equality. <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code> use unsigned numeric address
@@ -778,9 +849,9 @@ ordering, which keeps address-walking loops typed as pointers instead of
 raw integers. Untyped integer constants may bind to the address lens for
 equality checks, which keeps <code>addr == 0</code> available as the conventional
 sentinel test. Ordered comparisons against integer literals remain compile
-errors; cast both sides to <code>u64</code> when comparing against raw integer values.
+errors; convert both sides to <code>u64</code> with <code>as.address</code> when comparing against raw integer values.
 Comparing addresses of different element types (<code>@u8 == @u32</code>) is also a
-compile error; retarget explicitly or compare <code>as u64</code> values.</li>
+compile error; retarget explicitly or compare <code>as.address u64</code> values.</li>
 <li>There is no <code>null</code>. <code>@T = 0</code> is a legal value. <code>if addr == 0 { ... }</code>
 is the canonical check for &quot;address is the conventional unmapped
 sentinel.&quot; <em>Accessing</em> address 0 is <code>Architectural fault or trap</code>: it may
@@ -808,7 +879,7 @@ retreat <span class="token operator">::</span> <span class="token punctuation">(
 <span class="token punctuation">}</span>
 
 distance <span class="token operator">::</span> <span class="token punctuation">(</span>base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> cursor <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  <span class="token keyword">return</span> cursor <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">-</span> base <span class="token keyword">as</span> <span class="token builtin type">u64</span>
+  <span class="token keyword">return</span> cursor <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span> <span class="token operator">-</span> base <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
@@ -863,11 +934,11 @@ whole_bytes <span class="token operator">:</span> <span class="token operator">@
 whole_words <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>words<span class="token punctuation">)</span>
 
 main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  inferred_from_cast <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+  inferred_from_cast <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u64</span>
   first <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole_bytes<span class="token punctuation">]</span>
   third <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole_bytes <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span>
   word <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>whole_words <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span>
-  <span class="token keyword">return</span> word_addr <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> word_raw <span class="token operator">+</span> raw_addr <span class="token operator">+</span> byte_addr <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> inferred_from_cast <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> first <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> third <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> word
+  <span class="token keyword">return</span> word_addr <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span> <span class="token operator">+</span> word_raw <span class="token operator">+</span> raw_addr <span class="token operator">+</span> byte_addr <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span> <span class="token operator">+</span> inferred_from_cast <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span> <span class="token operator">+</span> first <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span> <span class="token operator">+</span> third <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span> <span class="token operator">+</span> word
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
@@ -897,8 +968,8 @@ main <span class="token operator">::</span> <span class="token punctuation">(</s
   buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
   bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
   whole <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
-  casted <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
-  <span class="token keyword">return</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes<span class="token punctuation">]</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span> <span class="token operator">+</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>casted<span class="token punctuation">]</span> <span class="token keyword">as</span> <span class="token builtin type">u64</span>
+  casted <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span>
+  <span class="token keyword">return</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes<span class="token punctuation">]</span> <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span> <span class="token operator">+</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>whole <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">]</span> <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span> <span class="token operator">+</span> <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>casted<span class="token punctuation">]</span> <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
@@ -927,7 +998,7 @@ buf <span class="token operator">:</span> <span class="token punctuation">[</spa
 
 read_word <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
   bytes <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
-  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span>
+  <span class="token keyword">return</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>bytes <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: check-fail -->
@@ -960,8 +1031,8 @@ read_reg <span class="token operator">::</span> <span class="token punctuation">
 <span class="token punctuation">}</span>
 
 explicit_boundary <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
-  volatile_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
-  device_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+  volatile_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+  device_view <span class="token operator">:</span><span class="token operator">=</span> RAM_WORD <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
   <span class="token keyword">return</span> <span class="token function">poll</span><span class="token punctuation">(</span>volatile_view<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token function">read_reg</span><span class="token punctuation">(</span>device_view<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1005,7 +1076,11 @@ convention. The compiler does not synthesize one and does not branch on
 <h4>Symbol-Sourced vs Computed Addresses</h4>
 <p>Wyst distinguishes two kinds of <code>@T</code> value by <strong>how the address is sourced</strong>.
 The distinction is invisible at runtime but load-bearing for the integrated
-linker: only one kind ever emits a relocation.</p>
+linker: among source address expressions, only the symbol-sourced kind emits an
+address-materialization relocation. Direct calls, direct symbol branches,
+object references, veneers, future jump tables, and address-bearing
+instructions are separate relocation origins owned by
+<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>.</p>
 <table>
 <thead>
 <tr>
@@ -1023,25 +1098,25 @@ linker: only one kind ever emits a relocation.</p>
 <td>Emits an <code>adrp</code>+<code>add</code> page-pair relocation against <code>name</code></td>
 </tr>
 <tr>
-<td><code>(#addr_of(name) as @T) + N</code> (constant element count <code>N</code>)</td>
+<td><code>(#addr_of(name) as.address @T) + N</code> (constant element count <code>N</code>)</td>
 <td>Symbol-sourced with addend</td>
 <td><strong>Yes</strong></td>
 <td>One relocation against <code>name</code> with byte addend <code>N * #size_of(T)</code> folded in</td>
 </tr>
 <tr>
-<td><code>((#addr_of(name) as @u8) + B) as @T</code> (constant byte count <code>B</code>)</td>
+<td><code>((#addr_of(name) as.address @u8) + B) as.lens @T</code> (constant byte count <code>B</code>)</td>
 <td>Symbol-sourced with byte addend</td>
 <td><strong>Yes</strong></td>
 <td>One relocation against <code>name</code> with byte addend <code>B</code> folded in</td>
 </tr>
 <tr>
-<td><code>((#addr_of(name) as u64) + B) as @T</code> (constant byte count <code>B</code>)</td>
+<td><code>((#addr_of(name) as.address u64) + B) as.address @T</code> (constant byte count <code>B</code>)</td>
 <td>Integer constant address</td>
 <td>No</td>
 <td>Numeric byte arithmetic first; no relocation is retained after the explicit integer computation</td>
 </tr>
 <tr>
-<td><code>(#addr_of(name) as @T) + i</code> (runtime element count <code>i</code>)</td>
+<td><code>(#addr_of(name) as.address @T) + i</code> (runtime element count <code>i</code>)</td>
 <td>Symbol-sourced base + runtime offset</td>
 <td><strong>Base only</strong></td>
 <td>Page-pair relocation for <code>name</code>; the runtime offset is scaled by <code>#size_of(T)</code> before the address add</td>
@@ -1059,30 +1134,30 @@ linker: only one kind ever emits a relocation.</p>
 <td>Compile-time-known absolute value; no relocation needed</td>
 </tr>
 <tr>
-<td><code>base + i</code>, <code>ptr as @u32</code>, <code>%mrs(...)</code>, any other runtime-computed <code>@T</code></td>
+<td><code>base + i</code>, <code>ptr as.lens @u32</code>, <code>%mrs(...)</code>, any other runtime-computed <code>@T</code></td>
 <td>Runtime-computed</td>
 <td>No</td>
 <td>No relocation; the address is whatever the typed address computation evaluates to at runtime</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rule:</strong> <code>#addr_of(name)</code> is the <strong>only</strong> expression form that introduces a
-symbol reference. <code>%addr_of(local)</code> produces a real address value, but it is a
-stack-frame computation, not a linkable symbol. Every other <code>@T</code> value is either
-a literal address or arithmetic that the compiler treats as ordinary integer
-math against a runtime value.</p>
+<p><strong>Rule:</strong> <code>#addr_of(name)</code> is the only source address expression form that
+introduces a symbol-sourced address value. <code>%addr_of(local)</code> produces a real
+address value, but it is a stack-frame computation, not a linkable symbol.
+Every other <code>@T</code> value is either a literal address or arithmetic that the
+compiler treats as ordinary integer math against a runtime value.</p>
 <p><strong>Consequence:</strong> Wyst does not have the C / C++ ambiguity about whether a
 pointer constant is a &quot;symbol address&quot; or a &quot;magic integer that happens to
 equal an address.&quot; The syntax tells you. A reader, the compiler, and the
 linker all agree on whether a given expression introduces a relocation.</p>
-<p><strong>Constant-offset folding.</strong> <code>(#addr_of(uart_regs) as @uart_regs) + 1</code> (where
+<p><strong>Constant-offset folding.</strong> <code>(#addr_of(uart_regs) as.address @uart_regs) + 1</code> (where
 the <code>1</code> is a compile-time element count) emits exactly one page-pair relocation
 with <code>#size_of(uart_regs)</code> as the ELF addend field. Relocation addends are
 always measured in bytes, even when the source expression used an element
 count. For raw byte offsets, use a byte lens such as
-<code>((#addr_of(uart_regs) as @u8) + 0x18) as @u32</code> or explicit numeric arithmetic
-such as <code>((#addr_of(uart_regs) as u64) + 0x18) as @u32</code>.</p>
-<p><strong>Runtime-offset arithmetic.</strong> <code>(#addr_of(buf) as @T) + i</code> (where <code>i</code> is a
+<code>((#addr_of(uart_regs) as.address @u8) + 0x18) as.lens @u32</code> or explicit numeric arithmetic
+such as <code>((#addr_of(uart_regs) as.address u64) + 0x18) as.address @u32</code>.</p>
+<p><strong>Runtime-offset arithmetic.</strong> <code>(#addr_of(buf) as.address @T) + i</code> (where <code>i</code> is a
 runtime value) emits one page-pair relocation for <code>buf</code>'s base address into a
 register, then runtime arithmetic to scale <code>i</code> by <code>#size_of(T)</code> and combine it
 with the base address. The relocation is attached only to the symbol-base
@@ -1113,11 +1188,11 @@ cond <span class="token operator">:</span> <span class="token builtin type">u32<
 addr <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0</span>                    <span class="token comment">// OK: 0 is a legal address; no null sentinel</span>
 
 addr_u64 <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> addr             <span class="token comment">// ERROR: no implicit @u8 -> u64</span>
-addr_u64 <span class="token operator">=</span> addr <span class="token keyword">as</span> <span class="token builtin type">u64</span>            <span class="token comment">// OK</span>
+addr_u64 <span class="token operator">=</span> addr <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>    <span class="token comment">// OK</span>
 
 packet <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 wire_len <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%load_be</span><span class="token operator">&lt;</span><span class="token builtin type">u16</span><span class="token operator">></span><span class="token punctuation">(</span>packet<span class="token punctuation">)</span>           <span class="token comment">// OK: host-order u16 result</span>
-total <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>wire_len <span class="token keyword">as</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">+</span> u32_val        <span class="token comment">// OK</span>
+total <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>wire_len <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">+</span> u32_val  <span class="token comment">// OK</span>
 byte_orderless <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token primitive macro">%load_be</span><span class="token operator">&lt;</span><span class="token builtin type">u8</span><span class="token operator">></span><span class="token punctuation">(</span>packet<span class="token punctuation">)</span>  <span class="token comment">// ERROR: endian load of 8-bit value</span>
 </code></pre>
 <hr>
@@ -1167,7 +1242,7 @@ byte_orderless <span class="token operator">:</span> <span class="token builtin 
 <hr>
 <h3 id="tradeoffs" tabindex="-1"><a class="doc-anchor" href="#tradeoffs" aria-hidden="true">#</a> Tradeoffs</h3>
 <ul>
-<li><strong>More <code>as</code> casts in real code.</strong> Mixed-type expressions cost a few extra
+<li><strong>More categorized conversions in real code.</strong> Mixed-type expressions cost a few extra
 keystrokes. The alternative — silent coercion — is the bug class the
 type system is designed to prevent.</li>
 <li><strong>No promotion to a common arithmetic type.</strong> <code>u8 + u8</code> produces <code>u8</code>,
@@ -1175,7 +1250,7 @@ not <code>u32</code>. Programs that need wider arithmetic widen the operands
 explicitly. This matches what the hardware does and what the user
 intended.</li>
 <li><strong><code>bool</code> is genuinely separate.</strong> <code>arr[flag]</code> cannot work; write
-<code>arr[flag as u64]</code>. This is verbose for rare patterns and prevents the
+<code>arr[flag as.numeric u64]</code>. This is verbose for rare patterns and prevents the
 common <code>arr[expr]</code> C-idiom bug where <code>expr</code> evaluates to <code>bool</code>.</li>
 </ul>
 <hr>
@@ -1202,7 +1277,7 @@ str x2<span class="token punctuation">,</span> <span class="token punctuation">[
 <p>Array literals use <strong>braces</strong> <code>{}</code> to avoid collision with the <code>type[address]</code> memory access syntax:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">{</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">}</span>           <span class="token comment">// array literal, element type inferred from context</span>
-<span class="token punctuation">{</span><span class="token number">5</span> <span class="token keyword">as</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">}</span>     <span class="token comment">// explicit: array of u8</span>
+<span class="token punctuation">{</span><span class="token number">5</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">}</span> <span class="token comment">// explicit: array of u8</span>
 </code></pre>
 <p>Braces are already used for blocks and struct bodies, but a comma-separated list of homogeneous values in expression position is unambiguously an array literal.</p>
 <h3 id="declaring-a-local-array" tabindex="-1"><a class="doc-anchor" href="#declaring-a-local-array" aria-hidden="true">#</a> Declaring a Local Array</h3>
@@ -1368,7 +1443,7 @@ buf <span class="token operator">:</span> <span class="token punctuation">[</spa
 
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   first <span class="token operator">:</span><span class="token operator">=</span> buf<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
-  base <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+  base <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u64</span>
   same <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>
   <span class="token keyword">return</span> first <span class="token operator">+</span> same
 <span class="token punctuation">}</span>
@@ -1415,8 +1490,9 @@ the syntactic prefix.</p>
 </tr>
 </tbody>
 </table>
-<p>Angle brackets (<code>&lt;...&gt;</code>) are <strong>reserved</strong> and not used by any non-generic
-form — they are held for Wyst's locked generic syntax (see §1.13 below).</p>
+<p>Angle brackets (<code>&lt;...&gt;</code>) are used by Wyst's locked generic syntax (see §1.13
+below) and by comparison operators in expressions. No non-generic type form
+uses angle brackets.</p>
 <h3 id="accessing-by-index" tabindex="-1"><a class="doc-anchor" href="#accessing-by-index" aria-hidden="true">#</a> Accessing by Index</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">}</span>
@@ -1474,7 +1550,7 @@ arithmetic:</p>
 </tbody>
 </table>
 <p>When raw byte arithmetic is intended, use a byte lens or numeric arithmetic:
-<code>(word_base as @u8) + 8</code> or <code>((word_base as u64) + 8) as @u64</code>.</p>
+<code>(word_base as.lens @u8) + 8</code> or <code>((word_base as.address u64) + 8) as.address @u64</code>.</p>
 <h3 id="global-arrays" tabindex="-1"><a class="doc-anchor" href="#global-arrays" aria-hidden="true">#</a> Global Arrays</h3>
 <p>A top-level fixed array is still a <code>[N]T</code> storage symbol. Its name does not
 evaluate to an address, even if the linker eventually places the storage in
@@ -1876,7 +1952,7 @@ arr<span class="token punctuation">[</span><span class="token operator">:</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span>lo <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> hi <span class="token operator">:</span> <span class="token builtin type">i16</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   arr <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
   s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> arr<span class="token punctuation">[</span>lo<span class="token operator">:</span>hi<span class="token punctuation">]</span>
-  t <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> s<span class="token punctuation">[</span><span class="token number">0</span> <span class="token keyword">as</span> <span class="token builtin type">u8</span><span class="token operator">:</span>hi<span class="token punctuation">]</span>
+  t <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> s<span class="token punctuation">[</span><span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u8</span><span class="token operator">:</span>hi<span class="token punctuation">]</span>
   <span class="token keyword">return</span> t<span class="token punctuation">.</span>len
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1900,7 +1976,7 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">base <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 n <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">64</span>
 s <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> base<span class="token punctuation">,</span> len <span class="token operator">=</span> n<span class="token punctuation">}</span> <span class="token comment">// 64 bytes starting at 0x4000</span>
-zero <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">}</span>
+zero <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">}</span>
 </code></pre>
 <p>This form is intentionally explicit: the <code>[]u8</code> prefix names the slice lens,
 the <code>data</code> field must have type <code>@u8</code>, and the <code>len</code> field must have type
@@ -1912,7 +1988,7 @@ non-negative integer expression:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">buf <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0</span>
 view <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">}</span>
-empty <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">}</span>
+empty <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token builtin type">u8</span><span class="token punctuation">{</span>data <span class="token operator">=</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">}</span>
 </code></pre>
 <p>Constant negative lengths are rejected, while runtime signed length values
 remain unchecked:</p>
@@ -1962,8 +2038,8 @@ elements. <code>.data</code> remains available when raw byte-address work should
 spelled directly; cast it to <code>@u8</code> before byte stepping:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">byte_offset <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> i <span class="token operator">*</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span>
-addr <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span>data <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> byte_offset
-val  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">]</span>
+addr <span class="token operator">:</span><span class="token operator">=</span> <span class="token punctuation">(</span>s<span class="token punctuation">.</span>data <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> byte_offset
+val  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span><span class="token punctuation">]</span>
 </code></pre>
 <p>If the compiler knows the slice descriptor's <code>.len</code> value and the element index
 is also a compile-time constant, the index must be in range. This catches obvious
@@ -2202,7 +2278,7 @@ path, movement policy, and address-stability policy.</p>
 </code></pre>
 <p>Lowering:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>msg<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>msg<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>len_addr<span class="token punctuation">]</span>
 </code></pre>
 <hr>
@@ -2449,7 +2525,7 @@ constant expressions.</p>
                <span class="token string">"fr must be at offset 0x18 per PL011 spec"</span><span class="token punctuation">)</span>
 
 <span class="token comment">// Manual field access via a byte lens (when pointer arithmetic is needed)</span>
-fr_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>base <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span>uart_regs<span class="token punctuation">,</span> fr<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u32</span>
+fr_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>base <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span>uart_regs<span class="token punctuation">,</span> fr<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span>
 fr_val <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>fr_addr<span class="token punctuation">]</span>
 </code></pre>
 <p><code>#field_offset</code> is useful for:</p>
@@ -2557,21 +2633,21 @@ the appropriate atomic or synchronization primitive for the storage location.</p
 <h3 id="conversion-to-and-from-the-backing-integer" tabindex="-1"><a class="doc-anchor" href="#conversion-to-and-from-the-backing-integer" aria-hidden="true">#</a> Conversion to and from the Backing Integer</h3>
 <p>A bitfield value can be converted to its backing integer and back:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">raw <span class="token operator">:</span><span class="token operator">=</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span>               <span class="token comment">// bitfield → integer (zero-extends unused bits)</span>
-tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1           <span class="token comment">// integer → bitfield (no masking; all bits taken as-is)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">raw <span class="token operator">:</span><span class="token operator">=</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span>               <span class="token comment">// bitfield -> integer (zero-extends unused bits)</span>
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1           <span class="token comment">// integer -> bitfield (no masking; all bits taken as-is)</span>
 </code></pre>
 <p>This is the primary mechanism for reading and writing system registers
 via <code>%mrs</code> / <code>%msr</code> (§1.3.3):</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// read TCR_EL1</span>
 raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1
 
 <span class="token comment">// modify a field</span>
 tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span>
 
 <span class="token comment">// write back</span>
-<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>                          <span class="token comment">// required because the write affects translation</span>
 </code></pre>
 <hr>
@@ -2593,7 +2669,7 @@ bitfield member. The prefix documents hardware intent; it does not create a
 compiler-enforced write barrier.</p>
 <p>A named field write preserves every surrounding bit in the current bitfield
 value, including <code>_</code> fields. Full backing-integer conversions remain raw:
-<code>raw as TCR_EL1</code> takes all bits as-is, and <code>tcr as u64</code> returns all bits as-is.
+<code>raw as.bits TCR_EL1</code> takes all bits as-is, and <code>tcr as.bits u64</code> returns all bits as-is.
 Preserving RES0/RES1 values across a full register write is therefore the
 programmer's responsibility via an explicit read-modify-write sequence or a
 known-good full-register value.</p>
@@ -2625,8 +2701,8 @@ known-good full-register value.</p>
 </tr>
 <tr>
 <td>full write</td>
-<td><code>bitfield as u64</code></td>
-<td>(no-op — reinterpretation)</td>
+<td><code>bitfield as.bits u64</code></td>
+<td>(no-op reinterpretation)</td>
 </tr>
 </tbody>
 </table>
@@ -2682,7 +2758,7 @@ tcr<span class="token punctuation">.</span>tx_busy <span class="token operator">
 <span class="token comment">//     Handler sets rx_busy:    0b0000_0011</span>
 <span class="token comment">//     Handler stores:          0b0000_0011</span>
 <span class="token comment">// ^^^ INTERRUPT RETURNS ^^^</span>
-raw <span class="token operator">=</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u32</span>                 <span class="token comment">// our register still has: 0b0000_0001</span>
+raw <span class="token operator">=</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u32</span>            <span class="token comment">// our register still has: 0b0000_0001</span>
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> raw           <span class="token comment">// store:   0b0000_0001</span>
 <span class="token comment">// rx_busy bit from handler is now LOST — silently overwritten</span>
 </code></pre>
@@ -2716,7 +2792,7 @@ was_set <span class="token operator">:</span><span class="token operator">=</spa
 raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_ADDR<span class="token punctuation">]</span>
 tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> status
 tcr<span class="token punctuation">.</span>tx_busy <span class="token operator">=</span> <span class="token number">1</span>
-raw <span class="token operator">=</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u32</span>
+raw <span class="token operator">=</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u32</span>
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> raw
 <span class="token primitive macro">%daif_clr</span><span class="token punctuation">(</span><span class="token number">0b0010</span><span class="token punctuation">)</span>            <span class="token comment">// unmask IRQs</span>
 </code></pre>
@@ -2729,10 +2805,10 @@ a local variable, modifying fields, writing back):</p>
 <span class="token comment">// read register → modify fields in register → write register.</span>
 <span class="token comment">// No other agent can modify the local register variable.</span>
 raw <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">)</span>
-tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span> TCR_EL1
+tcr <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits TCR_EL1
 tcr<span class="token punctuation">.</span>t0sz <span class="token operator">=</span> <span class="token number">25</span>                    <span class="token comment">// safe — local register only</span>
 tcr<span class="token punctuation">.</span>t1sz <span class="token operator">=</span> <span class="token number">25</span>
-<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+<span class="token primitive macro">%msr</span><span class="token punctuation">(</span>TCR_EL1<span class="token punctuation">,</span> tcr <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
 <p>This is safe because <code>tcr</code> lives entirely in a register during modification.
@@ -2820,8 +2896,8 @@ are specified in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-mode
 <td>documents reserved bits without hiding the raw backing integer model</td>
 </tr>
 <tr>
-<td><code>as</code> for integer conversion</td>
-<td>explicit cast; no implicit coercion between bitfield and integer</td>
+<td><code>as.bits</code> for integer conversion</td>
+<td>explicit conversion; no implicit coercion between bitfield and integer</td>
 </tr>
 <tr>
 <td><code>ubfx</code>/<code>bfi</code> lowering</td>
@@ -3210,17 +3286,17 @@ newline <span class="token operator">:</span> <span class="token builtin type">u
 null_byte <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> '\<span class="token number">0</span>' <span class="token comment">// 0x00</span>
 </code></pre>
 <p>Character literals support the escape sequences <code>\\</code>, <code>\'</code>, <code>\0</code>, <code>\n</code>,
-<code>\r</code>, and <code>\t</code>. They are compile-time constants and follow the same
+<code>\r</code>, <code>\t</code>, and <code>\xHH</code>. They are compile-time constants and follow the same
 constant-folding rules as integer literals.</p>
-<p>The value is the low byte of the character's Unicode scalar value, so
-character literals are effectively ASCII byte constants. Non-ASCII
-characters are accepted but truncated to <code>u8</code>.</p>
+<p>The value is the ASCII byte for a direct character or the explicit byte named
+by an escape sequence. Direct non-ASCII characters are rejected rather than
+truncated; use string literals for UTF-8 text.</p>
 <p>Because the type is <code>u8</code>, character literals participate in the normal
 type system with no implicit widening:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment">/* ... */</span> <span class="token punctuation">}</span>
 <span class="token function">uart_write</span><span class="token punctuation">(</span>'h'<span class="token punctuation">)</span>              <span class="token comment">// OK: 'h' is u8</span>
-wide <span class="token operator">:</span><span class="token operator">=</span> 'A' <span class="token keyword">as</span> <span class="token builtin type">u64</span>          <span class="token comment">// explicit widen required</span>
+wide <span class="token operator">:</span><span class="token operator">=</span> 'A' <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u64</span>    <span class="token comment">// explicit widen required</span>
 </code></pre>
 <hr>
 <h2 id="1.8-compile-time-constants" tabindex="-1"><a class="doc-anchor" href="#1.8-compile-time-constants" aria-hidden="true">#</a> 1.8 Compile-Time Constants</h2>
@@ -3604,35 +3680,63 @@ result is not determined by the left operand alone.</p>
 <hr>
 <h3 id="operator-precedence" tabindex="-1"><a class="doc-anchor" href="#operator-precedence" aria-hidden="true">#</a> Operator Precedence</h3>
 <p>Unary operators bind more tightly than all binary operators.</p>
-<p>Binary operators are grouped into five precedence levels. Higher numbers
-bind more tightly. Operators of equal precedence associate left to right.</p>
+<p>Binary operators use the Chapter 7 precedence table. Higher numbers bind more
+tightly. Operators of equal precedence associate left to right, except
+comparison operators, which are non-associative and require parentheses for
+explicit grouping.</p>
 <table>
 <thead>
 <tr>
 <th>Precedence</th>
 <th>Operators</th>
+<th>Associativity</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td>9</td>
+<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>+</code> <code>-</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>&amp;</code> <code>&amp;^</code></td>
+<td>left</td>
+</tr>
+<tr>
 <td>5</td>
-<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code> <code>&amp;</code> <code>&amp;^</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td><code>^</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>4</td>
-<td><code>+</code> <code>-</code> <code>|</code> <code>^</code></td>
+<td><code>|</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>3</td>
 <td><code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+<td>non-associative</td>
 </tr>
 <tr>
 <td>2</td>
 <td><code>&amp;&amp;</code></td>
+<td>left</td>
 </tr>
 <tr>
 <td>1</td>
 <td><code>||</code></td>
+<td>left</td>
 </tr>
 </tbody>
 </table>
@@ -3645,6 +3749,7 @@ bind more tightly. Operators of equal precedence associate left to right.</p>
 <span class="token comment">// left-to-right at equal precedence</span>
 x <span class="token operator">/</span> y <span class="token operator">*</span> z                           <span class="token comment">// (x / y) * z</span>
 a <span class="token operator">+</span> b <span class="token operator">-</span> c                           <span class="token comment">// (a + b) - c</span>
+a <span class="token operator">&lt;&lt;</span> b <span class="token operator">>></span> c                         <span class="token comment">// (a &lt;&lt; b) >> c</span>
 
 <span class="token comment">// bit manipulation</span>
 x <span class="token operator">&amp;</span><span class="token operator">^</span> mask                           <span class="token comment">// clear bits: a &amp; (~mask)</span>
@@ -4017,15 +4122,15 @@ Generic aliases, traits, concepts, typeclasses, and compile-time value
 parameters are outside this model.</p>
 <hr>
 <h3 id="reserved-boundaries" tabindex="-1"><a class="doc-anchor" href="#reserved-boundaries" aria-hidden="true">#</a> Reserved Boundaries</h3>
-<p>The angle-bracket token pair <code>&lt;...&gt;</code> is <strong>reserved</strong> for generic type
-parameter and type argument syntax. Compile-time value parameters are not part
-of Wyst's generic model. Forms such as <code>RingBuffer&lt;T, Capacity&gt;</code> or <code>Foo&lt;T, 4&gt;</code>
-are not generic declarations or instantiations; fixed arrays continue to use
-the dedicated <code>[N]T</code> syntax.</p>
+<p>The angle-bracket token pair <code>&lt;...&gt;</code> is implemented for generic type parameter
+and type argument syntax. Compile-time value parameters are not part of Wyst's
+generic model. Forms such as <code>RingBuffer&lt;T, Capacity&gt;</code> or <code>Foo&lt;T, 4&gt;</code> are not
+valid generic declarations or instantiations; fixed arrays continue to use the
+dedicated <code>[N]T</code> syntax.</p>
 <p>The narrow dynamic-array initializer spelling
-<code>dyn_array_init&lt;T&gt;(arena, capacity = ..., growth = ...)</code> is a bootstrap
-type-argument form. Its angle-bracket argument must be a type name. It is not a
-general generic call expression and does not accept compile-time values.</p>
+<code>dyn_array_init&lt;T&gt;(arena, capacity = ..., growth = ...)</code> uses the same explicit
+generic type-argument spelling as generic calls. Its angle-bracket argument
+must be a type, and it does not accept compile-time values.</p>
 <hr>
 <h3 id="generic-model" tabindex="-1"><a class="doc-anchor" href="#generic-model" aria-hidden="true">#</a> Generic Model</h3>
 <p>Wyst's generic syntax supports type parameters on functions, structs, and enums:</p>
@@ -4218,6 +4323,68 @@ diagnostics keep the source-facing spelling.</p>
 <p>Generic aliases are not part of Wyst's generic model. A named generic type must
 be introduced by a <code>struct</code> or <code>enum</code> declaration, so its nominal identity is
 anchored by source declaration rather than by alias expansion.</p>
+<h4>Generic Instantiation Termination</h4>
+<p>Generic instantiation is keyed by canonical semantic identity, not source text,
+parser object identity, generated symbol spelling, or traversal order. The
+canonical key is:</p>
+<pre class="wyst-code language-text" data-lang="text"><code class="language-text">CanonicalInstantiationKey =
+  (DeclarationIdentity, TypeArgumentList, ValueArgumentList)
+</code></pre>
+<p><code>DeclarationIdentity</code> is the resolved declaration identity produced by the
+source graph and name-resolution phases. Import aliases, local qualification
+choices, generated symbol names, and same-layout declarations do not change it.</p>
+<p><code>TypeArgumentList</code> is the complete ordered list of canonical concrete type
+arguments. Each entry uses type identity after name resolution, including
+nominal declaration identity for structs, enums, and bitfields, and includes
+the complete nested argument lists of any generic type arguments. A partial
+generic declaration such as <code>Box</code> without all of its type arguments has no
+canonical instantiation key.</p>
+<p><code>ValueArgumentList</code> is the complete ordered list of canonical compile-time
+value arguments. Wyst's current generic model has no compile-time value
+parameters, so this list is always empty today. A future value-parameter
+feature must define a typed, fully evaluated, phase-owned canonical value
+before allowing a non-empty list; source-equivalent expressions that produce
+the same typed value canonicalize to the same entry, while values with
+different declared parameter types remain distinct.</p>
+<p>The instantiator maintains a semantic instantiation trace from each root
+request to the request currently being expanded. A request that revisits an
+active <code>CanonicalInstantiationKey</code> is a valid recursive cycle for
+instantiation-termination purposes: the expansion closes over the existing
+instantiation and does not create a second copy. For example, <code>List&lt;u64&gt;</code> may
+refer to <code>@List&lt;u64&gt;</code>, and a generic function <code>walk&lt;u64&gt;</code> may call
+<code>walk&lt;u64&gt;</code>, because both edges revisit the exact same canonical instantiation.
+This rule only closes the generic request graph. It does not make by-value
+recursive layout valid; type layout still rejects unsized recursive storage.</p>
+<p>An instantiation chain must be rejected when it is strictly growing. A chain is
+strictly growing when it revisits a declaration identity with a different
+canonical key whose argument tuple contains an earlier argument tuple or
+argument value under additional type or value structure. Examples include
+<code>Nest&lt;T&gt;</code> requesting <code>Nest&lt;Box&lt;T&gt;&gt;</code>, then <code>Nest&lt;Box&lt;Box&lt;T&gt;&gt;&gt;</code>; requesting
+<code>Nest&lt;(value: T)&gt;</code>, then <code>Nest&lt;(value: (value: T))&gt;</code>; or repeatedly wrapping a
+type argument in another slice, array, pointer, tuple, container, or generic
+application. Such a chain is not a finite recursive cycle because it never
+revisits the exact same canonical instantiation.</p>
+<p>Not every same-declaration revisit with different arguments is automatically a
+growing-chain error. A finite set of distinct instantiations may be valid if it
+eventually closes by revisiting exact canonical keys and no edge is strictly
+growing. The rejection rule is the strictly growing chain, not a ban on all
+mutual recursion between different concrete instantiations.</p>
+<p>The language does not define an arbitrary recursion-depth, instantiation-count,
+or expansion-step limit. Termination is semantic: exact canonical cycles are
+finite, strictly growing chains are invalid, and finite acyclic request graphs
+are allowed regardless of depth. Implementations may still enforce safety
+limits for memory, time, stack use, or worklist size. Hitting such a limit is a
+resource failure, not a semantic generic-recursion diagnostic, and the failure
+must include the semantic instantiation trace, the limit that was reached, and
+the canonical instantiation request that would have been expanded next.</p>
+<p>Instantiation traces are deterministic. Trace entries render canonical
+instantiation keys using the source-facing generic spelling from this chapter,
+the owning declaration identity, complete type and value arguments, and the
+source span that requested the next edge. Roots are considered in canonical
+declaration-identity order, instantiation requests inside a declaration are
+considered in source order, and ties are broken by canonical key order. Reports
+and diagnostics must never depend on hash-map order, pointer addresses,
+filesystem traversal order, thread scheduling, or the backend symbol encoder.</p>
 <p>The generic design must satisfy the following constraints:</p>
 <table>
 <thead>
@@ -4264,6 +4431,14 @@ anchored by source declaration rather than by alias expansion.</p>
 <td>Determinism: identical (<code>T</code>, <code>U</code>, ...) tuples for the same generic function declaration must produce one semantic symbol; different declarations never merge structurally.</td>
 </tr>
 <tr>
+<td>Canonical instantiation key includes declaration identity plus complete type and value arguments</td>
+<td>Termination, diagnostics, debug info, and symbol generation all need the same identity rule. Value-argument identity is reserved as an empty list until a future value-parameter feature exists.</td>
+</tr>
+<tr>
+<td>Exact canonical cycles allowed; strictly growing chains rejected</td>
+<td>Self-recursive generic containers and functions should close over one instantiation, while <code>T -&gt; Box&lt;T&gt; -&gt; Box&lt;Box&lt;T&gt;&gt;</code> style expansion is not a finite program.</td>
+</tr>
+<tr>
 <td>Explicit type arguments at instantiation</td>
 <td>Keeps generic binding local and deterministic; type-argument inference is not part of the language.</td>
 </tr>
@@ -4282,6 +4457,10 @@ anchored by source declaration rather than by alias expansion.</p>
 <tr>
 <td>Deterministic instantiation order</td>
 <td>Per the <a href="/docs/chapter-01-language-design/">Reproducibility Model</a>; a generic instantiated from two modules must produce byte-identical code regardless of which module the compiler visits first.</td>
+</tr>
+<tr>
+<td>No semantic recursion-depth limit</td>
+<td>Resource limits may protect an implementation, but they are resource failures with semantic traces rather than part of the language's accept/reject boundary.</td>
 </tr>
 <tr>
 <td>No late typed errors after substitution</td>
@@ -4361,8 +4540,8 @@ unsigned integer. This handles the most common kernel need: register-layout
 records that vary by access width.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">SCTLR_EL1 <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>       <span class="token comment">// 64-bit system register</span>
-midr_el1  <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>       <span class="token comment">// 64-bit system register</span>
-fsr_el1   <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>       <span class="token comment">// 32-bit fault status</span>
+MIDR_EL1  <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>       <span class="token comment">// 64-bit system register</span>
+FSR_EL1   <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>       <span class="token comment">// 32-bit fault status</span>
 </code></pre>
 <h4><code>@T</code> for Pointer-Parametric Code</h4>
 <p>Since <code>@T</code> is structurally a tagged 64-bit address (see §1.4.1) and
@@ -4378,7 +4557,7 @@ the <em>bit width</em> of the access by passing the address with the intended le
 <span class="token punctuation">}</span>
 
 <span class="token comment">// Caller chooses what each word means by casting the address.</span>
-<span class="token function">zero_words</span><span class="token punctuation">(</span><span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buffer<span class="token punctuation">)</span> <span class="token keyword">as</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+<span class="token function">zero_words</span><span class="token punctuation">(</span><span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>buffer<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
 </code></pre>
 <p>The &quot;type-parametric&quot; axis here collapses to &quot;typed address arithmetic plus
 explicit access width,&quot; which is enough for most low-level kernel work.</p>
@@ -4481,7 +4660,7 @@ model rather than copying C++, Rust, or Zig.</li>
 				<li class="lvl-3"><a href="#non-scalar-built-in-type-forms">Non-Scalar Built-In Type Forms</a></li>
 				<li class="lvl-2"><a href="#1.4.1-type-system%3A-conversions-and-promotions">1.4.1 Type System: Conversions and Promotions</a></li>
 				<li class="lvl-3"><a href="#untyped-integer-constants">Untyped Integer Constants</a></li>
-				<li class="lvl-3"><a href="#the-as-operator">The as Operator</a></li>
+				<li class="lvl-3"><a href="#the-as.%3Ccategory%3E-operators">The as.&amp;lt;category&amp;gt; Operators</a></li>
 				<li class="lvl-3"><a href="#implicit-conversion-rules-(there-are-none)">Implicit Conversion Rules (There Are None)</a></li>
 				<li class="lvl-3"><a href="#mixed-signedness-comparison">Mixed-Signedness Comparison</a></li>
 				<li class="lvl-3"><a href="#bool-is-a-distinct-type">bool is a Distinct Type</a></li>
@@ -4587,7 +4766,7 @@ model rather than copying C++, Rust, or Zig.</li>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

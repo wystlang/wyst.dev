@@ -11,7 +11,7 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
-		<link rel="stylesheet" href="/assets/wyst.e35ffa82.css" />
+		<link rel="stylesheet" href="/assets/wyst.024ae4b0.css" />
 		<link rel="stylesheet" href="/assets/docs.75c836b1.css" />
 	</head>
 	<body class="docs">
@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -203,10 +204,10 @@ Keyword &lt;- ( 'select'
 </code></pre>
 <p><code>Keyword</code> matches only if the next character is not an <code>IdentCont</code>,
 which prevents <code>loop</code> from matching the prefix of <code>loopback</code>.</p>
-<p><code>enum</code>, <code>switch</code>, and <code>case</code> are contextual keywords in the grammar below:
-they are parsed by exact identifier text in declaration or statement
-positions rather than reserved by the lexer. They remain unavailable as
-names in those specific syntactic positions.</p>
+<p><code>enum</code>, <code>switch</code>, <code>case</code>, and <code>is</code> are contextual syntax words in the grammar
+below: they are parsed by exact identifier text in declaration, statement,
+pattern, or expression positions rather than reserved by the lexer. They
+remain unavailable as names in those specific syntactic positions.</p>
 <p>Built-in type names such as <code>bool</code>, <code>string</code>, <code>u64</code>, and <code>f32</code> are not
 lexer keywords. They are identifiers that resolve as built-in types in type
 contexts.</p>
@@ -222,9 +223,10 @@ DirectiveName &lt;- ( 'import' / 'module' / 'target' / 'requires'
                  / 'static_assert' / 'align' / 'section' / 'region' / 'entry'
                  / 'naked' / 'noescape' / 'inline' / 'initcall' / 'noreturn'
                  / 'pin'
-                 / 'weak' / 'hidden'                  // reserved — lexed for diagnostics, rejected by sema
+                 / 'weak' / 'hidden'                  // future-version normative — lexed for diagnostics, rejected today
                  / 'ventry' / 'exception_vector' / 'trap_frame' / 'packed'
                  / 'schedule' / 'asm'
+                 / 'frame' / 'exact'
                  / 'acquire' / 'release'
                  / 'likely' / 'unlikely' / 'cold' / 'partial'
                  / 'shared'
@@ -247,6 +249,10 @@ cannot be shadowed by user names. The full runtime primitive table lives in
 <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md</a> (§1.3.2 through §1.3.7) and
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a> (<code>@volatile</code>
 and <code>@mmio</code> address qualifiers).</p>
+<p><code>#weak</code> and <code>#hidden</code> are future-version normative for
+<code>wyst.language.v0.8</code> target 33. The current compiler recognizes both spellings
+for diagnostics and rejects them; Appendix B lists them only so tooling can
+preserve the token and produce the version-gated diagnostic.</p>
 <h3 id="1.4-numeric-literals" tabindex="-1"><a class="doc-anchor" href="#1.4-numeric-literals" aria-hidden="true">#</a> 1.4 Numeric Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">IntLiteral   &lt;- HexLiteral / BinLiteral / OctLiteral / DecLiteral
 HexLiteral   &lt;- '0x' HexDigit ('_'? HexDigit)*
@@ -269,7 +275,7 @@ start or end of a literal, illegal in runs of two or more. The parser
 strips <code>_</code> after lexing. Decimal exponent-only forms such as <code>1e6</code> are
 <code>FloatLiteral</code>s. Hexadecimal floating-point literals such as <code>0x1.fp3</code> are not
 Wyst syntax. Type suffixes (<code>5_u8</code>, <code>1.0_f32</code>) are rejected. Use a type
-annotation or <code>as</code> cast instead.</p>
+annotation or categorized conversion instead.</p>
 <h3 id="1.5-string-literals" tabindex="-1"><a class="doc-anchor" href="#1.5-string-literals" aria-hidden="true">#</a> 1.5 String Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">StringLiteral   &lt;- SimpleString / MultilineString
 SimpleString    &lt;- '&quot;' (StringChar / EscapeSeq)* '&quot;'
@@ -294,13 +300,16 @@ decoded length equal to <code>N</code> is an exact fit, and decoded length great
 expression, not a separate lexical form.</p>
 <h3 id="1.5.1-character-literals" tabindex="-1"><a class="doc-anchor" href="#1.5.1-character-literals" aria-hidden="true">#</a> 1.5.1 Character Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">CharLiteral &lt;- &quot;'&quot; (CharChar / CharEscape) &quot;'&quot;
-CharChar    &lt;- !(&quot;'&quot; / '\\' / Newline) .
+CharChar    &lt;- ASCIIChar - (&quot;'&quot; / '\\' / Newline)
+ASCIIChar   &lt;- [\x00-\x7f]
 CharEscape  &lt;- '\\' ( &quot;'&quot; / '\\' / 'n' / 't' / 'r' / '0' / 'x' HexDigit HexDigit )
 </code></pre>
-<p>A character literal is a single character or escape sequence enclosed in
-single quotes. It has type <code>u8</code> — the low byte of the character's Unicode
-scalar value. Characters outside the ASCII range (<code>0x00</code>–<code>0x7F</code>) are
-accepted syntactically but produce a truncated <code>u8</code> value.</p>
+<p>A character literal is a single ASCII source character or escape sequence
+enclosed in single quotes. It has type <code>u8</code>; its value is the ASCII byte for a
+direct character, or the byte produced by the escape sequence. Direct
+characters outside the ASCII range (<code>0x00</code>–<code>0x7F</code>) are rejected rather than
+truncated. UTF-8 text belongs in string literals; non-ASCII bytes in character
+literals must be written explicitly with <code>\xHH</code>.</p>
 <p>Character literals share string escapes for backslash, control bytes, and
 <code>\xHH</code> byte values, exclude <code>\&quot;</code>, and add <code>\'</code>.</p>
 <h3 id="1.6-punctuation-and-operator-tokens" tabindex="-1"><a class="doc-anchor" href="#1.6-punctuation-and-operator-tokens" aria-hidden="true">#</a> 1.6 Punctuation and Operator Tokens</h3>
@@ -329,8 +338,9 @@ zero.</p>
 <hr>
 <h2 id="2.-types" tabindex="-1"><a class="doc-anchor" href="#2.-types" aria-hidden="true">#</a> 2. Types</h2>
 <p>The type sublanguage is parsed by the <code>Type</code> rule. Types appear in
-declarations, function signatures, struct fields, casts (<code>as T</code>), and a
-few directives (<code>#static_assert(#size_of(T), ...)</code>). The disambiguation
+declarations, function signatures, struct fields, categorized conversions
+(<code>as.&lt;category&gt; T</code>), and a few directives (<code>#static_assert(#size_of(T), ...)</code>).
+The disambiguation
 between <code>[N]T</code> (array type), <code>[T:N]</code> (vector type), <code>[]T</code> (slice type),
 <code>[dynamic]T</code> (dynamic array descriptor type), and <code>T@[expr]</code>
 (memory load expression) lives entirely in the lookahead encoded below.</p>
@@ -437,12 +447,28 @@ unambiguous by their first non-<code>[</code> token:</p>
 <p>In a strict PEG, &quot;known to denote a constant&quot; is not available; instead
 the parser tries <code>ArrayType</code> first and <code>VectorType</code> second, and lets the
 constant-expression parser reject non-constant bracket contents:</p>
-<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ConstExpr &lt;- IntLiteral
-           / Identifier             // resolved to a visible `::`-bound constant in sema
-           / '(' ConstExpr ')'
-           / ConstExpr ConstBinOp ConstExpr
-ConstBinOp &lt;- '+' / '-' / '*' / '/' / '%' / '&lt;&lt;' / '&gt;&gt;' / '&amp;' / '|' / '^'
+<pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ConstExpr &lt;- ConstOrExpr
+ConstOrExpr &lt;- ConstAndExpr ('||' ConstAndExpr)*
+ConstAndExpr &lt;- ConstCompareExpr ('&amp;&amp;' ConstCompareExpr)*
+ConstCompareExpr &lt;- ConstBitOrExpr (CmpOp ConstBitOrExpr)?
+ConstBitOrExpr &lt;- ConstBitXorExpr ('|' ConstBitXorExpr)*
+ConstBitXorExpr &lt;- ConstBitAndExpr ('^' ConstBitAndExpr)*
+ConstBitAndExpr &lt;- ConstShiftExpr (('&amp;^' / '&amp;') ConstShiftExpr)*
+ConstShiftExpr &lt;- ConstAddExpr (('&lt;&lt;' / '&gt;&gt;') ConstAddExpr)*
+ConstAddExpr &lt;- ConstMulExpr (('+' / '-') ConstMulExpr)*
+ConstMulExpr &lt;- ConstUnaryExpr (('*' / '/' / '%%' / '%') ConstUnaryExpr)*
+ConstUnaryExpr &lt;- ('+' / '-' / '~' / '!') ConstUnaryExpr / ConstPrimaryExpr
+ConstPrimaryExpr &lt;- Literal
+                  / CompileTimeForm
+                  / BareName       // resolved to a visible `::`-bound constant in sema
+                  / '(' ConstExpr ')'
 </code></pre>
+<p>The implementation parses the same expression syntax in const contexts and
+then requires the resulting expression to be a deterministic compile-time or
+layout-time value in the semantic phase. The grammar above is the
+non-left-recursive subset that can be implemented directly for const-only
+parsers; accepting the broader <code>Expr</code> syntax at parse time must not make
+non-constant values legal in const contexts.</p>
 <p>A bracket containing an identifier that turns out to be a <em>variable</em>
 rather than a visible top-level or local <code>::</code>-bound constant is rejected as a
 semantic error (&quot;array length must be a compile-time constant&quot;,
@@ -484,26 +510,46 @@ each level matches a single binary operator class.</p>
 </tr>
 <tr>
 <td>4</td>
-<td><code>+</code> <code>-</code> <code>|</code> <code>^</code></td>
+<td><code>|</code></td>
 <td>left</td>
 </tr>
 <tr>
 <td>5</td>
-<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code> <code>&amp;</code> <code>&amp;^</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td><code>^</code></td>
 <td>left</td>
 </tr>
 <tr>
 <td>6</td>
-<td><code>as</code></td>
+<td><code>&amp;</code> <code>&amp;^</code></td>
 <td>left</td>
 </tr>
 <tr>
 <td>7</td>
+<td><code>&lt;&lt;</code> <code>&gt;&gt;</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>+</code> <code>-</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>*</code> <code>/</code> <code>%</code> <code>%%</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>as</code></td>
+<td>left</td>
+</tr>
+<tr>
+<td>11</td>
 <td>unary <code>+ - ~ !</code></td>
 <td>prefix</td>
 </tr>
 <tr>
-<td>8</td>
+<td>12</td>
 <td>postfix <code>( )</code>, <code>[ ]</code>, <code>.</code></td>
 <td>left</td>
 </tr>
@@ -514,19 +560,37 @@ each level matches a single binary operator class.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Expr        &lt;- OrExpr
 OrExpr      &lt;- AndExpr ('||' AndExpr)*
 AndExpr     &lt;- CmpExpr ('&amp;&amp;' CmpExpr)*
-CmpExpr     &lt;- AddExpr (CmpOp AddExpr)?                // non-associative
+CmpExpr     &lt;- IsExpr (CmpOp IsExpr)?                  // non-associative
 CmpOp       &lt;- '==' / '!=' / '&lt;=' / '&gt;=' / '&lt;' / '&gt;'
+IsExpr      &lt;- BitOrExpr ('is' EnumPattern)?           // enum variant test, same precedence as comparison
+EnumPattern &lt;- (Identifier '.')? Identifier SwitchBindingList?
+BitOrExpr   &lt;- BitXorExpr ('|' BitXorExpr)*
+BitXorExpr  &lt;- BitAndExpr ('^' BitAndExpr)*
+BitAndExpr  &lt;- ShiftExpr (BitAndOp ShiftExpr)*
+BitAndOp    &lt;- '&amp;^' / '&amp;'
+ShiftExpr   &lt;- AddExpr (ShiftOp AddExpr)*
+ShiftOp     &lt;- '&lt;&lt;' / '&gt;&gt;'
 AddExpr     &lt;- MulExpr (AddOp MulExpr)*
-AddOp       &lt;- '+' / '-' / '|' / '^'
+AddOp       &lt;- '+' / '-'
 MulExpr     &lt;- CastExpr (MulOp CastExpr)*
-MulOp       &lt;- '*' / '/' / '%%' / '%' / '&amp;^' / '&amp;' / '&lt;&lt;' / '&gt;&gt;'
-CastExpr    &lt;- UnaryExpr ('as' Type)*
+MulOp       &lt;- '*' / '/' / '%%' / '%'
+CastExpr    &lt;- UnaryExpr ('as' '.' ConversionCategory Type)*
+ConversionCategory
+    &lt;- 'widen'
+     / 'truncate'
+     / 'signedness'
+     / 'numeric'
+     / 'bits'
+     / 'address'
+     / 'lens'
+     / 'qualifier'
+     / 'float'
 UnaryExpr   &lt;- UnaryOp UnaryExpr / PostfixExpr
 UnaryOp     &lt;- '+' / '-' / '~' / '!'
 
 PostfixExpr &lt;- PrimaryExpr PostfixOp*
 PostfixOp
-    &lt;- GenericTypeArgList '(' ArgList? ')'              // generic call — f&lt;T&gt;(args)
+    &lt;- GenericTypeArgList                              // generic apply — f&lt;T&gt;, Result&lt;T, E&gt;
      / '(' ArgList? ')'                                // call (expression position)
      / '[' SliceOrIndex ']'                            // index or slice
      / '.' Identifier                                  // field access
@@ -536,7 +600,7 @@ CallArg     &lt;- Identifier '=' Expr                     // labeled (load-beari
              / OrderArg                                // intrinsic-only trailing marker
              / Expr
 OrderArg    &lt;- 'order' ':' MemoryOrder                 // atomic intrinsics only — see §11
-MemoryOrder &lt;- 'relaxed' / 'acquire' / 'release' / 'acq_rel' / 'seq_cst'
+MemoryOrder &lt;- 'relaxed' / 'acquire' / 'release' / 'acqrel' / 'seq_cst'
 SliceOrIndex
     &lt;- Expr ':' Expr?                                  // a[lo:hi]  or  a[lo:]
      / ':' Expr?                                       // a[:hi]    or  a[:]
@@ -545,6 +609,7 @@ SliceOrIndex
 PrimaryExpr
     &lt;- MemoryLoad                                      // T@[addr]  or  [T:N]@[addr]
      / SliceConstruct                                  // []T{data = addr, len = n}
+     / CompileTimeIfExpr                               // #if cond { a } #else { b }
      / CompileTimeForm                                 // #size_of(T), #len(arr), #addr_of(sym), #start(.text)
      / RuntimePrimitiveCall                           // %name(args)
      / SelectCall                                      // select(cond, a, b)
@@ -566,6 +631,18 @@ SliceConstructField
     &lt;- 'data' '=' Expr
      / 'len' '=' Expr
 </code></pre>
+<p><code>is</code> is implemented for enum variant tests. Direct <code>if value is Variant(name)</code>
+conditions may introduce an immutable payload binding in the true block.
+Payload bindings in compound boolean conditions and negated <code>is</code> patterns are
+reserved/current-rejected; use a direct <code>if</code> or <code>switch</code> when a binding is
+needed. Nested enum patterns and tuple payload patterns are also
+reserved/current-rejected.</p>
+<p><code>&lt;...&gt;</code> after a value path is parsed as <code>GenericTypeArgList</code> only when the
+matching <code>&gt;</code> is followed by a valid generic-application follower: <code>(</code>, <code>{</code>,
+<code>)</code>, <code>[</code>, <code>]</code>, <code>.</code>, <code>,</code>, <code>;</code>, <code>}</code>, or end of file. Otherwise <code>&lt;</code> and <code>&gt;</code> keep
+their comparison-token roles. This lets <code>f&lt;T&gt;(x)</code> parse as a generic call while
+<code>a &lt; b &gt; c</code> remains comparison syntax and is later rejected as a chained
+comparison when applicable.</p>
 <p><code>SliceConstruct</code> requires exactly one <code>data</code> field and exactly one <code>len</code>
 field. The fields may appear in either order. In constant/global initializer
 contexts, <code>data</code> must be a compile-time address value and <code>len</code> must be a
@@ -623,6 +700,11 @@ type.</p>
      / '#percpu_offset_of' '(' Expr ','? ')'
      / '#tls_offset_of' '(' Expr ','? ')'
      / '#trusted_cast' '&lt;' FnPointerType '&gt;' '(' Expr ','? ')'
+
+CompileTimeIfExpr
+    &lt;- '#if' Expr Block ('#else' (CompileTimeElseIfExpr / Block))?
+CompileTimeElseIfExpr
+    &lt;- 'if' Expr Block ('#else' (CompileTimeElseIfExpr / Block))?
 
 StoragePath
     &lt;- BareName ('.' Identifier)*
@@ -848,8 +930,10 @@ CompileTimeElseIf
 AcquireDirective &lt;- '#acquire' MemoryLoad
 ReleaseDirective &lt;- '#release' AssignTarget '=' Expr
 </code></pre>
-<p><code>CompileTimeIf</code> selects a compile-time branch. Compile-time checks use
-<code>#static_assert</code> and the query forms in §3.4.</p>
+<p><code>CompileTimeIf</code> selects a compile-time branch. The same <code>#if</code> form is
+implemented as a top-level item, as a statement, and as an expression.
+Expression-valued <code>#if</code> requires an <code>#else</code> branch during semantic checking.
+Compile-time checks use <code>#static_assert</code> and the query forms in §3.4.</p>
 <p>Barriers are runtime primitives (<code>%dsb(domain)</code>, <code>%dmb(domain)</code>, <code>%isb()</code>,
 <code>%compiler_barrier()</code>), not directives.</p>
 <p><code>#acquire</code> and <code>#release</code> remain valid per-access annotations for
@@ -916,7 +1000,9 @@ ModuleDecl   &lt;- '#module' DottedName
 ModuleDeny   &lt;- '#deny' '(' EffectList ')'                   // applies to all functions in module
 ImportDecl   &lt;- '#import' (ImportBlock / ImportItem)
 ImportBlock  &lt;- '(' ImportItem+ ')'                         // one item per line, no commas
-ImportItem   &lt;- DottedName ('as' Identifier)?
+ImportItem   &lt;- DottedName ('as' Identifier)? ImportSelect?
+ImportSelect &lt;- '{' ImportSelection (',' ImportSelection)* ','? '}'
+ImportSelection &lt;- Identifier ('as' Identifier)?
 TargetDecl   &lt;- '#target' '(' TargetAttrs ')'
 RequirementDecl &lt;- '#requires' '(' RequirementAttrs ')'
 
@@ -1258,15 +1344,34 @@ generic type parameter lists, generic type argument lists, and primitive type
 arguments on endian runtime primitives.</p>
 <p>The parser must emit a reserved-token diagnostic if any reserved symbol or
 form appears in source.</p>
+<p><code>#weak</code> and <code>#hidden</code> are not reserved: they are future-version normative for
+<code>wyst.language.v0.8</code> target 33. The current compiler recognizes both spellings
+for diagnostics and rejects them until that target is implemented.</p>
 <hr>
 <h2 id="8.-conformance" tabindex="-1"><a class="doc-anchor" href="#8.-conformance" aria-hidden="true">#</a> 8. Conformance</h2>
 <p>Parser conformance is defined by this grammar, the prose rules in the chapters
 that precede it, and the conflict order in
 <a href="/docs/source-of-truth/">source-of-truth.md</a>.</p>
+<p>The shared grammar-derived syntax corpus lives at
+<code>wync/tests/fixtures/syntax-corpus/manifest.tsv</code>. The manifest is consumed by
+compiler parser tests
+(<code>wync/src/parse/tests.rs::parses_shared_positive_syntax_corpus_from_grammar</code>
+and
+<code>wync/src/parse/tests.rs::rejects_shared_negative_syntax_corpus_from_grammar</code>),
+formatter parse-tree preservation tests
+(<code>wync/src/formatter/tests.rs::formatter_preserves_shared_positive_syntax_corpus_parse_tree</code>),
+source-only compiler diagnostic checks
+(<code>wync/tests/syntax_corpus.rs::compiler_check_corpus_negative_cases_emit_expected_diagnostics</code>),
+and editor/syntax-tooling drift checks
+(<code>wync/tests/syntax_corpus.rs::editor_and_syntax_tooling_cover_shared_syntax_corpus_tokens</code>).
+The corpus must cover precedence, malformed directives, version gating, atomic
+orders, generics, <code>is</code>, compile-time <code>#if</code>, MMIO constructs, and recovery
+behavior; adding or changing any of those syntax surfaces requires updating the
+manifest and the linked tests in the same change.</p>
 
 					</div>
 					<nav class="doc-pager" aria-label="Chapter navigation">
-					<a class="doc-pager-link prev" href="/docs/appendix-a-ir/"><span class="dir">← Previous</span><span class="lbl">Intermediate Representation</span></a>
+					<a class="doc-pager-link prev" href="/docs/chapter-25-compilation-phases/"><span class="dir">← Previous</span><span class="lbl">Compilation Phases</span></a>
 					<a class="doc-pager-link next" href="/docs/appendix-c-doc-example-contracts/"><span class="dir">Next →</span><span class="lbl">Documentation Example Contracts</span></a>
 				</nav>
 				</article>
@@ -1328,7 +1433,7 @@ that precede it, and the conflict order in
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

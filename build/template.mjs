@@ -82,7 +82,7 @@ function footer() {
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">
@@ -273,10 +273,8 @@ export function docIndexPage({
 	return shell({ title, description, canonical, bodyClass: "docs", body });
 }
 
-// A friendly error page (e.g. 404): a centered hero on a faded engineering grid
-// with Winston front and centre — at rest he shrugs (empty-pawed); on hover he
-// cross-fades to a searching pose. Reuses the shared shell (header + footer), so
-// the page is a full-height flex column that pins the footer to the bottom.
+// Error pages use the same structured mark language as the rest of the site:
+// a faded engineering grid, a small fault panel, and the shared shell.
 // `fault` is an optional { code, text } monospace fault line; `actions` is an
 // optional array of { href, label, variant, arrow } CTA buttons.
 export function errorPage({
@@ -308,14 +306,7 @@ export function errorPage({
 			<div class="nf-glow" aria-hidden="true"></div>
 			<div class="nf">
 				<span class="nf-eyebrow">${escapeHtml(eyebrow)}</span>
-				<div class="nf-winston">
-					<div
-						class="nf-winston-img nf-winston-shrug"
-						role="img"
-						aria-label="Winston shrugging — he came back empty-pawed, the page wasn't there"
-					></div>
-					<div class="nf-winston-img nf-winston-search" aria-hidden="true"></div>
-				</div>
+				<div class="nf-art" aria-hidden="true"></div>
 				<h1>${escapeHtml(h1)}</h1>
 				${faultHtml}
 				${bodyHtml}

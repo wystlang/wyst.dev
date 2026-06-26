@@ -16,8 +16,8 @@ import { errorPage } from "./template.mjs";
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 
 const bodyHtml = `<p class="nf-lede">
-				Winston went to fetch that page and trotted back empty-pawed. The
-				address didn't resolve to anything here.
+				The address did not resolve to a generated page. Nothing is mapped
+				here.
 			</p>`;
 
 const html = errorPage({

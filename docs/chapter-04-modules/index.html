@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -116,17 +117,19 @@ namespace. Every source file declares which module it belongs to with
 <p>The module name is a single identifier; dots are part of the name, not a
 nesting operator. <code>boot.hello</code> and <code>boot</code> are unrelated names — there is no
 parent/child relationship, no shared visibility, no implicit re-export.</p>
-<p><strong>Directory rule.</strong> All <code>.wyst</code> files in the same directory must declare the
-same module name. A directory containing files that declare different
-modules is a compile error. A given module name may appear in only one
-directory across a compilation.</p>
+<p><strong>Directory rule.</strong> A module is directory-anchored by the file found through
+the source-root mapping. The source graph associates the anchor with every
+regular, non-hidden <code>.wyst</code> part file in the same directory, after removing
+build-owned ignored paths such as the selected layout file. Every participating
+file must declare the same module name, and a given module name may appear in
+only one directory across a compilation.</p>
 <p>A file may declare its module exactly once. Re-declaring <code>#module</code> later in
 the same file is a compile error.</p>
 <h3 id="multi-file-modules" tabindex="-1"><a class="doc-anchor" href="#multi-file-modules" aria-hidden="true">#</a> Multi-File Modules</h3>
-<p>Files in the same directory that declare the same module name contribute to
-one shared namespace. Cross-file references within a module need no import
-— any item declared in any file of module <code>foo</code> is visible to every other
-file of module <code>foo</code> directly by name.</p>
+<p>Participating files in the same module directory that declare the same module
+name contribute to one shared namespace. Cross-file references within a module
+need no import — any item declared in any participating file of module <code>foo</code>
+is visible to every other participating file of module <code>foo</code> directly by name.</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">src/kernel.wyst       #module kernel
 src/allocator.wyst    #module kernel
 src/irq.wyst          #module kernel
@@ -192,12 +195,13 @@ specification.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> <span class="token punctuation">(</span>
   drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
-  runtime<span class="token punctuation">.</span>uart
+  runtime<span class="token punctuation">.</span>clock <span class="token punctuation">{</span> now<span class="token punctuation">,</span> Instant <span class="token keyword">as</span> ClockInstant <span class="token punctuation">}</span>
 <span class="token punctuation">)</span>
 </code></pre>
-<p><code>#import name</code> makes every public declaration of <code>name</code> available to the
-importing module under its declared name. Two or more imports are usually
-written in a block:</p>
+<p><code>#import name</code> records a dependency and makes the imported module's public
+declarations available through a qualified namespace. It does not place those
+declarations into the importing file's bare namespace. Two or more imports are
+usually written in a block:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> <span class="token punctuation">(</span>
   drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
@@ -205,8 +209,8 @@ written in a block:</p>
 <span class="token punctuation">)</span>
 </code></pre>
 <p>Each block entry is the same import item as a standalone <code>#import name</code> line,
-with the same optional <code>as alias</code> clause. The compiler also makes exported
-declarations available through a qualified namespace:</p>
+with the same optional <code>as alias</code> clause and optional selective import list.
+With an alias, the alias is the qualified namespace:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
 
@@ -222,9 +226,37 @@ tick <span class="token operator">::</span> <span class="token punctuation">(</s
   runtime<span class="token punctuation">.</span>clock<span class="token punctuation">.</span><span class="token function">clock_tick</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<p>Imports are not transitive — <code>#import A</code> exposes A's exports only; A's own
-imports are not re-exported. Import aliases are local to the importing module,
-and two imports in the same module cannot use the same qualified namespace.</p>
+<p>An import can explicitly select public names for unqualified use:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock <span class="token punctuation">{</span> now<span class="token punctuation">,</span> Instant <span class="token keyword">as</span> ClockInstant <span class="token punctuation">}</span>
+
+tick <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+stamp <span class="token operator">::</span> ClockInstant <span class="token operator">=</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+</code></pre>
+<p>A selected name enters the importing file's bare namespace under its declared
+name, or under the selection alias when the selection uses <code>as</code>. The module
+dependency remains module-qualified at the same time, so <code>runtime.clock.now()</code>
+or <code>clock.now()</code> remains valid when the import also has a module alias:</p>
+<!-- wyst-contract: sketch -->
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock <span class="token keyword">as</span> clock <span class="token punctuation">{</span> now <span class="token punctuation">}</span>
+</code></pre>
+<p>Imports are not transitive. <code>#import A</code> exposes A's exports only to the file
+that declares the import; A's own imports are not re-exported. Import aliases
+and selected names are local to the importing file and are not part of the
+importing module's public surface. Only declarations in the current module
+marked <code>pub</code> are re-exported to importers.</p>
+<p>Two imports in the same module section cannot use the same qualified namespace,
+and the same module cannot be imported twice in that section, even with
+different aliases. A selected bare import name cannot collide with a local
+top-level declaration or with another selected bare import name in the same
+section. Ordinary local bindings inside function bodies follow Wyst's normal
+lexical scoping rules and may shadow imported or local top-level bare names
+inside that local scope.</p>
+<p>Wildcard imports are not supported. Source must list every selected bare name
+explicitly.</p>
 <p><code>#import</code> may appear only at module scope, before any non-import top-level
 declaration. The order of imports does not matter.</p>
 <h3 id="import-resolution" tabindex="-1"><a class="doc-anchor" href="#import-resolution" aria-hidden="true">#</a> Import Resolution</h3>
@@ -252,7 +284,12 @@ drivers.uart   drivers/uart.wyst                    src/drivers/
 </code></pre>
 <p>The anchor file must exist for the resolver to find the module; its
 <code>#module</code> declaration must match the requested module name, and every
-sibling <code>.wyst</code> file in the same directory must declare the same module.
+discoverable sibling part file in the same directory must declare the same
+module. Hidden files, non-<code>.wyst</code> files, non-regular files, selected layout
+files, and files outside the import closure do not participate in module
+identity. Project builds and explicit root-file builds with <code>--source-root</code>
+use this same directory-anchored source graph; explicit multi-file builds use
+the command-line file list as their frozen input set.
 Project builds follow the import closure from the root module; they do not
 compile directories that no module in the closure imports. See
 <a href="/docs/chapter-03-project-builds/">chapter-03-project-builds.md</a>.</p>
@@ -261,24 +298,27 @@ This keeps the compiler's notion of a build deterministic and inspectable:
 project mode names the root and source roots explicitly, while explicit
 source-list mode names the source files directly.</p>
 <h3 id="symbol-references" tabindex="-1"><a class="doc-anchor" href="#symbol-references" aria-hidden="true">#</a> Symbol References</h3>
-<p>After resolution, every public symbol of an imported module remains in
-scope in the importing module under its bare name for compatibility with shipped
-code. The compiler records <code>module.symbol</code> and <code>alias.symbol</code> references as
-compiler-owned name facts. This keeps aliases deterministic across explicit,
-project, and loose-file source graphs.</p>
-<p>If two direct imports in the same importing scope <code>pub</code> the same bare symbol
-name, the import that introduces the conflict is a compile error. The
-diagnostic points at the conflicting import and at the export declarations.
-Rename one of the exporters before importing both modules into the same scope.</p>
+<p>After resolution, public symbols of an imported module are visible through
+their qualified namespace: <code>module.symbol</code> or <code>alias.symbol</code>. They are visible
+as bare <code>symbol</code> only when the source explicitly selects that name in the
+import item. The compiler records qualified references, module aliases, and
+selected bare-name aliases as compiler-owned name facts. This keeps import
+resolution deterministic across explicit, project, and loose-file source
+graphs.</p>
+<p>If two imports in the same importing scope select the same bare name, the
+import that introduces the conflict is a compile error. The diagnostic points
+at the conflicting selected name and at the first bare name in that scope.
+Keep both dependencies qualified, or alias one selected name before importing
+both modules into the same scope.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> main
 
 <span class="token directive macro">#import</span> <span class="token punctuation">(</span>
-  runtime<span class="token punctuation">.</span>gpio
-  runtime<span class="token punctuation">.</span>uart
+  runtime<span class="token punctuation">.</span>gpio <span class="token punctuation">{</span> gpio_init <span class="token keyword">as</span> init <span class="token punctuation">}</span>
+  runtime<span class="token punctuation">.</span>uart <span class="token punctuation">{</span> uart_init <span class="token keyword">as</span> init <span class="token punctuation">}</span>
 <span class="token punctuation">)</span>
 
-<span class="token comment">// compile error: both direct imports export `init`</span>
+<span class="token comment">// compile error: both imports select bare `init`</span>
 _start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   runtime<span class="token punctuation">.</span>uart<span class="token punctuation">.</span><span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -479,6 +519,165 @@ frontend-time constants.</p>
 </code></pre>
 <p>Sections are placed by constraint: <code>in</code> pins to a region, <code>after</code> chains
 sequentially. Alignment is explicit.</p>
+<h3 id="deterministic-placement-solver" tabindex="-1"><a class="doc-anchor" href="#deterministic-placement-solver" aria-hidden="true">#</a> Deterministic Placement Solver</h3>
+<p>Final placement is a deterministic constraint problem owned by
+<code>phase.placement_constraints</code> and <code>phase.placement_solving</code>. A conforming
+implementation must normalize the same build inputs into the same constraint
+set, then either produce the same solved placement or the same required
+diagnostic. A solver may use any internal algorithm, but its observable result
+must match the rules below; hash-map iteration, pointer addresses, thread
+scheduling, host path enumeration, and platform linker behavior are never
+tie-breakers.</p>
+<h4>Constraint Inputs</h4>
+<p>The placement constraint set contains only finalized products:</p>
+<ul>
+<li>region declarations: name, origin, size, and attributes;</li>
+<li>section declarations: name, layout-file declaration index, alignment,
+zero or more <code>in</code> region constraints, and zero or more <code>after</code> section
+constraints;</li>
+<li>fixed-address constraints from <code>#entry</code> and from any compiler-normalized
+exact-start requirement;</li>
+<li>section contribution lists with byte size, memory size, declaration
+identity, declaration-order index, required declaration alignment, section
+class, and file-byte payload;</li>
+<li>built-in canonical section order from
+<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §3</a> for canonical
+sections not explicitly ordered by the layout file.</li>
+</ul>
+<p>A section has these solved fields: section name, resolved region or no region,
+file offset, start address, file size, memory size, alignment, and end address.
+<code>end = start + memory_size</code>; for <code>NOBITS</code> sections, <code>file_size</code> may be smaller
+than <code>memory_size</code>, but the address interval uses <code>memory_size</code>.</p>
+<h4>Normalization</h4>
+<p>Constraint collection is deterministic and rejects malformed input before
+solving:</p>
+<ul>
+<li>Region names and section names are unique after normalization. Duplicate
+declarations are conflicting constraints, even when their payloads are textually
+identical.</li>
+<li>Alignment values must be positive powers of two. Missing section alignment
+uses the section-class default: 16 for executable text and vector sections,
+8 for initialized data, read-only data, <code>.initcalls</code>, <code>.percpu</code>, <code>.tls</code>, and
+<code>.bss</code>, and 1 for non-<code>ALLOC</code> metadata unless an owning chapter states a
+stricter value.</li>
+<li>Repeating <code>align</code> or <code>in</code> with the same normalized value is accepted as a
+duplicate assertion. Repeating either with different values is a conflicting
+constraint diagnostic.</li>
+<li>A section may have multiple <code>after</code> constraints. Identical repeats collapse
+to one dependency edge. Distinct <code>after</code> constraints are all enforced: the
+section's lower bound is the maximum end address and maximum file offset of
+every predecessor after each predecessor is solved.</li>
+<li>A fixed-address constraint pins a section or symbol to exactly one address.
+Multiple fixed-address constraints for the same entity must name the same
+value. Different values are conflicting fixed addresses.</li>
+<li>Fixed-address arithmetic is checked in unsigned 64-bit space. An entry
+symbol fixed by <code>#entry sym at A</code> creates the implied section-start
+constraint <code>A - offset(sym)</code>. If that subtraction underflows, or if any
+addition used to compute an end address overflows, the solver reports address
+overflow.</li>
+</ul>
+<h4>Region Inheritance</h4>
+<p><code>in = region</code> is an explicit region constraint. A section without <code>in</code> but with
+one or more <code>after</code> predecessors inherits the direct predecessors' region only
+when every direct predecessor has the same resolved region. This inherited
+region is part of the solved placement and is used for bounds checks. If direct
+predecessors resolve to different regions, the section has no inherited region
+unless it also has an explicit <code>in</code>.</p>
+<p>An explicit <code>in</code> may follow a predecessor from another region. In that case the
+section is placed at the first address in its explicit region that also
+satisfies all <code>after</code> lower bounds, alignment, and fixed-address constraints.
+If no such address exists, the diagnostic is a region-bounds, overlap, or
+fixed-address conflict as appropriate.</p>
+<h4>Solve Order And Ties</h4>
+<p>The dependency graph contains one node per section and one directed edge
+<code>predecessor -&gt; section</code> for each <code>after</code> constraint. Cycles are illegal,
+including self-cycles. The cycle diagnostic must identify every edge in the
+reported cycle and render a dependency path such as
+<code>.text -&gt; .rodata -&gt; .data -&gt; .text</code>, using the cycle rotated to the
+lexicographically smallest section name so conforming implementations choose
+the same path.</p>
+<p>After cycle checking, the solver visits ready sections in deterministic order:</p>
+<ol>
+<li>lower priority number from explicit layout-file declaration order;</li>
+<li>built-in canonical section order for canonical sections with no explicit
+layout declaration;</li>
+<li>canonical section name in bytewise ASCII order.</li>
+</ol>
+<p>This is the deterministic tie-breaking rule for equal-priority choices. The
+only declaration-order effects at the section level are these layout-file
+ordering ties: changing layout file order may change placement among otherwise
+independent, equal-priority sections. Inside a section, source declaration order
+still controls contribution order as specified in &quot;Concatenation Order&quot;; the
+solver may insert padding for alignment, but it must not reorder contributions.</p>
+<h4>Placement Formula</h4>
+<p>For each section in solve order:</p>
+<ol>
+<li>Start with the maximum of: the image base or zero for the first unconstrained
+section; the origin of an explicit or inherited region; every predecessor's
+end address; every fixed section-start address for that section.</li>
+<li>Start the file offset at the maximum of: the previous file-backed section's
+end offset in solve order, every predecessor's file end offset, and every
+file-offset floor imposed by the writer for headers or program segments.</li>
+<li>Align both start address and file offset upward to the section alignment.</li>
+<li>Apply fixed-address constraints after alignment. If aligning the section
+changes a fixed start, or if a fixed start is below an <code>after</code> or region
+lower bound, report the conflicting constraints instead of moving the
+section.</li>
+<li>Compute internal contribution offsets in declaration order. Before each
+contribution, align the section-relative cursor to the contribution's
+required declaration alignment. Padding created here belongs to the section.</li>
+<li>Compute <code>file_size</code>, <code>memory_size</code>, and <code>end</code> using checked 64-bit
+arithmetic.</li>
+<li>Verify region bounds and overlap against every previously solved non-empty
+allocated section.</li>
+</ol>
+<p>All empty sections have <code>file_size = 0</code>, <code>memory_size = 0</code>, and <code>start = end</code>.
+They still receive deterministic <code>#start</code> and <code>#end</code> values, and they do not
+overlap any other section. An implementation may omit an empty section header
+only when no source-visible layout export, synthesized bookend, or object
+schema rule requires that header; omission must not change any solved address.</p>
+<h4>Padding And Fill</h4>
+<p>All section-specific padding and fill bytes are deterministic:</p>
+<ul>
+<li>executable sections use the AArch64 <code>nop</code> instruction bytes
+<code>1f 20 03 d5</code> for 4-byte-aligned padding and <code>00</code> for any impossible
+tail bytes left by byte-granular artifact padding;</li>
+<li>read-only data, initialized data, mixed custom data, <code>.initcalls</code>,
+<code>.percpu</code>, <code>.tls</code>, string tail padding, and file gaps use <code>00</code>;</li>
+<li><code>.bss</code> and other <code>NOBITS</code> memory gaps reserve zero-initialized memory but
+write no file bytes for those gaps;</li>
+<li>non-<code>ALLOC</code> debug and symbol-table sections use the fill rules in their
+owning chapters, defaulting to <code>00</code> when no stricter rule exists.</li>
+</ul>
+<p>The fill byte policy is derived from section class. Wyst does not expose a
+layout-module attribute that changes fill bytes.</p>
+<h4>Required Diagnostics</h4>
+<p>Every placement diagnostic must identify the conflicting constraints and name
+the normalized entities involved. For cycle, overlap, or overflow, the
+diagnostic must also show the dependency path that made the failure reachable:</p>
+<ul>
+<li>dependency cycles: report the canonical cycle path and the source location of
+each <code>after</code> edge;</li>
+<li>multiple <code>after</code> constraints: when they are satisfiable, solve from the
+maximum predecessor end; when they are not, report each predecessor edge and
+the fixed, region, overlap, or overflow constraint that prevents a solution;</li>
+<li>conflicting fixed addresses: report all fixed-address constraints for the
+entity and their source locations;</li>
+<li>inherited region conflicts: report the section, each direct predecessor that
+supplied a region, and the chosen explicit region if one exists;</li>
+<li>overlap: report both section intervals, their source layout constraints, and
+the path of <code>after</code> and region/fixed-address constraints that positioned each
+interval;</li>
+<li>alignment failure: report the alignment, original lower bound, aligned value,
+and fixed address or region bound it conflicts with;</li>
+<li>address overflow: report the arithmetic operation, operands, section or
+symbol being placed, and the dependency path to the overflowed computation;</li>
+<li>empty-section diagnostics: report zero-sized intervals as <code>start == end</code>
+so users can distinguish emptiness from missing placement.</li>
+</ul>
+<p>The completion rule is: two conforming implementations given the same
+normalized source, layout, target, and compiler-version contract must therefore
+produce either the same placement or the same required diagnostic.</p>
 <h3 id="exports" tabindex="-1"><a class="doc-anchor" href="#exports" aria-hidden="true">#</a> Exports</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __text_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
@@ -742,8 +941,8 @@ gic_modinfo <span class="token operator">::</span> <span class="token punctuatio
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> kernel<span class="token punctuation">.</span>modinfo_walk
 
 walk_modinfo <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  addr <span class="token operator">:</span><span class="token operator">=</span> __modinfo_start <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
-  end <span class="token operator">:</span><span class="token operator">=</span> __modinfo_end <span class="token keyword">as</span> <span class="token address-qualifier type">@u8</span>
+  addr <span class="token operator">:</span><span class="token operator">=</span> __modinfo_start <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
+  end <span class="token operator">:</span><span class="token operator">=</span> __modinfo_end <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
   <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> end <span class="token punctuation">{</span>
     <span class="token function">announce_module</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
     addr <span class="token operator">+=</span> <span class="token number">16</span>
@@ -963,11 +1162,16 @@ canonical section catalog, relocation vocabulary, symbol table discipline —
 is specified in <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>.</p>
 <hr>
 <h3 id="duplicate-symbol-policy" tabindex="-1"><a class="doc-anchor" href="#duplicate-symbol-policy" aria-hidden="true">#</a> Duplicate Symbol Policy</h3>
-<p>If two modules directly imported into the same scope export the same bare
-symbol name, the compiler reports a compile error at the import that introduces
-the conflict. First-wins and COMDAT-style deduplication are not supported; all
-name collisions are surfaced explicitly. This is consistent with Wyst's general
-principle of making conflicts visible rather than silently resolving them.</p>
+<p>Qualified import references do not collide merely because imported modules
+contain public declarations. A compile error is reported when source creates an
+actual namespace collision: duplicate qualified import namespaces, duplicate
+imports of the same module in one module section, duplicate local top-level
+names, or duplicate selected bare import names. Ordinary monomorphic
+declarations also keep their source symbol names in the current object format,
+so duplicate top-level declaration names in one compilation remain invalid even
+when the declarations live in different modules. First-wins and COMDAT-style
+deduplication are not supported; all source-visible name collisions are surfaced
+explicitly.</p>
 <hr>
 
 					</div>
@@ -997,6 +1201,7 @@ principle of making conflicts visible rather than silently resolving them.</p>
 				<li class="lvl-3"><a href="#entry-point">Entry Point</a></li>
 				<li class="lvl-3"><a href="#regions">Regions</a></li>
 				<li class="lvl-3"><a href="#sections">Sections</a></li>
+				<li class="lvl-3"><a href="#deterministic-placement-solver">Deterministic Placement Solver</a></li>
 				<li class="lvl-3"><a href="#exports">Exports</a></li>
 				<li class="lvl-3"><a href="#complete-layout-module">Complete Layout Module</a></li>
 				<li class="lvl-3"><a href="#usage-from-source">Usage from Source</a></li>
@@ -1021,7 +1226,7 @@ principle of making conflicts visible rather than silently resolving them.</p>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">

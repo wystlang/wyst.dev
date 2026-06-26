@@ -76,6 +76,7 @@
 					<li><a href="/docs/chapter-22-generated-manifest/"><span class="doc-nav-num">22</span><span>Generated Manifest</span></a></li>
 					<li><a href="/docs/chapter-23-debug-info/"><span class="doc-nav-num">23</span><span>Debug Information</span></a></li>
 					<li><a href="/docs/chapter-24-scale/"><span class="doc-nav-num">24</span><span>Scale And Measurement</span></a></li>
+					<li><a href="/docs/chapter-25-compilation-phases/"><span class="doc-nav-num">25</span><span>Compilation Phases</span></a></li>
 				</ul>
 			</div>
 			<div class="doc-nav-group">
@@ -575,8 +576,8 @@ my_function <span class="token operator">::</span> <span class="token punctuatio
 </tr>
 <tr>
 <td>Struct &gt; 16 bytes</td>
-<td>Caller allocates, address in next xN</td>
-<td>Caller allocates, address in fixed x8</td>
+<td>Caller allocates, address follows ordinary integer argument allocation</td>
+<td>Caller allocates, address follows ordinary integer argument allocation</td>
 </tr>
 <tr>
 <td>HFA/HVA structs</td>
@@ -610,7 +611,7 @@ my_function <span class="token operator">::</span> <span class="token punctuatio
 </tr>
 </tbody>
 </table>
-<p>The most significant differences are: (1) Wyst native returns up to 4 integers in <code>x0</code>–<code>x3</code> where AAPCS64 only uses <code>x0</code>–<code>x1</code>; (2) <code>v8</code>–<code>v15</code> are caller-saved in Wyst native, eliminating SIMD callee-save overhead in hot paths; (3) large struct argument passing uses the next available <code>xN</code> register rather than the fixed <code>x8</code> slot.</p>
+<p>The most significant differences are: (1) Wyst native returns up to 4 integers in <code>x0</code>–<code>x3</code> where AAPCS64 only uses <code>x0</code>–<code>x1</code>; (2) <code>v8</code>–<code>v15</code> are caller-saved in Wyst native, eliminating SIMD callee-save overhead in hot paths; (3) HFA/HVA recognition is reserved for explicit <code>[aapcs]</code> boundaries.</p>
 <hr>
 <h3 id="b.4-declaring-foreign-functions" tabindex="-1"><a class="doc-anchor" href="#b.4-declaring-foreign-functions" aria-hidden="true">#</a> B.4 Declaring Foreign Functions</h3>
 <p>Foreign C functions called from Wyst must be declared with <code>[aapcs]</code>:</p>
@@ -654,6 +655,15 @@ call to an <code>[aapcs]</code>-annotated function.</p>
 <li>The convention annotation matches exactly (<code>@(...)</code> ≡ <code>@(...)</code>; <code>@[aapcs] (...)</code> ≡ <code>@[aapcs] (...)</code>; never <code>@(...)</code> ≡ <code>@[aapcs] (...)</code>).</li>
 <li>The argument types and return types match exactly under the standard type identity rules (no implicit numeric widening, no <code>@T</code> ↔ <code>u64</code> coercion).</li>
 </ol>
+<p>Register pin maps are not part of the current function-pointer type grammar.
+A function declaration with any <code>#pin(reg)</code> parameter is therefore a special
+entry point whose address cannot be taken as <code>@(args) -&gt; ret</code> or
+<code>@[aapcs] (args) -&gt; ret</code>. Direct calls remain valid because the callee
+declaration supplies the pin map to ABI lowering. Indirect calls, callbacks,
+dispatch tables, returned function pointers, and imported function-pointer
+slots require an ordinary-ABI wrapper or a future pin-map-aware convention
+type. Large aggregate and indirect-result returns still use the convention's
+ordinary result locations and do not encode argument pins.</p>
 <p>There is no implicit conversion between <code>@(...)</code> and <code>@[aapcs] (...)</code> in either direction. Wyst rejects:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
@@ -670,16 +680,17 @@ aapcs_fp <span class="token operator">:</span> <span class="token operator">@</s
 </ul>
 <p>There is no <code>[aapcs]</code>-stripping form of <code>#addr_of</code>. To call a Wyst-native function from C, the function itself must be declared <code>[aapcs]</code>. To call an <code>[aapcs]</code> function as if it were native, write a Wyst-native trampoline that re-marshals arguments and calls through.</p>
 <h4>Conversion to and from <code>u64</code></h4>
-<p>A function pointer of either convention converts to <code>u64</code> via <code>as</code>. Constructing
-a function pointer of either convention from a raw integer address requires the
-explicit trusted form:</p>
+<p>A function pointer of either convention converts to <code>u64</code> via <code>as.address</code>.
+Constructing a function pointer of either convention from a raw integer address
+requires the explicit trusted form:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">addr <span class="token operator">:</span><span class="token operator">=</span> aapcs_fp <span class="token keyword">as</span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">addr <span class="token operator">:</span><span class="token operator">=</span> aapcs_fp <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>
 fp   <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#trusted_cast</span><span class="token operator">&lt;</span><span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span><span class="token operator">></span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
 </code></pre>
 <p>Function pointers may be compared for equality with the same exact function
 pointer type, or with the untyped integer constant <code>0</code> as the conventional
-sentinel. Other integer comparisons require an explicit <code>as u64</code> cast.</p>
+sentinel. Other integer comparisons require an explicit <code>as.address u64</code>
+conversion.</p>
 <p><code>#trusted_cast&lt;@(args) -&gt; ret&gt;(addr)</code> or
 <code>#trusted_cast&lt;@[aapcs] (args) -&gt; ret&gt;(addr)</code> is the only way to construct a
 function pointer of a given convention from a raw <code>u64</code> address (e.g., when
@@ -818,7 +829,7 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 </table>
 <p>Any C type not in this table (anonymous unions, bit fields, packed structs, <code>_Atomic T</code>, function-like macros) requires hand translation with the user verifying the AAPCS64 layout matches.</p>
 <h4>B.6.2 AAPCS Struct Passing</h4>
-<p>When a C function takes a struct by value, AAPCS64 rules determine whether the struct is passed in registers, on the stack, or via a hidden pointer in <code>x8</code>. Wyst does not change those rules for <code>[aapcs]</code> calls. The user's job is to declare the struct with the right layout and to avoid signatures whose large by-value aggregate shape cannot be represented by the fixed <code>x8</code> slot.</p>
+<p>When a C function takes a struct by value, AAPCS64 rules determine whether the struct is passed in registers, on the stack, or through a caller-owned copy whose address is passed as an ordinary integer argument. Wyst does not change those rules for <code>[aapcs]</code> calls. The user's job is to declare the struct with the right layout and to keep <code>x8</code> reserved for indirect results.</p>
 <p>Worked example: a hypothetical <code>c_timespec</code> C call.</p>
 <pre class="wyst-code language-c" data-lang="c"><code class="language-c"><span class="token comment">// C side:</span>
 <span class="token keyword">struct</span> <span class="token class-name">timespec</span> <span class="token punctuation">{</span> <span class="token keyword">long</span> tv_sec<span class="token punctuation">;</span> <span class="token keyword">long</span> tv_nsec<span class="token punctuation">;</span> <span class="token punctuation">}</span><span class="token punctuation">;</span>
@@ -845,14 +856,7 @@ pub clock_diff <span class="token operator">::</span> <span class="token punctua
 <li><code>clock_gettime(0, &amp;ts)</code> — <code>clk</code> in <code>w0</code>, <code>ts</code> (pointer) in <code>x1</code>, return in <code>w0</code>.</li>
 <li><code>clock_diff(a, b)</code> — <code>a</code> is 16 bytes, fits in two GP registers, passed in <code>x0</code>/<code>x1</code>; <code>b</code> is 16 bytes, passed in <code>x2</code>/<code>x3</code>; return in <code>w0</code>.</li>
 </ul>
-<p>This is AAPCS64 §5.4.2 &quot;Aggregates&quot; applied to the supported fixed-arity surface. For structs &gt; 16 bytes that aren't HFA/HVA, Wyst's <code>[aapcs]</code> lowering uses a caller-owned stack copy and passes its address in fixed <code>x8</code>. Because <code>x8</code> is a single fixed slot, a <code>[aapcs]</code> function signature may contain at most one such large by-value aggregate parameter, and it may not combine that parameter with an indirect aggregate return that also needs <code>x8</code>; additional large aggregates must be passed by pointer unless this ABI chapter defines a distinct multi-aggregate rule. The Wyst Native ABI differs here: it passes the caller-owned copy address in the next available integer argument register, as described in §A.2. The Wyst struct layout (<a href="/docs/chapter-06-types/">chapter-06-types.md §1.6</a> alignment + tail-padding rules) matches AAPCS64's, so there is no Wyst-side adjustment required for <code>[aapcs]</code>.</p>
-<p>The compiler diagnoses this fixed-<code>x8</code> collision as soon as cross-convention
-intent is explicit: <code>[aapcs]</code> function definitions, no-body <code>[aapcs]</code> foreign
-declarations, and <code>@[aapcs]</code> function pointer types are checked when their
-signature is resolved. Ordinary Wyst Native functions are still allowed to use
-two large by-value aggregate parameters, or a large aggregate parameter plus a
-large aggregate return; they simply are not retaggable as <code>[aapcs]</code> without
-changing the call shape.</p>
+<p>This is AAPCS64 aggregate classification applied to the supported fixed-arity surface. For structs &gt; 16 bytes that are not HFA/HVA, Wyst's <code>[aapcs]</code> lowering uses a caller-owned stack copy and replaces the source argument with a pointer to that copy. That pointer is then allocated exactly like an ordinary pointer argument: it uses the next available <code>x0</code>-<code>x7</code> slot, or the next stack argument slot after integer argument registers are exhausted. Multiple large by-value aggregate parameters are therefore valid, and they may coexist with an indirect aggregate return; <code>x8</code> is reserved for the indirect result pointer only. The Wyst struct layout (<a href="/docs/chapter-06-types/">chapter-06-types.md §1.6</a> alignment + tail-padding rules) matches AAPCS64's, so there is no Wyst-side adjustment required for <code>[aapcs]</code>.</p>
 <p>Scalar HFAs are structs whose leaf fields are one to four homogeneous <code>f32</code> or <code>f64</code> values. Vector HVAs are structs whose leaf fields are one to four homogeneous SIMD vector values. Under <code>[aapcs]</code>, those fields pass and return in consecutive SIMD/floating-point registers; the Native ABI treats the same struct as a byte-image aggregate unless another Native rule applies. Mixed or non-homogeneous float/vector structs are not HFA/HVA aggregates, so they use the ordinary byte-image struct rows above.</p>
 <p><strong>Where this can go wrong:</strong> Wyst's strict layout means <code>#packed</code> structs do <em>not</em> match the C ABI on the same source declaration unless the C struct is also packed. If a C library uses <code>__attribute__((packed))</code>, the Wyst declaration must use <code>#packed</code>. If the C library uses any other layout attribute (<code>__attribute__((aligned(N)))</code>, MS-style bit fields), the user must hand-verify the layout with <code>#static_assert(#size_of(T) == ..., ...)</code> and <code>#static_assert(#field_offset(T, field) == ..., ...)</code> style invariants.</p>
 <h4>B.6.3 Calling Variadic C Functions: <code>printf</code> via <code>va_list</code></h4>
@@ -922,18 +926,18 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
     gp_save : [8]u64 = {0, 0, 0, 0, 0, 0, 0, 0}
     fp_save : [16]u64 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     ap : va_list = {
-        stack   = local_addr(gp_save) as @u8,   // unused: all args fit in GP regs
-        gr_top  = (local_addr(gp_save) as @u8) + 64,
-        vr_top  = (local_addr(fp_save) as @u8) + 128,
+        stack   = local_addr(gp_save) as.lens @u8, // unused: all args fit in GP regs
+        gr_top  = (local_addr(gp_save) as.lens @u8) + 64,
+        vr_top  = (local_addr(fp_save) as.lens @u8) + 128,
         gr_offs = -24,                         // 3 args x 8 bytes; offset from gr_top
         vr_offs = 0,                           // no FP args used
     }
 
     // Place a, b, c into the GP save area at the offsets va_list expects.
-    gp_base : @u8 = local_addr(gp_save) as @u8
-    u64@[(gp_base + 40) as @u64] = a as u64    // gr_top - 24
-    u64@[(gp_base + 48) as @u64] = b as u64    // gr_top - 16
-    u64@[(gp_base + 56) as @u64] = c as u64    // gr_top - 8
+    gp_base : @u8 = local_addr(gp_save) as.lens @u8
+    u64@[(gp_base + 40) as.lens @u64] = a as.signedness u64 // gr_top - 24
+    u64@[(gp_base + 48) as.lens @u64] = b as.signedness u64 // gr_top - 16
+    u64@[(gp_base + 56) as.lens @u64] = c as.signedness u64 // gr_top - 8
 
     return vprintf(fmt, local_addr(ap))
 }
@@ -957,9 +961,9 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
         }
     }
     return va_list {
-        stack   = local_addr(fp_save) as @u8,
-        gr_top  = local_addr(fp_save) as @u8,
-        vr_top  = (local_addr(fp_save) as @u8) + 32,
+        stack   = local_addr(fp_save) as.lens @u8,
+        gr_top  = local_addr(fp_save) as.lens @u8,
+        vr_top  = (local_addr(fp_save) as.lens @u8) + 32,
         gr_offs = 0,
         vr_offs = -32,
     }
@@ -1184,8 +1188,8 @@ project input, then <code>#import</code> it.</li>
 </tr>
 <tr>
 <td><strong>Struct &gt; 16 bytes</strong></td>
-<td>Caller-allocated; address in next xN</td>
-<td>Caller-allocated; address in fixed x8</td>
+<td>Caller-allocated; address follows ordinary integer argument allocation</td>
+<td>Caller-allocated; address follows ordinary integer argument allocation</td>
 </tr>
 <tr>
 <td><strong>HFA/HVA</strong></td>
@@ -1339,8 +1343,8 @@ apply call: x0 = &amp;transform_copy, x1 = v
 <td>Wyst multi-value return (§2.2) would otherwise require hidden struct allocation for 3- and 4-value returns. Direct register returns are zero overhead. AAPCS64's 2-register limit was designed around C's single-value return model, which Wyst does not share.</td>
 </tr>
 <tr>
-<td>Large struct address in next available <code>xN</code>, not fixed <code>x8</code></td>
-<td>Fixed-register conventions create a hidden argument slot that reduces the usable argument register count by one for every function with a large return value AND a large struct argument. Dynamic allocation avoids this. <code>x8</code> is still used for indirect <em>return</em> pointers, consistent with AAPCS64.</td>
+<td>Large struct argument address follows ordinary argument allocation</td>
+<td>Both Wyst Native and <code>[aapcs]</code> calls replace large by-value aggregate arguments with a caller-owned copy pointer and allocate that pointer through the normal integer argument cursor. <code>x8</code> remains reserved for indirect <em>return</em> pointers.</td>
 </tr>
 <tr>
 <td>No Native HFA/HVA rules</td>
@@ -1366,10 +1370,10 @@ apply call: x0 = &amp;transform_copy, x1 = v
 <ul>
 <li>Emit a <strong>hard error</strong> if a Wyst-native caller passes a <code>[aapcs]</code>-annotated function to a function pointer typed as a Wyst-native function pointer, or vice versa.</li>
 <li>Track <code>[aapcs]</code> through function pointer types — an <code>[aapcs]</code> function's address has type <code>@[aapcs] (args) -&gt; ret</code>, which is a distinct type from the non-annotated form <code>@(args) -&gt; ret</code>. See §B.5 and <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.6</a>.</li>
-<li>Emit a <strong>hard error</strong> while resolving any <code>[aapcs]</code> function signature or
-<code>@[aapcs]</code> function pointer type that has more than one fixed-<code>x8</code> large
-by-value aggregate parameter, or that combines such a parameter with an
-indirect aggregate return that also needs <code>x8</code>.</li>
+<li>Replace every large by-value <code>[aapcs]</code> aggregate argument that is not HFA/HVA
+with a pointer to caller-owned copy storage, then allocate that pointer
+through the ordinary integer argument path. Do not allocate large aggregate
+arguments in <code>x8</code>; <code>x8</code> is reserved for indirect results.</li>
 <li>Emit <code>d8</code>–<code>d15</code> callee-saves in every non-leaf <code>[aapcs]</code> function. A leaf
 <code>[aapcs]</code> function emits saves only for directly used or declared-clobbered
 <code>d8</code>–<code>d15</code> registers. Under the Wyst native ABI, no SIMD save/restore is ever
@@ -1427,7 +1431,7 @@ generated by the convention.</li>
 						human-readable IR for machine-oriented programming with
 						deterministic output.
 					</p>
-					<div class="foot-mascot"><span>Mascot: <b>Winston</b></span></div>
+					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
 				</div>
 				<div class="foot-links">
 					<div class="foot-col">
