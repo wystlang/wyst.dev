@@ -94,10 +94,6 @@ test("site headers do not include the old lang brand tag", async () => {
 		["source-of-truth docs", docsSourceOfTruthHtml],
 		["404", notFoundHtml],
 		[
-			"status",
-			await readFile(new URL("../status/index.html", import.meta.url), "utf8"),
-		],
-		[
 			"examples",
 			await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
 		],
@@ -220,22 +216,10 @@ test("landing page puts concrete evidence before principle cards", () => {
 	}
 });
 
-test("status page exposes current project state and is linked", async () => {
-	const statusHtml = await readFile(
-		new URL("../status/index.html", import.meta.url),
-		"utf8",
-	);
-
-	assert.match(html, /href="\/status\/"/);
-	assert.match(prepareWorkerAssetsScript, /"status"/);
-
+test("homepage owns project status without a standalone status route", async () => {
 	for (const phrase of [
-		"Implemented today",
-		"Specified but not implemented",
-		"Experimental",
-		"Not planned",
-		"Release history",
-		"Current limits",
+		"Project status",
+		"Built in the open. Early, but real.",
 		"ARM64 only",
 		"QEMU-tested",
 		"Rust bootstrap compiler",
@@ -244,8 +228,30 @@ test("status page exposes current project state and is linked", async () => {
 		"no LLVM backend",
 		"v0.8-draft",
 	]) {
-		assert.match(statusHtml, new RegExp(phrase));
+		assert.match(html, new RegExp(phrase));
 	}
+
+	for (const pageHtml of [
+		html,
+		notFoundHtml,
+		await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
+		await readFile(new URL("../coming-from-c/index.html", import.meta.url), "utf8"),
+		await readFile(
+			new URL("../coming-from-assembly/index.html", import.meta.url),
+			"utf8",
+		),
+		await readFile(
+			new URL("../coming-from-rust-zig/index.html", import.meta.url),
+			"utf8",
+		),
+	]) {
+		assert.doesNotMatch(pageHtml, /href="\/status\/"/);
+	}
+
+	assert.doesNotMatch(prepareWorkerAssetsScript, /"status"/);
+	await assert.rejects(
+		readFile(new URL("../status/index.html", import.meta.url), "utf8"),
+	);
 });
 
 test("FAQ directly preempts common skeptical-reader questions", () => {

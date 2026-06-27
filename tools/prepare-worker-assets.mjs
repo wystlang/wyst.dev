@@ -22,7 +22,6 @@ const entries = [
 	"404.html",
 	"assets",
 	"docs",
-	"status",
 	"examples",
 	"coming-from-c",
 	"coming-from-assembly",
