@@ -17,7 +17,7 @@ const outDir = path.join(root, ".worker-assets");
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
-const entries = ["index.html", "404.html", "assets", "docs"];
+const entries = ["index.html", "404.html", "assets", "docs", "status"];
 
 for (const entry of entries) {
 	await cp(path.join(root, entry), path.join(outDir, entry), {

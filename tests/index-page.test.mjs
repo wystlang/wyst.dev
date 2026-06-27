@@ -12,6 +12,10 @@ const docsSourceOfTruthHtml = await readFile(
 	"utf8",
 );
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
+const prepareWorkerAssetsScript = await readFile(
+	new URL("../tools/prepare-worker-assets.mjs", import.meta.url),
+	"utf8",
+);
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
 );
@@ -153,6 +157,34 @@ test("landing page puts concrete evidence before principle cards", () => {
 		"explain reports",
 	]) {
 		assert.match(html, new RegExp(phrase));
+	}
+});
+
+test("status page exposes current project state and is linked", async () => {
+	const statusHtml = await readFile(
+		new URL("../status/index.html", import.meta.url),
+		"utf8",
+	);
+
+	assert.match(html, /href="\/status\/"/);
+	assert.match(prepareWorkerAssetsScript, /"status"/);
+
+	for (const phrase of [
+		"Implemented today",
+		"Specified but not implemented",
+		"Experimental",
+		"Not planned",
+		"Release history",
+		"Current limits",
+		"ARM64 only",
+		"QEMU-tested",
+		"Rust bootstrap compiler",
+		"not self-hosting",
+		"not memory-safe",
+		"no LLVM backend",
+		"v0.8-draft",
+	]) {
+		assert.match(statusHtml, new RegExp(phrase));
 	}
 });
 

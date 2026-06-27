@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta
+			name="description"
+			content="Current Wyst implementation status, release evidence, limits, and not-planned items."
+		/>
+		<title>Wyst Status</title>
+		<link rel="canonical" href="https://wyst.dev/status/" />
+		<link rel="stylesheet" href="/assets/wyst.css" />
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<header class="site">
+			<div class="wrap nav">
+				<a class="brand" href="/">
+					<span class="mark" aria-hidden="true"></span>
+					<span class="word">wyst<span class="cc">::</span></span>
+					<span class="tag">lang</span>
+					<span class="ver">v0.8-draft</span>
+				</a>
+				<nav class="nav-links" aria-label="Primary">
+					<a href="/">Home</a>
+					<a href="/status/">Status</a>
+					<a href="/docs/">Docs</a>
+					<a href="https://github.com/wystlang/wyst" rel="noopener"
+						>Source</a
+					>
+				</nav>
+			</div>
+		</header>
+
+		<main id="main" class="status-page">
+			<section class="page-hero">
+				<div class="wrap page-hero-grid">
+					<div>
+						<span class="eyebrow">Project status</span>
+						<h1>Current implementation status.</h1>
+						<p>
+							Wyst is an early ARM64 bare-metal and
+							kernel-oriented language and assembler. This page
+							separates what works today from draft design,
+							experimental surfaces, and non-goals.
+						</p>
+					</div>
+					<div class="status-summary">
+						<span><b>Version:</b> v0.8-draft</span>
+						<span><b>Target:</b> ARM64 only</span>
+						<span><b>Compiler:</b> Rust bootstrap compiler</span>
+						<span><b>Evidence:</b> QEMU-tested fixtures</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="status-buckets">
+				<div class="wrap status-bucket-grid">
+					<article class="status-bucket">
+						<h2>Implemented today</h2>
+						<ul>
+							<li>AArch64 ELF output for bare-metal projects.</li>
+							<li>
+								<code>wync check</code>,
+								<code>wync build</code>, <code>wync fmt</code>,
+								and project builds.
+							</li>
+							<li>
+								Lowering, effect, and storage explain reports
+								with explicit provenance fields.
+							</li>
+							<li>
+								QEMU fixtures and deterministic rebuild proof in
+								the release evidence path.
+							</li>
+							<li>LSP and editor-oriented diagnostics.</li>
+						</ul>
+					</article>
+
+					<article class="status-bucket">
+						<h2>Specified but not implemented</h2>
+						<ul>
+							<li>
+								Complete v0.8-draft conformance coverage across
+								all documented corners.
+							</li>
+							<li>
+								Broader report freshness checks for every site
+								example that looks generated.
+							</li>
+							<li>
+								Editable playground support for
+								<code>check</code>, <code>fmt</code>, and
+								<code>explain</code>.
+							</li>
+						</ul>
+					</article>
+
+					<article class="status-bucket">
+						<h2>Experimental</h2>
+						<ul>
+							<li>
+								Source requirements and effect-deny workflows.
+							</li>
+							<li>MMIO intent annotations and report display.</li>
+							<li>
+								Storage contract reporting for buffers, arenas,
+								and handles.
+							</li>
+							<li>
+								The public v0.8-draft language surface before a
+								1.0 compatibility promise.
+							</li>
+						</ul>
+					</article>
+
+					<article class="status-bucket">
+						<h2>Not planned</h2>
+						<ul>
+							<li>
+								No LLVM backend; lowering is meant to be
+								inspectable and part of the contract.
+							</li>
+							<li>
+								No claim that Wyst is memory-safe; invalid
+								memory can still fault or misbehave.
+							</li>
+							<li>
+								No transparent multi-ISA portability layer in
+								the current project.
+							</li>
+							<li>
+								No optimizer that relies on
+								compiler-exploitable undefined behavior.
+							</li>
+						</ul>
+					</article>
+				</div>
+			</section>
+
+			<section class="status-detail-band">
+				<div class="wrap status-detail-grid">
+					<div class="status-detail">
+						<h2>Release history</h2>
+						<dl>
+							<div>
+								<dt>v0.8-draft</dt>
+								<dd>
+									Current draft tracked by the website:
+									source requirements, MMIO intent, report
+									provenance, and release-evidence language.
+								</dd>
+							</div>
+							<div>
+								<dt>pre-1.0</dt>
+								<dd>
+									No compatibility promise yet. Syntax,
+									report schemas, and project layout can still
+									change while the compiler hardens.
+								</dd>
+							</div>
+						</dl>
+					</div>
+					<div class="status-detail">
+						<h2>Current limits</h2>
+						<ul class="limit-list">
+							<li><b>Target:</b> ARM64 only</li>
+							<li><b>Evidence:</b> QEMU-tested</li>
+							<li><b>Compiler:</b> Rust bootstrap compiler</li>
+							<li><b>Status:</b> not self-hosting</li>
+							<li><b>Safety:</b> not memory-safe</li>
+							<li><b>Backend:</b> no LLVM backend</li>
+							<li><b>Version:</b> v0.8-draft</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+		</main>
+
+		<footer class="site">
+			<div class="wrap">
+				<div class="foot-grid">
+					<div class="foot-brand">
+						<a class="brand brand-lg" href="/">
+							<span class="mark" aria-hidden="true"></span>
+							<span class="word"
+								>wyst<span class="cc">::</span
+								><span class="res">status</span></span
+							>
+						</a>
+						<p>
+							Current implementation state and limits for the
+							Wyst ARM64 bare-metal language and assembler.
+						</p>
+					</div>
+					<div class="foot-links">
+						<div class="foot-col">
+							<div class="foot-title">Project</div>
+							<a href="/">Home</a>
+							<a href="/docs/">Docs</a>
+							<a href="/status/">Status</a>
+						</div>
+						<div class="foot-col">
+							<div class="foot-title">Reference</div>
+							<a href="/docs/source-of-truth/">Source of Truth</a>
+							<a
+								href="https://github.com/wystlang/wyst"
+								rel="noopener"
+								>Source</a
+							>
+						</div>
+					</div>
+				</div>
+			</div>
+		</footer>
+	</body>
+</html>
