@@ -186,6 +186,14 @@
 							<pre
 								aria-label="Wyst source example"
 							><code data-code="hero-uart"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="hero-uart"
+							>
+								checked by website tests with
+								<code>wync check</code> and
+								<code>wync build</code>
+							</p>
 						</div>
 						<p class="code-note">
 							Hardware access is visible. <b>@mmio</b> records
@@ -315,6 +323,12 @@
 							<pre
 								aria-label="C implementation of sum_to function"
 							><code data-code="compare-c"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-c"
+							>
+								illustrative excerpt for comparison only
+							</p>
 						</div>
 						<div class="panel">
 							<div class="panel-head">
@@ -326,6 +340,13 @@
 							<pre
 								aria-label="ARM64 assembly implementation of sum_to"
 							><code data-code="compare-arm64"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-arm64"
+							>
+								illustrative excerpt; loop shape checked by
+								website tests
+							</p>
 						</div>
 						<div class="panel wyst">
 							<div class="panel-head">
@@ -337,6 +358,14 @@
 							<pre
 								aria-label="Wyst implementation of sum_to function"
 							><code data-code="compare-wyst"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-wyst"
+							>
+								checked by website tests with
+								<code>wync check</code> and
+								<code>wync build</code>
+							</p>
 						</div>
 
 						<p class="note">
@@ -449,6 +478,14 @@
 											class="insp-code"
 											data-snippet="uart-source"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="uart-source"
+										>
+											checked by website tests with
+											<code>wync check</code> and
+											<code>wync build</code>
+										</p>
 									</div>
 									<div class="insp-asm">
 										<div class="insp-col-head">
@@ -459,6 +496,13 @@
 											class="insp-code"
 											data-snippet="uart-asm"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="uart-asm"
+										>
+											illustrative excerpt; instruction
+											pattern checked by website tests
+										</p>
 									</div>
 								</div>
 								<div class="insp-foot">
@@ -491,6 +535,13 @@
 											class="insp-code"
 											data-snippet="vectors-source"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="vectors-source"
+										>
+											illustrative excerpt; abbreviated
+											vector sketch
+										</p>
 									</div>
 									<div class="insp-asm">
 										<div class="insp-col-head">
@@ -504,6 +555,13 @@
 											class="insp-code"
 											data-snippet="vectors-asm"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="vectors-asm"
+										>
+											illustrative excerpt; abbreviated
+											vector table
+										</p>
 									</div>
 								</div>
 								<div class="insp-foot">
@@ -536,6 +594,14 @@
 											class="insp-code"
 											data-snippet="atomic-source"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="atomic-source"
+										>
+											checked by website tests with
+											<code>wync check</code> and
+											<code>wync build</code>
+										</p>
 									</div>
 									<div class="insp-asm">
 										<div class="insp-col-head">
@@ -546,6 +612,13 @@
 											class="insp-code"
 											data-snippet="atomic-asm"
 										></div>
+										<p
+											class="provenance"
+											data-example-provenance="atomic-asm"
+										>
+											illustrative excerpt; acquire/release
+											instructions checked by website tests
+										</p>
 									</div>
 								</div>
 								<div class="insp-foot">
@@ -607,6 +680,16 @@
 							<span class="dot">·</span>
 							<span>source-checked pattern</span>
 						</div>
+						<div class="reproduce">
+							<span class="reproduce-label">Reproduce this</span>
+							<code>cargo run --manifest-path ../wyst/wync/Cargo.toml -- explain lowering ../wyst/wync/tests/fixtures/reports/lowering --function mix</code>
+							<span
+								>generated from command for the stable lowering
+								report fixture; the compact
+								<code>sum_to</code> sample below is checked as
+								source and labeled as an excerpt.</span
+							>
+						</div>
 						<div class="insp-split">
 							<div class="insp-src">
 								<div class="insp-col-head">
@@ -617,6 +700,14 @@
 									class="insp-code"
 									data-snippet="sumto-source"
 								></div>
+								<p
+									class="provenance"
+									data-example-provenance="sumto-source"
+								>
+									checked by website tests with
+									<code>wync check</code> and
+									<code>wync build</code>
+								</p>
 							</div>
 							<div class="insp-asm">
 								<div class="insp-col-head">
@@ -627,6 +718,13 @@
 									class="insp-code"
 									data-snippet="sumto-asm"
 								></div>
+								<p
+									class="provenance"
+									data-example-provenance="sumto-asm"
+								>
+									illustrative excerpt; loop shape checked by
+									website tests
+								</p>
 							</div>
 						</div>
 					</div>

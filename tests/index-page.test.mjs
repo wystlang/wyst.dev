@@ -78,6 +78,24 @@ test("landing page uses narrow positioning and avoids overbroad safety copy", ()
 	assert.doesNotMatch(html, /Defined\s+inputs produce defined output/);
 });
 
+test("homepage examples carry explicit provenance labels", () => {
+	for (const name of [...Object.keys(codeBlocks), ...Object.keys(snippets)]) {
+		assert.match(
+			html,
+			new RegExp(`data-example-provenance="${name}"`),
+			`${name} should have a provenance marker`,
+		);
+	}
+
+	assert.match(html, /checked by website tests/);
+	assert.match(html, /illustrative excerpt/);
+	assert.match(html, /Reproduce this/);
+	assert.match(
+		html,
+		/cargo run --manifest-path \.\.\/wyst\/wync\/Cargo\.toml -- explain lowering \.\.\/wyst\/wync\/tests\/fixtures\/reports\/lowering --function mix/,
+	);
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
