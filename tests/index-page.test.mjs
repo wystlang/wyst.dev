@@ -168,7 +168,8 @@ test("homepage examples carry explicit provenance labels", () => {
 	}
 
 	assert.match(html, /checked by website tests/);
-	assert.doesNotMatch(html, /illustrative excerpt/);
+	assert.match(html, /illustrative excerpt/);
+	assert.doesNotMatch(html, /Reproduce this/);
 });
 
 test("compiler-checked homepage examples declare type and entry metadata", () => {
@@ -179,6 +180,15 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 		assert.equal(attrs["data-example-kind"], "wyst-source");
 		assert.equal(attrs["data-example-entry"], entry);
 	}
+
+	assert.equal(
+		provenanceAttributes("compare-wyst")["data-example-kind"],
+		"wyst-source-excerpt",
+	);
+	assert.equal(
+		provenanceAttributes("compare-arm64")["data-example-kind"],
+		"assembly-excerpt",
+	);
 });
 
 test("homepage omits the evidence section while retaining primary sections", () => {
@@ -433,49 +443,29 @@ test("generated pages do not link removed homepage example anchors", () => {
 	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
 });
 
-test("homepage presents compiler-backed sum_to artifacts inline", async () => {
-	const reportJson = JSON.parse(
-		await readFile(
-			new URL(
-				"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.json",
-				import.meta.url,
-			),
-			"utf8",
-		),
-	);
-
+test("homepage presents the side-by-side sum_to comparison", () => {
 	assert.match(html, /href="\/examples\/"/);
 	assert.match(siteHeaderHtml(html), /<a href="#examples">Examples<\/a>/);
 	assert.match(html, /id="examples"/);
-	assert.match(html, /Examples with compiler artifacts/);
-	assert.match(html, /data-example-artifact="sum-to"/);
-	assert.match(
-		html,
-		/data-report-fixture="\.\.\/wyst\/wync\/tests\/fixtures\/reports\/sum-to-lowering"/,
-	);
-	assert.match(html, /No arbitrary code execution/);
-	assert.match(html, /Source/);
-	assert.match(html, /Explain report/);
-	assert.match(html, /Generated AArch64/);
-	assert.match(html, /Bytes \/ provenance/);
-	assert.match(html, /wync explain lowering/);
-	assert.match(
-		html,
-		new RegExp(
-			escapeRegExp(
-				escapeHtmlText(`function: ${reportJson.function.symbol} sum_to`),
-			),
-		),
-	);
-	for (const item of reportJson.arm64Instructions.items.slice(0, 4)) {
-		assert.match(html, new RegExp(escapeRegExp(item.bytes)));
-		assert.match(html, new RegExp(escapeRegExp(item.encoding)));
-	}
-	for (const line of [".text addr=", "b.cond", "b", "ret"]) {
-		assert.match(html, new RegExp(escapeRegExp(line)));
-	}
+	assert.match(html, /Side by side/);
+	assert.match(html, /See what you're actually doing/);
+	assert.match(html, /data-code="compare-c"/);
+	assert.match(html, /data-code="compare-arm64"/);
+	assert.match(html, /data-code="compare-wyst"/);
+	assert.match(codeBlockText("compare-c"), /int sum_to\(int n\)/);
+	assert.match(codeBlockText("compare-arm64"), /sum_to:/);
+	assert.match(codeBlockText("compare-wyst"), /#module demo\.math/);
+	assert.match(codeBlockText("compare-wyst"), /while i < n/);
+	assert.match(html, /The <code>while<\/code> loop lowers to the/);
 	assert.doesNotMatch(html, /href="#compare"/);
 	assert.doesNotMatch(html, /href="#explain"/);
+	assert.doesNotMatch(html, /Examples with compiler artifacts/);
+	assert.doesNotMatch(html, /data-example-artifact="sum-to"/);
+	assert.doesNotMatch(html, /data-report-fixture=/);
+	assert.doesNotMatch(html, /Explain report/);
+	assert.doesNotMatch(html, /Generated AArch64/);
+	assert.doesNotMatch(html, /Bytes \/ provenance/);
+	assert.doesNotMatch(html, /wync explain lowering/);
 	assert.doesNotMatch(html, /<textarea/i);
 	assert.doesNotMatch(html, /contenteditable/i);
 	assert.doesNotMatch(html, /fetch\s*\(/);
@@ -483,29 +473,25 @@ test("homepage presents compiler-backed sum_to artifacts inline", async () => {
 	assert.doesNotMatch(html, /eval\s*\(/);
 });
 
-test("homepage presents additional static examples inline", () => {
+test("homepage does not duplicate the examples page card grid", () => {
 	assert.match(html, /href="\/examples\/"/);
 	assert.doesNotMatch(html, /id="inspect"/);
 	assert.doesNotMatch(html, /href="#inspect"/);
-	assert.doesNotMatch(html, /Source ↔ machine/);
 	assert.doesNotMatch(html, /data-snippet=/);
 	assert.deepEqual(Object.keys(snippets), []);
 
-	assert.match(html, /Additional examples/);
-	assert.match(html, /MMIO UART write/);
-	assert.match(html, /Release\/acquire flag/);
-	assert.match(html, /EL1 vector sketch/);
+	assert.doesNotMatch(html, /Additional examples/);
+	assert.doesNotMatch(html, /MMIO UART write/);
+	assert.doesNotMatch(html, /Release\/acquire flag/);
+	assert.doesNotMatch(html, /EL1 vector sketch/);
 	for (const card of ["mmio-uart", "release-acquire", "el1-vector"]) {
-		assert.match(
+		assert.doesNotMatch(
 			html,
 			new RegExp(`data-example-card="${card}"`),
-			`${card} should be a homepage example card`,
+			`${card} should not be duplicated on the homepage`,
 		);
 	}
-	assert.match(html, /<span class="token directive macro">#module<\/span> drivers\.uart/);
-	assert.match(html, /<span class="token directive macro">#release<\/span>/);
-	assert.match(html, /<span class="token directive macro">#exception_vector<\/span>/);
-	assert.match(html, /static language example/);
+	assert.doesNotMatch(html, /static language example/);
 });
 
 test("removed migration comparisons are not presented on the homepage", () => {
@@ -691,8 +677,8 @@ test("index examples that are presented as complete source build to ELF", async 
 	}
 });
 
-test("homepage lowering artifact labels current-run provenance precisely", () => {
-	assert.match(html, /freshness: current-run/);
-	assert.match(html, /provenance=arm64-lowering/);
+test("homepage side-by-side comparison is not labeled as a current-run artifact", () => {
+	assert.doesNotMatch(html, /freshness: current-run/);
+	assert.doesNotMatch(html, /provenance=arm64-lowering/);
 	assert.doesNotMatch(html, /current-run provenance/);
 });

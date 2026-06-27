@@ -61,7 +61,7 @@
 			sizes="180x180"
 			href="assets/apple-touch-icon.png"
 		/>
-		<link rel="stylesheet" href="assets/wyst.021ae9f7.css" />
+		<link rel="stylesheet" href="assets/wyst.5efebb43.css" />
 	</head>
 	<body>
 		<a class="skip" href="#main">Skip to content</a>
@@ -281,310 +281,91 @@
 					</div>
 				</div>
 			</section>
-			<section
-				class="guide-band homepage-examples"
-				id="examples"
-				aria-label="Compiler-backed examples"
-			>
+			<section class="sec sec--flush" id="examples">
 				<div class="wrap">
-					<div class="artifact-head">
-						<span class="eyebrow">Compiler-backed example</span>
-						<h2>Examples with compiler artifacts.</h2>
+					<div class="sec-head">
+						<span class="eyebrow">Side by side</span>
+						<h2>See what you're actually doing.</h2>
 						<p>
-							This section is static and has
-							<strong>No arbitrary code execution</strong>. It
-							keeps one compiler-backed <code>sum_to</code>
-							artifact with source, the real
-							<code>wync explain lowering</code> report, generated
-							AArch64 from <code>wync disasm</code>, and byte /
-							provenance rows from the report fixture. Additional
-							examples below are static language examples, not
-							hosted compiler sessions.
+							The same routine, summing integers
+							<code class="hl">0...n</code>, across three levels of
+							the stack. C hides the machine; assembly buries the
+							intent. Wyst keeps both.
 						</p>
-						<nav class="artifact-nav" aria-label="Artifact sections">
-							<a href="#source">Source</a>
-							<a href="#explain-report">Explain report</a>
-							<a href="#generated-aarch64">Generated AArch64</a>
-							<a href="#bytes-provenance">Bytes / provenance</a>
-							<a href="#additional-examples">Additional examples</a>
-						</nav>
 					</div>
 
-					<article
-						class="example-artifact"
-						data-example-artifact="sum-to"
-						data-report-fixture="../wyst/wync/tests/fixtures/reports/sum-to-lowering"
-						data-report-command="cargo run --manifest-path ../wyst/wync/Cargo.toml -- explain lowering ../wyst/wync/tests/fixtures/reports/sum-to-lowering/wyst.project --function sum_to"
-					>
-						<div class="artifact-head">
-							<span class="eyebrow">sum_to</span>
-							<h2>One loop, one report, one emitted artifact.</h2>
-							<p>
-								The fixture lives at
-								<code>../wyst/wync/tests/fixtures/reports/sum-to-lowering</code>.
-								The source, report text, generated AArch64, and
-								byte rows below are checked against that fixture.
+					<div class="compare">
+						<div class="panel">
+							<div class="panel-head">
+								<span class="lang">C</span>
+								<span class="qual"
+									>familiar,<br />opaque to the machine</span
+								>
+							</div>
+							<pre
+								aria-label="C implementation of sum_to function"
+							><code data-code="compare-c"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-c"
+								data-example-kind="comparison-excerpt"
+							>
+								illustrative excerpt for comparison only
+							</p>
+						</div>
+						<div class="panel">
+							<div class="panel-head">
+								<span class="lang">ARM64</span>
+								<span class="qual"
+									>explicit,<br />hard to read at scale</span
+								>
+							</div>
+							<pre
+								aria-label="ARM64 assembly implementation of sum_to"
+							><code data-code="compare-arm64"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-arm64"
+								data-example-kind="assembly-excerpt"
+							>
+								illustrative excerpt; loop shape checked by
+								website tests
+							</p>
+						</div>
+						<div class="panel wyst">
+							<div class="panel-head">
+								<span class="lang">Wyst</span>
+								<span class="qual"
+									>explicit semantics,<br />human-readable</span
+								>
+							</div>
+							<pre
+								aria-label="Wyst implementation of sum_to function"
+							><code data-code="compare-wyst"></code></pre>
+							<p
+								class="provenance"
+								data-example-provenance="compare-wyst"
+								data-example-kind="wyst-source-excerpt"
+							>
+								illustrative Wyst excerpt; source shape checked
+								by website tests
 							</p>
 						</div>
 
-						<div class="artifact-grid">
-							<section class="artifact-panel" id="source">
-								<h3>Source</h3>
-								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
-<span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64-v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span>
-
-sink <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
-
-pub <span class="token function">sum_to</span> <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">i32</span> <span class="token punctuation">{</span>
-    acc <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
-    i <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
-    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
-        acc <span class="token operator">+=</span> i
-        i <span class="token operator">+=</span> <span class="token number">1</span>
-    <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> acc
-<span class="token punctuation">}</span>
-
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
-    sink <span class="token operator">=</span> <span class="token function">sum_to</span><span class="token punctuation">(</span><span class="token number">9</span><span class="token punctuation">)</span>
-    <span class="token keyword">loop</span> <span class="token punctuation">{</span> <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									source fixture:
-									<code>src/boot.wyst</code>
-								</p>
-							</section>
-
-							<section class="artifact-panel" id="explain-report">
-								<h3>Explain report</h3>
-								<pre class="artifact-pre"><code data-report-section="explain-lowering">wync explain lowering
-schema: wync.explain.lowering.v0
-project: examples-sum-to
-function: $5 sum_to
-schedule-modes=schedule.default
-freshness: current-run
-provenance: compiler-lowering
-artifact-writes: none
-
-target assumptions [provenance=target-profile freshness=current-run]
-  name=qemu-virt-aarch64-el2 arch=arm64-v8a cpu=generic el=2 features=none
-  optimization=reproducible
-
-dependency estimates [provenance=typed-ir+target-descriptor freshness=current-run]
-  query=critical_path latency=1 ops=4 fallback-classes=0
-  step value=%3 class=ir-projection type=i32 latency=0 cumulative=0 fallback=false source=8:15
-  step value=%4 class=ir-projection type=i32 latency=0 cumulative=0 fallback=false source=8:5
-  step value=%6 class=ir-projection type=i32 latency=0 cumulative=0 fallback=false source=9:5
-  step value=%7 class=alu-simple type=bool latency=1 cumulative=1 fallback=false source=9:11
-
-source graph [provenance=source freshness=current-run]
-  module boot path=src/boot.wyst imports=none
-  function-span 6:5-14:2 bytes 83..218
-  source-line: pub sum_to :: (n : i32) -&gt; i32 {
-
-typed ir [provenance=typed-ir freshness=current-run]
-    fn $5 @sum_to(n: i32) -&gt; i32 pub {
-      ^0 entry:
-        %0: i32 = param 0 n
-        %1: i32 = const 0
-        %2: i32 = local acc &lt;- %1
-        %3: i32 = const 0
-        %4: i32 = local i &lt;- %3
-        jump ^1
-      ^1 while.cond:
-        %5: i32 = phi ^0: %2, ^2: %9
-        %6: i32 = phi ^0: %4, ^2: %12
-        %7: bool = Lt %6, %0
-        branch %7, ^2, ^3
-      ^2 while.body:
-        %8: i32 = Add %5, %6
-        %9: i32 = local acc &lt;- %8
-        %10: i32 = const 1
-        %11: i32 = Add %6, %10
-        %12: i32 = local i &lt;- %11
-        jump ^1
-      ^3 while.after:
-        return %5
-    }
-
-abi and storage [provenance=abi-lowering freshness=current-run]
-  calling-convention=native
-  abi-function-count=2
-  frame=0 bytes
-frame composition [provenance=abi-lowering+register-allocation freshness=current-run]
-  max-stack-bytes=0 frame-bytes=0 outgoing-call-bytes=0 spill-slots=0
-  components=none
-
-arm64 instructions [provenance=arm64-lowering freshness=current-run]
-  +0x0000 addr=0x000000003fffffdc bytes=01 00 80 52 encoding=0x52800001 op=.inst source=7:5
-  +0x0004 addr=0x000000003fffffe0 bytes=02 00 80 52 encoding=0x52800002 op=.inst source=8:5
-  +0x0008 addr=0x000000003fffffe4 bytes=5f 00 00 6b encoding=0x6b00005f op=.inst source=9:11
-  +0x000c addr=0x000000003fffffe8 bytes=8a 00 00 54 encoding=0x5400008a op=b.cond source=9:11
-
-machine artifact [provenance=emitted-bytes freshness=current-run]
-  text-address=0x000000003fffffdc function-offset=0 function-size=36 image-text-bytes=68 elf-text-bytes=68</code></pre>
-								<p class="provenance">
-									text excerpt from
-									<code>expected.txt</code>
-								</p>
-							</section>
-
-							<section class="artifact-panel" id="generated-aarch64">
-								<h3>Generated AArch64</h3>
-								<pre class="artifact-pre"><code>.text addr=0x000000003fffffdc off=4096 size=68
-  000000003fffffdc: 52800001  .inst
-  000000003fffffe0: 52800002  .inst
-  000000003fffffe4: 6b00005f  .inst
-  000000003fffffe8: 5400008a  b.cond
-  000000003fffffec: 0b020021  .inst
-  000000003ffffff0: 11000442  .inst
-  000000003ffffff4: 17fffffc  b
-  000000003ffffff8: 2a0103e0  .inst
-  000000003ffffffc: d65f03c0  ret
-  0000000040000000: 52800120  .inst
-  0000000040000004: 97fffff6  bl
-  0000000040000008: b000000a  adrp
-  000000004000000c: 9100014a  add (imm)
-  0000000040000010: 2a0003e9  .inst
-  0000000040000014: b9000149  .inst
-  0000000040000018: d503205f  wfe
-  000000004000001c: 17ffffff  b</code></pre>
-								<p class="provenance">
-									normalized output from
-									<code>wync disasm build/kernel.elf</code>
-								</p>
-							</section>
-
-							<section class="artifact-panel" id="bytes-provenance">
-								<h3>Bytes / provenance</h3>
-								<div class="artifact-facts">
-									<p>
-										These rows come from
-										<code>expected.json</code> under
-										<code>arm64Instructions.items</code>.
-										The report marks them
-										<code>provenance=arm64-lowering</code>
-										and <code>freshness=current-run</code>.
-									</p>
-								</div>
-								<div class="artifact-table-wrap">
-									<table class="artifact-table">
-										<thead>
-											<tr>
-												<th>Offset</th>
-												<th>Bytes</th>
-												<th>Encoding</th>
-												<th>Op</th>
-												<th>Source</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr><td>+0x0000</td><td>01 00 80 52</td><td>0x52800001</td><td>.inst</td><td>7:5</td></tr>
-											<tr><td>+0x0004</td><td>02 00 80 52</td><td>0x52800002</td><td>.inst</td><td>8:5</td></tr>
-											<tr><td>+0x0008</td><td>5f 00 00 6b</td><td>0x6b00005f</td><td>.inst</td><td>9:11</td></tr>
-											<tr><td>+0x000c</td><td>8a 00 00 54</td><td>0x5400008a</td><td>b.cond</td><td>9:11</td></tr>
-											<tr><td>+0x0010</td><td>21 00 02 0b</td><td>0x0b020021</td><td>.inst</td><td>10:9</td></tr>
-											<tr><td>+0x0014</td><td>42 04 00 11</td><td>0x11000442</td><td>.inst</td><td>11:9</td></tr>
-											<tr><td>+0x0018</td><td>fc ff ff 17</td><td>0x17fffffc</td><td>b</td><td>9:17</td></tr>
-											<tr><td>+0x001c</td><td>e0 03 01 2a</td><td>0x2a0103e0</td><td>.inst</td><td>9:5</td></tr>
-											<tr><td>+0x0020</td><td>c0 03 5f d6</td><td>0xd65f03c0</td><td>ret</td><td>9:5</td></tr>
-										</tbody>
-									</table>
-								</div>
-							</section>
-						</div>
-					</article>
-
-					<article
-						class="example-artifact example-artifact--secondary"
-						id="additional-examples"
-						aria-labelledby="additional-examples-heading"
-					>
-						<div class="artifact-head">
-							<span class="eyebrow">Additional examples</span>
-							<h2 id="additional-examples-heading">
-								Smaller Wyst source shapes.
-							</h2>
-							<p>
-								These are static language examples for scanning
-								syntax and intent. They are not marked as
-								current-run compiler artifacts; use the
-								<code>sum_to</code> artifact above when you want
-								report-backed output.
-							</p>
-						</div>
-
-						<div class="artifact-grid example-card-grid">
-							<section
-								class="artifact-panel"
-								data-example-card="mmio-uart"
-							>
-								<h3>MMIO UART write</h3>
-								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> drivers.uart
-
-UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
-UARTDR <span class="token operator">::</span> <span class="token builtin type">@mmio u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
-UARTFR <span class="token operator">::</span> <span class="token builtin type">@mmio u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x18</span>
-TXFF <span class="token operator">::</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x20</span>
-
-uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">while</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
-        <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token punctuation">}</span>
-    <span class="token builtin type">u32@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as.widen</span> <span class="token builtin type">u32</span>
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									static language example; MMIO intent and
-									volatile access semantics are visible in the
-									source.
-								</p>
-							</section>
-
-							<section
-								class="artifact-panel"
-								data-example-card="release-acquire"
-							>
-								<h3>Release/acquire flag</h3>
-								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> sync.atomic
-
-publish <span class="token operator">::</span> <span class="token punctuation">(</span>flag <span class="token operator">:</span> <span class="token builtin type">@u32</span><span class="token punctuation">,</span> v <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#release</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span> <span class="token operator">=</span> v
-<span class="token punctuation">}</span>
-
-observe <span class="token operator">::</span> <span class="token punctuation">(</span>flag <span class="token operator">:</span> <span class="token builtin type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
-    <span class="token keyword">return</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									static language example; ordering is written
-									on the access rather than inferred.
-								</p>
-							</section>
-
-							<section
-								class="artifact-panel"
-								data-example-card="el1-vector"
-							>
-								<h3>EL1 vector sketch</h3>
-								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> traps.vectors
-
-el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x800</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token keyword">goto</span> unexpected
-    <span class="token punctuation">}</span>
-    spx_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token keyword">goto</span> handle_sync
-    <span class="token punctuation">}</span>
-    spx_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
-        <span class="token keyword">goto</span> handle_irq
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									static language example; abbreviated sketch,
-									not a complete 16-slot vector table.
-								</p>
-							</section>
-						</div>
-					</article>
+						<p class="note">
+							<b>What's different:</b> the declaration, the
+							widths, and the control flow are all visible.
+							Signed <code>+</code> has defined overflow
+							semantics, so there's no undefined behavior for the
+							compiler to reason from; the loop can't be silently
+							deleted or rewritten into something you didn't
+							author. The <code>while</code> loop lowers to the
+							exact counted branch
+							<span class="note-right">on the right</span
+							><span class="note-above">above</span>, with a
+							direct, inspectable correspondence to AArch64.
+						</p>
+					</div>
 				</div>
 			</section>
 			<section class="sec not-sec" id="not">
@@ -1154,9 +935,203 @@ el1_vectors <span class="token operator">::</span> <span class="token directive 
 							token("k", "as.widen"),
 							" ",
 							token("t", "u32"),
+							],
+							["}"],
 						],
-						["}"],
-					],
+						"compare-c": [
+							[
+								token("t", "int"),
+								" ",
+								token("f", "sum_to"),
+								token("p", "("),
+								token("t", "int"),
+								" n",
+								token("p", ")"),
+								" ",
+								token("p", "{"),
+							],
+							[
+								"  ",
+								token("t", "int"),
+								" acc ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+								token("p", ";"),
+							],
+							[
+								"  ",
+								token("k", "for"),
+								" ",
+								token("p", "("),
+								token("t", "int"),
+								" i ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+								token("p", ";"),
+								" i ",
+								token("o", "<"),
+								" n",
+								token("p", ";"),
+								" i",
+								token("o", "++"),
+								token("p", ")"),
+								" ",
+								token("p", "{"),
+							],
+							["    acc ", token("o", "+="), " i", token("p", ";")],
+							["  }"],
+							[],
+							["  ", token("k", "return"), " acc", token("p", ";")],
+							[token("p", "}")],
+							[],
+							[token("c", "// signed overflow here is")],
+							[token("c", "// undefined; the compiler")],
+							[token("c", "// may assume it never happens.")],
+						],
+						"compare-arm64": [
+							[token("f", "sum_to:")],
+							[
+								"  ",
+								token("k", "mov"),
+								"   ",
+								token("t", "w1"),
+								token("p", ","),
+								" ",
+								token("n", "#0"),
+								"      ",
+								token("c", "// acc"),
+							],
+							[
+								"  ",
+								token("k", "mov"),
+								"   ",
+								token("t", "w2"),
+								token("p", ","),
+								" ",
+								token("n", "#0"),
+								"      ",
+								token("c", "// i"),
+							],
+							[token("f", ".Lloop:")],
+							[
+								"  ",
+								token("k", "cmp"),
+								"   ",
+								token("t", "w2"),
+								token("p", ","),
+								" ",
+								token("t", "w0"),
+							],
+							["  ", token("k", "b.ge"), "  ", token("f", ".Ldone")],
+							[
+								"  ",
+								token("k", "add"),
+								"   ",
+								token("t", "w1"),
+								token("p", ","),
+								" ",
+								token("t", "w1"),
+								token("p", ","),
+								" ",
+								token("t", "w2"),
+							],
+							[
+								"  ",
+								token("k", "add"),
+								"   ",
+								token("t", "w2"),
+								token("p", ","),
+								" ",
+								token("t", "w2"),
+								token("p", ","),
+								" ",
+								token("n", "#1"),
+							],
+							["  ", token("k", "b"), "     ", token("f", ".Lloop")],
+							[token("f", ".Ldone:")],
+							[
+								"  ",
+								token("k", "mov"),
+								"   ",
+								token("t", "w0"),
+								token("p", ","),
+								" ",
+								token("t", "w1"),
+							],
+							["  ", token("k", "ret")],
+						],
+						"compare-wyst": [
+							[token("m", "#module"), " demo.math"],
+							[],
+							[
+								token("f", "sum_to"),
+								" :: (",
+								token("param", "n"),
+								" : ",
+								token("t", "i32"),
+								") -> ",
+								token("t", "i32"),
+								" {",
+							],
+							[
+								"  ",
+								token("var", "acc"),
+								" : ",
+								token("t", "i32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+							],
+							[
+								"  ",
+								token("var", "i"),
+								" : ",
+								token("t", "i32"),
+								" ",
+								token("o", "="),
+								" ",
+								token("n", "0"),
+							],
+							[
+								"  ",
+								token("k", "while"),
+								" ",
+								token("var", "i"),
+								" ",
+								token("o", "<"),
+								" ",
+								token("param", "n"),
+								" {",
+							],
+							[
+								"    ",
+								token("var", "acc"),
+								" ",
+								token("o", "+="),
+								" ",
+								token("var", "i"),
+							],
+							[
+								"    ",
+								token("var", "i"),
+								" ",
+								token("o", "+="),
+								" ",
+								token("n", "1"),
+							],
+							["  }"],
+							[],
+							[
+								"  ",
+								token("k", "return"),
+								" ",
+								token("var", "acc"),
+							],
+							["}"],
+						],
 					};
 
 					const snippets = {};

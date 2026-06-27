@@ -906,6 +906,107 @@ pre code {
 	color: var(--faint);
 }
 
+.compare {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--space-md);
+	align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+	.compare {
+		grid-template-columns: 1fr;
+	}
+}
+
+.note-above {
+	display: none;
+}
+
+@media (max-width: 1024px) {
+	.note-right {
+		display: none;
+	}
+
+	.note-above {
+		display: inline;
+	}
+}
+
+.panel {
+	background: var(--bg-code);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+}
+
+.panel.wyst {
+	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent),
+		0 22px 50px -30px var(--accent);
+}
+
+.panel-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-sm);
+	padding: var(--space-sm) var(--space-md);
+	border-bottom: 1px solid var(--line);
+}
+
+.panel.wyst .panel-head {
+	border-bottom-color: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.panel-head .lang {
+	font-family: var(--mono);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	color: var(--text);
+}
+
+.panel.wyst .panel-head .lang {
+	color: var(--accent);
+}
+
+.panel-head .qual {
+	font-family: var(--sans);
+	font-size: var(--text-xs);
+	color: var(--faint);
+	text-align: right;
+}
+
+.panel pre {
+	font-size: var(--text-xs);
+	padding: var(--space-md) var(--space-md) var(--space-lg);
+}
+
+.compare .note {
+	grid-column: 1 / -1;
+	margin-top: var(--space-xs);
+	color: var(--muted);
+	font-size: var(--text-md);
+	border-left: 2px solid var(--accent);
+	padding-left: var(--space-md);
+	max-width: 760px;
+}
+
+.compare .note b {
+	color: var(--text);
+	font-weight: 600;
+}
+
+.compare .note code {
+	font-family: var(--mono);
+	font-size: var(--text-sm);
+	color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+	padding: 1px var(--space-xs);
+	border-radius: var(--radius-xs);
+}
+
 .not-sec {
 	background: var(--bg-elev);
 	border-top: 1px solid var(--line);
