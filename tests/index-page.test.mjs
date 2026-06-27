@@ -203,23 +203,35 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
-test("landing page puts concrete evidence before principle cards", () => {
-	const evidenceIndex = html.indexOf('id="evidence"');
-	const philosophyIndex = html.indexOf('id="philosophy"');
-	assert.notEqual(evidenceIndex, -1, "missing concrete evidence section");
-	assert.notEqual(philosophyIndex, -1, "missing philosophy section");
-	assert.ok(
-		evidenceIndex < philosophyIndex,
-		"evidence should appear before philosophy",
+test("landing page consolidates evidence, principles, boundaries, and reader answers", () => {
+	const evidenceSection = sectionHtmlByStart(
+		html,
+		'<section\n\t\t\t\tclass="sec evidence-band"\n\t\t\t\tid="evidence"',
 	);
+
+	assert.doesNotMatch(html, /id="philosophy"/);
+	assert.doesNotMatch(html, /id="not"/);
+	assert.doesNotMatch(html, /id="faq"/);
+	assert.doesNotMatch(siteHeaderHtml(html), /href="#not"/);
+	assert.doesNotMatch(siteHeaderHtml(html), /href="#faq"/);
 
 	for (const phrase of [
 		"QEMU fixtures",
 		"deterministic rebuild proof",
 		"release gates",
 		"explain reports",
+		"No magic. No surprises.",
+		"No UB-powered rewrites",
+		"Hidden optimization passes",
+		"Implicit vectorization",
+		"What can be built today?",
+		"Why isn't Wyst self-hosting?",
+		"Why no LLVM backend?",
+		"Is Wyst safer than C?",
+		"What happens on invalid memory access?",
+		"What should I not use Wyst for?",
 	]) {
-		assert.match(html, new RegExp(phrase));
+		assert.match(evidenceSection, new RegExp(phrase.replace(/[?]/g, "\\?")));
 	}
 });
 
@@ -282,7 +294,12 @@ test("homepage owns project status without a standalone status route", async () 
 	}
 });
 
-test("FAQ directly preempts common skeptical-reader questions", () => {
+test("consolidated reader answers preserve skeptical-reader caveats", () => {
+	const evidenceSection = sectionHtmlByStart(
+		html,
+		'<section\n\t\t\t\tclass="sec evidence-band"\n\t\t\t\tid="evidence"',
+	);
+
 	for (const question of [
 		"What can be built today?",
 		"Why isn't Wyst self-hosting?",
@@ -291,12 +308,12 @@ test("FAQ directly preempts common skeptical-reader questions", () => {
 		"What happens on invalid memory access?",
 		"What should I not use Wyst for?",
 	]) {
-		assert.match(html, new RegExp(question.replace(/[?]/g, "\\?")));
+		assert.match(evidenceSection, new RegExp(question.replace(/[?]/g, "\\?")));
 	}
 
-	assert.match(html, /not memory-safe/);
-	assert.match(html, /invalid memory access can still fault\s+or misbehave/);
-	assert.match(html, /no LLVM backend/);
+	assert.match(evidenceSection, /not memory-safe/);
+	assert.match(evidenceSection, /invalid memory access can still fault\s+or misbehave/);
+	assert.match(evidenceSection, /no LLVM backend/);
 });
 
 test("migration pages expose tradeoff tables and are linked", async () => {

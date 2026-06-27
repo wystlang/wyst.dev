@@ -61,7 +61,7 @@
 			sizes="180x180"
 			href="assets/apple-touch-icon.png"
 		/>
-		<link rel="stylesheet" href="assets/wyst.984a688e.css" />
+		<link rel="stylesheet" href="assets/wyst.68356999.css" />
 	</head>
 	<body>
 		<a class="skip" href="#main">Skip to content</a>
@@ -88,8 +88,6 @@
 				<nav id="primary-nav" class="nav-links" aria-label="Primary">
 					<a href="#evidence">Evidence</a>
 					<a href="/examples/">Examples</a>
-					<a href="#not">Non-goals</a>
-					<a href="#faq">FAQ</a>
 					<a href="/docs/">Docs</a>
 					<a
 						class="nav-icon"
@@ -207,17 +205,16 @@
 			<section
 				class="sec evidence-band"
 				id="evidence"
-				aria-label="Concrete Wyst evidence"
+				aria-label="Evidence, design boundaries, and reader answers"
 			>
-				<div class="wrap">
+				<div class="wrap evidence-wrap">
 					<div class="evidence-head">
 						<span class="eyebrow">Evidence first</span>
-						<h2>Artifacts before claims.</h2>
+						<h2>Evidence, boundaries, and straight answers.</h2>
 						<p>
-							The homepage examples are checked against the
-							compiler, and release evidence is built around
-							reproducible AArch64 outputs rather than broad
-							language promises.
+							One compact pass through what is real today, what
+							the compiler promises, and what Wyst deliberately
+							does not try to be.
 						</p>
 					</div>
 					<div class="evidence-grid">
@@ -259,81 +256,142 @@
 							</p>
 						</article>
 					</div>
-				</div>
-			</section>
-			<section class="sec principle-sec" id="philosophy">
-				<div class="wrap">
-					<div class="sec-head">
-						<span class="eyebrow">Design principles</span>
-						<h2>No magic. No surprises.</h2>
-						<p>
-							Wyst makes a single promise: what you write is what
-							the machine does. The compiler's job is to lower it
-							faithfully, not to outsmart you.
-						</p>
+					<div class="evidence-contract">
+						<div class="contract-copy">
+							<span class="eyebrow">Design contract</span>
+							<h3>No magic. No surprises.</h3>
+							<p>
+								Wyst makes the lowering contract part of the
+								review surface: visible effects, deterministic
+								output, explicit memory intent, and no
+								UB-powered rewrites. Invalid memory access can
+								still fault or misbehave; the compiler will not
+								turn that into unrelated rewrites.
+							</p>
+						</div>
+						<div class="contract-grid">
+							<article>
+								<h4>Reproducible lowering</h4>
+								<p>
+									The same source, layout, symbols, and
+									relocations produce the same bytes.
+								</p>
+							</article>
+							<article>
+								<h4>Explicit semantics</h4>
+								<p>
+									Widths, arithmetic behavior, memory
+									ordering, and effect boundaries are visible.
+								</p>
+							</article>
+							<article>
+								<h4>No UB-powered rewrites</h4>
+								<p>
+									Overflow, null, and out-of-bounds
+									possibilities are not optimizer fuel.
+								</p>
+							</article>
+						</div>
 					</div>
-
-					<div class="cards">
-						<article class="card">
-							<span class="idx">01</span>
-							<div class="ico" aria-hidden="true">↻</div>
-							<h3>Reproducible Lowering</h3>
+					<div class="boundary-grid">
+						<article class="boundary-card">
+							<span class="evidence-kicker">Non-goals</span>
+							<h3>What Wyst leaves out.</h3>
+							<ul>
+								<li>
+									<b>Hidden optimization passes:</b> default
+									lowering is fixed and inspectable.
+								</li>
+								<li>
+									<b>Automatic algorithmic rewrites:</b> your
+									loop shape stays your loop shape.
+								</li>
+								<li>
+									<b>Implicit vectorization:</b> SIMD is
+									explicit, never inferred from scalar loops.
+								</li>
+								<li>
+									<b>Hidden allocation semantics:</b> storage
+									is explicit, with no mandatory runtime.
+								</li>
+							</ul>
+						</article>
+						<article class="boundary-card">
+							<span class="evidence-kicker">Tradeoffs</span>
+							<h3>What you give up.</h3>
+							<ul>
+								<li>
+									<b>Implicit integer promotion:</b> casts and
+									widths are written out.
+								</li>
+								<li>
+									<b>Portability across architectures:</b>
+									Wyst is ARM64 only.
+								</li>
+								<li>
+									<b>A standard library:</b> no built-in
+									containers, allocators, or I/O abstractions.
+								</li>
+								<li>
+									<b>Production readiness:</b> do not use it
+									for production kernels or security-critical
+									code today.
+								</li>
+							</ul>
+						</article>
+					</div>
+					<div
+						class="reader-grid"
+						aria-label="Skeptical-reader answers"
+					>
+						<article class="reader-answer">
+							<h3>What can be built today?</h3>
 							<p>
-								The same source compiles to the same bytes,
-								every time. Release tests build twice and
-								compare the ELF byte-for-byte.
+								Small ARM64 bare-metal and kernel-oriented
+								programs: boot paths, MMIO experiments, runtime
+								pieces, and deterministic AArch64 ELF fixtures.
 							</p>
 						</article>
-						<article class="card">
-							<span class="idx">02</span>
-							<div class="ico" aria-hidden="true">∎</div>
-							<h3>Explicit Semantics</h3>
+						<article class="reader-answer">
+							<h3>Why isn't Wyst self-hosting?</h3>
 							<p>
-								Data widths, arithmetic behavior, memory
-								ordering, and effect boundaries are visible.
-								Inferred effects are surfaced for inspection.
+								The current compiler is a Rust bootstrap
+								because the language and lowering contract are
+								still changing; self-hosting is a milestone,
+								not proof of correctness.
 							</p>
 						</article>
-						<article class="card">
-							<span class="idx">03</span>
-							<div class="ico" aria-hidden="true">⊘</div>
-							<h3>No UB-powered rewrites</h3>
+						<article class="reader-answer">
+							<h3>Why no LLVM backend?</h3>
 							<p>
-								The compiler does not use overflow, null, or
-								out-of-bounds possibilities as optimization
-								fuel. Invalid memory access can still fault or
-								misbehave; Wyst's promise is that the compiler
-								will not turn that into unrelated rewrites.
+								Wyst is testing a direct, inspectable lowering
+								contract. LLVM maturity is useful, but there is
+								no LLVM backend in this plan.
 							</p>
 						</article>
-						<article class="card">
-							<span class="idx">04</span>
-							<div class="ico" aria-hidden="true">≈</div>
-							<h3>Performance Transparency</h3>
+						<article class="reader-answer">
+							<h3>Is Wyst safer than C?</h3>
 							<p>
-								Cost is visible at the source. No implicit
-								vectorization, no hidden allocation, no global
-								optimizer passes or profile-guided rewrites.
+								Not in the Rust sense. Wyst is not memory-safe;
+								the narrower claim is that the compiler does
+								not use undefined-behavior assumptions for
+								unrelated rewrites.
 							</p>
 						</article>
-						<article class="card">
-							<span class="idx">05</span>
-							<div class="ico" aria-hidden="true">▦</div>
-							<h3>Deterministic Output</h3>
+						<article class="reader-answer">
+							<h3>What happens on invalid memory access?</h3>
 							<p>
-								Layout, symbols, and relocations are emitted
-								deterministically. The ELF is a function of your
-								source, not the machine that built it.
+								Bad pointer behavior is still possible:
+								invalid memory access can still fault or misbehave.
 							</p>
 						</article>
-						<article class="card">
-							<span class="idx">06</span>
-							<div class="ico" aria-hidden="true">◎</div>
-							<h3>Architecture-Aware</h3>
+						<article class="reader-answer">
+							<h3>What should I not use Wyst for?</h3>
 							<p>
-								System registers, exception vectors, and AAPCS64
-								interop are first-class, close to the metal by
-								design and not by escape hatch.
+								Do not use it for production kernels,
+								security-critical code, portable user-space
+								apps, or anything needing a stable 1.0
+								ecosystem today.
 							</p>
 						</article>
 					</div>
@@ -353,301 +411,6 @@
 						<a href="/coming-from-rust-zig/"
 							>Coming from Rust or Zig</a
 						>
-					</div>
-				</div>
-			</section>
-			<section class="sec not-sec" id="not">
-				<div class="wrap">
-					<div class="sec-head">
-						<span class="eyebrow">Non-goals</span>
-						<h2>What Wyst deliberately leaves out.</h2>
-						<p>
-							Every omission below is a choice. A compiler that
-							does less to your code is a compiler you can trust
-							to do exactly what you asked.
-						</p>
-					</div>
-
-					<div class="not-grid">
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Hidden optimization passes</span
-								>
-								<span class="why"
-									>Default lowering is fixed and inspectable.
-									Non-default build optimization modes are
-									opt-in and document their own reproducibility
-									contract.</span
-								>
-							</span>
-						</div>
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Automatic algorithmic rewrites</span
-								>
-								<span class="why"
-									>Your algorithm is your algorithm. The
-									compiler won't swap your structure or loop
-									shape for one it prefers.</span
-								>
-							</span>
-						</div>
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Implicit vectorization</span
-								>
-								<span class="why"
-									>SIMD is written explicitly with fixed-width
-									vector types, never conjured from a scalar
-									loop.</span
-								>
-							</span>
-						</div>
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Hidden allocation semantics</span
-								>
-								<span class="why"
-									>No allocation you didn't write. Storage is
-									explicit, arena-first, with no mandatory
-									runtime.</span
-								>
-							</span>
-						</div>
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Opaque compiler behavior</span
-								>
-								<span class="why"
-									>Effects are inferred conservatively and
-									surfaced;
-									<code>#deny</code>
-									lets you forbid the ones you don't
-									want.</span
-								>
-							</span>
-						</div>
-						<div class="not-item">
-							<span class="x" aria-hidden="true">✕</span>
-							<span class="body">
-								<span class="struck"
-									>Compiler-exploitable UB</span
-								>
-								<span class="why"
-									>There's no undefined-behavior loophole to
-									reason from. Defined in, defined out. Full
-									stop.</span
-								>
-							</span>
-						</div>
-					</div>
-
-					<div
-						class="sec-head"
-						style="
-							margin-top: 48px;
-							margin-bottom: 24px;
-							max-width: 640px;
-						"
-					>
-						<span class="eyebrow">What you give up</span>
-						<p style="color: var(--muted); font-size: 16px">
-							These are deliberate tradeoffs, not oversights.
-							Knowing them up front is the point.
-						</p>
-					</div>
-
-					<div class="not-grid">
-						<div class="not-item tradeoff">
-							<span class="x" aria-hidden="true">⇌</span>
-							<span class="body">
-								<span class="struck"
-									>Implicit integer promotion</span
-								>
-								<span class="why"
-									>Widths are explicit. You write the cast;
-									the compiler never silently promotes a
-									narrower type to a wider one. Expressions
-									are more verbose as a result.</span
-								>
-							</span>
-						</div>
-						<div class="not-item tradeoff">
-							<span class="x" aria-hidden="true">⇌</span>
-							<span class="body">
-								<span class="struck"
-									>Portability across architectures</span
-								>
-								<span class="why"
-									>Wyst targets ARM64 only. The ARM memory
-									model, register classes, and barrier
-									semantics are first-class, not abstracted
-									over. An x86 or RISC-V port would be a
-									different project.</span
-								>
-							</span>
-						</div>
-						<div class="not-item tradeoff">
-							<span class="x" aria-hidden="true">⇌</span>
-							<span class="body">
-								<span class="struck">A standard library</span>
-								<span class="why"
-									>There are no built-in containers,
-									allocators, or I/O abstractions. Wyst
-									provides the primitives; you compose the
-									structures. Equivalent functionality is more
-									code than idiomatic C++ or Rust.</span
-								>
-							</span>
-						</div>
-					</div>
-				</div>
-			</section>
-			<section class="sec" id="faq">
-				<div class="wrap">
-					<div class="sec-head">
-						<span class="eyebrow">Frequently asked</span>
-						<h2>Straight answers.</h2>
-						<p>
-							What Wyst does today, where its limits genuinely
-							are, and the lines it won't cross.
-						</p>
-					</div>
-
-					<div class="faq">
-						<div class="faq-item">
-							<span class="faq-num">01</span>
-							<div>
-								<p class="faq-q">What can be built today?</p>
-								<p class="faq-a">
-									Small ARM64 bare-metal and kernel-oriented
-									programs: hand-rolled boot paths, MMIO
-									experiments, simple runtime pieces, and
-									fixtures that produce deterministic AArch64
-									ELF output. The compiler also supports
-									<code>wync check</code>, <code>fmt</code>,
-									project builds, LSP diagnostics, and explain
-									reports.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">02</span>
-							<div>
-								<p class="faq-q">
-									Why isn't Wyst self-hosting?
-								</p>
-								<p class="faq-a">
-									The current compiler is a Rust bootstrap
-									because the language and lowering contract
-									are still changing. Self-hosting would be a
-									major milestone, not proof of correctness by
-									itself, and it is not required to validate
-									the current AArch64 output path.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">03</span>
-							<div>
-								<p class="faq-q">Why no LLVM backend?</p>
-								<p class="faq-a">
-									LLVM is excellent when you want a mature
-									optimizing backend. Wyst is testing a
-									different contract: the lowering is meant to
-									be inspectable, direct, and part of the
-									language surface. There is no LLVM backend
-									in the plan.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">04</span>
-							<div>
-								<p class="faq-q">Is Wyst safer than C?</p>
-								<p class="faq-a">
-									Not in the Rust sense. Wyst is not
-									memory-safe and does not prevent bad
-									pointers, bad lifetimes, or device misuse.
-									The narrower safety property is that the
-									compiler does not turn undefined behavior
-									assumptions into unrelated rewrites.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">05</span>
-							<div>
-								<p class="faq-q">
-									What happens on invalid memory access?
-								</p>
-								<p class="faq-a">
-									Invalid memory access can still fault or
-									misbehave. Wyst does not hide that behind a
-									safety story. The point is that the compiler
-									will not use the possibility of invalid
-									memory access as fuel for an optimization
-									that changes unrelated program behavior.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">06</span>
-							<div>
-								<p class="faq-q">
-									What should I not use Wyst for?
-								</p>
-								<p class="faq-a">
-									Do not use it for production kernels,
-									security-critical code, portable user-space
-									applications, or anything that needs a
-									stable 1.0 ecosystem today. Use it for
-									reading, experiments, fixtures, and
-									understanding the language design.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">07</span>
-							<div>
-								<p class="faq-q">Why ARM64 only?</p>
-								<p class="faq-a">
-									A single ISA lets Wyst expose the real
-									memory model, register classes, and barriers
-									without inventing a portable abstraction
-									over things that do not map cleanly between
-									architectures. x86 or RISC-V would be a
-									different project.
-								</p>
-							</div>
-						</div>
-						<div class="faq-item">
-							<span class="faq-num">08</span>
-							<div>
-								<p class="faq-q">
-									How does it sit between C and assembly?
-								</p>
-								<p class="faq-a">
-									Above assembly: structured control flow,
-									named bindings, typed memory access,
-									modules, explicit generics, enums, packed
-									structs, and a register allocator. Below C:
-									no implicit promotions, no hidden
-									allocation, and no compiler-exploitable UB
-									to reason from.
-								</p>
-							</div>
-						</div>
 					</div>
 				</div>
 			</section>
