@@ -16,7 +16,6 @@ const prepareWorkerAssetsScript = await readFile(
 	new URL("../tools/prepare-worker-assets.mjs", import.meta.url),
 	"utf8",
 );
-const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
 );
@@ -103,27 +102,6 @@ test("site headers do not include the old lang brand tag", async () => {
 		[
 			"examples",
 			await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
-		],
-		[
-			"coming from C",
-			await readFile(
-				new URL("../coming-from-c/index.html", import.meta.url),
-				"utf8",
-			),
-		],
-		[
-			"coming from assembly",
-			await readFile(
-				new URL("../coming-from-assembly/index.html", import.meta.url),
-				"utf8",
-			),
-		],
-		[
-			"coming from Rust/Zig",
-			await readFile(
-				new URL("../coming-from-rust-zig/index.html", import.meta.url),
-				"utf8",
-			),
 		],
 	];
 
@@ -270,15 +248,6 @@ test("homepage owns project status without a standalone status route", async () 
 		html,
 		notFoundHtml,
 		await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
-		await readFile(new URL("../coming-from-c/index.html", import.meta.url), "utf8"),
-		await readFile(
-			new URL("../coming-from-assembly/index.html", import.meta.url),
-			"utf8",
-		),
-		await readFile(
-			new URL("../coming-from-rust-zig/index.html", import.meta.url),
-			"utf8",
-		),
 	]) {
 		assert.doesNotMatch(pageHtml, /href="\/status\/"/);
 	}
@@ -327,41 +296,17 @@ test("consolidated reader answers preserve skeptical-reader caveats", () => {
 	assert.match(overviewSection, /no LLVM backend/);
 });
 
-test("migration pages expose tradeoff tables and are linked", async () => {
-	for (const [route, heading, caveat] of [
-		["coming-from-c", "Coming from C", "invalid memory can still fault or misbehave"],
-		["coming-from-assembly", "Coming from assembly", "ARM64 only"],
-		["coming-from-rust-zig", "Coming from Rust or Zig", "not memory-safe"],
-	]) {
-		const pageHtml = await readFile(
-			new URL(`../${route}/index.html`, import.meta.url),
-			"utf8",
-		);
+test("homepage and worker assets omit removed migration guides", () => {
+	assert.doesNotMatch(html, /class="migration-strip"/);
+	assert.doesNotMatch(html, /Migration guides/);
 
-		assert.match(html, new RegExp(`href="/${route}/"`));
-		assert.match(prepareWorkerAssetsScript, new RegExp(`"${route}"`));
-		assert.match(pageHtml, new RegExp(`<h1>${heading}</h1>`));
-		const comparisonIndex = pageHtml.indexOf("data-language-comparison");
-		const tableIndex = pageHtml.indexOf('class="tradeoff-table-wrap"');
-		assert.notEqual(
-			comparisonIndex,
-			-1,
-			`${route} should include a source comparison section`,
-		);
-		assert.notEqual(tableIndex, -1, `${route} should include a tradeoff table`);
-		assert.ok(
-			comparisonIndex < tableIndex,
-			`${route} should put source comparisons before the tradeoff table`,
-		);
-		for (const column of [
-			"Familiar concept",
-			"Wyst equivalent",
-			"What you gain",
-			"What you give up",
-		]) {
-			assert.match(pageHtml, new RegExp(column));
-		}
-		assert.match(pageHtml, new RegExp(caveat));
+	for (const route of [
+		"coming-from-c",
+		"coming-from-assembly",
+		"coming-from-rust-zig",
+	]) {
+		assert.doesNotMatch(html, new RegExp(`href="/${route}/"`));
+		assert.doesNotMatch(prepareWorkerAssetsScript, new RegExp(`"${route}"`));
 	}
 });
 
@@ -577,57 +522,13 @@ test("homepage presents additional static examples inline", () => {
 	assert.match(html, /static language example/);
 });
 
-test("migration guides include sum_to comparisons for their source language", async () => {
-	const pages = {
-		c: await readFile(new URL("../coming-from-c/index.html", import.meta.url), "utf8"),
-		assembly: await readFile(
-			new URL("../coming-from-assembly/index.html", import.meta.url),
-			"utf8",
-		),
-		rust: await readFile(
-			new URL("../coming-from-rust-zig/index.html", import.meta.url),
-			"utf8",
-		),
-	};
-
-	assert.match(pages.c, /data-language-comparison="sum-to-c"/);
-	assert.match(pages.c, /<pre class="artifact-pre syntax-code language-c"/);
-	assert.match(
-		pages.c,
-		/<span class="token type">int<\/span> <span class="token function">sum_to<\/span>/,
-	);
-	assert.match(pages.c, /<span class="token keyword">for<\/span>/);
-	assert.match(pages.c, /signed overflow in\s+C remains undefined/);
-	assert.match(pages.c, /pub <span class="token function">sum_to<\/span>/);
-
-	assert.match(pages.assembly, /data-language-comparison="sum-to-aarch64"/);
-	assert.match(
-		pages.assembly,
-		/<pre class="artifact-pre syntax-code language-aarch64"/,
-	);
-	assert.match(
-		pages.assembly,
-		/<span class="token label">sum_to:<\/span>/,
-	);
-	assert.match(
-		pages.assembly,
-		/<span class="token instruction">b\.ge<\/span>\s+<span class="token label-ref">\.Ldone<\/span>/,
-	);
-	assert.match(pages.assembly, /structured loop intent/);
-	assert.match(pages.assembly, /pub <span class="token function">sum_to<\/span>/);
-
-	assert.match(pages.rust, /data-language-comparison="sum-to-rust"/);
-	assert.match(pages.rust, /<pre class="artifact-pre syntax-code language-rust"/);
-	assert.match(
-		pages.rust,
-		/<span class="token keyword">pub<\/span> <span class="token keyword">fn<\/span> <span class="token function">sum_to<\/span>/,
-	);
-	assert.match(pages.rust, /<span class="token method">wrapping_add<\/span>/);
-	assert.match(pages.rust, /not a Rust replacement/);
-	assert.match(pages.rust, /pub <span class="token function">sum_to<\/span>/);
-	assert.match(siteCss, /\.syntax-code \.token\.keyword/);
-	assert.match(siteCss, /\.syntax-code \.token\.instruction/);
-	assert.match(siteCss, /\.syntax-code \.token\.register/);
+test("removed migration comparisons are not presented on the homepage", () => {
+	assert.doesNotMatch(html, /data-language-comparison=/);
+	assert.doesNotMatch(html, /Coming from C/);
+	assert.doesNotMatch(html, /Coming from assembly/);
+	assert.doesNotMatch(html, /Coming from Rust or Zig/);
+	assert.doesNotMatch(html, /Familiar concept/);
+	assert.doesNotMatch(html, /Wyst equivalent/);
 });
 
 test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {

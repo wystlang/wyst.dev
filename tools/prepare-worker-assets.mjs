@@ -23,9 +23,6 @@ const entries = [
 	"assets",
 	"docs",
 	"examples",
-	"coming-from-c",
-	"coming-from-assembly",
-	"coming-from-rust-zig",
 ];
 
 for (const entry of entries) {
