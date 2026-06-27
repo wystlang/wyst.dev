@@ -52,6 +52,21 @@ test("landing page tracks the v0.8 draft language surface", () => {
 	assert.doesNotMatch(html, /<b>Current:<\/b> v0\.7 ·/);
 });
 
+test("landing page states current limits near the top", () => {
+	assert.match(html, /aria-label="Current Wyst limits and evidence"/);
+	for (const phrase of [
+		"ARM64 only",
+		"QEMU-tested",
+		"Rust bootstrap compiler",
+		"not self-hosting",
+		"not memory-safe",
+		"no LLVM backend",
+		"v0.8-draft",
+	]) {
+		assert.match(html, new RegExp(phrase));
+	}
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
