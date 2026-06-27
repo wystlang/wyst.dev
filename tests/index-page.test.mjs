@@ -186,29 +186,16 @@ test("homepage examples carry explicit provenance labels", () => {
 	}
 
 	assert.match(html, /checked by website tests/);
-	assert.match(html, /illustrative excerpt/);
+	assert.doesNotMatch(html, /illustrative excerpt/);
 });
 
 test("compiler-checked homepage examples declare type and entry metadata", () => {
-	for (const [name, entry] of [
-		["hero-uart", "uart_write"],
-		["uart-source", "uart_write"],
-		["atomic-source", "publish"],
-	]) {
+	assert.deepEqual(Object.keys(snippets), []);
+
+	for (const [name, entry] of [["hero-uart", "uart_write"]]) {
 		const attrs = provenanceAttributes(name);
 		assert.equal(attrs["data-example-kind"], "wyst-source");
 		assert.equal(attrs["data-example-entry"], entry);
-	}
-
-	for (const name of [
-		"uart-asm",
-		"vectors-asm",
-		"atomic-asm",
-	]) {
-		assert.equal(
-			provenanceAttributes(name)["data-example-kind"],
-			"assembly-excerpt",
-		);
 	}
 });
 
@@ -303,7 +290,7 @@ test("migration pages expose tradeoff tables and are linked", async () => {
 	}
 });
 
-test("examples page presents one compiler-backed sum_to artifact", async () => {
+test("examples page presents compiler-backed sum_to plus additional static examples", async () => {
 	const examplesHtml = await readFile(
 		new URL("../examples/index.html", import.meta.url),
 		"utf8",
@@ -344,6 +331,10 @@ test("examples page presents one compiler-backed sum_to artifact", async () => {
 		"Examples with compiler artifacts",
 		"compiler-backed",
 		"sum_to",
+		"Additional examples",
+		"MMIO UART write",
+		"Release/acquire flag",
+		"EL1 vector sketch",
 		"No arbitrary code execution",
 		"Source",
 		"Explain report",
@@ -383,6 +374,17 @@ test("examples page presents one compiler-backed sum_to artifact", async () => {
 	}
 	assert.match(examplesHtml, /<pre class="wyst-code language-wyst"/);
 	assert.match(examplesHtml, /<span class="token keyword">while<\/span>/);
+	for (const card of ["mmio-uart", "release-acquire", "el1-vector"]) {
+		assert.match(
+			examplesHtml,
+			new RegExp(`data-example-card="${card}"`),
+			`${card} should be an examples-page card`,
+		);
+	}
+	assert.match(examplesHtml, /<span class="token directive macro">#module<\/span> drivers\.uart/);
+	assert.match(examplesHtml, /<span class="token directive macro">#release<\/span>/);
+	assert.match(examplesHtml, /<span class="token directive macro">#exception_vector<\/span>/);
+	assert.match(examplesHtml, /static language example/);
 	assert.doesNotMatch(examplesHtml, /data-inspector-example="uart"/);
 	assert.doesNotMatch(examplesHtml, /data-inspector-example="atomic"/);
 	assert.doesNotMatch(examplesHtml, /Static inspector/);
@@ -412,6 +414,19 @@ test("generated pages track the v0.8 draft header badge", () => {
 	}
 });
 
+test("generated pages do not link removed homepage example anchors", () => {
+	for (const [name, pageHtml] of [
+		["source-of-truth docs", docsSourceOfTruthHtml],
+		["404", notFoundHtml],
+	]) {
+		assert.doesNotMatch(pageHtml, /\/#compare/, `${name} should not link #compare`);
+		assert.doesNotMatch(pageHtml, /\/#inspect/, `${name} should not link #inspect`);
+		assert.match(pageHtml, /href="\/examples\/"/, `${name} should link examples page`);
+	}
+
+	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
+});
+
 test("homepage delegates sum_to artifacts to the examples page", () => {
 	assert.match(html, /href="\/examples\/"/);
 	assert.doesNotMatch(html, /id="compare"/);
@@ -439,6 +454,62 @@ test("homepage delegates sum_to artifacts to the examples page", () => {
 			`${name} provenance should not exist on the homepage`,
 		);
 	}
+});
+
+test("homepage delegates inspector examples to the examples page", () => {
+	assert.match(html, /href="\/examples\/"/);
+	assert.doesNotMatch(html, /id="inspect"/);
+	assert.doesNotMatch(html, /href="#inspect"/);
+	assert.doesNotMatch(html, /Source ↔ machine/);
+	assert.doesNotMatch(html, /data-snippet=/);
+	assert.deepEqual(Object.keys(snippets), []);
+
+	for (const name of [
+		"uart-source",
+		"uart-asm",
+		"vectors-source",
+		"vectors-asm",
+		"atomic-source",
+		"atomic-asm",
+	]) {
+		assert.equal(snippets[name], undefined, `${name} snippet should be absent`);
+		assert.doesNotMatch(
+			html,
+			new RegExp(`data-example-provenance="${name}"`),
+			`${name} provenance should not exist on the homepage`,
+		);
+	}
+});
+
+test("migration guides include sum_to comparisons for their source language", async () => {
+	const pages = {
+		c: await readFile(new URL("../coming-from-c/index.html", import.meta.url), "utf8"),
+		assembly: await readFile(
+			new URL("../coming-from-assembly/index.html", import.meta.url),
+			"utf8",
+		),
+		rust: await readFile(
+			new URL("../coming-from-rust-zig/index.html", import.meta.url),
+			"utf8",
+		),
+	};
+
+	assert.match(pages.c, /data-language-comparison="sum-to-c"/);
+	assert.match(pages.c, /int sum_to\(int n\)/);
+	assert.match(pages.c, /signed overflow in\s+C remains undefined/);
+	assert.match(pages.c, /pub <span class="token function">sum_to<\/span>/);
+
+	assert.match(pages.assembly, /data-language-comparison="sum-to-aarch64"/);
+	assert.match(pages.assembly, /sum_to:/);
+	assert.match(pages.assembly, /b\.ge\s+\.Ldone/);
+	assert.match(pages.assembly, /structured loop intent/);
+	assert.match(pages.assembly, /pub <span class="token function">sum_to<\/span>/);
+
+	assert.match(pages.rust, /data-language-comparison="sum-to-rust"/);
+	assert.match(pages.rust, /fn sum_to\(n: i32\) -> i32/);
+	assert.match(pages.rust, /wrapping_add/);
+	assert.match(pages.rust, /not a Rust replacement/);
+	assert.match(pages.rust, /pub <span class="token function">sum_to<\/span>/);
 });
 
 test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {
@@ -598,7 +669,7 @@ async function assertWyncBuildPasses(name, source, entry) {
 
 test("index examples that are presented as real source pass wync check", async (t) => {
 	const examples = compilerCheckedSourceExamples();
-	assert.equal(examples.length, 3);
+	assert.equal(examples.length, 1);
 
 	for (const { name, source } of examples) {
 		await t.test(name, () => assertWyncCheckPasses(name, source));
@@ -607,39 +678,12 @@ test("index examples that are presented as real source pass wync check", async (
 
 test("index examples that are presented as complete source build to ELF", async (t) => {
 	const examples = compilerCheckedSourceExamples();
-	assert.equal(examples.length, 3);
+	assert.equal(examples.length, 1);
 
 	for (const { name, source, entry } of examples) {
 		assert.ok(entry, `${name} should declare a build entry`);
 		await t.test(name, () => assertWyncBuildPasses(name, source, entry));
 	}
-});
-
-test("other index source and assembly snippets advertise documented patterns", () => {
-	const uartSource = snippetText("uart-source");
-	const uartAsm = snippetText("uart-asm");
-	assert.match(uartSource, /@mmio records MMIO intent/);
-	assert.doesNotMatch(uartSource, /@volatile marks MMIO/);
-	assert.match(uartSource, /UARTDR :: @mmio u32/);
-	assert.match(uartSource, /UARTFR :: @mmio u32/);
-	assert.match(uartSource, /while u32@\[UARTFR\] & TXFF != 0/);
-	assert.match(uartAsm, /ldr w2, \[x1, #0x18\]/);
-	assert.match(uartAsm, /tbnz w2, #5, \.Lwait/);
-	assert.match(uartAsm, /str w0, \[x1\]/);
-
-	const atomicSource = snippetText("atomic-source");
-	const atomicAsm = snippetText("atomic-asm");
-	assert.match(atomicSource, /#release u32@\[flag\] = v/);
-	assert.match(atomicSource, /return #acquire u32@\[flag\]/);
-	assert.match(atomicAsm, /stlr w1, \[x0\]/);
-	assert.match(atomicAsm, /ldar w0, \[x0\]/);
-
-	const vectorsSource = snippetText("vectors-source");
-	const vectorsAsm = snippetText("vectors-asm");
-	assert.match(vectorsSource, /Abbreviated EL1 vector sketch/);
-	assert.match(vectorsSource, /slots 2-3 omitted here/);
-	assert.match(vectorsAsm, /\.fill 31, 4, 0xd503201f/);
-	assert.match(vectorsAsm, /; \.\.\. slots 6\S15/);
 });
 
 test("compact lowering examples do not claim current-run compiler artifacts", () => {

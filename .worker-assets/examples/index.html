@@ -11,7 +11,7 @@
 		/>
 		<title>Wyst Examples - Compiler Artifacts</title>
 		<link rel="canonical" href="https://wyst.dev/examples/" />
-		<link rel="stylesheet" href="/assets/wyst.418ad06d.css" />
+		<link rel="stylesheet" href="/assets/wyst.2ab45d8b.css" />
 	</head>
 	<body>
 		<a class="skip" href="#main">Skip to content</a>
@@ -40,17 +40,20 @@
 						<p class="guide-intro">
 							This page is static and has
 							<strong>No arbitrary code execution</strong>. It
-							shows one compiler-backed <code>sum_to</code>
-							example with source, the real
+							keeps one compiler-backed <code>sum_to</code>
+							artifact with source, the real
 							<code>wync explain lowering</code> report, generated
 							AArch64 from <code>wync disasm</code>, and byte /
-							provenance rows from the report fixture.
+							provenance rows from the report fixture. Additional
+							examples below are static language examples, not
+							hosted compiler sessions.
 						</p>
 						<nav class="artifact-nav" aria-label="Artifact sections">
 							<a href="#source">Source</a>
 							<a href="#explain-report">Explain report</a>
 							<a href="#generated-aarch64">Generated AArch64</a>
 							<a href="#bytes-provenance">Bytes / provenance</a>
+							<a href="#additional-examples">Additional examples</a>
 						</nav>
 					</div>
 					<div class="status-summary">
@@ -245,6 +248,97 @@ machine artifact [provenance=emitted-bytes freshness=current-run]
 										</tbody>
 									</table>
 								</div>
+							</section>
+						</div>
+					</article>
+
+					<article
+						class="example-artifact example-artifact--secondary"
+						id="additional-examples"
+						aria-labelledby="additional-examples-heading"
+					>
+						<div class="artifact-head">
+							<span class="eyebrow">Additional examples</span>
+							<h2 id="additional-examples-heading">
+								Smaller Wyst source shapes.
+							</h2>
+							<p>
+								These are static language examples for scanning
+								syntax and intent. They are not marked as
+								current-run compiler artifacts; use the
+								<code>sum_to</code> artifact above when you want
+								report-backed output.
+							</p>
+						</div>
+
+						<div class="artifact-grid example-card-grid">
+							<section
+								class="artifact-panel"
+								data-example-card="mmio-uart"
+							>
+								<h3>MMIO UART write</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> drivers.uart
+
+UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+UARTDR <span class="token operator">::</span> <span class="token builtin type">@mmio u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
+UARTFR <span class="token operator">::</span> <span class="token builtin type">@mmio u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x18</span>
+TXFF <span class="token operator">::</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x20</span>
+
+uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">while</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+        <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    <span class="token builtin type">u32@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as.widen</span> <span class="token builtin type">u32</span>
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									static language example; MMIO intent and
+									volatile access semantics are visible in the
+									source.
+								</p>
+							</section>
+
+							<section
+								class="artifact-panel"
+								data-example-card="release-acquire"
+							>
+								<h3>Release/acquire flag</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> sync.atomic
+
+publish <span class="token operator">::</span> <span class="token punctuation">(</span>flag <span class="token operator">:</span> <span class="token builtin type">@u32</span><span class="token punctuation">,</span> v <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token directive macro">#release</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span> <span class="token operator">=</span> v
+<span class="token punctuation">}</span>
+
+observe <span class="token operator">::</span> <span class="token punctuation">(</span>flag <span class="token operator">:</span> <span class="token builtin type">@u32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">u32</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u32@</span><span class="token punctuation">[</span>flag<span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									static language example; ordering is written
+									on the access rather than inferred.
+								</p>
+							</section>
+
+							<section
+								class="artifact-panel"
+								data-example-card="el1-vector"
+							>
+								<h3>EL1 vector sketch</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> traps.vectors
+
+el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x800</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+        <span class="token keyword">goto</span> unexpected
+    <span class="token punctuation">}</span>
+    spx_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+        <span class="token keyword">goto</span> handle_sync
+    <span class="token punctuation">}</span>
+    spx_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span> <span class="token punctuation">{</span>
+        <span class="token keyword">goto</span> handle_irq
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									static language example; abbreviated sketch,
+									not a complete 16-slot vector table.
+								</p>
 							</section>
 						</div>
 					</article>

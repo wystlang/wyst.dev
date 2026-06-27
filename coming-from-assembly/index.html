@@ -134,6 +134,64 @@
 						</table>
 					</div>
 
+					<section
+						class="language-comparison"
+						data-language-comparison="sum-to-aarch64"
+						aria-labelledby="sum-to-aarch64-heading"
+					>
+						<div class="artifact-head">
+							<span class="eyebrow">sum_to comparison</span>
+							<h2 id="sum-to-aarch64-heading">
+								The same loop from AArch64.
+							</h2>
+							<p>
+								The assembly is direct, but the structured loop
+								intent lives in comments and label discipline.
+								Wyst keeps that intent in the source while still
+								lowering to inspectable AArch64.
+							</p>
+						</div>
+						<div class="artifact-grid">
+							<section class="artifact-panel">
+								<h3>AArch64</h3>
+								<pre class="artifact-pre"><code>sum_to:
+    mov   w1, #0
+    mov   w2, #0
+.Lloop:
+    cmp   w2, w0
+    b.ge  .Ldone
+    add   w1, w1, w2
+    add   w2, w2, #1
+    b     .Lloop
+.Ldone:
+    mov   w0, w1
+    ret</code></pre>
+								<p class="provenance">
+									comparison snippet; structured loop intent is
+									manual in raw assembly
+								</p>
+							</section>
+							<section class="artifact-panel">
+								<h3>Wyst</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> demo.math
+
+pub <span class="token function">sum_to</span> <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">i32</span> <span class="token punctuation">{</span>
+    acc <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    i <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
+        acc <span class="token operator">+=</span> i
+        i <span class="token operator">+=</span> <span class="token number">1</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> acc
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									Wyst comparison source; labels and branch
+									shape move into inspectable lowering output
+								</p>
+							</section>
+						</div>
+					</section>
+
 					<div class="guide-caveats">
 						<div>
 							<h2>Best fit</h2>

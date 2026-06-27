@@ -129,6 +129,57 @@
 						</table>
 					</div>
 
+					<section
+						class="language-comparison"
+						data-language-comparison="sum-to-c"
+						aria-labelledby="sum-to-c-heading"
+					>
+						<div class="artifact-head">
+							<span class="eyebrow">sum_to comparison</span>
+							<h2 id="sum-to-c-heading">The same loop from C.</h2>
+							<p>
+								C makes the loop compact, but signed overflow in
+								C remains undefined. Wyst keeps the width and
+								overflow behavior in the language contract so
+								the compiler has no UB-powered rewrite license.
+							</p>
+						</div>
+						<div class="artifact-grid">
+							<section class="artifact-panel">
+								<h3>C</h3>
+								<pre class="artifact-pre"><code>int sum_to(int n) {
+    int acc = 0;
+    for (int i = 0; i &lt; n; i++) {
+        acc += i;
+    }
+    return acc;
+}</code></pre>
+								<p class="provenance">
+									comparison snippet; signed overflow in C
+									remains undefined
+								</p>
+							</section>
+							<section class="artifact-panel">
+								<h3>Wyst</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> demo.math
+
+pub <span class="token function">sum_to</span> <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">i32</span> <span class="token punctuation">{</span>
+    acc <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    i <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
+        acc <span class="token operator">+=</span> i
+        i <span class="token operator">+=</span> <span class="token number">1</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> acc
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									Wyst comparison source; explicit width and
+									visible control flow
+								</p>
+							</section>
+						</div>
+					</section>
+
 					<div class="guide-caveats">
 						<div>
 							<h2>Best fit</h2>
