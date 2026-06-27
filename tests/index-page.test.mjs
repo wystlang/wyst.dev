@@ -95,6 +95,24 @@ test("landing page uses narrow positioning and avoids overbroad safety copy", ()
 	assert.doesNotMatch(html, /Defined\s+inputs produce defined output/);
 });
 
+test("hero keeps calls to action focused", () => {
+	const match = html.match(
+		/<div class="cta-row">([\s\S]*?)<\/div>\s*<\/div>\s*<div class="hero-card">/,
+	);
+	assert.ok(match, "hero CTA row should exist");
+
+	const heroCtas = [...match[1].matchAll(/<a\b[^>]*href="([^"]+)"[\s\S]*?>([\s\S]*?)<\/a\s*>/g)]
+		.map(([, href, body]) => ({
+			href,
+			label: body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+		}));
+
+	assert.deepEqual(heroCtas, [
+		{ href: "/docs/", label: "Read the Docs →" },
+		{ href: "/try/", label: "Open static demo" },
+	]);
+});
+
 test("homepage examples carry explicit provenance labels", () => {
 	for (const name of [...Object.keys(codeBlocks), ...Object.keys(snippets)]) {
 		assert.match(
