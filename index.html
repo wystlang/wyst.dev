@@ -979,18 +979,15 @@
 						<div class="faq-item">
 							<span class="faq-num">01</span>
 							<div>
-								<p class="faq-q">
-									What does Wyst actually produce today?
-								</p>
+								<p class="faq-q">What can be built today?</p>
 								<p class="faq-a">
-									Deterministic AArch64 ELF binaries for
-									bare-metal and small-kernel work, tested
-									under QEMU. The compiler, <b>wync</b>, is a
-									zero-dependency Rust bootstrap with no LLVM
-									or host linker in the emit path. It also
-									ships an LSP server, a canonical formatter
-									(<code>wync fmt</code>), project builds, and
-									built-in lowering, effect, and storage
+									Small ARM64 bare-metal and kernel-oriented
+									programs: hand-rolled boot paths, MMIO
+									experiments, simple runtime pieces, and
+									fixtures that produce deterministic AArch64
+									ELF output. The compiler also supports
+									<code>wync check</code>, <code>fmt</code>,
+									project builds, LSP diagnostics, and explain
 									reports.
 								</p>
 							</div>
@@ -999,61 +996,59 @@
 							<span class="faq-num">02</span>
 							<div>
 								<p class="faq-q">
-									How does it sit between C and assembly?
+									Why isn't Wyst self-hosting?
 								</p>
 								<p class="faq-a">
-									Above assembly: structured control flow,
-									named bindings, typed memory access,
-									modules, explicit generics, enums, packed
-									structs, and a register allocator.
-									Below C: no undefined behavior to exploit,
-									no implicit promotions, no hidden
-									allocation, no aliasing rules to trip over.
+									The current compiler is a Rust bootstrap
+									because the language and lowering contract
+									are still changing. Self-hosting would be a
+									major milestone, not proof of correctness by
+									itself, and it is not required to validate
+									the current AArch64 output path.
 								</p>
 							</div>
 						</div>
 						<div class="faq-item">
 							<span class="faq-num">03</span>
 							<div>
-								<p class="faq-q">Why ARM64 only?</p>
+								<p class="faq-q">Why no LLVM backend?</p>
 								<p class="faq-a">
-									A single ISA lets Wyst expose the real
-									memory model, register classes, and barriers
-									without inventing a portable abstraction
-									over things that don't map cleanly between
-									architectures. x86 or RISC-V would be a
-									different project.
+									LLVM is excellent when you want a mature
+									optimizing backend. Wyst is testing a
+									different contract: the lowering is meant to
+									be inspectable, direct, and part of the
+									language surface. There is no LLVM backend
+									in the plan.
 								</p>
 							</div>
 						</div>
 						<div class="faq-item">
 							<span class="faq-num">04</span>
 							<div>
-								<p class="faq-q">
-									What does "no compiler-exploitable UB" mean
-									in practice?
-								</p>
+								<p class="faq-q">Is Wyst safer than C?</p>
 								<p class="faq-a">
-									Signed overflow wraps. Out-of-bounds reads
-									return what the hardware returns. The
-									compiler is never allowed to delete a branch
-									on the grounds that the only way to reach it
-									was undefined. <code>#deny</code> lets you
-									forbid effects outright.
+									Not in the Rust sense. Wyst is not
+									memory-safe and does not prevent bad
+									pointers, bad lifetimes, or device misuse.
+									The narrower safety property is that the
+									compiler does not turn undefined behavior
+									assumptions into unrelated rewrites.
 								</p>
 							</div>
 						</div>
 						<div class="faq-item">
 							<span class="faq-num">05</span>
 							<div>
-								<p class="faq-q">Is Wyst memory-safe?</p>
+								<p class="faq-q">
+									What happens on invalid memory access?
+								</p>
 								<p class="faq-a">
-									No, and it doesn't claim to be. You can
-									still dereference garbage. The promise is
-									narrower: the compiler won't
-									<b>exploit</b> the possibility that you did.
-									That's a transparency property, not a safety
-									one.
+									Invalid memory access can still fault or
+									misbehave. Wyst does not hide that behind a
+									safety story. The point is that the compiler
+									will not use the possibility of invalid
+									memory access as fuel for an optimization
+									that changes unrelated program behavior.
 								</p>
 							</div>
 						</div>
@@ -1061,13 +1056,46 @@
 							<span class="faq-num">06</span>
 							<div>
 								<p class="faq-q">
-									Will there be an LLVM backend?
+									What should I not use Wyst for?
 								</p>
 								<p class="faq-a">
-									No. The lowering is meant to be the spec.
-									Routing through a backend that performs
-									UB-based optimization would defeat the
-									entire point of the language.
+									Do not use it for production kernels,
+									security-critical code, portable user-space
+									applications, or anything that needs a
+									stable 1.0 ecosystem today. Use it for
+									reading, experiments, fixtures, and
+									understanding the language design.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">07</span>
+							<div>
+								<p class="faq-q">Why ARM64 only?</p>
+								<p class="faq-a">
+									A single ISA lets Wyst expose the real
+									memory model, register classes, and barriers
+									without inventing a portable abstraction
+									over things that do not map cleanly between
+									architectures. x86 or RISC-V would be a
+									different project.
+								</p>
+							</div>
+						</div>
+						<div class="faq-item">
+							<span class="faq-num">08</span>
+							<div>
+								<p class="faq-q">
+									How does it sit between C and assembly?
+								</p>
+								<p class="faq-a">
+									Above assembly: structured control flow,
+									named bindings, typed memory access,
+									modules, explicit generics, enums, packed
+									structs, and a register allocator. Below C:
+									no implicit promotions, no hidden
+									allocation, and no compiler-exploitable UB
+									to reason from.
 								</p>
 							</div>
 						</div>

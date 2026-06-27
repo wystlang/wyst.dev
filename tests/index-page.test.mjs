@@ -188,6 +188,23 @@ test("status page exposes current project state and is linked", async () => {
 	}
 });
 
+test("FAQ directly preempts common skeptical-reader questions", () => {
+	for (const question of [
+		"What can be built today?",
+		"Why isn't Wyst self-hosting?",
+		"Why no LLVM backend?",
+		"Is Wyst safer than C?",
+		"What happens on invalid memory access?",
+		"What should I not use Wyst for?",
+	]) {
+		assert.match(html, new RegExp(question.replace(/[?]/g, "\\?")));
+	}
+
+	assert.match(html, /not memory-safe/);
+	assert.match(html, /invalid memory access can still fault\s+or misbehave/);
+	assert.match(html, /no LLVM backend/);
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
