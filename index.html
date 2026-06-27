@@ -86,7 +86,7 @@
 					</span>
 				</button>
 				<nav id="primary-nav" class="nav-links" aria-label="Primary">
-					<a href="#evidence">Overview</a>
+					<a href="#overview">Overview</a>
 					<a href="/examples/">Examples</a>
 					<a href="/docs/">Docs</a>
 					<a
@@ -187,13 +187,13 @@
 			</section>
 			<section
 				class="limits-strip"
-				aria-label="Current Wyst limits and evidence"
+				aria-label="Current Wyst limits and validation"
 			>
 				<div class="wrap limits-strip-inner">
 					<div class="limits-strip-label">Current reality</div>
 					<ul class="limits-list">
 						<li><b>Target:</b> ARM64 only</li>
-						<li><b>Evidence:</b> QEMU-tested</li>
+						<li><b>Validation:</b> QEMU-tested</li>
 						<li><b>Compiler:</b> Rust bootstrap compiler</li>
 						<li><b>Status:</b> not self-hosting</li>
 						<li><b>Safety:</b> not memory-safe</li>
@@ -203,21 +203,21 @@
 				</div>
 			</section>
 			<section
-				class="sec evidence-band"
-				id="evidence"
-				aria-label="Evidence, design boundaries, and reader answers"
+				class="sec overview-band"
+				id="overview"
+				aria-label="Overview, design boundaries, and reader answers"
 			>
-				<div class="wrap evidence-wrap">
-					<div class="evidence-head">
-						<span class="eyebrow">Evidence first</span>
-						<h2>Evidence, boundaries, and straight answers.</h2>
+				<div class="wrap overview-wrap">
+					<div class="overview-head">
+						<span class="eyebrow">Overview</span>
+						<h2>Boundaries and straight answers.</h2>
 						<p>
 							One compact pass through what is real today, what
 							the compiler promises, and what Wyst deliberately
 							does not try to be.
 						</p>
 					</div>
-					<div class="evidence-contract">
+					<div class="overview-contract">
 						<div class="contract-copy">
 							<span class="eyebrow">Design contract</span>
 							<h3>No magic. No surprises.</h3>
@@ -256,7 +256,7 @@
 					</div>
 					<div class="boundary-grid">
 						<article class="boundary-card">
-							<span class="evidence-kicker">Non-goals</span>
+							<span class="overview-kicker">Non-goals</span>
 							<h3>What Wyst leaves out.</h3>
 							<ul>
 								<li>
@@ -278,7 +278,7 @@
 							</ul>
 						</article>
 						<article class="boundary-card">
-							<span class="evidence-kicker">Tradeoffs</span>
+							<span class="overview-kicker">Tradeoffs</span>
 							<h3>What you give up.</h3>
 							<ul>
 								<li>

@@ -811,37 +811,37 @@ pre code {
 	}
 }
 
-.evidence-band {
+.overview-band {
 	padding-top: clamp(44px, 6vw, 72px);
 	padding-bottom: clamp(44px, 6vw, 72px);
 	background: var(--bg-elev);
 	border-bottom: 1px solid var(--line);
 }
 
-.evidence-wrap {
+.overview-wrap {
 	display: grid;
 	gap: var(--space-2xl);
 }
 
-.evidence-head {
+.overview-head {
 	display: grid;
 	grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1fr);
 	gap: var(--space-lg) var(--space-3xl);
 	align-items: end;
 }
 
-.evidence-head h2 {
+.overview-head h2 {
 	font-size: clamp(26px, 3vw, 36px);
 }
 
-.evidence-head p {
+.overview-head p {
 	color: var(--muted);
 	font-size: var(--text-lg);
 	line-height: 1.6;
 	max-width: 62ch;
 }
 
-.evidence-kicker {
+.overview-kicker {
 	font-family: var(--mono);
 	font-size: var(--text-2xs);
 	letter-spacing: 0.12em;
@@ -849,7 +849,7 @@ pre code {
 	color: var(--accent);
 }
 
-.evidence-contract {
+.overview-contract {
 	display: grid;
 	grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1fr);
 	gap: var(--space-xl);
@@ -993,7 +993,7 @@ pre code {
 }
 
 @media (max-width: 720px) {
-	.evidence-head {
+	.overview-head {
 		grid-template-columns: 1fr;
 		align-items: start;
 	}
@@ -1002,7 +1002,7 @@ pre code {
 		grid-template-columns: 1fr;
 	}
 
-	.evidence-contract,
+	.overview-contract,
 	.boundary-grid,
 	.migration-links {
 		grid-template-columns: 1fr;

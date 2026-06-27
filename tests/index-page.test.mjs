@@ -137,7 +137,7 @@ test("site headers do not include the old lang brand tag", async () => {
 });
 
 test("landing page states current limits near the top", () => {
-	assert.match(html, /aria-label="Current Wyst limits and evidence"/);
+	assert.match(html, /aria-label="Current Wyst limits and validation"/);
 	for (const phrase of [
 		"ARM64 only",
 		"QEMU-tested",
@@ -203,22 +203,23 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
-test("landing page consolidates principles, boundaries, and reader answers without evidence cards", () => {
-	const evidenceSection = sectionHtmlByStart(
+test("landing page consolidates principles, boundaries, and reader answers as overview", () => {
+	const overviewSection = sectionHtmlByStart(
 		html,
-		'<section\n\t\t\t\tclass="sec evidence-band"\n\t\t\t\tid="evidence"',
+		'<section\n\t\t\t\tclass="sec overview-band"\n\t\t\t\tid="overview"',
 	);
 	const headerHtml = siteHeaderHtml(html);
 
+	assert.doesNotMatch(html, /evidence/i);
 	assert.doesNotMatch(html, /id="philosophy"/);
 	assert.doesNotMatch(html, /id="not"/);
 	assert.doesNotMatch(html, /id="faq"/);
-	assert.match(headerHtml, /<a href="#evidence">Overview<\/a>/);
-	assert.doesNotMatch(headerHtml, /<a href="#evidence">Evidence<\/a>/);
+	assert.match(headerHtml, /<a href="#overview">Overview<\/a>/);
+	assert.doesNotMatch(headerHtml, /href="#evidence"/i);
 	assert.doesNotMatch(headerHtml, /href="#not"/);
 	assert.doesNotMatch(headerHtml, /href="#faq"/);
-	assert.doesNotMatch(evidenceSection, /class="evidence-grid"/);
-	assert.doesNotMatch(evidenceSection, /class="evidence-item"/);
+	assert.doesNotMatch(overviewSection, /class="evidence-grid"/i);
+	assert.doesNotMatch(overviewSection, /class="evidence-item"/i);
 
 	for (const phrase of [
 		"No magic. No surprises.",
@@ -232,7 +233,7 @@ test("landing page consolidates principles, boundaries, and reader answers witho
 		"What happens on invalid memory access?",
 		"What should I not use Wyst for?",
 	]) {
-		assert.match(evidenceSection, new RegExp(phrase.replace(/[?]/g, "\\?")));
+		assert.match(overviewSection, new RegExp(phrase.replace(/[?]/g, "\\?")));
 	}
 
 	for (const removedCardPhrase of [
@@ -241,7 +242,7 @@ test("landing page consolidates principles, boundaries, and reader answers witho
 		"release gates",
 		"explain reports",
 	]) {
-		assert.doesNotMatch(evidenceSection, new RegExp(removedCardPhrase));
+		assert.doesNotMatch(overviewSection, new RegExp(removedCardPhrase));
 	}
 });
 
@@ -305,9 +306,9 @@ test("homepage owns project status without a standalone status route", async () 
 });
 
 test("consolidated reader answers preserve skeptical-reader caveats", () => {
-	const evidenceSection = sectionHtmlByStart(
+	const overviewSection = sectionHtmlByStart(
 		html,
-		'<section\n\t\t\t\tclass="sec evidence-band"\n\t\t\t\tid="evidence"',
+		'<section\n\t\t\t\tclass="sec overview-band"\n\t\t\t\tid="overview"',
 	);
 
 	for (const question of [
@@ -318,12 +319,12 @@ test("consolidated reader answers preserve skeptical-reader caveats", () => {
 		"What happens on invalid memory access?",
 		"What should I not use Wyst for?",
 	]) {
-		assert.match(evidenceSection, new RegExp(question.replace(/[?]/g, "\\?")));
+		assert.match(overviewSection, new RegExp(question.replace(/[?]/g, "\\?")));
 	}
 
-	assert.match(evidenceSection, /not memory-safe/);
-	assert.match(evidenceSection, /invalid memory access can still fault\s+or misbehave/);
-	assert.match(evidenceSection, /no LLVM backend/);
+	assert.match(overviewSection, /not memory-safe/);
+	assert.match(overviewSection, /invalid memory access can still fault\s+or misbehave/);
+	assert.match(overviewSection, /no LLVM backend/);
 });
 
 test("migration pages expose tradeoff tables and are linked", async () => {
