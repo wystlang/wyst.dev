@@ -1516,7 +1516,8 @@ pre code {
 	white-space: pre;
 }
 
-.wyst-code code {
+.wyst-code code,
+.syntax-code code {
 	font-family: inherit;
 	color: inherit;
 	background: none;
@@ -1524,26 +1525,37 @@ pre code {
 }
 
 .wyst-code .token.comment,
-.wyst-code .token.prolog {
+.wyst-code .token.prolog,
+.syntax-code .token.comment,
+.syntax-code .token.prolog {
 	color: var(--syn-comment);
 	font-style: italic;
 }
 
 .wyst-code .token.keyword,
-.wyst-code .token.boolean {
+.wyst-code .token.boolean,
+.syntax-code .token.keyword,
+.syntax-code .token.boolean,
+.syntax-code .token.instruction {
 	color: var(--syn-kw);
 }
 
 .wyst-code .token.builtin,
 .wyst-code .token.type,
-.wyst-code .token.class-name {
+.wyst-code .token.class-name,
+.syntax-code .token.builtin,
+.syntax-code .token.type,
+.syntax-code .token.class-name,
+.syntax-code .token.register {
 	color: var(--syn-type);
 }
 
 .wyst-code .token.macro,
 .wyst-code .token.directive,
 .wyst-code .token.address-qualifier,
-.wyst-code .token.primitive {
+.wyst-code .token.primitive,
+.syntax-code .token.macro,
+.syntax-code .token.directive {
 	color: var(--syn-macro);
 }
 
@@ -1551,24 +1563,33 @@ pre code {
 	color: var(--syn-type);
 }
 
-.wyst-code .token.number {
+.wyst-code .token.number,
+.syntax-code .token.number {
 	color: var(--syn-num);
 }
 
 .wyst-code .token.string,
-.wyst-code .token.char {
+.wyst-code .token.char,
+.syntax-code .token.string,
+.syntax-code .token.char {
 	color: var(--syn-str);
 }
 
-.wyst-code .token.function {
+.wyst-code .token.function,
+.syntax-code .token.function,
+.syntax-code .token.method,
+.syntax-code .token.label,
+.syntax-code .token.label-ref {
 	color: var(--syn-fn);
 }
 
-.wyst-code .token.operator {
+.wyst-code .token.operator,
+.syntax-code .token.operator {
 	color: var(--syn-op);
 }
 
-.wyst-code .token.punctuation {
+.wyst-code .token.punctuation,
+.syntax-code .token.punctuation {
 	color: var(--syn-punct);
 }
 

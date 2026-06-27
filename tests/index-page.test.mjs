@@ -16,6 +16,7 @@ const prepareWorkerAssetsScript = await readFile(
 	new URL("../tools/prepare-worker-assets.mjs", import.meta.url),
 	"utf8",
 );
+const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
 );
@@ -495,21 +496,43 @@ test("migration guides include sum_to comparisons for their source language", as
 	};
 
 	assert.match(pages.c, /data-language-comparison="sum-to-c"/);
-	assert.match(pages.c, /int sum_to\(int n\)/);
+	assert.match(pages.c, /<pre class="artifact-pre syntax-code language-c"/);
+	assert.match(
+		pages.c,
+		/<span class="token type">int<\/span> <span class="token function">sum_to<\/span>/,
+	);
+	assert.match(pages.c, /<span class="token keyword">for<\/span>/);
 	assert.match(pages.c, /signed overflow in\s+C remains undefined/);
 	assert.match(pages.c, /pub <span class="token function">sum_to<\/span>/);
 
 	assert.match(pages.assembly, /data-language-comparison="sum-to-aarch64"/);
-	assert.match(pages.assembly, /sum_to:/);
-	assert.match(pages.assembly, /b\.ge\s+\.Ldone/);
+	assert.match(
+		pages.assembly,
+		/<pre class="artifact-pre syntax-code language-aarch64"/,
+	);
+	assert.match(
+		pages.assembly,
+		/<span class="token label">sum_to:<\/span>/,
+	);
+	assert.match(
+		pages.assembly,
+		/<span class="token instruction">b\.ge<\/span>\s+<span class="token label-ref">\.Ldone<\/span>/,
+	);
 	assert.match(pages.assembly, /structured loop intent/);
 	assert.match(pages.assembly, /pub <span class="token function">sum_to<\/span>/);
 
 	assert.match(pages.rust, /data-language-comparison="sum-to-rust"/);
-	assert.match(pages.rust, /fn sum_to\(n: i32\) -> i32/);
-	assert.match(pages.rust, /wrapping_add/);
+	assert.match(pages.rust, /<pre class="artifact-pre syntax-code language-rust"/);
+	assert.match(
+		pages.rust,
+		/<span class="token keyword">pub<\/span> <span class="token keyword">fn<\/span> <span class="token function">sum_to<\/span>/,
+	);
+	assert.match(pages.rust, /<span class="token method">wrapping_add<\/span>/);
 	assert.match(pages.rust, /not a Rust replacement/);
 	assert.match(pages.rust, /pub <span class="token function">sum_to<\/span>/);
+	assert.match(siteCss, /\.syntax-code \.token\.keyword/);
+	assert.match(siteCss, /\.syntax-code \.token\.instruction/);
+	assert.match(siteCss, /\.syntax-code \.token\.register/);
 });
 
 test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {

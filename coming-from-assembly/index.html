@@ -154,18 +154,18 @@
 						<div class="artifact-grid">
 							<section class="artifact-panel">
 								<h3>AArch64</h3>
-								<pre class="artifact-pre"><code>sum_to:
-    mov   w1, #0
-    mov   w2, #0
-.Lloop:
-    cmp   w2, w0
-    b.ge  .Ldone
-    add   w1, w1, w2
-    add   w2, w2, #1
-    b     .Lloop
-.Ldone:
-    mov   w0, w1
-    ret</code></pre>
+								<pre class="artifact-pre syntax-code language-aarch64" data-lang="aarch64"><code class="language-aarch64"><span class="token label">sum_to:</span>
+    <span class="token instruction">mov</span>   <span class="token register">w1</span><span class="token punctuation">,</span> <span class="token number">#0</span>
+    <span class="token instruction">mov</span>   <span class="token register">w2</span><span class="token punctuation">,</span> <span class="token number">#0</span>
+<span class="token label">.Lloop:</span>
+    <span class="token instruction">cmp</span>   <span class="token register">w2</span><span class="token punctuation">,</span> <span class="token register">w0</span>
+    <span class="token instruction">b.ge</span>  <span class="token label-ref">.Ldone</span>
+    <span class="token instruction">add</span>   <span class="token register">w1</span><span class="token punctuation">,</span> <span class="token register">w1</span><span class="token punctuation">,</span> <span class="token register">w2</span>
+    <span class="token instruction">add</span>   <span class="token register">w2</span><span class="token punctuation">,</span> <span class="token register">w2</span><span class="token punctuation">,</span> <span class="token number">#1</span>
+    <span class="token instruction">b</span>     <span class="token label-ref">.Lloop</span>
+<span class="token label">.Ldone:</span>
+    <span class="token instruction">mov</span>   <span class="token register">w0</span><span class="token punctuation">,</span> <span class="token register">w1</span>
+    <span class="token instruction">ret</span></code></pre>
 								<p class="provenance">
 									comparison snippet; structured loop intent is
 									manual in raw assembly
