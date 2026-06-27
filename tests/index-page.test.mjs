@@ -176,7 +176,7 @@ test("hero keeps calls to action focused", () => {
 
 	assert.deepEqual(heroCtas, [
 		{ href: "/docs/", label: "Read the Docs →" },
-		{ href: "/examples/", label: "View examples" },
+		{ href: "#examples", label: "View examples" },
 	]);
 });
 
@@ -502,36 +502,57 @@ test("generated pages do not link removed homepage example anchors", () => {
 	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
 });
 
-test("homepage delegates sum_to artifacts to the examples page", () => {
+test("homepage presents compiler-backed sum_to artifacts inline", async () => {
+	const reportJson = JSON.parse(
+		await readFile(
+			new URL(
+				"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.json",
+				import.meta.url,
+			),
+			"utf8",
+		),
+	);
+
 	assert.match(html, /href="\/examples\/"/);
-	assert.doesNotMatch(html, /id="compare"/);
-	assert.doesNotMatch(html, /id="explain"/);
+	assert.match(siteHeaderHtml(html), /<a href="#examples">Examples<\/a>/);
+	assert.match(html, /id="examples"/);
+	assert.match(html, /Examples with compiler artifacts/);
+	assert.match(html, /data-example-artifact="sum-to"/);
+	assert.match(
+		html,
+		/data-report-fixture="\.\.\/wyst\/wync\/tests\/fixtures\/reports\/sum-to-lowering"/,
+	);
+	assert.match(html, /No arbitrary code execution/);
+	assert.match(html, /Source/);
+	assert.match(html, /Explain report/);
+	assert.match(html, /Generated AArch64/);
+	assert.match(html, /Bytes \/ provenance/);
+	assert.match(html, /wync explain lowering/);
+	assert.match(
+		html,
+		new RegExp(
+			escapeRegExp(
+				escapeHtmlText(`function: ${reportJson.function.symbol} sum_to`),
+			),
+		),
+	);
+	for (const item of reportJson.arm64Instructions.items.slice(0, 4)) {
+		assert.match(html, new RegExp(escapeRegExp(item.bytes)));
+		assert.match(html, new RegExp(escapeRegExp(item.encoding)));
+	}
+	for (const line of [".text addr=", "b.cond", "b", "ret"]) {
+		assert.match(html, new RegExp(escapeRegExp(line)));
+	}
 	assert.doesNotMatch(html, /href="#compare"/);
 	assert.doesNotMatch(html, /href="#explain"/);
-
-	for (const name of [
-		"compare-c",
-		"compare-arm64",
-		"compare-wyst",
-		"sumto-source",
-		"sumto-asm",
-	]) {
-		assert.equal(codeBlocks[name], undefined, `${name} code block should be absent`);
-		assert.equal(snippets[name], undefined, `${name} snippet should be absent`);
-		assert.doesNotMatch(
-			html,
-			new RegExp(`data-(?:code|snippet)="${name}"`),
-			`${name} should not be rendered on the homepage`,
-		);
-		assert.doesNotMatch(
-			html,
-			new RegExp(`data-example-provenance="${name}"`),
-			`${name} provenance should not exist on the homepage`,
-		);
-	}
+	assert.doesNotMatch(html, /<textarea/i);
+	assert.doesNotMatch(html, /contenteditable/i);
+	assert.doesNotMatch(html, /fetch\s*\(/);
+	assert.doesNotMatch(html, /WebSocket/);
+	assert.doesNotMatch(html, /eval\s*\(/);
 });
 
-test("homepage delegates inspector examples to the examples page", () => {
+test("homepage presents additional static examples inline", () => {
 	assert.match(html, /href="\/examples\/"/);
 	assert.doesNotMatch(html, /id="inspect"/);
 	assert.doesNotMatch(html, /href="#inspect"/);
@@ -539,21 +560,21 @@ test("homepage delegates inspector examples to the examples page", () => {
 	assert.doesNotMatch(html, /data-snippet=/);
 	assert.deepEqual(Object.keys(snippets), []);
 
-	for (const name of [
-		"uart-source",
-		"uart-asm",
-		"vectors-source",
-		"vectors-asm",
-		"atomic-source",
-		"atomic-asm",
-	]) {
-		assert.equal(snippets[name], undefined, `${name} snippet should be absent`);
-		assert.doesNotMatch(
+	assert.match(html, /Additional examples/);
+	assert.match(html, /MMIO UART write/);
+	assert.match(html, /Release\/acquire flag/);
+	assert.match(html, /EL1 vector sketch/);
+	for (const card of ["mmio-uart", "release-acquire", "el1-vector"]) {
+		assert.match(
 			html,
-			new RegExp(`data-example-provenance="${name}"`),
-			`${name} provenance should not exist on the homepage`,
+			new RegExp(`data-example-card="${card}"`),
+			`${card} should be a homepage example card`,
 		);
 	}
+	assert.match(html, /<span class="token directive macro">#module<\/span> drivers\.uart/);
+	assert.match(html, /<span class="token directive macro">#release<\/span>/);
+	assert.match(html, /<span class="token directive macro">#exception_vector<\/span>/);
+	assert.match(html, /static language example/);
 });
 
 test("migration guides include sum_to comparisons for their source language", async () => {
@@ -783,7 +804,8 @@ test("index examples that are presented as complete source build to ELF", async 
 	}
 });
 
-test("compact lowering examples do not claim current-run compiler artifacts", () => {
-	assert.doesNotMatch(html, /freshness: current-run/);
+test("homepage lowering artifact labels current-run provenance precisely", () => {
+	assert.match(html, /freshness: current-run/);
+	assert.match(html, /provenance=arm64-lowering/);
 	assert.doesNotMatch(html, /current-run provenance/);
 });
