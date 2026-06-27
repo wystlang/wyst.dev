@@ -67,6 +67,18 @@ function siteHeaderHtml(pageHtml) {
 	return match[1];
 }
 
+function escapeRegExp(text) {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtmlText(text) {
+	return text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
 	assert.match(html, /The current v0\.8-draft compiler/);
@@ -85,8 +97,8 @@ test("site headers do not include the old lang brand tag", async () => {
 			await readFile(new URL("../status/index.html", import.meta.url), "utf8"),
 		],
 		[
-			"try",
-			await readFile(new URL("../try/index.html", import.meta.url), "utf8"),
+			"examples",
+			await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
 		],
 		[
 			"coming from C",
@@ -160,7 +172,7 @@ test("hero keeps calls to action focused", () => {
 
 	assert.deepEqual(heroCtas, [
 		{ href: "/docs/", label: "Read the Docs →" },
-		{ href: "/try/", label: "Try it" },
+		{ href: "/examples/", label: "View examples" },
 	]);
 });
 
@@ -300,35 +312,95 @@ test("migration pages expose tradeoff tables and are linked", async () => {
 	}
 });
 
-test("try page is a static precomputed inspector without code execution", async () => {
-	const tryHtml = await readFile(
-		new URL("../try/index.html", import.meta.url),
+test("examples page presents one compiler-backed sum_to artifact", async () => {
+	const examplesHtml = await readFile(
+		new URL("../examples/index.html", import.meta.url),
+		"utf8",
+	);
+	const reportText = await readFile(
+		new URL(
+			"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.txt",
+			import.meta.url,
+		),
+		"utf8",
+	);
+	const reportJson = JSON.parse(
+		await readFile(
+			new URL(
+				"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.json",
+				import.meta.url,
+			),
+			"utf8",
+		),
+	);
+	const disasm = await readFile(
+		new URL(
+			"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.disasm",
+			import.meta.url,
+		),
 		"utf8",
 	);
 
-	assert.match(html, /href="\/try\/"/);
-	assert.match(prepareWorkerAssetsScript, /"try"/);
+	assert.match(html, /href="\/examples\/"/);
+	assert.doesNotMatch(html, /href="\/try\/"/);
+	assert.match(prepareWorkerAssetsScript, /"examples"/);
+	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
+	await assert.rejects(
+		readFile(new URL("../try/index.html", import.meta.url), "utf8"),
+	);
 
 	for (const phrase of [
-		"Static inspector",
-		"precomputed examples",
+		"Examples with compiler artifacts",
+		"compiler-backed",
+		"sum_to",
 		"No arbitrary code execution",
 		"Source",
-		"Explain facts",
-		"AArch64",
+		"Explain report",
+		"Generated AArch64",
 		"Bytes / provenance",
-		"checked by website tests",
+		"wync explain lowering",
 	]) {
-		assert.match(tryHtml, new RegExp(phrase));
+		assert.match(examplesHtml, new RegExp(phrase));
 	}
 
-	assert.match(tryHtml, /data-inspector-example="uart"/);
-	assert.match(tryHtml, /data-inspector-example="sum-to"/);
-	assert.doesNotMatch(tryHtml, /<textarea/i);
-	assert.doesNotMatch(tryHtml, /contenteditable/i);
-	assert.doesNotMatch(tryHtml, /fetch\s*\(/);
-	assert.doesNotMatch(tryHtml, /WebSocket/);
-	assert.doesNotMatch(tryHtml, /eval\s*\(/);
+	assert.equal(reportJson.function.name, "sum_to");
+	assert.equal(reportJson.project, "examples-sum-to");
+	assert.match(reportText, /function: \$\d+ sum_to/);
+	assert.match(reportText, /arm64 instructions \[provenance=arm64-lowering freshness=current-run\]/);
+	assert.match(disasm, /\.text addr=/);
+	assert.match(disasm, /b\.cond/);
+	assert.match(disasm, /ret/);
+
+	assert.match(
+		examplesHtml,
+		/data-report-fixture="\.\.\/wyst\/wync\/tests\/fixtures\/reports\/sum-to-lowering"/,
+	);
+	assert.match(
+		examplesHtml,
+		new RegExp(
+			escapeRegExp(
+				escapeHtmlText(`function: ${reportJson.function.symbol} sum_to`),
+			),
+		),
+	);
+	for (const item of reportJson.arm64Instructions.items.slice(0, 4)) {
+		assert.match(examplesHtml, new RegExp(escapeRegExp(item.bytes)));
+		assert.match(examplesHtml, new RegExp(escapeRegExp(item.encoding)));
+	}
+	for (const line of [".text addr=", "b.cond", "b", "ret"]) {
+		assert.match(examplesHtml, new RegExp(escapeRegExp(line)));
+	}
+	assert.match(examplesHtml, /<pre class="wyst-code language-wyst"/);
+	assert.match(examplesHtml, /<span class="token keyword">while<\/span>/);
+	assert.doesNotMatch(examplesHtml, /data-inspector-example="uart"/);
+	assert.doesNotMatch(examplesHtml, /data-inspector-example="atomic"/);
+	assert.doesNotMatch(examplesHtml, /Static inspector/);
+	assert.doesNotMatch(examplesHtml, /Try Wyst/);
+	assert.doesNotMatch(examplesHtml, /<textarea/i);
+	assert.doesNotMatch(examplesHtml, /contenteditable/i);
+	assert.doesNotMatch(examplesHtml, /fetch\s*\(/);
+	assert.doesNotMatch(examplesHtml, /WebSocket/);
+	assert.doesNotMatch(examplesHtml, /eval\s*\(/);
 });
 
 test("generated pages track the v0.8 draft header badge", () => {

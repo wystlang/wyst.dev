@@ -1514,14 +1514,14 @@ pre code {
 	line-height: 1.6;
 }
 
-.try-picker {
+.artifact-nav {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--space-sm);
 	margin-top: var(--space-xl);
 }
 
-.try-picker a {
+.artifact-nav a {
 	border: 1px solid var(--line-2);
 	border-radius: var(--radius-md);
 	padding: var(--space-sm) var(--space-md);
@@ -1531,27 +1531,39 @@ pre code {
 	background: var(--surface-faint);
 }
 
-.try-picker a:hover,
-.try-picker a:focus-visible {
+.artifact-nav a:hover,
+.artifact-nav a:focus-visible {
 	color: var(--text);
 	border-color: color-mix(in srgb, var(--accent) 45%, var(--line-2));
 }
 
-.try-example {
+.example-artifact {
 	padding: clamp(48px, 7vw, 84px) 0;
-	border-top: 1px solid var(--line);
 }
 
-.try-example:first-child {
-	border-top: 0;
-}
-
-.try-example h2 {
-	font-size: clamp(26px, 4vw, 42px);
+.artifact-head {
+	max-width: 820px;
 	margin-bottom: var(--space-xl);
 }
 
-.try-grid {
+.artifact-head h2 {
+	font-size: clamp(26px, 4vw, 42px);
+	margin-bottom: var(--space-md);
+}
+
+.artifact-head p {
+	color: var(--muted);
+	font-size: var(--text-lg);
+	line-height: 1.7;
+}
+
+.artifact-head code {
+	color: var(--accent);
+	font-family: var(--mono);
+	font-size: 0.88em;
+}
+
+.artifact-grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 1px;
@@ -1559,12 +1571,12 @@ pre code {
 	background: var(--line);
 }
 
-.try-panel {
+.artifact-panel {
 	background: var(--bg);
 	min-width: 0;
 }
 
-.try-panel h3 {
+.artifact-panel h3 {
 	padding: var(--space-sm) var(--space-md);
 	border-bottom: 1px solid var(--line);
 	color: var(--accent);
@@ -1574,12 +1586,80 @@ pre code {
 	text-transform: uppercase;
 }
 
-.try-panel pre {
+.artifact-panel pre,
+.wyst-code {
 	font-size: var(--text-xs);
 	background: var(--bg-code);
+	color: var(--syn-text);
+	overflow-x: auto;
 }
 
-.try-facts {
+.artifact-pre,
+.wyst-code {
+	margin: 0;
+	padding: var(--space-md);
+	font-family: var(--mono);
+	line-height: 1.7;
+	white-space: pre;
+}
+
+.wyst-code code {
+	font-family: inherit;
+	color: inherit;
+	background: none;
+	padding: 0;
+}
+
+.wyst-code .token.comment,
+.wyst-code .token.prolog {
+	color: var(--syn-comment);
+	font-style: italic;
+}
+
+.wyst-code .token.keyword,
+.wyst-code .token.boolean {
+	color: var(--syn-kw);
+}
+
+.wyst-code .token.builtin,
+.wyst-code .token.type,
+.wyst-code .token.class-name {
+	color: var(--syn-type);
+}
+
+.wyst-code .token.macro,
+.wyst-code .token.directive,
+.wyst-code .token.address-qualifier,
+.wyst-code .token.primitive {
+	color: var(--syn-macro);
+}
+
+.wyst-code .token.address-qualifier {
+	color: var(--syn-type);
+}
+
+.wyst-code .token.number {
+	color: var(--syn-num);
+}
+
+.wyst-code .token.string,
+.wyst-code .token.char {
+	color: var(--syn-str);
+}
+
+.wyst-code .token.function {
+	color: var(--syn-fn);
+}
+
+.wyst-code .token.operator {
+	color: var(--syn-op);
+}
+
+.wyst-code .token.punctuation {
+	color: var(--syn-punct);
+}
+
+.artifact-facts {
 	display: grid;
 	gap: var(--space-sm);
 	padding: var(--space-md);
@@ -1588,18 +1668,48 @@ pre code {
 	line-height: 1.6;
 }
 
-.try-facts li {
-	margin-left: 1em;
+.artifact-facts p {
+	margin: 0;
 }
 
-.try-facts li::marker {
-	color: var(--accent);
-}
-
-.try-facts code {
+.artifact-facts code,
+.artifact-table code {
 	color: var(--accent);
 	font-family: var(--mono);
 	font-size: 0.92em;
+}
+
+.artifact-table-wrap {
+	overflow-x: auto;
+}
+
+.artifact-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	color: var(--muted);
+}
+
+.artifact-table th,
+.artifact-table td {
+	text-align: left;
+	white-space: nowrap;
+	padding: var(--space-xs) var(--space-sm);
+	border-top: 1px solid var(--line);
+}
+
+.artifact-table th {
+	color: var(--faint);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.artifact-table td:nth-child(2),
+.artifact-table td:nth-child(3),
+.artifact-table td:nth-child(4) {
+	color: var(--text);
 }
 
 @media (max-width: 820px) {
@@ -1607,7 +1717,7 @@ pre code {
 		grid-template-columns: 1fr;
 	}
 
-	.try-grid {
+	.artifact-grid {
 		grid-template-columns: 1fr;
 	}
 }
