@@ -44,6 +44,19 @@ function evaluateObject(name, endNeedle) {
 const codeBlocks = evaluateObject("codeBlocks", "const snippets = ");
 const snippets = evaluateObject("snippets", 'document.querySelectorAll("[data-code]")');
 
+function provenanceAttributes(name) {
+	const match = html.match(
+		new RegExp(`<[^>]+data-example-provenance="${name}"[^>]*>`),
+	);
+	assert.ok(match, `${name} should have a provenance element`);
+
+	return Object.fromEntries(
+		[...match[0].matchAll(/\s(data-[\w-]+)="([^"]*)"/g)].map(
+			([, key, value]) => [key, value],
+		),
+	);
+}
+
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
 	assert.match(html, /The current v0\.8-draft compiler/);
@@ -96,6 +109,33 @@ test("homepage examples carry explicit provenance labels", () => {
 	);
 });
 
+test("compiler-checked homepage examples declare type and entry metadata", () => {
+	for (const [name, entry] of [
+		["hero-uart", "uart_write"],
+		["compare-wyst", "sum_to"],
+		["uart-source", "uart_write"],
+		["atomic-source", "publish"],
+		["sumto-source", "sum_to"],
+	]) {
+		const attrs = provenanceAttributes(name);
+		assert.equal(attrs["data-example-kind"], "wyst-source");
+		assert.equal(attrs["data-example-entry"], entry);
+	}
+
+	for (const name of [
+		"compare-arm64",
+		"uart-asm",
+		"vectors-asm",
+		"atomic-asm",
+		"sumto-asm",
+	]) {
+		assert.equal(
+			provenanceAttributes(name)["data-example-kind"],
+			"assembly-excerpt",
+		);
+	}
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
@@ -140,6 +180,24 @@ function codeBlockText(name) {
 function snippetText(name) {
 	assert.ok(snippets[name], `missing ${name} snippet`);
 	return renderLines(snippets[name].lines);
+}
+
+function exampleText(name) {
+	if (codeBlocks[name]) {
+		return codeBlockText(name);
+	}
+	return snippetText(name);
+}
+
+function compilerCheckedSourceExamples() {
+	return [...Object.keys(codeBlocks), ...Object.keys(snippets)]
+		.map((name) => ({ name, attrs: provenanceAttributes(name) }))
+		.filter(({ attrs }) => attrs["data-example-kind"] === "wyst-source")
+		.map(({ name, attrs }) => ({
+			name,
+			entry: attrs["data-example-entry"],
+			source: exampleText(name),
+		}));
 }
 
 async function assertWyncCheckPasses(name, source) {
@@ -257,28 +315,36 @@ async function assertWyncBuildPasses(name, source, entry) {
 }
 
 test("index examples that are presented as real source pass wync check", async (t) => {
-	for (const [name, source] of [
-		["hero-uart", codeBlockText("hero-uart")],
-		["compare-wyst", codeBlockText("compare-wyst")],
-		["uart-source", snippetText("uart-source")],
-		["atomic-source", snippetText("atomic-source")],
-		["sumto-source", snippetText("sumto-source")],
-	]) {
+	const examples = compilerCheckedSourceExamples();
+	assert.equal(examples.length, 5);
+
+	for (const { name, source } of examples) {
 		await t.test(name, () => assertWyncCheckPasses(name, source));
 	}
 });
 
 test("index examples that are presented as complete source build to ELF", async (t) => {
-	for (const [name, source, entry] of [
-		["hero-uart", codeBlockText("hero-uart"), "uart_write"],
-		["compare-wyst", codeBlockText("compare-wyst"), "sum_to"],
-		["uart-source", snippetText("uart-source"), "uart_write"],
-		["atomic-source", snippetText("atomic-source"), "publish"],
-		["sumto-source", snippetText("sumto-source"), "sum_to"],
-	]) {
+	const examples = compilerCheckedSourceExamples();
+	assert.equal(examples.length, 5);
+
+	for (const { name, source, entry } of examples) {
+		assert.ok(entry, `${name} should declare a build entry`);
 		await t.test(name, () => assertWyncBuildPasses(name, source, entry));
 	}
 });
+
+function normalizeAssemblyExcerpt(text) {
+	return text
+		.split("\n")
+		.map((line) => line.replace(/\/\/.*$/, "").trim())
+		.filter(Boolean)
+		.map((line) =>
+			line
+				.replace(/^0x[0-9a-f]+\s+/i, "")
+				.replace(/\s+/g, " ")
+				.trim(),
+		);
+}
 
 test("sum_to examples use while for runtime n and match signed i32 assembly", () => {
 	for (const [sourceName, asmName] of [
@@ -306,6 +372,10 @@ test("sum_to examples use while for runtime n and match signed i32 assembly", ()
 	const sumToAsm = snippetText("sumto-asm");
 	assert.match(sumToAsm, /\/\/ while i < n/);
 	assert.match(sumToAsm, /\/\/ i \+= 1/);
+	assert.deepEqual(
+		normalizeAssemblyExcerpt(sumToAsm),
+		normalizeAssemblyExcerpt(codeBlockText("compare-arm64")),
+	);
 });
 
 test("other index source and assembly snippets advertise documented patterns", () => {
