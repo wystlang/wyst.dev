@@ -23,6 +23,7 @@ const entries = [
 	"assets",
 	"docs",
 	"status",
+	"try",
 	"coming-from-c",
 	"coming-from-assembly",
 	"coming-from-rust-zig",

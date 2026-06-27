@@ -231,6 +231,37 @@ test("migration pages expose tradeoff tables and are linked", async () => {
 	}
 });
 
+test("try page is a static precomputed inspector without code execution", async () => {
+	const tryHtml = await readFile(
+		new URL("../try/index.html", import.meta.url),
+		"utf8",
+	);
+
+	assert.match(html, /href="\/try\/"/);
+	assert.match(prepareWorkerAssetsScript, /"try"/);
+
+	for (const phrase of [
+		"Static inspector",
+		"precomputed examples",
+		"No arbitrary code execution",
+		"Source",
+		"Explain facts",
+		"AArch64",
+		"Bytes / provenance",
+		"checked by website tests",
+	]) {
+		assert.match(tryHtml, new RegExp(phrase));
+	}
+
+	assert.match(tryHtml, /data-inspector-example="uart"/);
+	assert.match(tryHtml, /data-inspector-example="sum-to"/);
+	assert.doesNotMatch(tryHtml, /<textarea/i);
+	assert.doesNotMatch(tryHtml, /contenteditable/i);
+	assert.doesNotMatch(tryHtml, /fetch\s*\(/);
+	assert.doesNotMatch(tryHtml, /WebSocket/);
+	assert.doesNotMatch(tryHtml, /eval\s*\(/);
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
