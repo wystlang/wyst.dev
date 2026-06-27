@@ -203,23 +203,24 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
-test("landing page consolidates evidence, principles, boundaries, and reader answers", () => {
+test("landing page consolidates principles, boundaries, and reader answers without evidence cards", () => {
 	const evidenceSection = sectionHtmlByStart(
 		html,
 		'<section\n\t\t\t\tclass="sec evidence-band"\n\t\t\t\tid="evidence"',
 	);
+	const headerHtml = siteHeaderHtml(html);
 
 	assert.doesNotMatch(html, /id="philosophy"/);
 	assert.doesNotMatch(html, /id="not"/);
 	assert.doesNotMatch(html, /id="faq"/);
-	assert.doesNotMatch(siteHeaderHtml(html), /href="#not"/);
-	assert.doesNotMatch(siteHeaderHtml(html), /href="#faq"/);
+	assert.match(headerHtml, /<a href="#evidence">Overview<\/a>/);
+	assert.doesNotMatch(headerHtml, /<a href="#evidence">Evidence<\/a>/);
+	assert.doesNotMatch(headerHtml, /href="#not"/);
+	assert.doesNotMatch(headerHtml, /href="#faq"/);
+	assert.doesNotMatch(evidenceSection, /class="evidence-grid"/);
+	assert.doesNotMatch(evidenceSection, /class="evidence-item"/);
 
 	for (const phrase of [
-		"QEMU fixtures",
-		"deterministic rebuild proof",
-		"release gates",
-		"explain reports",
 		"No magic. No surprises.",
 		"No UB-powered rewrites",
 		"Hidden optimization passes",
@@ -232,6 +233,15 @@ test("landing page consolidates evidence, principles, boundaries, and reader ans
 		"What should I not use Wyst for?",
 	]) {
 		assert.match(evidenceSection, new RegExp(phrase.replace(/[?]/g, "\\?")));
+	}
+
+	for (const removedCardPhrase of [
+		"QEMU fixtures",
+		"deterministic rebuild proof",
+		"release gates",
+		"explain reports",
+	]) {
+		assert.doesNotMatch(evidenceSection, new RegExp(removedCardPhrase));
 	}
 });
 

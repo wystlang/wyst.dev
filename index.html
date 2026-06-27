@@ -86,7 +86,7 @@
 					</span>
 				</button>
 				<nav id="primary-nav" class="nav-links" aria-label="Primary">
-					<a href="#evidence">Evidence</a>
+					<a href="#evidence">Overview</a>
 					<a href="/examples/">Examples</a>
 					<a href="/docs/">Docs</a>
 					<a
@@ -216,45 +216,6 @@
 							the compiler promises, and what Wyst deliberately
 							does not try to be.
 						</p>
-					</div>
-					<div class="evidence-grid">
-						<article class="evidence-item">
-							<span class="evidence-kicker">runtime</span>
-							<h3>QEMU fixtures</h3>
-							<p>
-								Release fixtures build bare-metal AArch64 ELF
-								images and run them under the
-								<code>qemu-virt-aarch64-el2</code> target.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">bytes</span>
-							<h3>deterministic rebuild proof</h3>
-							<p>
-								The release path rebuilds the same project and
-								compares emitted ELF bytes so reproducibility is
-								an observed property, not just design intent.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">release</span>
-							<h3>release gates</h3>
-							<p>
-								Source, formatter, lowering, diagnostics, and
-								release-evidence checks gate what the site calls
-								current.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">reports</span>
-							<h3>explain reports</h3>
-							<p>
-								<code>wync explain lowering</code> connects
-								source spans, typed IR, AArch64 lowering,
-								relocations, and emitted bytes with explicit
-								provenance fields.
-							</p>
-						</article>
 					</div>
 					<div class="evidence-contract">
 						<div class="contract-copy">
