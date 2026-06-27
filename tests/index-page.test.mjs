@@ -136,6 +136,26 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
+test("landing page puts concrete evidence before principle cards", () => {
+	const evidenceIndex = html.indexOf('id="evidence"');
+	const philosophyIndex = html.indexOf('id="philosophy"');
+	assert.notEqual(evidenceIndex, -1, "missing concrete evidence section");
+	assert.notEqual(philosophyIndex, -1, "missing philosophy section");
+	assert.ok(
+		evidenceIndex < philosophyIndex,
+		"evidence should appear before philosophy",
+	);
+
+	for (const phrase of [
+		"QEMU fixtures",
+		"deterministic rebuild proof",
+		"release gates",
+		"explain reports",
+	]) {
+		assert.match(html, new RegExp(phrase));
+	}
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
