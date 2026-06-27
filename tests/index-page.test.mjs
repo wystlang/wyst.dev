@@ -187,20 +187,13 @@ test("homepage examples carry explicit provenance labels", () => {
 
 	assert.match(html, /checked by website tests/);
 	assert.match(html, /illustrative excerpt/);
-	assert.match(html, /Reproduce this/);
-	assert.match(
-		html,
-		/cargo run --manifest-path \.\.\/wyst\/wync\/Cargo\.toml -- explain lowering \.\.\/wyst\/wync\/tests\/fixtures\/reports\/lowering --function mix/,
-	);
 });
 
 test("compiler-checked homepage examples declare type and entry metadata", () => {
 	for (const [name, entry] of [
 		["hero-uart", "uart_write"],
-		["compare-wyst", "sum_to"],
 		["uart-source", "uart_write"],
 		["atomic-source", "publish"],
-		["sumto-source", "sum_to"],
 	]) {
 		const attrs = provenanceAttributes(name);
 		assert.equal(attrs["data-example-kind"], "wyst-source");
@@ -208,11 +201,9 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 
 	for (const name of [
-		"compare-arm64",
 		"uart-asm",
 		"vectors-asm",
 		"atomic-asm",
-		"sumto-asm",
 	]) {
 		assert.equal(
 			provenanceAttributes(name)["data-example-kind"],
@@ -421,9 +412,33 @@ test("generated pages track the v0.8 draft header badge", () => {
 	}
 });
 
-test("landing page describes the sum_to example as a while loop", () => {
-	assert.match(html, /The <code>while<\/code> loop lowers to the/);
-	assert.doesNotMatch(html, /The <code>repeat<\/code> loop lowers to the/);
+test("homepage delegates sum_to artifacts to the examples page", () => {
+	assert.match(html, /href="\/examples\/"/);
+	assert.doesNotMatch(html, /id="compare"/);
+	assert.doesNotMatch(html, /id="explain"/);
+	assert.doesNotMatch(html, /href="#compare"/);
+	assert.doesNotMatch(html, /href="#explain"/);
+
+	for (const name of [
+		"compare-c",
+		"compare-arm64",
+		"compare-wyst",
+		"sumto-source",
+		"sumto-asm",
+	]) {
+		assert.equal(codeBlocks[name], undefined, `${name} code block should be absent`);
+		assert.equal(snippets[name], undefined, `${name} snippet should be absent`);
+		assert.doesNotMatch(
+			html,
+			new RegExp(`data-(?:code|snippet)="${name}"`),
+			`${name} should not be rendered on the homepage`,
+		);
+		assert.doesNotMatch(
+			html,
+			new RegExp(`data-example-provenance="${name}"`),
+			`${name} provenance should not exist on the homepage`,
+		);
+	}
 });
 
 test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {
@@ -583,7 +598,7 @@ async function assertWyncBuildPasses(name, source, entry) {
 
 test("index examples that are presented as real source pass wync check", async (t) => {
 	const examples = compilerCheckedSourceExamples();
-	assert.equal(examples.length, 5);
+	assert.equal(examples.length, 3);
 
 	for (const { name, source } of examples) {
 		await t.test(name, () => assertWyncCheckPasses(name, source));
@@ -592,57 +607,12 @@ test("index examples that are presented as real source pass wync check", async (
 
 test("index examples that are presented as complete source build to ELF", async (t) => {
 	const examples = compilerCheckedSourceExamples();
-	assert.equal(examples.length, 5);
+	assert.equal(examples.length, 3);
 
 	for (const { name, source, entry } of examples) {
 		assert.ok(entry, `${name} should declare a build entry`);
 		await t.test(name, () => assertWyncBuildPasses(name, source, entry));
 	}
-});
-
-function normalizeAssemblyExcerpt(text) {
-	return text
-		.split("\n")
-		.map((line) => line.replace(/\/\/.*$/, "").trim())
-		.filter(Boolean)
-		.map((line) =>
-			line
-				.replace(/^0x[0-9a-f]+\s+/i, "")
-				.replace(/\s+/g, " ")
-				.trim(),
-		);
-}
-
-test("sum_to examples use while for runtime n and match signed i32 assembly", () => {
-	for (const [sourceName, asmName] of [
-		["compare-wyst", "compare-arm64"],
-		["sumto-source", "sumto-asm"],
-	]) {
-		const source = sourceName === "compare-wyst"
-			? codeBlockText(sourceName)
-			: snippetText(sourceName);
-		const asm = asmName === "compare-arm64"
-			? codeBlockText(asmName)
-			: snippetText(asmName);
-
-		assert.match(source, /i : i32 = 0/);
-		assert.match(source, /while i < n/);
-		assert.match(source, /acc \+= i/);
-		assert.match(source, /i \+= 1/);
-		assert.doesNotMatch(source, /repeat n/);
-
-		assert.match(asm, /cmp\s+w2,\s+w0/);
-		assert.match(asm, /b\.ge\s+\.Ldone/);
-		assert.doesNotMatch(asm, /repeat/);
-	}
-
-	const sumToAsm = snippetText("sumto-asm");
-	assert.match(sumToAsm, /\/\/ while i < n/);
-	assert.match(sumToAsm, /\/\/ i \+= 1/);
-	assert.deepEqual(
-		normalizeAssemblyExcerpt(sumToAsm),
-		normalizeAssemblyExcerpt(codeBlockText("compare-arm64")),
-	);
 });
 
 test("other index source and assembly snippets advertise documented patterns", () => {
