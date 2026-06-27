@@ -205,6 +205,32 @@ test("FAQ directly preempts common skeptical-reader questions", () => {
 	assert.match(html, /no LLVM backend/);
 });
 
+test("migration pages expose tradeoff tables and are linked", async () => {
+	for (const [route, heading, caveat] of [
+		["coming-from-c", "Coming from C", "invalid memory can still fault or misbehave"],
+		["coming-from-assembly", "Coming from assembly", "ARM64 only"],
+		["coming-from-rust-zig", "Coming from Rust or Zig", "not memory-safe"],
+	]) {
+		const pageHtml = await readFile(
+			new URL(`../${route}/index.html`, import.meta.url),
+			"utf8",
+		);
+
+		assert.match(html, new RegExp(`href="/${route}/"`));
+		assert.match(prepareWorkerAssetsScript, new RegExp(`"${route}"`));
+		assert.match(pageHtml, new RegExp(`<h1>${heading}</h1>`));
+		for (const column of [
+			"Familiar concept",
+			"Wyst equivalent",
+			"What you gain",
+			"What you give up",
+		]) {
+			assert.match(pageHtml, new RegExp(column));
+		}
+		assert.match(pageHtml, new RegExp(caveat));
+	}
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],

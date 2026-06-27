@@ -12,5 +12,5 @@
   Cache-Control: public, max-age=31536000, immutable
 /assets/social-card.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.78584bf7.css
+/assets/wyst.e61637f2.css
   Cache-Control: public, max-age=31536000, immutable

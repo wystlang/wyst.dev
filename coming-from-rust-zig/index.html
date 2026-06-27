@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta
+			name="description"
+			content="Tradeoffs for Rust and Zig programmers evaluating Wyst."
+		/>
+		<title>Coming from Rust or Zig - Wyst</title>
+		<link
+			rel="canonical"
+			href="https://wyst.dev/coming-from-rust-zig/"
+		/>
+		<link rel="stylesheet" href="/assets/wyst.css" />
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<header class="site">
+			<div class="wrap nav">
+				<a class="brand" href="/">
+					<span class="mark" aria-hidden="true"></span>
+					<span class="word">wyst<span class="cc">::</span></span>
+					<span class="tag">lang</span>
+					<span class="ver">v0.8-draft</span>
+				</a>
+				<nav class="nav-links" aria-label="Primary">
+					<a href="/">Home</a>
+					<a href="/status/">Status</a>
+					<a href="/docs/">Docs</a>
+				</nav>
+			</div>
+		</header>
+
+		<main id="main">
+			<section class="page-hero">
+				<div class="wrap page-hero-grid">
+					<div>
+						<span class="eyebrow">Tradeoff guide</span>
+						<h1>Coming from Rust or Zig</h1>
+						<p class="guide-intro">
+							Wyst is closer to a semantic assembler than a
+							general systems language. It trades ecosystem,
+							portability, and broad safety machinery for direct
+							ARM64 lowering and deterministic output.
+						</p>
+					</div>
+					<div class="status-summary">
+						<span><b>Safety:</b> not memory-safe</span>
+						<span><b>Backend:</b> no LLVM backend</span>
+						<span><b>Status:</b> pre-1.0</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="guide-band">
+				<div class="wrap">
+					<div class="tradeoff-table-wrap">
+						<table class="tradeoff-table">
+							<thead>
+								<tr>
+									<th>Familiar concept</th>
+									<th>Wyst equivalent</th>
+									<th>What you gain</th>
+									<th>What you give up</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Rust ownership and borrowing</td>
+									<td>
+										Explicit memory access and effects, but
+										no borrow checker.
+									</td>
+									<td>
+										Lower-level code is direct and visible in
+										the source.
+									</td>
+									<td>
+										No memory-safety guarantee from the type
+										system.
+									</td>
+								</tr>
+								<tr>
+									<td>Zig-style explicitness</td>
+									<td>
+										Explicit widths, layouts, target facts,
+										and reportable effects.
+									</td>
+									<td>
+										Compiler behavior is deliberately narrow
+										and inspectable.
+									</td>
+									<td>
+										No comparable standard library,
+										cross-platform story, or package
+										ecosystem.
+									</td>
+								</tr>
+								<tr>
+									<td>Generics and comptime</td>
+									<td>
+										Explicit generics and source-level
+										requirements in the v0.8-draft surface.
+									</td>
+									<td>
+										Constraints are meant to be visible and
+										reportable.
+									</td>
+									<td>
+										Not a replacement for Rust traits or
+										Zig's broad comptime model.
+									</td>
+								</tr>
+								<tr>
+									<td>Mature backends</td>
+									<td>
+										A direct Wyst AArch64 lowering path.
+									</td>
+									<td>
+										No LLVM backend means less hidden
+										optimizer behavior in the emit path.
+									</td>
+									<td>
+										You give up LLVM maturity, target breadth,
+										and optimization depth.
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="guide-caveats">
+						<div>
+							<h2>Best fit</h2>
+							<p>
+								Compiler, kernel, and bare-metal experiments
+								where you want to inspect how source maps to
+								AArch64 output.
+							</p>
+						</div>
+						<div>
+							<h2>Main caveat</h2>
+							<p>
+								Wyst is not memory-safe, has no borrow checker,
+								and should not be read as a Rust replacement.
+							</p>
+						</div>
+						<div>
+							<h2>Current limit</h2>
+							<p>
+								ARM64 only, no LLVM backend, Rust bootstrap
+								compiler, and no stable 1.0 compatibility
+								promise yet.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>

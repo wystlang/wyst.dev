@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0d0f12" />
+		<meta
+			name="description"
+			content="Tradeoffs for C programmers evaluating Wyst."
+		/>
+		<title>Coming from C - Wyst</title>
+		<link rel="canonical" href="https://wyst.dev/coming-from-c/" />
+		<link rel="stylesheet" href="/assets/wyst.e61637f2.css" />
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<header class="site">
+			<div class="wrap nav">
+				<a class="brand" href="/">
+					<span class="mark" aria-hidden="true"></span>
+					<span class="word">wyst<span class="cc">::</span></span>
+					<span class="tag">lang</span>
+					<span class="ver">v0.8-draft</span>
+				</a>
+				<nav class="nav-links" aria-label="Primary">
+					<a href="/">Home</a>
+					<a href="/status/">Status</a>
+					<a href="/docs/">Docs</a>
+				</nav>
+			</div>
+		</header>
+
+		<main id="main">
+			<section class="page-hero">
+				<div class="wrap page-hero-grid">
+					<div>
+						<span class="eyebrow">Tradeoff guide</span>
+						<h1>Coming from C</h1>
+						<p class="guide-intro">
+							Wyst keeps direct memory and hardware access, but
+							removes C's implicit promotions, hidden lowering,
+							and optimizer license from undefined behavior.
+						</p>
+					</div>
+					<div class="status-summary">
+						<span><b>Target:</b> ARM64 only</span>
+						<span><b>Safety:</b> not memory-safe</span>
+						<span><b>Runtime:</b> no required libc</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="guide-band">
+				<div class="wrap">
+					<div class="tradeoff-table-wrap">
+						<table class="tradeoff-table">
+							<thead>
+								<tr>
+									<th>Familiar concept</th>
+									<th>Wyst equivalent</th>
+									<th>What you gain</th>
+									<th>What you give up</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Pointers and MMIO</td>
+									<td>
+										Typed address access such as
+										<code>u32@[addr]</code> plus
+										<code>@mmio</code> intent markers.
+									</td>
+									<td>
+										Device access is visible in source and in
+										reports.
+									</td>
+									<td>
+										Invalid memory can still fault or
+										misbehave; Wyst is not a sandbox.
+									</td>
+								</tr>
+								<tr>
+									<td>Integer arithmetic</td>
+									<td>
+										Explicit widths and explicit casts.
+									</td>
+									<td>
+										No implicit integer promotion and no
+										signed-overflow UB for the compiler to
+										exploit.
+									</td>
+									<td>
+										More annotations where C would silently
+										promote or convert.
+									</td>
+								</tr>
+								<tr>
+									<td>Header and linker model</td>
+									<td>
+										Project manifests, modules, layouts, and
+										deterministic AArch64 ELF output.
+									</td>
+									<td>
+										The build graph and memory layout are
+										compiler inputs rather than ambient host
+										toolchain behavior.
+									</td>
+									<td>
+										No drop-in compatibility with C build
+										systems or libc.
+									</td>
+								</tr>
+								<tr>
+									<td>Compiler optimizations</td>
+									<td>
+										Fixed, inspectable lowering and explicit
+										optimization modes.
+									</td>
+									<td>
+										The compiler will not rewrite around
+										undefined behavior assumptions.
+									</td>
+									<td>
+										You do not get a mature global optimizer
+										for free.
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="guide-caveats">
+						<div>
+							<h2>Best fit</h2>
+							<p>
+								Bare-metal fixtures, small kernels, MMIO-heavy
+								experiments, and code where inspectable lowering
+								is more important than C ecosystem reach.
+							</p>
+						</div>
+						<div>
+							<h2>Main caveat</h2>
+							<p>
+								Wyst is not memory-safe: invalid memory can still fault or misbehave. The narrower
+								claim is that the compiler will not exploit it
+								for unrelated rewrites.
+							</p>
+						</div>
+						<div>
+							<h2>Current limit</h2>
+							<p>
+								ARM64 only, Rust bootstrap compiler, pre-1.0,
+								and no C standard library replacement.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>
