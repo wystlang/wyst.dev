@@ -181,39 +181,36 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
-test("landing page uses the original section set", () => {
+test("homepage omits the evidence section while retaining primary sections", () => {
 	const headerHtml = siteHeaderHtml(html);
 	const evidenceIndex = html.indexOf('id="evidence"');
 	const philosophyIndex = html.indexOf('id="philosophy"');
+	const examplesIndex = html.indexOf('id="examples"');
 	const nonGoalsIndex = html.indexOf('id="not"');
 	const faqIndex = html.indexOf('id="faq"');
 
-	assert.notEqual(evidenceIndex, -1, "missing concrete evidence section");
+	assert.equal(evidenceIndex, -1, "evidence section should be removed");
 	assert.notEqual(philosophyIndex, -1, "missing philosophy section");
+	assert.notEqual(examplesIndex, -1, "missing examples section");
 	assert.notEqual(nonGoalsIndex, -1, "missing non-goals section");
 	assert.notEqual(faqIndex, -1, "missing FAQ section");
-	assert.ok(
-		evidenceIndex < philosophyIndex,
-		"evidence should appear before philosophy",
-	);
-	assert.ok(philosophyIndex < nonGoalsIndex, "principles should precede non-goals");
+	assert.ok(philosophyIndex < examplesIndex, "principles should precede examples");
+	assert.ok(examplesIndex < nonGoalsIndex, "examples should precede non-goals");
 	assert.ok(nonGoalsIndex < faqIndex, "non-goals should precede FAQ");
 
+	assert.doesNotMatch(html, /class="sec evidence-band"/);
+	assert.doesNotMatch(html, /class="evidence-grid"/);
+	assert.doesNotMatch(html, /Evidence first/);
+	assert.doesNotMatch(html, /Artifacts before claims/);
+	assert.doesNotMatch(html, /QEMU fixtures/);
+	assert.doesNotMatch(html, /deterministic rebuild proof/);
+	assert.doesNotMatch(html, /release gates/);
 	assert.doesNotMatch(html, /id="overview"/);
 	assert.doesNotMatch(html, /class="sec overview-band"/);
-	assert.match(headerHtml, /<a href="#evidence">Evidence<\/a>/);
+	assert.doesNotMatch(headerHtml, /href="#evidence"/);
 	assert.match(headerHtml, /<a href="#not">Non-goals<\/a>/);
 	assert.match(headerHtml, /<a href="#faq">FAQ<\/a>/);
 	assert.doesNotMatch(headerHtml, /href="#overview"/);
-
-	for (const phrase of [
-		"QEMU fixtures",
-		"deterministic rebuild proof",
-		"release gates",
-		"explain reports",
-	]) {
-		assert.match(html, new RegExp(phrase));
-	}
 });
 
 test("homepage owns project status without a standalone status route", async () => {

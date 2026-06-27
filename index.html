@@ -86,7 +86,6 @@
 					</span>
 				</button>
 				<nav id="primary-nav" class="nav-links" aria-label="Primary">
-					<a href="#evidence">Evidence</a>
 					<a href="#examples">Examples</a>
 					<a href="#not">Non-goals</a>
 					<a href="#faq">FAQ</a>
@@ -202,63 +201,6 @@
 						<li><b>Backend:</b> no LLVM backend</li>
 						<li><b>Version:</b> v0.8-draft, pre-1.0</li>
 					</ul>
-				</div>
-			</section>
-			<section
-				class="sec evidence-band"
-				id="evidence"
-				aria-label="Concrete Wyst evidence"
-			>
-				<div class="wrap">
-					<div class="evidence-head">
-						<span class="eyebrow">Evidence first</span>
-						<h2>Artifacts before claims.</h2>
-						<p>
-							The homepage examples are checked against the
-							compiler, and release evidence is built around
-							reproducible AArch64 outputs rather than broad
-							language promises.
-						</p>
-					</div>
-					<div class="evidence-grid">
-						<article class="evidence-item">
-							<span class="evidence-kicker">runtime</span>
-							<h3>QEMU fixtures</h3>
-							<p>
-								Release fixtures build bare-metal AArch64 ELF
-								images and run them under the
-								<code>qemu-virt-aarch64-el2</code> target.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">bytes</span>
-							<h3>deterministic rebuild proof</h3>
-							<p>
-								The release path rebuilds the same project and
-								compares emitted ELF bytes so reproducibility is
-								an observed property, not just design intent.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">release</span>
-							<h3>release gates</h3>
-							<p>
-								Source, formatter, lowering, diagnostics, and
-								release-evidence checks gate what the site calls
-								current.
-							</p>
-						</article>
-						<article class="evidence-item">
-							<span class="evidence-kicker">reports</span>
-							<h3>explain reports</h3>
-							<p>
-								<code>wync explain lowering</code> connects
-								source spans, typed IR, AArch64 lowering,
-								relocations, and emitted bytes with explicit
-								provenance fields.
-							</p>
-						</article>
-					</div>
 				</div>
 			</section>
 			<section class="sec principle-sec" id="philosophy">
