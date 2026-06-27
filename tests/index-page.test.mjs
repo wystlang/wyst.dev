@@ -279,6 +279,18 @@ test("migration pages expose tradeoff tables and are linked", async () => {
 		assert.match(html, new RegExp(`href="/${route}/"`));
 		assert.match(prepareWorkerAssetsScript, new RegExp(`"${route}"`));
 		assert.match(pageHtml, new RegExp(`<h1>${heading}</h1>`));
+		const comparisonIndex = pageHtml.indexOf("data-language-comparison");
+		const tableIndex = pageHtml.indexOf('class="tradeoff-table-wrap"');
+		assert.notEqual(
+			comparisonIndex,
+			-1,
+			`${route} should include a source comparison section`,
+		);
+		assert.notEqual(tableIndex, -1, `${route} should include a tradeoff table`);
+		assert.ok(
+			comparisonIndex < tableIndex,
+			`${route} should put source comparisons before the tradeoff table`,
+		);
 		for (const column of [
 			"Familiar concept",
 			"Wyst equivalent",

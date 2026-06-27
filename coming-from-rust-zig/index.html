@@ -56,6 +56,62 @@
 
 			<section class="guide-band">
 				<div class="wrap">
+					<section
+						class="language-comparison"
+						data-language-comparison="sum-to-rust"
+						aria-labelledby="sum-to-rust-heading"
+					>
+						<div class="artifact-head">
+							<span class="eyebrow">sum_to comparison</span>
+							<h2 id="sum-to-rust-heading">
+								The same loop from Rust.
+							</h2>
+							<p>
+								The Rust version can make overflow explicit with
+								<code>wrapping_add</code>, while Wyst is narrower:
+								it is not a Rust replacement, but a small ARM64
+								language for code where lowering is part of the
+								review surface.
+							</p>
+						</div>
+						<div class="artifact-grid">
+							<section class="artifact-panel">
+								<h3>Rust</h3>
+								<pre class="artifact-pre syntax-code language-rust" data-lang="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function">sum_to</span><span class="token punctuation">(</span>n<span class="token punctuation">:</span> <span class="token type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token type">i32</span> <span class="token punctuation">{</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> acc <span class="token operator">=</span> <span class="token number">0i32</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> i <span class="token operator">=</span> <span class="token number">0i32</span><span class="token punctuation">;</span>
+    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
+        acc <span class="token operator">=</span> acc<span class="token punctuation">.</span><span class="token method">wrapping_add</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        i <span class="token operator">=</span> i<span class="token punctuation">.</span><span class="token method">wrapping_add</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    acc
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									comparison snippet; wrapping_add makes the
+									overflow policy explicit
+								</p>
+							</section>
+							<section class="artifact-panel">
+								<h3>Wyst</h3>
+								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> demo.math
+
+pub <span class="token function">sum_to</span> <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">i32</span> <span class="token punctuation">{</span>
+    acc <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    i <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
+        acc <span class="token operator">+=</span> i
+        i <span class="token operator">+=</span> <span class="token number">1</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> acc
+<span class="token punctuation">}</span></code></pre>
+								<p class="provenance">
+									Wyst comparison source; smaller surface, no
+									borrow checker, no Rust ecosystem claim
+								</p>
+							</section>
+						</div>
+					</section>
+
 					<div class="tradeoff-table-wrap">
 						<table class="tradeoff-table">
 							<thead>
@@ -130,62 +186,6 @@
 							</tbody>
 						</table>
 					</div>
-
-					<section
-						class="language-comparison"
-						data-language-comparison="sum-to-rust"
-						aria-labelledby="sum-to-rust-heading"
-					>
-						<div class="artifact-head">
-							<span class="eyebrow">sum_to comparison</span>
-							<h2 id="sum-to-rust-heading">
-								The same loop from Rust.
-							</h2>
-							<p>
-								The Rust version can make overflow explicit with
-								<code>wrapping_add</code>, while Wyst is narrower:
-								it is not a Rust replacement, but a small ARM64
-								language for code where lowering is part of the
-								review surface.
-							</p>
-						</div>
-						<div class="artifact-grid">
-							<section class="artifact-panel">
-								<h3>Rust</h3>
-								<pre class="artifact-pre syntax-code language-rust" data-lang="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function">sum_to</span><span class="token punctuation">(</span>n<span class="token punctuation">:</span> <span class="token type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token type">i32</span> <span class="token punctuation">{</span>
-    <span class="token keyword">let</span> <span class="token keyword">mut</span> acc <span class="token operator">=</span> <span class="token number">0i32</span><span class="token punctuation">;</span>
-    <span class="token keyword">let</span> <span class="token keyword">mut</span> i <span class="token operator">=</span> <span class="token number">0i32</span><span class="token punctuation">;</span>
-    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
-        acc <span class="token operator">=</span> acc<span class="token punctuation">.</span><span class="token method">wrapping_add</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
-        i <span class="token operator">=</span> i<span class="token punctuation">.</span><span class="token method">wrapping_add</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span>
-    acc
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									comparison snippet; wrapping_add makes the
-									overflow policy explicit
-								</p>
-							</section>
-							<section class="artifact-panel">
-								<h3>Wyst</h3>
-								<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> demo.math
-
-pub <span class="token function">sum_to</span> <span class="token operator">::</span> <span class="token punctuation">(</span>n <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token builtin type">i32</span> <span class="token punctuation">{</span>
-    acc <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
-    i <span class="token operator">:</span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token number">0</span>
-    <span class="token keyword">while</span> i <span class="token operator">&lt;</span> n <span class="token punctuation">{</span>
-        acc <span class="token operator">+=</span> i
-        i <span class="token operator">+=</span> <span class="token number">1</span>
-    <span class="token punctuation">}</span>
-    <span class="token keyword">return</span> acc
-<span class="token punctuation">}</span></code></pre>
-								<p class="provenance">
-									Wyst comparison source; smaller surface, no
-									borrow checker, no Rust ecosystem claim
-								</p>
-							</section>
-						</div>
-					</section>
 
 					<div class="guide-caveats">
 						<div>
