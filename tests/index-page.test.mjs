@@ -181,46 +181,38 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	}
 });
 
-test("landing page consolidates principles, boundaries, and reader answers as overview", () => {
-	const overviewSection = sectionHtmlByStart(
-		html,
-		'<section\n\t\t\t\tclass="sec overview-band"\n\t\t\t\tid="overview"',
-	);
+test("landing page uses the original section set", () => {
 	const headerHtml = siteHeaderHtml(html);
+	const evidenceIndex = html.indexOf('id="evidence"');
+	const philosophyIndex = html.indexOf('id="philosophy"');
+	const nonGoalsIndex = html.indexOf('id="not"');
+	const faqIndex = html.indexOf('id="faq"');
 
-	assert.doesNotMatch(html, /evidence/i);
-	assert.doesNotMatch(html, /id="philosophy"/);
-	assert.doesNotMatch(html, /id="not"/);
-	assert.doesNotMatch(html, /id="faq"/);
-	assert.match(headerHtml, /<a href="#overview">Overview<\/a>/);
-	assert.doesNotMatch(headerHtml, /href="#evidence"/i);
-	assert.doesNotMatch(headerHtml, /href="#not"/);
-	assert.doesNotMatch(headerHtml, /href="#faq"/);
-	assert.doesNotMatch(overviewSection, /class="evidence-grid"/i);
-	assert.doesNotMatch(overviewSection, /class="evidence-item"/i);
+	assert.notEqual(evidenceIndex, -1, "missing concrete evidence section");
+	assert.notEqual(philosophyIndex, -1, "missing philosophy section");
+	assert.notEqual(nonGoalsIndex, -1, "missing non-goals section");
+	assert.notEqual(faqIndex, -1, "missing FAQ section");
+	assert.ok(
+		evidenceIndex < philosophyIndex,
+		"evidence should appear before philosophy",
+	);
+	assert.ok(philosophyIndex < nonGoalsIndex, "principles should precede non-goals");
+	assert.ok(nonGoalsIndex < faqIndex, "non-goals should precede FAQ");
+
+	assert.doesNotMatch(html, /id="overview"/);
+	assert.doesNotMatch(html, /class="sec overview-band"/);
+	assert.match(headerHtml, /<a href="#evidence">Evidence<\/a>/);
+	assert.match(headerHtml, /<a href="#not">Non-goals<\/a>/);
+	assert.match(headerHtml, /<a href="#faq">FAQ<\/a>/);
+	assert.doesNotMatch(headerHtml, /href="#overview"/);
 
 	for (const phrase of [
-		"No magic. No surprises.",
-		"No UB-powered rewrites",
-		"Hidden optimization passes",
-		"Implicit vectorization",
-		"What can be built today?",
-		"Why isn't Wyst self-hosting?",
-		"Why no LLVM backend?",
-		"Is Wyst safer than C?",
-		"What happens on invalid memory access?",
-		"What should I not use Wyst for?",
-	]) {
-		assert.match(overviewSection, new RegExp(phrase.replace(/[?]/g, "\\?")));
-	}
-
-	for (const removedCardPhrase of [
 		"QEMU fixtures",
 		"deterministic rebuild proof",
 		"release gates",
 		"explain reports",
 	]) {
-		assert.doesNotMatch(overviewSection, new RegExp(removedCardPhrase));
+		assert.match(html, new RegExp(phrase));
 	}
 });
 
@@ -274,11 +266,8 @@ test("homepage owns project status without a standalone status route", async () 
 	}
 });
 
-test("consolidated reader answers preserve skeptical-reader caveats", () => {
-	const overviewSection = sectionHtmlByStart(
-		html,
-		'<section\n\t\t\t\tclass="sec overview-band"\n\t\t\t\tid="overview"',
-	);
+test("FAQ directly preempts common skeptical-reader questions", () => {
+	const faqSection = sectionHtmlByStart(html, '<section class="sec" id="faq">');
 
 	for (const question of [
 		"What can be built today?",
@@ -288,12 +277,12 @@ test("consolidated reader answers preserve skeptical-reader caveats", () => {
 		"What happens on invalid memory access?",
 		"What should I not use Wyst for?",
 	]) {
-		assert.match(overviewSection, new RegExp(question.replace(/[?]/g, "\\?")));
+		assert.match(faqSection, new RegExp(question.replace(/[?]/g, "\\?")));
 	}
 
-	assert.match(overviewSection, /not memory-safe/);
-	assert.match(overviewSection, /invalid memory access can still fault\s+or misbehave/);
-	assert.match(overviewSection, /no LLVM backend/);
+	assert.match(faqSection, /not memory-safe/);
+	assert.match(faqSection, /invalid memory access can still fault\s+or misbehave/);
+	assert.match(faqSection, /no LLVM backend/);
 });
 
 test("homepage and worker assets omit removed migration guides", () => {
