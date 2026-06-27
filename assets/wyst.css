@@ -1185,24 +1185,6 @@ pre code {
 	margin-top: var(--space-xl);
 }
 
-.status-meta {
-	margin-top: var(--space-xl);
-	padding-top: var(--space-lg);
-	border-top: 1px solid var(--line);
-	display: flex;
-	justify-content: center;
-	flex-wrap: wrap;
-	gap: var(--space-sm) var(--space-xl);
-	font-family: var(--mono);
-	font-size: var(--text-xs);
-	color: var(--faint);
-}
-
-.status-meta span b {
-	color: var(--muted);
-	font-weight: 500;
-}
-
 .page-hero {
 	padding-top: clamp(64px, 10vw, 120px);
 	padding-bottom: clamp(52px, 8vw, 96px);

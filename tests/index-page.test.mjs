@@ -80,12 +80,19 @@ function escapeHtmlText(text) {
 		.replace(/"/g, "&quot;");
 }
 
+function sectionHtmlByStart(pageHtml, startNeedle) {
+	const start = pageHtml.indexOf(startNeedle);
+	assert.notEqual(start, -1, `missing section start ${startNeedle}`);
+	const end = pageHtml.indexOf("</section>", start);
+	assert.notEqual(end, -1, `missing section end ${startNeedle}`);
+	return pageHtml.slice(start, end + "</section>".length);
+}
+
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
-	assert.match(html, /The current v0\.8-draft compiler/);
-	assert.match(html, /<b>Current:<\/b> v0\.8-draft ·/);
+	assert.match(html, /<li><b>Version:<\/b> v0\.8-draft, pre-1\.0<\/li>/);
 	assert.doesNotMatch(html, /The current v0\.7 compiler/);
-	assert.doesNotMatch(html, /<b>Current:<\/b> v0\.7 ·/);
+	assert.doesNotMatch(html, /<li><b>Version:<\/b> v0\.7/);
 });
 
 test("site headers do not include the old lang brand tag", async () => {
@@ -217,6 +224,11 @@ test("landing page puts concrete evidence before principle cards", () => {
 });
 
 test("homepage owns project status without a standalone status route", async () => {
+	const statusSection = sectionHtmlByStart(
+		html,
+		'<section class="sec status-sec" id="status">',
+	);
+
 	for (const phrase of [
 		"Project status",
 		"Built in the open. Early, but real.",
@@ -252,6 +264,22 @@ test("homepage owns project status without a standalone status route", async () 
 	await assert.rejects(
 		readFile(new URL("../status/index.html", import.meta.url), "utf8"),
 	);
+
+	for (const duplicate of [
+		"v0.8-draft",
+		"Rust bootstrap",
+		"ARM64",
+		"QEMU",
+		"self-hosting",
+		"no LLVM backend",
+		"not memory-safe",
+	]) {
+		assert.doesNotMatch(
+			statusSection,
+			new RegExp(duplicate),
+			`project status card should not duplicate Current reality fact: ${duplicate}`,
+		);
+	}
 });
 
 test("FAQ directly preempts common skeptical-reader questions", () => {
