@@ -7,19 +7,19 @@
 		<meta name="theme-color" content="#0d0f12" />
 		<meta
 			name="description"
-			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+			content="Wyst is an ARM64 bare-metal and kernel-oriented language and assembler for explicit, deterministic low-level programming."
 		/>
-		<title>Wyst: a semantic ARM64 systems language</title>
+		<title>Wyst: ARM64 bare-metal language and assembler</title>
 		<link rel="canonical" href="https://wyst.dev/" />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content="https://wyst.dev/" />
 		<meta
 			property="og:title"
-			content="Wyst: a semantic ARM64 systems language"
+			content="Wyst: ARM64 bare-metal language and assembler"
 		/>
 		<meta
 			property="og:description"
-			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+			content="Wyst is an ARM64 bare-metal and kernel-oriented language and assembler for explicit, deterministic low-level programming."
 		/>
 		<meta
 			property="og:image"
@@ -30,16 +30,16 @@
 		<meta property="og:image:height" content="630" />
 		<meta
 			property="og:image:alt"
-			content="Wyst: semantic ARM64 systems language"
+			content="Wyst: ARM64 bare-metal language and assembler"
 		/>
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta
 			name="twitter:title"
-			content="Wyst: a semantic ARM64 systems language"
+			content="Wyst: ARM64 bare-metal language and assembler"
 		/>
 		<meta
 			name="twitter:description"
-			content="Wyst is a semantic ARM64 systems language and assembler for explicit, deterministic low-level programming."
+			content="Wyst is an ARM64 bare-metal and kernel-oriented language and assembler for explicit, deterministic low-level programming."
 		/>
 		<meta
 			name="twitter:image"
@@ -47,7 +47,7 @@
 		/>
 		<meta
 			name="twitter:image:alt"
-			content="Wyst: semantic ARM64 systems language"
+			content="Wyst: ARM64 bare-metal language and assembler"
 		/>
 		<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 		<link
@@ -131,8 +131,9 @@
 							about.
 						</h1>
 						<p class="lede">
-							Wyst is a semantic ARM64 systems language and
-							assembler. It sits between C and assembly:
+							Wyst is an ARM64 bare-metal and kernel-oriented
+							language and assembler. It sits between C and
+							assembly:
 							<strong
 								>more expressive than raw AArch64, with none of
 								the hidden magic of a C compiler.</strong
@@ -140,7 +141,9 @@
 							Memory ordering, source requirements, and overflow
 							behavior are explicit in the source; semantic
 							effects and post-lowering resource facts are
-							surfaced for inspection.
+							surfaced for inspection. It does not make invalid
+							memory safe: invalid memory access can still fault
+							or misbehave.
 						</p>
 						<div class="cta-row">
 							<a class="btn btn-primary" href="/docs/"
@@ -246,11 +249,13 @@
 						<article class="card">
 							<span class="idx">03</span>
 							<div class="ico" aria-hidden="true">⊘</div>
-							<h3>Zero UB Exploitation</h3>
+							<h3>No UB-powered rewrites</h3>
 							<p>
-								There is no compiler-exploitable undefined
-								behavior to mine for "optimizations." Defined
-								inputs produce defined output.
+								The compiler does not use overflow, null, or
+								out-of-bounds possibilities as optimization
+								fuel. Invalid memory access can still fault or
+								misbehave; Wyst's promise is that the compiler
+								will not turn that into unrelated rewrites.
 							</p>
 						</article>
 						<article class="card">

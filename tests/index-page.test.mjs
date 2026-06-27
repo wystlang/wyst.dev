@@ -67,6 +67,17 @@ test("landing page states current limits near the top", () => {
 	}
 });
 
+test("landing page uses narrow positioning and avoids overbroad safety copy", () => {
+	assert.match(
+		html,
+		/ARM64 bare-metal and kernel-oriented language and assembler/,
+	);
+	assert.match(html, /No UB-powered rewrites/);
+	assert.match(html, /invalid memory access can still fault\s+or misbehave/);
+	assert.doesNotMatch(html, /Zero UB Exploitation/);
+	assert.doesNotMatch(html, /Defined\s+inputs produce defined output/);
+});
+
 test("generated pages track the v0.8 draft header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
