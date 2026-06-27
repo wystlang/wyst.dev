@@ -160,7 +160,7 @@ test("hero keeps calls to action focused", () => {
 
 	assert.deepEqual(heroCtas, [
 		{ href: "/docs/", label: "Read the Docs →" },
-		{ href: "/try/", label: "Open static demo" },
+		{ href: "/try/", label: "Try it" },
 	]);
 });
 
