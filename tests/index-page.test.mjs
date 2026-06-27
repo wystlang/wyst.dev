@@ -61,12 +61,63 @@ function provenanceAttributes(name) {
 	);
 }
 
+function siteHeaderHtml(pageHtml) {
+	const match = pageHtml.match(/<header class="site">([\s\S]*?)<\/header>/);
+	assert.ok(match, "missing site header");
+	return match[1];
+}
+
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
 	assert.match(html, /The current v0\.8-draft compiler/);
 	assert.match(html, /<b>Current:<\/b> v0\.8-draft ·/);
 	assert.doesNotMatch(html, /The current v0\.7 compiler/);
 	assert.doesNotMatch(html, /<b>Current:<\/b> v0\.7 ·/);
+});
+
+test("site headers do not include the old lang brand tag", async () => {
+	const pages = [
+		["home", html],
+		["source-of-truth docs", docsSourceOfTruthHtml],
+		["404", notFoundHtml],
+		[
+			"status",
+			await readFile(new URL("../status/index.html", import.meta.url), "utf8"),
+		],
+		[
+			"try",
+			await readFile(new URL("../try/index.html", import.meta.url), "utf8"),
+		],
+		[
+			"coming from C",
+			await readFile(
+				new URL("../coming-from-c/index.html", import.meta.url),
+				"utf8",
+			),
+		],
+		[
+			"coming from assembly",
+			await readFile(
+				new URL("../coming-from-assembly/index.html", import.meta.url),
+				"utf8",
+			),
+		],
+		[
+			"coming from Rust/Zig",
+			await readFile(
+				new URL("../coming-from-rust-zig/index.html", import.meta.url),
+				"utf8",
+			),
+		],
+	];
+
+	for (const [name, pageHtml] of pages) {
+		assert.doesNotMatch(
+			siteHeaderHtml(pageHtml),
+			/<span class="tag">lang<\/span>/,
+			`${name} header should not show the lang tag`,
+		);
+	}
 });
 
 test("landing page states current limits near the top", () => {

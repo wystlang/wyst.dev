@@ -231,12 +231,6 @@ header.site {
 	color: var(--muted);
 }
 
-.brand .tag {
-	font-size: var(--text-sm);
-	color: var(--muted);
-	letter-spacing: 0.02em;
-}
-
 .brand .ver {
 	font-size: var(--text-2xs);
 	color: var(--faint);

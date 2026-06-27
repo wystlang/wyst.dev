@@ -43,7 +43,6 @@ function header(active = "docs") {
 			<a class="brand" href="/">
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
-				<span class="tag">lang</span>
 				<span class="ver">${VERSION}</span>
 			</a>
 			<button
