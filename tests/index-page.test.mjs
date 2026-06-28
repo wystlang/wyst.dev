@@ -67,6 +67,12 @@ function siteHeaderHtml(pageHtml) {
 	return match[1];
 }
 
+function siteFooterHtml(pageHtml) {
+	const match = pageHtml.match(/<footer class="site">([\s\S]*?)<\/footer>/);
+	assert.ok(match, "missing site footer");
+	return match[1];
+}
+
 function escapeRegExp(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -110,6 +116,23 @@ test("site headers do not include the old lang brand tag", async () => {
 			siteHeaderHtml(pageHtml),
 			/<span class="tag">lang<\/span>/,
 			`${name} header should not show the lang tag`,
+		);
+	}
+});
+
+test("site footers do not link the examples page", async () => {
+	const pages = [
+		["home", html],
+		["source-of-truth docs", docsSourceOfTruthHtml],
+		["404", notFoundHtml],
+	];
+
+	for (const [name, pageHtml] of pages) {
+		const footerHtml = siteFooterHtml(pageHtml);
+		assert.doesNotMatch(
+			footerHtml,
+			/href="\/examples\/"/,
+			`${name} footer should not link examples page`,
 		);
 	}
 });
@@ -335,7 +358,7 @@ test("examples page presents compiler-backed sum_to plus additional static examp
 		"utf8",
 	);
 
-	assert.match(html, /href="\/examples\/"/);
+	assert.match(examplesHtml, /href="\/examples\/"/);
 	assert.doesNotMatch(html, /href="\/try\/"/);
 	assert.match(prepareWorkerAssetsScript, /"examples"/);
 	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
@@ -444,7 +467,6 @@ test("generated pages do not link removed homepage example anchors", () => {
 });
 
 test("homepage presents the side-by-side sum_to comparison", () => {
-	assert.match(html, /href="\/examples\/"/);
 	assert.match(siteHeaderHtml(html), /<a href="#examples">Examples<\/a>/);
 	assert.match(html, /id="examples"/);
 	assert.match(html, /Side by side/);
@@ -474,7 +496,6 @@ test("homepage presents the side-by-side sum_to comparison", () => {
 });
 
 test("homepage does not duplicate the examples page card grid", () => {
-	assert.match(html, /href="\/examples\/"/);
 	assert.doesNotMatch(html, /id="inspect"/);
 	assert.doesNotMatch(html, /href="#inspect"/);
 	assert.doesNotMatch(html, /data-snippet=/);
