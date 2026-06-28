@@ -372,6 +372,13 @@ test("homepage owns project status without a standalone status route", async () 
 		assert.match(html, new RegExp(phrase));
 	}
 
+	assert.match(
+		statusSection,
+		/href="https:\/\/github\.com\/wystlang\/wyst"[\s\S]*?>\s*<svg[\s\S]*?<\/svg>\s*Follow Progress\s*<\/a>/,
+		"project status CTA should use distinct progress-oriented copy",
+	);
+	assert.doesNotMatch(statusSection, /View on GitHub/);
+
 	for (const pageHtml of [
 		html,
 		notFoundHtml,
