@@ -7,13 +7,16 @@ a semantic ARM64 systems language. Deployed as static files to Cloudflare.
 
 ```
 index.html              Landing page
+404.html                Generated custom not-found page (commit this)
 assets/
   wyst.css              Shared design system (tokens, typography, components)
   docs.css              Documentation layout + prose + syntax-highlight colors
   …                     Fonts, icons, social imagery
 docs/                   GENERATED — one folder per chapter/appendix (commit this)
+examples/               Static examples index (commit this)
 build/
   generate.mjs          Markdown → HTML generator
+  generate-404.mjs      404 page generator
   template.mjs          Shared page shell (header/footer/sidebar)
   prism-wyst.mjs        Prism grammar for the Wyst language
   serve.mjs             Tiny static server for local preview
@@ -34,16 +37,17 @@ Website-ready brand exports and source design-system CSS snapshots come from
 `tools/sync-brand-assets.mjs` copies the approved files from a local checkout
 of the brand repo into this repo's `assets/` directory.
 
-The brand repo is not a submodule here. That keeps Cloudflare Pages deploys
+The brand repo is not a submodule here. That keeps Cloudflare Workers Builds
 from needing access to the private `wystlang/brand` repository during checkout.
-Deploys use the committed static files in `assets/`.
+Deploys use the committed static files in `assets/` and `.worker-assets/`.
 
 To update website brand assets:
 
 ```sh
 gh repo clone wystlang/brand ../brand # first time only, or set WYST_BRAND_DIR
 npm run sync:brand
-git add assets
+npm run build:worker-assets
+git add assets .worker-assets
 git commit -m "Update brand assets"
 ```
 
@@ -87,8 +91,10 @@ npx wrangler deploy
 ```
 
 Wrangler deploys `.worker-assets/` as static Worker assets. That directory is a
-committed deploy artifact containing only `index.html`, `404.html`, `assets/`,
-and `docs/`. Regenerate and commit it whenever those source files change:
+committed deploy artifact containing `index.html`, `404.html`, `assets/`,
+`docs/`, `examples/`, and generated `_headers`. CSS filenames are fingerprinted
+inside `.worker-assets/assets/`. Regenerate and commit the artifact whenever
+those source files change:
 
 ```sh
 npm run build:worker-assets
@@ -98,10 +104,10 @@ git add .worker-assets
 ### Automatic regeneration (git hook)
 
 A tracked `pre-commit` hook in `.githooks/` runs the two steps above for you:
-whenever a commit touches `index.html`, `404.html`, `assets/`, or `docs/`, it
-regenerates `.worker-assets/` and stages it, so the deploy artifact can never
-fall out of sync with the source (the cause of "I pushed but the live site
-didn't change").
+whenever a commit touches `index.html`, `404.html`, `assets/`, `docs/`, or
+`examples/`, it regenerates `.worker-assets/` and stages it, so the deploy
+artifact can never fall out of sync with the source (the cause of "I pushed but
+the live site didn't change").
 
 The hook is activated by pointing git at `.githooks/`, which the `prepare`
 script does automatically on `npm install`. To enable it manually in an existing
@@ -120,6 +126,7 @@ committed artifact is deployed.
 
 ```sh
 npm install
+npm test         # runs node --test tests/*.test.mjs
 npm run build        # regenerates docs/
 npm run docs         # alias for build
 npm run build:worker-assets # refreshes committed Worker deploy artifact
