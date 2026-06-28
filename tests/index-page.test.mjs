@@ -120,7 +120,10 @@ function sectionHtmlByStart(pageHtml, startNeedle) {
 
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
-	assert.match(html, /<li><b>Version:<\/b> v0\.8-draft, pre-1\.0<\/li>/);
+	assert.match(
+		html,
+		/<span class="limits-chip-label">Version<\/span>\s*<span class="limits-chip-value">v0\.8-draft, pre-1\.0<\/span>/,
+	);
 	assert.doesNotMatch(html, /The current v0\.7 compiler/);
 	assert.doesNotMatch(html, /<li><b>Version:<\/b> v0\.7/);
 });
@@ -253,6 +256,20 @@ test("site footers do not link the examples page", async () => {
 });
 
 test("landing page states current limits near the top", () => {
+	const limitsSection = sectionHtmlByStart(
+		html,
+		'<section\n\t\t\t\tclass="limits-strip"',
+	);
+	const limitChips = [
+		["Target", "ARM64 only"],
+		["Validation", "QEMU-tested"],
+		["Compiler", "Rust bootstrap compiler"],
+		["Status", "not self-hosting"],
+		["Safety", "not memory-safe"],
+		["Backend", "no LLVM backend"],
+		["Version", "v0.8-draft, pre-1.0"],
+	];
+
 	assert.match(html, /aria-label="Current Wyst limits and validation"/);
 	for (const phrase of [
 		"ARM64 only",
@@ -265,6 +282,23 @@ test("landing page states current limits near the top", () => {
 	]) {
 		assert.match(html, new RegExp(phrase));
 	}
+
+	for (const [label, value] of limitChips) {
+		assert.match(
+			limitsSection,
+			new RegExp(
+				`<li class="limits-chip">\\s*<span class="limits-chip-label">${escapeRegExp(label)}</span>\\s*<span class="limits-chip-value">${escapeRegExp(value)}</span>\\s*</li>`,
+			),
+			`current reality chip should expose ${label}: ${value}`,
+		);
+	}
+
+	assert.equal(
+		[...limitsSection.matchAll(/class="limits-chip"/g)].length,
+		limitChips.length,
+	);
+	assert.doesNotMatch(limitsSection, /<b>/);
+	assert.doesNotMatch(siteCss, /limits-list li \+ li::before/);
 });
 
 test("landing page uses narrow positioning and avoids overbroad safety copy", () => {
@@ -394,6 +428,8 @@ test("homepage owns project status without a standalone status route", async () 
 		"project status CTA should use distinct progress-oriented copy",
 	);
 	assert.doesNotMatch(statusSection, /View on GitHub/);
+	assert.doesNotMatch(statusSection, /status-art/);
+	assert.doesNotMatch(siteCss, /\.status-art/);
 
 	for (const pageHtml of [
 		html,
