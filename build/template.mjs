@@ -86,7 +86,7 @@ function footer() {
 					<div class="foot-col">
 						<div class="foot-title">Project</div>
 						<a href="/docs/">Docs</a>
-						<a href="${GITHUB_URL}" rel="noopener">Source ↗</a>
+						<a href="${GITHUB_URL}" rel="noopener">GitHub</a>
 					</div>
 					<div class="foot-col">
 						<div class="foot-title">Reference</div>

@@ -139,6 +139,16 @@ test("site footers do not link the examples page", async () => {
 			/class="foot-bottom"/,
 			`${name} footer should not include the bottom row`,
 		);
+		assert.match(
+			footerHtml,
+			/href="https:\/\/github\.com\/wystlang\/wyst" rel="noopener">GitHub<\/a>/,
+			`${name} footer should label the project repository link GitHub`,
+		);
+		assert.doesNotMatch(
+			footerHtml,
+			/>Source/,
+			`${name} footer should not label the repository link Source`,
+		);
 	}
 });
 
