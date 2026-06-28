@@ -148,8 +148,8 @@ test("site headers expose homepage section navigation", async () => {
 		{ href: "#philosophy", label: "Design" },
 		{ href: "#examples", label: "Compare" },
 		{ href: "#not", label: "Non-goals" },
-		{ href: "#status", label: "Status" },
 		{ href: "#faq", label: "FAQ" },
+		{ href: "#status", label: "Status" },
 		{ href: "/docs/", label: "Docs" },
 		{ href: "https://github.com/wystlang/wyst", label: "GitHub" },
 	];

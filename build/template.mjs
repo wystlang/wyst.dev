@@ -60,8 +60,8 @@ function header(active = "docs") {
 				${link("/#philosophy", "Design", "")}
 				${link("/#examples", "Compare", "")}
 				${link("/#not", "Non-goals", "")}
-				${link("/#status", "Status", "")}
 				${link("/#faq", "FAQ", "")}
+				${link("/#status", "Status", "")}
 				${link("/docs/", "Docs", "docs")}
 				<a href="${GITHUB_URL}" rel="noopener">GitHub</a>
 			</nav>
