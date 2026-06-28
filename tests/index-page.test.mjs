@@ -265,7 +265,7 @@ test("hero keeps calls to action focused", () => {
 
 	assert.deepEqual(heroCtas, [
 		{ href: "/docs/", label: "Read the Docs →" },
-		{ href: "#examples", label: "Compare syntax" },
+		{ href: "https://github.com/wystlang/wyst", label: "View on GitHub" },
 	]);
 });
 
