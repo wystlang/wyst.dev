@@ -1592,19 +1592,6 @@ footer.site {
 	}
 }
 
-.foot-bottom {
-	margin-top: var(--space-2xl);
-	padding-top: var(--space-lg);
-	border-top: 1px solid var(--line);
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-	gap: var(--space-sm);
-	font-family: var(--mono);
-	font-size: var(--text-xs);
-	color: var(--faint);
-}
-
 .faq {
 	display: grid;
 	grid-template-columns: 1fr 1fr;

@@ -134,6 +134,11 @@ test("site footers do not link the examples page", async () => {
 			/href="\/examples\/"/,
 			`${name} footer should not link examples page`,
 		);
+		assert.doesNotMatch(
+			footerHtml,
+			/class="foot-bottom"/,
+			`${name} footer should not include the bottom row`,
+		);
 	}
 });
 

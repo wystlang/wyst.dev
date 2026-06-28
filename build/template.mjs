@@ -97,10 +97,6 @@ function footer() {
 					</div>
 				</div>
 			</div>
-			<div class="foot-bottom">
-				<span>Wyst · semantic ARM64 IR · no magic, no surprises.</span>
-				<span>wync · zero-dependency Rust bootstrap</span>
-			</div>
 		</div>
 	</footer>`;
 }
