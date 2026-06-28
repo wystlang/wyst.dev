@@ -67,6 +67,12 @@ function siteHeaderHtml(pageHtml) {
 	return match[1];
 }
 
+function heroLedeText() {
+	const match = html.match(/<p class="lede">([\s\S]*?)<\/p>/);
+	assert.ok(match, "missing hero lede");
+	return match[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function primaryNavHtml(pageHtml) {
 	const headerHtml = siteHeaderHtml(pageHtml);
 	const match = headerHtml.match(/<nav[^>]*class="nav-links"[^>]*>([\s\S]*?)<\/nav>/);
@@ -241,12 +247,19 @@ test("landing page states current limits near the top", () => {
 });
 
 test("landing page uses narrow positioning and avoids overbroad safety copy", () => {
+	const heroText = heroLedeText();
 	assert.match(
-		html,
-		/ARM64 bare-metal and kernel-oriented language and assembler/,
+		heroText,
+		/ARM64 bare-metal language and assembler for kernel-oriented code/,
+	);
+	assert.match(
+		heroText,
+		/memory ordering, overflow behavior, and lowered resource facts stay explicit/,
 	);
 	assert.match(html, /No UB-powered rewrites/);
 	assert.match(html, /invalid memory access can still fault\s+or misbehave/);
+	assert.doesNotMatch(heroText, /It sits between C and assembly/);
+	assert.doesNotMatch(heroText, /hidden magic of a C compiler/);
 	assert.doesNotMatch(html, /Zero UB Exploitation/);
 	assert.doesNotMatch(html, /Defined\s+inputs produce defined output/);
 });

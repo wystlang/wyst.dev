@@ -129,19 +129,12 @@
 							about.
 						</h1>
 						<p class="lede">
-							Wyst is an ARM64 bare-metal and kernel-oriented
-							language and assembler. It sits between C and
-							assembly:
-							<strong
-								>more expressive than raw AArch64, with none of
-								the hidden magic of a C compiler.</strong
-							>
-							Memory ordering, source requirements, and overflow
-							behavior are explicit in the source; semantic
-							effects and post-lowering resource facts are
-							surfaced for inspection. It does not make invalid
-							memory safe: invalid memory access can still fault
-							or misbehave.
+							Wyst is an ARM64 bare-metal language and assembler
+							for kernel-oriented code. It keeps intent visible
+							without hiding the machine: memory ordering,
+							overflow behavior, and lowered resource facts stay
+							explicit. It is not memory-safe; invalid memory
+							access can still fault or misbehave.
 						</p>
 						<div class="cta-row">
 							<a class="btn btn-primary" href="/docs/"
