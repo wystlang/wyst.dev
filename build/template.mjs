@@ -57,10 +57,13 @@ function header(active = "docs") {
 				</span>
 			</button>
 			<nav id="primary-nav" class="nav-links" aria-label="Primary">
-				${link("/docs/", "Docs", "docs")}
-				${link("/examples/", "Examples", "")}
+				${link("/#philosophy", "Design", "")}
+				${link("/#examples", "Compare", "")}
+				${link("/#not", "Non-goals", "")}
+				${link("/#status", "Status", "")}
 				${link("/#faq", "FAQ", "")}
-				<a href="${GITHUB_URL}" rel="noopener">GitHub ↗</a>
+				${link("/docs/", "Docs", "docs")}
+				<a href="${GITHUB_URL}" rel="noopener">GitHub</a>
 			</nav>
 		</div>
 	</header>`;

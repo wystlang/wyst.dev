@@ -67,6 +67,24 @@ function siteHeaderHtml(pageHtml) {
 	return match[1];
 }
 
+function primaryNavHtml(pageHtml) {
+	const headerHtml = siteHeaderHtml(pageHtml);
+	const match = headerHtml.match(/<nav[^>]*class="nav-links"[^>]*>([\s\S]*?)<\/nav>/);
+	assert.ok(match, "missing primary nav");
+	return match[1];
+}
+
+function primaryNavLinks(pageHtml) {
+	return [...primaryNavHtml(pageHtml).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map(
+		([, attrs, body]) => ({
+			href: attrs.match(/\shref="([^"]+)"/)?.[1] ?? "",
+			label:
+				attrs.match(/\saria-label="([^"]+)"/)?.[1] ??
+				body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+		}),
+	);
+}
+
 function siteFooterHtml(pageHtml) {
 	const match = pageHtml.match(/<footer class="site">([\s\S]*?)<\/footer>/);
 	assert.ok(match, "missing site footer");
@@ -116,6 +134,46 @@ test("site headers do not include the old lang brand tag", async () => {
 			siteHeaderHtml(pageHtml),
 			/<span class="tag">lang<\/span>/,
 			`${name} header should not show the lang tag`,
+		);
+	}
+});
+
+test("site headers expose homepage section navigation", async () => {
+	const examplesHtml = await readFile(
+		new URL("../examples/index.html", import.meta.url),
+		"utf8",
+	);
+	const homeLinks = primaryNavLinks(html);
+	const homeExpected = [
+		{ href: "#philosophy", label: "Design" },
+		{ href: "#examples", label: "Compare" },
+		{ href: "#not", label: "Non-goals" },
+		{ href: "#status", label: "Status" },
+		{ href: "#faq", label: "FAQ" },
+		{ href: "/docs/", label: "Docs" },
+		{ href: "https://github.com/wystlang/wyst", label: "GitHub" },
+	];
+
+	assert.deepEqual(homeLinks, homeExpected);
+	assert.doesNotMatch(primaryNavHtml(html), />Examples<\/a>/);
+	assert.doesNotMatch(primaryNavHtml(html), /href="\/examples\/"/);
+
+	for (const [name, pageHtml] of [
+		["source-of-truth docs", docsSourceOfTruthHtml],
+		["404", notFoundHtml],
+		["examples", examplesHtml],
+	]) {
+		assert.deepEqual(
+			primaryNavLinks(pageHtml),
+			homeExpected.map((link) =>
+				link.href.startsWith("#") ? { ...link, href: `/${link.href}` } : link,
+			),
+			`${name} header should link back to homepage sections`,
+		);
+		assert.doesNotMatch(
+			primaryNavHtml(pageHtml),
+			/>Examples<\/a>|href="\/examples\/"/,
+			`${name} header should not expose the old examples nav link`,
 		);
 	}
 });
@@ -388,7 +446,10 @@ test("examples page presents compiler-backed sum_to plus additional static examp
 		"utf8",
 	);
 
-	assert.match(examplesHtml, /href="\/examples\/"/);
+	assert.match(
+		examplesHtml,
+		/<link rel="canonical" href="https:\/\/wyst\.dev\/examples\/" \/>/,
+	);
 	assert.doesNotMatch(html, /href="\/try\/"/);
 	assert.match(prepareWorkerAssetsScript, /"examples"/);
 	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
@@ -490,14 +551,14 @@ test("generated pages do not link removed homepage example anchors", () => {
 	]) {
 		assert.doesNotMatch(pageHtml, /\/#compare/, `${name} should not link #compare`);
 		assert.doesNotMatch(pageHtml, /\/#inspect/, `${name} should not link #inspect`);
-		assert.match(pageHtml, /href="\/examples\/"/, `${name} should link examples page`);
+		assert.doesNotMatch(pageHtml, /href="\/examples\/"/, `${name} should not link examples page from primary nav`);
 	}
 
 	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
 });
 
 test("homepage presents the side-by-side sum_to comparison", () => {
-	assert.match(siteHeaderHtml(html), /<a href="#examples">Examples<\/a>/);
+	assert.match(siteHeaderHtml(html), /<a href="#examples">Compare<\/a>/);
 	assert.match(html, /id="examples"/);
 	assert.match(html, /Side by side/);
 	assert.match(html, /See what you're actually doing/);
