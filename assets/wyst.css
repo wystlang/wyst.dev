@@ -16,6 +16,7 @@
 	--bg-code-2: #0a0c10;
 	--line: rgba(255, 255, 255, 0.075);
 	--line-2: rgba(255, 255, 255, 0.14);
+	--card-grid-line: rgba(255, 255, 255, 0.16);
 	--surface-faint: rgba(255, 255, 255, 0.015);
 	--surface-subtle: rgba(255, 255, 255, 0.035);
 	--surface-hover: rgba(255, 255, 255, 0.05);
@@ -894,8 +895,8 @@ pre code {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 1px;
-	background: var(--line);
-	border: 1px solid var(--line);
+	background: var(--card-grid-line);
+	border: 1px solid var(--card-grid-line);
 	border-radius: var(--radius);
 	overflow: hidden;
 }

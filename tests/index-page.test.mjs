@@ -134,18 +134,64 @@ function cssHexVar(name) {
 	return match[1];
 }
 
+function cssColorVar(name) {
+	const match = siteCss.match(
+		new RegExp(
+			`${escapeRegExp(name)}:\\s*(#[0-9a-f]{6}|rgba?\\([^;]+\\));`,
+			"i",
+		),
+	);
+	assert.ok(match, `missing CSS color token ${name}`);
+	return match[1];
+}
+
+function parseCssColor(color) {
+	const rgbMatch = color.match(
+		/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/,
+	);
+	if (rgbMatch) {
+		return {
+			alpha: rgbMatch[4] === undefined ? 1 : Number.parseFloat(rgbMatch[4]),
+			channels: rgbMatch.slice(1, 4).map(Number),
+		};
+	}
+
+	const hexMatch = color.match(/^#([0-9a-f]{6})$/i);
+	assert.ok(hexMatch, `unsupported CSS color ${color}`);
+	const value = Number.parseInt(hexMatch[1], 16);
+	return {
+		alpha: 1,
+		channels: [(value >> 16) & 255, (value >> 8) & 255, value & 255],
+	};
+}
+
+function compositeOver(foreground, backgroundHex) {
+	const background = parseCssColor(backgroundHex);
+	const alpha = foreground.alpha;
+	return foreground.channels.map((channel, index) =>
+		Math.round(channel * alpha + background.channels[index] * (1 - alpha)),
+	);
+}
+
 function relativeLuminance(hexColor) {
-	const channels = hexColor
-		.slice(1)
-		.match(/.{2}/g)
+	const channels = Array.isArray(hexColor)
+		? hexColor
+		: hexColor
+				.slice(1)
+				.match(/.{2}/g)
+				.map((channel) => Number.parseInt(channel, 16));
+
+	return channels
 		.map((channel) => {
-			const value = Number.parseInt(channel, 16) / 255;
+			const value = channel / 255;
 			return value <= 0.03928
 				? value / 12.92
 				: ((value + 0.055) / 1.055) ** 2.4;
-		});
-
-	return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+		})
+		.reduce((sum, channel, index) => {
+			const weights = [0.2126, 0.7152, 0.0722];
+			return sum + weights[index] * channel;
+		}, 0);
 }
 
 function contrastRatio(foreground, background) {
@@ -154,6 +200,13 @@ function contrastRatio(foreground, background) {
 		relativeLuminance(background),
 	].sort((a, b) => b - a);
 	return (lighter + 0.05) / (darker + 0.05);
+}
+
+function compositedContrastRatio(foregroundColor, backgroundHex) {
+	return contrastRatio(
+		compositeOver(parseCssColor(foregroundColor), backgroundHex),
+		backgroundHex,
+	);
 }
 
 test("landing page tracks the v0.8 draft language surface", () => {
@@ -368,6 +421,25 @@ test("homepage persuasive secondary copy has strong dark-theme contrast", () => 
 		"tradeoff intro should use the high-contrast body-copy token",
 	);
 	assert.doesNotMatch(html, /style="color:\s*var\(--muted\);\s*font-size:\s*16px"/);
+});
+
+test("homepage principle cards have visible separators", () => {
+	assert.ok(
+		compositedContrastRatio(cssColorVar("--card-grid-line"), cssHexVar("--bg")) >=
+			1.5,
+		"principle card separators should stay readable against the card background",
+	);
+
+	assert.match(
+		cssRule(".cards"),
+		/background:\s*var\(--card-grid-line\);/,
+		"principle grid gaps should use the stronger separator token",
+	);
+	assert.match(
+		cssRule(".cards"),
+		/border:\s*1px solid var\(--card-grid-line\);/,
+		"principle grid outer border should use the stronger separator token",
+	);
 });
 
 test("landing page uses narrow positioning and avoids overbroad safety copy", () => {
