@@ -118,6 +118,44 @@ function sectionHtmlByStart(pageHtml, startNeedle) {
 	return pageHtml.slice(start, end + "</section>".length);
 }
 
+function cssRule(selector) {
+	const match = siteCss.match(
+		new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\n\\}`),
+	);
+	assert.ok(match, `missing CSS rule for ${selector}`);
+	return match[1];
+}
+
+function cssHexVar(name) {
+	const match = siteCss.match(
+		new RegExp(`${escapeRegExp(name)}:\\s*(#[0-9a-f]{6});`, "i"),
+	);
+	assert.ok(match, `missing CSS color token ${name}`);
+	return match[1];
+}
+
+function relativeLuminance(hexColor) {
+	const channels = hexColor
+		.slice(1)
+		.match(/.{2}/g)
+		.map((channel) => {
+			const value = Number.parseInt(channel, 16) / 255;
+			return value <= 0.03928
+				? value / 12.92
+				: ((value + 0.055) / 1.055) ** 2.4;
+		});
+
+	return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(foreground, background) {
+	const [lighter, darker] = [
+		relativeLuminance(foreground),
+		relativeLuminance(background),
+	].sort((a, b) => b - a);
+	return (lighter + 0.05) / (darker + 0.05);
+}
+
 test("landing page tracks the v0.8 draft language surface", () => {
 	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
 	assert.match(
@@ -299,6 +337,37 @@ test("landing page states current limits near the top", () => {
 	);
 	assert.doesNotMatch(limitsSection, /<b>/);
 	assert.doesNotMatch(siteCss, /limits-list li \+ li::before/);
+});
+
+test("homepage persuasive secondary copy has strong dark-theme contrast", () => {
+	assert.ok(
+		contrastRatio(cssHexVar("--copy-muted"), cssHexVar("--bg-elev")) >= 7,
+		"persuasive secondary copy should meet a 7:1 contrast floor on elevated surfaces",
+	);
+
+	for (const selector of [
+		".hero .lede",
+		".sec-head p",
+		".card p",
+		".compare .note",
+		".not-item .body .why",
+		".status-card p",
+		".faq-a",
+	]) {
+		assert.match(
+			cssRule(selector),
+			/color:\s*var\(--copy-muted\);/,
+			`${selector} should use the high-contrast body-copy token`,
+		);
+	}
+
+	assert.match(html, /class="tradeoff-intro"/);
+	assert.match(
+		cssRule(".tradeoff-intro"),
+		/color:\s*var\(--copy-muted\);/,
+		"tradeoff intro should use the high-contrast body-copy token",
+	);
+	assert.doesNotMatch(html, /style="color:\s*var\(--muted\);\s*font-size:\s*16px"/);
 });
 
 test("landing page uses narrow positioning and avoids overbroad safety copy", () => {

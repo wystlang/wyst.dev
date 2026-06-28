@@ -21,6 +21,7 @@
 	--surface-hover: rgba(255, 255, 255, 0.05);
 	--text: #e7e9ec;
 	--muted: #9097a0;
+	--copy-muted: #a6adb5;
 	--faint: #818a94;
 	--accent: #f5a623;
 	--accent-2: color-mix(in srgb, var(--accent) 78%, #fff);
@@ -527,7 +528,7 @@ html.back-to-top-ready .back-to-top.is-visible {
 
 .hero .lede {
 	font-size: clamp(17px, 1.4vw, 19.5px);
-	color: var(--muted);
+	color: var(--copy-muted);
 	max-width: 36ch;
 	margin-bottom: var(--space-xl);
 }
@@ -885,7 +886,7 @@ pre code {
 }
 
 .sec-head p {
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-xl);
 }
 
@@ -946,7 +947,7 @@ pre code {
 }
 
 .card p {
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-md);
 	line-height: 1.6;
 }
@@ -1040,7 +1041,7 @@ pre code {
 .compare .note {
 	grid-column: 1 / -1;
 	margin-top: var(--space-xs);
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-md);
 	border-left: 2px solid var(--accent);
 	padding-left: var(--space-md);
@@ -1113,7 +1114,7 @@ pre code {
 
 .not-item .body .why {
 	display: block;
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-base);
 	margin-top: var(--space-2xs);
 }
@@ -1132,6 +1133,11 @@ pre code {
 .not-item.tradeoff .struck {
 	color: var(--muted);
 	text-decoration-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.tradeoff-intro {
+	color: var(--copy-muted);
+	font-size: var(--text-lg);
 }
 
 .status-sec {
@@ -1175,7 +1181,7 @@ pre code {
 }
 
 .status-card p {
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-xl);
 	max-width: 52ch;
 	margin: 0 auto var(--space-md);
@@ -1690,7 +1696,7 @@ footer.site {
 }
 
 .faq-a {
-	color: var(--muted);
+	color: var(--copy-muted);
 	font-size: var(--text-base);
 	line-height: 1.62;
 }
