@@ -63,7 +63,7 @@
 		/>
 		<link rel="stylesheet" href="assets/wyst.css" />
 	</head>
-	<body>
+	<body id="top">
 		<a class="skip" href="#main">Skip to content</a>
 		<header class="site">
 			<div class="wrap nav">
@@ -116,6 +116,15 @@
 		</header>
 
 		<div class="nav-scrim" aria-hidden="true"></div>
+		<a
+			class="back-to-top"
+			href="#top"
+			aria-label="Back to top"
+			title="Back to top"
+			data-back-to-top
+		>
+			<span aria-hidden="true">↑</span>
+		</a>
 
 		<main id="main">
 			<section class="hero">
@@ -813,6 +822,33 @@
 				}
 
 				syncMode();
+			})();
+
+			(() => {
+				const backToTop = document.querySelector("[data-back-to-top]");
+				const hero = document.querySelector(".hero");
+
+				if (!backToTop || !hero) return;
+
+				document.documentElement.classList.add("back-to-top-ready");
+
+				function syncBackToTop() {
+					const heroBottom = hero.offsetTop + hero.offsetHeight;
+					backToTop.classList.toggle(
+						"is-visible",
+						window.scrollY > heroBottom,
+					);
+				}
+
+				backToTop.addEventListener("click", () => {
+					backToTop.blur();
+				});
+
+				window.addEventListener("scroll", syncBackToTop, {
+					passive: true,
+				});
+				window.addEventListener("resize", syncBackToTop);
+				syncBackToTop();
 			})();
 
 			(() => {

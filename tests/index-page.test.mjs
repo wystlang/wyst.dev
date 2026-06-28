@@ -12,6 +12,7 @@ const docsSourceOfTruthHtml = await readFile(
 	"utf8",
 );
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
+const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 const prepareWorkerAssetsScript = await readFile(
 	new URL("../tools/prepare-worker-assets.mjs", import.meta.url),
 	"utf8",
@@ -182,6 +183,21 @@ test("site headers expose homepage section navigation", async () => {
 			`${name} header should not expose the old examples nav link`,
 		);
 	}
+});
+
+test("homepage provides a back-to-top control for long reads", () => {
+	assert.match(html, /<body id="top">/);
+	assert.match(
+		html,
+		/<a\s+class="back-to-top"\s+href="#top"\s+aria-label="Back to top"/,
+	);
+	assert.match(html, /data-back-to-top/);
+	assert.match(html, /classList\.add\("back-to-top-ready"\)/);
+	assert.match(html, /classList\.toggle\(\s*"is-visible"/);
+	assert.match(siteCss, /\.back-to-top\s*\{[\s\S]*?position:\s*fixed/);
+	assert.match(siteCss, /html\.back-to-top-ready \.back-to-top\.is-visible/);
+	assert.match(primaryNavHtml(html), /href="#philosophy"/);
+	assert.match(primaryNavHtml(html), /href="#status"/);
 });
 
 test("site footers do not link the examples page", async () => {

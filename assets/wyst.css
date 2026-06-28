@@ -318,6 +318,50 @@ header.site {
 	text-underline-offset: 4px;
 }
 
+.back-to-top {
+	position: fixed;
+	right: max(var(--space-md), env(safe-area-inset-right));
+	bottom: max(var(--space-md), env(safe-area-inset-bottom));
+	z-index: 18;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--bg-elev) 94%, transparent);
+	box-shadow: var(--shadow-md);
+	color: var(--text);
+	font-family: var(--mono);
+	font-size: var(--text-xl);
+	line-height: 1;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(10px);
+	visibility: hidden;
+	transition:
+		opacity var(--dur-base) var(--ease),
+		transform var(--dur-base) var(--ease),
+		border-color var(--dur-base) var(--ease),
+		background var(--dur-base) var(--ease),
+		color var(--dur-base) var(--ease);
+}
+
+html.back-to-top-ready .back-to-top.is-visible {
+	opacity: 1;
+	pointer-events: auto;
+	transform: translateY(0);
+	visibility: visible;
+}
+
+.back-to-top:hover,
+.back-to-top:focus-visible {
+	border-color: color-mix(in srgb, var(--accent) 48%, var(--line-2));
+	background: color-mix(in srgb, var(--accent) 12%, var(--bg-elev));
+	color: var(--accent-2);
+}
+
 @media (max-width: 720px) {
 	html {
 		scroll-padding-top: 188px;
@@ -1805,6 +1849,10 @@ code.hl {
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
+	}
+
+	.back-to-top {
+		transition: none;
 	}
 }
 
