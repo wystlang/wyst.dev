@@ -215,13 +215,18 @@ test("site footers do not link the examples page", async () => {
 		);
 		assert.match(
 			footerHtml,
-			/ARM64 bare-metal and kernel-oriented\s+language\s+and\s+assembler/,
+			/ARM64 bare-metal language and assembler\s+for\s+kernel-oriented code/,
 			`${name} footer should match the hero positioning`,
 		);
 		assert.match(
 			footerHtml,
-			/More expressive than raw AArch64,\s+with none\s+of the hidden magic of a C compiler/,
+			/Intent stays visible without\s+hiding the machine/,
 			`${name} footer should match the hero sentiment`,
+		);
+		assert.doesNotMatch(
+			footerHtml,
+			/hidden magic of a C compiler/,
+			`${name} footer should not retain the old dense hero sentiment`,
 		);
 		assert.doesNotMatch(
 			footerHtml,
