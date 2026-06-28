@@ -149,6 +149,21 @@ test("site footers do not link the examples page", async () => {
 			/>Source/,
 			`${name} footer should not label the repository link Source`,
 		);
+		assert.match(
+			footerHtml,
+			/ARM64 bare-metal and kernel-oriented\s+language\s+and\s+assembler/,
+			`${name} footer should match the hero positioning`,
+		);
+		assert.match(
+			footerHtml,
+			/More expressive than raw AArch64,\s+with none\s+of the hidden magic of a C compiler/,
+			`${name} footer should match the hero sentiment`,
+		);
+		assert.doesNotMatch(
+			footerHtml,
+			/semantic ARM64 systems language|human-readable IR|machine-oriented programming/,
+			`${name} footer should not use the old semantic IR framing`,
+		);
 	}
 });
 
