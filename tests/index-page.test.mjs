@@ -209,11 +209,11 @@ function compositedContrastRatio(foregroundColor, backgroundHex) {
 	);
 }
 
-test("landing page tracks the v0.8 draft language surface", () => {
-	assert.match(html, /<span class="ver">v0\.8-draft<\/span>/);
+test("landing page tracks the v0.8 release language surface", () => {
+	assert.match(html, /<span class="ver">v0\.8<\/span>/);
 	assert.match(
 		html,
-		/<span class="limits-chip-label">Version<\/span>\s*<span class="limits-chip-value">v0\.8-draft, pre-1\.0<\/span>/,
+		/<span class="limits-chip-label">Version<\/span>\s*<span class="limits-chip-value">v0\.8, pre-1\.0<\/span>/,
 	);
 	assert.doesNotMatch(html, /The current v0\.7 compiler/);
 	assert.doesNotMatch(html, /<li><b>Version:<\/b> v0\.7/);
@@ -358,7 +358,7 @@ test("landing page states current limits near the top", () => {
 		["Status", "not self-hosting"],
 		["Safety", "not memory-safe"],
 		["Backend", "no LLVM backend"],
-		["Version", "v0.8-draft, pre-1.0"],
+		["Version", "v0.8, pre-1.0"],
 	];
 
 	assert.match(html, /aria-label="Current Wyst limits and validation"/);
@@ -369,7 +369,7 @@ test("landing page states current limits near the top", () => {
 		"not self-hosting",
 		"not memory-safe",
 		"no LLVM backend",
-		"v0.8-draft",
+		"v0.8",
 	]) {
 		assert.match(html, new RegExp(phrase));
 	}
@@ -558,7 +558,7 @@ test("homepage owns project status without a standalone status route", async () 
 		"not self-hosting",
 		"not memory-safe",
 		"no LLVM backend",
-		"v0.8-draft",
+		"v0.8",
 	]) {
 		assert.match(html, new RegExp(phrase));
 	}
@@ -586,7 +586,7 @@ test("homepage owns project status without a standalone status route", async () 
 	);
 
 	for (const duplicate of [
-		"v0.8-draft",
+		"v0.8",
 		"Rust bootstrap",
 		"ARM64",
 		"QEMU",
@@ -744,15 +744,15 @@ test("examples page presents compiler-backed sum_to plus additional static examp
 	assert.doesNotMatch(examplesHtml, /eval\s*\(/);
 });
 
-test("generated pages track the v0.8 draft header badge", () => {
+test("generated pages track the v0.8 release header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
 		["404", notFoundHtml],
 	]) {
 		assert.match(
 			pageHtml,
-			/<span class="ver">v0\.8-draft<\/span>/,
-			`${name} should use the draft header badge`,
+			/<span class="ver">v0\.8<\/span>/,
+			`${name} should use the release header badge`,
 		);
 		assert.doesNotMatch(
 			pageHtml,

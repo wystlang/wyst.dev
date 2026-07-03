@@ -3,7 +3,7 @@
 // system from /assets/wyst.css.
 
 export const GITHUB_URL = "https://github.com/wystlang/wyst";
-const VERSION = "v0.8-draft";
+const VERSION = "v0.8";
 
 export function escapeHtml(s) {
 	return String(s)

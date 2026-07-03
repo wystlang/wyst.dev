@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="color-scheme" content="dark" />
 		<meta name="theme-color" content="#0d0f12" />
-		<meta name="description" content="Compilation phase products, semantic fact ownership, dependency rules, and legacy adapters." />
+		<meta name="description" content="Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters." />
 		<title>Compilation Phases · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-25-compilation-phases/" />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
@@ -21,7 +21,7 @@
 			<a class="brand" href="/">
 				<span class="mark" aria-hidden="true"></span>
 				<span class="word">wyst<span class="cc">::</span></span>
-				<span class="ver">v0.8-draft</span>
+				<span class="ver">v0.8</span>
 			</a>
 			<button
 				class="nav-toggle"
@@ -93,7 +93,7 @@
 					<header class="doc-article-head">
 						<span class="eyebrow">Chapter 25</span>
 						<h1>Chapter 25: Compilation Phases</h1>
-						<p class="doc-lede">Compilation phase products, semantic fact ownership, dependency rules, and legacy adapters.</p>
+						<p class="doc-lede">Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters.</p>
 					</header>
 					<div class="doc-body">
 <p>The compilation phase contract defines which compiler phase owns each
@@ -287,7 +287,8 @@ today, that carrier is an adapter and does not own the fact.</p>
 </code></pre>
 <p>Terminal products branch after their required inputs are complete:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">relocation_artifact_preparation -> report_only_fact_computation
-relocation_artifact_preparation -> manifest_provenance_generation
+build_inputs -> manifest_provenance_generation
+source_graph -> manifest_provenance_generation
 any phase diagnostic record -> diagnostic_rendering
 </code></pre>
 <p>This is a partial order, not a required implementation loop shape. Independent
@@ -375,6 +376,13 @@ new authority.</p>
 </tr>
 </tbody>
 </table>
+<p>Current declaration, resolved-symbol, checked-type, and ordinary-constant
+products carry immutable rows copied from checked semantic fact snapshots, with
+row counts derived from the same product data. This keeps product ownership
+explicit and prevents <code>sema::Program</code> from acting as an authoritative fact
+carrier. Current semantic diagnostic and cycle-trace products also carry an
+internal origin phase so diagnostic rendering and future cycle reports can
+preserve ownership metadata without changing public diagnostic output.</p>
 <h2 id="dependency-rules-and-cycles" tabindex="-1"><a class="doc-anchor" href="#dependency-rules-and-cycles" aria-hidden="true">#</a> Dependency Rules And Cycles</h2>
 <p>The <code>cycleOwner</code> field names the phase responsible for detecting and reporting
 cycles in that phase's dependency domain. <code>none</code> means the phase must not
@@ -443,15 +451,23 @@ reporting.</p>
 Chapter 4 now owns the deterministic placement constraint problem, region and
 section dependency solving, tie-breaking, padding and fill-byte policy, and
 required diagnostics for cycles, overlaps, conflicting fixed addresses, and
-overflow.</p>
+overflow.
+The current placement product owns the normalized static-ELF placement input
+wrapper plus read-only layout-section, text-section, and solved-placement
+carrier rows for runtime consumers. The static-ELF solver remains inside the
+artifact preparation implementation until solved placement production itself is
+promoted into the placement product without changing artifact bytes.
+The current type-layout product likewise exposes categorized scalar, aggregate,
+descriptor, enum, and bitfield layout rows through read-only runtime accessors.</p>
 <p><code>checklist.26.ir-representation</code> is complete at the semantic-boundary level:
 Appendix A now owns the IR representation of fixed arrays, slices, dynamic
 arrays, enums, aggregates, typed addresses, raw addresses, explicit relocation
 origins, and the handoff to lowering and emitted artifacts. Chapter 16 owns the
 matching relocation-origin and artifact vocabulary.</p>
 <h2 id="legacy-adapter-register" tabindex="-1"><a class="doc-anchor" href="#legacy-adapter-register" aria-hidden="true">#</a> Legacy Adapter Register</h2>
-<p>Current implementation details below are adapters. They are documented so they
-can be removed or narrowed without treating them as target architecture.</p>
+<p>No semantic legacy adapters remain after post-#38 consolidation. The register is
+kept so new semantic adapters have an explicit place to be recorded and rejected
+during design-contract review.</p>
 <table>
 <thead>
 <tr>
@@ -465,44 +481,149 @@ can be removed or narrowed without treating them as target architecture.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>adapter.target_ast_injection</code></td>
-<td>Synthetic target AST items inserted from project target defaults.</td>
-<td>Current sema target collection and source requirement checks.</td>
-<td>Ordinary constants, report-only facts, artifact bytes, and generated machine code as semantic inputs.</td>
-<td>E1003 artifact-target provenance checks and target/profile CLI tests.</td>
-<td>Replace with an explicit build-input target fact product after source/product consolidation.</td>
+<td>Retired IR boundary evidence: IR lowering consumes one <code>IrDeclarationInputProduct&lt;IrDeclarationInputBundle&gt;</code> containing AST-derived symbol/declaration/import/const-declaration/control-declaration/layout-placement/function-declaration/global-declaration/type-declaration/type-collection/source-lowering and BuildTargetFacts-backed target input facts, plus <code>IrSemanticFactsProduct&lt;IrSemanticInputFacts&gt;</code> and <code>EffectExecutionProduct&lt;effects::Summary&gt;</code> handoff products; enum shape maps, top-level type metadata, current struct layout facts, declaration symbol metadata, global storage metadata, computed global/sectioned-constant/exception-vector output attributes, callable/control metadata, ordinary const seed values, global initializer seeds, resolved initcall orders, and resolved layout entry/image-base/section projections are product inputs. Source-only IR declaration/import surface inputs use source-named constructors. Source-only IR declaration inputs use source/layout constructors with no layout AST. IR construction handoff preserves IrDeclarationInputProduct, IrSemanticFactsProduct, and EffectExecutionProduct wrappers. Terminal IR declaration bundle assembly consumes declaration/import products through <code>ir_declaration_input_product_from_declaration_products</code> before constructing the IR-owned bundle. IR construction input surfaces no longer accept raw CheckedSemanticProduct handles. Const declaration facts consume explicit const input rows for symbol type collection. Function declaration facts consume explicit function input rows for signature and attribute collection; function symbol types and inline-function bindings are derived from function declaration/body inputs. Global declaration facts no longer carry raw global AST declarations and carry explicit global type, initializer expression, and output attribute inputs. Global symbol types are derived from global type inputs. Type declaration facts carry explicit struct, enum, and bitfield input rows. Struct declaration rows are constructed through <code>IrStructDeclRowInput</code> before inserting into type declaration facts. Enum declaration rows are constructed through <code>IrEnumDeclRowInput</code> before inserting into type declaration facts. Bitfield declaration rows are constructed through <code>IrBitfieldDeclRowInput</code> before inserting into type declaration facts; bitfield backings, enum tags/payloads, and type symbol metadata are derived from those rows. Type-collection lowering inputs carry only item kind, name, and span metadata. Source lowering inputs carry only module/name/span metadata; function, label, and exception-vector slot bodies are named body inputs. Function, label, global, const, parameter, enum, bitfield, and exception-vector attributes are carried through IrAttrInput wrappers. Control signatures, control symbol types, and exception-vector slot attributes are derived from control input facts. Symbol input facts consume type-collection, global declaration, and control declaration products. Constant/global seed collection, initcall order collection, global output attribute collection, and exception-vector output attribute collection consume ordered type-collection facts instead of raw modules. Raw IR AST adapters are private IR internals; product-facing constructors consume instantiated AST and BuildTargetFacts products. IR expression lowering consumes <code>IrExpressionInput</code> at the function-lowering boundary.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
+</tbody>
+</table>
+<p>Current narrowing: statement-list lowering exposes <code>IrStatementInput</code> iteration instead of raw AST statement slices.
+Current narrowing: if-expression branch lowering splits branch bodies through <code>IrStatementListInput</code> instead of raw block statement slices.
+Current narrowing: if-expression type guessing scans prefix statements through <code>IrStatementListInput</code> instead of raw block statements.
+Current narrowing: loop-support block scans expose <code>LoopStmtInput</code> iteration instead of raw block statement slices.
+Current narrowing: loop-support switch and call scans consume <code>LoopSwitchArmInput</code> and <code>LoopExprListInput</code> accessors instead of raw arm/argument slices.
+Current narrowing: inline-ventry block scans expose <code>InlineVentryStmtInput</code> iteration instead of raw block statement slices.
+Current narrowing: inline-ventry expression scans consume <code>InlineVentryExprListInput</code>, <code>InlineVentrySwitchArmInput</code>, and <code>InlineVentryStructFieldInput</code> accessors instead of raw slices.
+Current narrowing: expression-type if-branch value projection is owned by <code>ExprTypeBlockInput</code> instead of raw block statements.
+Current narrowing: expression-type intrinsic probing consumes <code>ExprTypeExprListInput</code> accessors instead of raw argument slices.
+Current narrowing: MaybeUninit type lowering consumes <code>TypeAstListInput</code> exact-one accessors instead of raw type argument slices.
+Current narrowing: function-pointer and tuple type lowering consume <code>TypeAstListInput</code> and <code>TypeTupleFieldInput</code> accessors instead of raw type/field slices.
+Current narrowing: IR declaration attribute inputs consume <code>IrAttrListInput</code> and <code>IrAttrArgListInput</code> accessors instead of raw attribute/argument slices.
+Current narrowing: Global output, function declaration, and label attribute constructors consume <code>IrAttrListInput</code> instead of raw item-attribute slices.
+Current narrowing: IR enum payload inputs consume <code>IrTypeListInput</code> accessors instead of raw type slices.
+Current narrowing: IR function parameter inputs consume <code>IrParamListInput</code> accessors instead of raw parameter slices.
+Current narrowing: IR type declaration child-list inputs consume <code>IrStructFieldListInput</code>, <code>IrEnumVariantListInput</code>, and <code>IrBitfieldFieldListInput</code> accessors instead of raw child slices.
+Current narrowing: IR AST item scans consume <code>IrAstItemListInput</code> accessors instead of raw module item slices.
+Current narrowing: IR exception-vector slot inputs consume <code>IrExceptionVectorSlotListInput</code> accessors instead of raw vector slot slices.
+Current narrowing: IR layout section attr inputs consume <code>IrLayoutSectionAttrListInput</code> accessors instead of raw layout attr slices.
+Current narrowing: IR layout image-base resolution consumes <code>IrLayoutImageBaseListInput</code> accessors instead of raw image-base input slices.
+Current narrowing: IR layout region and section resolution consume <code>IrLayoutRegionListInput</code> and <code>IrLayoutSectionListInput</code> accessors instead of raw staging slices.
+Current narrowing: IR type-collection row consumers consume <code>IrTypeCollectionItemListInput</code> accessors instead of raw item slices.
+Current narrowing: IR module builder consumes type/source lowering row list accessors instead of raw lowering item slices.
+Current narrowing: IR module builder preserves symbol input facts and consumes <code>IrSymbolInputListInput</code> accessors instead of raw symbol slices.
+Current narrowing: IR module builder consumes target device-memory list inputs instead of raw target range slices.
+Current narrowing: IR module builder consumes placement section list inputs instead of raw layout section slices.
+Current narrowing: IR module builder consumes recorded-feature list inputs instead of raw feature slices.
+Current narrowing: Recorded feature rows use <code>IrRecordedFeatureInput</code> instead of raw <code>ast::FeatureUse</code> rows before module-builder rejection checks.
+Current narrowing: Terminal IR declaration bundle assembly groups declaration/import products through <code>IrDeclarationProductInputs</code> before cloning product payloads.
+Current narrowing: Session product accessors group frontend, semantic, IR gate, callable, artifact, and terminal-report dependencies through named <code>*ProductInputs</code> carriers instead of ignored parameters.
+Current narrowing: Type-collection rows are constructed through <code>IrTypeCollectionItemRowInput</code> before entering type collection facts.
+Current narrowing: Source-lowering rows are constructed through <code>IrSourceLoweringItemRowInput</code> before entering source lowering facts.
+Current narrowing: Declaration-surface module rows are constructed through <code>IrModuleDeclRowInput</code> before selecting the IR module name.
+Current narrowing: Resolved-import module membership consumes <code>IrModuleDeclRowInput</code> before tracking current module.
+Current narrowing: Resolved-import declaration rows are constructed through <code>IrImportDeclRowInput</code> and <code>IrImportSelectionInput</code> before qualified-name insertion.
+Current narrowing: Const declaration rows are constructed through <code>IrConstDeclInput::from_item_const</code> with <code>IrAttrListInput</code> instead of inline raw item fields.
+Current narrowing: Const declaration item rows are constructed through <code>IrConstDeclRowInput</code> before inserting into const input facts.
+Current narrowing: Const declaration augmentation groups seed/output attribute dependencies through <code>IrConstDeclAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Global declaration rows are constructed through <code>IrGlobalDeclRowInput</code> with <code>IrAttrListInput</code> before splitting into type/init/output maps.
+Current narrowing: Global declaration collectors consume <code>IrGlobalDeclRowInput::from_item</code> before splitting into type/init/output maps.
+Current narrowing: Global declaration augmentation groups output attribute dependencies through <code>IrGlobalDeclAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Label declaration rows are constructed through <code>IrLabelDeclRowInput</code> before splitting into attribute/body maps.
+Current narrowing: Label declaration collectors consume <code>IrLabelDeclRowInput::from_item</code> before splitting into attribute/body maps.
+Current narrowing: Exception-vector declaration rows are constructed through <code>IrExceptionVectorDeclRowInput</code> before splitting into declaration/slot-body maps.
+Current narrowing: Exception-vector declaration collectors consume <code>IrExceptionVectorDeclRowInput::from_item</code> before splitting into declaration/slot-body maps.
+Current narrowing: Control declaration augmentation groups exception-vector output attribute dependencies through <code>IrControlDeclAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Function declaration augmentation groups initcall dependencies through <code>IrFunctionDeclAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Function declaration rows are constructed through <code>IrFunctionDeclRowInput</code> before splitting into declaration/body maps.
+Current narrowing: Function declaration collectors consume <code>IrFunctionDeclRowInput::from_item</code> before splitting into declaration/body maps.
+Current narrowing: Type declaration augmentation groups struct-layout dependencies through <code>IrTypeDeclAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Struct declaration collectors consume <code>IrStructDeclRowInput::from_item</code> before inserting into type declaration facts.
+Current narrowing: Enum declaration collectors consume <code>IrEnumDeclRowInput::from_item</code> before inserting into type declaration facts.
+Current narrowing: Bitfield declaration collectors consume <code>IrBitfieldDeclRowInput::from_item</code> before inserting into type declaration facts.
+Current narrowing: Layout placement AST rows are constructed through <code>IrLayoutPlacementAstRowInput</code> before staging layout entry, image-base, region, and section facts.
+Current narrowing: Layout placement augmentation groups resolved-placement dependencies through <code>IrLayoutPlacementAugmentationInputs</code> before cloning product payloads.
+Current narrowing: Type/source lowering row constructors own item eligibility directly without separate <code>item_is_*</code> helpers.
+Current narrowing: IR target facts consume <code>TargetItemListInput</code> and <code>TargetArgListInput</code> accessors instead of raw target item/argument slices.
+Current narrowing: local pin attribute lowering consumes <code>AttrListInput</code> and <code>AttrInput</code> accessors instead of raw attribute argument slices.
+Current narrowing: attribute argument lookup consumes <code>AttrArgListInput</code> accessors instead of raw attribute argument slices.
+Current narrowing: attribute presence checks consume <code>AttrListInput</code> accessors instead of raw attribute slices.
+Current narrowing: asm option lowering consumes <code>AsmOptionListInput</code> and <code>AsmOptionInput</code> accessors instead of raw asm option slices.
+Current narrowing: switch lowering consumes <code>SwitchArmListInput</code> and <code>SwitchVariantListInput</code> accessors instead of raw switch arm slices.
+Current narrowing: is-pattern lowering consumes <code>IrIsPatternInput</code> instead of synthesizing raw AST patterns.
+Current narrowing: const-dependency block priming scans <code>IrConstDependencyStmtInput</code> iteration instead of raw block statements.
+Current narrowing: const-dependency switch priming consumes <code>IrConstDependencySwitchArmInput</code> accessors instead of raw switch arm slices.
+Current narrowing: const-dependency expression priming consumes <code>IrConstSeedContextExprListInput</code> and <code>IrConstSeedStructFieldInput</code> accessors instead of raw expression/field slices.
+Current narrowing: const-dependency type priming consumes <code>IrConstSeedContextTypeListInput</code> and <code>IrConstSeedTupleFieldInput</code> accessors instead of raw type/tuple-field slices.
+Current narrowing: tuple literal lowering consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw expression slices.
+Current narrowing: array and vector literal lowering consume <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw expression slices.
+Current narrowing: struct literal lowering consumes <code>IrStructFieldInitInput</code> iteration from <code>IrStructFieldInitListInput</code> instead of raw field initializer slices.
+Current narrowing: enum constructor lowering consumes <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: len intrinsic lowering consumes <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: slice constructor lowering consumes supplied <code>IrExpressionInput</code> operands instead of rewrapping raw expressions.
+Current narrowing: atomic order splitting consumes <code>AtomicArgsInput</code> split accessors instead of raw argument slices.
+Current narrowing: atomic order splitting consumes <code>IrExpressionListInput</code> through <code>AtomicArgsInput</code> instead of rewrapping raw argument slices.
+Current narrowing: atomic load lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>AtomicArgsInput</code> instead of raw argument slices.
+Current narrowing: atomic store lowering consumes pair <code>IrExpressionInput</code> accessors from <code>AtomicArgsInput</code> instead of raw argument slices.
+Current narrowing: CAS lowering consumes triple <code>IrExpressionInput</code> accessors from <code>AtomicArgsInput</code> instead of raw argument slices.
+Current narrowing: atomic fetch/exchange lowering consumes pair <code>IrExpressionInput</code> accessors from <code>AtomicArgsInput</code> instead of raw argument slices.
+Current narrowing: atomic bit-operation lowering consumes pair <code>IrExpressionInput</code> accessors from <code>AtomicArgsInput</code> instead of raw argument slices.
+Current narrowing: system-register encoding consumes indexed <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: runtime tag_of lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: tag_of lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: addr_of lowering consumes first <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: per-instance offset lowering consumes first <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: endian load lowering consumes first <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: endian store lowering consumes pair <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: mrs lowering consumes first <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: msr lowering consumes indexed <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: msr_s value lowering consumes indexed <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: barrier-domain lowering consumes first <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: prefetch lowering consumes triple <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: ldnp lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: stnp lowering consumes triple <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: unary SIMD intrinsic lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: generic intrinsic fallback lowering consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: call lowering consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: inline call lowering consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: directive statement lowering consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: const-seed intrinsic argument handling consumes <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: module const-seed intrinsic argument handling consumes <code>IrConstSeedContextExprListInput</code> accessors instead of raw argument slices.
+Current narrowing: const-seed address intrinsic handling consumes <code>ConstSeedExprListInput</code> first-name accessors instead of raw argument slices.
+Current narrowing: array literal const-seed aggregation consumes <code>IrConstSeedContextExprInput</code> iteration from <code>IrConstSeedContextExprListInput</code> instead of raw expression slices.
+Current narrowing: enum constructor const-seed aggregation consumes exact-one <code>IrConstSeedContextExprInput</code> accessors from <code>IrConstSeedContextExprListInput</code> instead of raw argument slices.
+Current narrowing: struct literal const-seed aggregation consumes <code>IrConstSeedStructFieldInput</code> accessors from <code>IrConstSeedStructFieldListInput</code> instead of raw field initializer slices.
+Current narrowing: raw-storage read lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: raw-storage write lowering consumes pair <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: FMA result type inference consumes <code>IrExpressionInput</code> iteration from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: trusted cast lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: runtime addr_of lowering consumes exact-one <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.
+Current narrowing: FMA lowering consumes triple <code>IrExpressionInput</code> accessors from <code>IrExpressionListInput</code> instead of raw argument slices.</p>
+<h2 id="non-semantic-rendering-compatibility-adapters" tabindex="-1"><a class="doc-anchor" href="#non-semantic-rendering-compatibility-adapters" aria-hidden="true">#</a> Non-Semantic Rendering Compatibility Adapters</h2>
+<p>The adapters below preserve public text/report compatibility only. They must
+not own or feed module identity, declaration identity, semantic caches, IR
+identity, or artifact bytes.</p>
+<table>
+<thead>
 <tr>
-<td><code>adapter.layout_facts_via_sema_program</code></td>
-<td>Layout facts carried through <code>sema::Program</code> and symbol lookup.</td>
-<td>Source semantic checking, IR construction, and artifact preparation after the layout owner phase.</td>
-<td>Ordinary constants or <code>#if</code> consuming placement-owned <code>#start/#end</code> addresses.</td>
-<td>E1000 ordinary constant and compile-time selection tests.</td>
-<td>Replace with explicit layout-time and type-layout products after #25/post-#38.</td>
+<th>Adapter ID</th>
+<th>Current carrier</th>
+<th>Allowed consumers</th>
+<th>Forbidden consumers</th>
+<th>Enforcement evidence</th>
+<th>Removal condition</th>
 </tr>
-<tr>
-<td><code>adapter.ast_to_ir_recomputation</code></td>
-<td>IR lowering recomputes from AST plus semantic carriers.</td>
-<td><code>phase.ir_construction</code> while consuming finalized source, type, constant, layout, placement, effect, and execution-level facts.</td>
-<td>Report-only facts, diagnostic rendering, and artifact bytes feeding IR construction.</td>
-<td>Rust phase dependency tests and pre-23 characterization.</td>
-<td>#26 replaces the IR representation and typed semantic product handoff.</td>
-</tr>
-<tr>
-<td><code>adapter.report_reconstruction</code></td>
-<td>Explain and provenance commands reconstruct report inputs from frontend, IR, and artifacts.</td>
-<td>Terminal report/provenance renderers.</td>
-<td>Parsing, semantic checking, diagnostics, IR, ABI classification, lowering, register allocation, artifacts, or build acceptance.</td>
-<td>Report isolation tests and E1002 contract classification.</td>
-<td>Post-#38 report products replace reconstruction from internal carriers.</td>
-</tr>
+</thead>
+<tbody>
 <tr>
 <td><code>adapter.synthetic_build_inputs_span</code></td>
 <td>Synthetic <code>&lt;build inputs&gt;</code> display identity for concatenated sources.</td>
-<td>Diagnostic rendering and manifest/report provenance display.</td>
+<td>Diagnostic rendering and manifest/report provenance display through <code>SourceMapProduct</code> segments.</td>
 <td>Module identity, declaration identity, semantic caches, IR identity, or artifact bytes.</td>
 <td>Source graph/design contract tests and pre-23 characterization.</td>
-<td>Source graph product carries file-span identity everywhere after post-#38 consolidation.</td>
+<td>Public diagnostic/span snapshots migrate from synthetic display labels to original-file source spans.</td>
 </tr>
 </tbody>
 </table>
@@ -525,6 +646,7 @@ can be removed or narrowed without treating them as target architecture.</p>
 				<li class="lvl-2"><a href="#diagnostic-rendering">Diagnostic Rendering</a></li>
 				<li class="lvl-2"><a href="#deferred-checklist-boundaries">Deferred Checklist Boundaries</a></li>
 				<li class="lvl-2"><a href="#legacy-adapter-register">Legacy Adapter Register</a></li>
+				<li class="lvl-2"><a href="#non-semantic-rendering-compatibility-adapters">Non-Semantic Rendering Compatibility Adapters</a></li>
 			</ul>
 			</aside>
 			</div>
