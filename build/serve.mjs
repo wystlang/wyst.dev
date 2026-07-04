@@ -1,11 +1,13 @@
-// Minimal static file server for local preview of the generated site.
-// Root is derived from this file's location so it never depends on cwd.
+// Minimal static file server for local preview of the generated Worker asset.
+// Roots are derived from this file's location so they never depend on cwd.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
+const PUBLIC_ROOT = path.join(ROOT, ".worker-assets");
+const HOST = process.env.HOST || "127.0.0.1";
 const PORT = Number(process.env.PORT || 8347);
 
 const TYPES = {
@@ -21,17 +23,44 @@ const TYPES = {
 	".json": "application/json",
 };
 
+function notFound(res) {
+	res.writeHead(404, { "content-type": "text/plain" });
+	res.end("404");
+}
+
+function safePublicPath(req) {
+	let urlPath;
+	try {
+		urlPath = decodeURIComponent(req.url.split("?")[0]);
+	} catch {
+		return null;
+	}
+
+	const relativePath = urlPath.replace(/^\/+/, "") || "index.html";
+	const segments = relativePath.split("/");
+	if (segments.some((segment) => segment.startsWith(".") || segment === "_headers")) {
+		return null;
+	}
+
+	let fsPath = path.resolve(PUBLIC_ROOT, relativePath);
+	const relativeToRoot = path.relative(PUBLIC_ROOT, fsPath);
+	if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) {
+		return null;
+	}
+
+	if (fs.existsSync(fsPath) && fs.statSync(fsPath).isDirectory()) {
+		fsPath = path.join(fsPath, "index.html");
+	}
+
+	return fsPath;
+}
+
 http
 	.createServer((req, res) => {
-		let urlPath = decodeURIComponent(req.url.split("?")[0]);
-		let fsPath = path.join(ROOT, urlPath);
 		try {
-			if (fs.existsSync(fsPath) && fs.statSync(fsPath).isDirectory()) {
-				fsPath = path.join(fsPath, "index.html");
-			}
-			if (!fsPath.startsWith(ROOT) || !fs.existsSync(fsPath)) {
-				res.writeHead(404, { "content-type": "text/plain" });
-				res.end("404");
+			const fsPath = safePublicPath(req);
+			if (!fsPath || !fs.existsSync(fsPath)) {
+				notFound(res);
 				return;
 			}
 			const ext = path.extname(fsPath);
@@ -42,4 +71,6 @@ http
 			res.end(String(e));
 		}
 	})
-	.listen(PORT, () => console.log(`serving ${ROOT} on http://localhost:${PORT}`));
+	.listen(PORT, HOST, () =>
+		console.log(`serving ${PUBLIC_ROOT} on http://${HOST}:${PORT}`),
+	);
