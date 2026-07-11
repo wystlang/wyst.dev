@@ -70,7 +70,7 @@
 				<a class="brand" href="/">
 					<span class="mark" aria-hidden="true"></span>
 					<span class="word">wyst<span class="cc">::</span></span>
-					<span class="ver">v0.8</span>
+					<span class="ver">v0.8 · experimental</span>
 				</a>
 				<button
 					class="nav-toggle"
@@ -146,8 +146,8 @@
 							access can still fault or misbehave.
 						</p>
 						<div class="cta-row">
-							<a class="btn btn-primary" href="/docs/"
-								>Read the Docs
+							<a class="btn btn-primary" href="#start"
+								>Build your first program
 								<span class="arrow" aria-hidden="true"
 									>→</span
 								></a
@@ -231,15 +231,54 @@
 					</ul>
 				</div>
 			</section>
+			<section class="sec start-sec" id="start">
+				<div class="wrap start-grid">
+					<div class="sec-head">
+						<span class="eyebrow">Five-minute start</span>
+						<h2>Build, inspect, then run.</h2>
+						<p>Wyst currently runs from its Rust bootstrap compiler. Clone the repository, build the checked UART fixture, inspect the emitted ELF, then run the QEMU gate.</p>
+						<p class="start-requirements">Requires Rust/Cargo; the final command also requires <code>qemu-system-aarch64</code>.</p>
+					</div>
+					<div class="quickstart-card">
+						<pre aria-label="Commands to build and run the Wyst UART fixture"><code>git clone https://github.com/wystlang/wyst.git
+cd wyst
+cargo run --locked --manifest-path wync/Cargo.toml -- build \
+  wync/tests/fixtures/qemu/virt/uart-hello/main.wyst \
+  --layout wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst \
+  -o /tmp/uart.elf
+cargo run --locked --manifest-path wync/Cargo.toml -- disasm /tmp/uart.elf
+./wync/tests/fixtures/qemu/virt/run.sh</code></pre>
+						<div class="quickstart-links">
+							<a href="https://github.com/wystlang/wyst#quick-start" rel="noopener">Full setup on GitHub →</a>
+							<a href="/docs/">Open the reference manual →</a>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="sec evidence-sec" id="evidence">
+				<div class="wrap">
+					<div class="sec-head">
+						<span class="eyebrow">Evidence, not slogans</span>
+						<h2>Check the contract and the tests.</h2>
+						<p>The claims below are deliberately narrow. Follow the links to the versioned authority, semantic test map, and runnable fixtures.</p>
+					</div>
+					<div class="evidence-grid">
+						<a class="evidence-card" href="/docs/source-of-truth/"><span class="evidence-label">Language status</span><strong>v0.8 authority</strong><span>Implemented, future, experimental, and reserved features are distinguished explicitly.</span></a>
+						<a class="evidence-card" href="/docs/conformance-index/"><span class="evidence-label">Semantic coverage</span><strong>Conformance index</strong><span>Language-contract rows link to the tests that exercise them.</span></a>
+						<a class="evidence-card" href="https://github.com/wystlang/wyst/tree/main/wync/tests/fixtures/qemu" rel="noopener"><span class="evidence-label">Runtime validation</span><strong>QEMU fixtures</strong><span>Runnable ARM64 fixtures cover named emulated targets; this is not hardware certification.</span></a>
+						<a class="evidence-card" href="https://github.com/wystlang/wyst#tests" rel="noopener"><span class="evidence-label">Release gate</span><strong>Rebuild evidence</strong><span>Release checks build identical declared inputs twice and compare the resulting ELF bytes.</span></a>
+					</div>
+				</div>
+			</section>
 			<section class="sec principle-sec" id="philosophy">
 				<div class="wrap">
 					<div class="sec-head">
 						<span class="eyebrow">Design principles</span>
 						<h2>No magic. No surprises.</h2>
 						<p>
-							Wyst makes a single promise: what you write is what
-							the machine does. The compiler's job is to lower it
-							faithfully, not to outsmart you.
+							Source-visible semantics constrain lowering. Compiler choices
+							remain deterministic and inspectable within the documented build
+							contract.
 						</p>
 					</div>
 
@@ -249,9 +288,9 @@
 							<div class="ico" aria-hidden="true">↻</div>
 							<h3>Reproducible Lowering</h3>
 							<p>
-								The same source compiles to the same bytes,
-								every time. Release tests build twice and
-								compare the ELF byte-for-byte.
+								Given identical declared inputs, target profile, build mode,
+								and <code>wync</code> compiler version, release tests build
+								twice and compare the ELF byte-for-byte.
 							</p>
 						</article>
 						<article class="card">
@@ -281,9 +320,10 @@
 							<div class="ico" aria-hidden="true">≈</div>
 							<h3>Performance Transparency</h3>
 							<p>
-								Cost is visible at the source. No implicit
-								vectorization, no hidden allocation, no global
-								optimizer passes or profile-guided rewrites.
+								Compiler-introduced work is constrained and inspectable. No
+								implicit vectorization, hidden allocation, global optimizer
+								passes, or profile-guided rewrites. Hardware timing still
+								depends on the target system.
 							</p>
 						</article>
 						<article class="card">
@@ -292,8 +332,8 @@
 							<h3>Deterministic Output</h3>
 							<p>
 								Layout, symbols, and relocations are emitted
-								deterministically. The ELF is a function of your
-								source, not the machine that built it.
+								deterministically. With documented inputs fixed,
+								host-machine variation does not change the emitted ELF.
 							</p>
 						</article>
 						<article class="card">
@@ -315,10 +355,10 @@
 						<span class="eyebrow">Side by side</span>
 						<h2>See what you're actually doing.</h2>
 						<p>
-							The same routine, summing integers
+							Illustrative versions of the same routine, summing integers
 							<code class="hl">0...n</code>, across three levels of
-							the stack. C hides the machine; assembly buries the
-							intent. Wyst keeps both.
+							the stack. C emphasizes source intent; assembly exposes
+							instruction detail. Wyst is designed to connect them.
 						</p>
 					</div>
 
@@ -387,11 +427,11 @@
 							semantics, so there's no undefined behavior for the
 							compiler to reason from; the loop can't be silently
 							deleted or rewritten into something you didn't
-							author. The <code>while</code> loop lowers to the
-							exact counted branch
+							author. The displayed assembly shows the intended counted-branch
+							shape
 							<span class="note-right">on the right</span
 							><span class="note-above">above</span>, with a
-							direct, inspectable correspondence to AArch64.
+							illustrative comparison, not a current compiler artifact.
 						</p>
 					</div>
 				</div>
@@ -778,7 +818,7 @@
 
 				if (!nav || !toggle || !links) return;
 
-				const mobile = window.matchMedia("(max-width: 720px)");
+				const mobile = window.matchMedia("(max-width: 920px)");
 				document.documentElement.classList.add("nav-ready");
 
 				function setOpen(open) {

@@ -200,7 +200,7 @@ function compositedContrastRatio(foregroundColor, backgroundHex) {
 }
 
 test("landing page tracks the v0.8 release language surface", () => {
-	assert.match(html, /<span class="ver">v0\.8<\/span>/);
+	assert.match(html, /<span class="ver">v0\.8 · experimental<\/span>/);
 	assert.match(
 		html,
 		/<span class="limits-chip-label">Version<\/span>\s*<span class="limits-chip-value">v0\.8, pre-1\.0<\/span>/,
@@ -413,7 +413,7 @@ test("hero keeps calls to action focused", () => {
 		}));
 
 	assert.deepEqual(heroCtas, [
-		{ href: "/docs/", label: "Read the Docs →" },
+		{ href: "#start", label: "Build your first program →" },
 		{ href: "https://github.com/wystlang/wyst", label: "View on GitHub" },
 	]);
 });
@@ -556,7 +556,7 @@ test("homepage presents the side-by-side sum_to comparison", () => {
 	assert.match(codeBlockText("compare-arm64"), /sum_to:/);
 	assert.match(codeBlockText("compare-wyst"), /#module demo\.math/);
 	assert.match(codeBlockText("compare-wyst"), /while i < n/);
-	assert.match(html, /The <code>while<\/code> loop lowers to the/);
+	assert.match(html, /displayed assembly shows the intended counted-branch/);
 	assert.doesNotMatch(html, /<textarea/i);
 	assert.doesNotMatch(html, /contenteditable/i);
 	assert.doesNotMatch(html, /fetch\s*\(/);

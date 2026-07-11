@@ -364,7 +364,7 @@ html.back-to-top-ready .back-to-top.is-visible {
 	color: var(--accent-2);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 920px) {
 	html {
 		scroll-padding-top: 188px;
 	}
@@ -868,6 +868,101 @@ pre code {
 .sec-head p {
 	color: var(--copy-muted);
 	font-size: var(--text-xl);
+}
+
+.start-sec {
+	background: var(--bg-elev);
+	border-top: 1px solid var(--line);
+	border-bottom: 1px solid var(--line);
+}
+
+.start-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+	gap: var(--space-3xl);
+	align-items: center;
+}
+
+.start-grid .sec-head {
+	margin-bottom: 0;
+}
+
+.start-requirements {
+	margin-top: var(--space-lg);
+	font-size: var(--text-md) !important;
+}
+
+.quickstart-card {
+	min-width: 0;
+	background: var(--bg-code-2);
+	border: 1px solid var(--line-2);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+	box-shadow: var(--shadow-md);
+}
+
+.quickstart-card pre {
+	padding: var(--space-xl);
+	overflow-x: auto;
+	font: 500 var(--text-sm)/1.75 var(--mono);
+	color: var(--syn-text);
+}
+
+.quickstart-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-md) var(--space-xl);
+	padding: var(--space-md) var(--space-xl);
+	border-top: 1px solid var(--line);
+	font: 700 var(--text-sm)/1.5 var(--mono);
+	color: var(--accent-2);
+}
+
+.evidence-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 1px;
+	background: var(--card-grid-line);
+	border: 1px solid var(--card-grid-line);
+	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+
+.evidence-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+	padding: var(--space-xl);
+	background: var(--bg);
+	transition: background var(--dur-base) var(--ease);
+}
+
+.evidence-card:hover,
+.evidence-card:focus-visible {
+	background: var(--bg-elev);
+}
+
+.evidence-card strong {
+	font-size: var(--text-2xl);
+}
+
+.evidence-card > span:last-child {
+	color: var(--copy-muted);
+	font-size: var(--text-md);
+}
+
+.evidence-label {
+	font: 700 var(--text-xs)/1.4 var(--mono);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+@media (max-width: 760px) {
+	.start-grid,
+	.evidence-grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 .cards {
