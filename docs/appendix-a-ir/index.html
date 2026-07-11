@@ -1064,11 +1064,11 @@ attribute-block := "[" attribute-list "]"
 <h3 id="8.2-worked-example" tabindex="-1"><a class="doc-anchor" href="#8.2-worked-example" aria-hidden="true">#</a> 8.2 Worked Example</h3>
 <p>The Wyst surface code:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">uart_write</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">byte</span> <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span>
-  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span>
+  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTDR</span><span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Lowers (post-IR-construction, pre-type-erasure) to:</p>
@@ -1634,7 +1634,7 @@ If no descriptor is loaded, they report chain length in ops.</li>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

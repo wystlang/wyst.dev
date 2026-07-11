@@ -139,16 +139,16 @@ appear only:</p>
 </code></pre>
 <p>is rejected. Add is expressed by writing variables:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
-b <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
-c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b <span class="token comment">// lowers to `add xD, xA, xB` for whichever GPRs the allocator picks</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
+<span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b <span class="token comment">// lowers to `add xD, xA, xB` for whichever GPRs the allocator picks</span>
 </code></pre>
 <p>If the operation must use specific registers (firmware contract, fixed ABI),
 pin the variables:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">1</span>
-b <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x2<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">2</span>
-c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> a <span class="token operator">+</span> b   <span class="token comment">// guaranteed `add x0, x1, x2`</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x2<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">2</span>
+<span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> a <span class="token operator">+</span> b   <span class="token comment">// guaranteed `add x0, x1, x2`</span>
 </code></pre>
 <p>If the operation must be emitted as a literal instruction (the rest of the
 function is also hand-scheduled, or the encoding is load-bearing), use <code>#asm</code>:</p>
@@ -171,7 +171,7 @@ str x0<span class="token punctuation">,</span> <span class="token punctuation">[
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> memory_demo
 
-read_word <span class="token operator">::</span> <span class="token punctuation">(</span>addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+<span class="token function">read_word</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -205,16 +205,16 @@ specified in this chapter.</p>
 </code></pre>
 <p>Examples:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">mem <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">mem</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
-x <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>     <span class="token comment">// load: read u64 from address in mem</span>
+<span class="token variable">x</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>     <span class="token comment">// load: read u64 from address in mem</span>
                   <span class="token comment">// x's type is inferred as u64 from the load</span>
 
 <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span> <span class="token operator">=</span> x     <span class="token comment">// store: write x to u64 at address in mem</span>
 </code></pre>
 <p>The type of <code>x</code> is inferred from the load. Explicit annotation is also valid:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>
 </code></pre>
 <p>These are equivalent. The <code>:=</code> shorthand is simply <code>:</code> and <code>=</code> without whitespace.</p>
 <h3 id="volatile-and-mmio-intent-access" tabindex="-1"><a class="doc-anchor" href="#volatile-and-mmio-intent-access" aria-hidden="true">#</a> Volatile and MMIO-Intent Access</h3>
@@ -231,11 +231,11 @@ Device memory. Normal-vs-Device memory type is established by page tables,
 firmware, or platform configuration; target descriptions may record known
 mapping facts, but a type conversion cannot create them.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">UARTFR</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+<span class="token parameter">UARTDR</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
 
-status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span>      <span class="token comment">// volatile MMIO-intent load</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile MMIO-intent store</span>
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span>      <span class="token comment">// volatile MMIO-intent load</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTDR</span><span class="token punctuation">]</span> <span class="token operator">=</span> byte        <span class="token comment">// volatile MMIO-intent store</span>
 </code></pre>
 <p>A volatile access is a <strong>compiler barrier</strong>. The compiler may not:</p>
 <ul>
@@ -286,12 +286,12 @@ or store through either qualified address is a compiler barrier (see section
 1.3.1). Only access through <code>@mmio T</code> introduces the <code>mmio</code> effect. Qualifiers
 propagate through address arithmetic:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">GIC_BASE_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
-GICD_CTLR      <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
-GICD_TYPER     <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>GIC_BASE_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">GIC_BASE_BYTES</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0x0800_0000</span>
+<span class="token parameter">GICD_CTLR</span>      <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token constant">GIC_BASE_BYTES</span> <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+<span class="token parameter">GICD_TYPER</span>     <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token constant">GIC_BASE_BYTES</span> <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_CTLR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile MMIO-intent store</span>
-mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>GICD_TYPER<span class="token punctuation">]</span>           <span class="token comment">// volatile MMIO-intent load at byte offset 4</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">GICD_CTLR</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>              <span class="token comment">// volatile MMIO-intent store</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">GICD_TYPER</span><span class="token punctuation">]</span>           <span class="token comment">// volatile MMIO-intent load at byte offset 4</span>
 </code></pre>
 <p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
 direction. Stripping volatility or MMIO intent requires an explicit
@@ -313,9 +313,9 @@ including when one address was produced by casting the other.</p>
 </code></pre>
 <p>Float loads and stores use the same <code>type[address]</code> syntax:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">addr <span class="token operator">:</span> <span class="token address-qualifier type">@f32</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@f32</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
 
-val <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">f32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>          <span class="token comment">// load f32</span>
+<span class="token variable">val</span> <span class="token operator">:=</span> <span class="token builtin type">f32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span>          <span class="token comment">// load f32</span>
 <span class="token builtin type">f32</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span> <span class="token operator">=</span> val           <span class="token comment">// store f32</span>
 </code></pre>
 <h4>Struct Addresses</h4>
@@ -327,13 +327,13 @@ val <span class="token operator">:</span><span class="token operator">=</span> <
 </code></pre>
 <p>Struct stride is the total size of the struct (sum of field sizes including padding). Addressing structs lets you treat contiguous struct data as an array:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">msgs <span class="token operator">:</span> <span class="token address-qualifier type">@string</span> <span class="token operator">=</span> <span class="token number">0x6000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">msgs</span> <span class="token operator">:</span> <span class="token address-qualifier type">@string</span> <span class="token operator">=</span> <span class="token number">0x6000</span>
 
-first_len_addr  <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
-second_len_addr <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
+<span class="token parameter">first_len_addr</span>  <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
+<span class="token parameter">second_len_addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>msgs <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token directive macro">#field_offset</span><span class="token punctuation">(</span><span class="token builtin type">string</span><span class="token punctuation">,</span> len<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 
-first_len  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>first_len_addr<span class="token punctuation">]</span>
-second_len <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>second_len_addr<span class="token punctuation">]</span>
+<span class="token variable">first_len</span>  <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>first_len_addr<span class="token punctuation">]</span>
+<span class="token variable">second_len</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>second_len_addr<span class="token punctuation">]</span>
 </code></pre>
 <h4>Vector Addresses</h4>
 <!-- wyst-contract: sketch -->
@@ -345,21 +345,21 @@ second_len <span class="token operator">:</span><span class="token operator">=</
 <p>The element type records the intended access type. Array and slice indexing
 syntax is a separate operation; <code>@T</code> address arithmetic uses element offsets:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">base <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">base</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> i<span class="token punctuation">]</span>
 </code></pre>
 <h3 id="mmio-example" tabindex="-1"><a class="doc-anchor" href="#mmio-example" aria-hidden="true">#</a> MMIO Example</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UARTFR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-UARTDR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
-TXFF   <span class="token operator">::</span> <span class="token builtin type">u32</span>          <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">UARTFR</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+<span class="token parameter">UARTDR</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<span class="token constant">TXFF</span>   <span class="token operator">::</span> <span class="token builtin type">u32</span>          <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
 
-<span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+<span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTDR</span><span class="token punctuation">]</span> <span class="token operator">=</span> byte
 </code></pre>
 <p>MMIO intent and volatility come from the address type. No per-access directive
 can be forgotten, and the type does not replace the runtime page-table setup
@@ -449,10 +449,10 @@ no load forwarding, no merging of consecutive accesses);</li>
 <p>Two volatile accesses are never reordered relative to each other. A plain
 access may not be moved across a volatile access in either direction.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">READY_FLAG <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">READY_FLAG</span> <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
 
-status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>READY_FLAG<span class="token punctuation">]</span>      <span class="token comment">// volatile load — guaranteed emitted</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>READY_FLAG<span class="token punctuation">]</span> <span class="token operator">=</span> status <span class="token operator">|</span> <span class="token number">1</span>  <span class="token comment">// volatile store — guaranteed emitted</span>
+status <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">READY_FLAG</span><span class="token punctuation">]</span>      <span class="token comment">// volatile load — guaranteed emitted</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">READY_FLAG</span><span class="token punctuation">]</span> <span class="token operator">=</span> status <span class="token operator">|</span> <span class="token number">1</span>  <span class="token comment">// volatile store — guaranteed emitted</span>
 </code></pre>
 <p>A volatile access lowers to the same <code>ldr</code>/<code>str</code> instruction as a plain
 access. The &quot;device&quot; behavior comes from the page-table attributes for the
@@ -466,13 +466,13 @@ optimize the access away.</p>
 when a byte view is needed. Any access through the derived address is a
 compiler barrier:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">STATUS_WORDS  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">STATUS_WORDS</span>  <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x8000_1000</span>
 
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>             <span class="token comment">// volatile store, element offset 0</span>
-mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>STATUS_WORDS <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load, element offset 1</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">STATUS_WORDS</span> <span class="token operator">+</span> <span class="token number">0</span><span class="token punctuation">]</span>  <span class="token operator">=</span> <span class="token number">1</span>             <span class="token comment">// volatile store, element offset 0</span>
+mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">STATUS_WORDS</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span>           <span class="token comment">// volatile load, element offset 1</span>
 
-STATUS_BYTES <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> STATUS_WORDS <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span>
-type_addr <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span>STATUS_BYTES <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+<span class="token parameter">STATUS_BYTES</span> <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token constant">STATUS_WORDS</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u8</span>
+<span class="token parameter">type_addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token constant">STATUS_BYTES</span> <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 same_mask <span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>type_addr<span class="token punctuation">]</span>         <span class="token comment">// same address, byte offset spelled explicitly</span>
 </code></pre>
 <p>Volatility and MMIO intent are properties of the static result type of the
@@ -481,11 +481,11 @@ arithmetic expression. If an integer operand was produced from an address with
 qualifiers. Mixed-qualifier address arithmetic is rejected unless the source
 first casts one address to the intended qualifier:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
-plain <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span>          <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">device</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>
+<span class="token parameter">plain</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span>          <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 
-bad  <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>                 <span class="token comment">// compile error</span>
-good <span class="token operator">:</span><span class="token operator">=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token comment">// result is @mmio u32</span>
+<span class="token variable">bad</span>  <span class="token operator">:=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>                 <span class="token comment">// compile error</span>
+<span class="token variable">good</span> <span class="token operator">:=</span> device <span class="token operator">+</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>plain <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token comment">// result is @mmio u32</span>
 </code></pre>
 <p>There is no implicit conversion among <code>@T</code>, <code>@volatile T</code>, and <code>@mmio T</code> in any
 direction. To strip volatility or MMIO intent use an explicit <code>as.qualifier</code>
@@ -494,13 +494,13 @@ MMIO-intent, use an explicit <code>as.qualifier</code> conversion as well. These
 conversions do not perform an access and do not introduce
 <code>volatile_access</code> or <code>mmio</code> effects until a later load or store:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">device <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
-plain <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@u32</span>             <span class="token comment">// qualifiers dropped; loads through `plain` are not barriers</span>
-volatile_only <span class="token operator">:</span><span class="token operator">=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">device</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0018</span>
+<span class="token variable">plain</span> <span class="token operator">:=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@u32</span>             <span class="token comment">// qualifiers dropped; loads through `plain` are not barriers</span>
+<span class="token variable">volatile_only</span> <span class="token operator">:=</span> device <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
 
-ram <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-volatile_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
-device_view <span class="token operator">:</span><span class="token operator">=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
+<span class="token parameter">ram</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+<span class="token variable">volatile_view</span> <span class="token operator">:=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span>
+<span class="token variable">device_view</span> <span class="token operator">:=</span> ram <span class="token keyword">as</span><span class="token punctuation">.</span>qualifier <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span>
 </code></pre>
 <p>The static address type at the access site decides whether the access is
 plain, volatile, or MMIO-intent, but it is not an alias boundary. If <code>plain</code>
@@ -750,25 +750,25 @@ sequences. On ARM64, the CPU store buffer may reorder stores to different addres
 device that requires its configuration registers to be written in a specific
 order requires explicit barriers between those writes.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">UART_CR <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
-UART_IBRD <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
-UART_FBRD <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">UART_CR</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0030</span>
+<span class="token parameter">UART_IBRD</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0024</span>
+<span class="token parameter">UART_FBRD</span> <span class="token operator">:</span> <span class="token address-qualifier type">@mmio</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0x0900_0028</span>
 </code></pre>
 <p><strong>Incorrect</strong> (CPU may reorder stores even though every access is volatile):</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x0</span>       <span class="token comment">// disable UART</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_IBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>         <span class="token comment">// set baud divisor integer</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_FBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>        <span class="token comment">// set baud divisor fraction</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x301</span>     <span class="token comment">// re-enable UART</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_CR</span><span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x0</span>       <span class="token comment">// disable UART</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_IBRD</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>         <span class="token comment">// set baud divisor integer</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_FBRD</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>        <span class="token comment">// set baud divisor fraction</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_CR</span><span class="token punctuation">]</span>   <span class="token operator">=</span> <span class="token number">0x301</span>     <span class="token comment">// re-enable UART</span>
 </code></pre>
 <p><strong>Correct</strong> (barriers enforce hardware observation order):</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x0</span>         <span class="token comment">// disable UART</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_CR</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x0</span>         <span class="token comment">// disable UART</span>
 <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>                   <span class="token comment">// wait until disable is observed</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_IBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_FBRD<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_IBRD</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">1</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_FBRD</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">40</span>
 <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>                   <span class="token comment">// wait until baud writes complete</span>
-<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UART_CR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x301</span>       <span class="token comment">// re-enable UART</span>
+<span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UART_CR</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x301</span>       <span class="token comment">// re-enable UART</span>
 </code></pre>
 <p>Use <code>%dsb(sy)</code> when you need the CPU to stall until all preceding stores
 are globally observed. Use <code>%dmb(sy)</code> when ordering is required but
@@ -781,11 +781,11 @@ between the writes themselves does not.</p>
 and <code>#release</code> for the unlock store. <code>%cas</code> lowers to a single <code>casa</code>
 instruction on ARMv8.1 LSE or an <code>ldaxr</code>/<code>stxr</code> loop on baseline ARMv8.0.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">LOCK_ADDR <span class="token operator">::</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x8000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token constant">LOCK_ADDR</span> <span class="token operator">::</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x8000</span>
 
-spin_lock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">spin_lock</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
-    _<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>LOCK_ADDR<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span>acquire<span class="token punctuation">)</span>
+    _<span class="token punctuation">,</span> <span class="token variable">ok</span> <span class="token operator">:=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span><span class="token constant">LOCK_ADDR</span><span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span>acquire<span class="token punctuation">)</span>
     <span class="token keyword">if</span> ok <span class="token punctuation">{</span>
       <span class="token keyword">return</span>
     <span class="token punctuation">}</span>
@@ -793,8 +793,8 @@ spin_lock <span class="token operator">::</span> <span class="token punctuation"
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
-spin_unlock <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>LOCK_ADDR<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// store-release clears the lock</span>
+<span class="token function">spin_unlock</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">LOCK_ADDR</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// store-release clears the lock</span>
   <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// wake any waiters</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1469,7 +1469,7 @@ another hb edge.</li>
 <p>The canonical spinlock pattern is not a mixed-access race:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// acquire</span>
-_<span class="token punctuation">,</span> ok <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>lock<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> order<span class="token operator">:</span> acquire<span class="token punctuation">)</span>
+_<span class="token punctuation">,</span> <span class="token variable">ok</span> <span class="token operator">:=</span> <span class="token primitive macro">%cas</span><span class="token punctuation">(</span>lock<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> acquire<span class="token punctuation">)</span>
 
 <span class="token comment">// release</span>
 <span class="token directive macro">#release</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
@@ -1576,13 +1576,13 @@ above for reproducibility, and the §9.4 &quot;non-access-atomic load&quot; case
 multi-chunk aggregate copies when they race.</p>
 <h4>Worked example: 16-byte struct copy</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Point <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-    x <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
-    y <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">Point</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+    <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+    <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span>
 
-src <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
-dst <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4010</span>
+<span class="token parameter">src</span> <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+<span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@Point</span> <span class="token operator">=</span> <span class="token number">0x4010</span>
 
 Point<span class="token operator">@</span><span class="token punctuation">[</span>dst<span class="token punctuation">]</span> <span class="token operator">=</span> Point<span class="token operator">@</span><span class="token punctuation">[</span>src<span class="token punctuation">]</span>                <span class="token comment">// 16-byte aggregate copy</span>
 </code></pre>
@@ -1653,8 +1653,8 @@ write and before the signaling store.</li>
 the critical section.</li>
 </ol>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result_buf   <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span>          <span class="token operator">=</span> <span class="token number">0x4000</span>
-result_ready <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4008</span>      <span class="token comment">// volatility lives in the type</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">result_buf</span>   <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span>          <span class="token operator">=</span> <span class="token number">0x4000</span>
+<span class="token parameter">result_ready</span> <span class="token operator">:</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4008</span>      <span class="token comment">// volatility lives in the type</span>
 
 <span class="token comment">// Foreground: write result and signal handler</span>
 <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>result_buf<span class="token punctuation">]</span>   <span class="token operator">=</span> computed_value         <span class="token comment">// write result (plain)</span>
@@ -1696,19 +1696,19 @@ variable declared but not assigned before use is not an implicit way to observe
 its stack slot or register home. An ordinary read of a local before
 initialization is a compile-time error.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  x <span class="token operator">:</span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">main</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
   <span class="token keyword">return</span> x <span class="token comment">// error[E0204]: local 'x' is read before it is initialized</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Programs that deliberately need raw machine storage must say so in the type and
 the operation:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  storage <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span>
-  first <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">main</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  <span class="token parameter">storage</span> <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span><span class="token builtin type">u64</span><span class="token operator">></span>
+  <span class="token parameter">first</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
   <span class="token primitive macro">%write_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">)</span>
-  second <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
+  <span class="token parameter">second</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span>storage<span class="token punctuation">)</span>
   <span class="token keyword">return</span> first <span class="token operator">+</span> second
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1872,7 +1872,7 @@ recent store to the same address:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// STLF succeeds: matching width and alignment</span>
 <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span> <span class="token operator">=</span> value
-result <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span>        <span class="token comment">// forwarded from store buffer</span>
+<span class="token variable">result</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token address-qualifier type">@buf</span><span class="token punctuation">]</span>        <span class="token comment">// forwarded from store buffer</span>
 </code></pre>
 <h4>When Forwarding Fails</h4>
 <p>Forwarding fails when the load cannot be satisfied entirely from a single
@@ -1910,29 +1910,29 @@ store buffer entry. Common failure cases:</p>
 </table>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// STLF failure: narrow store followed by wider load</span>
-buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
+<span class="token parameter">buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 <span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>buf<span class="token punctuation">]</span> <span class="token operator">=</span> flags
-combined <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>buf <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span> <span class="token comment">// penalty: ~10-20 cycle stall</span>
+<span class="token variable">combined</span> <span class="token operator">:=</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>buf <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span><span class="token punctuation">]</span> <span class="token comment">// penalty: ~10-20 cycle stall</span>
 
 <span class="token comment">// STLF failure: constructing a value from sub-word stores</span>
-p <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
-p32 <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span>
-p64 <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
+<span class="token parameter">p</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token number">0x5000</span>
+<span class="token parameter">p32</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u32</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u32</span>
+<span class="token parameter">p64</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> p <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
 
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>p32<span class="token punctuation">]</span>     <span class="token operator">=</span> lo
 <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>p32 <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">=</span> hi
-full <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>p64<span class="token punctuation">]</span>            <span class="token comment">// penalty: two store buffer entries</span>
+<span class="token variable">full</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>p64<span class="token punctuation">]</span>            <span class="token comment">// penalty: two store buffer entries</span>
 </code></pre>
 <h4>Bitfield RMW and STLF</h4>
 <p>Bitfield field writes compile to read-modify-write sequences using <code>ubfx</code> and
 <code>bfi</code> (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>). A field write followed by a
 differently-sized read of the backing integer can trigger STLF failure:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">status <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    ready <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
-    error <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-    count <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">status</span> <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token parameter">ready</span> <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
+    <span class="token parameter">error</span> <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+    <span class="token parameter">count</span> <span class="token operator">:</span> <span class="token function">bits</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
 <span class="token comment">// Potential STLF hazard: field write is a u32 RMW,</span>
@@ -1941,7 +1941,7 @@ differently-sized read of the backing integer can trigger STLF failure:</p>
 reg<span class="token punctuation">.</span>ready <span class="token operator">=</span> <span class="token number">1</span>
 reg<span class="token punctuation">.</span>error <span class="token operator">=</span> <span class="token number">0</span>
 reg<span class="token punctuation">.</span>count <span class="token operator">=</span> <span class="token number">42</span>
-raw <span class="token operator">:</span><span class="token operator">=</span> reg <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u32</span>     <span class="token comment">// safe: all writes are full-width u32 RMW</span>
+<span class="token variable">raw</span> <span class="token operator">:=</span> reg <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token builtin type">u32</span>     <span class="token comment">// safe: all writes are full-width u32 RMW</span>
 </code></pre>
 <p>In practice, bitfield field writes in Wyst are full-width RMW on the backing
 type, so they do not cause width-mismatch STLF failures by themselves. The
@@ -1998,8 +1998,8 @@ degrade throughput by 10–50×.</p>
 <hr>
 <h3 id="%23shared-%E2%80%94-cache-line-isolation" tabindex="-1"><a class="doc-anchor" href="#%23shared-%E2%80%94-cache-line-isolation" aria-hidden="true">#</a> <code>#shared</code> — Cache-Line Isolation</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
-flags <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token parameter">flags</span> <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 </code></pre>
 <p><code>#shared</code> is a placement attribute on mutable global variables and <code>#percpu</code>
 declarations. It guarantees:</p>
@@ -2062,15 +2062,15 @@ with <code>#acquire</code> / <code>#release</code> or barrier runtime primitives
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Two per-CPU counters that will never false-share</span>
 <span class="token directive macro">#percpu</span>
-request_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token parameter">request_count</span> <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token directive macro">#percpu</span>
-error_count <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token parameter">error_count</span> <span class="token operator">:</span> <span class="token directive macro">#shared</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 </code></pre>
 <hr>
 <h3 id="%23cache_line_width()-%E2%80%94-compile-time-query" tabindex="-1"><a class="doc-anchor" href="#%23cache_line_width()-%E2%80%94-compile-time-query" aria-hidden="true">#</a> <code>#cache_line_width()</code> — Compile-Time Query</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">stride <span class="token operator">::</span> <span class="token directive macro">#cache_line_width</span><span class="token punctuation">(</span><span class="token punctuation">)</span>       <span class="token comment">// 64 on most ARM64; 128 on Apple M-series</span>
-buf <span class="token operator">:</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token directive macro">#cache_line_width</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token builtin type">u8</span>
+<span class="token parameter">buf</span> <span class="token operator">:</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token directive macro">#cache_line_width</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token builtin type">u8</span>
 </code></pre>
 <p><code>#cache_line_width()</code> is a compile-time query that returns the cache line
 width in bytes for the current <code>#target</code>. It is resolved at compile time — no
@@ -2209,7 +2209,7 @@ spacing.</p>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

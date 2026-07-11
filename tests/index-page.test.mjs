@@ -180,6 +180,36 @@ function contrastRatio(foreground, background) {
 	return (lighter + 0.05) / (darker + 0.05);
 }
 
+function oklab(hexColor) {
+	const [red, green, blue] = hexColor
+		.slice(1)
+		.match(/.{2}/g)
+		.map((channel) => Number.parseInt(channel, 16) / 255)
+		.map((channel) =>
+			channel <= 0.04045
+				? channel / 12.92
+				: ((channel + 0.055) / 1.055) ** 2.4,
+		);
+	const l = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue;
+	const m = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue;
+	const s = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue;
+	const lRoot = Math.cbrt(l);
+	const mRoot = Math.cbrt(m);
+	const sRoot = Math.cbrt(s);
+
+	return [
+		0.2104542553 * lRoot + 0.793617785 * mRoot - 0.0040720468 * sRoot,
+		1.9779984951 * lRoot - 2.428592205 * mRoot + 0.4505937099 * sRoot,
+		0.0259040371 * lRoot + 0.7827717662 * mRoot - 0.808675766 * sRoot,
+	];
+}
+
+function perceptualDistance(first, second) {
+	const firstLab = oklab(first);
+	const secondLab = oklab(second);
+	return Math.hypot(...firstLab.map((channel, index) => channel - secondLab[index]));
+}
+
 test("shared headers keep only Manual and Source", () => {
 	const expected = [
 		{ href: "/docs/", label: "manual" },
@@ -330,6 +360,7 @@ test("shared identity uses the integrated punctuation-free wordmark", () => {
 		"--syn-kw",
 		"--syn-type",
 		"--syn-num",
+		"--syn-const",
 		"--syn-op",
 		"--syn-fn",
 		"--syn-var",
@@ -342,6 +373,25 @@ test("shared identity uses the integrated punctuation-free wordmark", () => {
 			contrastRatio(cssHexVar(token), cssHexVar("--bg-code")) >= 7,
 			`${token} should retain AAA contrast on the code surface`,
 		);
+	}
+
+	const semanticSyntaxTokens = [
+		"--syn-kw",
+		"--syn-type",
+		"--syn-const",
+		"--syn-op",
+		"--syn-fn",
+		"--syn-var",
+		"--syn-param",
+		"--syn-str",
+	];
+	for (const [index, first] of semanticSyntaxTokens.entries()) {
+		for (const second of semanticSyntaxTokens.slice(index + 1)) {
+			assert.ok(
+				perceptualDistance(cssHexVar(first), cssHexVar(second)) >= 0.09,
+				`${first} and ${second} should remain perceptually distinct`,
+			);
+		}
 	}
 
 	assert.match(siteCss, /font-family:\s*"Newsreader"/);
@@ -420,6 +470,11 @@ test("homepage shows one static UART example from the real fixture", () => {
 		.map((match) => ({ markup: match[1], lines: sourceLines(match[1]) }))
 		.find(({ lines }) => lines.some((line) => line.startsWith("UARTDR ::")));
 	assert.ok(sourceBlock, "UART example should contain a static Wyst source block");
+	assert.match(
+		sourceBlock.markup,
+		/<span class="const">UARTDR<\/span>/,
+		"the example should distinguish named constants from variables",
+	);
 
 	const fixtureLines = new Set(
 		uartFixtureSource

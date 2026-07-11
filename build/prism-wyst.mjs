@@ -18,6 +18,17 @@ export function registerWyst(Prism) {
 			pattern: /"""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"/,
 			greedy: true,
 		},
+		char: {
+			pattern:
+				/'(?:\\x[0-9A-Fa-f]{2}|\\['\\ntr0]|[\x00-\x09\x0B\x0C\x0E-\x26\x28-\x5B\x5D-\x7F])'/,
+			greedy: true,
+		},
+		"class-name": {
+			// Type declarations, including one level of nested generic arguments.
+			pattern:
+				/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?::\s*(?:(?:#[a-zA-Z_]\w*)(?:\([^\n)]*\))?\s*)*(?:bitfield|enum|struct)\b)/,
+			alias: "type",
+		},
 		// #module, #align, #release, #exception_vector, ... (compile/layout directives)
 		directive: {
 			pattern: /#[a-zA-Z_]\w*/,
@@ -34,7 +45,13 @@ export function registerWyst(Prism) {
 			alias: "type",
 		},
 		keyword:
-			/\b(?:as|bitfield|break|case|continue|else|enum|goto|if|label|loop|repeat|return|select|struct|switch|while)\b/,
+			/\b(?:as|bitfield|break|case|continue|else|enum|goto|if|is|label|loop|pub|repeat|return|select|struct|switch|while)\b/,
+		function: [
+			// declarations, with optional generic parameters and calling convention
+			/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?::\s*(?:\[[a-zA-Z_]\w*\]\s*)?\()/,
+			// ordinary and generic call sites
+			/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?\()/,
+		],
 		boolean: /\b(?:false|true)\b/,
 		// built-in types resolve in type context (not lexer keywords)
 		builtin: {
@@ -45,10 +62,16 @@ export function registerWyst(Prism) {
 			pattern:
 				/\b(?:0x[0-9a-fA-F](?:_?[0-9a-fA-F])*|0b[01](?:_?[01])*|0o[0-7](?:_?[0-7])*|\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?)\b/,
 		},
-		// call sites: ident immediately followed by '(' (keywords already consumed above)
-		function: /\b[a-zA-Z_]\w*(?=\s*\()/,
-		// :: declaration, -> return arrow, %% floored mod, shifts, compound + comparison
-		operator: /::|->|%%|<<|>>|&&|\|\||[-+*/%&|^~!<>=]=?|[@:]/,
+		// Binding names can be recognized at declarations. References require
+		// semantic information and remain ordinary identifiers.
+		parameter: /\b[a-zA-Z_]\w*(?=\s*:\s*(?![:=]))/,
+		variable: /\b[a-zA-Z_]\w*(?=\s*:=)/,
+		// Common all-caps constants are the useful lexical subset. Single-letter
+		// names stay unclassified because they are commonly generic type parameters.
+		constant: /\b[A-Z][A-Z0-9_]{1,}\b/,
+		// Longest spellings first so compound operators remain one token.
+		operator:
+			/::=|%%=|<<=|>>=|&&=|\|\|=|&\^=|::|:=|->|==|!=|<=|>=|<<|>>|&&|\|\||&\^|%%|\.\.|[-+*/%&|^~!<>=]=?|[@?:]/,
 		punctuation: /[{}[\]();,.]/,
 	};
 

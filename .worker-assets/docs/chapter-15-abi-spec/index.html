@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -252,9 +252,9 @@ classification.</p>
 <h4>Small Struct Arguments (≤ 8 bytes)</h4>
 <p>A struct whose total size is at most 8 bytes is packed into a single integer argument register. Field bytes are packed in memory layout order, occupying the low bytes of the register:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">point <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  x <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 0</span>
-  y <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 4</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">point</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 0</span>
+  <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 4</span>
 <span class="token punctuation">}</span>
 <span class="token comment">// passed as: w0 = (y &lt;&lt; 32) | x  — NO; passed as the raw 64-bit memory image</span>
 <span class="token comment">// i.e., bits [31:0] = x, bits [63:32] = y</span>
@@ -263,9 +263,9 @@ classification.</p>
 <h4>Medium Struct Arguments (9–16 bytes)</h4>
 <p>A struct whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), the second holds the remaining bytes (zero-padded to 8 bytes if the struct is not a multiple of 8 bytes in size):</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token builtin type">string</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  data <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token comment">// offset 0, 8 bytes</span>
-  len <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// offset 8, 8 bytes</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">string</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">data</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token comment">// offset 0, 8 bytes</span>
+  <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// offset 8, 8 bytes</span>
 <span class="token punctuation">}</span>
 <span class="token comment">// passed as: x0 = data, x1 = len</span>
 <span class="token comment">// consumes two argument register slots</span>
@@ -274,10 +274,10 @@ classification.</p>
 <h4>Large Struct Arguments (&gt; 16 bytes)</h4>
 <p>A struct larger than 16 bytes is not passed in registers. The caller allocates storage for the struct on its stack, copies the argument value there, and passes the address of that storage in the next available integer argument register:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">big <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  a <span class="token operator">:</span> <span class="token builtin type">u64</span>
-  b <span class="token operator">:</span> <span class="token builtin type">u64</span>
-  c <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 24 bytes total — too large for registers</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">big</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 24 bytes total — too large for registers</span>
 <span class="token punctuation">}</span>
 <span class="token comment">// caller:</span>
 <span class="token comment">//   sub  sp, sp, #32          ; allocate struct copy</span>
@@ -331,7 +331,7 @@ source-level value.</p>
 </table>
 <p>Example:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">divmod <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span>q<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> r<span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">divmod</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">q</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">r</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token punctuation">(</span>a <span class="token operator">/</span> b<span class="token punctuation">,</span> a <span class="token operator">%</span> b<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -489,7 +489,7 @@ not have current source semantics.</p>
 <p>Functions that accept a variable number of arguments use explicit count-and-pointer parameters:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// idiomatic Wyst variadic-style function</span>
-print_all <span class="token operator">::</span> <span class="token punctuation">(</span>args <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> count <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token function">print_all</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">args</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token parameter">count</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>This means Wyst native functions cannot be called as C variadics. A function intended to be a C variadic (e.g. a custom <code>printf</code>-like) must use <code>[aapcs]</code> and accept <code>va_list</code> through <code>#asm</code> blocks. See <a href="#b63-calling-variadic-c-functions-printf-via-va_list">B.6.3</a> for the worked example.</p>
 <hr>
@@ -498,7 +498,7 @@ print_all <span class="token operator">::</span> <span class="token punctuation"
 <h3 id="b.1-annotation" tabindex="-1"><a class="doc-anchor" href="#b.1-annotation" aria-hidden="true">#</a> B.1 Annotation</h3>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-my_function <span class="token operator">::</span> <span class="token punctuation">(</span>x <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> y <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<span class="token function">my_function</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>The <code>[aapcs]</code> attribute declares that the function conforms fully to the ARM64 Procedure Call Standard (AAPCS64, document IHI0055). The compiler applies AAPCS64 rules for argument passing, register preservation, struct passing (including HFA/HVA rules), return values, and frame records.</p>
 <p><code>[aapcs]</code> applies to the <strong>function it annotates</strong>. It does not change the convention of callers or of other functions in the same module.</p>
@@ -608,10 +608,10 @@ my_function <span class="token operator">::</span> <span class="token punctuatio
 <p>Foreign C functions called from Wyst must be declared with <code>[aapcs]</code>:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-memcpy <span class="token operator">::</span> <span class="token punctuation">(</span>dst <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> src <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
+<span class="token function">memcpy</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-puts <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token function">puts</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 </code></pre>
 <p>The compiler will generate a call using AAPCS64 argument passing rules for any
 call to an <code>[aapcs]</code>-annotated function.</p>
@@ -658,10 +658,10 @@ ordinary result locations and do not encode argument pins.</p>
 <p>There is no implicit conversion between <code>@(...)</code> and <code>@[aapcs] (...)</code> in either direction. Wyst rejects:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-puts <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token function">puts</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
-native_fp <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// compile error</span>
-aapcs_fp <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// OK</span>
+<span class="token parameter">native_fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// compile error</span>
+<span class="token parameter">aapcs_fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// OK</span>
 </code></pre>
 <h4><code>#addr_of</code> and Convention</h4>
 <p><code>#addr_of(name)</code> produces a function pointer whose convention matches the declaration of <code>name</code>:</p>
@@ -675,8 +675,8 @@ aapcs_fp <span class="token operator">:</span> <span class="token operator">@</s
 Constructing a function pointer of either convention from a raw integer address
 requires the explicit trusted form:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">addr <span class="token operator">:</span><span class="token operator">=</span> aapcs_fp <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>
-fp   <span class="token operator">:</span><span class="token operator">=</span> <span class="token directive macro">#trusted_cast</span><span class="token operator">&lt;</span><span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span><span class="token operator">></span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">addr</span> <span class="token operator">:=</span> aapcs_fp <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>
+<span class="token variable">fp</span>   <span class="token operator">:=</span> <span class="token directive macro">#trusted_cast</span><span class="token operator">&lt;</span><span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span><span class="token operator">></span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
 </code></pre>
 <p>Function pointers may be compared for equality with the same exact function
 pointer type, or with the untyped integer constant <code>0</code> as the conventional
@@ -711,13 +711,13 @@ via <code>va_list</code>.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>libc
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub memcpy <span class="token operator">::</span> <span class="token punctuation">(</span>dst <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> src <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
+<span class="token keyword">pub</span> <span class="token function">memcpy</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub memset <span class="token operator">::</span> <span class="token punctuation">(</span>dst <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> val <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
+<span class="token keyword">pub</span> <span class="token function">memset</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub memcmp <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">memcmp</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 </code></pre>
 <p>These are forward declarations for an object/link-capable build mode; the
 bodies are provided by the linked C runtime. Current static-ELF output accepts
@@ -727,7 +727,7 @@ mode:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>libc
 
-copy_packet <span class="token operator">::</span> <span class="token punctuation">(</span>dst_buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> src_buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
+<span class="token function">copy_packet</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst_buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src_buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token function">memcpy</span><span class="token punctuation">(</span>dst_buf<span class="token punctuation">,</span> src_buf<span class="token punctuation">,</span> len<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -831,16 +831,16 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>posix_time
 
-pub timespec <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  tv_sec <span class="token operator">:</span> <span class="token builtin type">i64</span>
-  tv_nsec <span class="token operator">:</span> <span class="token builtin type">i64</span>
+<span class="token keyword">pub</span> <span class="token class-name type">timespec</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">tv_sec</span> <span class="token operator">:</span> <span class="token builtin type">i64</span>
+  <span class="token parameter">tv_nsec</span> <span class="token operator">:</span> <span class="token builtin type">i64</span>
 <span class="token punctuation">}</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub clock_gettime <span class="token operator">::</span> <span class="token punctuation">(</span>clk <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> ts <span class="token operator">:</span> <span class="token address-qualifier type">@timespec</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">clock_gettime</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">clk</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> <span class="token parameter">ts</span> <span class="token operator">:</span> <span class="token address-qualifier type">@timespec</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub clock_diff <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> timespec<span class="token punctuation">,</span> b <span class="token operator">:</span> timespec<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">clock_diff</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> timespec<span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> timespec<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 </code></pre>
 <p>AAPCS64 lowering at the call site:</p>
 <ul>
@@ -861,10 +861,10 @@ pub clock_diff <span class="token operator">::</span> <span class="token punctua
 <p>Declare <code>printf</code> once per call shape used:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub printf_1s <span class="token operator">::</span> <span class="token punctuation">(</span>fmt <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> s <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">printf_1s</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">fmt</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub printf_2d <span class="token operator">::</span> <span class="token punctuation">(</span>fmt <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> a <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">printf_2d</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">fmt</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 </code></pre>
 <p>These are not C's <code>printf</code> — they are <em>fixed-arity</em> <code>[aapcs]</code> declarations that happen to call into <code>printf</code> because C's variadic ABI accepts a fixed-arity call as a special case when the fixed arguments match what <code>printf</code> extracts. The linker resolves all <code>printf_*</code> symbols to the same <code>printf</code> entry point if the user adds a linker alias, or — more simply — declares each as a separate forward declaration and lets the C runtime handle the variadic decode.</p>
 <p>This pattern works because AAPCS64 variadics pass register arguments the same way as fixed arguments for the first 8 slots. It breaks for stack-arg variadics or for floating-point variadic arguments (AAPCS64 §6.4 has special rules for those).</p>
@@ -883,12 +883,12 @@ pub printf_2d <span class="token operator">::</span> <span class="token punctuat
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>va_list
 
-pub va_list <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  stack <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
-  gr_top <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
-  vr_top <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
-  gr_offs <span class="token operator">:</span> <span class="token builtin type">i32</span>
-  vr_offs <span class="token operator">:</span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token class-name type">va_list</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">stack</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
+  <span class="token parameter">gr_top</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
+  <span class="token parameter">vr_top</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span>
+  <span class="token parameter">gr_offs</span> <span class="token operator">:</span> <span class="token builtin type">i32</span>
+  <span class="token parameter">vr_offs</span> <span class="token operator">:</span> <span class="token builtin type">i32</span>
 <span class="token punctuation">}</span>
 
 <span class="token directive macro">#static_assert</span><span class="token punctuation">(</span><span class="token directive macro">#size_of</span><span class="token punctuation">(</span>va_list<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">32</span><span class="token punctuation">,</span> <span class="token string">"va_list must match AAPCS64 \xc2\xa76.4.3"</span><span class="token punctuation">)</span>
@@ -899,10 +899,10 @@ pub va_list <span class="token operator">::</span> <span class="token keyword">s
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>va_list
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub vprintf <span class="token operator">::</span> <span class="token punctuation">(</span>fmt <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> ap <span class="token operator">:</span> <span class="token address-qualifier type">@va_list</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">vprintf</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">fmt</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">ap</span> <span class="token operator">:</span> <span class="token address-qualifier type">@va_list</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub vsnprintf <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> sz <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> fmt <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> ap <span class="token operator">:</span> <span class="token address-qualifier type">@va_list</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
+<span class="token keyword">pub</span> <span class="token function">vsnprintf</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">sz</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">fmt</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">ap</span> <span class="token operator">:</span> <span class="token address-qualifier type">@va_list</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 </code></pre>
 <p><strong>Constructing a <code>va_list</code>.</strong> Variadic argument construction <em>cannot</em> be expressed in pure Wyst because Wyst has no variadic primitives. The construction requires an <code>#asm</code> block that places the user's argument values into the AAPCS-defined register-save area, then initializes the <code>va_list</code> struct to point at it. The examples below are Wyst-like pseudocode until the runtime local-address materialization syntax is chosen; <code>local_addr(x)</code> is not source syntax.</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">#import (
@@ -965,14 +965,14 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
 <p>The reverse direction: a C library accepts a function pointer that it later calls back. The Wyst-side callback must be declared <code>[aapcs]</code> and marked <code>pub</code> so the linker can find it:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
-pub on_signal <span class="token operator">::</span> <span class="token punctuation">(</span>sig <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token keyword">pub</span> <span class="token function">on_signal</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">sig</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// ... handler body</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Passing the function pointer is via <code>#addr_of</code>, which produces a function pointer with the convention of the declaration:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">fp <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>on_signal<span class="token punctuation">)</span>
-<span class="token function">signal_register</span><span class="token punctuation">(</span>SIGUSR1<span class="token punctuation">,</span> fp<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>on_signal<span class="token punctuation">)</span>
+<span class="token function">signal_register</span><span class="token punctuation">(</span><span class="token constant">SIGUSR1</span><span class="token punctuation">,</span> fp<span class="token punctuation">)</span>
 </code></pre>
 <p>This is the same <code>#addr_of</code> discipline from <a href="#b5-function-pointer-type-discipline">B.5</a>. No special FFI rule.</p>
 <hr>
@@ -1263,16 +1263,16 @@ project input, then <code>#import</code> it.</li>
 <h3 id="c.2-argument-register-allocation-examples" tabindex="-1"><a class="doc-anchor" href="#c.2-argument-register-allocation-examples" aria-hidden="true">#</a> C.2 Argument Register Allocation Examples</h3>
 <h4>Eight integer arguments — all in registers</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">f <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> c <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> d <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> e <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> f <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> g <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> h <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">f</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">d</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">e</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">f</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">g</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">h</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">a → x0   b → x1   c → x2   d → x3
 e → x4   f → x5   g → x6   h → x7
 </code></pre>
 <h4>Nine integer arguments — ninth on stack</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">g <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> c <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> d <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
-      e <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> f <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> g <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> h <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
-      i <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">g</span> <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">d</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+      <span class="token parameter">e</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">f</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">g</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">h</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
+      <span class="token parameter">i</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">a → x0   b → x1   c → x2   d → x3
 e → x4   f → x5   g → x6   h → x7
@@ -1280,7 +1280,7 @@ i → [sp + 0]                          // first stack argument at sp[0] in call
 </code></pre>
 <h4>Mixed integer and float arguments</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">h <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> x <span class="token operator">:</span> <span class="token builtin type">f32</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> y <span class="token operator">:</span> <span class="token builtin type">f64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">h</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">f32</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">f64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">a → x0   b → x1          // integers fill x0, x1 in order
 x → s0   y → d1          // floats fill v0, v1 in order
@@ -1288,25 +1288,25 @@ x → s0   y → d1          // floats fill v0, v1 in order
 </code></pre>
 <h4>Medium struct argument</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">bounds <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  lo <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 16 bytes</span>
-  hi <span class="token operator">:</span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">bounds</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">lo</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 16 bytes</span>
+  <span class="token parameter">hi</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
 <span class="token punctuation">}</span>
 
-check <span class="token operator">::</span> <span class="token punctuation">(</span>range <span class="token operator">:</span> bounds<span class="token punctuation">,</span> val <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span>
+<span class="token function">check</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">range</span> <span class="token operator">:</span> bounds<span class="token punctuation">,</span> <span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">range.lo → x0   range.hi → x1    // struct occupies two consecutive registers
 val      → x2
 </code></pre>
 <h4>Large struct argument</h4>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">transform <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
-  a <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 24 bytes — too large</span>
-  b <span class="token operator">:</span> <span class="token builtin type">u64</span>
-  c <span class="token operator">:</span> <span class="token builtin type">u64</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">transform</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+  <span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 24 bytes — too large</span>
+  <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
+  <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
 <span class="token punctuation">}</span>
 
-apply <span class="token operator">::</span> <span class="token punctuation">(</span>t <span class="token operator">:</span> transform<span class="token punctuation">,</span> v <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
+<span class="token function">apply</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">t</span> <span class="token operator">:</span> transform<span class="token punctuation">,</span> <span class="token parameter">v</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">// caller:
 //   sub sp, sp, #32         ; allocate struct copy (24 bytes, padded to 32)
@@ -1411,7 +1411,7 @@ generated by the convention.</li>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

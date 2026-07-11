@@ -295,19 +295,28 @@
 	font-style: normal;
 }
 
-.wyst-code .token.keyword,
-.wyst-code .token.boolean,
-.wyst-code .token.macro,
-.wyst-code .token.directive {
+.wyst-code .token.keyword {
 	color: var(--syn-kw);
+	font-weight: 600;
+}
+
+.wyst-code .token.boolean,
+.wyst-code .token.constant {
+	color: var(--syn-const);
+	font-weight: 600;
+}
+
+.wyst-code .token.macro,
+.wyst-code .token.directive,
+.wyst-code .token.primitive {
+	color: var(--syn-macro);
 	font-weight: 600;
 }
 
 .wyst-code .token.builtin,
 .wyst-code .token.type,
 .wyst-code .token.class-name,
-.wyst-code .token.address-qualifier,
-.wyst-code .token.primitive {
+.wyst-code .token.address-qualifier {
 	color: var(--syn-type);
 	font-weight: 550;
 }
@@ -319,6 +328,15 @@
 
 .wyst-code .token.function {
 	color: var(--syn-fn);
+	font-weight: 550;
+}
+
+.wyst-code .token.variable {
+	color: var(--syn-var);
+}
+
+.wyst-code .token.parameter {
+	color: var(--syn-param);
 	font-weight: 550;
 }
 

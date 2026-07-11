@@ -62,7 +62,7 @@ function header(active = "") {
 function footer() {
 	return `	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="${GITHUB_URL}#license" rel="noopener">license</a>
 		</div>
 	</footer>`;

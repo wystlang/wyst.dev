@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -148,7 +148,7 @@ payload arguments follow the order written in source. Struct field initializers
 also evaluate in written source order, even when the fields are written out of
 declaration order:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Pair <span class="token punctuation">{</span> b<span class="token operator">:</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> a<span class="token operator">:</span> <span class="token function">g</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token comment">// evaluates f() before g()</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">Pair <span class="token punctuation">{</span> <span class="token parameter">b</span><span class="token operator">:</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">a</span><span class="token operator">:</span> <span class="token function">g</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token comment">// evaluates f() before g()</span>
 </code></pre>
 <p>Struct layout and storage still follow the struct declaration. Source-order
 initializer evaluation does not change field offsets, ABI classification, or
@@ -270,14 +270,14 @@ compile-time constant contexts is a future surface:</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> ops
 
-compute <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">40</span>
-  y <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
+<span class="token function">compute</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">40</span>
+  <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">2</span>
   <span class="token keyword">return</span> x <span class="token operator">+</span> y
 <span class="token punctuation">}</span>
 </code></pre>
 <!-- wyst-contract: future -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">SCALE <span class="token operator">::</span><span class="token operator">=</span> <span class="token number">1.5</span> <span class="token operator">*</span> <span class="token number">2.0</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token constant">SCALE</span> <span class="token operator">::=</span> <span class="token number">1.5</span> <span class="token operator">*</span> <span class="token number">2.0</span>
 </code></pre>
 <h3 id="bitwise" tabindex="-1"><a class="doc-anchor" href="#bitwise" aria-hidden="true">#</a> Bitwise</h3>
 <table>
@@ -424,9 +424,9 @@ the result is determined by the left operand.</p>
 the arithmetic and bitwise binary operators are defined <strong>element-wise</strong>. Each
 maps to a single ARM64 SIMD instruction. No loops, no unrolling.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">a <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">2.0</span><span class="token punctuation">,</span> <span class="token number">3.0</span><span class="token punctuation">,</span> <span class="token number">4.0</span><span class="token punctuation">}</span>
-b <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">5.0</span><span class="token punctuation">,</span> <span class="token number">6.0</span><span class="token punctuation">,</span> <span class="token number">7.0</span><span class="token punctuation">,</span> <span class="token number">8.0</span><span class="token punctuation">}</span>
-c <span class="token operator">:</span><span class="token operator">=</span> a <span class="token operator">+</span> b    <span class="token comment">// [6.0, 8.0, 10.0, 12.0]  — fadd v0.4s, v1.4s, v2.4s</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">2.0</span><span class="token punctuation">,</span> <span class="token number">3.0</span><span class="token punctuation">,</span> <span class="token number">4.0</span><span class="token punctuation">}</span>
+<span class="token parameter">b</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">5.0</span><span class="token punctuation">,</span> <span class="token number">6.0</span><span class="token punctuation">,</span> <span class="token number">7.0</span><span class="token punctuation">,</span> <span class="token number">8.0</span><span class="token punctuation">}</span>
+<span class="token variable">c</span> <span class="token operator">:=</span> a <span class="token operator">+</span> b    <span class="token comment">// [6.0, 8.0, 10.0, 12.0]  — fadd v0.4s, v1.4s, v2.4s</span>
 </code></pre>
 <p>Element-wise operators by operand kind:</p>
 <table>
@@ -658,10 +658,10 @@ a <span class="token operator">&amp;</span> b <span class="token operator">&amp;
 <h4>Common Expressions</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// UART flag check — &amp; binds before !=</span>
-volatile<span class="token punctuation">.</span><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span>   <span class="token comment">// same as (volatile.u32@[UARTFR] &amp; TXFF) != 0</span>
+volatile<span class="token punctuation">.</span><span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span>   <span class="token comment">// same as (volatile.u32@[UARTFR] &amp; TXFF) != 0</span>
 
 <span class="token comment">// Bit manipulation</span>
-x <span class="token operator">&amp;</span><span class="token operator">^</span> mask                           <span class="token comment">// clear bits in mask</span>
+x <span class="token operator">&amp;^</span> mask                           <span class="token comment">// clear bits in mask</span>
 x <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> n<span class="token punctuation">)</span>                        <span class="token comment">// set bit n</span>
 <span class="token punctuation">(</span>x <span class="token operator">>></span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> <span class="token number">0xF</span>                      <span class="token comment">// extract nibble</span>
 x <span class="token operator">^</span> y                               <span class="token comment">// toggle bits in x that are set in y</span>
@@ -814,7 +814,7 @@ divisor-zero guard when the selected instruction sequence is already zero-safe.<
 modulo <code>2ⁿ</code>, where <code>n</code> is the bit width of the type. High bits are silently
 discarded. Programs may rely on wrap-around behavior:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">255</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">255</span>
 x <span class="token operator">+=</span> <span class="token number">1</span>   <span class="token comment">// x == 0, defined wrap</span>
 </code></pre>
 <h3 id="signed-integers" tabindex="-1"><a class="doc-anchor" href="#signed-integers" aria-hidden="true">#</a> Signed Integers</h3>
@@ -897,7 +897,7 @@ scalar shifts use the 64-bit count domain.</p>
 </table>
 <p>Examples for <code>u64</code>:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">x <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">1</span>
 x <span class="token operator">&lt;&lt;</span> <span class="token number">63</span>   <span class="token comment">// 0x8000_0000_0000_0000</span>
 x <span class="token operator">&lt;&lt;</span> <span class="token number">64</span>   <span class="token comment">// same as x &lt;&lt; 0  →  1        (64 mod 64 == 0)</span>
 x <span class="token operator">&lt;&lt;</span> <span class="token number">65</span>   <span class="token comment">// same as x &lt;&lt; 1  →  2        (65 mod 64 == 1)</span>
@@ -905,7 +905,7 @@ x <span class="token operator">>></span> <span class="token number">64</span>   
 </code></pre>
 <p>Examples for narrow scalar integers:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">b <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">1</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">1</span>
 b <span class="token operator">&lt;&lt;</span> <span class="token number">8</span>    <span class="token comment">// 0: 8 mod 32 == 8, then the u8 result keeps the low 8 bits</span>
 b <span class="token operator">&lt;&lt;</span> <span class="token number">32</span>   <span class="token comment">// 1: 32 mod 32 == 0</span>
 </code></pre>
@@ -941,7 +941,7 @@ for exceptional cases. Division by zero produces <code>+Inf</code>, <code>-Inf</
 as defined by IEEE 754 — no runtime panic occurs. Programs that need to
 detect these conditions should check the result explicitly:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> a <span class="token operator">/</span> b
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">result</span> <span class="token operator">:</span> <span class="token builtin type">f64</span> <span class="token operator">=</span> a <span class="token operator">/</span> b
 
 <span class="token keyword">if</span> result <span class="token operator">==</span> result <span class="token punctuation">{</span>   <span class="token comment">// NaN check: NaN != NaN by IEEE 754</span>
     <span class="token comment">// result is a valid finite or infinite value</span>
@@ -956,8 +956,8 @@ two operations with two roundings, matching the written source expression.</p>
 <p>To explicitly request a fused multiply-add (single rounding, using ARM64
 <code>fmadd</code>/<code>fmsub</code>), use the <code>%fma</code> intrinsic:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> c<span class="token punctuation">)</span>          <span class="token comment">// a * b + c, fused — single rounding</span>
-result <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> <span class="token operator">-</span>c<span class="token punctuation">)</span>         <span class="token comment">// a * b - c, fused — lowers to fmsub</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">result</span> <span class="token operator">:=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> c<span class="token punctuation">)</span>          <span class="token comment">// a * b + c, fused — single rounding</span>
+<span class="token variable">result</span> <span class="token operator">:=</span> <span class="token primitive macro">%fma</span><span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">,</span> <span class="token operator">-</span>c<span class="token punctuation">)</span>         <span class="token comment">// a * b - c, fused — lowers to fmsub</span>
 </code></pre>
 <p>The distinction matters for:</p>
 <ul>
@@ -1017,7 +1017,7 @@ after <code>&amp;</code> in any valid expression.</p>
 <hr>
 <h2 id="branchless-conditional-selection" tabindex="-1"><a class="doc-anchor" href="#branchless-conditional-selection" aria-hidden="true">#</a> Branchless Conditional Selection</h2>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">result <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>cond<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">result</span> <span class="token operator">:=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>cond<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
 </code></pre>
 <p><code>select(cond, a, b)</code> follows the general call-like evaluation order: it
 evaluates <code>cond</code> first, then evaluates <code>a</code>, then evaluates <code>b</code>. It returns <code>a</code>
@@ -1066,13 +1066,13 @@ not an integer.</li>
 </ul>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Branchless min</span>
-min <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>a <span class="token operator">&lt;</span> b<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
+<span class="token variable">min</span> <span class="token operator">:=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>a <span class="token operator">&lt;</span> b<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
 
 <span class="token comment">// Branchless absolute value (signed)</span>
-abs <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>x <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token operator">-</span>x<span class="token punctuation">,</span> x<span class="token punctuation">)</span>
+<span class="token variable">abs</span> <span class="token operator">:=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>x <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token operator">-</span>x<span class="token punctuation">,</span> x<span class="token punctuation">)</span>
 
 <span class="token comment">// Branchless clamp</span>
-clamped <span class="token operator">:</span><span class="token operator">=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">&lt;</span> lo<span class="token punctuation">,</span> lo<span class="token punctuation">,</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">></span> hi<span class="token punctuation">,</span> hi<span class="token punctuation">,</span> v<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token variable">clamped</span> <span class="token operator">:=</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">&lt;</span> lo<span class="token punctuation">,</span> lo<span class="token punctuation">,</span> <span class="token keyword">select</span><span class="token punctuation">(</span>v <span class="token operator">></span> hi<span class="token punctuation">,</span> hi<span class="token punctuation">,</span> v<span class="token punctuation">)</span><span class="token punctuation">)</span>
 </code></pre>
 <p><strong>When to use <code>select</code> vs <code>if</code>:</strong></p>
 <table>
@@ -1318,7 +1318,7 @@ conflicts with existing operators and is grep-friendly.</p>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

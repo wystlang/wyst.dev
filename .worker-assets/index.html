@@ -50,7 +50,7 @@
 			sizes="180x180"
 			href="assets/apple-touch-icon.png?v=39df437e"
 		/>
-		<link rel="stylesheet" href="assets/wyst.5df8943d.css" />
+		<link rel="stylesheet" href="assets/wyst.a60851b2.css" />
 	</head>
 	<body class="home-page">
 		<a class="skip" href="#main">Skip to content</a>
@@ -117,26 +117,26 @@
 							>source ↗</a
 						>
 					</div>
-					<pre aria-label="Wyst UART source"><code><span class="var">UARTDR</span> :: <span class="t">@volatile u32</span> <span class="o">=</span> <span class="var">UART0_BASE</span> <span class="o">+</span> <span class="n">0x00</span>
-<span class="var">UARTFR</span> :: <span class="t">@volatile u32</span> <span class="o">=</span> <span class="var">UART0_BASE</span> <span class="o">+</span> <span class="n">0x18</span>
-<span class="var">TXFF</span> :: <span class="t">u32</span> <span class="o">=</span> <span class="n">0x20</span>
+					<pre aria-label="Wyst UART source"><code><span class="const">UARTDR</span> <span class="o">::</span> <span class="t">@volatile u32</span> <span class="o">=</span> <span class="const">UART0_BASE</span> <span class="o">+</span> <span class="n">0x00</span>
+<span class="const">UARTFR</span> <span class="o">::</span> <span class="t">@volatile u32</span> <span class="o">=</span> <span class="const">UART0_BASE</span> <span class="o">+</span> <span class="n">0x18</span>
+<span class="const">TXFF</span> <span class="o">::</span> <span class="t">u32</span> <span class="o">=</span> <span class="n">0x20</span>
 
-<span class="f">uart_write</span> :: (<span class="param">byte</span> : <span class="t">u8</span>) {
-    <span class="k">while</span> (<span class="t">u32@</span>[<span class="var">UARTFR</span>] <span class="o">&amp;</span> <span class="var">TXFF</span>) <span class="o">!=</span> <span class="n">0</span> {
-        <span class="o">%</span>nop()
-    }
+<span class="f">uart_write</span> <span class="o">::</span> <span class="p">(</span><span class="param">byte</span> <span class="o">:</span> <span class="t">u8</span><span class="p">) {</span>
+    <span class="k">while</span> <span class="p">(</span><span class="t">u32@</span><span class="p">[</span><span class="const">UARTFR</span><span class="p">]</span> <span class="o">&amp;</span> <span class="const">TXFF</span><span class="p">)</span> <span class="o">!=</span> <span class="n">0</span> <span class="p">{</span>
+        <span class="primitive">%nop</span><span class="p">()</span>
+    <span class="p">}</span>
 
-    <span class="t">u32@</span>[<span class="var">UARTDR</span>] <span class="o">=</span> <span class="param">byte</span> <span class="k">as.widen</span> <span class="t">u32</span>
-}
+    <span class="t">u32@</span><span class="p">[</span><span class="const">UARTDR</span><span class="p">]</span> <span class="o">=</span> <span class="param">byte</span> <span class="k">as</span><span class="p">.</span>widen <span class="t">u32</span>
+<span class="p">}</span>
 
-<span class="f">uart_hello</span> :: () {
-    <span class="f">uart_write</span>(<span class="s">'h'</span>)
-    <span class="f">uart_write</span>(<span class="s">'e'</span>)
-    <span class="f">uart_write</span>(<span class="s">'l'</span>)
-    <span class="f">uart_write</span>(<span class="s">'l'</span>)
-    <span class="f">uart_write</span>(<span class="s">'o'</span>)
-    <span class="f">uart_write</span>(<span class="s">'\n'</span>)
-}</code></pre>
+<span class="f">uart_hello</span> <span class="o">::</span> <span class="p">() {</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'h'</span><span class="p">)</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'e'</span><span class="p">)</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'l'</span><span class="p">)</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'l'</span><span class="p">)</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'o'</span><span class="p">)</span>
+    <span class="f">uart_write</span><span class="p">(</span><span class="s">'\n'</span><span class="p">)</span>
+<span class="p">}</span></code></pre>
 					<figcaption class="artifact-output">
 						<span>qemu / virt</span>
 						<pre aria-label="QEMU UART output"><code>hello</code></pre>
@@ -147,7 +147,7 @@
 
 		<footer class="site">
 			<div class="wrap foot-simple">
-				<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+				<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 				<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 			</div>
 		</footer>

@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -205,15 +205,15 @@ With an alias, the alias is the qualified namespace:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  uart<span class="token punctuation">.</span><span class="token function">uart_write</span><span class="token punctuation">(</span>'w'<span class="token punctuation">)</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  uart<span class="token punctuation">.</span><span class="token function">uart_write</span><span class="token punctuation">(</span><span class="token char">'w'</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Without an alias, the full module name is the qualified namespace:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock
 
-tick <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   runtime<span class="token punctuation">.</span>clock<span class="token punctuation">.</span><span class="token function">clock_tick</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -221,11 +221,11 @@ tick <span class="token operator">::</span> <span class="token punctuation">(</s
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock <span class="token punctuation">{</span> now<span class="token punctuation">,</span> Instant <span class="token keyword">as</span> ClockInstant <span class="token punctuation">}</span>
 
-tick <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+<span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-stamp <span class="token operator">::</span> ClockInstant <span class="token operator">=</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+stamp <span class="token operator">::</span> ClockInstant <span class="token operator">=</span> <span class="token operator">..</span><span class="token punctuation">.</span>
 </code></pre>
 <p>A selected name enters the importing file's bare namespace under its declared
 name, or under the selection alias when the selection uses <code>as</code>. The module
@@ -310,7 +310,7 @@ both modules into the same scope.</p>
 <span class="token punctuation">)</span>
 
 <span class="token comment">// compile error: both imports select bare `init`</span>
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   runtime<span class="token punctuation">.</span>uart<span class="token punctuation">.</span><span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -322,11 +322,11 @@ default</strong>. A declaration is visible to importers only when prefixed with
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>uart
 
-UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>          <span class="token comment">// private — internal helper</span>
+<span class="token constant">UART0_BASE</span> <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>          <span class="token comment">// private — internal helper</span>
 
-pub init <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>                     <span class="token comment">// public — usable by importers</span>
+<span class="token keyword">pub</span> <span class="token function">init</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>                     <span class="token comment">// public — usable by importers</span>
 
-pub write <span class="token operator">::</span> <span class="token punctuation">(</span>s <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> n <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>    <span class="token comment">// public</span>
+<span class="token keyword">pub</span> <span class="token function">write</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>    <span class="token comment">// public</span>
 </code></pre>
 <p>Private declarations are not accessible from outside the defining module
 under any form (no &quot;friend&quot; mechanism, no escape hatch). The <code>pub</code> keyword
@@ -359,7 +359,7 @@ there is no language-level synchronization. Use atomics
 (<a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a>) or explicit serialization for
 any concurrent access.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub boot_counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// visible and writable by every importer</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">pub</span> <span class="token parameter">boot_counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// visible and writable by every importer</span>
 </code></pre>
 <hr>
 <h2 id="symbol-visibility" tabindex="-1"><a class="doc-anchor" href="#symbol-visibility" aria-hidden="true">#</a> Symbol Visibility</h2>
@@ -380,7 +380,7 @@ complete machine profile.</p>
 
 <span class="token directive macro">#requires</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> abi <span class="token operator">=</span> <span class="token punctuation">(</span> aapcs64 <span class="token punctuation">)</span><span class="token punctuation">)</span>
 
-spin_once <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">spin_once</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -496,17 +496,17 @@ frontend-time constants.</p>
 <p>The entry symbol and its load address are declared together.</p>
 <h3 id="regions" tabindex="-1"><a class="doc-anchor" href="#regions" aria-hidden="true">#</a> Regions</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#region</span> rom <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x0000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x0010_0000</span><span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readonly<span class="token punctuation">)</span>
-<span class="token directive macro">#region</span> ram <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-<span class="token directive macro">#region</span> stack <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x4000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#region</span> <span class="token parameter">rom</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x0000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x0010_0000</span><span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readonly<span class="token punctuation">)</span>
+<span class="token directive macro">#region</span> <span class="token parameter">ram</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+<span class="token directive macro">#region</span> <span class="token parameter">stack</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x4000</span>
 </code></pre>
 <p>Regions name address ranges with optional attributes (<code>readonly</code>).</p>
 <h3 id="sections" tabindex="-1"><a class="doc-anchor" href="#sections" aria-hidden="true">#</a> Sections</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>rodata <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>data <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>bss <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">data</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">bss</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
 </code></pre>
 <p>Sections are placed by constraint: <code>in</code> pins to a region, <code>after</code> chains
 sequentially. Alignment is explicit.</p>
@@ -671,11 +671,11 @@ normalized source, layout, target, and compiler-version contract must therefore
 produce either the same placement or the same required diagnostic.</p>
 <h3 id="exports" tabindex="-1"><a class="doc-anchor" href="#exports" aria-hidden="true">#</a> Exports</h3>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">pub __text_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __text_end <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __bss_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">pub</span> __text_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __text_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __bss_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __bss_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
 </code></pre>
 <p>Section boundaries are exported as typed <code>u64</code> layout-time constants. Their
 values become fixed after the integrated layout pass places every referenced
@@ -685,19 +685,19 @@ section.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>layout
 
 <span class="token directive macro">#entry</span> _start at <span class="token number">0x0008_0000</span>
-<span class="token directive macro">#region</span> rom <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x0000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x0010_0000</span><span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readonly<span class="token punctuation">)</span>
-<span class="token directive macro">#region</span> ram <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
-<span class="token directive macro">#region</span> stack <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x4000</span>
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>rodata <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>data <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>bss <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
+<span class="token directive macro">#region</span> <span class="token parameter">rom</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x0000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x0010_0000</span><span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readonly<span class="token punctuation">)</span>
+<span class="token directive macro">#region</span> <span class="token parameter">ram</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
+<span class="token directive macro">#region</span> <span class="token parameter">stack</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x4000</span>
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">data</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">bss</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
 
-pub __text_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __text_end <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-pub __bss_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
+<span class="token keyword">pub</span> __text_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __text_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __bss_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __bss_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
 </code></pre>
 <h3 id="usage-from-source" tabindex="-1"><a class="doc-anchor" href="#usage-from-source" aria-hidden="true">#</a> Usage from Source</h3>
 <!-- wyst-contract: sketch -->
@@ -705,10 +705,10 @@ pub __stack_top <span class="token operator">::</span> <span class="token builti
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">)</span>
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// __bss_start, __bss_end are available as typed u64 values after layout</span>
-  bss_start <span class="token operator">:</span><span class="token operator">=</span> __bss_start
-  bss_end <span class="token operator">:</span><span class="token operator">=</span> __bss_end
+  <span class="token variable">bss_start</span> <span class="token operator">:=</span> __bss_start
+  <span class="token variable">bss_end</span> <span class="token operator">:=</span> __bss_end
 <span class="token punctuation">}</span>
 </code></pre>
 <p>The compiler is invoked with <code>--layout boot.layout</code>. The layout module exports
@@ -720,9 +720,9 @@ specific declaration belongs to. Together they express the pattern
 &quot;these declarations go into this section, which lives at this address.&quot;</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">bring_up_uart</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// boot-time code; can be unmapped after init</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>CNTFRQ_EL0<span class="token punctuation">,</span> <span class="token number">24_000_000</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">CNTFRQ_EL0</span><span class="token punctuation">,</span> <span class="token number">24_000_000</span><span class="token punctuation">)</span>
   <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 
@@ -731,8 +731,8 @@ module_name <span class="token operator">::</span> <span class="token punctuatio
 </code></pre>
 <p>The layout module places those sections:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>modinfo <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">modinfo</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
 </code></pre>
 <h4>Legal Placements</h4>
 <p><code>#section(.name)</code> is legal on:</p>
@@ -857,9 +857,9 @@ dropped. So <code>.init.text</code> produces <code>__init_text_start</code> and
 <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §4</a>) and unblock the kernel pattern
 of freeing <code>.init.text</code> after early bring-up:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">free_init_text <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  start <span class="token operator">:</span><span class="token operator">=</span> __init_text_start
-  end <span class="token operator">:</span><span class="token operator">=</span> __init_text_end
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">free_init_text</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token variable">start</span> <span class="token operator">:=</span> __init_text_start
+  <span class="token variable">end</span> <span class="token operator">:=</span> __init_text_end
   <span class="token function">unmap_range</span><span class="token punctuation">(</span>start<span class="token punctuation">,</span> end <span class="token operator">-</span> start<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -883,34 +883,34 @@ to enumerate drivers.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>init
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>CNTFRQ_EL0<span class="token punctuation">,</span> <span class="token number">24_000_000</span><span class="token punctuation">)</span>
+<span class="token function">bring_up_uart</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">CNTFRQ_EL0</span><span class="token punctuation">,</span> <span class="token number">24_000_000</span><span class="token punctuation">)</span>
   <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span>
-bring_up_gic <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">bring_up_gic</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 
-main <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">main</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token function">bring_up_uart</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// calls into .init.text</span>
   <span class="token function">bring_up_gic</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token function">free_init_section</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// .init.text contents now stale</span>
   <span class="token function">kernel_main</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 
-free_init_section <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  start <span class="token operator">:</span><span class="token operator">=</span> __init_text_start
-  end <span class="token operator">:</span><span class="token operator">=</span> __init_text_end
+<span class="token function">free_init_section</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token variable">start</span> <span class="token operator">:=</span> __init_text_start
+  <span class="token variable">end</span> <span class="token operator">:=</span> __init_text_end
   <span class="token function">unmap_range</span><span class="token punctuation">(</span>start<span class="token punctuation">,</span> end <span class="token operator">-</span> start<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Layout module:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>rodata <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span>text
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span>text
 </code></pre>
 <p>After link, <code>__init_text_start</code> and <code>__init_text_end</code> bracket the
 <code>bring_up_uart</code> + <code>bring_up_gic</code> bytes; <code>free_init_section</code> reclaims
@@ -931,9 +931,9 @@ gic_modinfo <span class="token operator">::</span> <span class="token punctuatio
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> kernel<span class="token punctuation">.</span>modinfo_walk
 
-walk_modinfo <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  addr <span class="token operator">:</span><span class="token operator">=</span> __modinfo_start <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
-  end <span class="token operator">:</span><span class="token operator">=</span> __modinfo_end <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
+<span class="token function">walk_modinfo</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token variable">addr</span> <span class="token operator">:=</span> __modinfo_start <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
+  <span class="token variable">end</span> <span class="token operator">:=</span> __modinfo_end <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
   <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> end <span class="token punctuation">{</span>
     <span class="token function">announce_module</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
     addr <span class="token operator">+=</span> <span class="token number">16</span>
@@ -976,12 +976,12 @@ is for code that is not a function declaration (e.g. a <code>label</code>).</p>
 explicitly opt into <code>.text.hot</code> via <code>#section(.text.hot)</code>:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">.</span>hot<span class="token punctuation">)</span>
-inner_loop <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">inner_loop</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// hot loop body — keep in i-cache</span>
 <span class="token punctuation">}</span>
 
 <span class="token directive macro">#cold</span>
-panic_handler <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">panic_handler</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// implicitly in .text.cold</span>
   <span class="token function">log_panic</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -994,9 +994,9 @@ function lands in. See <a href="/docs/chapter-08-functions/">chapter-08-function
 <code>.text.cold</code> and the program has a layout module, the layout module must
 declare <code>.text.cold</code>:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>text <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span>hot <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text <span class="token comment">// optional</span>
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span>cold <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata <span class="token comment">// required for implicit #cold placement</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span><span class="token parameter">hot</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text <span class="token comment">// optional</span>
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span><span class="token parameter">cold</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata <span class="token comment">// required for implicit #cold placement</span>
 </code></pre>
 <p>If <code>.text.cold</code> is not declared and a <code>#cold</code> function would be placed there
 implicitly, the compiler emits a semantic diagnostic before IR lowering:</p>
@@ -1206,7 +1206,7 @@ explicitly.</p>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

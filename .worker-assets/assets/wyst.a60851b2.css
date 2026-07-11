@@ -35,18 +35,19 @@
 	--reference: #7CC9E8;
 	--success: #91D4BB;
 	--selection: #29375B;
-	--syn-comment: #98A5B5;
-	--syn-kw: #B0BCFF;
-	--syn-type: #7DD3E8;
-	--syn-num: #D6A9E5;
-	--syn-op: #D6DEE8;
-	--syn-fn: #8ABFE8;
-	--syn-var: #EDF1F7;
-	--syn-param: #C7D0DC;
-	--syn-macro: #B0BCFF;
-	--syn-punct: #98A5B5;
-	--syn-str: #91D4BB;
-	--syn-text: #EDF1F7;
+	--syn-comment: #9BA8B8;
+	--syn-kw: #DDA0FF;
+	--syn-type: #67DAF0;
+	--syn-num: #F4D06F;
+	--syn-const: #F4D06F;
+	--syn-op: #C5CEDA;
+	--syn-fn: #FF9EAC;
+	--syn-var: #F4F7FB;
+	--syn-param: #97B4FF;
+	--syn-macro: #DDA0FF;
+	--syn-punct: #9BA8B8;
+	--syn-str: #87DD98;
+	--syn-text: #F4F7FB;
 	--serif: "Newsreader", "Iowan Old Style", Charter, Georgia, serif;
 	--sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--mono: "Commit Mono", "SFMono-Regular", Consolas, monospace;
@@ -241,9 +242,14 @@ header.site {
 	font-style: normal;
 }
 
-.k,
-.m {
+.k {
 	color: var(--syn-kw);
+	font-weight: 600;
+}
+
+.m,
+.primitive {
+	color: var(--syn-macro);
 	font-weight: 600;
 }
 
@@ -255,6 +261,11 @@ header.site {
 .n {
 	color: var(--syn-num);
 	font-weight: 550;
+}
+
+.const {
+	color: var(--syn-const);
+	font-weight: 600;
 }
 
 .o {

@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -665,7 +665,7 @@ at the Wyst surface level. It exists only inside <code>#asm</code> bodies, where
 programmer has taken explicit responsibility for register-level scheduling.</p>
 <p>Compound operations apply to variables:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 counter <span class="token operator">+=</span> <span class="token number">1</span>            <span class="token comment">// lowers to `add xN, xN, #1` for whichever xN the allocator picked</span>
 </code></pre>
 <h4>Register Affinity via <code>#pin</code></h4>
@@ -675,9 +675,9 @@ expecting the syndrome in a particular register, an <code>#asm</code> block whos
 encoding is fixed — the programmer expresses this with <code>#pin</code> on the
 declaration:</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">counter <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
 
-_start <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
     <span class="token function">kernel_init</span><span class="token punctuation">(</span>dtb<span class="token punctuation">)</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span> <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -937,7 +937,7 @@ comma-separated list of effect categories:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">,</span> trap<span class="token punctuation">)</span>
 
-format_string <span class="token operator">::</span> <span class="token punctuation">(</span>buf <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+<span class="token function">format_string</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token comment">// compile error if anything reachable from here</span>
   <span class="token comment">// touches %mrs, %msr, %svc, %hvc, etc.</span>
 <span class="token punctuation">}</span>
@@ -946,9 +946,9 @@ format_string <span class="token operator">::</span> <span class="token punctuat
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>interrupt_mask<span class="token punctuation">)</span>
 
-allocator_alloc <span class="token operator">::</span> <span class="token punctuation">(</span>size <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
+<span class="token function">allocator_alloc</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">size</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
   <span class="token comment">// uses atomics — that's fine, `atomic` is not denied</span>
-  lock <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span>
+  <span class="token parameter">lock</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#acquire</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>lock_addr<span class="token punctuation">]</span>
   <span class="token comment">// ...</span>
   <span class="token comment">// but if someone adds %daif_clr here, compile error</span>
 <span class="token punctuation">}</span>
@@ -988,11 +988,11 @@ containing an unannotated <code>#asm</code> block will fire. The programmer
 resolves this by annotating the <code>#asm</code> block:</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">)</span>
-fast_memcpy <span class="token operator">::</span> <span class="token punctuation">(</span>dst <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> src <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> len <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token directive macro">#asm</span><span class="token punctuation">(</span>effects<span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">fast_memcpy</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token directive macro">#asm</span><span class="token punctuation">(</span><span class="token parameter">effects</span><span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token comment">// pure register-to-register computation</span>
         <span class="token comment">// no system register access</span>
-        body <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+        body <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1680,7 +1680,7 @@ the identified bottleneck category</li>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

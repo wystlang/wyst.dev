@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -737,7 +737,7 @@ contract fails until a layout declares the section:</p>
 modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"abcd"</span>
 </code></pre>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> bring_up_uart <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> <span class="token function">bring_up_uart</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>   uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1"</span>
 </code></pre>
 <p>The full semantics — legal placements, section-name constraints,
@@ -956,7 +956,7 @@ that would prevent a future port.</p>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

@@ -11,8 +11,8 @@
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.5df8943d.css" />
-		<link rel="stylesheet" href="/assets/docs.3d043964.css" />
+		<link rel="stylesheet" href="/assets/wyst.a60851b2.css" />
+		<link rel="stylesheet" href="/assets/docs.a668d4ba.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -105,7 +105,7 @@ that rely on later machine-primitive chapters.</p>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#noreturn</span>
-_start <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span>
@@ -117,26 +117,26 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span>
 
-UART0_BASE <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x09_00_00_00</span>
-UARTDR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x00</span>
-UARTFR <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> UART0_BASE <span class="token operator">+</span> <span class="token number">0x18</span>
-TXFF <span class="token operator">::</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
-STACK_TOP <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>
+<span class="token constant">UART0_BASE</span> <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x09_00_00_00</span>
+<span class="token constant">UARTDR</span> <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token constant">UART0_BASE</span> <span class="token operator">+</span> <span class="token number">0x00</span>
+<span class="token constant">UARTFR</span> <span class="token operator">::</span> <span class="token address-qualifier type">@volatile</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token constant">UART0_BASE</span> <span class="token operator">+</span> <span class="token number">0x18</span>
+<span class="token constant">TXFF</span> <span class="token operator">::</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span>
+<span class="token constant">STACK_TOP</span> <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>
 
-uart_write <span class="token operator">::</span> <span class="token punctuation">(</span>byte <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">uart_write</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">byte</span> <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 
-  <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTFR<span class="token punctuation">]</span> <span class="token operator">&amp;</span> TXFF <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+  <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span>
 
-  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span>UARTDR<span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span>
+  <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTDR</span><span class="token punctuation">]</span> <span class="token operator">=</span> byte <span class="token keyword">as</span><span class="token punctuation">.</span>widen <span class="token builtin type">u32</span>
 <span class="token punctuation">}</span>
 
-uart_print <span class="token operator">::</span> <span class="token punctuation">(</span>msg <span class="token operator">:</span> <span class="token builtin type">string</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">uart_print</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">msg</span> <span class="token operator">:</span> <span class="token builtin type">string</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 
-  base <span class="token operator">:</span><span class="token operator">=</span> msg<span class="token punctuation">.</span>data
+  <span class="token variable">base</span> <span class="token operator">:=</span> msg<span class="token punctuation">.</span>data
 
-  i <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token parameter">i</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
   <span class="token keyword">while</span> i <span class="token operator">&lt;</span> msg<span class="token punctuation">.</span>len <span class="token punctuation">{</span>
     <span class="token function">uart_write</span><span class="token punctuation">(</span><span class="token builtin type">u8</span><span class="token operator">@</span><span class="token punctuation">[</span>base <span class="token operator">+</span> i<span class="token punctuation">]</span><span class="token punctuation">)</span>
@@ -145,11 +145,11 @@ uart_print <span class="token operator">::</span> <span class="token punctuation
 <span class="token punctuation">}</span>
 
 #<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
-pub _start <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token keyword">pub</span> <span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
 
-  <span class="token directive macro">#asm</span><span class="token punctuation">(</span>sets_sp<span class="token punctuation">,</span> effects<span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token directive macro">#asm</span><span class="token punctuation">(</span>sets_sp<span class="token punctuation">,</span> <span class="token parameter">effects</span><span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
-      stack <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>STACK_TOP<span class="token punctuation">)</span>
+      stack <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span><span class="token constant">STACK_TOP</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
     body <span class="token punctuation">{</span>
       mov sp<span class="token punctuation">,</span> <span class="token punctuation">{</span>stack<span class="token punctuation">}</span>
@@ -279,18 +279,18 @@ primitives covered in earlier parts.</p>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>layout
 
-<span class="token directive macro">#region</span> ram   <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x4000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> 128M<span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readwrite<span class="token punctuation">)</span>
+<span class="token directive macro">#region</span> <span class="token parameter">ram</span>   <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x4000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> 128M<span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readwrite<span class="token punctuation">)</span>
 
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>text   <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>rodata <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>data   <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span>  after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
-<span class="token directive macro">#section</span> <span class="token punctuation">.</span>bss    <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>data
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span>   <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">data</span>   <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span>  after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
+<span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">bss</span>    <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>data
 
 <span class="token directive macro">#entry</span> _start at <span class="token number">0x4008_0000</span>           <span class="token comment">// QEMU virt loads kernel here</span>
 
-pub __bss_start <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __bss_end   <span class="token operator">::</span><span class="token operator">=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
-pub __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>   <span class="token comment">// 1MB of stack, top-down</span>
+<span class="token keyword">pub</span> __bss_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __bss_end   <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
+<span class="token keyword">pub</span> __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>   <span class="token comment">// 1MB of stack, top-down</span>
 </code></pre>
 <h4>Kernel module (<code>boot</code>)</h4>
 <!-- wyst-contract: sketch -->
@@ -303,9 +303,9 @@ pub __stack_top <span class="token operator">::</span> <span class="token builti
 <span class="token comment">// Entry point — invoked at EL2 by QEMU with DTB pointer in x0.</span>
 <span class="token comment">// Must be #naked: sp is undefined; we cannot use stack until we set it.</span>
 #<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
-_start <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// 1. Set up an initial stack (in EL2's sp_el2, which becomes sp here).</span>
-  <span class="token directive macro">#asm</span><span class="token punctuation">(</span>sets_sp<span class="token punctuation">,</span> effects<span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token directive macro">#asm</span><span class="token punctuation">(</span>sets_sp<span class="token punctuation">,</span> <span class="token parameter">effects</span><span class="token operator">:</span> none<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
       stack <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>__stack_top<span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
@@ -313,27 +313,27 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
       mov sp<span class="token punctuation">,</span> <span class="token punctuation">{</span>stack<span class="token punctuation">}</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>SP_EL1<span class="token punctuation">,</span> __stack_top<span class="token punctuation">)</span> <span class="token comment">// stack for after the EL2 -> EL1 drop</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">SP_EL1</span><span class="token punctuation">,</span> __stack_top<span class="token punctuation">)</span> <span class="token comment">// stack for after the EL2 -> EL1 drop</span>
 
   <span class="token comment">// 2. Install VBAR_EL1 ahead of the drop.</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>VBAR_EL1<span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">VBAR_EL1</span><span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 
   <span class="token comment">// 3. Configure HCR_EL2: EL1 runs in AArch64.</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>HCR_EL2<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">31</span><span class="token punctuation">)</span> <span class="token comment">// RW = 1</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">HCR_EL2</span><span class="token punctuation">,</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">31</span><span class="token punctuation">)</span> <span class="token comment">// RW = 1</span>
 
   <span class="token comment">// 4. Configure CPTR_EL2: allow FP/SIMD at EL1 (do not trap).</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>CPTR_EL2<span class="token punctuation">,</span> <span class="token number">0x33ff</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">CPTR_EL2</span><span class="token punctuation">,</span> <span class="token number">0x33ff</span><span class="token punctuation">)</span>
 
   <span class="token comment">// 5. Configure SCTLR_EL1 reset state: MMU off, caches off.</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>SCTLR_EL1<span class="token punctuation">,</span> <span class="token number">0x30c5_0838</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">SCTLR_EL1</span><span class="token punctuation">,</span> <span class="token number">0x30c5_0838</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 
   <span class="token comment">// 6. Configure SPSR_EL2: target EL1h, all DAIF masked.</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>SPSR_EL2<span class="token punctuation">,</span> <span class="token number">0x3c5</span><span class="token punctuation">)</span> <span class="token comment">// M=0101 (EL1h), DAIF=1111</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">SPSR_EL2</span><span class="token punctuation">,</span> <span class="token number">0x3c5</span><span class="token punctuation">)</span> <span class="token comment">// M=0101 (EL1h), DAIF=1111</span>
 
   <span class="token comment">// 7. Set ELR_EL2 to where we want EL1 to start.</span>
-  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>ELR_EL2<span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_main<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
+  <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">ELR_EL2</span><span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_main<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 
   <span class="token comment">// 8. eret: drop to EL1 with x0 (dtb) preserved as the EL1 first argument.</span>
   <span class="token primitive macro">%eret</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -341,9 +341,9 @@ _start <span class="token operator">::</span> <span class="token punctuation">(<
 
 <span class="token comment">// EL1 entry — runs after the drop. sp now refers to sp_el1.</span>
 <span class="token directive macro">#noreturn</span>
-el1_main <span class="token operator">::</span> <span class="token punctuation">(</span>dtb <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">el1_main</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// 10. Zero BSS now that we are at EL1 with a usable stack.</span>
-  addr <span class="token operator">:</span><span class="token operator">=</span> __bss_start
+  <span class="token variable">addr</span> <span class="token operator">:=</span> __bss_start
   <span class="token keyword">while</span> addr <span class="token operator">&lt;</span> __bss_end <span class="token punctuation">{</span>
     <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>addr<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span>
     addr <span class="token operator">+=</span> <span class="token number">8</span>
@@ -363,61 +363,61 @@ under the <code>#naked</code> verifier.</p>
 <h4>Vector declarations (same program module)</h4>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
-  current_el_sp0_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_sp0_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
-  current_el_sp0_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_sp0_irq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
-  current_el_sp0_fiq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_sp0_fiq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
-  current_el_sp0_serror <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_sp0_serror</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
 
-  current_el_spx_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_spx_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> handle_sync
   <span class="token punctuation">}</span>
-  current_el_spx_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_spx_irq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> handle_irq
   <span class="token punctuation">}</span>
-  current_el_spx_fiq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_spx_fiq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
-  current_el_spx_serror <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">goto</span> unexpected
-  <span class="token punctuation">}</span>
-
-  lower_el_aarch64_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">goto</span> unexpected
-  <span class="token punctuation">}</span>
-  lower_el_aarch64_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">goto</span> unexpected
-  <span class="token punctuation">}</span>
-  lower_el_aarch64_fiq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    <span class="token keyword">goto</span> unexpected
-  <span class="token punctuation">}</span>
-  lower_el_aarch64_serror <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">current_el_spx_serror</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1h_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
   <span class="token punctuation">}</span>
 
-  lower_el_aarch32_sync <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">lower_el_aarch64_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">goto</span> unexpected
+  <span class="token punctuation">}</span>
+  <span class="token parameter">lower_el_aarch64_irq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">goto</span> unexpected
+  <span class="token punctuation">}</span>
+  <span class="token parameter">lower_el_aarch64_fiq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">goto</span> unexpected
+  <span class="token punctuation">}</span>
+  <span class="token parameter">lower_el_aarch64_serror</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">goto</span> unexpected
+  <span class="token punctuation">}</span>
+
+  <span class="token parameter">lower_el_aarch32_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
       <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
-  lower_el_aarch32_irq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">lower_el_aarch32_irq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_irq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
       <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
-  lower_el_aarch32_fiq <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">lower_el_aarch32_fiq</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_fiq"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
       <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
   <span class="token punctuation">}</span>
-  lower_el_aarch32_serror <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token parameter">lower_el_aarch32_serror</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el0_32_serror"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">loop</span> <span class="token punctuation">{</span>
       <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span>
@@ -426,7 +426,7 @@ under the <code>#naked</code> verifier.</p>
 
 handle_sync <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
   <span class="token comment">// Read ESR_EL1 to dispatch on exception class.</span>
-  esr <span class="token operator">:</span><span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>ESR_EL1<span class="token punctuation">)</span>
+  <span class="token variable">esr</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">ESR_EL1</span><span class="token punctuation">)</span>
   <span class="token comment">// ... full dispatch elided ...</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -454,9 +454,9 @@ each online with the PSCI <code>CPU_ON</code> SMCCC call. The EL2 SMP example
 uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
 conduit when the DTB says so.</p>
 <!-- wyst-contract: sketch -->
-<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">psci_cpu_on <span class="token operator">::</span> <span class="token punctuation">(</span>mpidr <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> entry_point <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> context_id <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
-  status <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
-  <span class="token directive macro">#asm</span><span class="token punctuation">(</span>effects<span class="token operator">:</span> trap<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">psci_cpu_on</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">mpidr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">entry_point</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">context_id</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+  <span class="token parameter">status</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token directive macro">#asm</span><span class="token punctuation">(</span><span class="token parameter">effects</span><span class="token operator">:</span> trap<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
       func_id <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span><span class="token number">0xC400_0003</span><span class="token punctuation">)</span> <span class="token comment">// PSCI_CPU_ON (SMC64)</span>
       target <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>mpidr<span class="token punctuation">)</span>
@@ -659,7 +659,7 @@ sequence). Not covered here.</li>
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>

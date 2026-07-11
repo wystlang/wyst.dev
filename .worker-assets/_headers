@@ -4,7 +4,7 @@
   Cache-Control: public, max-age=0, must-revalidate
 /assets/commit-mono-v143.woff2
   Cache-Control: public, max-age=31536000, immutable
-/assets/docs.3d043964.css
+/assets/docs.a668d4ba.css
   Cache-Control: public, max-age=31536000, immutable
 /assets/favicon-48.png
   Cache-Control: public, max-age=0, must-revalidate
@@ -18,5 +18,5 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/wordmark-accent.svg
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.5df8943d.css
+/assets/wyst.a60851b2.css
   Cache-Control: public, max-age=31536000, immutable

@@ -130,9 +130,9 @@ count, or cross-version instruction order must remain stable.</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> scheduling_demo
 
-step <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> b <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
+<span class="token function">step</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    sum <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
+    <span class="token parameter">sum</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
     <span class="token keyword">return</span> sum
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -188,8 +188,8 @@ source-level intermediates must be preserved.</p>
 <h2 id="strict-scheduling" tabindex="-1"><a class="doc-anchor" href="#strict-scheduling" aria-hidden="true">#</a> Strict Scheduling</h2>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    raw  <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
-    next <span class="token operator">:</span><span class="token operator">=</span> raw <span class="token operator">+</span> <span class="token number">1</span>
+    <span class="token variable">raw</span>  <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
+    <span class="token variable">next</span> <span class="token operator">:=</span> raw <span class="token operator">+</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p><code>#schedule(strict)</code> is defined at the level of <strong>source-level semantic
@@ -288,7 +288,7 @@ emit for that code item.</p>
 <!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> exact_code_demo
 
-tick <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token directive macro">#exact</span><span class="token punctuation">(</span>instructions <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">,</span> families <span class="token operator">=</span> <span class="token string">"hint,branch"</span><span class="token punctuation">,</span> bytes <span class="token operator">=</span> <span class="token string">"1f2003d5 c0035fd6"</span><span class="token punctuation">,</span> prologue <span class="token operator">=</span> <span class="token string">"absent"</span><span class="token punctuation">,</span> spills <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> veneers <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> section <span class="token operator">=</span> <span class="token string">".text"</span><span class="token punctuation">,</span> align <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token directive macro">#exact</span><span class="token punctuation">(</span>instructions <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">,</span> families <span class="token operator">=</span> <span class="token string">"hint,branch"</span><span class="token punctuation">,</span> bytes <span class="token operator">=</span> <span class="token string">"1f2003d5 c0035fd6"</span><span class="token punctuation">,</span> prologue <span class="token operator">=</span> <span class="token string">"absent"</span><span class="token punctuation">,</span> spills <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> veneers <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> section <span class="token operator">=</span> <span class="token string">".text"</span><span class="token punctuation">,</span> align <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
@@ -354,9 +354,9 @@ mode for ordinary code.</p>
 <h2 id="relaxed-scheduling" tabindex="-1"><a class="doc-anchor" href="#relaxed-scheduling" aria-hidden="true">#</a> Relaxed Scheduling</h2>
 <!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>relaxed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    lhs <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
-    rhs <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
-    sum <span class="token operator">:</span><span class="token operator">=</span> lhs <span class="token operator">+</span> rhs
+    <span class="token variable">lhs</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
+    <span class="token variable">rhs</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
+    <span class="token variable">sum</span> <span class="token operator">:=</span> lhs <span class="token operator">+</span> rhs
 <span class="token punctuation">}</span>
 </code></pre>
 <p><strong>Ordering constraint.</strong> The assembler may reorder instructions that have no
@@ -419,8 +419,8 @@ exchange for potential latency improvement.</p>
 <span class="token comment">// block is the fall-through target.</span>
 
 <span class="token directive macro">#schedule</span><span class="token punctuation">(</span>throughput<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-    a <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>p<span class="token punctuation">]</span>
-    b <span class="token operator">:</span><span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>q<span class="token punctuation">]</span>
+    <span class="token variable">a</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>p<span class="token punctuation">]</span>
+    <span class="token variable">b</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>q<span class="token punctuation">]</span>
     <span class="token keyword">if</span> a <span class="token operator">></span> b <span class="token punctuation">{</span>
         <span class="token function">hot_path</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
@@ -474,7 +474,7 @@ hints and <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> for hot/
 		</main>
 	<footer class="site">
 		<div class="wrap foot-simple">
-			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<p class="foot-simple-note"><b>“Wyst”</b> is pronounced “<b>wist</b>,” an old word meaning “to know.”</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
