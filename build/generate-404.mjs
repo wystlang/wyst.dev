@@ -28,7 +28,7 @@ const html = errorPage({
 	bodyHtml,
 	actions: [
 		{ href: "/", label: "home" },
-		{ href: "/docs/", label: "manual" },
+		{ href: "/docs/", label: "reference" },
 	],
 });
 

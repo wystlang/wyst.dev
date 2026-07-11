@@ -52,7 +52,7 @@ function header(active = "") {
 				<span class="ver">${VERSION}</span>
 			</a>
 			<nav class="nav-links" aria-label="Primary">
-				${link("/docs/", "manual", "docs")}
+				${link("/docs/", "reference", "docs")}
 				<a href="${GITHUB_URL}" rel="noopener">source</a>
 			</nav>
 		</div>
@@ -78,7 +78,7 @@ const DOC_SIDEBAR_SCRIPT = `<script>
 
 function sidebar(navModel, currentUrl) {
 	const groups = [
-		["Chapters", navModel.filter((d) => d.group === "chapter")],
+		["Topics", navModel.filter((d) => d.group === "chapter")],
 		["Appendices", navModel.filter((d) => d.group === "appendix")],
 	];
 	const sections = groups
@@ -87,11 +87,9 @@ function sidebar(navModel, currentUrl) {
 			const lis = items
 				.map((d) => {
 					const cur = d.url === currentUrl ? ' aria-current="page"' : "";
-					const num = d.chapter
-						? `<span class="doc-nav-num">${d.chapter}</span>`
-						: d.appendix
-							? `<span class="doc-nav-num">${d.appendix}</span>`
-							: "";
+					const num = d.appendix
+						? `<span class="doc-nav-num">${d.appendix}</span>`
+						: "";
 					return `<li><a href="${d.url}"${cur}>${num}<span>${escapeHtml(d.navTitle)}</span></a></li>`;
 				})
 				.join("\n\t\t\t\t\t");
@@ -135,13 +133,9 @@ export function docPage({
 	eyebrow,
 	articleHtml,
 	tocHtml,
-	pager,
 }) {
-	const prevNext = pager
-		? `<nav class="doc-pager" aria-label="Chapter navigation">
-					${pager.prev ? `<a class="doc-pager-link prev" href="${pager.prev.url}"><span class="dir">← Previous</span><span class="lbl">${escapeHtml(pager.prev.navTitle)}</span></a>` : "<span></span>"}
-					${pager.next ? `<a class="doc-pager-link next" href="${pager.next.url}"><span class="dir">Next →</span><span class="lbl">${escapeHtml(pager.next.navTitle)}</span></a>` : "<span></span>"}
-				</nav>`
+	const eyebrowHtml = eyebrow
+		? `\n\t\t\t\t\t\t<span class="eyebrow">${escapeHtml(eyebrow)}</span>`
 		: "";
 	const toc = tocHtml
 		? `<aside class="doc-toc" aria-label="On this page">
@@ -151,18 +145,16 @@ export function docPage({
 		: "";
 	const body = `		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Chapters</button>
+				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
 ${sidebar(navModel, current.url)}
 				<article class="doc-article">
-					<header class="doc-article-head">
-						${eyebrow ? `<span class="eyebrow">${escapeHtml(eyebrow)}</span>` : ""}
+					<header class="doc-article-head">${eyebrowHtml}
 						<h1>${escapeHtml(current.h1 || title)}</h1>
 						${current.summary ? `<p class="doc-lede">${escapeHtml(current.summary)}</p>` : ""}
 					</header>
 					<div class="doc-body">
 ${articleHtml}
 					</div>
-					${prevNext}
 				</article>
 				${toc}
 			</div>
@@ -170,7 +162,7 @@ ${articleHtml}
 	return shell({ title, description, canonical, bodyClass: "docs", body });
 }
 
-// The documentation home: a card grid grouped by Chapters / Appendices.
+// The documentation home: a lookup grid grouped by topics and appendices.
 export function docIndexPage({
 	title,
 	description,
@@ -180,11 +172,9 @@ export function docIndexPage({
 	introHtml,
 }) {
 	const card = (d) => {
-		const num = d.chapter
-			? String(d.chapter).padStart(2, "0")
-			: d.appendix || "";
-		return `<a class="doc-index-card" href="${d.url}">
-						<span class="num">${num}</span>
+		const num = d.appendix || "";
+		const badge = num ? `\n\t\t\t\t\t\t<span class="num">${num}</span>` : "";
+		return `<a class="doc-index-card" href="${d.url}">${badge}
 						<h3>${escapeHtml(d.navTitle)}</h3>
 						${d.summary ? `<p>${escapeHtml(d.summary)}</p>` : ""}
 					</a>`;
@@ -206,7 +196,7 @@ export function docIndexPage({
 					<h1>${escapeHtml(h1)}</h1>
 					${introHtml ? `<div class="doc-index-lede">${introHtml}</div>` : ""}
 				</header>
-				${group("Chapters", chapters)}
+				${group("Topics", chapters)}
 				${group("Appendices", appendices)}
 			</div>
 		</main>`;

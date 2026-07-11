@@ -11,8 +11,16 @@ const UART_EXAMPLE_PATH =
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const docsIndexHtml = await readFile(
+	new URL("../docs/index.html", import.meta.url),
+	"utf8",
+);
 const docsSourceOfTruthHtml = await readFile(
 	new URL("../docs/source-of-truth/index.html", import.meta.url),
+	"utf8",
+);
+const docsTypesHtml = await readFile(
+	new URL("../docs/chapter-06-types/index.html", import.meta.url),
 	"utf8",
 );
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
@@ -210,9 +218,9 @@ function perceptualDistance(first, second) {
 	return Math.hypot(...firstLab.map((channel, index) => channel - secondLab[index]));
 }
 
-test("shared headers keep only Manual and Source", () => {
+test("shared headers keep only Reference and Source", () => {
 	const expected = [
-		{ href: "/docs/", label: "manual" },
+		{ href: "/docs/", label: "reference" },
 		{ href: GITHUB_URL, label: "source" },
 	];
 
@@ -289,11 +297,11 @@ test("homepage opens with a minimal personal introduction and separate project f
 	}
 });
 
-test("homepage links plainly to the source and manual", () => {
+test("homepage links plainly to the source and reference", () => {
 	const pageLinks = anchors(html);
 	const expectedLinks = [
 		{ href: GITHUB_URL, label: /^Source$/i },
-		{ href: "/docs/", label: /^Manual$/i },
+		{ href: "/docs/", label: /^Reference$/i },
 	];
 
 	for (const expected of expectedLinks) {
@@ -307,6 +315,37 @@ test("homepage links plainly to the source and manual", () => {
 			`${match.label} should be a text link, not a conversion control`,
 		);
 	}
+});
+
+test("documentation is a lookup reference rather than a tutorial path", () => {
+	const indexText = textContent(docsIndexHtml);
+	assert.match(indexText, /organized for lookup by topic/i);
+	assert.match(indexText, /not as a tutorial/i);
+	assert.doesNotMatch(
+		indexText,
+		/read the chapters in order|learning Wyst for the first time/i,
+	);
+	assert.match(docsIndexHtml, /<h2>Topics<\/h2>/);
+	assert.match(
+		docsIndexHtml,
+		/<a class="doc-index-card" href="\/docs\/chapter-01-language-design\/">\s*<h3>/,
+		"reference topics should be named rather than presented as numbered steps",
+	);
+	assert.match(docsTypesHtml, /<h1>Type System<\/h1>/);
+	assert.doesNotMatch(
+		docsTypesHtml,
+		/>Chapter 6<|<h1>Chapter 6:/,
+		"website headings should use topic names while source metadata keeps stable chapter numbers",
+	);
+	assert.match(
+		docsSourceOfTruthHtml,
+		/<button class="doc-sidebar-toggle" type="button">☰ Contents<\/button>/,
+	);
+	assert.doesNotMatch(
+		docsSourceOfTruthHtml,
+		/class="doc-pager"|← Previous|Next →/,
+		"reference pages should not imply a required reading sequence",
+	);
 });
 
 test("shared identity uses the integrated punctuation-free wordmark", () => {

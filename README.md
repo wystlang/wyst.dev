@@ -55,7 +55,7 @@ brand guidelines, licensing notes, and marketing source materials in
 
 ## Documentation source
 
-The manual lives in the **compiler repo** (`wystlang/wyst`) under `design/`,
+The reference manual lives in the **compiler repo** (`wystlang/wyst`) under `design/`,
 versioned alongside the compiler. This repo consumes generated HTML snapshots;
 never edit docs here.
 

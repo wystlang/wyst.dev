@@ -1,6 +1,6 @@
 // Static documentation generator for wyst.dev.
 //
-// Reads the Wyst design manual (markdown) and emits styled HTML under /docs/,
+// Reads the Wyst design reference (markdown) and emits styled HTML under /docs/,
 // reusing the homepage design system. Markdown source is treated as
 // read-only: cross-links (`*.md`) are rewritten to site URLs at build time so
 // the source stays valid when viewed on GitHub.
@@ -104,7 +104,7 @@ const fileToUrl = new Map(); // "chapter-07-operators.md" -> "/docs/chapter-07-o
 function makeMd() {
 	const md = new MarkdownIt({
 		html: true,
-		// linkify off: the manual mentions bare filenames (e.g. "foo.md:321")
+		// linkify off: the reference mentions bare filenames (e.g. "foo.md:321")
 		// in prose; auto-linking them produces bogus http:// links. Real links
 		// are explicit markdown and handled by the link_open rewrite below.
 		linkify: false,
@@ -220,7 +220,7 @@ function main() {
 		// first H1 becomes the article heading; strip it from the body so it
 		// isn't rendered twice (the template renders the title).
 		let body = page.body.replace(/^\s*#\s+(.+?)\s*$/m, (_, h1) => {
-			page.h1 = h1.trim();
+			page.h1 = navTitleFrom(h1.trim());
 			return "";
 		});
 
@@ -229,7 +229,7 @@ function main() {
 		if (page.isIndex) {
 			const intro = body.split(/^##\s+/m)[0];
 			const html = docIndexPage({
-				title: "Documentation · Wyst",
+				title: "Language Reference · Wyst",
 				description:
 					"The canonical Wyst language and compiler design reference.",
 				canonical: SITE + page.url,
@@ -245,18 +245,10 @@ function main() {
 		const articleHtml = md.render(body);
 		const tocHtml = buildToc(articleHtml);
 
-		const idx = navModel.indexOf(page);
-		const pager = page.isIndex
-			? null
-			: {
-					prev: navModel[idx - 1],
-					next: navModel[idx + 1],
-				};
-
 		const eyebrow = page.isIndex
 			? "Reference"
 			: page.chapter
-				? `Chapter ${page.chapter}`
+				? ""
 				: page.appendix
 					? `Appendix ${page.appendix}`
 					: "Reference";
@@ -270,7 +262,6 @@ function main() {
 			eyebrow,
 			articleHtml,
 			tocHtml,
-			pager,
 		});
 
 		const dest = page.isIndex
