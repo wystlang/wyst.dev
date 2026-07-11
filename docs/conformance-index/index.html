@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="color-scheme" content="dark" />
-		<meta name="theme-color" content="#0d0f12" />
+		<meta name="color-scheme" content="light" />
+		<meta name="theme-color" content="#F4F0E6" />
 		<meta name="description" content="Traceability from semantic authority rows to conformance evidence." />
 		<title>Clause-To-Test Conformance Index · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/conformance-index/" />
@@ -18,30 +18,13 @@
 		<a class="skip" href="#main">Skip to content</a>
 	<header class="site">
 		<div class="wrap nav">
-			<a class="brand" href="/">
-				<span class="mark" aria-hidden="true"></span>
-				<span class="word">wyst<span class="cc">::</span></span>
+			<a class="brand" href="/" aria-label="Wyst home">
+				<span class="word">wyst</span>
 				<span class="ver">v0.8</span>
 			</a>
-			<button
-				class="nav-toggle"
-				type="button"
-				aria-label="Open primary navigation"
-				aria-controls="primary-nav"
-				aria-expanded="false"
-			>
-				<span class="nav-toggle-lines" aria-hidden="true">
-					<span></span><span></span><span></span>
-				</span>
-			</button>
-			<nav id="primary-nav" class="nav-links" aria-label="Primary">
-				<a href="/#philosophy">Design</a>
-				<a href="/#examples">Compare</a>
-				<a href="/#not">Non-goals</a>
-				<a href="/#faq">FAQ</a>
-				<a href="/#status">Status</a>
-				<a href="/docs/" class="is-active">Docs</a>
-				<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub</a>
+			<nav class="nav-links" aria-label="Primary">
+				<a href="/docs/" class="is-active" aria-current="page">manual</a>
+				<a href="https://github.com/wystlang/wyst" rel="noopener">source</a>
 			</nav>
 		</div>
 	</header>
@@ -709,59 +692,12 @@ change can be complete.</p>
 			</div>
 		</main>
 	<footer class="site">
-		<div class="wrap">
-			<div class="foot-grid">
-				<div class="foot-brand">
-					<a class="brand brand-lg" href="/">
-						<span class="mark" aria-hidden="true"></span>
-						<span class="word">wyst<span class="cc">::</span><span class="res">_start</span></span>
-					</a>
-					<p>
-						An ARM64 bare-metal language and assembler for
-						kernel-oriented code. Intent stays visible without
-						hiding the machine.
-					</p>
-					<div class="foot-note"><span>Name: <b>wist</b> means to know</span></div>
-				</div>
-				<div class="foot-links">
-					<div class="foot-col">
-						<div class="foot-title">Project</div>
-						<a href="/docs/">Docs</a>
-						<a href="https://github.com/wystlang/wyst" rel="noopener">GitHub</a>
-					</div>
-					<div class="foot-col">
-						<div class="foot-title">Reference</div>
-						<a href="/docs/chapter-01-language-design/">Language Design</a>
-						<a href="/docs/appendix-a-ir/">IR &amp; Semantics</a>
-						<a href="/docs/appendix-b-grammar/">Grammar</a>
-						<a href="https://github.com/wystlang/wyst#license" rel="noopener">License</a>
-					</div>
-				</div>
-			</div>
+		<div class="wrap foot-simple">
+			<p class="foot-simple-note">“<b>wist</b>” means to know.</p>
+			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
 		<script>
-(() => {
-	const nav = document.querySelector(".nav");
-	const toggle = document.querySelector(".nav-toggle");
-	const links = document.querySelector(".nav-links");
-	if (!nav || !toggle || !links) return;
-	const mobile = window.matchMedia("(max-width: 920px)");
-	document.documentElement.classList.add("nav-ready");
-	function setOpen(open) {
-		nav.classList.toggle("is-open", open);
-		toggle.setAttribute("aria-expanded", String(open));
-		if (mobile.matches) links.setAttribute("aria-hidden", String(!open));
-		else links.removeAttribute("aria-hidden");
-	}
-	toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
-	document.addEventListener("keydown", (e) => {
-		if (e.key === "Escape" && nav.classList.contains("is-open")) { setOpen(false); toggle.focus(); }
-	});
-	const sync = () => setOpen(mobile.matches && nav.classList.contains("is-open"));
-	mobile.addEventListener ? mobile.addEventListener("change", sync) : mobile.addListener(sync);
-	sync();
-})();
 (() => {
 	const t = document.querySelector(".doc-sidebar-toggle");
 	const sb = document.querySelector(".doc-sidebar");

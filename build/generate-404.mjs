@@ -23,13 +23,12 @@ const bodyHtml = `<p class="nf-lede">
 const html = errorPage({
 	title: "Page not found · Wyst",
 	description: "The page you requested could not be found on wyst.dev.",
-	eyebrow: "Error 404 · Data abort",
-	fault: { code: "translation fault", text: "no page mapped at this address" },
+	eyebrow: "404",
 	h1: "Page not found",
 	bodyHtml,
 	actions: [
-		{ href: "/", label: "Back home", variant: "primary", arrow: true },
-		{ href: "/docs/", label: "Docs", variant: "secondary" },
+		{ href: "/", label: "home" },
+		{ href: "/docs/", label: "manual" },
 	],
 });
 

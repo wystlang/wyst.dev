@@ -1,12 +1,12 @@
 # wyst.dev
 
-Landing page and generated documentation for [Wyst](https://github.com/wystlang/wyst),
+Project homepage and generated documentation for [Wyst](https://github.com/wystlang/wyst),
 a semantic ARM64 systems language. Deployed as static files to Cloudflare.
 
 ## Structure
 
 ```
-index.html              Landing page
+index.html              Project notebook homepage
 404.html                Generated custom not-found page (commit this)
 assets/
   wyst.css              Shared design system (tokens, typography, components)
@@ -24,7 +24,7 @@ tools/
                           Copies committed site files into .worker-assets/
 ```
 
-The landing page and the docs share **one** design system (`assets/wyst.css`),
+The homepage and the docs share **one** design system (`assets/wyst.css`),
 so they stay visually consistent. Generated HTML under `docs/` is committed,
 so deploys remain plain static files with no build step on Cloudflare's side.
 

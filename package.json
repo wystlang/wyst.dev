@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "wyst.dev landing page and generated documentation site",
+  "description": "wyst.dev project homepage and generated documentation site",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "audit": "node tools/audit-site.mjs",

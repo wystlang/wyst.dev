@@ -1,7 +1,7 @@
 // Static documentation generator for wyst.dev.
 //
 // Reads the Wyst design manual (markdown) and emits styled HTML under /docs/,
-// reusing the landing page's design system. Markdown source is treated as
+// reusing the homepage design system. Markdown source is treated as
 // read-only: cross-links (`*.md`) are rewritten to site URLs at build time so
 // the source stays valid when viewed on GitHub.
 //
