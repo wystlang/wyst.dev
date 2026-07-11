@@ -1,7 +1,7 @@
 :root {
-	--doc-maxw: 1280px;
 	--doc-sidebar-w: 244px;
-	--doc-toc-w: 188px;
+	--doc-content-max: 800px;
+	--doc-rail-max: 264px;
 }
 
 .nav-links a.is-active {
@@ -12,12 +12,20 @@
 
 .doc-wrap {
 	display: grid;
-	grid-template-columns: var(--doc-sidebar-w) minmax(0, 1fr) var(--doc-toc-w);
-	gap: clamp(28px, 4vw, 56px);
-	max-width: var(--doc-maxw);
+	grid-template-columns:
+		minmax(200px, 1fr)
+		minmax(0, var(--doc-content-max))
+		minmax(200px, 1fr);
+	column-gap: clamp(32px, 4vw, 72px);
+	max-width: none;
 	align-items: start;
 	padding-top: var(--space-2xl);
 	padding-bottom: clamp(64px, 9vw, 120px);
+}
+
+body.docs header.site .wrap,
+body.docs footer.site .wrap {
+	max-width: none;
 }
 
 .doc-sidebar-toggle {
@@ -37,6 +45,8 @@
 .doc-sidebar {
 	position: sticky;
 	top: var(--space-lg);
+	justify-self: start;
+	width: min(100%, var(--doc-rail-max));
 	max-height: calc(100vh - 48px);
 	overflow-y: auto;
 	padding-right: var(--space-sm);
@@ -358,6 +368,8 @@
 .doc-toc {
 	position: sticky;
 	top: var(--space-lg);
+	justify-self: end;
+	width: min(100%, var(--doc-rail-max));
 	max-height: calc(100vh - 48px);
 	overflow-y: auto;
 	font-family: var(--mono);
@@ -470,9 +482,15 @@
 	line-height: 1.5;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1280px) {
 	.doc-wrap {
-		grid-template-columns: var(--doc-sidebar-w) minmax(0, 1fr);
+		grid-template-columns: var(--doc-sidebar-w) minmax(0, var(--doc-content-max));
+		justify-content: center;
+		column-gap: clamp(28px, 4vw, 56px);
+	}
+
+	.doc-sidebar {
+		width: 100%;
 	}
 
 	.doc-toc {

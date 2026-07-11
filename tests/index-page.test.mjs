@@ -348,6 +348,29 @@ test("documentation is a lookup reference rather than a tutorial path", () => {
 	);
 });
 
+test("wide reference pages anchor both indexes around centered content", () => {
+	assert.match(
+		docsCss,
+		/\.doc-wrap\s*\{[\s\S]*?grid-template-columns:\s*minmax\(200px,\s*1fr\)\s*minmax\(0,\s*var\(--doc-content-max\)\)\s*minmax\(200px,\s*1fr\);[\s\S]*?max-width:\s*none;/,
+		"the desktop reference grid should reserve equal outer tracks around the article",
+	);
+	assert.match(
+		docsCss,
+		/\.doc-sidebar\s*\{[\s\S]*?justify-self:\s*start;[\s\S]*?width:\s*min\(100%,\s*var\(--doc-rail-max\)\);/,
+		"the reference index should anchor to the left edge",
+	);
+	assert.match(
+		docsCss,
+		/\.doc-toc\s*\{[\s\S]*?justify-self:\s*end;[\s\S]*?width:\s*min\(100%,\s*var\(--doc-rail-max\)\);/,
+		"the page index should anchor to the right edge",
+	);
+	assert.match(
+		docsCss,
+		/@media \(max-width:\s*1280px\)\s*\{[\s\S]*?\.doc-toc\s*\{[\s\S]*?display:\s*none;/,
+		"the right index should collapse before it crowds the article",
+	);
+});
+
 test("shared identity uses the integrated punctuation-free wordmark", () => {
 	for (const [name, pageHtml] of [
 		["home", html],
