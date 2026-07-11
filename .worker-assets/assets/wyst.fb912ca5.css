@@ -309,6 +309,7 @@ header.site {
 	max-width: 1600px;
 	margin: 0 auto;
 	padding-left: var(--pad);
+	padding-right: var(--pad);
 	grid-template-columns: minmax(300px, 0.76fr) minmax(560px, 1.24fr);
 	gap: clamp(40px, 6vw, 96px);
 	align-items: center;
@@ -374,8 +375,7 @@ header.site {
 	margin: 0;
 	background: var(--bg-code);
 	border: 1px solid var(--line-2);
-	border-right: 0;
-	border-radius: 18px 0 0 18px;
+	border-radius: 18px;
 	overflow: hidden;
 }
 

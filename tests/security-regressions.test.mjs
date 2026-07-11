@@ -137,3 +137,21 @@ test("pre-commit artifact rebuild trigger includes every deployed source directo
 		assert.equal(hookPatternMatches(pattern, path), true, `${path} should trigger rebuild`);
 	}
 });
+
+test("stable favicon assets always revalidate", async () => {
+	const headers = await readFile(
+		new URL("../.worker-assets/_headers", import.meta.url),
+		"utf8",
+	);
+	for (const path of [
+		"/assets/apple-touch-icon.png",
+		"/assets/favicon-48.png",
+		"/assets/favicon.svg",
+	]) {
+		assert.match(
+			headers,
+			new RegExp(`${path.replaceAll(".", "\\.")}\\n  Cache-Control: public, max-age=0, must-revalidate`),
+			`${path} should not retain a stale icon across deploys`,
+		);
+	}
+});

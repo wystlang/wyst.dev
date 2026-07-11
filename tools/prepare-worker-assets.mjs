@@ -99,6 +99,12 @@ for (const file of htmlFiles) {
 // extension suffix after `*` matches — exact paths are unambiguous.
 const IMMUTABLE = "public, max-age=31536000, immutable";
 const REVALIDATE = "public, max-age=86400, stale-while-revalidate=604800";
+const MUST_REVALIDATE = "public, max-age=0, must-revalidate";
+const FAVICON_URLS = new Set([
+	"/assets/apple-touch-icon.png",
+	"/assets/favicon-48.png",
+	"/assets/favicon.svg",
+]);
 const POLICY = {
 	".css": IMMUTABLE,
 	".woff2": IMMUTABLE,
@@ -117,9 +123,11 @@ const POLICY = {
 
 const rules = [];
 for (const file of await walk(assetsDir)) {
-	const cc = POLICY[path.extname(file).toLowerCase()];
-	if (!cc) continue;
 	const url = "/" + path.relative(outDir, file).split(path.sep).join("/");
+	const cc = FAVICON_URLS.has(url)
+		? MUST_REVALIDATE
+		: POLICY[path.extname(file).toLowerCase()];
+	if (!cc) continue;
 	rules.push({ url, cc });
 }
 rules.sort((a, b) => a.url.localeCompare(b.url)); // deterministic output

@@ -293,6 +293,17 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 		);
 		assert.match(pageHtml, /<meta name="color-scheme" content="dark" \/>/);
 		assert.match(pageHtml, /<meta name="theme-color" content="#0B0D12" \/>/);
+		for (const [asset, version] of [
+			["favicon\\.svg", "6ed879ce"],
+			["favicon-48\\.png", "090a1ea7"],
+			["apple-touch-icon\\.png", "fd071720"],
+		]) {
+			assert.match(
+				pageHtml,
+				new RegExp(`href="/?assets/${asset}\\?v=${version}"`),
+				`${name} should use a cache-busted ${asset}`,
+			);
+		}
 	}
 
 	for (const [token, value] of [
@@ -371,6 +382,16 @@ test("homepage contains only the introduction and real example", () => {
 		siteCss,
 		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*0\.76fr\)\s+minmax\(560px,\s*1\.24fr\);/,
 		"the homepage should pair the introduction with a code-led split layout",
+	);
+	assert.match(
+		siteCss,
+		/\.home-split\s*\{[\s\S]*?padding-left:\s*var\(--pad\);[\s\S]*?padding-right:\s*var\(--pad\);/,
+		"the desktop split should leave room for both sides of the code artifact",
+	);
+	assert.match(
+		siteCss,
+		/\.artifact\s*\{[\s\S]*?border:\s*1px solid var\(--line-2\);[\s\S]*?border-radius:\s*18px;/,
+		"the desktop code artifact should retain all four rounded corners",
 	);
 });
 

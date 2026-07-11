@@ -27,9 +27,9 @@ function head({ title, description, canonical }) {
 		<title>${escapeHtml(title)}</title>${
 			canonical ? `\n\t\t<link rel="canonical" href="${canonical}" />` : ""
 		}
-		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png" />
-		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=6ed879ce" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=090a1ea7" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=fd071720" />
 		<link rel="stylesheet" href="/assets/wyst.css" />
 		<link rel="stylesheet" href="/assets/docs.css" />
 	</head>`;
