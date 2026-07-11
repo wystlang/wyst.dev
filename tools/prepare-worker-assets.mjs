@@ -22,7 +22,6 @@ const entries = [
 	"404.html",
 	"assets",
 	"docs",
-	"examples",
 ];
 
 for (const entry of entries) {

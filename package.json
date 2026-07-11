@@ -6,9 +6,8 @@
   "description": "wyst.dev landing page and generated documentation site",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "audit": "node tools/audit-site.mjs",
     "build": "node build/generate.mjs",
-    "docs": "node build/generate.mjs",
-    "build:404": "node build/generate-404.mjs",
     "build:worker-assets": "node build/generate-404.mjs && node tools/prepare-worker-assets.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
     "deploy": "wrangler deploy",

@@ -133,7 +133,6 @@ test("pre-commit artifact rebuild trigger includes every deployed source directo
 		"assets/wyst.css",
 		"docs/index.html",
 		"build/generate.mjs",
-		"examples/index.html",
 	]) {
 		assert.equal(hookPatternMatches(pattern, path), true, `${path} should trigger rebuild`);
 	}

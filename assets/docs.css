@@ -32,11 +32,6 @@
 	padding-bottom: clamp(64px, 9vw, 120px);
 }
 
-.doc-wrap--solo {
-	grid-template-columns: minmax(0, 760px);
-	justify-content: center;
-}
-
 .doc-sidebar-toggle {
 	display: none;
 	grid-column: 1 / -1;

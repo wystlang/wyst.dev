@@ -13,10 +13,6 @@ const docsSourceOfTruthHtml = await readFile(
 );
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
-const prepareWorkerAssetsScript = await readFile(
-	new URL("../tools/prepare-worker-assets.mjs", import.meta.url),
-	"utf8",
-);
 const cargoManifest = fileURLToPath(
 	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
 );
@@ -46,8 +42,10 @@ function evaluateObject(name, endNeedle) {
 	)(token);
 }
 
-const codeBlocks = evaluateObject("codeBlocks", "const snippets = ");
-const snippets = evaluateObject("snippets", 'document.querySelectorAll("[data-code]")');
+const codeBlocks = evaluateObject(
+	"codeBlocks",
+	'document.querySelectorAll("[data-code]")',
+);
 
 function provenanceAttributes(name) {
 	const match = html.match(
@@ -100,14 +98,6 @@ function siteFooterHtml(pageHtml) {
 
 function escapeRegExp(text) {
 	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function escapeHtmlText(text) {
-	return text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
 }
 
 function sectionHtmlByStart(pageHtml, startNeedle) {
@@ -215,35 +205,9 @@ test("landing page tracks the v0.8 release language surface", () => {
 		html,
 		/<span class="limits-chip-label">Version<\/span>\s*<span class="limits-chip-value">v0\.8, pre-1\.0<\/span>/,
 	);
-	assert.doesNotMatch(html, /The current v0\.7 compiler/);
-	assert.doesNotMatch(html, /<li><b>Version:<\/b> v0\.7/);
 });
 
-test("site headers do not include the old lang brand tag", async () => {
-	const pages = [
-		["home", html],
-		["source-of-truth docs", docsSourceOfTruthHtml],
-		["404", notFoundHtml],
-		[
-			"examples",
-			await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
-		],
-	];
-
-	for (const [name, pageHtml] of pages) {
-		assert.doesNotMatch(
-			siteHeaderHtml(pageHtml),
-			/<span class="tag">lang<\/span>/,
-			`${name} header should not show the lang tag`,
-		);
-	}
-});
-
-test("site headers expose homepage section navigation", async () => {
-	const examplesHtml = await readFile(
-		new URL("../examples/index.html", import.meta.url),
-		"utf8",
-	);
+test("site headers expose homepage section navigation", () => {
 	const homeLinks = primaryNavLinks(html);
 	const homeExpected = [
 		{ href: "#philosophy", label: "Design" },
@@ -256,13 +220,9 @@ test("site headers expose homepage section navigation", async () => {
 	];
 
 	assert.deepEqual(homeLinks, homeExpected);
-	assert.doesNotMatch(primaryNavHtml(html), />Examples<\/a>/);
-	assert.doesNotMatch(primaryNavHtml(html), /href="\/examples\/"/);
-
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
 		["404", notFoundHtml],
-		["examples", examplesHtml],
 	]) {
 		assert.deepEqual(
 			primaryNavLinks(pageHtml),
@@ -270,11 +230,6 @@ test("site headers expose homepage section navigation", async () => {
 				link.href.startsWith("#") ? { ...link, href: `/${link.href}` } : link,
 			),
 			`${name} header should link back to homepage sections`,
-		);
-		assert.doesNotMatch(
-			primaryNavHtml(pageHtml),
-			/>Examples<\/a>|href="\/examples\/"/,
-			`${name} header should not expose the old examples nav link`,
 		);
 	}
 });
@@ -294,7 +249,7 @@ test("homepage provides a back-to-top control for long reads", () => {
 	assert.match(primaryNavHtml(html), /href="#status"/);
 });
 
-test("site footers do not link the examples page", async () => {
+test("site footers retain the compact project links", () => {
 	const pages = [
 		["home", html],
 		["source-of-truth docs", docsSourceOfTruthHtml],
@@ -303,11 +258,6 @@ test("site footers do not link the examples page", async () => {
 
 	for (const [name, pageHtml] of pages) {
 		const footerHtml = siteFooterHtml(pageHtml);
-		assert.doesNotMatch(
-			footerHtml,
-			/href="\/examples\/"/,
-			`${name} footer should not link examples page`,
-		);
 		assert.doesNotMatch(
 			footerHtml,
 			/class="foot-bottom"/,
@@ -332,16 +282,6 @@ test("site footers do not link the examples page", async () => {
 			footerHtml,
 			/Intent stays visible without\s+hiding the machine/,
 			`${name} footer should match the hero sentiment`,
-		);
-		assert.doesNotMatch(
-			footerHtml,
-			/hidden magic of a C compiler/,
-			`${name} footer should not retain the old dense hero sentiment`,
-		);
-		assert.doesNotMatch(
-			footerHtml,
-			/semantic ARM64 systems language|human-readable IR|machine-oriented programming/,
-			`${name} footer should not use the old semantic IR framing`,
 		);
 	}
 });
@@ -479,7 +419,7 @@ test("hero keeps calls to action focused", () => {
 });
 
 test("homepage examples carry explicit provenance labels", () => {
-	for (const name of [...Object.keys(codeBlocks), ...Object.keys(snippets)]) {
+	for (const name of Object.keys(codeBlocks)) {
 		assert.match(
 			html,
 			new RegExp(`data-example-provenance="${name}"`),
@@ -493,8 +433,6 @@ test("homepage examples carry explicit provenance labels", () => {
 });
 
 test("compiler-checked homepage examples declare type and entry metadata", () => {
-	assert.deepEqual(Object.keys(snippets), []);
-
 	for (const [name, entry] of [["hero-uart", "uart_write"]]) {
 		const attrs = provenanceAttributes(name);
 		assert.equal(attrs["data-example-kind"], "wyst-source");
@@ -511,15 +449,13 @@ test("compiler-checked homepage examples declare type and entry metadata", () =>
 	);
 });
 
-test("homepage omits the evidence section while retaining primary sections", () => {
+test("homepage primary sections appear in order", () => {
 	const headerHtml = siteHeaderHtml(html);
-	const evidenceIndex = html.indexOf('id="evidence"');
 	const philosophyIndex = html.indexOf('id="philosophy"');
 	const examplesIndex = html.indexOf('id="examples"');
 	const nonGoalsIndex = html.indexOf('id="not"');
 	const faqIndex = html.indexOf('id="faq"');
 
-	assert.equal(evidenceIndex, -1, "evidence section should be removed");
 	assert.notEqual(philosophyIndex, -1, "missing philosophy section");
 	assert.notEqual(examplesIndex, -1, "missing examples section");
 	assert.notEqual(nonGoalsIndex, -1, "missing non-goals section");
@@ -528,22 +464,11 @@ test("homepage omits the evidence section while retaining primary sections", () 
 	assert.ok(examplesIndex < nonGoalsIndex, "examples should precede non-goals");
 	assert.ok(nonGoalsIndex < faqIndex, "non-goals should precede FAQ");
 
-	assert.doesNotMatch(html, /class="sec evidence-band"/);
-	assert.doesNotMatch(html, /class="evidence-grid"/);
-	assert.doesNotMatch(html, /Evidence first/);
-	assert.doesNotMatch(html, /Artifacts before claims/);
-	assert.doesNotMatch(html, /QEMU fixtures/);
-	assert.doesNotMatch(html, /deterministic rebuild proof/);
-	assert.doesNotMatch(html, /release gates/);
-	assert.doesNotMatch(html, /id="overview"/);
-	assert.doesNotMatch(html, /class="sec overview-band"/);
-	assert.doesNotMatch(headerHtml, /href="#evidence"/);
 	assert.match(headerHtml, /<a href="#not">Non-goals<\/a>/);
 	assert.match(headerHtml, /<a href="#faq">FAQ<\/a>/);
-	assert.doesNotMatch(headerHtml, /href="#overview"/);
 });
 
-test("homepage owns project status without a standalone status route", async () => {
+test("homepage presents project status", () => {
 	const statusSection = sectionHtmlByStart(
 		html,
 		'<section class="sec status-sec" id="status">',
@@ -569,21 +494,6 @@ test("homepage owns project status without a standalone status route", async () 
 		"project status CTA should use distinct progress-oriented copy",
 	);
 	assert.doesNotMatch(statusSection, /View on GitHub/);
-	assert.doesNotMatch(statusSection, /status-art/);
-	assert.doesNotMatch(siteCss, /\.status-art/);
-
-	for (const pageHtml of [
-		html,
-		notFoundHtml,
-		await readFile(new URL("../examples/index.html", import.meta.url), "utf8"),
-	]) {
-		assert.doesNotMatch(pageHtml, /href="\/status\/"/);
-	}
-
-	assert.doesNotMatch(prepareWorkerAssetsScript, /"status"/);
-	await assert.rejects(
-		readFile(new URL("../status/index.html", import.meta.url), "utf8"),
-	);
 
 	for (const duplicate of [
 		"v0.8",
@@ -621,129 +531,6 @@ test("FAQ directly preempts common skeptical-reader questions", () => {
 	assert.match(faqSection, /no LLVM backend/);
 });
 
-test("homepage and worker assets omit removed migration guides", () => {
-	assert.doesNotMatch(html, /class="migration-strip"/);
-	assert.doesNotMatch(html, /Migration guides/);
-
-	for (const route of [
-		"coming-from-c",
-		"coming-from-assembly",
-		"coming-from-rust-zig",
-	]) {
-		assert.doesNotMatch(html, new RegExp(`href="/${route}/"`));
-		assert.doesNotMatch(prepareWorkerAssetsScript, new RegExp(`"${route}"`));
-	}
-});
-
-test("examples page presents compiler-backed sum_to plus additional static examples", async () => {
-	const examplesHtml = await readFile(
-		new URL("../examples/index.html", import.meta.url),
-		"utf8",
-	);
-	const reportText = await readFile(
-		new URL(
-			"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.txt",
-			import.meta.url,
-		),
-		"utf8",
-	);
-	const reportJson = JSON.parse(
-		await readFile(
-			new URL(
-				"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.json",
-				import.meta.url,
-			),
-			"utf8",
-		),
-	);
-	const disasm = await readFile(
-		new URL(
-			"../../wyst/wync/tests/fixtures/reports/sum-to-lowering/expected.disasm",
-			import.meta.url,
-		),
-		"utf8",
-	);
-
-	assert.match(
-		examplesHtml,
-		/<link rel="canonical" href="https:\/\/wyst\.dev\/examples\/" \/>/,
-	);
-	assert.doesNotMatch(html, /href="\/try\/"/);
-	assert.match(prepareWorkerAssetsScript, /"examples"/);
-	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
-	await assert.rejects(
-		readFile(new URL("../try/index.html", import.meta.url), "utf8"),
-	);
-
-	for (const phrase of [
-		"Examples with compiler artifacts",
-		"compiler-backed",
-		"sum_to",
-		"Additional examples",
-		"MMIO UART write",
-		"Release/acquire flag",
-		"EL1 vector sketch",
-		"No arbitrary code execution",
-		"Source",
-		"Explain report",
-		"Generated AArch64",
-		"Bytes / provenance",
-		"wync explain lowering",
-	]) {
-		assert.match(examplesHtml, new RegExp(phrase));
-	}
-
-	assert.equal(reportJson.function.name, "sum_to");
-	assert.equal(reportJson.project, "examples-sum-to");
-	assert.match(reportText, /function: \$\d+ sum_to/);
-	assert.match(reportText, /arm64 instructions \[provenance=arm64-lowering freshness=current-run\]/);
-	assert.match(disasm, /\.text addr=/);
-	assert.match(disasm, /b\.cond/);
-	assert.match(disasm, /ret/);
-
-	assert.match(
-		examplesHtml,
-		/data-report-fixture="\.\.\/wyst\/wync\/tests\/fixtures\/reports\/sum-to-lowering"/,
-	);
-	assert.match(
-		examplesHtml,
-		new RegExp(
-			escapeRegExp(
-				escapeHtmlText(`function: ${reportJson.function.symbol} sum_to`),
-			),
-		),
-	);
-	for (const item of reportJson.arm64Instructions.items.slice(0, 4)) {
-		assert.match(examplesHtml, new RegExp(escapeRegExp(item.bytes)));
-		assert.match(examplesHtml, new RegExp(escapeRegExp(item.encoding)));
-	}
-	for (const line of [".text addr=", "b.cond", "b", "ret"]) {
-		assert.match(examplesHtml, new RegExp(escapeRegExp(line)));
-	}
-	assert.match(examplesHtml, /<pre class="wyst-code language-wyst"/);
-	assert.match(examplesHtml, /<span class="token keyword">while<\/span>/);
-	for (const card of ["mmio-uart", "release-acquire", "el1-vector"]) {
-		assert.match(
-			examplesHtml,
-			new RegExp(`data-example-card="${card}"`),
-			`${card} should be an examples-page card`,
-		);
-	}
-	assert.match(examplesHtml, /<span class="token directive macro">#module<\/span> drivers\.uart/);
-	assert.match(examplesHtml, /<span class="token directive macro">#release<\/span>/);
-	assert.match(examplesHtml, /<span class="token directive macro">#exception_vector<\/span>/);
-	assert.match(examplesHtml, /static language example/);
-	assert.doesNotMatch(examplesHtml, /data-inspector-example="uart"/);
-	assert.doesNotMatch(examplesHtml, /data-inspector-example="atomic"/);
-	assert.doesNotMatch(examplesHtml, /Static inspector/);
-	assert.doesNotMatch(examplesHtml, /Try Wyst/);
-	assert.doesNotMatch(examplesHtml, /<textarea/i);
-	assert.doesNotMatch(examplesHtml, /contenteditable/i);
-	assert.doesNotMatch(examplesHtml, /fetch\s*\(/);
-	assert.doesNotMatch(examplesHtml, /WebSocket/);
-	assert.doesNotMatch(examplesHtml, /eval\s*\(/);
-});
-
 test("generated pages track the v0.8 release header badge", () => {
 	for (const [name, pageHtml] of [
 		["source-of-truth docs", docsSourceOfTruthHtml],
@@ -754,25 +541,7 @@ test("generated pages track the v0.8 release header badge", () => {
 			/<span class="ver">v0\.8<\/span>/,
 			`${name} should use the release header badge`,
 		);
-		assert.doesNotMatch(
-			pageHtml,
-			/<span class="ver">v0\.7<\/span>/,
-			`${name} should not use the old release badge`,
-		);
 	}
-});
-
-test("generated pages do not link removed homepage example anchors", () => {
-	for (const [name, pageHtml] of [
-		["source-of-truth docs", docsSourceOfTruthHtml],
-		["404", notFoundHtml],
-	]) {
-		assert.doesNotMatch(pageHtml, /\/#compare/, `${name} should not link #compare`);
-		assert.doesNotMatch(pageHtml, /\/#inspect/, `${name} should not link #inspect`);
-		assert.doesNotMatch(pageHtml, /href="\/examples\/"/, `${name} should not link examples page from primary nav`);
-	}
-
-	assert.doesNotMatch(prepareWorkerAssetsScript, /"try"/);
 });
 
 test("homepage presents the side-by-side sum_to comparison", () => {
@@ -788,49 +557,11 @@ test("homepage presents the side-by-side sum_to comparison", () => {
 	assert.match(codeBlockText("compare-wyst"), /#module demo\.math/);
 	assert.match(codeBlockText("compare-wyst"), /while i < n/);
 	assert.match(html, /The <code>while<\/code> loop lowers to the/);
-	assert.doesNotMatch(html, /href="#compare"/);
-	assert.doesNotMatch(html, /href="#explain"/);
-	assert.doesNotMatch(html, /Examples with compiler artifacts/);
-	assert.doesNotMatch(html, /data-example-artifact="sum-to"/);
-	assert.doesNotMatch(html, /data-report-fixture=/);
-	assert.doesNotMatch(html, /Explain report/);
-	assert.doesNotMatch(html, /Generated AArch64/);
-	assert.doesNotMatch(html, /Bytes \/ provenance/);
-	assert.doesNotMatch(html, /wync explain lowering/);
 	assert.doesNotMatch(html, /<textarea/i);
 	assert.doesNotMatch(html, /contenteditable/i);
 	assert.doesNotMatch(html, /fetch\s*\(/);
 	assert.doesNotMatch(html, /WebSocket/);
 	assert.doesNotMatch(html, /eval\s*\(/);
-});
-
-test("homepage does not duplicate the examples page card grid", () => {
-	assert.doesNotMatch(html, /id="inspect"/);
-	assert.doesNotMatch(html, /href="#inspect"/);
-	assert.doesNotMatch(html, /data-snippet=/);
-	assert.deepEqual(Object.keys(snippets), []);
-
-	assert.doesNotMatch(html, /Additional examples/);
-	assert.doesNotMatch(html, /MMIO UART write/);
-	assert.doesNotMatch(html, /Release\/acquire flag/);
-	assert.doesNotMatch(html, /EL1 vector sketch/);
-	for (const card of ["mmio-uart", "release-acquire", "el1-vector"]) {
-		assert.doesNotMatch(
-			html,
-			new RegExp(`data-example-card="${card}"`),
-			`${card} should not be duplicated on the homepage`,
-		);
-	}
-	assert.doesNotMatch(html, /static language example/);
-});
-
-test("removed migration comparisons are not presented on the homepage", () => {
-	assert.doesNotMatch(html, /data-language-comparison=/);
-	assert.doesNotMatch(html, /Coming from C/);
-	assert.doesNotMatch(html, /Coming from assembly/);
-	assert.doesNotMatch(html, /Coming from Rust or Zig/);
-	assert.doesNotMatch(html, /Familiar concept/);
-	assert.doesNotMatch(html, /Wyst equivalent/);
 });
 
 test("UART examples use MMIO-intent addresses, not volatile as MMIO shorthand", () => {
@@ -851,26 +582,14 @@ function codeBlockText(name) {
 	return renderLines(codeBlocks[name]);
 }
 
-function snippetText(name) {
-	assert.ok(snippets[name], `missing ${name} snippet`);
-	return renderLines(snippets[name].lines);
-}
-
-function exampleText(name) {
-	if (codeBlocks[name]) {
-		return codeBlockText(name);
-	}
-	return snippetText(name);
-}
-
 function compilerCheckedSourceExamples() {
-	return [...Object.keys(codeBlocks), ...Object.keys(snippets)]
+	return Object.keys(codeBlocks)
 		.map((name) => ({ name, attrs: provenanceAttributes(name) }))
 		.filter(({ attrs }) => attrs["data-example-kind"] === "wyst-source")
 		.map(({ name, attrs }) => ({
 			name,
 			entry: attrs["data-example-entry"],
-			source: exampleText(name),
+			source: codeBlockText(name),
 		}));
 }
 

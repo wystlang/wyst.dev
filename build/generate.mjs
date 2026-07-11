@@ -213,9 +213,6 @@ function main() {
 	const md = makeMd();
 	const outDir = path.join(ROOT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
-	// `roadmap.md` was retired in the compiler repo; clear the old generated
-	// route so rebuilds cannot preserve a stale checked-in artifact.
-	fs.rmSync(path.join(ROOT, "roadmap"), { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
 
 	let count = 0;

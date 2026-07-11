@@ -13,7 +13,6 @@ assets/
   docs.css              Documentation layout + prose + syntax-highlight colors
   …                     Fonts, icons, social imagery
 docs/                   GENERATED — one folder per chapter/appendix (commit this)
-examples/               Static examples index (commit this)
 build/
   generate.mjs          Markdown → HTML generator
   generate-404.mjs      404 page generator
@@ -21,7 +20,6 @@ build/
   prism-wyst.mjs        Prism grammar for the Wyst language
   serve.mjs             Tiny static server for local preview
 tools/
-  normalize-docs.py     One-time docs source migration (see below)
   prepare-worker-assets.mjs
                           Copies committed site files into .worker-assets/
 ```
@@ -92,7 +90,7 @@ npx wrangler deploy
 
 Wrangler deploys `.worker-assets/` as static Worker assets. That directory is a
 committed deploy artifact containing `index.html`, `404.html`, `assets/`,
-`docs/`, `examples/`, and generated `_headers`. CSS filenames are fingerprinted
+`docs/`, and generated `_headers`. CSS filenames are fingerprinted
 inside `.worker-assets/assets/`. Regenerate and commit the artifact whenever
 those source files change:
 
@@ -104,8 +102,8 @@ git add .worker-assets
 ### Automatic regeneration (git hook)
 
 A tracked `pre-commit` hook in `.githooks/` runs the two steps above for you:
-whenever a commit touches `index.html`, `404.html`, `assets/`, `docs/`, or
-`examples/`, it regenerates `.worker-assets/` and stages it, so the deploy
+whenever a commit touches `index.html`, `404.html`, `assets/`, or `docs/`, it
+regenerates `.worker-assets/` and stages it, so the deploy
 artifact can never fall out of sync with the source (the cause of "I pushed but
 the live site didn't change").
 
@@ -127,8 +125,8 @@ committed artifact is deployed.
 ```sh
 npm install
 npm test         # runs node --test tests/*.test.mjs
+npm run audit    # checks CSS references and public-route reachability
 npm run build        # regenerates docs/
-npm run docs         # alias for build
 npm run build:worker-assets # refreshes committed Worker deploy artifact
 node build/serve.mjs # preview at http://localhost:8347
 ```
@@ -150,14 +148,7 @@ git push                                    # Cloudflare deploys
 The generated HTML committed here is the reviewable deploy artifact. The site
 only changes when you deliberately regenerate and commit it.
 
-## One-time docs normalization
-
-`tools/normalize-docs.py` was used once against `wystlang/wyst`'s `design/` to
-(1) fix heading levels so each page has a single H1, and (2) add YAML
-frontmatter (`title` / `group` / `order` / `summary`). It is fence-aware
-(headings inside code blocks are never touched) and idempotent. Run it from the
-compiler repo, not here:
-
-```sh
-python3 /path/to/wyst.dev/tools/normalize-docs.py /path/to/wyst/design
-```
+Keeping `.worker-assets/` committed is intentional: the Cloudflare build trigger
+runs `wrangler deploy` directly, and Wrangler uploads the configured directory as
+it exists at deploy time. Committing the directory makes that input deterministic
+and reviewable without requiring a separate build command in Cloudflare.
