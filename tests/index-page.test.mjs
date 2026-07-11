@@ -199,35 +199,48 @@ test("shared headers keep only Manual and Source", () => {
 	}
 });
 
-test("homepage opens with a minimal personal introduction", () => {
+test("homepage opens with a minimal personal introduction and separate project facts", () => {
 	const introText = textContent(
 		taggedElementWithOpeningMatch(
 			html,
-			/<([a-z][\w-]*)\b[^>]*class="[^"]*\bnotebook-hero\b[^"]*"[^>]*>/i,
-			"missing notebook introduction",
+			/<([a-z][\w-]*)\b[^>]*class="[^"]*\bproject-introduction\b[^"]*"[^>]*>/i,
+			"missing personal introduction",
 		),
 	);
-	assert.match(
-		introText,
-		/\bI(?:['’]m| am) building\b[^.]*\bfor fun\b/i,
-		"the opening should say in the author's own voice that Wyst is built for fun",
-	);
-	assert.match(
-		introText,
-		/\bpersonal experiment\b/i,
-		"the opening should frame Wyst as a personal experiment",
-	);
+	for (const [idea, pattern] of [
+		["web-interface day job", /\bday job\b[^.]*\bweb interfaces\b/i],
+		["low-level programming itch", /\blow-level programming itch\b/i],
+		["ARM64 language and compiler", /\bARM64 language and compiler\b/i],
+		["visual learning goal", /\bvisualize what the machine is actually doing\b/i],
+		["computer science degree", /\bCS degree\b/i],
+		["candid AI use", /\busing AI to help build Wyst and the tooling\b/i],
+	]) {
+		assert.match(introText, pattern, `the introduction should include ${idea}`);
+	}
 	assert.ok(
-		introText.split(/\s+/).filter(Boolean).length <= 50,
-		"the complete introduction should stay under 50 words",
+		introText.split(/\s+/).filter(Boolean).length <= 60,
+		"the complete introduction should stay at or under 60 words",
+	);
+	assert.doesNotMatch(
+		introText,
+		/—/,
+		"the personal introduction should not use em dashes",
+	);
+
+	const projectMeta = textContent(
+		taggedElementWithOpeningMatch(
+			html,
+			/<([a-z][\w-]*)\b[^>]*class="[^"]*\bproject-meta\b[^"]*"[^>]*>/i,
+			"missing separate project metadata",
+		),
 	);
 	for (const [fact, pattern] of [
 		["pre-1.0", /\bpre-1\.0\b/i],
 		["ARM64 only", /\bARM64-only\b/i],
-		["Rust bootstrap", /\bbootstrapped in Rust\b/i],
+		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
 		["not memory-safe", /\bnot memory-safe\b/i],
 	]) {
-		assert.match(introText, pattern, `the introduction should say ${fact}`);
+		assert.match(projectMeta, pattern, `the metadata should say ${fact}`);
 	}
 
 	for (const salesPhrase of [
