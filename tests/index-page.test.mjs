@@ -17,6 +17,7 @@ const docsSourceOfTruthHtml = await readFile(
 );
 const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
+const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
 const uartFixtureSource = await readFile(
 	new URL(`../../wyst/${UART_EXAMPLE_PATH}`, import.meta.url),
 	"utf8",
@@ -278,23 +279,58 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 			`${name} should not retain the punctuation or four-block identity`,
 		);
 		assert.match(pageHtml, /<meta name="color-scheme" content="light" \/>/);
-		assert.match(pageHtml, /<meta name="theme-color" content="#F4F0E6" \/>/);
+		assert.match(pageHtml, /<meta name="theme-color" content="#F4F7FB" \/>/);
 	}
 
 	for (const [token, value] of [
-		["--bg", "#f4f0e6"],
-		["--bg-code", "#e8e1d3"],
-		["--text", "#202724"],
-		["--muted", "#58615c"],
-		["--line-solid", "#c8c0b0"],
-		["--accent", "#9e432a"],
-		["--reference", "#2e6073"],
+		["--bg", "#f4f7fb"],
+		["--bg-code", "#e7edf4"],
+		["--text", "#17212b"],
+		["--muted", "#3f5062"],
+		["--line-solid", "#77899c"],
+		["--accent", "#1f478e"],
+		["--reference", "#00536b"],
 	]) {
 		assert.equal(cssHexVar(token).toLowerCase(), value);
 	}
 
+	for (const token of [
+		"--syn-text",
+		"--syn-comment",
+		"--syn-kw",
+		"--syn-type",
+		"--syn-num",
+		"--syn-op",
+		"--syn-fn",
+		"--syn-var",
+		"--syn-param",
+		"--syn-macro",
+		"--syn-punct",
+		"--syn-str",
+	]) {
+		assert.ok(
+			contrastRatio(cssHexVar(token), cssHexVar("--bg-code")) >= 7,
+			`${token} should retain AAA contrast on the code surface`,
+		);
+	}
+
 	assert.match(siteCss, /font-family:\s*"Newsreader"/);
 	assert.match(siteCss, /font-family:\s*"Commit Mono"/);
+	assert.match(
+		siteCss,
+		/\.artifact\s*>\s*pre\s*\{[\s\S]*?font-size:\s*clamp\(14px,\s*1\.6vw,\s*15px\);[\s\S]*?font-weight:\s*450;/,
+		"homepage source should remain at least 14px with a medium variable-font weight",
+	);
+	assert.match(
+		docsCss,
+		/\.doc-body\s+\.wyst-code\s*\{[\s\S]*?font-size:\s*var\(--text-base\);[\s\S]*?font-weight:\s*450;/,
+		"documentation source should remain at least 14px with a medium variable-font weight",
+	);
+	assert.doesNotMatch(
+		`${siteCss}\n${docsCss}`,
+		/font-style:\s*italic/,
+		"source comments should not rely on a synthetic italic face",
+	);
 	assert.doesNotMatch(siteCss, /linear-gradient|radial-gradient|backdrop-filter|box-shadow/);
 });
 

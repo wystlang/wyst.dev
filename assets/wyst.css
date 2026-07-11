@@ -15,37 +15,38 @@
 }
 
 :root {
-	--bg: #F4F0E6;
-	--bg-elev: #E8E1D3;
-	--bg-code: #E8E1D3;
-	--bg-code-2: #E8E1D3;
-	--text: #202724;
-	--muted: #58615C;
-	--copy-muted: #58615C;
-	--faint: #58615C;
-	--line-solid: #C8C0B0;
+	--bg: #F4F7FB;
+	--bg-elev: #E7EDF4;
+	--bg-code: #E7EDF4;
+	--bg-code-2: #E7EDF4;
+	--text: #17212B;
+	--muted: #3F5062;
+	--copy-muted: #3F5062;
+	--faint: #3F5062;
+	--line-solid: #77899C;
 	--line: var(--line-solid);
 	--line-2: var(--line-solid);
 	--surface-faint: transparent;
 	--surface-subtle: var(--bg-code);
 	--surface-hover: var(--bg-code);
-	--accent: #9E432A;
+	--accent: #1F478E;
 	--accent-2: var(--accent);
-	--accent-ink: var(--bg);
-	--reference: #2E6073;
-	--success: var(--reference);
-	--syn-comment: var(--muted);
-	--syn-kw: var(--accent);
-	--syn-type: var(--reference);
-	--syn-num: var(--text);
-	--syn-op: var(--text);
-	--syn-fn: var(--text);
-	--syn-var: var(--text);
-	--syn-param: var(--text);
-	--syn-macro: var(--accent);
-	--syn-punct: var(--muted);
-	--syn-str: var(--reference);
-	--syn-text: var(--text);
+	--accent-ink: #F4F7FB;
+	--reference: #00536B;
+	--success: #00536B;
+	--selection: #CFDCEE;
+	--syn-comment: #3F5062;
+	--syn-kw: #1F478E;
+	--syn-type: #00536B;
+	--syn-num: #713061;
+	--syn-op: #17212B;
+	--syn-fn: #164A79;
+	--syn-var: #17212B;
+	--syn-param: #17212B;
+	--syn-macro: #1F478E;
+	--syn-punct: #3F5062;
+	--syn-str: #713061;
+	--syn-text: #17212B;
 	--serif: "Newsreader", "Iowan Old Style", Charter, Georgia, serif;
 	--mono: "Commit Mono", "SFMono-Regular", Consolas, monospace;
 	--text-2xs: 11px;
@@ -115,7 +116,7 @@ a:hover {
 }
 
 ::selection {
-	background: var(--line-solid);
+	background: var(--selection);
 	color: var(--text);
 }
 
@@ -243,27 +244,40 @@ header.site {
 
 .c {
 	color: var(--syn-comment);
-	font-style: italic;
+	font-style: normal;
 }
 
 .k,
 .m {
 	color: var(--syn-kw);
+	font-weight: 600;
 }
 
 .t {
 	color: var(--syn-type);
+	font-weight: 550;
 }
 
 .n {
 	color: var(--syn-num);
+	font-weight: 550;
 }
 
-.o,
-.f,
-.var,
+.o {
+	color: var(--syn-op);
+}
+
+.f {
+	color: var(--syn-fn);
+	font-weight: 550;
+}
+
+.var {
+	color: var(--syn-var);
+}
+
 .param {
-	color: var(--text);
+	color: var(--syn-param);
 }
 
 .p {
@@ -272,6 +286,7 @@ header.site {
 
 .s {
 	color: var(--syn-str);
+	font-weight: 550;
 }
 
 .notebook-column {
@@ -344,8 +359,9 @@ header.site {
 	margin: 0;
 	padding: clamp(18px, 3vw, 28px) var(--space-md);
 	color: var(--syn-text);
-	font-size: clamp(12px, 1.5vw, 14px);
-	line-height: 1.7;
+	font-size: clamp(14px, 1.6vw, 15px);
+	font-weight: 450;
+	line-height: 1.65;
 }
 
 .artifact-output {

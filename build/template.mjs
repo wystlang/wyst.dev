@@ -22,7 +22,7 @@ function head({ title, description, canonical }) {
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="color-scheme" content="light" />
-		<meta name="theme-color" content="#F4F0E6" />
+		<meta name="theme-color" content="#F4F7FB" />
 		<meta name="description" content="${desc}" />
 		<title>${escapeHtml(title)}</title>${
 			canonical ? `\n\t\t<link rel="canonical" href="${canonical}" />` : ""

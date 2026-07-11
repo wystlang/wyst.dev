@@ -4,7 +4,7 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/commit-mono-v143.woff2
   Cache-Control: public, max-age=31536000, immutable
-/assets/docs.ea3854f4.css
+/assets/docs.1c7a0c47.css
   Cache-Control: public, max-age=31536000, immutable
 /assets/favicon-48.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
@@ -16,5 +16,5 @@
   Cache-Control: public, max-age=31536000, immutable
 /assets/social-card.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.fe1a09be.css
+/assets/wyst.8e48a9dc.css
   Cache-Control: public, max-age=31536000, immutable

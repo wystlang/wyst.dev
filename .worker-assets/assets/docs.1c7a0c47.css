@@ -275,8 +275,9 @@
 	background: var(--bg-code);
 	overflow-x: auto;
 	font-family: var(--mono);
-	font-size: var(--text-sm);
-	line-height: 1.7;
+	font-size: var(--text-base);
+	font-weight: 450;
+	line-height: 1.65;
 	tab-size: 2;
 }
 
@@ -291,7 +292,7 @@
 .wyst-code .token.comment,
 .wyst-code .token.prolog {
 	color: var(--syn-comment);
-	font-style: italic;
+	font-style: normal;
 }
 
 .wyst-code .token.keyword,
@@ -299,6 +300,7 @@
 .wyst-code .token.macro,
 .wyst-code .token.directive {
 	color: var(--syn-kw);
+	font-weight: 600;
 }
 
 .wyst-code .token.builtin,
@@ -307,18 +309,28 @@
 .wyst-code .token.address-qualifier,
 .wyst-code .token.primitive {
 	color: var(--syn-type);
+	font-weight: 550;
 }
 
-.wyst-code .token.number,
-.wyst-code .token.function,
+.wyst-code .token.number {
+	color: var(--syn-num);
+	font-weight: 550;
+}
+
+.wyst-code .token.function {
+	color: var(--syn-fn);
+	font-weight: 550;
+}
+
 .wyst-code .token.operator {
-	color: var(--text);
+	color: var(--syn-op);
 }
 
 .wyst-code .token.string,
 .wyst-code .token.char,
 .wyst-code .token.label {
-	color: var(--reference);
+	color: var(--syn-str);
+	font-weight: 550;
 }
 
 .wyst-code .token.punctuation {
