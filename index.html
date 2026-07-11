@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="color-scheme" content="light" />
-		<meta name="theme-color" content="#F4F7FB" />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#0B0D12" />
 		<meta
 			name="description"
 			content="Wyst is a personal ARM64 language and compiler project exploring explicit, inspectable low-level code."
@@ -52,7 +52,7 @@
 		/>
 		<link rel="stylesheet" href="assets/wyst.css" />
 	</head>
-	<body>
+	<body class="home-page">
 		<a class="skip" href="#main">Skip to content</a>
 		<header class="site">
 			<div class="wrap nav">
@@ -66,38 +66,35 @@
 			</div>
 		</header>
 
-		<main id="main">
+		<main id="main" class="home-split">
 			<section class="notebook-hero" aria-labelledby="page-title">
-				<div class="wrap notebook-column">
-					<h1 id="page-title">Wyst is a small ARM64 language and compiler I’m building for fun.</h1>
-					<div class="notebook-intro">
-						<p>I like compilers, kernels, and seeing exactly what a program becomes.</p>
-						<p>It is a personal experiment: pre-1.0, ARM64-only, bootstrapped in Rust, and not memory-safe.</p>
-					</div>
+				<h1 id="page-title">wyst</h1>
+				<p class="project-lede">A small ARM64 language and compiler I’m building for fun.</p>
+				<div class="notebook-intro">
+					<p>I like compilers, kernels, and seeing exactly what a program becomes.</p>
+					<p>It is a personal experiment: pre-1.0, ARM64-only, bootstrapped in Rust, and not memory-safe.</p>
 				</div>
 			</section>
 
 			<section class="notebook-section" id="example" aria-labelledby="example-title">
-				<div class="wrap notebook-column">
-					<header class="notebook-heading">
-						<p class="notebook-label">a real v0.8 fixture</p>
-						<h2 id="example-title">A tiny UART program.</h2>
-					</header>
+				<header class="notebook-heading">
+					<h2 id="example-title" class="visually-hidden">A tiny UART program.</h2>
+				</header>
 
-					<figure
-						class="artifact source-artifact"
-						data-example-source="uart-hello"
-						data-example-path="wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
-					>
-						<div class="artifact-bar">
-							<span>wync/tests/fixtures/qemu/virt/uart-hello/main.wyst</span>
-							<a
-								href="https://github.com/wystlang/wyst/blob/main/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
-								rel="noopener"
-								>source ↗</a
-							>
-						</div>
-						<pre aria-label="Wyst UART source"><code><span class="var">UARTDR</span> :: <span class="t">@volatile u32</span> <span class="o">=</span> <span class="var">UART0_BASE</span> <span class="o">+</span> <span class="n">0x00</span>
+				<figure
+					class="artifact source-artifact"
+					data-example-source="uart-hello"
+					data-example-path="wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
+				>
+					<div class="artifact-bar">
+						<span>main.wyst</span>
+						<a
+							href="https://github.com/wystlang/wyst/blob/main/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
+							rel="noopener"
+							>source ↗</a
+						>
+					</div>
+					<pre aria-label="Wyst UART source"><code><span class="var">UARTDR</span> :: <span class="t">@volatile u32</span> <span class="o">=</span> <span class="var">UART0_BASE</span> <span class="o">+</span> <span class="n">0x00</span>
 <span class="var">UARTFR</span> :: <span class="t">@volatile u32</span> <span class="o">=</span> <span class="var">UART0_BASE</span> <span class="o">+</span> <span class="n">0x18</span>
 <span class="var">TXFF</span> :: <span class="t">u32</span> <span class="o">=</span> <span class="n">0x20</span>
 
@@ -117,12 +114,11 @@
     <span class="f">uart_write</span>(<span class="s">'o'</span>)
     <span class="f">uart_write</span>(<span class="s">'\n'</span>)
 }</code></pre>
-						<figcaption class="artifact-output">
-							<span>qemu / virt</span>
-							<pre aria-label="QEMU UART output"><code>hello</code></pre>
-						</figcaption>
-					</figure>
-				</div>
+					<figcaption class="artifact-output">
+						<span>qemu / virt</span>
+						<pre aria-label="QEMU UART output"><code>hello</code></pre>
+					</figcaption>
+				</figure>
 			</section>
 		</main>
 

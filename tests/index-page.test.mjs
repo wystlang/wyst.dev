@@ -278,18 +278,19 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 			/\bclass="(?:mark|cc)"|wyst::/i,
 			`${name} should not retain the punctuation or four-block identity`,
 		);
-		assert.match(pageHtml, /<meta name="color-scheme" content="light" \/>/);
-		assert.match(pageHtml, /<meta name="theme-color" content="#F4F7FB" \/>/);
+		assert.match(pageHtml, /<meta name="color-scheme" content="dark" \/>/);
+		assert.match(pageHtml, /<meta name="theme-color" content="#0B0D12" \/>/);
 	}
 
 	for (const [token, value] of [
-		["--bg", "#f4f7fb"],
-		["--bg-code", "#e7edf4"],
-		["--text", "#17212b"],
-		["--muted", "#3f5062"],
-		["--line-solid", "#77899c"],
-		["--accent", "#1f478e"],
-		["--reference", "#00536b"],
+		["--bg", "#0b0d12"],
+		["--bg-code", "#111722"],
+		["--text", "#f4f6fa"],
+		["--muted", "#9ba8b8"],
+		["--line-solid", "#2b3544"],
+		["--line-2", "#526276"],
+		["--accent", "#93a4ff"],
+		["--reference", "#7cc9e8"],
 	]) {
 		assert.equal(cssHexVar(token).toLowerCase(), value);
 	}
@@ -316,6 +317,13 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 
 	assert.match(siteCss, /font-family:\s*"Newsreader"/);
 	assert.match(siteCss, /font-family:\s*"Commit Mono"/);
+	assert.match(siteCss, /--sans:\s*ui-sans-serif/);
+	assert.match(siteCss, /body\s*\{[\s\S]*?font-family:\s*var\(--sans\)/);
+	assert.match(
+		siteCss,
+		/\.notebook-hero h1\s*\{[\s\S]*?font-family:\s*var\(--serif\);[\s\S]*?font-size:\s*clamp\(96px,\s*11vw,\s*168px\);/,
+		"the homepage should reserve the oversized serif treatment for the wordmark",
+	);
 	assert.match(
 		siteCss,
 		/\.artifact\s*>\s*pre\s*\{[\s\S]*?font-size:\s*clamp\(14px,\s*1\.6vw,\s*15px\);[\s\S]*?font-weight:\s*450;/,
@@ -344,6 +352,13 @@ test("homepage contains only the introduction and real example", () => {
 	assert.match(example, /<h2\b/i);
 	assert.match(example, /data-example-source="uart-hello"/i);
 	assert.doesNotMatch(html, /\bid="(?:why|status|bench)"|on the bench|Lately:/i);
+	assert.match(html, /<main\b[^>]*class="[^"]*\bhome-split\b[^"]*"/i);
+	assert.match(html, /<h1\b[^>]*>wyst<\/h1>/i);
+	assert.match(
+		siteCss,
+		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*0\.76fr\)\s+minmax\(560px,\s*1\.24fr\);/,
+		"the homepage should pair the introduction with a code-led split layout",
+	);
 });
 
 test("homepage shows one static UART example from the real fixture", () => {
@@ -461,11 +476,11 @@ test("minimal homepage retains accessibility and safe external links", () => {
 	assert.match(siteCss, /\.skip:focus\s*\{[\s\S]*?top:\s*0/);
 	assert.ok(
 		contrastRatio(cssHexVar("--text"), cssHexVar("--bg")) >= 7,
-		"primary text should retain enhanced light-theme contrast",
+		"primary text should retain enhanced dark-theme contrast",
 	);
 	assert.ok(
 		contrastRatio(cssHexVar("--copy-muted"), cssHexVar("--bg")) >= 4.5,
-		"secondary prose should retain AA contrast on paper",
+		"secondary prose should retain AA contrast on the dark field",
 	);
 });
 
