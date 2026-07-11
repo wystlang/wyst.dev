@@ -226,6 +226,11 @@ test("homepage opens with a minimal personal introduction and separate project f
 		/—/,
 		"the personal introduction should not use em dashes",
 	);
+	assert.ok(
+		introText.indexOf("ARM64 language and compiler") <
+			introText.indexOf("My day job"),
+		"the introduction should define Wyst before explaining the author's motivation",
+	);
 
 	const projectMeta = textContent(
 		taggedElementWithOpeningMatch(
