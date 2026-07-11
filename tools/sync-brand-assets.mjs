@@ -34,6 +34,7 @@ async function resolveBrandRoot() {
 }
 
 const files = [
+	["brand/wordmark-accent.svg", "wordmark-accent.svg"],
 	["web-icons/apple-touch-icon.png", "apple-touch-icon.png"],
 	["web-icons/favicon-48.png", "favicon-48.png"],
 	["web-icons/favicon.svg", "favicon.svg"],

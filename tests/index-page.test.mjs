@@ -279,7 +279,7 @@ test("homepage links plainly to the source and manual", () => {
 	}
 });
 
-test("shared identity is a punctuation-free lowercase wordmark", () => {
+test("shared identity uses the integrated punctuation-free wordmark", () => {
 	for (const [name, pageHtml] of [
 		["home", html],
 		["source-of-truth docs", docsSourceOfTruthHtml],
@@ -288,8 +288,8 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 		const header = siteHeaderHtml(pageHtml);
 		assert.match(
 			header,
-			/<span class="word">wyst<\/span>/,
-			`${name} should use the lowercase text wordmark`,
+			/<img\b(?=[^>]*\bclass="brand-wordmark")(?=[^>]*\bsrc="\/?assets\/wordmark-accent\.svg\?v=7ce9ef2b")(?=[^>]*\bwidth="87")(?=[^>]*\bheight="48")(?=[^>]*\balt="")(?=[^>]*\baria-hidden="true")[^>]*>/i,
+			`${name} should use the integrated accent wordmark`,
 		);
 		assert.doesNotMatch(
 			header,
@@ -299,9 +299,9 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 		assert.match(pageHtml, /<meta name="color-scheme" content="dark" \/>/);
 		assert.match(pageHtml, /<meta name="theme-color" content="#0B0D12" \/>/);
 		for (const [asset, version] of [
-			["favicon\\.svg", "6ed879ce"],
-			["favicon-48\\.png", "090a1ea7"],
-			["apple-touch-icon\\.png", "fd071720"],
+			["favicon\\.svg", "96d86d9d"],
+			["favicon-48\\.png", "feef7b4f"],
+			["apple-touch-icon\\.png", "39df437e"],
 		]) {
 			assert.match(
 				pageHtml,
@@ -350,8 +350,13 @@ test("shared identity is a punctuation-free lowercase wordmark", () => {
 	assert.match(siteCss, /body\s*\{[\s\S]*?font-family:\s*var\(--sans\)/);
 	assert.match(
 		siteCss,
-		/\.notebook-hero h1\s*\{[\s\S]*?font-family:\s*var\(--serif\);[\s\S]*?font-size:\s*clamp\(96px,\s*11vw,\s*168px\);/,
-		"the homepage should reserve the oversized serif treatment for the wordmark",
+		/\.notebook-hero h1\s*\{[\s\S]*?font-size:\s*clamp\(96px,\s*11vw,\s*168px\);/,
+		"the homepage should retain the responsive wordmark scale",
+	);
+	assert.match(
+		siteCss,
+		/\.hero-wordmark\s*\{[\s\S]*?height:\s*1em;/,
+		"the outlined hero wordmark should inherit the responsive heading scale",
 	);
 	assert.match(
 		siteCss,
@@ -382,7 +387,10 @@ test("homepage contains only the introduction and real example", () => {
 	assert.match(example, /data-example-source="uart-hello"/i);
 	assert.doesNotMatch(html, /\bid="(?:why|status|bench)"|on the bench|Lately:/i);
 	assert.match(html, /<main\b[^>]*class="[^"]*\bhome-split\b[^"]*"/i);
-	assert.match(html, /<h1\b[^>]*>wyst<\/h1>/i);
+	assert.match(
+		html,
+		/<h1\b[^>]*\bid="page-title"[^>]*>\s*<img\b(?=[^>]*\bclass="hero-wordmark")(?=[^>]*\bsrc="assets\/wordmark-accent\.svg\?v=7ce9ef2b")(?=[^>]*\balt="Wyst")[^>]*>\s*<\/h1>/i,
+	);
 	assert.match(
 		siteCss,
 		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*0\.76fr\)\s+minmax\(560px,\s*1\.24fr\);/,

@@ -27,9 +27,9 @@ function head({ title, description, canonical }) {
 		<title>${escapeHtml(title)}</title>${
 			canonical ? `\n\t\t<link rel="canonical" href="${canonical}" />` : ""
 		}
-		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=6ed879ce" />
-		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=090a1ea7" />
-		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=fd071720" />
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
 		<link rel="stylesheet" href="/assets/wyst.css" />
 		<link rel="stylesheet" href="/assets/docs.css" />
 	</head>`;
@@ -41,7 +41,14 @@ function header(active = "") {
 	return `	<header class="site">
 		<div class="wrap nav">
 			<a class="brand" href="/" aria-label="Wyst home">
-				<span class="word">wyst</span>
+				<img
+					class="brand-wordmark"
+					src="/assets/wordmark-accent.svg?v=7ce9ef2b"
+					width="87"
+					height="48"
+					alt=""
+					aria-hidden="true"
+				/>
 				<span class="ver">${VERSION}</span>
 			</a>
 			<nav class="nav-links" aria-label="Primary">

@@ -187,7 +187,7 @@ header.site {
 .nav {
 	position: relative;
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	justify-content: space-between;
 	min-height: 68px;
 	gap: var(--space-lg);
@@ -197,18 +197,16 @@ header.site {
 
 .brand {
 	display: inline-flex;
-	align-items: baseline;
+	align-items: center;
 	gap: var(--space-sm);
 	color: var(--text);
 	text-decoration: none;
 }
 
-.brand .word {
-	font-family: var(--serif);
-	font-size: 26px;
-	font-weight: 500;
-	letter-spacing: -0.04em;
-	line-height: 1;
+.brand-wordmark {
+	display: block;
+	width: auto;
+	height: 30px;
 }
 
 .brand .ver {
@@ -322,12 +320,14 @@ header.site {
 
 .notebook-hero h1 {
 	margin-left: -0.06em;
-	color: var(--text);
-	font-family: var(--serif);
 	font-size: clamp(96px, 11vw, 168px);
-	font-weight: 550;
-	letter-spacing: -0.065em;
-	line-height: 0.78;
+	line-height: 1;
+}
+
+.hero-wordmark {
+	display: block;
+	width: auto;
+	height: 1em;
 }
 
 .project-lede {
