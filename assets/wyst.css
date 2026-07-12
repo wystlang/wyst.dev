@@ -1,12 +1,4 @@
 @font-face {
-	font-family: "Newsreader";
-	src: url("/assets/newsreader-opsz-wght.woff2") format("woff2");
-	font-style: normal;
-	font-weight: 200 800;
-	font-display: swap;
-}
-
-@font-face {
 	font-family: "Commit Mono";
 	src: url("/assets/commit-mono-v143.woff2") format("woff2");
 	font-style: normal;
@@ -16,7 +8,6 @@
 
 :root {
 	--bg: #0B0D12;
-	--bg-elev: #10151E;
 	--bg-code: #111722;
 	--bg-code-2: #151D29;
 	--text: #F4F6FA;
@@ -24,14 +15,8 @@
 	--copy-muted: #B6C0CD;
 	--faint: #7E8B9B;
 	--line-solid: #2B3544;
-	--line: var(--line-solid);
 	--line-2: #526276;
-	--surface-faint: transparent;
-	--surface-subtle: var(--bg-code);
-	--surface-hover: var(--bg-code-2);
 	--accent: #93A4FF;
-	--accent-2: #7CC9E8;
-	--accent-ink: #0B0D12;
 	--reference: #7CC9E8;
 	--success: #91D4BB;
 	--selection: #29375B;
@@ -48,7 +33,6 @@
 	--syn-punct: #9BA8B8;
 	--syn-str: #87DD98;
 	--syn-text: #F4F7FB;
-	--serif: "Newsreader", "Iowan Old Style", Charter, Georgia, serif;
 	--sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--mono: "Commit Mono", "SFMono-Regular", Consolas, monospace;
 	--text-2xs: 11px;
@@ -58,13 +42,10 @@
 	--text-md: 15px;
 	--text-lg: 16px;
 	--text-xl: 18px;
-	--text-2xl: 20px;
 	--text-3xl: 23px;
 	--text-4xl: 28px;
-	--text-5xl: 38px;
 	--maxw: 1380px;
 	--pad: clamp(20px, 5vw, 48px);
-	--space-3xs: 2px;
 	--space-2xs: 4px;
 	--space-xs: 8px;
 	--space-sm: 12px;
@@ -72,10 +53,6 @@
 	--space-lg: 24px;
 	--space-xl: 32px;
 	--space-2xl: 48px;
-	--space-3xl: 64px;
-	--dur-fast: 0.15s;
-	--dur-base: 0.18s;
-	--ease: ease;
 }
 
 * {
@@ -237,17 +214,11 @@ header.site {
 	text-decoration-color: var(--accent);
 }
 
-.c {
-	color: var(--syn-comment);
-	font-style: normal;
-}
-
 .k {
 	color: var(--syn-kw);
 	font-weight: 600;
 }
 
-.m,
 .primitive {
 	color: var(--syn-macro);
 	font-weight: 600;
@@ -275,10 +246,6 @@ header.site {
 .f {
 	color: var(--syn-fn);
 	font-weight: 550;
-}
-
-.var {
-	color: var(--syn-var);
 }
 
 .param {
@@ -465,20 +432,6 @@ header.site {
 .nf h1 {
 	margin-top: var(--space-sm);
 	font-size: clamp(32px, 5vw, 46px);
-}
-
-.nf-fault {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-sm) var(--space-lg);
-	margin-top: var(--space-lg);
-	color: var(--muted);
-	font-family: var(--mono);
-	font-size: var(--text-sm);
-}
-
-.nf-fault code {
-	color: var(--accent);
 }
 
 .nf-lede {

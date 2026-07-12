@@ -24,14 +24,31 @@ async function auditCssReferences() {
 	const source = (
 		await Promise.all(sourceFiles.map((file) => readFile(file, "utf8")))
 	).join("\n");
+	const usedClasses = new Set();
+	for (const match of source.matchAll(/\bclass\s*=\s*["']([^"']*)["']/g)) {
+		for (const className of match[1].split(/\s+/)) {
+			if (className && !className.includes("$")) usedClasses.add(className);
+		}
+	}
+	for (const match of source.matchAll(
+		/classList\.(?:add|remove|toggle|contains)\(\s*["']([^"']+)["']/g,
+	)) {
+		usedClasses.add(match[1]);
+	}
 	const failures = [];
 
 	for (const filename of ["wyst.css", "docs.css"]) {
-		const css = await readFile(path.join(root, "assets", filename), "utf8");
-		const classes = new Set(
-			[...css.matchAll(/\.([_a-zA-Z][\w-]*)/g)].map((match) => match[1]),
-		);
-		const unused = [...classes].filter((className) => !source.includes(className));
+		const css = (await readFile(path.join(root, "assets", filename), "utf8"))
+			.replace(/\/\*[\s\S]*?\*\//g, "");
+		const classes = new Set();
+		for (const rule of css.matchAll(/([^{}]+)\{/g)) {
+			const selector = rule[1].trim();
+			if (selector.startsWith("@")) continue;
+			for (const match of selector.matchAll(/\.([_a-zA-Z][\w-]*)/g)) {
+				classes.add(match[1]);
+			}
+		}
+		const unused = [...classes].filter((className) => !usedClasses.has(className));
 		if (unused.length) failures.push(`${filename}: ${unused.sort().join(", ")}`);
 	}
 

@@ -4,19 +4,15 @@
   Cache-Control: public, max-age=0, must-revalidate
 /assets/commit-mono-v143.woff2
   Cache-Control: public, max-age=31536000, immutable
-/assets/docs.b20a2e62.css
+/assets/docs.5a1cd6e0.css
   Cache-Control: public, max-age=31536000, immutable
 /assets/favicon-48.png
   Cache-Control: public, max-age=0, must-revalidate
 /assets/favicon.svg
   Cache-Control: public, max-age=0, must-revalidate
-/assets/jetbrains-mono-700-latin.woff2
-  Cache-Control: public, max-age=31536000, immutable
-/assets/newsreader-opsz-wght.woff2
-  Cache-Control: public, max-age=31536000, immutable
 /assets/social-card.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/wordmark-accent.svg
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/wyst.a60851b2.css
+/assets/wyst.30367495.css
   Cache-Control: public, max-age=31536000, immutable

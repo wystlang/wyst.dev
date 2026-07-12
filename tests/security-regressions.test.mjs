@@ -124,8 +124,11 @@ test("preview server listens on loopback instead of every interface", async (t) 
 
 test("pre-commit artifact rebuild trigger includes every deployed source directory", async () => {
 	const hook = await readFile(new URL("../.githooks/pre-commit", import.meta.url), "utf8");
-	const pattern = hook.match(/grep -Eq '([^']+)'/)?.[1];
-	assert.ok(pattern, "pre-commit hook should use a grep -Eq rebuild trigger");
+	const patterns = [...hook.matchAll(/grep -Eq '([^']+)'/g)].map((match) => match[1]);
+	assert.ok(
+		patterns.length >= 2,
+		"pre-commit hook should separate docs and artifact inputs",
+	);
 
 	for (const path of [
 		"index.html",
@@ -133,9 +136,20 @@ test("pre-commit artifact rebuild trigger includes every deployed source directo
 		"assets/wyst.css",
 		"docs/index.html",
 		"build/generate.mjs",
+		"build/generate-404.mjs",
+		"build/template.mjs",
+		"build/prism-wyst.mjs",
+		"tools/prepare-worker-assets.mjs",
 	]) {
-		assert.equal(hookPatternMatches(pattern, path), true, `${path} should trigger rebuild`);
+		assert.equal(
+			patterns.some((pattern) => hookPatternMatches(pattern, path)),
+			true,
+			`${path} should trigger rebuild`,
+		);
 	}
+	assert.match(hook, /npm run --silent build\b/);
+	assert.match(hook, /git add docs/);
+	assert.match(hook, /git add 404\.html \.worker-assets/);
 });
 
 test("stable favicon assets always revalidate", async () => {

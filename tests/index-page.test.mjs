@@ -371,7 +371,7 @@ test("wide reference pages anchor both indexes around centered content", () => {
 	);
 });
 
-test("shared identity uses the integrated punctuation-free wordmark", () => {
+test("shared identity uses the integrated wordmark", () => {
 	for (const [name, pageHtml] of [
 		["home", html],
 		["source-of-truth docs", docsSourceOfTruthHtml],
@@ -382,11 +382,6 @@ test("shared identity uses the integrated punctuation-free wordmark", () => {
 			header,
 			/<img\b(?=[^>]*\bclass="brand-wordmark")(?=[^>]*\bsrc="\/?assets\/wordmark-accent\.svg\?v=7ce9ef2b")(?=[^>]*\bwidth="87")(?=[^>]*\bheight="48")(?=[^>]*\balt="")(?=[^>]*\baria-hidden="true")[^>]*>/i,
 			`${name} should use the integrated accent wordmark`,
-		);
-		assert.doesNotMatch(
-			header,
-			/\bclass="(?:mark|cc)"|wyst::/i,
-			`${name} should not retain the punctuation or four-block identity`,
 		);
 		assert.match(pageHtml, /<meta name="color-scheme" content="dark" \/>/);
 		assert.match(pageHtml, /<meta name="theme-color" content="#0B0D12" \/>/);
@@ -456,8 +451,8 @@ test("shared identity uses the integrated punctuation-free wordmark", () => {
 		}
 	}
 
-	assert.match(siteCss, /font-family:\s*"Newsreader"/);
 	assert.match(siteCss, /font-family:\s*"Commit Mono"/);
+	assert.equal(siteCss.match(/@font-face/g)?.length, 1);
 	assert.match(siteCss, /--sans:\s*ui-sans-serif/);
 	assert.match(siteCss, /body\s*\{[\s\S]*?font-family:\s*var\(--sans\)/);
 	assert.match(

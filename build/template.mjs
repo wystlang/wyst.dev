@@ -204,20 +204,15 @@ export function docIndexPage({
 }
 
 // Error pages use the same quiet working-copy language as the rest of the site.
-// `fault` is an optional { code, text } monospace detail; `actions` is an
-// optional array of plain links.
+// `actions` is an optional array of plain links.
 export function errorPage({
 	title,
 	description,
 	eyebrow,
-	fault,
 	h1,
 	bodyHtml,
 	actions = [],
 }) {
-	const faultHtml = fault
-		? `<p class="nf-fault"><code>${escapeHtml(fault.code)}</code><span>${escapeHtml(fault.text)}</span></p>`
-		: "";
 	const actionsHtml = actions
 		.map((a) => {
 			const rel = /^https?:/i.test(a.href) ? ' rel="noopener"' : "";
@@ -227,7 +222,7 @@ export function errorPage({
 	const actionsBlock = actionsHtml
 		? `<nav class="nf-links" aria-label="Error page links">\n\t\t\t\t\t${actionsHtml}\n\t\t\t\t</nav>`
 		: "";
-	const contentHtml = [faultHtml, bodyHtml, actionsBlock]
+	const contentHtml = [bodyHtml, actionsBlock]
 		.filter(Boolean)
 		.join("\n\t\t\t\t");
 	const body = `		<main id="main" class="nf-main">

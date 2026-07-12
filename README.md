@@ -32,8 +32,9 @@ so deploys remain plain static files with no build step on Cloudflare's side.
 
 Website-ready brand exports and source design-system CSS snapshots come from
 `wystlang/brand`. The site still serves assets from stable `/assets/...` URLs;
-`tools/sync-brand-assets.mjs` copies the approved files from a local checkout
-of the brand repo into this repo's `assets/` directory.
+`tools/sync-brand-assets.mjs` replaces this repo's `assets/` directory with the
+approved web manifest from a local checkout of the brand repo. Removed manifest
+entries are pruned instead of lingering as stale public assets.
 
 The brand repo is not a submodule here. That keeps Cloudflare Workers Builds
 from needing access to the private `wystlang/brand` repository during checkout.
@@ -101,11 +102,10 @@ git add .worker-assets
 
 ### Automatic regeneration (git hook)
 
-A tracked `pre-commit` hook in `.githooks/` runs the two steps above for you:
-whenever a commit touches `index.html`, `404.html`, `assets/`, or `docs/`, it
-regenerates `.worker-assets/` and stages it, so the deploy
-artifact can never fall out of sync with the source (the cause of "I pushed but
-the live site didn't change").
+A tracked `pre-commit` hook in `.githooks/` regenerates docs when their build
+scripts change, then refreshes `404.html` and `.worker-assets/` whenever a
+deployed source or artifact tool changes. It stages the generated files so the
+deploy artifact cannot drift from its sources.
 
 The hook is activated by pointing git at `.githooks/`, which the `prepare`
 script does automatically on `npm install`. To enable it manually in an existing

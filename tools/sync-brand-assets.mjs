@@ -1,4 +1,11 @@
-import { copyFile, mkdir, stat } from "node:fs/promises";
+import {
+	copyFile,
+	mkdir,
+	mkdtemp,
+	rename,
+	rm,
+	stat,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,23 +46,26 @@ const files = [
 	["web-icons/favicon-48.png", "favicon-48.png"],
 	["web-icons/favicon.svg", "favicon.svg"],
 	["marketing/social-card.png", "social-card.png"],
-	["typography/newsreader-opsz-wght.woff2", "newsreader-opsz-wght.woff2"],
 	["typography/commit-mono-v143.woff2", "commit-mono-v143.woff2"],
-	["typography/Newsreader-OFL.txt", "licenses/Newsreader-OFL.txt"],
 	["typography/CommitMono-OFL.txt", "licenses/CommitMono-OFL.txt"],
-	["typography/jetbrains-mono-700-latin.woff2", "jetbrains-mono-700-latin.woff2"],
-	["typography/JetBrainsMono-OFL.txt", "licenses/JetBrainsMono-OFL.txt"],
 	["design-system/wyst.dev/wyst.css", "wyst.css"],
 	["design-system/wyst.dev/docs.css", "docs.css"],
 ];
 
 const brandRoot = await resolveBrandRoot();
-await mkdir(assetsDir, { recursive: true });
+const stagingDir = await mkdtemp(path.join(root, ".assets-sync-"));
 
-for (const [from, to] of files) {
-	const destination = path.join(assetsDir, to);
-	await mkdir(path.dirname(destination), { recursive: true });
-	await copyFile(path.join(brandRoot, from), destination);
+try {
+	for (const [from, to] of files) {
+		const destination = path.join(stagingDir, to);
+		await mkdir(path.dirname(destination), { recursive: true });
+		await copyFile(path.join(brandRoot, from), destination);
+	}
+	await rm(assetsDir, { recursive: true, force: true });
+	await rename(stagingDir, assetsDir);
+} catch (error) {
+	await rm(stagingDir, { recursive: true, force: true });
+	throw error;
 }
 
 console.log(`Synced ${files.length} brand assets from ${brandRoot}`);

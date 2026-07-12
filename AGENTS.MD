@@ -3,11 +3,12 @@
 ## Project Structure & Module Organization
 
 This repo is the static website and generated documentation site for Wyst.
-`index.html` and `404.html` are hand-edited pages. Shared site styling and web
-assets live in `assets/`; keep `assets/wyst.css` as the common design system and
-`assets/docs.css` for documentation prose. `build/` contains the Markdown to
-HTML generator, page template, Prism grammar, and local static server. `docs/`
-is generated from the compiler repo's `design/` docs and must be committed.
+`index.html` is hand edited; `404.html` is generated from the shared template.
+Shared site styling and web assets live in `assets/`; keep `assets/wyst.css` as
+the common design system and `assets/docs.css` for documentation prose.
+`build/` contains the Markdown to HTML generator, page template, Prism grammar,
+and local static server. `docs/` is generated from the compiler repo's
+`design/` docs and must be committed.
 `.worker-assets/` is also committed because Cloudflare deploys that artifact.
 
 ## Build, Test, and Development Commands

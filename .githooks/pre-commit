@@ -1,18 +1,21 @@
 #!/bin/sh
 #
-# Keep the committed Worker deploy artifact (.worker-assets/) in sync with the
-# site sources. Cloudflare serves .worker-assets/, so it must be regenerated and
-# committed alongside any change to index.html, 404.html, assets/, docs/, or
-# the build/ scripts that produce them — otherwise the live site
-# won't update. See README "Cloudflare deployment".
+# Keep generated docs and the committed Worker deploy artifact in sync with
+# their sources. See README "Cloudflare deployment".
 #
 # Activated via core.hooksPath (set by the package.json "prepare" script).
 set -e
 
-# Only rebuild when this commit actually touches a source input. build:worker-assets
-# regenerates 404.html (from build/) before assembling the artifact.
-if git diff --cached --name-only | grep -Eq '^(index\.html|404\.html|assets/|docs/|build/)'; then
+staged_paths=$(git diff --cached --name-only)
+
+if printf '%s\n' "$staged_paths" | grep -Eq '^build/(generate|template|prism-wyst)\.mjs$'; then
+	echo "pre-commit: refreshing docs/ from source…"
+	npm run --silent build
+	git add docs
+fi
+
+if printf '%s\n' "$staged_paths" | grep -Eq '^(index\.html|404\.html|assets/|docs/|build/(generate|generate-404|template|prism-wyst)\.mjs|tools/prepare-worker-assets\.mjs)'; then
 	echo "pre-commit: refreshing .worker-assets/ from source…"
 	npm run --silent build:worker-assets
-	git add .worker-assets
+	git add 404.html .worker-assets
 fi

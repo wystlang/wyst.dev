@@ -299,8 +299,7 @@ body.docs footer.site .wrap {
 	white-space: pre;
 }
 
-.wyst-code .token.comment,
-.wyst-code .token.prolog {
+.wyst-code .token.comment {
 	color: var(--syn-comment);
 	font-style: normal;
 }
@@ -355,8 +354,7 @@ body.docs footer.site .wrap {
 }
 
 .wyst-code .token.string,
-.wyst-code .token.char,
-.wyst-code .token.label {
+.wyst-code .token.char {
 	color: var(--syn-str);
 	font-weight: 550;
 }
