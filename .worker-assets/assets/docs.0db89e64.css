@@ -23,7 +23,6 @@
 	padding-bottom: clamp(64px, 9vw, 120px);
 }
 
-body.docs header.site .wrap,
 body.docs footer.site .wrap {
 	max-width: none;
 }

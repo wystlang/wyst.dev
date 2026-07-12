@@ -162,6 +162,11 @@ header.site {
 	background: var(--bg);
 }
 
+body.home-page header.site .wrap,
+body.docs header.site .wrap {
+	max-width: none;
+}
+
 .nav {
 	position: relative;
 	display: flex;
@@ -286,9 +291,10 @@ header.site {
 	margin: 0 auto;
 	padding-left: var(--pad);
 	padding-right: var(--pad);
-	grid-template-columns: minmax(300px, 0.76fr) minmax(560px, 1.24fr);
+	grid-template-columns: minmax(300px, 34rem) max-content;
 	gap: clamp(40px, 6vw, 96px);
 	align-items: center;
+	justify-content: center;
 }
 
 .notebook-hero {
@@ -345,6 +351,10 @@ header.site {
 .notebook-section {
 	min-width: 0;
 	padding: clamp(48px, 8vh, 96px) 0;
+}
+
+.source-artifact {
+	max-width: 32rem;
 }
 
 .notebook-heading {
@@ -488,12 +498,17 @@ footer.site {
 	}
 
 	.notebook-hero {
+		width: 100%;
 		max-width: 40rem;
 		padding-bottom: var(--space-2xl);
+		justify-self: center;
 	}
 
 	.notebook-section {
+		width: max-content;
+		max-width: 100%;
 		padding-top: 0;
+		justify-self: center;
 	}
 
 	.artifact {
@@ -546,6 +561,11 @@ footer.site {
 
 	.nav-links {
 		gap: var(--space-sm);
+	}
+
+	.notebook-section {
+		width: auto;
+		justify-self: stretch;
 	}
 
 	.source-artifact {

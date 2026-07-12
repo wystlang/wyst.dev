@@ -386,6 +386,14 @@ test("wide reference pages anchor both indexes around centered content", () => {
 	);
 });
 
+test("homepage and manual headers share the same outer positioning", () => {
+	assert.match(
+		siteCss,
+		/body\.home-page header\.site \.wrap,\s*body\.docs header\.site \.wrap\s*\{[^}]*max-width:\s*none;/,
+		"the homepage and manual headers should share full-width positioning",
+	);
+});
+
 test("shared identity uses the integrated wordmark", () => {
 	for (const [name, pageHtml] of [
 		["home", html],
@@ -515,8 +523,13 @@ test("homepage contains only the introduction and real example", () => {
 	);
 	assert.match(
 		siteCss,
-		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*0\.76fr\)\s+minmax\(560px,\s*1\.24fr\);/,
-		"the homepage should pair the introduction with a code-led split layout",
+		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*34rem\)\s+max-content;[\s\S]*?justify-content:\s*center;/,
+		"the homepage should center the introduction beside a content-sized example",
+	);
+	assert.match(
+		siteCss,
+		/\.source-artifact\s*\{[^}]*max-width:\s*32rem;/,
+		"the UART example should stay compact if its source grows",
 	);
 	assert.match(
 		siteCss,
@@ -527,6 +540,16 @@ test("homepage contains only the introduction and real example", () => {
 		siteCss,
 		/\.artifact\s*\{[\s\S]*?border:\s*1px solid var\(--line-2\);[\s\S]*?border-radius:\s*18px;/,
 		"the desktop code artifact should retain all four rounded corners",
+	);
+	assert.match(
+		siteCss,
+		/@media \(max-width:\s*960px\)\s*\{[\s\S]*?\.notebook-hero\s*\{[^}]*width:\s*100%;[^}]*justify-self:\s*center;[\s\S]*?\.notebook-section\s*\{[^}]*width:\s*max-content;[^}]*max-width:\s*100%;[^}]*justify-self:\s*center;/,
+		"the stacked hero and compact example should remain centered",
+	);
+	assert.match(
+		siteCss,
+		/@media \(max-width:\s*470px\)\s*\{[\s\S]*?\.notebook-section\s*\{[^}]*width:\s*auto;[^}]*justify-self:\s*stretch;/,
+		"the phone layout should restore the full-bleed example",
 	);
 });
 
