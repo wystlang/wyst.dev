@@ -261,6 +261,11 @@ test("homepage opens with a minimal personal introduction and separate project f
 	);
 	assert.doesNotMatch(
 		introText,
+		/\bpronounced\b/i,
+		"the pronunciation should be de-emphasized with the project metadata",
+	);
+	assert.doesNotMatch(
+		introText,
 		/—/,
 		"the personal introduction should not use em dashes",
 	);
@@ -269,6 +274,7 @@ test("homepage opens with a minimal personal introduction and separate project f
 			introText.indexOf("My day job"),
 		"the introduction should define Wyst before explaining the author's motivation",
 	);
+	assert.doesNotMatch(html, /<footer\b/i, "the homepage should not have a footer");
 
 	const projectMeta = textContent(
 		taggedElementWithOpeningMatch(
@@ -282,6 +288,8 @@ test("homepage opens with a minimal personal introduction and separate project f
 		["ARM64 only", /\bARM64-only\b/i],
 		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
 		["not memory-safe", /\bnot memory-safe\b/i],
+		["name pronunciation", /pronounced “wist”/i],
+		["name meaning", /old word meaning “to know”/i],
 	]) {
 		assert.match(projectMeta, pattern, `the metadata should say ${fact}`);
 	}
