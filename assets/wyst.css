@@ -328,9 +328,6 @@ header.site {
 }
 
 .project-meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-2xs) var(--space-md);
 	margin-top: var(--space-lg);
 	padding-top: var(--space-md);
 	border-top: 1px solid var(--line-solid);
@@ -338,6 +335,11 @@ header.site {
 	font-family: var(--mono);
 	font-size: var(--text-2xs);
 	line-height: 1.6;
+}
+
+.project-meta > span + span::before {
+	margin: 0 var(--space-xs);
+	content: "·";
 }
 
 .notebook-section {

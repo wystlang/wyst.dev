@@ -288,11 +288,18 @@ test("homepage opens with a minimal personal introduction and separate project f
 		["ARM64 only", /\bARM64-only\b/i],
 		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
 		["not memory-safe", /\bnot memory-safe\b/i],
-		["name pronunciation", /pronounced “wist”/i],
-		["name meaning", /old word meaning “to know”/i],
+		[
+			"name pronunciation and meaning",
+			/pronounced “wist,” an old word meaning “to know”/i,
+		],
 	]) {
 		assert.match(projectMeta, pattern, `the metadata should say ${fact}`);
 	}
+	assert.match(
+		siteCss,
+		/\.project-meta > span \+ span::before\s*\{[^}]*content:\s*"·";/s,
+		"the metadata should separate adjacent technical details",
+	);
 
 	for (const salesPhrase of [
 		"Build your first program",
