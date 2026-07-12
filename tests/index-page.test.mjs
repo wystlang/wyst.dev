@@ -297,7 +297,7 @@ test("homepage opens with a minimal personal introduction and separate project f
 	}
 	assert.match(
 		siteCss,
-		/\.project-meta > span \+ span::before\s*\{[^}]*content:\s*"·";/s,
+		/\.project-meta > span \+ span::before\s*\{(?=[^}]*margin-right:\s*1ch;)[^}]*content:\s*"·";/s,
 		"the metadata should separate adjacent technical details",
 	);
 

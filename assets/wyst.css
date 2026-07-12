@@ -338,7 +338,7 @@ header.site {
 }
 
 .project-meta > span + span::before {
-	margin: 0 var(--space-xs);
+	margin-right: 1ch;
 	content: "·";
 }
 
