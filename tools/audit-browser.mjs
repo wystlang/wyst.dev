@@ -58,7 +58,7 @@ async function stopProcess(child) {
 	}
 }
 
-async function poll(url, label, processOutput, attempts = 100) {
+async function poll(url, label, processOutput, attempts = 400) {
 	let lastError;
 	for (let attempt = 0; attempt < attempts; attempt++) {
 		try {
@@ -269,13 +269,15 @@ preview.stderr.on("data", (chunk) => {
 	previewOutput += chunk;
 });
 
+const chromeExecutable = chromeBinary();
 const chrome = spawn(
-	chromeBinary(),
+	chromeExecutable,
 	[
 		"--headless=new",
 		"--disable-background-networking",
 		"--disable-component-update",
 		"--disable-default-apps",
+		"--disable-dev-shm-usage",
 		"--disable-extensions",
 		"--disable-gpu",
 		"--disable-sync",
@@ -283,6 +285,7 @@ const chrome = spawn(
 		"--no-default-browser-check",
 		"--no-first-run",
 		...(process.env.CI ? ["--no-sandbox"] : []),
+		"--remote-debugging-address=127.0.0.1",
 		`--remote-debugging-port=${debugPort}`,
 		`--user-data-dir=${profile}`,
 		"about:blank",
@@ -307,7 +310,10 @@ try {
 	await poll(
 		`http://127.0.0.1:${debugPort}/json/version`,
 		"Chrome debugging endpoint",
-		() => chromeOutput,
+		() =>
+			`Chrome executable: ${chromeExecutable}\n` +
+			`Chrome exit code: ${chrome.exitCode ?? "running"}\n` +
+			chromeOutput,
 	);
 	const targetResponse = await fetch(
 		`http://127.0.0.1:${debugPort}/json/new?${encodeURIComponent("about:blank")}`,
