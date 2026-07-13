@@ -1,0 +1,55 @@
+#module boot.hello
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+UART0_BASE :: u64 = 0x0900_0000
+UARTDR :: @volatile u32 = UART0_BASE + 0x00
+UARTFR :: @volatile u32 = UART0_BASE + 0x18
+TXFF :: u32 = 0x20
+
+Pl011Prefix :: struct {
+    dr : u32
+    rsrecr : u32
+    reserved0 : [4]u32
+    fr : u32
+}
+
+#static_assert(#size_of(Pl011Prefix) == 28, "PL011 prefix size")
+#static_assert(#field_offset(Pl011Prefix, fr) == 0x18, "PL011 FR offset")
+
+uart_write :: (byte : u8) {
+    while (u32@[UARTFR] & TXFF) != 0 {
+        %nop()
+    }
+
+    u32@[UARTDR] = byte as.widen u32
+}
+
+uart_hello :: () {
+    uart_write('h')
+    uart_write('e')
+    uart_write('l')
+    uart_write('l')
+    uart_write('o')
+    uart_write('\n')
+}
+
+#noreturn
+kernel_main :: (dtb : @u8) {
+    uart_hello()
+    test_exit(0)
+}
+
+#[naked, noreturn]
+pub _start :: (dtb : @u8 #pin(x0)) {
+    #asm(sets_sp, effects: none) {
+        inputs {
+            stack = gpr(__stack_top)
+        }
+        body {
+            mov sp, {stack}
+        }
+    }
+
+    kernel_main(dtb)
+}

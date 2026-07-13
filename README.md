@@ -27,6 +27,9 @@ tools/
   audit-browser.mjs     Chrome mobile overflow and interaction gate
   audit-live-site.mjs   Post-deploy HTTPS, header, and injected-script gate
   prepare-worker-assets.mjs  Copies committed site files into .worker-assets/
+  sync-wyst-snapshot.mjs     Refreshes versioned docs and test inputs from Wyst
+tests/fixtures/wyst/    Versioned copies of the four Wyst fixtures used by tests
+vendor/wyst-design/     Versioned publication snapshot of the design reference
 ```
 
 The homepage and the docs share **one** design system (`assets/wyst.css`),
@@ -60,30 +63,34 @@ Only copy web-consumed exports and CSS into `assets/`. Keep source artwork,
 brand guidelines, licensing notes, and marketing source materials in
 `wystlang/brand`.
 
-## Documentation source
+## Wyst source and publication snapshots
 
-The reference manual lives in the **compiler repo** (`wystlang/wyst`) under `design/`,
-versioned alongside the compiler. This repo consumes generated HTML snapshots;
-never edit docs here.
+The reference manual's source of truth lives in the **compiler repo**
+(`wystlang/wyst`) under `design/`, versioned alongside the compiler. Make
+documentation and fixture edits there. This site repository keeps a reviewable
+publication snapshot of the top-level Markdown and `semantic-db.json` inputs in
+`vendor/wyst-design/`, plus only the four compiler fixtures its tests consume
+under `tests/fixtures/wyst/`.
 
-The generator resolves the docs directory in this order:
-
-1. `WYST_DOCS_DIR` (env override)
-2. `../wyst/design` (a sibling checkout)
-
-### Local docs source
-
-Keep `wystlang/wyst` checked out next to this repo, or set `WYST_DOCS_DIR`:
+`vendor/wyst-design/.source-commit` records the exact Wyst commit copied into a
+snapshot. The sync tool rejects uncommitted changes within the copied inputs, but
+ignores unrelated compiler worktree changes. Refresh both snapshots from
+`WYST_REPO_DIR` or a sibling `../wyst` checkout:
 
 ```sh
-gh repo clone wystlang/wyst ../wyst
-# or:
-WYST_DOCS_DIR=/path/to/wyst/design npm run build
+gh repo clone wystlang/wyst ../wyst # first time only, or set WYST_REPO_DIR
+npm run sync:wyst
 ```
 
-A fresh checkout of this repo does not need private submodule access. Cloudflare
-deploys committed static files directly and does not regenerate docs during
-deployment.
+The documentation generator resolves its input in this order:
+
+1. `WYST_DOCS_DIR` (explicit override)
+2. `../wyst/design` (authoritative sibling checkout for local development)
+3. `vendor/wyst-design` (versioned publication snapshot)
+
+CI explicitly selects `vendor/wyst-design`, so its checks need no
+credential for the private compiler repository. Cloudflare likewise deploys the
+committed static files without regenerating docs.
 
 ## Cloudflare deployment
 
@@ -155,10 +162,9 @@ committed artifact is deployed.
 
 `.github/workflows/site-integrity.yml` repeats the locked install, docs/sitemap
 generation, Worker asset preparation, tests, full public-reference audit, and
-all-route mobile Chrome audit. It fails if committed generated files drift.
-Configure the repository secret `WYST_REPO_TOKEN` as a fine-grained, read-only
-token for the private
-`wystlang/wyst` repository so CI can read the authoritative design sources.
+all-route mobile Chrome audit. It explicitly builds from the committed Wyst
+publication snapshot and fails if generated files drift. No compiler-repository
+token, deploy key, submodule, or private checkout is required.
 
 ## Build
 
@@ -169,6 +175,7 @@ npm run audit               # checks routes/assets/fragments/reachability
 npm run audit:browser       # checks every route at mobile width in Chrome
 npm run build               # regenerates docs/ and sitemap.xml
 npm run build:worker-assets # refreshes committed Worker deploy artifact
+npm run sync:wyst           # refreshes versioned Wyst docs/test snapshots
 npm run audit:live          # verifies the deployed edge configuration
 node build/serve.mjs        # preview at http://localhost:8347
 ```
@@ -179,16 +186,18 @@ Docs are edited in the compiler repo. To publish those changes here:
 
 ```sh
 # 1. edit + commit docs in the wystlang/wyst repo, then:
-WYST_DOCS_DIR=/path/to/wyst/design npm run build
+npm run sync:wyst # set WYST_REPO_DIR if the repo is not at ../wyst
+WYST_DOCS_DIR=vendor/wyst-design npm run build
 npm run build:worker-assets
-git add docs
+git add vendor/wyst-design tests/fixtures/wyst docs
 git add .worker-assets
 git commit -m "Update docs to <description>"
 git push                                    # Cloudflare deploys
 ```
 
-The generated HTML committed here is the reviewable deploy artifact. The site
-only changes when you deliberately regenerate and commit it.
+Commit the publication snapshot and its generated HTML together. The generated
+HTML remains the reviewable deploy artifact, and the site only changes when you
+deliberately sync, regenerate, and commit it.
 
 Keeping `.worker-assets/` committed is intentional: the Cloudflare build trigger
 runs `wrangler deploy` directly, and Wrangler uploads the configured directory as

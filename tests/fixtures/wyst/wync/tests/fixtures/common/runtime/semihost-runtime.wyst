@@ -1,0 +1,27 @@
+SEMIHOST_APPLICATION_EXIT :: u64 = 0x20026
+semihost_exit_reason : u64 = SEMIHOST_APPLICATION_EXIT
+semihost_exit_status : u64 = 1
+
+#noreturn
+test_exit :: (code : u64) {
+    semihost_exit_status = code
+
+    #asm(effects: trap) {
+        inputs {
+            args = gpr(#addr_of(semihost_exit_reason))
+        }
+        clobbers {
+            x0
+            x1
+        }
+        body {
+            mov x0, #0x18
+            mov x1, {args}
+            hlt #0xf000
+        }
+    }
+
+    loop {
+        %wfe()
+    }
+}

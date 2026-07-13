@@ -8,13 +8,13 @@ set -e
 
 staged_paths=$(git diff --cached --name-only)
 
-if printf '%s\n' "$staged_paths" | grep -Eq '^(package(-lock)?\.json|build/(generate|generate-sitemap|template|prism-wyst)\.mjs)$'; then
-	echo "pre-commit: refreshing docs/ from source…"
-	npm run --silent build
+if printf '%s\n' "$staged_paths" | grep -Eq '^(package(-lock)?\.json|vendor/wyst-design/|build/(generate|generate-sitemap|template|prism-wyst)\.mjs)$'; then
+	echo "pre-commit: refreshing docs/ from the publication snapshot…"
+	WYST_DOCS_DIR=vendor/wyst-design npm run --silent build
 	git add docs sitemap.xml
 fi
 
-if printf '%s\n' "$staged_paths" | grep -Eq '^(package(-lock)?\.json|index\.html|404\.html|robots\.txt|sitemap\.xml|assets/|docs/|build/(generate|generate-sitemap|generate-404|template|prism-wyst)\.mjs|tools/prepare-worker-assets\.mjs)'; then
+if printf '%s\n' "$staged_paths" | grep -Eq '^(package(-lock)?\.json|index\.html|404\.html|robots\.txt|sitemap\.xml|assets/|docs/|vendor/wyst-design/|build/(generate|generate-sitemap|generate-404|template|prism-wyst)\.mjs|tools/prepare-worker-assets\.mjs)'; then
 	echo "pre-commit: refreshing .worker-assets/ from source…"
 	npm run --silent build:worker-assets
 	git add 404.html sitemap.xml .worker-assets

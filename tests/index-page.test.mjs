@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -27,33 +28,44 @@ const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "ut
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
 const uartFixtureSource = await readFile(
-	new URL(`../../wyst/${UART_EXAMPLE_PATH}`, import.meta.url),
+	new URL(`./fixtures/wyst/${UART_EXAMPLE_PATH}`, import.meta.url),
 	"utf8",
 );
 const uartFixtureLayout = await readFile(
 	new URL(
-		"../../wyst/wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
+		"./fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 		import.meta.url,
 	),
 	"utf8",
 );
 const uartExpectedOutput = await readFile(
 	new URL(
-		"../../wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+		"./fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
 		import.meta.url,
 	),
 	"utf8",
 );
 const semihostRuntimeSource = await readFile(
 	new URL(
-		"../../wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
+		"./fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
 		import.meta.url,
 	),
 	"utf8",
 );
-const cargoManifest = fileURLToPath(
-	new URL("../../wyst/wync/Cargo.toml", import.meta.url),
-);
+
+function resolveCargoManifest() {
+	const candidates = [
+		process.env.WYST_REPO_DIR && resolve(process.env.WYST_REPO_DIR),
+		fileURLToPath(new URL("../../wyst", import.meta.url)),
+	].filter(Boolean);
+	for (const candidate of candidates) {
+		const manifest = join(candidate, "wync", "Cargo.toml");
+		if (existsSync(manifest)) return manifest;
+	}
+	return undefined;
+}
+
+const cargoManifest = resolveCargoManifest();
 
 function decodeHtml(text) {
 	return text
@@ -723,46 +735,54 @@ test("minimal homepage retains accessibility and safe external links", () => {
 	);
 });
 
-test("the complete UART fixture used by the homepage builds to an ELF", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "wyst-index-uart-"));
-	const sourcePath = join(dir, "main.wyst");
-	const layoutPath = join(dir, "layout.wyst");
-	const outputPath = join(dir, "uart-hello.elf");
+test(
+	"the complete UART fixture used by the homepage builds to an ELF",
+	{
+		skip: cargoManifest
+			? false
+			: "requires WYST_REPO_DIR or a sibling ../wyst compiler checkout",
+	},
+	async () => {
+		const dir = await mkdtemp(join(tmpdir(), "wyst-index-uart-"));
+		const sourcePath = join(dir, "main.wyst");
+		const layoutPath = join(dir, "layout.wyst");
+		const outputPath = join(dir, "uart-hello.elf");
 
-	try {
-		await writeFile(
-			sourcePath,
-			`${uartFixtureSource.trimEnd()}\n\n${semihostRuntimeSource}`,
-		);
-		await writeFile(layoutPath, uartFixtureLayout);
-
-		const result = spawnSync(
-			"cargo",
-			[
-				"run",
-				"--quiet",
-				"--locked",
-				"--manifest-path",
-				cargoManifest,
-				"--",
-				"build",
+		try {
+			await writeFile(
 				sourcePath,
-				"--layout",
-				layoutPath,
-				"-o",
-				outputPath,
-			],
-			{ encoding: "utf8", timeout: 120_000 },
-		);
+				`${uartFixtureSource.trimEnd()}\n\n${semihostRuntimeSource}`,
+			);
+			await writeFile(layoutPath, uartFixtureLayout);
 
-		assert.equal(
-			result.status,
-			0,
-			`uart-hello fixture should build\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
-		);
-		const elf = await readFile(outputPath);
-		assert.deepEqual([...elf.subarray(0, 4)], [0x7f, 0x45, 0x4c, 0x46]);
-	} finally {
-		await rm(dir, { recursive: true, force: true });
-	}
-});
+			const result = spawnSync(
+				"cargo",
+				[
+					"run",
+					"--quiet",
+					"--locked",
+					"--manifest-path",
+					cargoManifest,
+					"--",
+					"build",
+					sourcePath,
+					"--layout",
+					layoutPath,
+					"-o",
+					outputPath,
+				],
+				{ encoding: "utf8", timeout: 120_000 },
+			);
+
+			assert.equal(
+				result.status,
+				0,
+				`uart-hello fixture should build\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+			);
+			const elf = await readFile(outputPath);
+			assert.deepEqual([...elf.subarray(0, 4)], [0x7f, 0x45, 0x4c, 0x46]);
+		} finally {
+			await rm(dir, { recursive: true, force: true });
+		}
+	},
+);

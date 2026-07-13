@@ -17,6 +17,7 @@ on:
       - "sitemap.xml"
       - "tests/**"
       - "tools/**"
+      - "vendor/wyst-design/**"
       - "wrangler.jsonc"
   push:
     paths:
@@ -34,6 +35,7 @@ on:
       - "sitemap.xml"
       - "tests/**"
       - "tools/**"
+      - "vendor/wyst-design/**"
       - "wrangler.jsonc"
   workflow_dispatch:
 
@@ -55,27 +57,6 @@ jobs:
           path: wyst.dev
           persist-credentials: false
 
-      # The language reference is private and remains authoritative in the
-      # compiler repository. Configure WYST_REPO_TOKEN as a read-only token
-      # with access to wystlang/wyst.
-      - name: Require documentation source token
-        env:
-          WYST_REPO_TOKEN: ${{ secrets.WYST_REPO_TOKEN }}
-        shell: bash
-        run: |
-          if [[ -z "$WYST_REPO_TOKEN" ]]; then
-            echo "::error::Configure WYST_REPO_TOKEN with read access to wystlang/wyst"
-            exit 1
-          fi
-
-      - name: Check out documentation source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          repository: wystlang/wyst
-          path: wyst
-          token: ${{ secrets.WYST_REPO_TOKEN }}
-          persist-credentials: false
-
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -90,7 +71,7 @@ jobs:
       - name: Regenerate documentation and sitemap
         working-directory: wyst.dev
         env:
-          WYST_DOCS_DIR: ${{ github.workspace }}/wyst/design
+          WYST_DOCS_DIR: ${{ github.workspace }}/wyst.dev/vendor/wyst-design
         run: npm run build
 
       - name: Regenerate 404 and Worker assets

@@ -1,0 +1,508 @@
+---
+title: "Chapter 5: Wyst Boot Entry Contract"
+group: chapter
+chapter: 5
+order: 5
+summary: "First runnable program shape, boot entry assumptions, and early runtime setup."
+---
+
+# Chapter 5: Wyst Boot Entry Contract
+
+> **Canonical scope.** A complete UART hello-world example end-to-end
+> followed by the boot entry contract for QEMU `virt`: reset
+> state, implications, the EL2 → EL1 drop with vector install, BSS zero,
+> DTB preservation, and the secondary-CPU PSCI `CPU_ON` example
+> Exception vectors live in
+> [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md); trap intrinsics
+> (`%svc`, `%hvc`, `%eret`) live in [chapter-11-intrinsics.md §1.3.4](chapter-11-intrinsics.md).
+
+The UART example is a complete program illustrating the boot-entry shape. The
+EL transitions, exception vectors, and SMP recipe depend on the machine
+primitive and exception-vector contracts linked above.
+
+---
+
+### Checked Entry Skeleton
+
+The minimal boot-entry shape is a no-return `_start` symbol:
+
+<!-- wyst-contract: check-pass -->
+```wyst
+#module boot
+
+#noreturn
+_start :: () {
+  loop {
+    %wfe()
+  }
+}
+```
+
+### Complete UART Example
+
+<!-- wyst-contract: sketch -->
+```wyst
+#module boot.hello
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+UART0_BASE :: u64 = 0x09_00_00_00
+UARTDR :: @volatile u32 = UART0_BASE + 0x00
+UARTFR :: @volatile u32 = UART0_BASE + 0x18
+TXFF :: u32 = 1 << 5
+STACK_TOP :: u64 = 0x4010_0000
+
+uart_write :: (byte : u8) {
+
+  while u32@[UARTFR] & TXFF != 0 {
+    %nop()
+  }
+
+  u32@[UARTDR] = byte as.widen u32
+}
+
+uart_print :: (msg : string) {
+
+  base := msg.data
+
+  i : u64 = 0
+
+  while i < msg.len {
+    uart_write(u8@[base + i])
+    i += 1
+  }
+}
+
+#[naked, noreturn]
+pub _start :: (dtb : @u8 #pin(x0)) {
+
+  #asm(sets_sp, effects: none) {
+    inputs {
+      stack = gpr(STACK_TOP)
+    }
+    body {
+      mov sp, {stack}
+    }
+  }
+
+  uart_print("Hi!\n")
+
+  loop {
+    %wfe()
+  }
+}
+```
+
+`sets_sp` is a stack-state verifier contract, not a `#deny` effect category.
+The `effects: none` annotation in the entry stub means the block introduces no
+tracked effect category while the separate `sets_sp` verifier proves that the
+stack pointer is initialized from the aligned `stack` input.
+
+---
+
+### Boot Entry Contract
+
+The reset state of an ARMv8-A CPU is platform-defined. This part
+specifies the contract Wyst assumes for the QEMU `virt` machine (the
+canonical development target) and provides a worked example of a
+minimal EL2-to-EL1 drop with vector-table installation.
+
+Programmers targeting real silicon must consult their platform's
+firmware/bootloader contract and adapt; the structure of the boot code
+is similar, but specific register values differ.
+
+---
+
+### QEMU `virt` Reset State
+
+On entry to the kernel image loaded via `qemu-system-aarch64 -machine virt`:
+
+| Item              | State at entry                                                                    |
+| ----------------- | --------------------------------------------------------------------------------- |
+| Exception Level   | EL2 (unless `-machine virtualization=off`, then EL1)                              |
+| PSTATE            | `EL2h`, DAIF = 1111 (all interrupts masked)                                       |
+| `x0`              | physical address of FDT (DTB) blob in RAM                                         |
+| `x1` – `x3`       | 0                                                                                 |
+| `x4` – `x30`      | undefined                                                                         |
+| `sp`              | **undefined** — must be initialized before any stack operation                    |
+| `pc`              | entry address as configured by `-kernel` (typically the image load address)       |
+| MMU               | disabled (`SCTLR_EL2.M = 0`)                                                      |
+| D-cache, I-cache  | disabled in `SCTLR_EL2`; cache contents undefined                                 |
+| `VBAR_EL2`        | undefined                                                                         |
+| `VBAR_EL1`        | undefined                                                                         |
+| `TTBR0_EL2`, etc. | undefined                                                                         |
+| `HCR_EL2`         | reset value (`E2H = 0`, `RW = 1` on most QEMU versions, but verify)               |
+| Secondary CPUs    | halted in PSCI spin (CPU_ON through the platform PSCI conduit); not yet executing |
+
+Implications:
+
+1. **No stack until set.** Function calls, local variables, and anything
+   that touches `sp` is forbidden until `sp` is initialized. The first
+   instructions of `_start` must run in a `#naked` context (see [chapter-08-functions.md §2.7](chapter-08-functions.md))
+   or be tiny enough to live entirely in registers.
+
+2. **D-cache must be invalidated.** With the MMU off, the CPU bypasses
+   the cache for normal accesses, but the cache may hold stale lines
+   from prior firmware activity. Before enabling the MMU, the kernel
+   must invalidate the D-cache.
+
+3. **DTB must be preserved.** The DTB pointer in x0 is the only way to
+   discover device addresses, memory ranges, and the CPU topology. Save
+   it before any code path that may clobber x0.
+
+4. **VBAR_ELx must be installed before unmasking interrupts.** With
+   `VBAR_ELx` undefined and DAIF clear, any synchronous fault or async
+   interrupt jumps to an undefined address.
+
+---
+
+### Minimal EL2 → EL1 Drop with Vector Install
+
+This example walks from CPU reset at EL2 to executing kernel code at EL1
+with the vector table installed and the BSS zeroed. It uses only Wyst
+primitives covered in earlier parts.
+
+#### Layout module (`boot.layout`)
+
+<!-- wyst-contract: sketch -->
+```wyst
+#module boot.layout
+
+#region ram   : origin = 0x4000_0000, size = 128M, attrs = (readwrite)
+
+#section .text   : align = 16, in = ram
+#section .rodata : align = 16, after = .text
+#section .data   : align = 8,  after = .rodata
+#section .bss    : align = 16, after = .data
+
+#entry _start at 0x4008_0000           // QEMU virt loads kernel here
+
+pub __bss_start ::= #start(.bss)
+pub __bss_end   ::= #end(.bss)
+pub __stack_top :: u64 = 0x4010_0000   // 1MB of stack, top-down
+```
+
+#### Kernel module (`boot`)
+
+<!-- wyst-contract: sketch -->
+```wyst
+#module boot
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+// The compiler is invoked with `--layout boot.layout`.
+// Exported layout symbols such as __stack_top are available by bare name.
+// Entry point — invoked at EL2 by QEMU with DTB pointer in x0.
+// Must be #naked: sp is undefined; we cannot use stack until we set it.
+#[naked, noreturn]
+_start :: (dtb : @u8 #pin(x0)) {
+  // 1. Set up an initial stack (in EL2's sp_el2, which becomes sp here).
+  #asm(sets_sp, effects: none) {
+    inputs {
+      stack = gpr(__stack_top)
+    }
+    body {
+      mov sp, {stack}
+    }
+  }
+  %msr(SP_EL1, __stack_top) // stack for after the EL2 -> EL1 drop
+
+  // 2. Install VBAR_EL1 ahead of the drop.
+  %msr(VBAR_EL1, #addr_of(el1_vectors) as.address u64)
+  %isb()
+
+  // 3. Configure HCR_EL2: EL1 runs in AArch64.
+  %msr(HCR_EL2, 1 << 31) // RW = 1
+
+  // 4. Configure CPTR_EL2: allow FP/SIMD at EL1 (do not trap).
+  %msr(CPTR_EL2, 0x33ff)
+
+  // 5. Configure SCTLR_EL1 reset state: MMU off, caches off.
+  %msr(SCTLR_EL1, 0x30c5_0838)
+  %isb()
+
+  // 6. Configure SPSR_EL2: target EL1h, all DAIF masked.
+  %msr(SPSR_EL2, 0x3c5) // M=0101 (EL1h), DAIF=1111
+
+  // 7. Set ELR_EL2 to where we want EL1 to start.
+  %msr(ELR_EL2, #addr_of(el1_main) as.address u64)
+
+  // 8. eret: drop to EL1 with x0 (dtb) preserved as the EL1 first argument.
+  %eret()
+}
+
+// EL1 entry — runs after the drop. sp now refers to sp_el1.
+#noreturn
+el1_main :: (dtb : @u8 #pin(x0)) {
+  // 10. Zero BSS now that we are at EL1 with a usable stack.
+  addr := __bss_start
+  while addr < __bss_end {
+    u64@[addr] = 0
+    addr += 8
+  }
+
+  // 11. Hand off to high-level kernel init.
+  kernel_init(dtb)
+
+  loop {
+    %wfe()
+  }
+}
+```
+
+The stack-setting assembly is inline in `_start` rather than a helper call:
+before that block executes, `sp` is undefined, and ordinary calls are illegal
+under the `#naked` verifier.
+
+#### Vector declarations (same program module)
+
+<!-- wyst-contract: sketch -->
+```wyst
+el1_vectors :: #exception_vector {
+  current_el_sp0_sync : #ventry(label = "el1t_sync") {
+    goto unexpected
+  }
+  current_el_sp0_irq : #ventry(label = "el1t_irq") {
+    goto unexpected
+  }
+  current_el_sp0_fiq : #ventry(label = "el1t_fiq") {
+    goto unexpected
+  }
+  current_el_sp0_serror : #ventry(label = "el1t_serror") {
+    goto unexpected
+  }
+
+  current_el_spx_sync : #ventry(label = "el1h_sync") {
+    goto handle_sync
+  }
+  current_el_spx_irq : #ventry(label = "el1h_irq") {
+    goto handle_irq
+  }
+  current_el_spx_fiq : #ventry(label = "el1h_fiq") {
+    goto unexpected
+  }
+  current_el_spx_serror : #ventry(label = "el1h_serror") {
+    goto unexpected
+  }
+
+  lower_el_aarch64_sync : #ventry(label = "el0_sync") {
+    goto unexpected
+  }
+  lower_el_aarch64_irq : #ventry(label = "el0_irq") {
+    goto unexpected
+  }
+  lower_el_aarch64_fiq : #ventry(label = "el0_fiq") {
+    goto unexpected
+  }
+  lower_el_aarch64_serror : #ventry(label = "el0_serror") {
+    goto unexpected
+  }
+
+  lower_el_aarch32_sync : #ventry(label = "el0_32_sync") {
+    loop {
+      %wfe()
+    }
+  }
+  lower_el_aarch32_irq : #ventry(label = "el0_32_irq") {
+    loop {
+      %wfe()
+    }
+  }
+  lower_el_aarch32_fiq : #ventry(label = "el0_32_fiq") {
+    loop {
+      %wfe()
+    }
+  }
+  lower_el_aarch32_serror : #ventry(label = "el0_32_serror") {
+    loop {
+      %wfe()
+    }
+  }
+}
+
+handle_sync :: label #noreturn {
+  // Read ESR_EL1 to dispatch on exception class.
+  esr := %mrs(ESR_EL1)
+  // ... full dispatch elided ...
+  loop {
+    %wfe()
+  }
+}
+
+handle_irq :: label #noreturn {
+  // GIC EOI dispatch — elided.
+  loop {
+    %wfe()
+  }
+}
+
+unexpected :: label #noreturn {
+  loop {
+    %wfe()
+  }
+}
+```
+
+---
+
+### Secondary CPU Bring-Up (PSCI)
+
+QEMU `virt` advertises PSCI through the DTB. After the primary CPU
+parses the DTB to discover the secondary CPUs' MPIDR values, it brings
+each online with the PSCI `CPU_ON` SMCCC call. The EL2 SMP example
+uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
+conduit when the DTB says so.
+
+<!-- wyst-contract: sketch -->
+```wyst
+psci_cpu_on :: (mpidr : u64, entry_point : u64, context_id : u64) -> u64 {
+  status : u64 #pin(x0) = 0
+  #asm(effects: trap) {
+    inputs {
+      func_id = gpr(0xC400_0003) // PSCI_CPU_ON (SMC64)
+      target = gpr(mpidr)
+      ep = gpr(entry_point)
+      ctx = gpr(context_id)
+    }
+    outputs {
+      ret = gpr(status) // x0 holds the return code
+    }
+    clobbers {
+      x1
+      x2
+      x3
+      x4
+      x5
+      x6
+      x7
+      x8
+      x16
+      x17
+      x30
+      memory
+      cc
+    }
+    body {
+      mov x0, {func_id}
+      mov x1, {target}
+      mov x2, {ep}
+      mov x3, {ctx}
+      smc #0
+    }
+  }
+  return status
+}
+```
+
+The entry point for secondary CPUs is a separate Wyst function with the
+same `#naked` discipline as `_start`. Each secondary sets up its own
+stack (typically from a per-CPU stack array indexed by MPIDR or by an
+atomically-incremented online counter), installs `VBAR_EL1`, and joins
+the kernel scheduler.
+
+#### QEMU `virt` SMP Recipe
+
+This SMP bring-up recipe is intentionally narrow: QEMU `virt`, EL2 entry, PSCI via
+`smc #0`, two Cortex-A53 CPUs, and a checked shared-memory handoff. It is
+not a scheduler, per-CPU-storage implementation, or generic topology
+probe.
+
+The smoke run uses this command shape:
+
+```sh
+qemu-system-aarch64 \
+  -machine virt,virtualization=on \
+  -cpu cortex-a53 \
+  -smp 2 \
+  -display none \
+  -monitor none \
+  -serial file:<uart-log> \
+  -semihosting-config enable=on,target=native \
+  -kernel <18-smp-smoke.elf>
+```
+
+The example assumes QEMU's second CPU has MPIDR value `0x1`; production
+boot code must discover MPIDRs from the DTB before issuing `CPU_ON`.
+
+The handoff protocol is visible in the source:
+
+1. The primary CPU initializes the shared command, ready, value, and
+   wait-count words, then runs `dsb ish`.
+2. The primary calls PSCI `CPU_ON` with x0=`0xC400_0003`,
+   x1=`secondary MPIDR`, x2=`secondary_start`, x3=`context`.
+3. The primary stores the start command, runs `dsb ish`, and sends `sev`.
+4. The secondary starts at a `#naked` entry, installs its own stack, reads
+   `MPIDR_EL1` for inspection, and waits with `wfe` until the command word
+   changes.
+5. The secondary runs `dsb ish`, writes the checked value, runs `dsb ish`,
+   writes the ready word, runs `dsb ish`, and sends `sev`.
+6. The primary polls with a bounded loop and `yield`; on success it checks
+   the value and emits `SMP ok\n` over the PL011 UART. Any PSCI failure,
+   mismatched value, or timeout exits through the semihosting panic path.
+
+The barriers are deliberately written in the source. Wyst does not infer
+the SMP synchronization sequence, does not insert implicit cache
+maintenance, and does not rewrite the wait loop into a runtime primitive.
+
+---
+
+### Boot-Time Cache and TLB Maintenance
+
+| When                                   | Required sequence                                                      |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| Before enabling MMU                    | invalidate D-cache (`dc isw` walk; `ic iallu`); `dsb sy`; `isb`        |
+| After writing `TTBR0_EL1` / `TCR_EL1`  | `dsb ish`; `tlbi vmalle1`; `dsb ish`; `isb`                            |
+| After enabling MMU (`SCTLR_EL1.M = 1`) | `isb`                                                                  |
+| Before unmasking interrupts            | ensure `VBAR_EL1` is set and `isb` has run since the most recent `msr` |
+
+D-cache walk-and-invalidate via `dc isw` is iterative (cache-level-by-set-by-way);
+it is verbose and typically lives in a separate helper function that
+reads the architectural CLIDR and CCSIDR registers to discover the topology. Wyst source should
+provide this as a library; it is too long to inline in every boot sequence.
+
+---
+
+### What This Contract Does Not Cover
+
+- **U-Boot / EDK2 hand-off conventions** — those bootloaders deliver
+  control with a different register and memory state (e.g. U-Boot 64-bit
+  ARM passes DTB in x0, args 0 elsewhere; image already EL2). The
+  contract above applies after the bootloader exits to the kernel; the
+  kernel-side code is unchanged.
+- **Real-silicon power-on reset** — Cortex-A processors have additional
+  reset-time setup (errata workarounds, cluster-controller programming,
+  CCI / CMN snoop-filter configuration) that the boot ROM normally
+  handles. Wyst code typically picks up from a known-good state after
+  this is done.
+- **Secure-world entry (EL3 / TrustZone)** — Wyst supports EL3 system
+  registers and traps via `#target(... el = 3)`, but the EL3 reset
+  contract is highly platform-specific (TF-A's `bl1`/`bl2` boot
+  sequence). Not covered here.
+
+---
+
+### Design Rationale
+
+| Choice                                    | Reason                                                                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Document QEMU `virt` specifically         | It is the canonical target. Generalizing across all ARMv8 platforms would dilute the contract into "depends on your firmware."               |
+| `_start` is `#naked` + `#noreturn`        | `sp` is undefined; using locals before sp-init would clobber whatever happens to be in `[sp]`. `#noreturn` because the EL1 entry takes over. |
+| `%eret` to drop EL, not `bl` or `b`       | Architecturally, EL transitions are exception returns. `bl` from EL2 to an EL1 address simply stays at EL2.                                  |
+| Vector install before enabling interrupts | Establishes a known target for any synchronous fault. Without it, a stray fault becomes an undefined-PC jump.                                |
+| BSS zeroing at EL1, after the drop        | Requires a working stack and EL1 MMU-off mode. Cleaner than embedding the zero loop in the `#naked` `_start`.                                |
+| Cache invalidation library, not inline    | The CLIDR/CCSIDR walk is verbose, error-prone, and the same across every kernel; it belongs in a shared utility.                             |
+
+---
+
+## Final Direction
+
+The syntax should optimize for:
+
+- visible semantics
+- predictable lowering
+- explicit memory behavior
+- readable machine-oriented programming
+
+The core principle remains:
+
+> expose computational behavior rather than hiding it.

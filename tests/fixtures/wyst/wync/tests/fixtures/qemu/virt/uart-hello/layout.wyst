@@ -1,0 +1,9 @@
+#module layout
+
+#region ram : origin = 0x4008_0000, size = 0x0008_0000, attrs = (readwrite)
+#entry _start at 0x4008_0000
+
+__image_base :: u64 = 0x4008_0000
+__stack_top :: u64 = 0x4010_0000
+__bss_start :: u64 = #start(.bss)
+__bss_end :: u64 = #end(.bss)

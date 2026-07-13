@@ -12,6 +12,7 @@
     "build": "node build/generate.mjs && node build/generate-sitemap.mjs",
     "build:worker-assets": "node build/generate-404.mjs && node tools/prepare-worker-assets.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
+    "sync:wyst": "node tools/sync-wyst-snapshot.mjs",
     "deploy": "wrangler deploy",
     "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
