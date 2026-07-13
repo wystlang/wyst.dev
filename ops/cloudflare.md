@@ -19,6 +19,7 @@ Worker entry point, runtime bindings, storage products, or request-time code.
 - Cloudflare Web Analytics injection remains disabled.
 - Bot or challenge features must not inject `/cdn-cgi/` JavaScript into normal
   site responses.
+- Persisted Worker logs and traces remain disabled through `wrangler.jsonc`.
 
 The production audit enforces these externally observable controls after every
 release and on a schedule. Dashboard-only settings are not silently changed by

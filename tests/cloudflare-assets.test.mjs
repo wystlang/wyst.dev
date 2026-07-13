@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -40,6 +40,7 @@ async function makeFixture(t) {
 			"compatibility_date": "2026-07-13",
 			"workers_dev": false,
 			"preview_urls": false,
+			"observability": {"enabled": false},
 			"assets": {
 				"directory": "./public",
 				"html_handling": "auto-trailing-slash",
@@ -77,6 +78,19 @@ test("Cloudflare validator rejects Worker code and release-surface config drift"
 	await assert.rejects(
 		validateCloudflareAssets(fixture),
 		/unsupported release configuration: main/,
+	);
+});
+
+test("Cloudflare validator requires disabled Worker observability", async (t) => {
+	const fixture = await makeFixture(t);
+	const source = await readFile(fixture.configPath, "utf8");
+	await writeFile(
+		fixture.configPath,
+		source.replace('"observability": {"enabled": false}', '"observability": {"enabled": true}'),
+	);
+	await assert.rejects(
+		validateCloudflareAssets(fixture),
+		/Worker observability must remain disabled/,
 	);
 });
 
