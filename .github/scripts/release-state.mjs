@@ -10,10 +10,10 @@ function createdOnMilliseconds(deployment) {
 // Forty-five retry gaps allow 90 seconds for fast stale-manifest responses to
 // converge. The release driver's 180-second subprocess timeout remains the hard
 // wall-clock bound when requests themselves stall.
-const ORDINARY_ORIGIN_AUDIT_ATTEMPTS = 46;
-const ORDINARY_ORIGIN_RETRY_MS = 2000;
+const DEPLOYMENT_CONVERGENCE_AUDIT_ATTEMPTS = 46;
+const DEPLOYMENT_CONVERGENCE_RETRY_MS = 2000;
 
-export function ordinaryOriginContentAuditEnvironment(expectedIdentity) {
+function deploymentConvergenceAuditEnvironment(expectedIdentity) {
 	if (
 		!expectedIdentity ||
 		typeof expectedIdentity !== "object" ||
@@ -23,8 +23,24 @@ export function ordinaryOriginContentAuditEnvironment(expectedIdentity) {
 	}
 	return {
 		...expectedIdentity,
-		WYST_AUDIT_ATTEMPTS: String(ORDINARY_ORIGIN_AUDIT_ATTEMPTS),
-		WYST_AUDIT_RETRY_MS: String(ORDINARY_ORIGIN_RETRY_MS),
+		WYST_AUDIT_ATTEMPTS: String(DEPLOYMENT_CONVERGENCE_AUDIT_ATTEMPTS),
+		WYST_AUDIT_RETRY_MS: String(DEPLOYMENT_CONVERGENCE_RETRY_MS),
+	};
+}
+
+export function candidateVersionAuditEnvironment(expectedIdentity, versionId) {
+	if (typeof versionId !== "string" || !/^[\w.-]+$/.test(versionId)) {
+		throw new Error("candidate version ID is invalid");
+	}
+	return {
+		...deploymentConvergenceAuditEnvironment(expectedIdentity),
+		WYST_VERSION_ID: versionId,
+	};
+}
+
+export function ordinaryOriginContentAuditEnvironment(expectedIdentity) {
+	return {
+		...deploymentConvergenceAuditEnvironment(expectedIdentity),
 		WYST_CONTENT_ONLY: "1",
 	};
 }

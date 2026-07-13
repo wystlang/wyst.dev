@@ -9,6 +9,7 @@ import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
 	assertWorkerSubdomainsDisabled,
+	candidateVersionAuditEnvironment,
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
 	ordinaryOriginContentAuditEnvironment,
@@ -114,7 +115,7 @@ test("release requires both workers.dev and version previews to be disabled", ()
 	);
 });
 
-test("ordinary-origin verification allows bounded deployment convergence", () => {
+test("release audits allow bounded deployment convergence", () => {
 	const identity = {
 		WYST_EXPECTED_COMMIT: "a".repeat(40),
 		WYST_EXPECTED_MANIFEST_SHA256: "b".repeat(64),
@@ -128,6 +129,12 @@ test("ordinary-origin verification allows bounded deployment convergence", () =>
 		WYST_AUDIT_RETRY_MS: "2000",
 		WYST_CONTENT_ONLY: "1",
 	});
+	assert.deepEqual(candidateVersionAuditEnvironment(identity, "candidate.123"), {
+		...identity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "2000",
+		WYST_VERSION_ID: "candidate.123",
+	});
 	const retryDelayWindow =
 		(Number(environment.WYST_AUDIT_ATTEMPTS) - 1) *
 		Number(environment.WYST_AUDIT_RETRY_MS);
@@ -136,9 +143,13 @@ test("ordinary-origin verification allows bounded deployment convergence", () =>
 		() => ordinaryOriginContentAuditEnvironment(null),
 		/expected build identity/,
 	);
+	assert.throws(
+		() => candidateVersionAuditEnvironment(identity, ""),
+		/candidate version ID/,
+	);
 });
 
-test("ordinary-origin retries only until the exact promoted identity is visible", async (t) => {
+test("identity-bound audits retry only until the intended commit is visible", async (t) => {
 	const manifestBytes = await readFile(
 		path.join(root, "dist", ".well-known", "build.json"),
 	);
@@ -152,6 +163,8 @@ test("ordinary-origin retries only until the exact promoted identity is visible"
 	};
 
 	const stale = await mockedLiveAudit(t, {
+		WYST_CONTENT_ONLY: "0",
+		WYST_VERSION_ID: "candidate-version",
 		WYST_AUDIT_ATTEMPTS: "3",
 		WYST_AUDIT_RETRY_MS: "1",
 		WYST_EXPECTED_COMMIT: differentHex(exactIdentity.WYST_EXPECTED_COMMIT),
@@ -169,11 +182,16 @@ test("ordinary-origin retries only until the exact promoted identity is visible"
 	assert.match(stale.stderr, /live-site audit failed after 3 attempt\(s\)/);
 	assert.deepEqual(
 		stale.stderr.match(/WYST_TEST_FETCH \S+/g),
-		Array(3).fill("WYST_TEST_FETCH /.well-known/build.json"),
+		Array.from({ length: 3 }, () => [
+			"WYST_TEST_FETCH /__wyst-audit-redirect-probe",
+			"WYST_TEST_FETCH /.well-known/build.json",
+		]).flat(),
 	);
 
 	const corruptManifest = await mockedLiveAudit(t, {
 		...exactIdentity,
+		WYST_CONTENT_ONLY: "0",
+		WYST_VERSION_ID: "candidate-version",
 		WYST_AUDIT_ATTEMPTS: "46",
 		WYST_AUDIT_RETRY_MS: "1",
 		WYST_EXPECTED_MANIFEST_SHA256: differentHex(
@@ -185,12 +203,18 @@ test("ordinary-origin retries only until the exact promoted identity is visible"
 		corruptManifest.stderr,
 		/live-site audit failed after 1 attempt\(s\)/,
 	);
-	assert.deepEqual(corruptManifest.stderr.match(/WYST_TEST_FETCH \S+/g), [
-		"WYST_TEST_FETCH /.well-known/build.json",
-	]);
+	assert.deepEqual(
+		corruptManifest.stderr.match(/WYST_TEST_FETCH \S+/g),
+		[
+			"WYST_TEST_FETCH /__wyst-audit-redirect-probe",
+			"WYST_TEST_FETCH /.well-known/build.json",
+		],
+	);
 
 	const corruptAsset = await mockedLiveAudit(t, {
 		...exactIdentity,
+		WYST_CONTENT_ONLY: "0",
+		WYST_VERSION_ID: "candidate-version",
 		WYST_AUDIT_ATTEMPTS: "46",
 		WYST_AUDIT_RETRY_MS: "1",
 	});
@@ -207,6 +231,25 @@ test("ordinary-origin retries only until the exact promoted identity is visible"
 	assert.match(
 		corruptAsset.stderr,
 		/WYST_TEST_FETCH \/(?!\.well-known\/build\.json)/,
+	);
+
+	const monitorTransient = await mockedLiveAudit(t, {
+		...exactIdentity,
+		WYST_AUDIT_ATTEMPTS: "3",
+		WYST_AUDIT_RETRY_MS: "1",
+		WYST_CONTENT_ONLY: "0",
+		WYST_VERSION_ID: "",
+	});
+	assert.notEqual(monitorTransient.status, 0);
+	assert.match(
+		monitorTransient.stderr,
+		/live-site audit failed after 3 attempt\(s\)/,
+	);
+	assert.equal(
+		monitorTransient.stderr.match(
+			/WYST_TEST_FETCH \/\.well-known\/build\.json/g,
+		)?.length,
+		3,
 	);
 });
 

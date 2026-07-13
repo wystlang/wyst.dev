@@ -5,6 +5,7 @@ import { auditEnvironmentFor } from "../../tools/export-build-identity.mjs";
 import { verifyBuildIdentity } from "../../tools/verify-build.mjs";
 import {
 	assertWorkerSubdomainsDisabled,
+	candidateVersionAuditEnvironment,
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
 	newestDeploymentFrom,
@@ -342,12 +343,9 @@ async function main() {
 			"the bootstrap candidate at 100%",
 		);
 		try {
-			liveAudit({
-				...expectedIdentity,
-				WYST_AUDIT_ATTEMPTS: "8",
-				WYST_AUDIT_RETRY_MS: "1000",
-				WYST_VERSION_ID: candidateVersion,
-			});
+			liveAudit(
+				candidateVersionAuditEnvironment(expectedIdentity, candidateVersion),
+			);
 			browserAudit(candidateVersion);
 			liveAudit(ordinaryOriginContentAuditEnvironment(expectedIdentity));
 		} catch (error) {
@@ -370,12 +368,7 @@ async function main() {
 			{ [oldVersion]: 100, [candidateVersion]: 0 },
 			"the staged old/candidate traffic split",
 		);
-		liveAudit({
-			...expectedIdentity,
-			WYST_AUDIT_ATTEMPTS: "8",
-			WYST_AUDIT_RETRY_MS: "1000",
-			WYST_VERSION_ID: candidateVersion,
-		});
+		liveAudit(candidateVersionAuditEnvironment(expectedIdentity, candidateVersion));
 		browserAudit(candidateVersion);
 	} catch (error) {
 		console.error("Candidate audit failed; restoring the prior version at 100%.");

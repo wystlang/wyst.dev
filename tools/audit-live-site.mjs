@@ -524,14 +524,14 @@ async function auditOnce() {
 	} else {
 		await auditRedirects(failures);
 		if (policyOnly) await auditPolicyOnly(failures);
-		else await auditManifest(failures);
+		else promotedCommitObserved = await auditManifest(failures);
 	}
 	if (failures.length) {
 		const error = new Error(failures.join("\n"));
-		// Once the ordinary origin exposes the promoted commit, any remaining
-		// identity or file mismatch is corruption rather than deployment convergence.
-		// Return immediately so the release driver can roll back the known-good version.
-		if (contentOnly && verifiesExpectedIdentity && promotedCommitObserved) {
+		// Once the audited origin exposes the intended commit, any remaining identity,
+		// policy, or file mismatch is corruption rather than deployment convergence.
+		// Return immediately so the release driver can restore the known-good version.
+		if ((contentOnly || versionId) && verifiesExpectedIdentity && promotedCommitObserved) {
 			error.retryable = false;
 		}
 		throw error;
