@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+	assertWorkerSubdomainsDisabled,
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
 } from "../.github/scripts/release-state.mjs";
@@ -37,6 +38,26 @@ test("release exposes an explicit first-deployment state", () => {
 		true,
 	);
 	assert.equal(isWorkerNotFoundOutput("authentication failed"), false);
+});
+
+test("release requires both workers.dev and version previews to be disabled", () => {
+	assert.doesNotThrow(() =>
+		assertWorkerSubdomainsDisabled({ enabled: false, previews_enabled: false }),
+	);
+	assert.throws(
+		() =>
+			assertWorkerSubdomainsDisabled({ enabled: true, previews_enabled: false }),
+		/workers\.dev and version preview URLs must both be disabled/,
+	);
+	assert.throws(
+		() =>
+			assertWorkerSubdomainsDisabled({ enabled: false, previews_enabled: true }),
+		/workers\.dev and version preview URLs must both be disabled/,
+	);
+	assert.throws(
+		() => assertWorkerSubdomainsDisabled(null),
+		/settings are malformed/,
+	);
 });
 
 test("release rejects malformed deployment history and unsafe current splits", () => {

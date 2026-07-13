@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { auditEnvironmentFor } from "../../tools/export-build-identity.mjs";
 import { verifyBuildIdentity } from "../../tools/verify-build.mjs";
 import {
+	assertWorkerSubdomainsDisabled,
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
 	newestDeploymentFrom,
@@ -19,9 +20,17 @@ const MUTATION_TIMEOUT_MS = 90_000;
 const POLICY_AUDIT_TIMEOUT_MS = 90_000;
 const CONTENT_AUDIT_TIMEOUT_MS = 180_000;
 const BROWSER_AUDIT_TIMEOUT_MS = 240_000;
+const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+const cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN;
 
 if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(commit || "")) {
 	throw new Error("GITHUB_SHA must contain the full release commit object ID");
+}
+if (!/^[0-9a-f]{32}$/.test(cloudflareAccountId || "")) {
+	throw new Error("CLOUDFLARE_ACCOUNT_ID must contain a 32-character account ID");
+}
+if (!cloudflareApiToken) {
+	throw new Error("CLOUDFLARE_API_TOKEN is required for production releases");
 }
 
 function run(
@@ -108,6 +117,41 @@ function browserAudit(versionId) {
 		stripCloudflareCredentials: true,
 		timeoutMs: BROWSER_AUDIT_TIMEOUT_MS,
 	});
+}
+
+async function assertPrivateWorkerHostnames() {
+	const response = await fetch(
+		`https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/workers/scripts/wyst/subdomain`,
+		{
+			headers: {
+				accept: "application/json",
+				authorization: `Bearer ${cloudflareApiToken}`,
+				"user-agent": "wyst-release/1.0",
+			},
+			redirect: "error",
+			signal: AbortSignal.timeout(QUERY_TIMEOUT_MS),
+		},
+	);
+	let payload;
+	try {
+		payload = await response.json();
+	} catch {
+		throw new Error(
+			`Cloudflare Worker subdomain settings returned non-JSON status ${response.status}`,
+		);
+	}
+	if (!response.ok || payload?.success !== true) {
+		const codes = Array.isArray(payload?.errors)
+			? payload.errors
+					.map((error) => error?.code)
+					.filter((code) => Number.isSafeInteger(code))
+					.join(",")
+			: "";
+		throw new Error(
+			`Cloudflare Worker subdomain settings request failed with status ${response.status}${codes ? ` (codes ${codes})` : ""}`,
+		);
+	}
+	assertWorkerSubdomainsDisabled(payload.result);
 }
 
 function productionState() {
@@ -219,11 +263,6 @@ async function uploadedVersion(excludedVersionIds) {
 			});
 		const candidate = matches.at(-1)?.version;
 		if (candidate) {
-			if (candidate.metadata?.has_preview !== false) {
-				throw new Error(
-					`candidate ${candidate.id} has a public preview URL despite preview_urls=false`,
-				);
-			}
 			return candidate.id;
 		}
 		if (attempt < 5) {
@@ -251,6 +290,7 @@ async function main() {
 	if (oldVersion) {
 		console.log("Preflight: verify current edge policy without requiring build identity.");
 		liveAudit({ WYST_POLICY_ONLY: "1" });
+		await assertPrivateWorkerHostnames();
 		console.log(`Current production version: ${oldVersion}`);
 	} else if (workerExists) {
 		console.log(
@@ -286,6 +326,7 @@ async function main() {
 		]);
 	}
 	const candidateVersion = await uploadedVersion(preexistingVersionIds);
+	await assertPrivateWorkerHostnames();
 	console.log(`Candidate version: ${candidateVersion}`);
 
 	if (!oldVersion) {

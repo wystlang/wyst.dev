@@ -11,6 +11,17 @@ export function isWorkerNotFoundOutput(output) {
 	return /\[code:\s*(?:10007|10090)\]/.test(String(output || ""));
 }
 
+export function assertWorkerSubdomainsDisabled(settings) {
+	if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+		throw new Error("Cloudflare Worker subdomain settings are malformed");
+	}
+	if (settings.enabled !== false || settings.previews_enabled !== false) {
+		throw new Error(
+			"Cloudflare workers.dev and version preview URLs must both be disabled",
+		);
+	}
+}
+
 export function currentProductionVersionFrom(deployments) {
 	if (!Array.isArray(deployments)) {
 		throw new Error("Cloudflare deployments response must be an array");
