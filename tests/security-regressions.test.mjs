@@ -2,11 +2,21 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
-import { readFile } from "node:fs/promises";
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { createPreviewServer } from "../build/serve.mjs";
 
 const serveScript = fileURLToPath(new URL("../build/serve.mjs", import.meta.url));
 
@@ -58,10 +68,15 @@ async function waitForPreview(port, child) {
 	throw lastError || new Error("preview server did not start");
 }
 
-async function startPreview(t) {
+async function startPreview(t, environment = {}) {
 	const port = await getFreePort();
 	const child = spawn(process.execPath, [serveScript], {
-		env: { ...process.env, PORT: String(port) },
+		env: {
+			...process.env,
+			HOST: "127.0.0.1",
+			PORT: String(port),
+			...environment,
+		},
 		stdio: ["ignore", "pipe", "pipe"],
 	});
 	let output = "";
@@ -112,6 +127,90 @@ test("preview server listens on loopback instead of every interface", async (t) 
 	assert.equal(listener.status, 0, listener.stderr);
 	assert.doesNotMatch(listener.stdout, new RegExp(`TCP \\*:${preview.port}`));
 	assert.match(listener.stdout, new RegExp(`127\\.0\\.0\\.1:${preview.port}`));
+});
+
+test("preview server serves only indexed regular public files", async (t) => {
+	const fixture = await mkdtemp(path.join(os.tmpdir(), "wyst-preview-"));
+	t.after(() => rm(fixture, { recursive: true, force: true }));
+	const publicRoot = path.join(fixture, "public");
+	await Promise.all([
+		mkdir(path.join(publicRoot, "docs"), { recursive: true }),
+		mkdir(path.join(publicRoot, ".well-known"), { recursive: true }),
+	]);
+	const secret = path.join(fixture, "secret.txt");
+	await Promise.all([
+		writeFile(path.join(publicRoot, "index.html"), "home"),
+		writeFile(path.join(publicRoot, "404.html"), "missing"),
+		writeFile(path.join(publicRoot, "_headers"), "private release metadata"),
+		writeFile(path.join(publicRoot, "docs", "index.html"), "docs"),
+		writeFile(
+			path.join(publicRoot, ".well-known", "build.json"),
+			'{"siteCommit":"fixture"}\n',
+		),
+		writeFile(secret, "outside-root-sentinel"),
+	]);
+	await symlink(secret, path.join(publicRoot, "leak.txt"));
+
+	const preview = await startPreview(t, { WYST_OUTPUT_DIR: publicRoot });
+	for (const [urlPath, expected] of [
+		["/", "home"],
+		["/docs", "docs"],
+		["/docs/", "docs"],
+		["/.well-known/build.json", '{"siteCommit":"fixture"}\n'],
+	]) {
+		const response = await request(preview.port, urlPath);
+		assert.equal(response.statusCode, 200, urlPath);
+		assert.equal(response.body, expected, urlPath);
+	}
+
+	for (const urlPath of [
+		"/leak.txt",
+		"/_headers",
+		"/../secret.txt",
+		"/%2e%2e/secret.txt",
+		"/docs/%2e%2e/%2e%2e/secret.txt",
+	]) {
+		const response = await request(preview.port, urlPath);
+		assert.equal(response.statusCode, 404, urlPath);
+		assert.doesNotMatch(response.body, /outside-root-sentinel/, urlPath);
+	}
+
+	await writeFile(path.join(publicRoot, "index.html"), "rebuilt home");
+	await writeFile(path.join(publicRoot, "added.txt"), "added after startup");
+	const rebuilt = await request(preview.port, "/");
+	assert.equal(rebuilt.statusCode, 200);
+	assert.equal(rebuilt.body, "rebuilt home");
+	const added = await request(preview.port, "/added.txt");
+	assert.equal(added.statusCode, 200);
+	assert.equal(added.body, "added after startup");
+	await rm(path.join(publicRoot, "added.txt"));
+	assert.equal((await request(preview.port, "/added.txt")).statusCode, 404);
+});
+
+test("preview server never exposes request-handler errors", async (t) => {
+	const sentinel = "/private/workspace/secret.txt";
+	const server = createPreviewServer({
+		files: {
+			get() {
+				throw new Error(sentinel);
+			},
+		},
+		logError() {},
+	});
+	await new Promise((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", resolve);
+	});
+	t.after(
+		() =>
+			new Promise((resolve, reject) =>
+				server.close((error) => (error ? reject(error) : resolve())),
+			),
+	);
+	const response = await request(server.address().port, "/");
+	assert.equal(response.statusCode, 500);
+	assert.equal(response.body, "Internal Server Error");
+	assert.doesNotMatch(response.body, new RegExp(sentinel));
 });
 
 test("stable favicon assets always revalidate", async () => {

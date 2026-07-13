@@ -27,67 +27,118 @@ const TYPES = {
 	".txt": "text/plain; charset=utf-8",
 };
 
-function notFound(res) {
-	const notFoundPage = path.join(PUBLIC_ROOT, "404.html");
-	if (fs.existsSync(notFoundPage)) {
+function publicFileIndex(publicRoot) {
+	const files = new Map();
+
+	function add(urlPath, file) {
+		if (files.has(urlPath)) {
+			throw new Error(`duplicate preview URL: ${urlPath}`);
+		}
+		files.set(urlPath, file);
+	}
+
+	function walk(directory, segments = []) {
+		const entries = fs
+			.readdirSync(directory, { withFileTypes: true })
+			.sort((a, b) => a.name.localeCompare(b.name));
+		for (const entry of entries) {
+			if (
+				entry.name === "_headers" ||
+				(entry.name.startsWith(".") &&
+					!(segments.length === 0 && entry.name === ".well-known"))
+			) {
+				continue;
+			}
+
+			const childSegments = [...segments, entry.name];
+			const fullPath = path.join(directory, entry.name);
+			if (entry.isDirectory()) {
+				walk(fullPath, childSegments);
+				continue;
+			}
+			// The generated artifact validator rejects links and special files. Ignore
+			// them here as well so a custom preview tree cannot escape its root.
+			if (!entry.isFile()) continue;
+
+			const urlPath = `/${childSegments.join("/")}`;
+			const file = {
+				path: fullPath,
+				contentType:
+					TYPES[path.extname(entry.name)] || "application/octet-stream",
+			};
+			add(urlPath, file);
+			if (entry.name === "index.html") {
+				const directoryUrl = `/${segments.join("/")}`;
+				if (directoryUrl === "/") {
+					add("/", file);
+				} else {
+					add(directoryUrl, file);
+					add(`${directoryUrl}/`, file);
+				}
+			}
+		}
+	}
+
+	walk(publicRoot);
+	return files;
+}
+
+function notFound(res, files) {
+	const notFoundPage = files.get("/404.html");
+	if (notFoundPage) {
+		const body = fs.readFileSync(notFoundPage.path);
 		res.writeHead(404, { "content-type": TYPES[".html"] });
-		fs.createReadStream(notFoundPage).pipe(res);
+		res.end(body);
 		return;
 	}
 	res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
 	res.end("404");
 }
 
-function safePublicPath(req) {
-	let urlPath;
+function requestedPath(req) {
 	try {
-		urlPath = decodeURIComponent(req.url.split("?")[0]);
+		return decodeURIComponent((req.url || "/").split("?")[0]);
 	} catch {
 		return null;
 	}
-
-	const relativePath = urlPath.replace(/^\/+/, "") || "index.html";
-	const segments = relativePath.split("/");
-	if (
-		segments.some(
-			(segment, index) =>
-				(segment.startsWith(".") &&
-					!(index === 0 && segment === ".well-known")) ||
-				segment === "_headers",
-		)
-	) {
-		return null;
-	}
-
-	let fsPath = path.resolve(PUBLIC_ROOT, relativePath);
-	const relativeToRoot = path.relative(PUBLIC_ROOT, fsPath);
-	if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) {
-		return null;
-	}
-
-	if (fs.existsSync(fsPath) && fs.statSync(fsPath).isDirectory()) {
-		fsPath = path.join(fsPath, "index.html");
-	}
-
-	return fsPath;
 }
 
-http
-	.createServer((req, res) => {
+export function createPreviewServer({
+	publicRoot = PUBLIC_ROOT,
+	files,
+	logError = (error) => console.error("preview request failed", error),
+} = {}) {
+	return http.createServer((req, res) => {
 		try {
-			const fsPath = safePublicPath(req);
-			if (!fsPath || !fs.existsSync(fsPath)) {
-				notFound(res);
+			// Refreshing the trusted index preserves live rebuilds without deriving a
+			// filesystem path from the request URL.
+			const publicFiles = files || publicFileIndex(publicRoot);
+			const urlPath = requestedPath(req);
+			const file = urlPath === null ? null : publicFiles.get(urlPath);
+			if (!file) {
+				notFound(res, publicFiles);
 				return;
 			}
-			const ext = path.extname(fsPath);
-			res.writeHead(200, { "content-type": TYPES[ext] || "application/octet-stream" });
-			fs.createReadStream(fsPath).pipe(res);
-		} catch (e) {
-			res.writeHead(500, { "content-type": "text/plain" });
-			res.end(String(e));
+			const body = fs.readFileSync(file.path);
+			res.writeHead(200, { "content-type": file.contentType });
+			res.end(body);
+		} catch (error) {
+			logError(error);
+			if (res.headersSent) {
+				res.destroy();
+				return;
+			}
+			res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+			res.end("Internal Server Error");
 		}
-	})
-	.listen(PORT, HOST, () =>
+	});
+}
+
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	createPreviewServer().listen(PORT, HOST, () =>
 		console.log(`serving ${PUBLIC_ROOT} on http://${HOST}:${PORT}`),
 	);
+}

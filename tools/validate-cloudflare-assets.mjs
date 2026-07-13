@@ -309,8 +309,13 @@ export function validateHtml(source, relativePath) {
 	);
 	const titles = [...source.matchAll(/<title\b[^>]*>([\s\S]*?)<\/title>/gi)];
 	assert(titles.length === 1, `${relativePath} must contain exactly one title element`);
+	const titleSource = titles[0][1];
 	assert(
-		decodeHtml(titles[0][1].replace(/<[^>]*>/g, "")).trim().length > 0,
+		!titleSource.includes("<"),
+		`${relativePath} title must not contain raw markup`,
+	);
+	assert(
+		decodeHtml(titleSource).trim().length > 0,
 		`${relativePath} title must not be empty`,
 	);
 }

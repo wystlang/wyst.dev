@@ -49,6 +49,27 @@ function decodeHtml(text) {
 		.replaceAll("&amp;", "&");
 }
 
+function textOutsideTags(markup) {
+	let text = "";
+	let insideTag = false;
+	let quote = "";
+	for (const character of markup) {
+		if (!insideTag) {
+			if (character === "<") insideTag = true;
+			else text += character;
+			continue;
+		}
+		if (quote) {
+			if (character === quote) quote = "";
+		} else if (character === '"' || character === "'") {
+			quote = character;
+		} else if (character === ">") {
+			insideTag = false;
+		}
+	}
+	return text;
+}
+
 function textContent(markup) {
 	return decodeHtml(markup.replace(/<[^>]*>/g, " "))
 		.replace(/\s+/g, " ")
@@ -139,7 +160,7 @@ function uartExampleHtml() {
 }
 
 function sourceLines(markup) {
-	return decodeHtml(markup.replace(/<[^>]*>/g, ""))
+	return decodeHtml(textOutsideTags(markup))
 		.replaceAll("\r", "")
 		.split("\n")
 		.map((line) => line.trim())
@@ -626,7 +647,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 		/<([a-z][\w-]*)\b[^>]*(?:class="[^"]*\bterminal(?:-[\w-]+)?\b[^"]*"|data-terminal(?:-output)?(?:="[^"]*")?|aria-label="[^"]*UART output[^"]*")[^>]*>/i,
 		"UART example should include terminal output",
 	);
-	const terminalText = decodeHtml(terminal.replace(/<[^>]*>/g, ""));
+	const terminalText = decodeHtml(textOutsideTags(terminal));
 	assert.ok(
 		terminalText.includes(uartExpectedOutput.trim()),
 		"terminal should contain the fixture's real `hello` output",

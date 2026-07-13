@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
-import { makeMd } from "../build/generate.mjs";
+import { buildToc, makeMd } from "../build/generate.mjs";
 import { docPage } from "../build/template.mjs";
 
 const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
@@ -53,12 +53,32 @@ test("generated heading fragments match GitHub-style source links", () => {
 
 test("documentation markdown permits only the intentional safe HTML subset", () => {
 	const rendered = makeMd().render(
-		'<script>alert("x")</script>\n\ntext<br>next<img src=x onerror=alert(1)>\n\n<!-- wyst-contract: sketch -->\n',
+		'<SCRIPT type="text/javascript">alert("x")</SCRIPT>\n\ntext<br>next<IMG src=x onerror=alert(1)>\n\n<!-- wyst-contract: sketch -->\n',
 	);
-	assert.doesNotMatch(rendered, /<script>|<img\b/);
-	assert.match(rendered, /&lt;script&gt;alert\(&quot;x&quot;\)&lt;\/script&gt;/);
-	assert.match(rendered, /text<br>next&lt;img src=x onerror=alert\(1\)&gt;/);
+	assert.doesNotMatch(rendered, /<(?:script|img)\b/i);
+	assert.match(
+		rendered,
+		/&lt;SCRIPT type=&quot;text\/javascript&quot;&gt;alert\(&quot;x&quot;\)&lt;\/SCRIPT&gt;/,
+	);
+	assert.match(rendered, /text<br>next&lt;IMG src=x onerror=alert\(1\)&gt;/);
 	assert.doesNotMatch(rendered, /wyst-contract/);
+});
+
+test("documentation TOC derives escaped labels from parsed heading tokens", () => {
+	const md = makeMd();
+	const tokens = md.parse(
+		'## Memory `Layout` *model*\n\n### Raw <SCRIPT data-label="x">\n\n### Wrapped<br>line\n',
+		{},
+	);
+	const toc = buildToc(tokens);
+
+	assert.match(toc, />Memory Layout model<\/a>/);
+	assert.match(
+		toc,
+		/>Raw &lt;SCRIPT data-label=&quot;x&quot;&gt;<\/a>/,
+	);
+	assert.match(toc, />Wrapped line<\/a>/);
+	assert.doesNotMatch(toc, /<script\b/i);
 });
 
 test("mobile Contents is an ARIA disclosure backed by an external script", () => {
