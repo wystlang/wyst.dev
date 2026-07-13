@@ -8,6 +8,7 @@ import {
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
 	newestDeploymentFrom,
+	ordinaryOriginContentAuditEnvironment,
 } from "./release-state.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -348,12 +349,7 @@ async function main() {
 				WYST_VERSION_ID: candidateVersion,
 			});
 			browserAudit(candidateVersion);
-			liveAudit({
-				...expectedIdentity,
-				WYST_AUDIT_ATTEMPTS: "8",
-				WYST_AUDIT_RETRY_MS: "1000",
-				WYST_CONTENT_ONLY: "1",
-			});
+			liveAudit(ordinaryOriginContentAuditEnvironment(expectedIdentity));
 		} catch (error) {
 			console.error(
 				"Bootstrap audit failed. No prior deployment exists to roll back to; production remains on the failed first version for diagnosis.",
@@ -398,12 +394,7 @@ async function main() {
 			{ [candidateVersion]: 100 },
 			"the promoted candidate at 100%",
 		);
-		liveAudit({
-			...expectedIdentity,
-			WYST_AUDIT_ATTEMPTS: "8",
-			WYST_AUDIT_RETRY_MS: "1000",
-			WYST_CONTENT_ONLY: "1",
-		});
+		liveAudit(ordinaryOriginContentAuditEnvironment(expectedIdentity));
 	} catch (error) {
 		console.error("Post-deployment content audit failed; rolling back production.");
 		run(wrangler, [

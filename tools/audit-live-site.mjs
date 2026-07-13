@@ -43,9 +43,10 @@ const expectedIdentity = [
 	expectedReleaseSha256,
 	expectedManifestSha256,
 ];
+const verifiesExpectedIdentity = expectedIdentity.every(Boolean);
 if (
 	expectedIdentity.some(Boolean) &&
-	!expectedIdentity.every(Boolean)
+	!verifiesExpectedIdentity
 ) {
 	throw new Error(
 		"expected deployment identity requires commit, public tree, release, and manifest SHA-256 values",
@@ -415,16 +416,20 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	const response = await fetchPublic("/.well-known/build.json");
 	if (response.status !== 200) {
 		failures.push(`/.well-known/build.json returned ${response.status}`);
-		return;
+		return false;
 	}
 
 	const manifestBytes = Buffer.from(await response.arrayBuffer());
+	const manifestSha256 = sha256(manifestBytes);
+	let expectedIdentityMatches = true;
+	let promotedCommitObserved = true;
 	if (
 		expectedManifestSha256 &&
-		sha256(manifestBytes) !== expectedManifestSha256
+		manifestSha256 !== expectedManifestSha256
 	) {
+		expectedIdentityMatches = false;
 		failures.push(
-			`deployed build manifest SHA-256 is ${sha256(manifestBytes)}; expected ${expectedManifestSha256}`,
+			`deployed build manifest SHA-256 is ${manifestSha256}; expected ${expectedManifestSha256}`,
 		);
 	}
 
@@ -433,27 +438,38 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 		manifest = JSON.parse(manifestBytes.toString("utf8"));
 	} catch (error) {
 		failures.push(`/.well-known/build.json is invalid JSON: ${error.message}`);
-		return;
+		return false;
 	}
 	const invalid = manifestFailure(manifest);
 	if (invalid) {
 		failures.push(invalid);
-		return;
+		return false;
 	}
 	if (expectedCommit && manifest.siteCommit.toLowerCase() !== expectedCommit) {
+		expectedIdentityMatches = false;
+		promotedCommitObserved = false;
 		failures.push(
 			`deployed site commit is ${manifest.siteCommit}; expected ${expectedCommit}`,
 		);
 	}
 	if (expectedTreeSha256 && manifest.treeSha256 !== expectedTreeSha256) {
+		expectedIdentityMatches = false;
 		failures.push(
 			`deployed public tree is ${manifest.treeSha256}; expected ${expectedTreeSha256}`,
 		);
 	}
 	if (expectedReleaseSha256 && manifest.releaseSha256 !== expectedReleaseSha256) {
+		expectedIdentityMatches = false;
 		failures.push(
 			`deployed release identity is ${manifest.releaseSha256}; expected ${expectedReleaseSha256}`,
 		);
+	}
+	if (verifiesExpectedIdentity && !expectedIdentityMatches) {
+		// A valid manifest for another commit means the ordinary hostname has not
+		// converged yet. Do not crawl that older tree. If the promoted commit is
+		// already visible but another identity field differs, return immediately so
+		// the release driver can treat it as corruption and roll back.
+		return promotedCommitObserved;
 	}
 
 	for (const [publicUrl, entry] of Object.entries(manifest.files)) {
@@ -495,22 +511,37 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	const expected404 = manifest.files["/404.html"];
 	if (!expected404) failures.push("build manifest is missing /404.html");
 	await auditNotFound(expected404, failures, { auditPolicy });
+	return true;
 }
 
 async function auditOnce() {
 	const failures = [];
+	let promotedCommitObserved = false;
 	if (contentOnly) {
-		await auditManifest(failures, { auditPolicy: false });
+		promotedCommitObserved = await auditManifest(failures, {
+			auditPolicy: false,
+		});
 	} else {
 		await auditRedirects(failures);
 		if (policyOnly) await auditPolicyOnly(failures);
 		else await auditManifest(failures);
 	}
-	if (failures.length) throw new Error(failures.join("\n"));
+	if (failures.length) {
+		const error = new Error(failures.join("\n"));
+		// Once the ordinary origin exposes the promoted commit, any remaining
+		// identity or file mismatch is corruption rather than deployment convergence.
+		// Return immediately so the release driver can roll back the known-good version.
+		if (contentOnly && verifiesExpectedIdentity && promotedCommitObserved) {
+			error.retryable = false;
+		}
+		throw error;
+	}
 }
 
 let lastError;
+let completedAttempts = 0;
 for (let attempt = 1; attempt <= attempts; attempt++) {
+	completedAttempts = attempt;
 	try {
 		await auditOnce();
 		const qualifier = policyOnly
@@ -524,10 +555,13 @@ for (let attempt = 1; attempt <= attempts; attempt++) {
 		break;
 	} catch (error) {
 		lastError = error;
+		if (error.retryable === false) break;
 		if (attempt < attempts) await sleep(retryMs);
 	}
 }
 
 if (lastError) {
-	throw new Error(`live-site audit failed after ${attempts} attempt(s):\n${lastError.message}`);
+	throw new Error(
+		`live-site audit failed after ${completedAttempts} attempt(s):\n${lastError.message}`,
+	);
 }

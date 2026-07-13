@@ -1,18 +1,72 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { once } from "node:events";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
 	assertWorkerSubdomainsDisabled,
 	currentProductionVersionFrom,
 	isWorkerNotFoundOutput,
+	ordinaryOriginContentAuditEnvironment,
 } from "../.github/scripts/release-state.mjs";
 import { newestSuccessfulProductionDeployment } from "../.github/scripts/production-deployment.mjs";
 import { verifyBuildIdentity } from "../tools/verify-build.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const liveAuditScript = path.join(root, "tools", "audit-live-site.mjs");
+
+async function mockedLiveAudit(t, environment) {
+	const temporaryRoot = await mkdtemp(path.join(tmpdir(), "wyst-live-audit-test-"));
+	t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
+	const preload = path.join(temporaryRoot, "mock-fetch.mjs");
+	await writeFile(
+		preload,
+		`import { readFileSync } from "node:fs";
+const manifest = readFileSync(process.env.WYST_TEST_MANIFEST);
+globalThis.fetch = async (input) => {
+	const url = new URL(input);
+	process.stderr.write(\`WYST_TEST_FETCH \${url.pathname}\\n\`);
+	if (url.pathname === "/.well-known/build.json") {
+		return new Response(manifest, {
+			headers: { "content-type": "application/json" },
+			status: 200,
+		});
+	}
+	return new Response("corrupt", { status: 503 });
+};
+`,
+	);
+	const child = spawn(process.execPath, [liveAuditScript], {
+		env: {
+			...process.env,
+			NODE_OPTIONS: `--import=${pathToFileURL(preload).href}`,
+			WYST_CONTENT_ONLY: "1",
+			WYST_LIVE_ORIGIN: "https://audit.test",
+			WYST_TEST_MANIFEST: path.join(root, "dist", ".well-known", "build.json"),
+			...environment,
+		},
+	});
+	let stdout = "";
+	let stderr = "";
+	child.stdout.setEncoding("utf8");
+	child.stderr.setEncoding("utf8");
+	child.stdout.on("data", (chunk) => {
+		stdout += chunk;
+	});
+	child.stderr.on("data", (chunk) => {
+		stderr += chunk;
+	});
+	const [status] = await once(child, "close");
+	return { status, stderr, stdout };
+}
+
+function differentHex(value) {
+	return `${value.startsWith("0") ? "1" : "0"}${value.slice(1)}`;
+}
 
 function deployment(id, createdOn, versionId, percentage = 100) {
 	return {
@@ -57,6 +111,102 @@ test("release requires both workers.dev and version previews to be disabled", ()
 	assert.throws(
 		() => assertWorkerSubdomainsDisabled(null),
 		/settings are malformed/,
+	);
+});
+
+test("ordinary-origin verification allows bounded deployment convergence", () => {
+	const identity = {
+		WYST_EXPECTED_COMMIT: "a".repeat(40),
+		WYST_EXPECTED_MANIFEST_SHA256: "b".repeat(64),
+		WYST_EXPECTED_RELEASE_SHA256: "c".repeat(64),
+		WYST_EXPECTED_TREE_SHA256: "d".repeat(64),
+	};
+	const environment = ordinaryOriginContentAuditEnvironment(identity);
+	assert.deepEqual(environment, {
+		...identity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "2000",
+		WYST_CONTENT_ONLY: "1",
+	});
+	const retryDelayWindow =
+		(Number(environment.WYST_AUDIT_ATTEMPTS) - 1) *
+		Number(environment.WYST_AUDIT_RETRY_MS);
+	assert.equal(retryDelayWindow, 90_000);
+	assert.throws(
+		() => ordinaryOriginContentAuditEnvironment(null),
+		/expected build identity/,
+	);
+});
+
+test("ordinary-origin retries only until the exact promoted identity is visible", async (t) => {
+	const manifestBytes = await readFile(
+		path.join(root, "dist", ".well-known", "build.json"),
+	);
+	const manifest = JSON.parse(manifestBytes);
+	const manifestSha256 = createHash("sha256").update(manifestBytes).digest("hex");
+	const exactIdentity = {
+		WYST_EXPECTED_COMMIT: manifest.siteCommit,
+		WYST_EXPECTED_MANIFEST_SHA256: manifestSha256,
+		WYST_EXPECTED_RELEASE_SHA256: manifest.releaseSha256,
+		WYST_EXPECTED_TREE_SHA256: manifest.treeSha256,
+	};
+
+	const stale = await mockedLiveAudit(t, {
+		WYST_AUDIT_ATTEMPTS: "3",
+		WYST_AUDIT_RETRY_MS: "1",
+		WYST_EXPECTED_COMMIT: differentHex(exactIdentity.WYST_EXPECTED_COMMIT),
+		WYST_EXPECTED_MANIFEST_SHA256: differentHex(
+			exactIdentity.WYST_EXPECTED_MANIFEST_SHA256,
+		),
+		WYST_EXPECTED_RELEASE_SHA256: differentHex(
+			exactIdentity.WYST_EXPECTED_RELEASE_SHA256,
+		),
+		WYST_EXPECTED_TREE_SHA256: differentHex(
+			exactIdentity.WYST_EXPECTED_TREE_SHA256,
+		),
+	});
+	assert.notEqual(stale.status, 0);
+	assert.match(stale.stderr, /live-site audit failed after 3 attempt\(s\)/);
+	assert.deepEqual(
+		stale.stderr.match(/WYST_TEST_FETCH \S+/g),
+		Array(3).fill("WYST_TEST_FETCH /.well-known/build.json"),
+	);
+
+	const corruptManifest = await mockedLiveAudit(t, {
+		...exactIdentity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "1",
+		WYST_EXPECTED_MANIFEST_SHA256: differentHex(
+			exactIdentity.WYST_EXPECTED_MANIFEST_SHA256,
+		),
+	});
+	assert.notEqual(corruptManifest.status, 0);
+	assert.match(
+		corruptManifest.stderr,
+		/live-site audit failed after 1 attempt\(s\)/,
+	);
+	assert.deepEqual(corruptManifest.stderr.match(/WYST_TEST_FETCH \S+/g), [
+		"WYST_TEST_FETCH /.well-known/build.json",
+	]);
+
+	const corruptAsset = await mockedLiveAudit(t, {
+		...exactIdentity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "1",
+	});
+	assert.notEqual(corruptAsset.status, 0);
+	assert.match(
+		corruptAsset.stderr,
+		/live-site audit failed after 1 attempt\(s\)/,
+	);
+	assert.equal(
+		corruptAsset.stderr.match(/WYST_TEST_FETCH \/\.well-known\/build\.json/g)
+			?.length,
+		1,
+	);
+	assert.match(
+		corruptAsset.stderr,
+		/WYST_TEST_FETCH \/(?!\.well-known\/build\.json)/,
 	);
 });
 

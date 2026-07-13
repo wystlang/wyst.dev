@@ -7,6 +7,28 @@ function createdOnMilliseconds(deployment) {
 	return milliseconds;
 }
 
+// Forty-five retry gaps allow 90 seconds for fast stale-manifest responses to
+// converge. The release driver's 180-second subprocess timeout remains the hard
+// wall-clock bound when requests themselves stall.
+const ORDINARY_ORIGIN_AUDIT_ATTEMPTS = 46;
+const ORDINARY_ORIGIN_RETRY_MS = 2000;
+
+export function ordinaryOriginContentAuditEnvironment(expectedIdentity) {
+	if (
+		!expectedIdentity ||
+		typeof expectedIdentity !== "object" ||
+		Array.isArray(expectedIdentity)
+	) {
+		throw new Error("expected build identity must be an environment object");
+	}
+	return {
+		...expectedIdentity,
+		WYST_AUDIT_ATTEMPTS: String(ORDINARY_ORIGIN_AUDIT_ATTEMPTS),
+		WYST_AUDIT_RETRY_MS: String(ORDINARY_ORIGIN_RETRY_MS),
+		WYST_CONTENT_ONLY: "1",
+	};
+}
+
 export function isWorkerNotFoundOutput(output) {
 	return /\[code:\s*(?:10007|10090)\]/.test(String(output || ""));
 }
