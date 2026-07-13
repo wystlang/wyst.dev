@@ -46,7 +46,7 @@ isolated builds are byte-identical.
 Node.js 22 or newer and Chrome or Chromium are required.
 
 ```sh
-npm install
+npm ci
 npm run build
 npm run serve              # http://127.0.0.1:8347
 ```
@@ -107,7 +107,7 @@ commit.
 `.github/workflows/site.yml` runs for every pull request, every push to `main`,
 and manual dispatches. Its `Verify` job has read-only repository permissions and
 receives no deployment secrets. It installs the lockfile exactly, runs
-`npm run check`, and verifies the build manifest.
+`npm run check`, which includes build-manifest verification.
 
 For `main`, that job uploads the exact `dist/` tree as a one-day GitHub artifact,
 including the normally excluded `.well-known/build.json`. The production job
@@ -162,39 +162,29 @@ dispatch remains available for recovery and diagnosis.
 Dependabot checks both npm dependencies and pinned GitHub Actions weekly. Every
 third-party action in the workflows is pinned to a full commit SHA.
 
-## One-time repository configuration
+## Repository and production configuration
 
-After making the repository public:
+The public repository and production deployment path are already configured.
+`main` requires a pull request and the exact `Verify` status check. The
+`production` environment is restricted to `main` and holds the Cloudflare
+account identifier and narrowly scoped Workers deployment token. GitHub Actions
+is the sole release authority; Cloudflare Workers Builds and Git deployment
+remain disabled.
 
-1. Add a ruleset or branch protection rule for `main` that requires a pull
-   request and the `Site / Verify` check.
-2. Create a GitHub environment named `production`, restrict it to `main`, and
-   optionally require manual approval.
-3. Add `CLOUDFLARE_ACCOUNT_ID` as a repository or `production` environment
-   variable.
-4. Add `CLOUDFLARE_API_TOKEN` as a `production` environment secret. Use an
-   account-owned token scoped only to the relevant account with **Workers
-   Scripts: Edit**. The workflow does not require zone-route permission.
-5. Disable Cloudflare Workers Builds/Git deployment for this Worker. GitHub must
-   remain the sole release authority.
+The authoritative routing, client-policy, and deployment-ownership requirements
+are in the [Cloudflare production runbook](ops/cloudflare.md). Update that
+runbook when the production contract changes instead of duplicating dashboard
+instructions here.
 
-Set the GitHub Actions spending budget to `$0` with usage stopping at the limit.
-Use standard Linux runners only; the workflows do not require paid runners or
+Use standard Linux runners and a GitHub Actions spending budget of `$0` with
+usage stopping at the limit. The workflows require neither paid runners nor
 long-lived GitHub artifacts.
 
-## Cloudflare configuration
+## Artifact validation and cost model
 
-`wrangler.jsonc` publishes `./dist` with no Worker entry point, bindings, route,
-preview URL, or `workers.dev` hostname. The existing `wyst.dev` custom domain is
-managed in Cloudflare rather than by the deploy token, keeping its permissions
-narrow.
-
-The generated `_headers` supplies the content security policy and related
-response protections. Cloudflare must also retain these zone-owned settings:
-
-- **Always Use HTTPS** enabled.
-- Automatic Web Analytics injection disabled.
-- Bot JavaScript detections disabled when they would inject client code.
+`wrangler.jsonc` publishes `./dist` as an assets-only Worker. The generated
+`_headers` supplies the content security policy and related response
+protections.
 
 Before any upload, `npm run validate:assets` checks the exact artifact against
 the Workers Free allowance of 20,000 files, the 25 MiB per-file ceiling, the

@@ -16,6 +16,7 @@ concurrency:
 jobs:
   http:
     name: HTTP and deployment identity
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 05 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

@@ -29,8 +29,10 @@ const ALLOWED_TOP_LEVEL_CONFIG = new Set([
 	"compatibility_date",
 	"workers_dev",
 	"preview_urls",
+	"observability",
 	"assets",
 ]);
+const ALLOWED_OBSERVABILITY_CONFIG = new Set(["enabled"]);
 const ALLOWED_ASSET_CONFIG = new Set([
 	"directory",
 	"html_handling",
@@ -171,6 +173,15 @@ export async function validateWranglerConfig(configPath, publicRoot) {
 	);
 	assert(config.workers_dev === false, "workers_dev must remain disabled");
 	assert(config.preview_urls === false, "preview_urls must remain disabled");
+	validateObjectKeys(
+		config.observability,
+		ALLOWED_OBSERVABILITY_CONFIG,
+		"observability config",
+	);
+	assert(
+		config.observability.enabled === false,
+		"Worker observability must remain disabled",
+	);
 	validateObjectKeys(config.assets, ALLOWED_ASSET_CONFIG, "assets config");
 	assert(
 		config.assets.html_handling === "auto-trailing-slash",
