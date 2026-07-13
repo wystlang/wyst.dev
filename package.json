@@ -5,21 +5,29 @@
   "type": "module",
   "description": "wyst.dev project homepage and generated documentation site",
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
-    "audit": "node tools/audit-site.mjs",
+    "build": "node tools/prepare-worker-assets.mjs",
+    "test": "npm run build && npm run test:unit",
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:fast": "node --test tests/cloudflare-assets.test.mjs tests/docs-accessibility.test.mjs tests/prism-wyst.test.mjs tests/wyst-snapshot.test.mjs",
+    "verify:build": "node tools/verify-build.mjs",
+    "verify:determinism": "node tools/verify-determinism.mjs",
+    "validate:assets": "node tools/validate-cloudflare-assets.mjs",
+    "audit": "node tools/audit-site.mjs --public-root dist",
     "audit:browser": "node tools/audit-browser.mjs",
+    "audit:dependencies": "npm audit --audit-level=high",
+    "audit:external": "node tools/audit-external-links.mjs",
     "audit:live": "node tools/audit-live-site.mjs",
-    "build": "node build/generate.mjs && node build/generate-sitemap.mjs",
-    "build:worker-assets": "node build/generate-404.mjs && node tools/prepare-worker-assets.mjs",
+    "deploy:dry-run": "wrangler versions upload --dry-run",
+    "check": "npm run build && npm run test:unit && npm run verify:build && npm run validate:assets && npm run audit && npm run audit:browser && npm run verify:determinism && npm run deploy:dry-run",
+    "serve": "node build/serve.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
     "sync:wyst": "node tools/sync-wyst-snapshot.mjs",
-    "deploy": "wrangler deploy",
     "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "markdown-it": "^14.1.0",
-    "markdown-it-anchor": "^9.2.0",
-    "prismjs": "^1.29.0",
-    "wrangler": "^4.102.0"
+    "markdown-it": "14.3.0",
+    "markdown-it-anchor": "9.2.1",
+    "prismjs": "1.30.0",
+    "wrangler": "4.110.0"
   }
 }

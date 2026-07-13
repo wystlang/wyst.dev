@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +9,16 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const serveScript = path.join(root, "build", "serve.mjs");
 const MOBILE_WIDTH = 375;
+const VIEWPORTS = [
+	{ label: "mobile", width: MOBILE_WIDTH, height: 812 },
+	{ label: "desktop", width: 1440, height: 900 },
+];
+const configuredOrigin = process.env.WYST_BROWSER_ORIGIN;
+const versionId = process.env.WYST_VERSION_ID?.trim();
+
+if (versionId && !/^[\w.-]+$/.test(versionId)) {
+	throw new Error("WYST_VERSION_ID contains invalid characters");
+}
 
 function chromeBinary() {
 	const absoluteCandidates = [
@@ -80,6 +90,7 @@ class CdpClient {
 		this.nextId = 1;
 		this.pending = new Map();
 		this.listeners = new Map();
+		this.handlers = new Map();
 		this.socket = new WebSocket(url);
 		this.ready = new Promise((resolve, reject) => {
 			this.socket.addEventListener("open", resolve, { once: true });
@@ -99,10 +110,20 @@ class CdpClient {
 				else pending.resolve(message.result);
 				return;
 			}
+			for (const handler of this.handlers.get(message.method) ?? []) {
+				handler(message.params);
+			}
 			const listeners = this.listeners.get(message.method) || [];
 			this.listeners.delete(message.method);
 			for (const listener of listeners) listener.resolve(message.params);
 		});
+	}
+
+	on(method, handler) {
+		const handlers = this.handlers.get(method) ?? new Set();
+		handlers.add(handler);
+		this.handlers.set(method, handlers);
+		return () => handlers.delete(handler);
 	}
 
 	async send(method, params = {}) {
@@ -210,6 +231,76 @@ const PAGE_AUDIT = String.raw`(() => {
 			};
 		})
 		.filter((target) => target.width < 24 || target.height < 24);
+	const duplicateIds = [];
+	const ids = new Set();
+	for (const element of document.querySelectorAll("[id]")) {
+		if (ids.has(element.id)) duplicateIds.push(element.id);
+		ids.add(element.id);
+	}
+	const missingAlt = [...document.images]
+		.filter((element) => !element.hasAttribute("alt"))
+		.map((element) => element.getAttribute("src") || "(inline image)");
+	const positiveTabindex = [...document.querySelectorAll("[tabindex]")]
+		.filter((element) => Number(element.getAttribute("tabindex")) > 0)
+		.map((element) => element.outerHTML.slice(0, 160));
+	const invalidAriaReferences = [];
+	for (const element of document.querySelectorAll(
+		"[aria-controls], [aria-labelledby], [aria-describedby]",
+	)) {
+		for (const attribute of ["aria-controls", "aria-labelledby", "aria-describedby"]) {
+			if (!element.hasAttribute(attribute)) continue;
+			for (const id of element.getAttribute(attribute).trim().split(/\s+/)) {
+				if (!id || !document.getElementById(id)) {
+					invalidAriaReferences.push(attribute + "=" + JSON.stringify(id));
+				}
+			}
+		}
+	}
+	const accessibleName = (element) => {
+		const labelledBy = (element.getAttribute("aria-labelledby") || "")
+			.trim()
+			.split(/\s+/)
+			.filter(Boolean)
+			.map((id) => document.getElementById(id)?.textContent || "")
+			.join(" ");
+		const labelledControl = element.id
+			? document.querySelector('label[for="' + CSS.escape(element.id) + '"]')
+			: null;
+		return [
+			element.getAttribute("aria-label") ||
+				"",
+			labelledBy,
+			labelledControl?.textContent || "",
+			element.textContent || "",
+			element.querySelector("img[alt]")?.getAttribute("alt") || "",
+			element.getAttribute("title") || "",
+			element.getAttribute("value") || "",
+		].map((value) => value.trim()).find(Boolean) || "";
+	};
+	const unnamedControls = [...document.querySelectorAll(
+		'a[href], button, input:not([type="hidden"]), select, textarea, summary, [role="button"]',
+	)]
+		.filter(visible)
+		.filter((element) => element.getAttribute("aria-hidden") === "true" || !accessibleName(element))
+		.map((element) => element.outerHTML.slice(0, 160));
+	const cspViolations = [];
+	for (const [selector, description] of [
+		["script:not([src])", "inline script"],
+		["style", "inline style element"],
+		["[style]", "inline style attribute"],
+		["form", "form blocked by form-action none"],
+		["base", "base element blocked by base-uri none"],
+		["iframe, frame, object, embed", "embedded content blocked by default-src none"],
+	]) {
+		const elements = [...document.querySelectorAll(selector)];
+		if (elements.length) cspViolations.push(description + " (" + elements.length + ")");
+	}
+	const inlineHandlers = [...document.querySelectorAll("*")].filter((element) =>
+		[...element.attributes].some((attribute) => /^on/i.test(attribute.name)),
+	);
+	if (inlineHandlers.length) {
+		cspViolations.push("inline event handler (" + inlineHandlers.length + ")");
+	}
 	return {
 		title: document.title,
 		viewport,
@@ -219,6 +310,15 @@ const PAGE_AUDIT = String.raw`(() => {
 		badAnchors: document.querySelectorAll(
 			'.doc-anchor[aria-hidden="true"], .doc-anchor:not([aria-label])',
 		).length,
+		mainElements: document.querySelectorAll("main").length,
+		h1Elements: document.querySelectorAll("h1").length,
+		documentLanguage: document.documentElement.lang,
+		duplicateIds: [...new Set(duplicateIds)],
+		missingAlt,
+		positiveTabindex,
+		invalidAriaReferences,
+		unnamedControls,
+		cspViolations,
 		scripts: [...document.scripts].map(
 			(script) => script.getAttribute("src") || "inline",
 		),
@@ -250,24 +350,122 @@ async function navigate(client, url, width, height) {
 		mobile: width <= MOBILE_WIDTH,
 	});
 	const loaded = client.waitFor("Page.loadEventFired");
-	await client.send("Page.navigate", { url });
+	const navigation = await client.send("Page.navigate", { url });
+	if (navigation.errorText) {
+		throw new Error(`could not navigate to ${url}: ${navigation.errorText}`);
+	}
 	await loaded;
 }
 
-const [previewPort, debugPort] = await Promise.all([freePort(), freePort()]);
-const profile = await mkdtemp(path.join(os.tmpdir(), "wyst-browser-audit-"));
-const preview = spawn(process.execPath, [serveScript], {
-	cwd: root,
-	env: { ...process.env, PORT: String(previewPort) },
-	stdio: ["ignore", "pipe", "pipe"],
-});
+async function pressKey(client, key, { shift = false } = {}) {
+	const keyCode = key === "Tab" ? 9 : key === "Enter" ? 13 : key === "Escape" ? 27 : 0;
+	const params = {
+		key,
+		code: key,
+		modifiers: shift ? 8 : 0,
+		windowsVirtualKeyCode: keyCode,
+		nativeVirtualKeyCode: keyCode,
+		...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}),
+	};
+	await client.send("Input.dispatchKeyEvent", { type: "keyDown", ...params });
+	await client.send("Input.dispatchKeyEvent", { type: "keyUp", ...params });
+}
+
+async function keyboardFocusAudit(client) {
+	await evaluate(
+		client,
+		String.raw`(() => {
+			document.activeElement?.blur();
+			window.scrollTo(0, 0);
+		})()`,
+	);
+	await pressKey(client, "Tab");
+	const firstFocus = await evaluate(
+		client,
+		String.raw`(() => {
+			const element = document.activeElement;
+			const style = getComputedStyle(element);
+			const rect = element.getBoundingClientRect();
+			const outlineVisible = style.outlineStyle !== "none" &&
+				parseFloat(style.outlineWidth) > 0 &&
+				style.outlineColor !== "transparent";
+			const shadowVisible = style.boxShadow !== "none";
+			return {
+				tag: element.tagName.toLowerCase(),
+				className: String(element.className || ""),
+				text: element.textContent.trim(),
+				href: element.getAttribute("href"),
+				visible: style.display !== "none" &&
+					style.visibility !== "hidden" &&
+					rect.bottom > 0 && rect.right > 0 &&
+					rect.top < innerHeight && rect.left < innerWidth,
+				focusIndicator: outlineVisible || shadowVisible,
+			};
+		})()`,
+	);
+	const focusedObject = await client.send("Runtime.evaluate", {
+		expression: "document.activeElement",
+		returnByValue: false,
+	});
+	const focusedAxTree = await client.send("Accessibility.getPartialAXTree", {
+		objectId: focusedObject.result.objectId,
+		fetchRelatives: false,
+	});
+	const focusedAxNode = focusedAxTree.nodes.find((node) => !node.ignored);
+	firstFocus.accessibilityRole = focusedAxNode?.role?.value ?? null;
+	firstFocus.accessibilityName = focusedAxNode?.name?.value ?? null;
+	await client.send("Runtime.releaseObject", {
+		objectId: focusedObject.result.objectId,
+	});
+	await pressKey(client, "Enter");
+	await evaluate(
+		client,
+		"new Promise((resolve) => requestAnimationFrame(() => resolve(true)))",
+	);
+	const activation = await evaluate(
+		client,
+		String.raw`(() => ({
+			hash: location.hash,
+			targetExists: Boolean(document.querySelector("main#main")),
+		}))()`,
+	);
+	return { firstFocus, activation };
+}
+
+const debugPort = await freePort();
+let preview;
+let targetOrigin;
 let previewOutput = "";
-preview.stdout.on("data", (chunk) => {
-	previewOutput += chunk;
-});
-preview.stderr.on("data", (chunk) => {
-	previewOutput += chunk;
-});
+
+if (configuredOrigin) {
+	targetOrigin = new URL(configuredOrigin);
+	if (
+		!/^https?:$/.test(targetOrigin.protocol) ||
+		targetOrigin.pathname !== "/" ||
+		targetOrigin.search ||
+		targetOrigin.hash ||
+		targetOrigin.username ||
+		targetOrigin.password
+	) {
+		throw new Error("WYST_BROWSER_ORIGIN must be an HTTP(S) origin without a path");
+	}
+} else {
+	const previewPort = await freePort();
+	targetOrigin = new URL(`http://127.0.0.1:${previewPort}/`);
+	preview = spawn(process.execPath, [serveScript], {
+		cwd: root,
+		env: { ...process.env, PORT: String(previewPort) },
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+	preview.stdout.on("data", (chunk) => {
+		previewOutput += chunk;
+	});
+	preview.stderr.on("data", (chunk) => {
+		previewOutput += chunk;
+	});
+}
+
+const profile = await mkdtemp(path.join(os.tmpdir(), "wyst-browser-audit-"));
 
 const chromeExecutable = chromeBinary();
 const chrome = spawn(
@@ -302,11 +500,9 @@ chrome.stderr.on("data", (chunk) => {
 
 let client;
 try {
-	await poll(
-		`http://127.0.0.1:${previewPort}/`,
-		"preview server",
-		() => previewOutput,
-	);
+	if (preview) {
+		await poll(targetOrigin, "preview server", () => previewOutput);
+	}
 	await poll(
 		`http://127.0.0.1:${debugPort}/json/version`,
 		"Chrome debugging endpoint",
@@ -326,72 +522,212 @@ try {
 	client = new CdpClient(target.webSocketDebuggerUrl);
 	await client.send("Page.enable");
 	await client.send("Runtime.enable");
+	await client.send("Accessibility.enable");
+	await client.send("Network.enable");
+	await client.send("Network.setCacheDisabled", { cacheDisabled: true });
+	const overrideHeaders = versionId
+		? { "Cloudflare-Workers-Version-Overrides": `wyst="${versionId}"` }
+		: {};
+	if (versionId) {
+		await client.send("Network.setExtraHTTPHeaders", {
+			headers: overrideHeaders,
+		});
+	}
 
-	const sitemap = await readFile(path.join(root, "sitemap.xml"), "utf8");
-	const routes = [...sitemap.matchAll(/<loc>https:\/\/wyst\.dev([^<]*)<\/loc>/g)].map(
-		(match) => match[1] || "/",
+	let activeRoute = "(startup)";
+	const requestUrls = new Map();
+	const runtimeFailures = [];
+	client.on("Network.requestWillBeSent", ({ requestId, request, type }) => {
+		requestUrls.set(requestId, request.url);
+		let url;
+		try {
+			url = new URL(request.url);
+		} catch {
+			runtimeFailures.push(`${activeRoute} requested a malformed URL: ${request.url}`);
+			return;
+		}
+		if (url.protocol === "data:" || request.url === "about:blank") return;
+		if (!/^https?:$/.test(url.protocol) || url.origin !== targetOrigin.origin) {
+			runtimeFailures.push(
+				`${activeRoute} made an unexpected cross-origin request to ${request.url}`,
+			);
+		}
+		if (["EventSource", "Fetch", "Ping", "XHR"].includes(type)) {
+			runtimeFailures.push(
+				`${activeRoute} made a ${type} request blocked by connect-src none: ${request.url}`,
+			);
+		}
+	});
+	client.on("Network.webSocketCreated", ({ url }) => {
+		runtimeFailures.push(
+			`${activeRoute} opened a WebSocket blocked by connect-src none: ${url}`,
+		);
+	});
+	client.on("Network.responseReceived", ({ response }) => {
+		if (response.status >= 400) {
+			runtimeFailures.push(
+				`${activeRoute} received HTTP ${response.status} from ${response.url}`,
+			);
+		}
+	});
+	client.on("Network.loadingFailed", ({ requestId, errorText, canceled }) => {
+		if (!canceled) {
+			runtimeFailures.push(
+				`${activeRoute} failed to load ${requestUrls.get(requestId) ?? requestId}: ${errorText}`,
+			);
+		}
+	});
+	client.on("Runtime.consoleAPICalled", ({ type, args }) => {
+		if (type !== "error" && type !== "assert") return;
+		const message = args
+			.map((arg) => arg.value ?? arg.description ?? arg.type)
+			.join(" ");
+		runtimeFailures.push(`${activeRoute} console.${type}: ${message}`);
+	});
+	client.on("Runtime.exceptionThrown", ({ exceptionDetails }) => {
+		runtimeFailures.push(
+			`${activeRoute} uncaught exception: ${exceptionDetails.exception?.description ?? exceptionDetails.text}`,
+		);
+	});
+
+	const sitemapResponse = await fetch(new URL("/sitemap.xml", targetOrigin), {
+		headers: overrideHeaders,
+		redirect: "error",
+		signal: AbortSignal.timeout(10_000),
+	});
+	if (!sitemapResponse.ok) {
+		throw new Error(`target sitemap returned ${sitemapResponse.status}`);
+	}
+	const sitemap = await sitemapResponse.text();
+	const routes = [...sitemap.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map(
+		(match) => {
+			const loc = new URL(match[1].replaceAll("&amp;", "&"));
+			if (loc.origin !== "https://wyst.dev" || loc.username || loc.password) {
+				throw new Error(`sitemap URL must use the canonical origin: ${loc}`);
+			}
+			if (loc.hash) throw new Error(`sitemap URL must not contain a fragment: ${loc}`);
+			return `${loc.pathname}${loc.search}` || "/";
+		},
 	);
+	if (!routes.length) throw new Error("target sitemap contains no routes");
+	if (new Set(routes).size !== routes.length) {
+		throw new Error("target sitemap contains duplicate routes");
+	}
 	const failures = [];
-	for (const route of routes) {
-		await navigate(
-			client,
-			`http://127.0.0.1:${previewPort}${route}`,
-			MOBILE_WIDTH,
-			812,
-		);
-		const audit = await evaluate(client, PAGE_AUDIT);
-		if (audit.documentWidth > audit.viewport + 1) {
-			failures.push(
-				`${route} overflows ${audit.documentWidth}px at ${audit.viewport}px`,
+	for (const viewport of VIEWPORTS) {
+		for (const route of routes) {
+			const label = `${route} at ${viewport.label} ${viewport.width}px`;
+			activeRoute = label;
+			await navigate(
+				client,
+				new URL(route, targetOrigin).href,
+				viewport.width,
+				viewport.height,
 			);
-		}
-		if (audit.outOfBounds.length) {
-			failures.push(
-				`${route} clips elements at ${audit.viewport}px: ${JSON.stringify(audit.outOfBounds)}`,
+			const audit = await evaluate(client, PAGE_AUDIT);
+			if (audit.documentWidth > audit.viewport + 1) {
+				failures.push(
+					`${label} overflows ${audit.documentWidth}px at ${audit.viewport}px`,
+				);
+			}
+			if (audit.outOfBounds.length) {
+				failures.push(
+					`${label} clips elements: ${JSON.stringify(audit.outOfBounds)}`,
+				);
+			}
+			if (audit.smallTargets.length) {
+				failures.push(
+					`${label} has undersized controls: ${JSON.stringify(audit.smallTargets)}`,
+				);
+			}
+			if (audit.badAnchors) {
+				failures.push(
+					`${label} has ${audit.badAnchors} inaccessible heading anchors`,
+				);
+			}
+			if (!audit.title.trim()) failures.push(`${label} has no document title`);
+			if (audit.documentLanguage !== "en") {
+				failures.push(`${label} has unexpected document language ${JSON.stringify(audit.documentLanguage)}`);
+			}
+			if (audit.mainElements !== 1) {
+				failures.push(`${label} has ${audit.mainElements} main landmarks`);
+			}
+			if (audit.h1Elements !== 1) {
+				failures.push(`${label} has ${audit.h1Elements} h1 elements`);
+			}
+			for (const [kind, findings] of [
+				["duplicate IDs", audit.duplicateIds],
+				["images without alt", audit.missingAlt],
+				["positive tabindex values", audit.positiveTabindex],
+				["invalid ARIA references", audit.invalidAriaReferences],
+				["unnamed controls", audit.unnamedControls],
+				["content that violates the generated CSP", audit.cspViolations],
+			]) {
+				if (findings.length) {
+					failures.push(`${label} has ${kind}: ${JSON.stringify(findings)}`);
+				}
+			}
+			const invalidScripts = audit.scripts.filter(
+				(src) => !/^\/assets\/docs(?:\.[a-f0-9]{8})?\.js$/.test(src),
 			);
-		}
-		if (audit.smallTargets.length) {
-			failures.push(
-				`${route} has undersized controls: ${JSON.stringify(audit.smallTargets)}`,
-			);
-		}
-		if (audit.badAnchors) {
-			failures.push(
-				`${route} has ${audit.badAnchors} inaccessible heading anchors`,
-			);
-		}
-		const invalidScripts = audit.scripts.filter(
-			(src) => !/^\/assets\/docs(?:\.[a-f0-9]{8})?\.js$/.test(src),
-		);
-		if (invalidScripts.length) {
-			failures.push(
-				`${route} has unexpected scripts: ${invalidScripts.join(", ")}`,
-			);
-		}
-		if (
-			route.startsWith("/docs/") &&
-			route !== "/docs/" &&
-			audit.toggle !== "false"
-		) {
-			failures.push(`${route} Contents disclosure does not start collapsed`);
+			if (invalidScripts.length) {
+				failures.push(
+					`${label} has unexpected scripts: ${invalidScripts.join(", ")}`,
+				);
+			}
+			if (
+				viewport.label === "mobile" &&
+				route.startsWith("/docs/") &&
+				route !== "/docs/" &&
+				audit.toggle !== "false"
+			) {
+				failures.push(`${label} Contents disclosure does not start collapsed`);
+			}
+
+			const keyboard = await keyboardFocusAudit(client);
+			const first = keyboard.firstFocus;
+			if (
+				first.tag !== "a" ||
+				!first.className.split(/\s+/).includes("skip") ||
+				first.href !== "#main" ||
+				first.text !== "Skip to content" ||
+				first.accessibilityRole !== "link" ||
+				first.accessibilityName !== "Skip to content"
+			) {
+				failures.push(`${label} does not expose Skip to content as the first Tab stop: ${JSON.stringify(first)}`);
+			}
+			if (!first.visible || !first.focusIndicator) {
+				failures.push(`${label} first keyboard focus is not visibly indicated: ${JSON.stringify(first)}`);
+			}
+			if (keyboard.activation.hash !== "#main" || !keyboard.activation.targetExists) {
+				failures.push(`${label} Skip to content does not activate #main: ${JSON.stringify(keyboard.activation)}`);
+			}
 		}
 	}
 
+	const disclosureRoute = routes.find(
+		(route) => route.startsWith("/docs/") && route !== "/docs/",
+	);
+	if (!disclosureRoute) throw new Error("sitemap contains no documentation detail route");
+	activeRoute = `${disclosureRoute} mobile keyboard disclosure`;
 	await navigate(
 		client,
-		`http://127.0.0.1:${previewPort}/docs/chapter-06-types/`,
+		new URL(disclosureRoute, targetOrigin).href,
 		MOBILE_WIDTH,
 		812,
 	);
-	const disclosure = await evaluate(
+	await evaluate(
 		client,
 		String.raw`(() => {
 			const toggle = document.querySelector(".doc-sidebar-toggle");
-			toggle.click();
-			const opened = toggle.getAttribute("aria-expanded") === "true" &&
-				getComputedStyle(
-					document.getElementById(toggle.getAttribute("aria-controls")),
-				).display !== "none";
+			toggle.focus();
+		})()`,
+	);
+	await pressKey(client, "Enter");
+	const disclosureOpen = await evaluate(
+		client,
+		String.raw`(() => {
+			const toggle = document.querySelector(".doc-sidebar-toggle");
 			const smallTargets = [...document.querySelectorAll(".doc-sidebar a")]
 				.map((link) => {
 					const rect = link.getBoundingClientRect();
@@ -402,47 +738,48 @@ try {
 					};
 				})
 				.filter((target) => target.width < 24 || target.height < 24);
-			document.dispatchEvent(
-				new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-			);
 			return {
-				opened,
-				closed: toggle.getAttribute("aria-expanded") === "false",
+				opened: toggle.getAttribute("aria-expanded") === "true" &&
+					getComputedStyle(
+						document.getElementById(toggle.getAttribute("aria-controls")),
+					).display !== "none",
 				smallTargets,
 			};
 		})()`,
 	);
-	if (!disclosure.opened || !disclosure.closed) {
+	await pressKey(client, "Escape");
+	const disclosureClosed = await evaluate(
+		client,
+		String.raw`(() => {
+			const toggle = document.querySelector(".doc-sidebar-toggle");
+			return {
+				closed: toggle.getAttribute("aria-expanded") === "false",
+				focusRestored: document.activeElement === toggle,
+			};
+		})()`,
+	);
+	if (!disclosureOpen.opened || !disclosureClosed.closed || !disclosureClosed.focusRestored) {
 		failures.push("mobile Contents disclosure state is not synchronized");
 	}
-	if (disclosure.smallTargets.length) {
+	if (disclosureOpen.smallTargets.length) {
 		failures.push(
-			`mobile Contents has undersized links: ${JSON.stringify(disclosure.smallTargets)}`,
+			`mobile Contents has undersized links: ${JSON.stringify(disclosureOpen.smallTargets)}`,
 		);
 	}
-
-	for (const route of ["/", "/docs/chapter-06-types/"]) {
-		await navigate(client, `http://127.0.0.1:${previewPort}${route}`, 1440, 900);
-		const audit = await evaluate(client, PAGE_AUDIT);
-		if (audit.documentWidth > audit.viewport + 1) {
-			failures.push(
-				`${route} overflows ${audit.documentWidth}px at desktop width ${audit.viewport}px`,
-			);
-		}
-		if (audit.outOfBounds.length) {
-			failures.push(`${route} clips desktop elements: ${JSON.stringify(audit.outOfBounds)}`);
-		}
-	}
+	failures.push(...new Set(runtimeFailures));
 
 	if (failures.length) {
 		throw new Error(`browser audit failed:\n${failures.join("\n")}`);
 	}
 	console.log(
-		`browser audit passed: ${routes.length} routes at ${MOBILE_WIDTH}px; desktop and disclosure checks passed`,
+		`browser audit passed for ${targetOrigin.origin}: ${routes.length} routes at mobile and desktop; accessibility, keyboard, CSP, network-origin, and disclosure checks passed`,
 	);
 } finally {
 	client?.close();
-	await Promise.all([stopProcess(preview), stopProcess(chrome)]);
+	await Promise.all([
+		preview ? stopProcess(preview) : Promise.resolve(),
+		stopProcess(chrome),
+	]);
 	await rm(profile, {
 		recursive: true,
 		force: true,

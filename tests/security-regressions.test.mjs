@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
@@ -83,15 +84,6 @@ async function startPreview(t) {
 	return { port, output: () => output };
 }
 
-function hookPatternMatches(pattern, path) {
-	return (
-		spawnSync("grep", ["-Eq", pattern], {
-			input: `${path}\n`,
-			encoding: "utf8",
-		}).status === 0
-	);
-}
-
 test("preview server serves public assets without exposing repository internals", async (t) => {
 	const preview = await startPreview(t);
 
@@ -122,44 +114,9 @@ test("preview server listens on loopback instead of every interface", async (t) 
 	assert.match(listener.stdout, new RegExp(`127\\.0\\.0\\.1:${preview.port}`));
 });
 
-test("pre-commit artifact rebuild trigger includes every deployed source directory", async () => {
-	const hook = await readFile(new URL("../.githooks/pre-commit", import.meta.url), "utf8");
-	const patterns = [...hook.matchAll(/grep -Eq '([^']+)'/g)].map((match) => match[1]);
-	assert.ok(
-		patterns.length >= 2,
-		"pre-commit hook should separate docs and artifact inputs",
-	);
-
-	for (const path of [
-		"index.html",
-		"404.html",
-		"assets/wyst.css",
-		"docs/index.html",
-		"build/generate.mjs",
-		"build/generate-sitemap.mjs",
-		"build/generate-404.mjs",
-		"build/template.mjs",
-		"build/prism-wyst.mjs",
-		"tools/prepare-worker-assets.mjs",
-		"robots.txt",
-		"sitemap.xml",
-		"package.json",
-		"package-lock.json",
-	]) {
-		assert.equal(
-			patterns.some((pattern) => hookPatternMatches(pattern, path)),
-			true,
-			`${path} should trigger rebuild`,
-		);
-	}
-	assert.match(hook, /npm run --silent build\b/);
-	assert.match(hook, /git add docs sitemap\.xml/);
-	assert.match(hook, /git add 404\.html sitemap\.xml \.worker-assets/);
-});
-
 test("stable favicon assets always revalidate", async () => {
 	const headers = await readFile(
-		new URL("../.worker-assets/_headers", import.meta.url),
+		new URL("../dist/_headers", import.meta.url),
 		"utf8",
 	);
 	for (const path of [
@@ -177,7 +134,7 @@ test("stable favicon assets always revalidate", async () => {
 
 test("Worker assets apply the complete static-site security policy", async () => {
 	const headers = await readFile(
-		new URL("../.worker-assets/_headers", import.meta.url),
+		new URL("../dist/_headers", import.meta.url),
 		"utf8",
 	);
 	for (const expected of [
@@ -199,10 +156,10 @@ test("Worker assets apply the complete static-site security policy", async () =>
 
 test("deploy artifact contains discovery files and no injected script markup", async () => {
 	const [home, docs, robots, sitemap] = await Promise.all([
-		readFile(new URL("../.worker-assets/index.html", import.meta.url), "utf8"),
-		readFile(new URL("../.worker-assets/docs/index.html", import.meta.url), "utf8"),
-		readFile(new URL("../.worker-assets/robots.txt", import.meta.url), "utf8"),
-		readFile(new URL("../.worker-assets/sitemap.xml", import.meta.url), "utf8"),
+		readFile(new URL("../dist/index.html", import.meta.url), "utf8"),
+		readFile(new URL("../dist/docs/index.html", import.meta.url), "utf8"),
+		readFile(new URL("../dist/robots.txt", import.meta.url), "utf8"),
+		readFile(new URL("../dist/sitemap.xml", import.meta.url), "utf8"),
 	]);
 	assert.doesNotMatch(home, /<script\b/i);
 	assert.match(
@@ -215,4 +172,33 @@ test("deploy artifact contains discovery files and no injected script markup", a
 	);
 	assert.match(robots, /^Sitemap: https:\/\/wyst\.dev\/sitemap\.xml$/m);
 	assert.match(sitemap, /<loc>https:\/\/wyst\.dev\/docs\/<\/loc>/);
+});
+
+test("deploy artifact identifies its immutable source and public files", async () => {
+	const [manifestSource, headers, wranglerConfig] = await Promise.all([
+		readFile(new URL("../dist/.well-known/build.json", import.meta.url), "utf8"),
+		readFile(new URL("../dist/_headers", import.meta.url)),
+		readFile(new URL("../wrangler.jsonc", import.meta.url)),
+	]);
+	const manifest = JSON.parse(manifestSource);
+	assert.equal(manifest.schema, 2);
+	assert.match(manifest.siteCommit, /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/);
+	assert.match(manifest.wystSourceCommit, /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/);
+	assert.match(manifest.wystSnapshotSha256, /^[0-9a-f]{64}$/);
+	assert.match(manifest.treeSha256, /^[0-9a-f]{64}$/);
+	assert.match(manifest.releaseSha256, /^[0-9a-f]{64}$/);
+	assert.deepEqual(Object.keys(manifest.releaseFiles), ["_headers", "wrangler.jsonc"]);
+	assert.deepEqual(manifest.releaseFiles._headers, {
+		sha256: createHash("sha256").update(headers).digest("hex"),
+		size: headers.byteLength,
+	});
+	assert.deepEqual(manifest.releaseFiles["wrangler.jsonc"], {
+		sha256: createHash("sha256").update(wranglerConfig).digest("hex"),
+		size: wranglerConfig.byteLength,
+	});
+	assert.ok(manifest.files["/"], "manifest should map index.html to its canonical URL");
+	assert.ok(manifest.files["/404.html"]);
+	assert.ok(manifest.files["/docs/"]);
+	assert.equal(manifest.files["/.well-known/build.json"], undefined);
+	assert.equal(manifest.files["/_headers"], undefined);
 });

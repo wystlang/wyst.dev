@@ -1,12 +1,13 @@
 // Static documentation generator for wyst.dev.
 //
-// Reads the Wyst design reference (markdown) and emits styled HTML under /docs/,
+// Reads the vendored Wyst design reference (markdown) and emits styled HTML
+// under the configured build output's /docs/ directory,
 // reusing the homepage design system. Markdown source is treated as
 // read-only: cross-links (`*.md`) are rewritten to site URLs at build time so
 // the source stays valid when viewed on GitHub.
 //
-//   WYST_DOCS_DIR  override for the docs source directory
-//   default order: ../wyst/design, then vendor/wyst-design
+//   WYST_DOCS_DIR    explicit override for the docs source directory
+//   WYST_OUTPUT_DIR  build output directory (default: dist)
 
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -37,17 +38,19 @@ const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 const SITE = "https://wyst.dev";
 
 function resolveDocsDir() {
-	const candidates = [
-		process.env.WYST_DOCS_DIR,
-		path.join(ROOT, "..", "wyst", "design"),
-		path.join(ROOT, "vendor", "wyst-design"),
-	].filter(Boolean);
-	for (const c of candidates) {
-		if (fs.existsSync(path.join(c, "README.md"))) return path.resolve(c);
-	}
+	const candidate = process.env.WYST_DOCS_DIR
+		? path.resolve(process.env.WYST_DOCS_DIR)
+		: path.join(ROOT, "vendor", "wyst-design");
+	if (fs.existsSync(path.join(candidate, "README.md"))) return candidate;
 	throw new Error(
-		"Could not locate the Wyst design docs. Set WYST_DOCS_DIR, clone wystlang/wyst next to this repo as ../wyst, or sync vendor/wyst-design.",
+		`Could not locate the Wyst design docs at ${candidate}. Sync vendor/wyst-design or explicitly set WYST_DOCS_DIR.`,
 	);
+}
+
+function resolveOutputDir() {
+	return process.env.WYST_OUTPUT_DIR
+		? path.resolve(process.env.WYST_OUTPUT_DIR)
+		: path.join(ROOT, "dist");
 }
 
 const LANG_MAP = {
@@ -221,9 +224,14 @@ function buildToc(html) {
 }
 
 // ---------------------------------------------------------------------------
-function main() {
-	const DOCS = resolveDocsDir();
+export function generateDocs({
+	docsDir = resolveDocsDir(),
+	outputDir = resolveOutputDir(),
+} = {}) {
+	const DOCS = path.resolve(docsDir);
+	const OUTPUT = path.resolve(outputDir);
 	console.log("docs source:", DOCS);
+	fileToUrl.clear();
 
 	const mdFiles = fs
 		.readdirSync(DOCS)
@@ -261,7 +269,7 @@ function main() {
 	const navModel = pages.filter((p) => !p.isIndex);
 
 	const md = makeMd();
-	const outDir = path.join(ROOT, "docs");
+	const outDir = path.join(OUTPUT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
 	fs.copyFileSync(
@@ -328,11 +336,12 @@ function main() {
 
 	console.log(`generated ${count} pages -> ${path.relative(ROOT, outDir)}/`);
 	console.log("github:", GITHUB_URL);
+	return { count, docsDir: DOCS, outputDir: outDir };
 }
 
 if (
 	process.argv[1] &&
 	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-	main();
+	generateDocs();
 }

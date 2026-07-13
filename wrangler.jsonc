@@ -1,21 +1,12 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "wyst",
-  "compatibility_date": "2026-06-12",
+  "compatibility_date": "2026-07-13",
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
-    "directory": ".worker-assets",
+    "directory": "./dist",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
-  },
-  // Assets-only Worker: no user code runs, so observability captures only
-  // request-level invocation logs. Traces instrument code execution and have
-  // nothing to record here, so they are omitted.
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1,
-    "logs": {
-      "enabled": true,
-      "invocation_logs": true
-    }
   }
 }

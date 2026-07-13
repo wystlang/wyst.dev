@@ -11,10 +11,12 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createWystSnapshotManifest } from "./wyst-snapshot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDestination = path.join(root, "vendor", "wyst-design");
 const fixtureDestination = path.join(root, "tests", "fixtures", "wyst");
+const snapshotDestination = path.join(root, "vendor", "wyst-snapshot.json");
 
 const fixturePaths = [
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
@@ -119,6 +121,7 @@ if (!/^[0-9a-f]{40,64}$/i.test(sourceCommit)) {
 const stagingRoot = await mkdtemp(path.join(root, ".wyst-snapshot-sync-"));
 const stagedDesign = path.join(stagingRoot, "wyst-design");
 const stagedFixtures = path.join(stagingRoot, "fixtures");
+const stagedManifest = path.join(stagingRoot, "wyst-snapshot.json");
 
 try {
 	await mkdir(stagedDesign, { recursive: true });
@@ -135,6 +138,12 @@ try {
 		await mkdir(path.dirname(destination), { recursive: true });
 		await copyFile(path.join(wystRoot, relativePath), destination);
 	}
+	await createWystSnapshotManifest({
+		designDir: stagedDesign,
+		fixtureDir: stagedFixtures,
+		destination: stagedManifest,
+		sourceCommit,
+	});
 
 	await mkdir(path.dirname(designDestination), { recursive: true });
 	await mkdir(path.dirname(fixtureDestination), { recursive: true });
@@ -142,6 +151,7 @@ try {
 	await rm(fixtureDestination, { recursive: true, force: true });
 	await rename(stagedDesign, designDestination);
 	await rename(stagedFixtures, fixtureDestination);
+	await rename(stagedManifest, snapshotDestination);
 } finally {
 	await rm(stagingRoot, { recursive: true, force: true });
 }

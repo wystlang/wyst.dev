@@ -6,7 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
-const PUBLIC_ROOT = path.join(ROOT, ".worker-assets");
+const PUBLIC_ROOT = process.env.WYST_OUTPUT_DIR
+	? path.resolve(process.env.WYST_OUTPUT_DIR)
+	: path.join(ROOT, "dist");
 const HOST = process.env.HOST || "127.0.0.1";
 const PORT = Number(process.env.PORT || 8347);
 
@@ -21,10 +23,18 @@ const TYPES = {
 	".avif": "image/avif",
 	".woff2": "font/woff2",
 	".json": "application/json",
+	".xml": "application/xml; charset=utf-8",
+	".txt": "text/plain; charset=utf-8",
 };
 
 function notFound(res) {
-	res.writeHead(404, { "content-type": "text/plain" });
+	const notFoundPage = path.join(PUBLIC_ROOT, "404.html");
+	if (fs.existsSync(notFoundPage)) {
+		res.writeHead(404, { "content-type": TYPES[".html"] });
+		fs.createReadStream(notFoundPage).pipe(res);
+		return;
+	}
+	res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
 	res.end("404");
 }
 
@@ -38,7 +48,14 @@ function safePublicPath(req) {
 
 	const relativePath = urlPath.replace(/^\/+/, "") || "index.html";
 	const segments = relativePath.split("/");
-	if (segments.some((segment) => segment.startsWith(".") || segment === "_headers")) {
+	if (
+		segments.some(
+			(segment, index) =>
+				(segment.startsWith(".") &&
+					!(index === 0 && segment === ".well-known")) ||
+				segment === "_headers",
+		)
+	) {
 		return null;
 	}
 

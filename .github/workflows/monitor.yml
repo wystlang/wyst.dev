@@ -1,0 +1,111 @@
+name: Production monitor
+
+on:
+  schedule:
+    - cron: "17 05 * * *"
+    - cron: "43 05 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wyst-production
+  cancel-in-progress: false
+
+jobs:
+  http:
+    name: HTTP and deployment identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      deployments: read
+    steps:
+      - name: Check out monitor controller
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve the last successful production deployment
+        id: production
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/production-deployment.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Check out deployed production source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          ref: ${{ steps.production.outputs.sha }}
+
+      - name: Install the locked build toolchain
+        run: npm ci
+
+      - name: Rebuild the expected production artifact
+        env:
+          WYST_SITE_COMMIT: ${{ steps.production.outputs.sha }}
+        run: npm run --silent build
+
+      - name: Export the verified artifact identity
+        shell: bash
+        run: node tools/export-build-identity.mjs --github-env >> "$GITHUB_ENV"
+
+      - name: Audit public production responses
+        run: npm run --silent audit:live
+
+  browser:
+    name: Weekly live browser crawl
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '43 05 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out browser audit
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+
+      - name: Crawl every production route in Chrome
+        env:
+          WYST_BROWSER_ORIGIN: https://wyst.dev
+        run: npm run --silent audit:browser
+
+  maintenance:
+    name: Weekly links and dependencies
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '43 05 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out audit source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install the locked toolchain
+        run: npm ci --ignore-scripts
+
+      - name: Build generated HTML
+        run: npm run --silent build
+
+      - name: Check external links
+        run: npm run --silent audit:external
+
+      - name: Audit dependency vulnerabilities
+        run: npm run --silent audit:dependencies

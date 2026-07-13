@@ -15,11 +15,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { verifyWystSnapshot } from "../tools/wyst-snapshot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDir = path.join(root, "vendor", "wyst-design");
 const fixtureDir = path.join(root, "tests", "fixtures", "wyst");
 const syncScript = path.join(root, "tools", "sync-wyst-snapshot.mjs");
+const snapshotScript = path.join(root, "tools", "wyst-snapshot.mjs");
 
 const expectedFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
@@ -76,6 +78,7 @@ async function makeWystRepo(t) {
 	await Promise.all(inputs.map(([file, contents]) => write(wystRoot, file, contents)));
 	await mkdir(path.join(siteRoot, "tools"), { recursive: true });
 	await copyFile(syncScript, path.join(siteRoot, "tools", "sync-wyst-snapshot.mjs"));
+	await copyFile(snapshotScript, path.join(siteRoot, "tools", "wyst-snapshot.mjs"));
 
 	git(wystRoot, ["init", "--quiet"]);
 	git(wystRoot, ["add", "."]);
@@ -130,6 +133,32 @@ test("the versioned Wyst publication snapshot has provenance and build inputs", 
 
 test("the versioned Wyst fixture snapshot contains only site test inputs", async () => {
 	assert.deepEqual(await listFiles(fixtureDir), expectedFixtures);
+});
+
+test("the committed snapshot manifest binds every imported byte", async () => {
+	const snapshot = await verifyWystSnapshot();
+	assert.match(snapshot.snapshotSha256, /^[0-9a-f]{64}$/);
+	assert.equal(
+		Object.keys(snapshot.files).length,
+		(await listFiles(designDir)).length + (await listFiles(fixtureDir)).length,
+	);
+});
+
+test("snapshot sync writes a deterministic byte manifest", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	const result = runSync(siteRoot, wystRoot);
+	assert.equal(result.status, 0, result.stderr || result.stdout);
+	const manifest = JSON.parse(
+		await readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
+	);
+	assert.equal(manifest.schema, 1);
+	assert.equal(manifest.sourceCommit, git(wystRoot, ["rev-parse", "HEAD"]).stdout.trim());
+	assert.match(manifest.snapshotSha256, /^[0-9a-f]{64}$/);
+	assert.equal(Object.keys(manifest.files).length, 8);
+	assert.ok(manifest.files["vendor/wyst-design/.source-commit"]);
+	for (const fixture of expectedFixtures) {
+		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
+	}
 });
 
 test("snapshot sync rejects a deleted tracked design chapter", async (t) => {

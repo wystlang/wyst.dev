@@ -1,41 +1,33 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
-const GITHUB_URL = "https://github.com/wystlang/wyst";
+const SITE_SOURCE_URL = "https://github.com/wystlang/wyst.dev";
 const UART_EXAMPLE_PATH =
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst";
+const UART_SOURCE_URL = `${SITE_SOURCE_URL}/blob/main/tests/fixtures/wyst/${UART_EXAMPLE_PATH}`;
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const docsIndexHtml = await readFile(
-	new URL("../docs/index.html", import.meta.url),
+	new URL("../dist/docs/index.html", import.meta.url),
 	"utf8",
 );
 const docsSourceOfTruthHtml = await readFile(
-	new URL("../docs/source-of-truth/index.html", import.meta.url),
+	new URL("../dist/docs/source-of-truth/index.html", import.meta.url),
 	"utf8",
 );
 const docsTypesHtml = await readFile(
-	new URL("../docs/chapter-06-types/index.html", import.meta.url),
+	new URL("../dist/docs/chapter-06-types/index.html", import.meta.url),
 	"utf8",
 );
-const notFoundHtml = await readFile(new URL("../404.html", import.meta.url), "utf8");
+const notFoundHtml = await readFile(
+	new URL("../dist/404.html", import.meta.url),
+	"utf8",
+);
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
 const uartFixtureSource = await readFile(
 	new URL(`./fixtures/wyst/${UART_EXAMPLE_PATH}`, import.meta.url),
-	"utf8",
-);
-const uartFixtureLayout = await readFile(
-	new URL(
-		"./fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
-		import.meta.url,
-	),
 	"utf8",
 );
 const uartExpectedOutput = await readFile(
@@ -45,27 +37,6 @@ const uartExpectedOutput = await readFile(
 	),
 	"utf8",
 );
-const semihostRuntimeSource = await readFile(
-	new URL(
-		"./fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
-		import.meta.url,
-	),
-	"utf8",
-);
-
-function resolveCargoManifest() {
-	const candidates = [
-		process.env.WYST_REPO_DIR && resolve(process.env.WYST_REPO_DIR),
-		fileURLToPath(new URL("../../wyst", import.meta.url)),
-	].filter(Boolean);
-	for (const candidate of candidates) {
-		const manifest = join(candidate, "wync", "Cargo.toml");
-		if (existsSync(manifest)) return manifest;
-	}
-	return undefined;
-}
-
-const cargoManifest = resolveCargoManifest();
 
 function decodeHtml(text) {
 	return text
@@ -93,7 +64,7 @@ function attributeMap(attributes) {
 }
 
 function anchors(pageHtml) {
-	return [...pageHtml.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)].map(
+	return [...pageHtml.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)].map(
 		([, attributes, body]) => {
 			const attrs = attributeMap(attributes);
 			return {
@@ -239,19 +210,17 @@ function perceptualDistance(first, second) {
 }
 
 test("shared headers keep only Reference and Source", () => {
-	const expected = [
-		{ href: "/docs/", label: "reference" },
-		{ href: GITHUB_URL, label: "source" },
-	];
-
-	for (const [name, pageHtml] of [
-		["home", html],
-		["source-of-truth docs", docsSourceOfTruthHtml],
-		["404", notFoundHtml],
+	for (const [name, pageHtml, sourceUrl] of [
+		["home", html, SITE_SOURCE_URL],
+		["source-of-truth docs", docsSourceOfTruthHtml, SITE_SOURCE_URL],
+		["404", notFoundHtml, SITE_SOURCE_URL],
 	]) {
 		assert.deepEqual(
 			primaryNavLinks(pageHtml),
-			expected,
+			[
+				{ href: "/docs/", label: "reference" },
+				{ href: sourceUrl, label: "source" },
+			],
 			`${name} should expose the quiet two-link project navigation`,
 		);
 	}
@@ -369,7 +338,7 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 test("homepage links plainly to the source and reference", () => {
 	const pageLinks = anchors(html);
 	const expectedLinks = [
-		{ href: GITHUB_URL, label: /^Source$/i },
+		{ href: SITE_SOURCE_URL, label: /^Source$/i },
 		{ href: "/docs/", label: /^Reference$/i },
 	];
 
@@ -614,6 +583,10 @@ test("homepage shows one static UART example from the real fixture", () => {
 	assert.equal(matches.length, 1, "the UART source example should appear once");
 
 	const example = uartExampleHtml();
+	assert.ok(
+		anchors(example).some(({ href }) => href === UART_SOURCE_URL),
+		"the UART example should link to its public versioned site fixture",
+	);
 	const codeBlocks = [...example.matchAll(/<code\b[^>]*>([\s\S]*?)<\/code>/gi)];
 	const sourceBlock = codeBlocks
 		.map((match) => ({ markup: match[1], lines: sourceLines(match[1]) }))
@@ -734,55 +707,3 @@ test("minimal homepage retains accessibility and safe external links", () => {
 		"secondary prose should retain AA contrast on the dark field",
 	);
 });
-
-test(
-	"the complete UART fixture used by the homepage builds to an ELF",
-	{
-		skip: cargoManifest
-			? false
-			: "requires WYST_REPO_DIR or a sibling ../wyst compiler checkout",
-	},
-	async () => {
-		const dir = await mkdtemp(join(tmpdir(), "wyst-index-uart-"));
-		const sourcePath = join(dir, "main.wyst");
-		const layoutPath = join(dir, "layout.wyst");
-		const outputPath = join(dir, "uart-hello.elf");
-
-		try {
-			await writeFile(
-				sourcePath,
-				`${uartFixtureSource.trimEnd()}\n\n${semihostRuntimeSource}`,
-			);
-			await writeFile(layoutPath, uartFixtureLayout);
-
-			const result = spawnSync(
-				"cargo",
-				[
-					"run",
-					"--quiet",
-					"--locked",
-					"--manifest-path",
-					cargoManifest,
-					"--",
-					"build",
-					sourcePath,
-					"--layout",
-					layoutPath,
-					"-o",
-					outputPath,
-				],
-				{ encoding: "utf8", timeout: 120_000 },
-			);
-
-			assert.equal(
-				result.status,
-				0,
-				`uart-hello fixture should build\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
-			);
-			const elf = await readFile(outputPath);
-			assert.deepEqual([...elf.subarray(0, 4)], [0x7f, 0x45, 0x4c, 0x46]);
-		} finally {
-			await rm(dir, { recursive: true, force: true });
-		}
-	},
-);

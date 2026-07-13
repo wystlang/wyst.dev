@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const defaultPublicRoot = path.join(root, ".worker-assets");
+const defaultPublicRoot = path.join(root, "dist");
 const siteOrigin = new URL("https://wyst.dev");
 
 async function walk(dir) {
@@ -362,14 +362,10 @@ async function auditPublicReferences(publicRoot) {
 	return { files, filesByPath, refsByFile, internalCount, externalCount };
 }
 
-async function auditCssReferences() {
-	const sourceFiles = [
-		path.join(root, "index.html"),
-		path.join(root, "404.html"),
-		...(await walk(path.join(root, "docs"))).filter((file) => file.endsWith(".html")),
-		...(await walk(path.join(root, "build"))).filter((file) => file.endsWith(".mjs")),
-		...(await walk(path.join(root, "assets"))).filter((file) => file.endsWith(".js")),
-	];
+async function auditCssReferences(publicRoot, files) {
+	const sourceFiles = files.filter(
+		(file) => file.endsWith(".html") || file.endsWith(".js"),
+	);
 	const source = (
 		await Promise.all(sourceFiles.map((file) => readFile(file, "utf8")))
 	).join("\n");
@@ -386,8 +382,9 @@ async function auditCssReferences() {
 	}
 	const failures = [];
 
-	for (const filename of ["wyst.css", "docs.css"]) {
-		const css = (await readFile(path.join(root, "assets", filename), "utf8"))
+	for (const file of files.filter((candidate) => candidate.endsWith(".css"))) {
+		const filename = publicPath(file, publicRoot);
+		const css = (await readFile(file, "utf8"))
 			.replace(/\/\*[\s\S]*?\*\//g, "");
 		const classes = new Set();
 		for (const rule of css.matchAll(/([^{}]+)\{/g)) {
@@ -473,8 +470,8 @@ async function auditSitemapCoverage(publicRoot, publicAudit) {
 }
 
 const { publicRoot } = parseArgs(process.argv.slice(2));
-if (publicRoot === defaultPublicRoot) await auditCssReferences();
 const publicAudit = await auditPublicReferences(publicRoot);
+await auditCssReferences(publicRoot, publicAudit.files);
 const routeCount = await auditRouteReachability(publicRoot, publicAudit);
 const sitemapCount = await auditSitemapCoverage(publicRoot, publicAudit);
 console.log(

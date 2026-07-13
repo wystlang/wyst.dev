@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
 	cp,
 	mkdir,
@@ -7,99 +8,100 @@ import {
 	rm,
 	writeFile,
 } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { generate404 } from "../build/generate-404.mjs";
+import { generateSitemap } from "../build/generate-sitemap.mjs";
+import { generateDocs } from "../build/generate.mjs";
+import {
+	createBuildManifest,
+	resolveOutputDir,
+} from "./build-manifest.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = path.join(root, ".worker-assets");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-await rm(outDir, { recursive: true, force: true });
-await mkdir(outDir, { recursive: true });
+function assertSafeOutputDir(outputDir) {
+	const output = path.resolve(outputDir);
+	const filesystemRoot = path.parse(output).root;
+	if (output === filesystemRoot || output === ROOT) {
+		throw new Error(`refusing to clean unsafe output directory: ${output}`);
+	}
 
-const entries = [
-	"index.html",
-	"404.html",
-	"robots.txt",
-	"sitemap.xml",
-	"assets",
-	"docs",
-];
+	// An output directory that contains the repository would delete the source
+	// tree when the clean build starts.
+	const repoFromOutput = path.relative(output, ROOT);
+	if (
+		repoFromOutput &&
+		!repoFromOutput.startsWith("..") &&
+		!path.isAbsolute(repoFromOutput)
+	) {
+		throw new Error(`output directory must not contain the repository: ${output}`);
+	}
 
-for (const entry of entries) {
-	await cp(path.join(root, entry), path.join(outDir, entry), {
-		recursive: true,
-		force: true,
-	});
+	const protectedDirectories = [
+		".git",
+		".github",
+		"assets",
+		"build",
+		"tests",
+		"tools",
+		"vendor",
+	].map((entry) => path.join(ROOT, entry));
+	for (const protectedDir of protectedDirectories) {
+		const relative = path.relative(protectedDir, output);
+		if (!relative.startsWith("..") && !path.isAbsolute(relative)) {
+			throw new Error(
+				`output directory overlaps build input ${path.relative(ROOT, protectedDir)}: ${output}`,
+			);
+		}
+	}
+	return output;
 }
 
-const assetsDir = path.join(outDir, "assets");
-
-// Recursively list files under a directory, returning absolute paths.
 async function walk(dir) {
 	const found = [];
-	for (const ent of await readdir(dir, { withFileTypes: true })) {
-		const full = path.join(dir, ent.name);
-		if (ent.isDirectory()) found.push(...(await walk(full)));
-		else found.push(full);
+	const entries = await readdir(dir, { withFileTypes: true });
+	entries.sort((a, b) => a.name.localeCompare(b.name));
+	for (const entry of entries) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) found.push(...(await walk(full)));
+		else if (entry.isFile()) found.push(full);
+		else throw new Error(`unsupported build input: ${full}`);
 	}
 	return found;
 }
 
-function hash8(buf) {
-	return createHash("sha256").update(buf).digest("hex").slice(0, 8);
+function hash8(contents) {
+	return createHash("sha256").update(contents).digest("hex").slice(0, 8);
 }
 
-// ---------------------------------------------------------------------------
-// Fingerprint cache-sensitive assets in the deploy artifact so they can be served
-// `immutable` (see the cache policy below). Source filenames stay stable —
-// only the copies under .worker-assets/ are renamed and their references in the
-// generated HTML rewritten. The hash is content-derived, so unchanged files keep
-// the same name and the committed artifact stays free of spurious diffs.
-const htmlFiles = (await walk(outDir)).filter((f) => f.endsWith(".html"));
-const rewrites = []; // [fromRef, toRef]
+async function fingerprintAssets(outputDir) {
+	const assetsDir = path.join(outputDir, "assets");
+	const htmlFiles = (await walk(outputDir)).filter((file) =>
+		file.endsWith(".html"),
+	);
+	const rewrites = [];
 
-for (const asset of ["wyst.css", "docs.css", "docs.js"]) {
-	const src = path.join(assetsDir, asset);
-	let buf;
-	try {
-		buf = await readFile(src);
-	} catch {
-		continue; // stylesheet not present; skip
+	for (const asset of ["wyst.css", "docs.css", "docs.js"]) {
+		const source = path.join(assetsDir, asset);
+		const contents = await readFile(source);
+		const extension = path.extname(asset);
+		const stem = asset.slice(0, -extension.length);
+		const fingerprinted = `${stem}.${hash8(contents)}${extension}`;
+		await rename(source, path.join(assetsDir, fingerprinted));
+		rewrites.push([`assets/${asset}`, `assets/${fingerprinted}`]);
 	}
-	const ext = path.extname(asset);
-	const stem = asset.slice(0, -ext.length);
-	const hashed = `${stem}.${hash8(buf)}${ext}`;
-	await rename(src, path.join(assetsDir, hashed));
-	// References appear as both "assets/foo.css" (root, relative) and
-	// "/assets/foo.css" (docs, absolute); the shared substring covers both.
-	rewrites.push([`assets/${asset}`, `assets/${hashed}`]);
-}
 
-for (const file of htmlFiles) {
-	let html = await readFile(file, "utf-8");
-	let changed = false;
-	for (const [from, to] of rewrites) {
-		if (html.includes(from)) {
-			html = html.split(from).join(to);
-			changed = true;
+	for (const file of htmlFiles) {
+		let html = await readFile(file, "utf8");
+		for (const [source, destination] of rewrites) {
+			html = html.split(source).join(destination);
 		}
+		await writeFile(file, html);
 	}
-	if (changed) await writeFile(file, html);
+	return rewrites;
 }
 
-// ---------------------------------------------------------------------------
-// Cache policy. Cloudflare Workers Assets defaults to `max-age=0,
-// must-revalidate`, which costs a revalidation round-trip per asset on every
-// visit. Override it with a generated `_headers` file:
-//   - fingerprinted CSS and fonts never change under their name -> immutable.
-//   - images keep stable, un-fingerprinted names, so a deploy could change them;
-//     `stale-while-revalidate` removes the blocking round-trip on repeat visits
-//     while still bounding how long a stale copy can be served.
-// HTML is intentionally omitted so it keeps the revalidated default and deploys
-// go live immediately. Rules are explicit per-file (not globbed): Workers
-// `_headers` only guarantees a single greedy splat, with no promise that a fixed
-// extension suffix after `*` matches — exact paths are unambiguous.
 const IMMUTABLE = "public, max-age=31536000, immutable";
 const REVALIDATE = "public, max-age=86400, stale-while-revalidate=604800";
 const MUST_REVALIDATE = "public, max-age=0, must-revalidate";
@@ -108,7 +110,7 @@ const FAVICON_URLS = new Set([
 	"/assets/favicon-48.png",
 	"/assets/favicon.svg",
 ]);
-const POLICY = {
+const CACHE_POLICY = {
 	".css": IMMUTABLE,
 	".js": IMMUTABLE,
 	".woff2": IMMUTABLE,
@@ -125,17 +127,6 @@ const POLICY = {
 	".ico": REVALIDATE,
 };
 
-const rules = [];
-for (const file of await walk(assetsDir)) {
-	const url = "/" + path.relative(outDir, file).split(path.sep).join("/");
-	const cc = FAVICON_URLS.has(url)
-		? MUST_REVALIDATE
-		: POLICY[path.extname(file).toLowerCase()];
-	if (!cc) continue;
-	rules.push({ url, cc });
-}
-rules.sort((a, b) => a.url.localeCompare(b.url)); // deterministic output
-
 const SECURITY_HEADERS = `/*
   Content-Security-Policy: default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; upgrade-insecure-requests
   Cross-Origin-Opener-Policy: same-origin
@@ -146,20 +137,78 @@ const SECURITY_HEADERS = `/*
   X-Frame-Options: DENY
   X-XSS-Protection: 0`;
 
-const headers =
-	"# Generated by tools/prepare-worker-assets.mjs — do not edit by hand.\n" +
-	"# Security and cache policy for static assets served by Cloudflare Workers Assets.\n" +
-	SECURITY_HEADERS +
-	"\n" +
-	rules.map((r) => `${r.url}\n  Cache-Control: ${r.cc}`).join("\n") +
-	"\n";
+async function writeHeaders(outputDir) {
+	const assetsDir = path.join(outputDir, "assets");
+	const rules = [];
+	for (const file of await walk(assetsDir)) {
+		const url = `/${path.relative(outputDir, file).split(path.sep).join("/")}`;
+		const cacheControl = FAVICON_URLS.has(url)
+			? MUST_REVALIDATE
+			: CACHE_POLICY[path.extname(file).toLowerCase()];
+		if (cacheControl) rules.push({ url, cacheControl });
+	}
+	rules.sort((a, b) => a.url.localeCompare(b.url));
 
-await writeFile(path.join(outDir, "_headers"), headers);
-
-console.log(`Prepared ${entries.join(", ")} in ${path.relative(root, outDir)}`);
-if (rewrites.length) {
-	console.log(
-		`Fingerprinted ${rewrites.map(([f, t]) => `${f} -> ${t}`).join(", ")}`,
-	);
+	const headers =
+		"# Generated by tools/prepare-worker-assets.mjs — do not edit by hand.\n" +
+		"# Security and cache policy for static assets served by Cloudflare Workers Assets.\n" +
+		SECURITY_HEADERS +
+		"\n" +
+		rules
+			.map(
+				(rule) =>
+					`${rule.url}\n  Cache-Control: ${rule.cacheControl}`,
+			)
+			.join("\n") +
+		"\n";
+	await writeFile(path.join(outputDir, "_headers"), headers);
+	return rules.length;
 }
-console.log(`Wrote _headers (${rules.length} rules)`);
+
+export async function prepareWorkerAssets({
+	outputDir = resolveOutputDir(),
+} = {}) {
+	const output = assertSafeOutputDir(outputDir);
+	await rm(output, { recursive: true, force: true });
+	await mkdir(output, { recursive: true });
+
+	for (const entry of ["index.html", "assets", "robots.txt"]) {
+		await cp(path.join(ROOT, entry), path.join(output, entry), {
+			recursive: true,
+			force: true,
+		});
+	}
+
+	generateDocs({ outputDir: output });
+	generate404({ outputDir: output });
+	await generateSitemap({ outputDir: output });
+	const rewrites = await fingerprintAssets(output);
+	const headerRules = await writeHeaders(output);
+	const manifest = await createBuildManifest({ outputDir: output });
+
+	console.log(`prepared deterministic site in ${path.relative(ROOT, output)}`);
+	console.log(
+		`fingerprinted ${rewrites.map(([from, to]) => `${from} -> ${to}`).join(", ")}`,
+	);
+	console.log(`wrote _headers (${headerRules} cache rules)`);
+	return { manifest, outputDir: output };
+}
+
+function parseArgs(argv) {
+	let outputDir = resolveOutputDir();
+	for (let index = 0; index < argv.length; index++) {
+		if (argv[index] === "--output-dir" && argv[index + 1]) {
+			outputDir = path.resolve(argv[++index]);
+			continue;
+		}
+		throw new Error(`unknown argument: ${argv[index]}`);
+	}
+	return { outputDir };
+}
+
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	await prepareWorkerAssets(parseArgs(process.argv.slice(2)));
+}

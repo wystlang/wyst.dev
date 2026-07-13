@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Wyst">
-	<rect width="48" height="48" fill="#0B0D12" />
-	<g fill="none" stroke="#93A4FF" stroke-width="6" stroke-linejoin="round">
-		<path d="M7 9 15 30 23 9 31 30 39 9" stroke-linecap="square" />
-		<path d="M31 30C31 36 31 39.5 28 42" stroke-linecap="round" />
-	</g>
-</svg>

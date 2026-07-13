@@ -4,9 +4,8 @@
 // Workers Static Assets is configured with `not_found_handling: "404-page"`
 // (see wrangler.jsonc), which serves the nearest 404.html for any unmatched
 // path. Without this file that setting silently falls back to a blank,
-// null-body 404 response. The output is committed at the repo root alongside
-// index.html and copied into the deploy artifact by
-// tools/prepare-worker-assets.mjs.
+// null-body 404 response. The output is generated directly into the deploy
+// artifact and is never committed.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -15,23 +14,40 @@ import { errorPage } from "./template.mjs";
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 
+function resolveOutputDir() {
+	return process.env.WYST_OUTPUT_DIR
+		? path.resolve(process.env.WYST_OUTPUT_DIR)
+		: path.join(ROOT, "dist");
+}
+
 const bodyHtml = `<p class="nf-lede">
 				The address did not resolve to a generated page. Nothing is mapped
 				here.
 			</p>`;
 
-const html = errorPage({
-	title: "Page not found · Wyst",
-	description: "The page you requested could not be found on wyst.dev.",
-	eyebrow: "404",
-	h1: "Page not found",
-	bodyHtml,
-	actions: [
-		{ href: "/", label: "home" },
-		{ href: "/docs/", label: "reference" },
-	],
-});
+export function generate404({ outputDir = resolveOutputDir() } = {}) {
+	const html = errorPage({
+		title: "Page not found · Wyst",
+		description: "The page you requested could not be found on wyst.dev.",
+		eyebrow: "404",
+		h1: "Page not found",
+		bodyHtml,
+		actions: [
+			{ href: "/", label: "home" },
+			{ href: "/docs/", label: "reference" },
+		],
+	});
 
-const dest = path.join(ROOT, "404.html");
-fs.writeFileSync(dest, html);
-console.log(`wrote ${path.relative(ROOT, dest)}`);
+	const dest = path.join(path.resolve(outputDir), "404.html");
+	fs.mkdirSync(path.dirname(dest), { recursive: true });
+	fs.writeFileSync(dest, html);
+	console.log(`wrote ${path.relative(ROOT, dest)}`);
+	return dest;
+}
+
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	generate404();
+}
