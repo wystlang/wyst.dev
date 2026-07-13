@@ -31,6 +31,7 @@ body.docs footer.site .wrap {
 	display: none;
 	grid-column: 1 / -1;
 	justify-self: start;
+	min-height: 44px;
 	padding: var(--space-xs) 0;
 	border: 0;
 	border-bottom: 1px solid var(--reference);
@@ -210,6 +211,11 @@ body.docs footer.site .wrap {
 .doc-anchor {
 	position: absolute;
 	left: -1.1em;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	min-height: 24px;
 	color: var(--muted);
 	font-weight: 400;
 	opacity: 0;
@@ -218,6 +224,7 @@ body.docs footer.site .wrap {
 
 .doc-body h2:hover .doc-anchor,
 .doc-body h3:hover .doc-anchor,
+.doc-body h4:hover .doc-anchor,
 .doc-anchor:focus-visible {
 	opacity: 1;
 }
@@ -228,7 +235,8 @@ body.docs footer.site .wrap {
 	color: var(--reference);
 	font-family: var(--mono);
 	font-size: 0.86em;
-	white-space: nowrap;
+	overflow-wrap: anywhere;
+	white-space: normal;
 }
 
 .doc-body blockquote {
@@ -272,7 +280,9 @@ body.docs footer.site .wrap {
 	font-weight: 500;
 }
 
+.doc-body th code,
 .doc-body td code {
+	overflow-wrap: normal;
 	white-space: nowrap;
 }
 
@@ -513,6 +523,16 @@ body.docs footer.site .wrap {
 		border-top: 1px solid var(--line-solid);
 		border-bottom: 1px solid var(--line-solid);
 		background: var(--bg-code);
+	}
+
+	.doc-sidebar-home,
+	.doc-sidebar li a {
+		align-items: center;
+		min-height: 44px;
+	}
+
+	.doc-sidebar-home {
+		display: flex;
 	}
 
 	.doc-sidebar.is-open {

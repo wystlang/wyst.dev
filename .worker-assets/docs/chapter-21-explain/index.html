@@ -8,11 +8,25 @@
 		<meta name="description" content="Lowering, effects, storage, and provenance reports that connect source to machine behavior." />
 		<title>Explain Reports · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-21-explain/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-21-explain/" />
+		<meta property="og:title" content="Explain Reports · Wyst" />
+		<meta property="og:description" content="Lowering, effects, storage, and provenance reports that connect source to machine behavior." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Explain Reports · Wyst" />
+		<meta name="twitter:description" content="Lowering, effects, storage, and provenance reports that connect source to machine behavior." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -94,7 +108,7 @@ effects, storage, object placement, and emitted bytes. They should not be used
 as a second source of language semantics. The report schema bundle is
 versioned as <code>wync.reports.v0</code> in <a href="/docs/source-of-truth/">source-of-truth.md</a>;
 individual report schemas are named below.</p>
-<h2 id="lowering-report" tabindex="-1"><a class="doc-anchor" href="#lowering-report" aria-hidden="true">#</a> Lowering Report</h2>
+<h2 id="lowering-report" tabindex="-1"><a class="doc-anchor" href="#lowering-report" aria-label="Permalink to Lowering Report">#</a> Lowering Report</h2>
 <p><code>wync explain lowering &lt;project-dir|path/to/wyst.project&gt; --function &lt;name&gt;</code>
 emits the source-to-machine report for a project build. The report is
 project-only so target profile, layout, source graph, and output policy all
@@ -126,7 +140,7 @@ and freshness state for reported facts.</li>
 Additional freshness states must not reinterpret <code>current-run</code>.</p>
 <p>Unrecognized shapes fail closed: explain lowering accepts project builds only,
 and unknown function names are diagnostics rather than empty reports.</p>
-<h2 id="effects-report" tabindex="-1"><a class="doc-anchor" href="#effects-report" aria-hidden="true">#</a> Effects Report</h2>
+<h2 id="effects-report" tabindex="-1"><a class="doc-anchor" href="#effects-report" aria-label="Permalink to Effects Report">#</a> Effects Report</h2>
 <p><code>wync explain effects &lt;project-dir|path/to/wyst.project&gt;</code> emits the memory/effect
 report for a project build. The optional <code>--function &lt;name&gt;</code>
 filter narrows the report to one typed IR function; without it the report covers
@@ -161,7 +175,7 @@ bytes, compiler-owned stack slots, spills, reloads, register-class usage, code
 size, veneers, or caller-owned aggregate copies. Those facts are post-lowering
 constraints and belong to lowering, ABI, object, generated-manifest, or storage
 reports.</p>
-<h2 id="storage-report" tabindex="-1"><a class="doc-anchor" href="#storage-report" aria-hidden="true">#</a> Storage Report</h2>
+<h2 id="storage-report" tabindex="-1"><a class="doc-anchor" href="#storage-report" aria-label="Permalink to Storage Report">#</a> Storage Report</h2>
 <p><code>wync explain storage &lt;project-dir|path/to/wyst.project&gt;</code> emits the
 storage-contract, dynamic-array descriptor, typed-handle, and buffer/string API
 reports for a project build. The report is read-only and uses the same project
@@ -234,12 +248,6 @@ trust-boundary model.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

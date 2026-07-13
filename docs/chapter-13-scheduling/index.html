@@ -8,6 +8,20 @@
 		<meta name="description" content="Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes." />
 		<title>Scheduling Semantics · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-13-scheduling/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-13-scheduling/" />
+		<meta property="og:title" content="Scheduling Semantics · Wyst" />
+		<meta property="og:description" content="Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Scheduling Semantics · Wyst" />
+		<meta name="twitter:description" content="Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -92,14 +106,14 @@ ordering-constraint vs optimization-hint distinction, and reproducibility
 scope. IR-level region representation
 of schedule blocks lives in <a href="/docs/appendix-a-ir/">appendix-a-ir.md §4.3</a>.</p>
 </blockquote>
-<h3 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-hidden="true">#</a> Semantic Boundary</h3>
+<h3 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-label="Permalink to Semantic Boundary">#</a> Semantic Boundary</h3>
 <p>Scheduling modes are permissions for instruction ordering, not a way to change
 source meaning. Optimization and IR rules build on the source evaluation order,
 effects, memory ordering, and dependency rules established here. Scheduling may
 move pure work only when the move is observationally equivalent under those
 rules.</p>
 <hr>
-<h3 id="scheduling-semantics" tabindex="-1"><a class="doc-anchor" href="#scheduling-semantics" aria-hidden="true">#</a> Scheduling Semantics</h3>
+<h3 id="scheduling-semantics" tabindex="-1"><a class="doc-anchor" href="#scheduling-semantics" aria-label="Permalink to Scheduling Semantics">#</a> Scheduling Semantics</h3>
 <p>Wyst assigns every emitted instruction to a named scheduling mode. Code that is
 not enclosed by an explicit <code>#schedule(...)</code> directive is in the distinct
 implicit mode <code>schedule.default</code>. Wyst also exposes scheduling permissions
@@ -124,9 +138,8 @@ input manifest, compiler binary, build optimization mode, target, and
 invocations. Do not use hint modes where source-order layout, exact instruction
 count, or cross-version instruction order must remain stable.</p>
 <hr>
-<h3 id="checked-scheduling-example" tabindex="-1"><a class="doc-anchor" href="#checked-scheduling-example" aria-hidden="true">#</a> Checked Scheduling Example</h3>
+<h3 id="checked-scheduling-example" tabindex="-1"><a class="doc-anchor" href="#checked-scheduling-example" aria-label="Permalink to Checked Scheduling Example">#</a> Checked Scheduling Example</h3>
 <p><code>#schedule(strict)</code> is valid inside an ordinary function body:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> scheduling_demo
 
 <span class="token function">step</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
@@ -136,7 +149,7 @@ count, or cross-version instruction order must remain stable.</p>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h2 id="default-scheduling" tabindex="-1"><a class="doc-anchor" href="#default-scheduling" aria-hidden="true">#</a> Default Scheduling</h2>
+<h2 id="default-scheduling" tabindex="-1"><a class="doc-anchor" href="#default-scheduling" aria-label="Permalink to Default Scheduling">#</a> Default Scheduling</h2>
 <p>Ordinary code without a <code>#schedule</code> directive is compiled under the named mode
 <code>schedule.default</code>.</p>
 <p><code>schedule.default</code> is a distinct mode. It is not an alias for
@@ -184,8 +197,7 @@ must not reinterpret <code>schedule.default</code> as a microarchitecture hint m
 acceptable and no explicit scheduling boundary is needed. Use
 <code>#schedule(strict)</code> when source-level semantic operation order or inspection of
 source-level intermediates must be preserved.</p>
-<h2 id="strict-scheduling" tabindex="-1"><a class="doc-anchor" href="#strict-scheduling" aria-hidden="true">#</a> Strict Scheduling</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="strict-scheduling" tabindex="-1"><a class="doc-anchor" href="#strict-scheduling" aria-label="Permalink to Strict Scheduling">#</a> Strict Scheduling</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>strict<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token variable">raw</span>  <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
     <span class="token variable">next</span> <span class="token operator">:=</span> raw <span class="token operator">+</span> <span class="token number">1</span>
@@ -277,14 +289,13 @@ choice, spill placement, prologue shape, or ABI marshalling. Use frame
 constraints, slot-budget diagnostics, disassembly snapshots, and generated
 reports when those post-lowering resources are part of the contract.</p>
 <hr>
-<h2 id="exact-code-contracts" tabindex="-1"><a class="doc-anchor" href="#exact-code-contracts" aria-hidden="true">#</a> Exact Code Contracts</h2>
+<h2 id="exact-code-contracts" tabindex="-1"><a class="doc-anchor" href="#exact-code-contracts" aria-label="Permalink to Exact Code Contracts">#</a> Exact Code Contracts</h2>
 <p>Exception vectors, counted sequences, timing-sensitive operations, and byte
 identity boundaries use <code>#exact(...)</code> on a function or label when strict
 scheduling is not strong enough. <code>#exact</code> is a post-lowering artifact contract,
 not a source-level scheduling mode. It does not authorize reordering and it
 does not change source meaning; it constrains what the backend is allowed to
 emit for that code item.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> exact_code_demo
 
 <span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token directive macro">#exact</span><span class="token punctuation">(</span>instructions <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">,</span> families <span class="token operator">=</span> <span class="token string">"hint,branch"</span><span class="token punctuation">,</span> bytes <span class="token operator">=</span> <span class="token string">"1f2003d5 c0035fd6"</span><span class="token punctuation">,</span> prologue <span class="token operator">=</span> <span class="token string">"absent"</span><span class="token punctuation">,</span> spills <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> veneers <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">,</span> section <span class="token operator">=</span> <span class="token string">".text"</span><span class="token punctuation">,</span> align <span class="token operator">=</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -350,8 +361,7 @@ only when the post-lowering artifact itself is the contract. Keeping the two
 facilities separate prevents strict scheduling from becoming a byte-freezing
 mode for ordinary code.</p>
 <hr>
-<h2 id="relaxed-scheduling" tabindex="-1"><a class="doc-anchor" href="#relaxed-scheduling" aria-hidden="true">#</a> Relaxed Scheduling</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="relaxed-scheduling" tabindex="-1"><a class="doc-anchor" href="#relaxed-scheduling" aria-label="Permalink to Relaxed Scheduling">#</a> Relaxed Scheduling</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>relaxed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token variable">lhs</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>a<span class="token punctuation">]</span>
     <span class="token variable">rhs</span> <span class="token operator">:=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>b<span class="token punctuation">]</span>
@@ -370,8 +380,7 @@ Instruction order is not guaranteed to be preserved across compiler versions.</p
 <p>Use <code>#schedule(relaxed)</code> when dependency ordering is sufficient and small
 reorderings for pipeline efficiency are acceptable.</p>
 <hr>
-<h2 id="throughput-scheduling" tabindex="-1"><a class="doc-anchor" href="#throughput-scheduling" aria-hidden="true">#</a> Throughput Scheduling</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="throughput-scheduling" tabindex="-1"><a class="doc-anchor" href="#throughput-scheduling" aria-label="Permalink to Throughput Scheduling">#</a> Throughput Scheduling</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>throughput<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     sum <span class="token operator">=</span> a <span class="token operator">+</span> b
 <span class="token punctuation">}</span>
@@ -387,8 +396,7 @@ order. Floating-point rounding and multiply-add contraction are not controlled
 by scheduling hints; if the source does not use <code>%fma</code>, the compiler does not
 fuse.</p>
 <hr>
-<h2 id="latency-scheduling" tabindex="-1"><a class="doc-anchor" href="#latency-scheduling" aria-hidden="true">#</a> Latency Scheduling</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="latency-scheduling" tabindex="-1"><a class="doc-anchor" href="#latency-scheduling" aria-label="Permalink to Latency Scheduling">#</a> Latency Scheduling</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#schedule</span><span class="token punctuation">(</span>latency<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     chain <span class="token operator">+=</span> next
 <span class="token punctuation">}</span>
@@ -402,7 +410,7 @@ the same build inputs, the chosen instruction order is deterministic.</p>
 the hint mode's cross-version instruction-order instability is acceptable in
 exchange for potential latency improvement.</p>
 <hr>
-<h2 id="layout-constraint" tabindex="-1"><a class="doc-anchor" href="#layout-constraint" aria-hidden="true">#</a> Layout Constraint</h2>
+<h2 id="layout-constraint" tabindex="-1"><a class="doc-anchor" href="#layout-constraint" aria-label="Permalink to Layout Constraint">#</a> Layout Constraint</h2>
 <p><strong>Hint scheduling modes must not change code layout.</strong></p>
 <p><code>#schedule(throughput)</code> and <code>#schedule(latency)</code> may reorder instructions
 <strong>within a single basic block only</strong>. They must not:</p>
@@ -412,7 +420,6 @@ exchange for potential latency improvement.</p>
 <li>change which section a function or block is placed in</li>
 <li>alter the control flow graph shape (branch targets, fall-through targets)</li>
 </ul>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// The hint mode may reorder the two independent loads,</span>
 <span class="token comment">// but may NOT move them past the branch or change which</span>
 <span class="token comment">// block is the fall-through target.</span>
@@ -473,12 +480,6 @@ hints and <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> for hot/
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

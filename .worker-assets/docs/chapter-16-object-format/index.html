@@ -8,11 +8,25 @@
 		<meta name="description" content="Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries." />
 		<title>Object Format · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-16-object-format/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-16-object-format/" />
+		<meta property="og:title" content="Object Format · Wyst" />
+		<meta property="og:description" content="Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Object Format · Wyst" />
+		<meta name="twitter:description" content="Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -99,7 +113,7 @@ future-version normative R8 surface (<code>wyst.language.v0.8</code> target 32) 
 override the current single-image rules until Chapter 16 is updated for that
 artifact mode.</p>
 <hr>
-<h2 id="1.-scope-and-goals" tabindex="-1"><a class="doc-anchor" href="#1.-scope-and-goals" aria-hidden="true">#</a> 1. Scope and Goals</h2>
+<h2 id="1-scope-and-goals" tabindex="-1"><a class="doc-anchor" href="#1-scope-and-goals" aria-label="Permalink to 1. Scope and Goals">#</a> 1. Scope and Goals</h2>
 <p>For the implemented <code>ET_EXEC</code> artifact mode, the Wyst compiler is
 <strong>whole-program, single-pass with respect to its output</strong>:</p>
 <ul>
@@ -121,15 +135,15 @@ little-endian AArch64 executable</strong>.</p>
 <p><code>kernel.elf</code> is a complete, statically linked image. It has no dependencies on
 a dynamic loader, no GOT, no PLT, no <code>DT_NEEDED</code> entries.</p>
 <hr>
-<h2 id="2.-output-format" tabindex="-1"><a class="doc-anchor" href="#2.-output-format" aria-hidden="true">#</a> 2. Output Format</h2>
-<h3 id="2.1-elf-discipline" tabindex="-1"><a class="doc-anchor" href="#2.1-elf-discipline" aria-hidden="true">#</a> 2.1 ELF Discipline</h3>
+<h2 id="2-output-format" tabindex="-1"><a class="doc-anchor" href="#2-output-format" aria-label="Permalink to 2. Output Format">#</a> 2. Output Format</h2>
+<h3 id="21-elf-discipline" tabindex="-1"><a class="doc-anchor" href="#21-elf-discipline" aria-label="Permalink to 2.1 ELF Discipline">#</a> 2.1 ELF Discipline</h3>
 <p>The output is ELF64 (<code>EI_CLASS = ELFCLASS64</code>), little-endian
 (<code>EI_DATA = ELFDATA2LSB</code>), AArch64 (<code>e_machine = EM_AARCH64 = 183</code>), executable
 (<code>e_type = ET_EXEC</code>).</p>
 <p>Position-independent executable output (<code>ET_DYN</code> with PIE semantics) is <strong>not
 supported</strong>. All addresses are resolved to absolute values at compile time,
 driven by the layout module's <code>#entry</code>, <code>#region</code>, and <code>#section</code> constraints.</p>
-<h3 id="2.2-elf-header" tabindex="-1"><a class="doc-anchor" href="#2.2-elf-header" aria-hidden="true">#</a> 2.2 ELF Header</h3>
+<h3 id="22-elf-header" tabindex="-1"><a class="doc-anchor" href="#22-elf-header" aria-label="Permalink to 2.2 ELF Header">#</a> 2.2 ELF Header</h3>
 <table>
 <thead>
 <tr>
@@ -176,7 +190,7 @@ driven by the layout module's <code>#entry</code>, <code>#region</code>, and <co
 </tr>
 </tbody>
 </table>
-<h3 id="2.3-program-headers" tabindex="-1"><a class="doc-anchor" href="#2.3-program-headers" aria-hidden="true">#</a> 2.3 Program Headers</h3>
+<h3 id="23-program-headers" tabindex="-1"><a class="doc-anchor" href="#23-program-headers" aria-label="Permalink to 2.3 Program Headers">#</a> 2.3 Program Headers</h3>
 <p>The compiler emits one <code>PT_LOAD</code> segment per contiguous run of sections that
 share load attributes (executable, writable, readable). Section-to-segment
 mapping is deterministic and driven by the layout module:</p>
@@ -193,12 +207,12 @@ table and are not mapped into a <code>PT_LOAD</code> segment.</li>
 </ul>
 <p><code>PT_NOTE</code>, <code>PT_TLS</code>, <code>PT_GNU_STACK</code>, and <code>PT_GNU_EH_FRAME</code> are outside the
 base image model.</p>
-<h3 id="2.4-section-headers" tabindex="-1"><a class="doc-anchor" href="#2.4-section-headers" aria-hidden="true">#</a> 2.4 Section Headers</h3>
+<h3 id="24-section-headers" tabindex="-1"><a class="doc-anchor" href="#24-section-headers" aria-label="Permalink to 2.4 Section Headers">#</a> 2.4 Section Headers</h3>
 <p>A full section header table is emitted to support <code>readelf</code>, <code>objdump</code>, GDB,
 and <code>gdb-multiarch</code> workflows. Section header content is informational; the
 ELF program headers are authoritative for loading.</p>
 <hr>
-<h2 id="3.-section-catalog" tabindex="-1"><a class="doc-anchor" href="#3.-section-catalog" aria-hidden="true">#</a> 3. Section Catalog</h2>
+<h2 id="3-section-catalog" tabindex="-1"><a class="doc-anchor" href="#3-section-catalog" aria-label="Permalink to 3. Section Catalog">#</a> 3. Section Catalog</h2>
 <p>Section names are <strong>canonical</strong>. The compiler emits its built-in artifacts
 into the section names listed below; the layout module places those sections
 but <strong>cannot rename them</strong>. User-defined section attributes (per Phase 6.3)
@@ -232,7 +246,7 @@ alignment dictated by §10.2.</p>
 per CPU / per thread at bring-up. They are placed once in the image; the
 runtime is responsible for replication. See §7 for the access lowering.</p>
 <hr>
-<h2 id="4.-symbol-table" tabindex="-1"><a class="doc-anchor" href="#4.-symbol-table" aria-hidden="true">#</a> 4. Symbol Table</h2>
+<h2 id="4-symbol-table" tabindex="-1"><a class="doc-anchor" href="#4-symbol-table" aria-label="Permalink to 4. Symbol Table">#</a> 4. Symbol Table</h2>
 <p>The <code>.symtab</code> includes one entry per:</p>
 <ul>
 <li>public top-level declaration (function, label, constant, mutable
@@ -244,7 +258,7 @@ debugger convenience). These are local symbols.</li>
 <li>Function and label body starts (private and public alike), to enable
 source/debug lookup. Private functions and labels get <code>STB_LOCAL</code>.</li>
 </ul>
-<h3 id="4.1-binding" tabindex="-1"><a class="doc-anchor" href="#4.1-binding" aria-hidden="true">#</a> 4.1 Binding</h3>
+<h3 id="41-binding" tabindex="-1"><a class="doc-anchor" href="#41-binding" aria-label="Permalink to 4.1 Binding">#</a> 4.1 Binding</h3>
 <table>
 <thead>
 <tr>
@@ -267,7 +281,7 @@ source/debug lookup. Private functions and labels get <code>STB_LOCAL</code>.</l
 </tr>
 </tbody>
 </table>
-<h3 id="4.2-type" tabindex="-1"><a class="doc-anchor" href="#4.2-type" aria-hidden="true">#</a> 4.2 Type</h3>
+<h3 id="42-type" tabindex="-1"><a class="doc-anchor" href="#42-type" aria-label="Permalink to 4.2 Type">#</a> 4.2 Type</h3>
 <table>
 <thead>
 <tr>
@@ -314,7 +328,7 @@ prologue, epilogue, or return semantics from a label symbol; source-level
 ordinary <code>STT_OBJECT</code> whose value is the offset within <code>.tls</code> / <code>.percpu</code>;
 access goes through the intrinsic-generated <code>mrs</code> + <code>add</code> sequence, not
 through ELF TLS relocations.</p>
-<h3 id="4.3-mangling" tabindex="-1"><a class="doc-anchor" href="#4.3-mangling" aria-hidden="true">#</a> 4.3 Mangling</h3>
+<h3 id="43-mangling" tabindex="-1"><a class="doc-anchor" href="#43-mangling" aria-label="Permalink to 4.3 Mangling">#</a> 4.3 Mangling</h3>
 <p>Wyst does not mangle ordinary monomorphic declarations. The symbol name
 written to <code>.symtab</code> is exactly the declaration name from the source. Module
 names do <strong>not</strong> appear in the ordinary declaration symbol: a function <code>init</code>
@@ -451,7 +465,7 @@ out-of-tree tooling. Longer generic names increase <code>.strtab</code> size, bu
 not duplicate machine code beyond the monomorphizations already required by
 the source program and do not add runtime-loaded data by themselves.</p>
 <hr>
-<h2 id="5.-relocation-vocabulary" tabindex="-1"><a class="doc-anchor" href="#5.-relocation-vocabulary" aria-hidden="true">#</a> 5. Relocation Vocabulary</h2>
+<h2 id="5-relocation-vocabulary" tabindex="-1"><a class="doc-anchor" href="#5-relocation-vocabulary" aria-label="Permalink to 5. Relocation Vocabulary">#</a> 5. Relocation Vocabulary</h2>
 <p>Because the compiler is whole-program single-pass, <strong>no relocations are
 serialized to disk</strong>. The output ELF has no <code>.rela.*</code> sections.</p>
 <p>The relocation types below are the <strong>internal</strong> alphabet used during the
@@ -546,7 +560,7 @@ by the compiler from <code>#start(.tls)</code>; see §7.</li>
 </ul>
 <p>If future Wyst versions add dynamic linking, the GOT family slots in here
 without breaking the static-only contract.</p>
-<h3 id="5.1-page-pair-discipline" tabindex="-1"><a class="doc-anchor" href="#5.1-page-pair-discipline" aria-hidden="true">#</a> 5.1 Page-Pair Discipline</h3>
+<h3 id="51-page-pair-discipline" tabindex="-1"><a class="doc-anchor" href="#51-page-pair-discipline" aria-label="Permalink to 5.1 Page-Pair Discipline">#</a> 5.1 Page-Pair Discipline</h3>
 <p>Every code-to-data and code-to-code reference longer than ±128 MB uses the
 <code>ADR_PG_HI21</code> + <code>ADD_LO12</code> page pair. Sub-±128 MB code-to-code calls use
 <code>CALL26</code> or <code>JUMP26</code> directly. The choice is determined at codegen time
@@ -568,7 +582,7 @@ above.</p>
 for <code>#addr_of</code> — the load is always materialized as an <code>adrp</code> + <code>add</code> (or
 <code>adrp</code> + <code>ldr</code> with <code>LDST*_LO12</code>) pair against the absolute symbol address.</p>
 <hr>
-<h2 id="6.-relocation-origins-and-address-expression-emission" tabindex="-1"><a class="doc-anchor" href="#6.-relocation-origins-and-address-expression-emission" aria-hidden="true">#</a> 6. Relocation Origins and Address-Expression Emission</h2>
+<h2 id="6-relocation-origins-and-address-expression-emission" tabindex="-1"><a class="doc-anchor" href="#6-relocation-origins-and-address-expression-emission" aria-label="Permalink to 6. Relocation Origins and Address-Expression Emission">#</a> 6. Relocation Origins and Address-Expression Emission</h2>
 <p>Every relocation-producing operation has an explicit origin before final image
 write-out. Current static <code>ET_EXEC</code> builds resolve these origins internally and
 do not serialize <code>.rela.*</code> sections, but the compiler still keeps the origin
@@ -698,7 +712,7 @@ symbol-sourced address value.</p>
 <p>See Phase 5.4 for the cross-link from <a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a> (Address
 Types).</p>
 <hr>
-<h2 id="7.-per-cpu-and-thread-local-lowering" tabindex="-1"><a class="doc-anchor" href="#7.-per-cpu-and-thread-local-lowering" aria-hidden="true">#</a> 7. Per-CPU and Thread-Local Lowering</h2>
+<h2 id="7-per-cpu-and-thread-local-lowering" tabindex="-1"><a class="doc-anchor" href="#7-per-cpu-and-thread-local-lowering" aria-label="Permalink to 7. Per-CPU and Thread-Local Lowering">#</a> 7. Per-CPU and Thread-Local Lowering</h2>
 <p>The intrinsics in <a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.7</a> are lowered without using
 ELF TLS relocations. The mechanism:</p>
 <ol>
@@ -723,19 +737,17 @@ exists for dynamic loaders Wyst doesn't have. If a future Wyst version adds
 dynamic linking, an opt-in ELF TLS lowering can be added per
 <code>#target(... features = (elf-tls))</code>.</p>
 <hr>
-<h2 id="8.-sections-from-user-declarations" tabindex="-1"><a class="doc-anchor" href="#8.-sections-from-user-declarations" aria-hidden="true">#</a> 8. Sections from User Declarations</h2>
+<h2 id="8-sections-from-user-declarations" tabindex="-1"><a class="doc-anchor" href="#8-sections-from-user-declarations" aria-label="Permalink to 8. Sections from User Declarations">#</a> 8. Sections from User Declarations</h2>
 <p>User code places a declaration in a custom section with the
 <code>#section(.name)</code> attribute:</p>
 <p>This source-level section request is checked against the layout. Under the
 default documentation layout, <code>.modinfo</code> is intentionally absent, so this
 contract fails until a layout declares the section:</p>
-<!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> object_demo
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>
 modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"abcd"</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span> <span class="token function">bring_up_uart</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>   uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1"</span>
 </code></pre>
@@ -763,7 +775,7 @@ then deterministic module-import order across modules, matching the
 determinism contract in §11.</li>
 </ul>
 <hr>
-<h2 id="9.-out-of-scope" tabindex="-1"><a class="doc-anchor" href="#9.-out-of-scope" aria-hidden="true">#</a> 9. Out of Scope</h2>
+<h2 id="9-out-of-scope" tabindex="-1"><a class="doc-anchor" href="#9-out-of-scope" aria-label="Permalink to 9. Out of Scope">#</a> 9. Out of Scope</h2>
 <p>These are explicit non-features of the object format. Each has a
 documented path if needed.</p>
 <table>
@@ -828,7 +840,7 @@ documented path if needed.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="10.-determinism" tabindex="-1"><a class="doc-anchor" href="#10.-determinism" aria-hidden="true">#</a> 10. Determinism</h2>
+<h2 id="10-determinism" tabindex="-1"><a class="doc-anchor" href="#10-determinism" aria-label="Permalink to 10. Determinism">#</a> 10. Determinism</h2>
 <p>Object format output is <strong>bit-for-bit reproducible</strong> under the
 reproducibility contract (<code>chapter-01-language-design.md</code>, Reproducibility Model):
 same compiler version, same build optimization mode, same target, same
@@ -854,7 +866,7 @@ computed deterministically.</li>
 derived from &quot;build state&quot;; everything else is content-derived.</li>
 </ul>
 <hr>
-<h2 id="11.-future-object-formats" tabindex="-1"><a class="doc-anchor" href="#11.-future-object-formats" aria-hidden="true">#</a> 11. Future Object Formats</h2>
+<h2 id="11-future-object-formats" tabindex="-1"><a class="doc-anchor" href="#11-future-object-formats" aria-label="Permalink to 11. Future Object Formats">#</a> 11. Future Object Formats</h2>
 <p>ELF64 is the base object format. Mach-O (Darwin) and PE (Windows / UEFI) are
 plausible future targets — both have AArch64 variants and both are well-
 documented. The §5 relocation vocabulary maps cleanly to each:</p>
@@ -872,7 +884,7 @@ whole-program model is preserved: the writer is the last stage.</p>
 section naming, generic-symbol encoding, and ABI choices are not made in ways
 that would prevent a future port.</p>
 <hr>
-<h2 id="12.-cross-references" tabindex="-1"><a class="doc-anchor" href="#12.-cross-references" aria-hidden="true">#</a> 12. Cross-References</h2>
+<h2 id="12-cross-references" tabindex="-1"><a class="doc-anchor" href="#12-cross-references" aria-label="Permalink to 12. Cross-References">#</a> 12. Cross-References</h2>
 <table>
 <thead>
 <tr>
@@ -925,26 +937,26 @@ that would prevent a future port.</p>
 				<aside class="doc-toc" aria-label="On this page">
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
-				<li class="lvl-2"><a href="#1.-scope-and-goals">1. Scope and Goals</a></li>
-				<li class="lvl-2"><a href="#2.-output-format">2. Output Format</a></li>
-				<li class="lvl-3"><a href="#2.1-elf-discipline">2.1 ELF Discipline</a></li>
-				<li class="lvl-3"><a href="#2.2-elf-header">2.2 ELF Header</a></li>
-				<li class="lvl-3"><a href="#2.3-program-headers">2.3 Program Headers</a></li>
-				<li class="lvl-3"><a href="#2.4-section-headers">2.4 Section Headers</a></li>
-				<li class="lvl-2"><a href="#3.-section-catalog">3. Section Catalog</a></li>
-				<li class="lvl-2"><a href="#4.-symbol-table">4. Symbol Table</a></li>
-				<li class="lvl-3"><a href="#4.1-binding">4.1 Binding</a></li>
-				<li class="lvl-3"><a href="#4.2-type">4.2 Type</a></li>
-				<li class="lvl-3"><a href="#4.3-mangling">4.3 Mangling</a></li>
-				<li class="lvl-2"><a href="#5.-relocation-vocabulary">5. Relocation Vocabulary</a></li>
-				<li class="lvl-3"><a href="#5.1-page-pair-discipline">5.1 Page-Pair Discipline</a></li>
-				<li class="lvl-2"><a href="#6.-relocation-origins-and-address-expression-emission">6. Relocation Origins and Address-Expression Emission</a></li>
-				<li class="lvl-2"><a href="#7.-per-cpu-and-thread-local-lowering">7. Per-CPU and Thread-Local Lowering</a></li>
-				<li class="lvl-2"><a href="#8.-sections-from-user-declarations">8. Sections from User Declarations</a></li>
-				<li class="lvl-2"><a href="#9.-out-of-scope">9. Out of Scope</a></li>
-				<li class="lvl-2"><a href="#10.-determinism">10. Determinism</a></li>
-				<li class="lvl-2"><a href="#11.-future-object-formats">11. Future Object Formats</a></li>
-				<li class="lvl-2"><a href="#12.-cross-references">12. Cross-References</a></li>
+				<li class="lvl-2"><a href="#1-scope-and-goals">1. Scope and Goals</a></li>
+				<li class="lvl-2"><a href="#2-output-format">2. Output Format</a></li>
+				<li class="lvl-3"><a href="#21-elf-discipline">2.1 ELF Discipline</a></li>
+				<li class="lvl-3"><a href="#22-elf-header">2.2 ELF Header</a></li>
+				<li class="lvl-3"><a href="#23-program-headers">2.3 Program Headers</a></li>
+				<li class="lvl-3"><a href="#24-section-headers">2.4 Section Headers</a></li>
+				<li class="lvl-2"><a href="#3-section-catalog">3. Section Catalog</a></li>
+				<li class="lvl-2"><a href="#4-symbol-table">4. Symbol Table</a></li>
+				<li class="lvl-3"><a href="#41-binding">4.1 Binding</a></li>
+				<li class="lvl-3"><a href="#42-type">4.2 Type</a></li>
+				<li class="lvl-3"><a href="#43-mangling">4.3 Mangling</a></li>
+				<li class="lvl-2"><a href="#5-relocation-vocabulary">5. Relocation Vocabulary</a></li>
+				<li class="lvl-3"><a href="#51-page-pair-discipline">5.1 Page-Pair Discipline</a></li>
+				<li class="lvl-2"><a href="#6-relocation-origins-and-address-expression-emission">6. Relocation Origins and Address-Expression Emission</a></li>
+				<li class="lvl-2"><a href="#7-per-cpu-and-thread-local-lowering">7. Per-CPU and Thread-Local Lowering</a></li>
+				<li class="lvl-2"><a href="#8-sections-from-user-declarations">8. Sections from User Declarations</a></li>
+				<li class="lvl-2"><a href="#9-out-of-scope">9. Out of Scope</a></li>
+				<li class="lvl-2"><a href="#10-determinism">10. Determinism</a></li>
+				<li class="lvl-2"><a href="#11-future-object-formats">11. Future Object Formats</a></li>
+				<li class="lvl-2"><a href="#12-cross-references">12. Cross-References</a></li>
 			</ul>
 			</aside>
 			</div>
@@ -955,12 +967,6 @@ that would prevent a future port.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

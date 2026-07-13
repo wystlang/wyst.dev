@@ -8,11 +8,25 @@
 		<meta name="description" content="Project layout, manifests, source discovery, target selection, and build modes." />
 		<title>Project Builds · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-03-project-builds/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-03-project-builds/" />
+		<meta property="og:title" content="Project Builds · Wyst" />
+		<meta property="og:description" content="Project layout, manifests, source discovery, target selection, and build modes." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Project Builds · Wyst" />
+		<meta name="twitter:description" content="Project layout, manifests, source discovery, target selection, and build modes." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -93,14 +107,14 @@ outside this build surface.</p>
 are specified here. Module syntax is specified in
 <a href="/docs/chapter-04-modules/">chapter 4</a>. Package management, external linking, and
 incremental builds remain explicit boundaries.</p>
-<h2 id="goals" tabindex="-1"><a class="doc-anchor" href="#goals" aria-hidden="true">#</a> Goals</h2>
+<h2 id="goals" tabindex="-1"><a class="doc-anchor" href="#goals" aria-label="Permalink to Goals">#</a> Goals</h2>
 <ul>
 <li>Build a non-trivial multi-module kernel without custom shell glue.</li>
 <li>Keep source imports semantic and module-name based.</li>
 <li>Make non-source build facts explicit, deterministic, and reviewable.</li>
 <li>Preserve the whole-program compiler model.</li>
 </ul>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>Package management, dependency download, lockfiles, registries, or semantic
 version solving.</li>
@@ -110,9 +124,9 @@ outputs.</li>
 language-level import names.</li>
 <li>Full target-descriptor schema.</li>
 </ul>
-<h2 id="build-modes" tabindex="-1"><a class="doc-anchor" href="#build-modes" aria-hidden="true">#</a> Build Modes</h2>
+<h2 id="build-modes" tabindex="-1"><a class="doc-anchor" href="#build-modes" aria-label="Permalink to Build Modes">#</a> Build Modes</h2>
 <p>The compiler has two build input modes.</p>
-<h3 id="project-directory-mode" tabindex="-1"><a class="doc-anchor" href="#project-directory-mode" aria-hidden="true">#</a> Project Directory Mode</h3>
+<h3 id="project-directory-mode" tabindex="-1"><a class="doc-anchor" href="#project-directory-mode" aria-label="Permalink to Project Directory Mode">#</a> Project Directory Mode</h3>
 <pre class="wyst-code language-sh" data-lang="sh"><code class="language-sh">wync build <span class="token builtin class-name">.</span>
 wync build path/to/project
 wync build path/to/wyst.project
@@ -122,7 +136,7 @@ Project mode does not search parent directories. If the build input is a project
 paths inside it are resolved relative to that file's directory.</p>
 <p>Directory builds without <code>wyst.project</code> fail with a diagnostic that suggests
 explicit root-file mode.</p>
-<h3 id="explicit-root-file-mode" tabindex="-1"><a class="doc-anchor" href="#explicit-root-file-mode" aria-hidden="true">#</a> Explicit Root-File Mode</h3>
+<h3 id="explicit-root-file-mode" tabindex="-1"><a class="doc-anchor" href="#explicit-root-file-mode" aria-label="Permalink to Explicit Root-File Mode">#</a> Explicit Root-File Mode</h3>
 <pre class="wyst-code language-sh" data-lang="sh"><code class="language-sh">wync build src/boot.wyst <span class="token punctuation">\</span>
   --source-root src <span class="token punctuation">\</span>
   <span class="token parameter variable">--layout</span> layout.wyst <span class="token punctuation">\</span>
@@ -142,7 +156,6 @@ for imports.</p>
 compatibility input. Import-closure discovery is the preferred project and
 root-file build surface when source roots are available.</p>
 <p>A root module loaded by either build input mode is ordinary Wyst source:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#noreturn</span>
@@ -152,7 +165,7 @@ root-file build surface when source roots are available.</p>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h2 id="project-manifest" tabindex="-1"><a class="doc-anchor" href="#project-manifest" aria-hidden="true">#</a> Project Manifest</h2>
+<h2 id="project-manifest" tabindex="-1"><a class="doc-anchor" href="#project-manifest" aria-label="Permalink to Project Manifest">#</a> Project Manifest</h2>
 <p><code>wyst.project</code> uses a small line-oriented key/value format with quoted strings
 and string lists:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">name = "project-graph-smoke"
@@ -249,9 +262,8 @@ silently becoming ignored build metadata.</p>
 <p>Path-valued manifest fields (<code>source_roots</code>, <code>layout</code>, and <code>output</code>) must be
 relative to the project file. Absolute paths are rejected. Source roots are
 also required to resolve inside the project directory.</p>
-<h2 id="module-to-file-mapping" tabindex="-1"><a class="doc-anchor" href="#module-to-file-mapping" aria-hidden="true">#</a> Module To File Mapping</h2>
+<h2 id="module-to-file-mapping" tabindex="-1"><a class="doc-anchor" href="#module-to-file-mapping" aria-label="Permalink to Module To File Mapping">#</a> Module To File Mapping</h2>
 <p>Source imports stay semantic:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#import</span> <span class="token punctuation">(</span>
@@ -291,7 +303,7 @@ project directory.</li>
 <p>Filesystem layout is still not language semantics. Moving
 <code>src/drivers/uart.wyst</code> is allowed if the project source-root mapping still
 resolves the semantic module name <code>drivers.uart</code>.</p>
-<h2 id="canonical-project-traversal" tabindex="-1"><a class="doc-anchor" href="#canonical-project-traversal" aria-hidden="true">#</a> Canonical Project Traversal</h2>
+<h2 id="canonical-project-traversal" tabindex="-1"><a class="doc-anchor" href="#canonical-project-traversal" aria-label="Permalink to Canonical Project Traversal">#</a> Canonical Project Traversal</h2>
 <p>Project builds use a deterministic import-closure traversal. This traversal is
 part of the reproducibility input manifest:</p>
 <ol>
@@ -317,7 +329,7 @@ work queue in first-encounter order, and modules already loaded are skipped.</li
 order, with each module contributing its files in the canonical file order
 above. Explicit multi-file builds instead use the exact command-line source
 order supplied by the user.</p>
-<h2 id="target-profiles" tabindex="-1"><a class="doc-anchor" href="#target-profiles" aria-hidden="true">#</a> Target Profiles</h2>
+<h2 id="target-profiles" tabindex="-1"><a class="doc-anchor" href="#target-profiles" aria-label="Permalink to Target Profiles">#</a> Target Profiles</h2>
 <p>Project builds select a named target profile. The QEMU <code>virt</code> profile is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">qemu-virt-aarch64-el2
 </code></pre>
@@ -356,7 +368,7 @@ the project-manifest surface. The project manifest does not add device
 protocol manifests, SDK discovery, generated binding provenance, or
 microarchitectural estimate tables unless a checked target cannot be proved
 without a small piece of that surface.</p>
-<h2 id="layout-and-output" tabindex="-1"><a class="doc-anchor" href="#layout-and-output" aria-hidden="true">#</a> Layout And Output</h2>
+<h2 id="layout-and-output" tabindex="-1"><a class="doc-anchor" href="#layout-and-output" aria-label="Permalink to Layout And Output">#</a> Layout And Output</h2>
 <p>The project manifest owns non-source image facts:</p>
 <ul>
 <li><code>layout</code> names the layout module.</li>
@@ -365,7 +377,7 @@ without a small piece of that surface.</p>
 </ul>
 <p>The root source file should not hard-code output paths or project directories.
 Layout exports remain available to source.</p>
-<h2 id="whole-program-policy" tabindex="-1"><a class="doc-anchor" href="#whole-program-policy" aria-hidden="true">#</a> Whole-Program Policy</h2>
+<h2 id="whole-program-policy" tabindex="-1"><a class="doc-anchor" href="#whole-program-policy" aria-label="Permalink to Whole-Program Policy">#</a> Whole-Program Policy</h2>
 <p>The compiler stays whole-program. It emits one final static ELF and does not write
 relocatable object files.</p>
 <p>Reason:</p>
@@ -380,7 +392,7 @@ partial debug-info contracts.</li>
 general linker.</li>
 </ul>
 <p>Object-file output remains a future object/linking milestone.</p>
-<h2 id="project-graph-smoke-fixture" tabindex="-1"><a class="doc-anchor" href="#project-graph-smoke-fixture" aria-hidden="true">#</a> Project Graph Smoke Fixture</h2>
+<h2 id="project-graph-smoke-fixture" tabindex="-1"><a class="doc-anchor" href="#project-graph-smoke-fixture" aria-label="Permalink to Project Graph Smoke Fixture">#</a> Project Graph Smoke Fixture</h2>
 <p>A split bare-metal fixture project has this shape:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">project-graph-smoke/
 |-- wyst.project
@@ -403,7 +415,7 @@ semantics:</p>
 <li>tiny explicit allocator or bump-pointer example only if it can be expressed
 with existing language features.</li>
 </ul>
-<h2 id="diagnostics" tabindex="-1"><a class="doc-anchor" href="#diagnostics" aria-hidden="true">#</a> Diagnostics</h2>
+<h2 id="diagnostics" tabindex="-1"><a class="doc-anchor" href="#diagnostics" aria-label="Permalink to Diagnostics">#</a> Diagnostics</h2>
 <p>The project-build surface has stable diagnostics for:</p>
 <ul>
 <li>directory build without <code>wyst.project</code>;</li>
@@ -448,12 +460,6 @@ with existing language features.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

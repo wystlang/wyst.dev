@@ -98,10 +98,45 @@ function navTitleFrom(title) {
 		.trim();
 }
 
+// Match the fragments readers get when viewing the Markdown on GitHub. This
+// keeps source-authored cross-links valid in both the design repository and the
+// generated site (notably numbered headings such as `B.6.3`).
+function githubSlugify(value) {
+	return String(value)
+		.trim()
+		.toLowerCase()
+		.replace(/[\u200b-\u200d\ufeff]/g, "")
+		.replace(/[^\p{L}\p{N}\s_-]/gu, "")
+		.replace(/\s+/g, "-");
+}
+
 // ---- markdown-it setup -----------------------------------------------------
 const fileToUrl = new Map(); // "chapter-07-operators.md" -> "/docs/chapter-07-operators/"
 
-function makeMd() {
+function headingPermalink(slug, _options, state, tokenIndex) {
+	const inline = state.tokens[tokenIndex + 1];
+	const headingText = inline.children
+		.filter((token) => token.type === "text" || token.type === "code_inline")
+		.map((token) => token.content)
+		.join("")
+		.trim();
+	const label = headingText || slug;
+
+	const linkOpen = new state.Token("link_open", "a", 1);
+	linkOpen.attrSet("class", "doc-anchor");
+	linkOpen.attrSet("href", `#${slug}`);
+	linkOpen.attrSet("aria-label", `Permalink to ${label}`);
+
+	const symbol = new state.Token("text", "", 0);
+	symbol.content = "#";
+	const linkClose = new state.Token("link_close", "a", -1);
+	const space = new state.Token("text", "", 0);
+	space.content = " ";
+
+	inline.children.unshift(linkOpen, symbol, linkClose, space);
+}
+
+export function makeMd() {
 	const md = new MarkdownIt({
 		html: true,
 		// linkify off: the reference mentions bare filenames (e.g. "foo.md:321")
@@ -117,14 +152,24 @@ function makeMd() {
 		},
 	});
 
+	// The design repository is build input, not trusted page markup. Preserve
+	// the one HTML element used for table line breaks and suppress the compiler's
+	// exact contract annotations; render every other raw HTML token as text.
+	md.renderer.rules.html_inline = (tokens, i) =>
+		/^<br\s*\/?>$/i.test(tokens[i].content)
+			? "<br>"
+			: escapeHtml(tokens[i].content);
+	md.renderer.rules.html_block = (tokens, i) => {
+		const raw = tokens[i].content;
+		return /^<!--\s*wyst-contract:\s*[\w-]+\s*-->\s*$/i.test(raw)
+			? ""
+			: escapeHtml(raw);
+	};
+
 	md.use(anchor, {
-		level: [2, 3],
-		permalink: anchor.permalink.linkInsideHeader({
-			symbol: "#",
-			placement: "before",
-			class: "doc-anchor",
-			ariaHidden: true,
-		}),
+		level: [2, 3, 4],
+		permalink: headingPermalink,
+		slugify: githubSlugify,
 	});
 
 	// rewrite *.md cross-links to site URLs at render time
@@ -136,6 +181,10 @@ function makeMd() {
 		const hi = tok.attrIndex("href");
 		if (hi >= 0) {
 			const href = tok.attrs[hi][1];
+			if (href === "semantic-db.json") {
+				tok.attrs[hi][1] = "/docs/semantic-db.json";
+				return defaultLinkOpen(tokens, i, opts, env, self);
+			}
 			const m = href.match(/^(?:\.\/)?([\w.-]+\.md)(#[^)\s]*)?$/);
 			if (m) {
 				const target = fileToUrl.get(m[1]);
@@ -214,6 +263,10 @@ function main() {
 	const outDir = path.join(ROOT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
+	fs.copyFileSync(
+		path.join(DOCS, "semantic-db.json"),
+		path.join(outDir, "semantic-db.json"),
+	);
 
 	let count = 0;
 	for (const page of pages) {
@@ -276,4 +329,9 @@ function main() {
 	console.log("github:", GITHUB_URL);
 }
 
-main();
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	main();
+}

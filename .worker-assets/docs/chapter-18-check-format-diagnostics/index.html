@@ -8,11 +8,25 @@
 		<meta name="description" content="Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor." />
 		<title>Check, Format, And Diagnostics · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-18-check-format-diagnostics/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-18-check-format-diagnostics/" />
+		<meta property="og:title" content="Check, Format, And Diagnostics · Wyst" />
+		<meta property="og:description" content="Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Check, Format, And Diagnostics · Wyst" />
+		<meta name="twitter:description" content="Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -92,7 +106,7 @@ than the full language-server contract in
 schemas. Editor delivery is specified in
 <a href="/docs/chapter-20-editor-integration/">chapter 20</a>; long-form learning explanations
 are specified in <a href="/docs/chapter-19-learning-diagnostics/">chapter 19</a>.</p>
-<h2 id="check-mode" tabindex="-1"><a class="doc-anchor" href="#check-mode" aria-hidden="true">#</a> Check Mode</h2>
+<h2 id="check-mode" tabindex="-1"><a class="doc-anchor" href="#check-mode" aria-label="Permalink to Check Mode">#</a> Check Mode</h2>
 <p><code>wync check</code> validates the same frontend build inputs as <code>wync build</code>, then
 stops before IR lowering and output emission.</p>
 <p>Accepted project inputs:</p>
@@ -144,7 +158,7 @@ optional primary label, secondary labels, and notes. The <code>lsp-json</code> s
 <code>wync.diagnostics.lsp.v0</code> and emits LSP-style diagnostic objects for editor
 adapters: document URI, zero-based UTF-16 ranges, numeric severity, code,
 source, message, related information, and notes data.</p>
-<h2 id="diagnostics-floor" tabindex="-1"><a class="doc-anchor" href="#diagnostics-floor" aria-hidden="true">#</a> Diagnostics Floor</h2>
+<h2 id="diagnostics-floor" tabindex="-1"><a class="doc-anchor" href="#diagnostics-floor" aria-label="Permalink to Diagnostics Floor">#</a> Diagnostics Floor</h2>
 <p>The compiler uses the stable plain-text diagnostic renderer:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">error[E0001]: message
   --> path/to/file.wyst:line:column
@@ -161,7 +175,7 @@ not change check-mode exit status when no errors are present.</p>
 or more secondary source labels, and zero or more notes. Diagnostic
 suppression policy and richer machine-readable payloads are outside this
 surface.</p>
-<h2 id="lsp-compatible-diagnostic-json" tabindex="-1"><a class="doc-anchor" href="#lsp-compatible-diagnostic-json" aria-hidden="true">#</a> LSP-Compatible Diagnostic JSON</h2>
+<h2 id="lsp-compatible-diagnostic-json" tabindex="-1"><a class="doc-anchor" href="#lsp-compatible-diagnostic-json" aria-label="Permalink to LSP-Compatible Diagnostic JSON">#</a> LSP-Compatible Diagnostic JSON</h2>
 <p><code>--diagnostic-format lsp-json</code> is the first editor-protocol bridge. It is not a
 full <code>textDocument/publishDiagnostics</code> notification and does not start a
 language server; it is a stable adapter payload that can be grouped by <code>uri</code>
@@ -182,7 +196,7 @@ with value <code>wync.diagnostics.lsp.v0</code> and a <code>diagnostics</code> a
 <p>The LSP-compatible payload is driven by the same <code>Diagnostic</code> values rendered
 by text and snapshot JSON mode. Editor integrations must not reparse source to
 invent diagnostics.</p>
-<h2 id="editor-completion-and-hover-catalog" tabindex="-1"><a class="doc-anchor" href="#editor-completion-and-hover-catalog" aria-hidden="true">#</a> Editor Completion And Hover Catalog</h2>
+<h2 id="editor-completion-and-hover-catalog" tabindex="-1"><a class="doc-anchor" href="#editor-completion-and-hover-catalog" aria-label="Permalink to Editor Completion And Hover Catalog">#</a> Editor Completion And Hover Catalog</h2>
 <p><code>wync editor-catalog</code> emits a deterministic JSON catalog for editor adapters.
 It is intentionally a compiler-owned data surface rather than a second
 editor-local vocabulary.</p>
@@ -210,7 +224,7 @@ duplicate top-level names and duplicate module declarations in the same source
 graph. Parser errors, layout failures, target-profile failures, item-body
 checking, IR lowering, and build output still stop at the first fatal
 diagnostic.</p>
-<h2 id="editor-syntax-highlighting" tabindex="-1"><a class="doc-anchor" href="#editor-syntax-highlighting" aria-hidden="true">#</a> Editor Syntax Highlighting</h2>
+<h2 id="editor-syntax-highlighting" tabindex="-1"><a class="doc-anchor" href="#editor-syntax-highlighting" aria-label="Permalink to Editor Syntax Highlighting">#</a> Editor Syntax Highlighting</h2>
 <p>Editor syntax-highlighting foundations should mirror the compiler lexer
 vocabulary:</p>
 <ul>
@@ -224,7 +238,7 @@ type names.</li>
 syntax. <code>wync check</code> remains the source of truth for diagnostics. Editor
 grammars should track the compiler's keyword, directive, intrinsic, register,
 type, comment, and string highlighting floor.</p>
-<h2 id="format-mode" tabindex="-1"><a class="doc-anchor" href="#format-mode" aria-hidden="true">#</a> Format Mode</h2>
+<h2 id="format-mode" tabindex="-1"><a class="doc-anchor" href="#format-mode" aria-label="Permalink to Format Mode">#</a> Format Mode</h2>
 <p><code>wync fmt &lt;input.wyst&gt;</code> parses one source file and prints the canonical source
 form to stdout. It does not rewrite the input file.</p>
 <p><code>wync fmt &lt;input.wyst&gt; --check</code> parses the same source, compares it with the
@@ -301,12 +315,6 @@ source files or report style-only failures.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

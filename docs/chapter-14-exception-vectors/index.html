@@ -8,6 +8,20 @@
 		<meta name="description" content="Alignment, exception vectors, vector slots, and checked trap-frame ABI basics." />
 		<title>Alignment and Exception Vectors · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-14-exception-vectors/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-14-exception-vectors/" />
+		<meta property="og:title" content="Alignment and Exception Vectors · Wyst" />
+		<meta property="og:description" content="Alignment, exception vectors, vector slots, and checked trap-frame ABI basics." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Alignment and Exception Vectors · Wyst" />
+		<meta name="twitter:description" content="Alignment, exception vectors, vector slots, and checked trap-frame ABI basics." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -98,9 +112,9 @@ Trap intrinsics (<code>%svc</code>, <code>%hvc</code>, <code>%eret</code>) live 
 using these vectors lives in <a href="/docs/chapter-05-boot/">chapter-05-boot.md</a>.</p>
 </blockquote>
 <hr>
-<h3 id="alignment-and-exception-vectors" tabindex="-1"><a class="doc-anchor" href="#alignment-and-exception-vectors" aria-hidden="true">#</a> Alignment and Exception Vectors</h3>
+<h3 id="alignment-and-exception-vectors" tabindex="-1"><a class="doc-anchor" href="#alignment-and-exception-vectors" aria-label="Permalink to Alignment and Exception Vectors">#</a> Alignment and Exception Vectors</h3>
 <hr>
-<h2 id="10.1-the-%23align-directive" tabindex="-1"><a class="doc-anchor" href="#10.1-the-%23align-directive" aria-hidden="true">#</a> 10.1 The <code>#align</code> Directive</h2>
+<h2 id="101-the-align-directive" tabindex="-1"><a class="doc-anchor" href="#101-the-align-directive" aria-label="Permalink to 10.1 The #align Directive">#</a> 10.1 The <code>#align</code> Directive</h2>
 <p><code>#align(n)</code> constrains the assembler to place the annotated symbol at an
 address that is a multiple of <code>n</code> bytes. <code>n</code> must be a power of two and a
 compile-time constant.</p>
@@ -111,7 +125,6 @@ compile-time constant.</p>
 <li>constants placed in <code>.rodata</code></li>
 <li>section declarations (via the layout module — see <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>)</li>
 </ul>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> align_demo
 
 <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span>
@@ -119,7 +132,6 @@ compile-time constant.</p>
   <span class="token keyword">return</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// align a label to a 64-byte cacheline boundary</span>
 hot_path <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token operator">..</span><span class="token punctuation">.</span>
@@ -137,7 +149,7 @@ hot_path <span class="token operator">::</span> <span class="token keyword">labe
 it only guarantees the start address satisfies the alignment requirement.
 The assembler emits <code>nop</code> padding before the symbol as needed to satisfy it.</p>
 <hr>
-<h2 id="10.2-exception-vectors" tabindex="-1"><a class="doc-anchor" href="#10.2-exception-vectors" aria-hidden="true">#</a> 10.2 Exception Vectors</h2>
+<h2 id="102-exception-vectors" tabindex="-1"><a class="doc-anchor" href="#102-exception-vectors" aria-label="Permalink to 10.2 Exception Vectors">#</a> 10.2 Exception Vectors</h2>
 <p>ARM64 exception vectors have strict hardware requirements:</p>
 <ul>
 <li>the entire table must be aligned to a 2KB (<code>0x800</code>) boundary</li>
@@ -147,8 +159,7 @@ The assembler emits <code>nop</code> padding before the symbol as needed to sati
 </ul>
 <p>Wyst provides a <code>#exception_vector</code> block that encodes this contract directly.</p>
 <hr>
-<h3 id="syntax" tabindex="-1"><a class="doc-anchor" href="#syntax" aria-hidden="true">#</a> Syntax</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="syntax" tabindex="-1"><a class="doc-anchor" href="#syntax" aria-label="Permalink to Syntax">#</a> Syntax</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">name <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x800</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">current_el_sp0_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"project-specific description"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     body
@@ -177,7 +188,7 @@ The assembler emits <code>nop</code> padding before the symbol as needed to sati
 defaults to <code>0x800</code> when <code>#exception_vector</code> is used)</li>
 </ul>
 <hr>
-<h3 id="the-16-arm64-vector-slots" tabindex="-1"><a class="doc-anchor" href="#the-16-arm64-vector-slots" aria-hidden="true">#</a> The 16 ARM64 Vector Slots</h3>
+<h3 id="the-16-arm64-vector-slots" tabindex="-1"><a class="doc-anchor" href="#the-16-arm64-vector-slots" aria-label="Permalink to The 16 ARM64 Vector Slots">#</a> The 16 ARM64 Vector Slots</h3>
 <p>ARM64 defines the 16 slots in a fixed order across four groups of four.
 Wyst uses that order as the source and emission contract. The source identifier
 for each slot must be exactly the canonical identifier in the table; descriptive
@@ -298,10 +309,9 @@ unused-slot fill. An unused architectural role still declares its canonical
 slot and supplies an explicit body, usually a branch to a shared unexpected
 handler or a spin loop.</p>
 <hr>
-<h3 id="complete-example" tabindex="-1"><a class="doc-anchor" href="#complete-example" aria-hidden="true">#</a> Complete Example</h3>
+<h3 id="complete-example" tabindex="-1"><a class="doc-anchor" href="#complete-example" aria-label="Permalink to Complete Example">#</a> Complete Example</h3>
 <p>A minimal EL1 exception vector table for a QEMU <code>virt</code> kernel. Most slots
 branch immediately to a handler; unhandled slots spin.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
 
   <span class="token comment">// Current EL, SP_EL0 (unexpected in normal kernel operation)</span>
@@ -370,7 +380,6 @@ branch immediately to a handler; unhandled slots spin.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Installing the table into <code>VBAR_EL1</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">install_vectors</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">VBAR_EL1</span><span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -381,7 +390,7 @@ integrated linker resolves the address at final placement and the compiler
 emits the correct <code>adrp xN, sym</code> + <code>add xN, xN, :lo12:sym</code> sequence. The
 programmer does not write relocation annotations directly.</p>
 <hr>
-<h3 id="slot-size-enforcement" tabindex="-1"><a class="doc-anchor" href="#slot-size-enforcement" aria-hidden="true">#</a> Slot Size Enforcement</h3>
+<h3 id="slot-size-enforcement" tabindex="-1"><a class="doc-anchor" href="#slot-size-enforcement" aria-label="Permalink to Slot Size Enforcement">#</a> Slot Size Enforcement</h3>
 <table>
 <thead>
 <tr>
@@ -439,7 +448,7 @@ slot is emitted at <code>index * 128</code> bytes from the table base. The emitt
 <code>__ventry_&lt;vector&gt;_&lt;slot&gt;_size</code> records the unpadded body size; the slot's
 artifact extent remains exactly 128 bytes after padding.</p>
 <hr>
-<h3 id="relationship-to-%23exact" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23exact" aria-hidden="true">#</a> Relationship to <code>#exact</code></h3>
+<h3 id="relationship-to-exact" tabindex="-1"><a class="doc-anchor" href="#relationship-to-exact" aria-label="Permalink to Relationship to #exact">#</a> Relationship to <code>#exact</code></h3>
 <p><code>#ventry</code> slots are already exact-code regions in the architectural sense:
 their table position and final size are fixed by ARM64, and their body size is
 checked against the 128-byte slot budget after lowering and inline expansion.
@@ -449,11 +458,10 @@ artifact contract. Inside an exception vector, a helper reached by a slot may
 still have its own ordinary <code>#exact</code> contract if it is an emitted callable; an
 inlined helper contributes to the slot's 128-byte budget.</p>
 <hr>
-<h3 id="relationship-to-%23align" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23align" aria-hidden="true">#</a> Relationship to <code>#align</code></h3>
+<h3 id="relationship-to-align" tabindex="-1"><a class="doc-anchor" href="#relationship-to-align" aria-label="Permalink to Relationship to #align">#</a> Relationship to <code>#align</code></h3>
 <p><code>#exception_vector</code> uses <code>#align</code> internally. The default alignment is
 <code>0x800</code>. An explicit <code>#align</code> on an <code>#exception_vector</code> block overrides the
 default:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// explicit — same as default</span>
 el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x800</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 
@@ -463,7 +471,7 @@ el1_vectors <span class="token operator">::</span> <span class="token directive 
 <p>Specifying an alignment smaller than <code>0x800</code> on an <code>#exception_vector</code> block
 is a compile error — the hardware requirement cannot be relaxed.</p>
 <hr>
-<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -507,7 +515,7 @@ is a compile error — the hardware requirement cannot be relaxed.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="10.3-trap-frame-abi" tabindex="-1"><a class="doc-anchor" href="#10.3-trap-frame-abi" aria-hidden="true">#</a> 10.3 Trap Frame ABI</h2>
+<h2 id="103-trap-frame-abi" tabindex="-1"><a class="doc-anchor" href="#103-trap-frame-abi" aria-label="Permalink to 10.3 Trap Frame ABI">#</a> 10.3 Trap Frame ABI</h2>
 <p>An exception vector slot should tail-transfer to a <code>#naked #noreturn</code> label
 when it needs a full handler frame. The entry label performs the save before
 ordinary Wyst code runs; the compiler does not synthesize hidden handler
@@ -545,7 +553,6 @@ prologues or register spills for this ABI.</p>
 </table>
 <p>Wyst exposes this ABI through <code>#trap_frame</code>, not through an unchecked comment
 convention. The canonical ARM64 frame type is:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">TrapFrame</span> <span class="token operator">::</span> <span class="token directive macro">#trap_frame</span><span class="token punctuation">(</span>arm64<span class="token punctuation">)</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">31</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token comment">// saved x0 through x30</span>
   <span class="token parameter">elr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// offset 0x0f8</span>
@@ -560,7 +567,6 @@ shown above. The type's natural Wyst alignment is still the maximum alignment
 of its fields; the 16-byte trap-frame base alignment is enforced by the
 entry/restore stack sequence.</p>
 <p>Entry and restore labels opt in explicitly:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">trap_entry <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#naked</span> <span class="token directive macro">#noreturn</span> <span class="token directive macro">#trap_frame</span><span class="token punctuation">(</span>entry<span class="token punctuation">,</span> TrapFrame<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 trap_restore <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token directive macro">#naked</span> <span class="token directive macro">#noreturn</span> <span class="token directive macro">#trap_frame</span><span class="token punctuation">(</span>restore<span class="token punctuation">,</span> TrapFrame<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 </code></pre>
@@ -597,7 +603,7 @@ fallback loop in the caller. The path does not claim to resume the interrupted
 context. Restore labels that end in checked <code>eret</code> assembly may still call an
 imported <code>#[inline, noreturn]</code> idle helper after the assembly block if the
 assembly unexpectedly returns control to source.</p>
-<h3 id="nested-interrupt-and-daif-policy" tabindex="-1"><a class="doc-anchor" href="#nested-interrupt-and-daif-policy" aria-hidden="true">#</a> Nested Interrupt And DAIF Policy</h3>
+<h3 id="nested-interrupt-and-daif-policy" tabindex="-1"><a class="doc-anchor" href="#nested-interrupt-and-daif-policy" aria-label="Permalink to Nested Interrupt And DAIF Policy">#</a> Nested Interrupt And DAIF Policy</h3>
 <p>The checked ARM64 trap-frame profile keeps nested interrupts disabled while a
 trap frame is being populated or restored. Hardware exception entry supplies
 the initial PSTATE/DAIF state in <code>SPSR_ELx</code>; the entry code preserves it but
@@ -616,16 +622,16 @@ handlers.</p>
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
 				<li class="lvl-3"><a href="#alignment-and-exception-vectors">Alignment and Exception Vectors</a></li>
-				<li class="lvl-2"><a href="#10.1-the-%23align-directive">10.1 The #align Directive</a></li>
-				<li class="lvl-2"><a href="#10.2-exception-vectors">10.2 Exception Vectors</a></li>
+				<li class="lvl-2"><a href="#101-the-align-directive">10.1 The #align Directive</a></li>
+				<li class="lvl-2"><a href="#102-exception-vectors">10.2 Exception Vectors</a></li>
 				<li class="lvl-3"><a href="#syntax">Syntax</a></li>
 				<li class="lvl-3"><a href="#the-16-arm64-vector-slots">The 16 ARM64 Vector Slots</a></li>
 				<li class="lvl-3"><a href="#complete-example">Complete Example</a></li>
 				<li class="lvl-3"><a href="#slot-size-enforcement">Slot Size Enforcement</a></li>
-				<li class="lvl-3"><a href="#relationship-to-%23exact">Relationship to #exact</a></li>
-				<li class="lvl-3"><a href="#relationship-to-%23align">Relationship to #align</a></li>
+				<li class="lvl-3"><a href="#relationship-to-exact">Relationship to #exact</a></li>
+				<li class="lvl-3"><a href="#relationship-to-align">Relationship to #align</a></li>
 				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#10.3-trap-frame-abi">10.3 Trap Frame ABI</a></li>
+				<li class="lvl-2"><a href="#103-trap-frame-abi">10.3 Trap Frame ABI</a></li>
 				<li class="lvl-3"><a href="#nested-interrupt-and-daif-policy">Nested Interrupt And DAIF Policy</a></li>
 			</ul>
 			</aside>
@@ -637,12 +643,6 @@ handlers.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

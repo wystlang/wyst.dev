@@ -8,11 +8,25 @@
 		<meta name="description" content="Documentation example categories and normative example conventions." />
 		<title>Documentation Example Contracts · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/appendix-c-doc-example-contracts/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/appendix-c-doc-example-contracts/" />
+		<meta property="og:title" content="Documentation Example Contracts · Wyst" />
+		<meta property="og:description" content="Documentation example categories and normative example conventions." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Documentation Example Contracts · Wyst" />
+		<meta name="twitter:description" content="Documentation example categories and normative example conventions." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -86,7 +100,7 @@
 						<p class="doc-lede">Documentation example categories and normative example conventions.</p>
 					</header>
 					<div class="doc-body">
-<h2 id="example-scope" tabindex="-1"><a class="doc-anchor" href="#example-scope" aria-hidden="true">#</a> Example Scope</h2>
+<h2 id="example-scope" tabindex="-1"><a class="doc-anchor" href="#example-scope" aria-label="Permalink to Example Scope">#</a> Example Scope</h2>
 <p>This appendix defines how manual examples claim language behavior and how
 syntax sketches stay separate from normative examples.</p>
 <p>Manual chapters may contain broad language sketches, but examples that claim
@@ -116,9 +130,8 @@ behavior. Use <code>sketch</code> only for fragments, pseudocode, or examples th
 on features outside the current checker. Use <code>future</code> only for syntax that is
 future-version normative in <a href="/docs/source-of-truth/">source-of-truth.md</a> and is
 expected not to compile yet.</p>
-<h2 id="checked-examples" tabindex="-1"><a class="doc-anchor" href="#checked-examples" aria-hidden="true">#</a> Checked Examples</h2>
+<h2 id="checked-examples" tabindex="-1"><a class="doc-anchor" href="#checked-examples" aria-label="Permalink to Checked Examples">#</a> Checked Examples</h2>
 <p>This formatting example is a language contract:</p>
-<!-- wyst-contract: fmt -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token comment">// comments are preserved by the formatter</span>
@@ -131,7 +144,6 @@ expected not to compile yet.</p>
 </code></pre>
 <p>This source is expected to pass frontend checking with the default documentation
 layout:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#noreturn</span>
@@ -142,7 +154,6 @@ layout:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This source is expected to fail semantic checking:</p>
-<!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -150,7 +161,6 @@ layout:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>This is a syntax sketch:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> sketch<span class="token punctuation">.</span>generics
 
 <span class="token function">identity</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">value</span> <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> T <span class="token punctuation">{</span>
@@ -175,12 +185,6 @@ layout:</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

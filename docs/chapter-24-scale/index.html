@@ -8,6 +8,20 @@
 		<meta name="description" content="Scale measurement, deterministic rebuild benchmarking, and non-goals." />
 		<title>Scale And Measurement · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-24-scale/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-24-scale/" />
+		<meta property="og:title" content="Scale And Measurement · Wyst" />
+		<meta property="og:description" content="Scale measurement, deterministic rebuild benchmarking, and non-goals." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Scale And Measurement · Wyst" />
+		<meta name="twitter:description" content="Scale measurement, deterministic rebuild benchmarking, and non-goals." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -91,7 +105,7 @@ requires repeated whole-project output to be
 byte-for-byte stable.</p>
 <p>Scale work starts with evidence, not cache machinery. The deterministic rebuild
 benchmark defines the measurement boundary.</p>
-<h2 id="deterministic-rebuild-benchmark" tabindex="-1"><a class="doc-anchor" href="#deterministic-rebuild-benchmark" aria-hidden="true">#</a> Deterministic Rebuild Benchmark</h2>
+<h2 id="deterministic-rebuild-benchmark" tabindex="-1"><a class="doc-anchor" href="#deterministic-rebuild-benchmark" aria-label="Permalink to Deterministic Rebuild Benchmark">#</a> Deterministic Rebuild Benchmark</h2>
 <p>Command:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">wync rebuild-benchmark &lt;project-dir|path/to/wyst.project>
 </code></pre>
@@ -159,7 +173,7 @@ change detection and incremental-checking analysis.
 The <code>buildIdentity</code> field uses the same stable prefix for resolved target facts
 and selected optimization mode, so target profile changes are visible even when
 the benchmarked source files do not change.</p>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>No persistent build cache.</li>
 <li>No incremental codegen.</li>
@@ -184,12 +198,6 @@ the benchmarked source files do not change.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

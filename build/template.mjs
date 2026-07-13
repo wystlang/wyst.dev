@@ -18,15 +18,34 @@ function head({ title, description, canonical }) {
 		description ||
 			"Wyst is a personal ARM64 language and compiler project.",
 	);
+	const pageTitle = escapeHtml(title);
+	const canonicalUrl = canonical ? escapeHtml(canonical) : "";
+	const social = canonical
+		? `
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="${canonicalUrl}" />
+		<meta property="og:title" content="${pageTitle}" />
+		<meta property="og:description" content="${desc}" />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="${pageTitle}" />
+		<meta name="twitter:description" content="${desc}" />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />`
+		: "";
 	return `	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="color-scheme" content="dark" />
 		<meta name="theme-color" content="#0B0D12" />
 		<meta name="description" content="${desc}" />
-		<title>${escapeHtml(title)}</title>${
-			canonical ? `\n\t\t<link rel="canonical" href="${canonical}" />` : ""
-		}
+		<title>${pageTitle}</title>${
+			canonical ? `\n\t\t<link rel="canonical" href="${canonicalUrl}" />` : ""
+		}${social}
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -68,14 +87,6 @@ function footer() {
 	</footer>`;
 }
 
-const DOC_SIDEBAR_SCRIPT = `<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>`;
-
 function sidebar(navModel, currentUrl) {
 	const groups = [
 		["Topics", navModel.filter((d) => d.group === "chapter")],
@@ -101,7 +112,7 @@ function sidebar(navModel, currentUrl) {
 			</div>`;
 		})
 		.join("\n\t\t\t");
-	return `<aside class="doc-sidebar" aria-label="Documentation">
+	return `<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/"${currentUrl === "/docs/" ? ' aria-current="page"' : ""}>Reference Manual</a>
 			${sections}
 		</aside>`;
@@ -109,7 +120,9 @@ function sidebar(navModel, currentUrl) {
 
 function shell({ title, description, canonical, bodyClass, body }) {
 	const sidebarScript =
-		bodyClass === "docs" ? `\n\t\t${DOC_SIDEBAR_SCRIPT}` : "";
+		bodyClass === "docs"
+			? `\n\t\t<script src="/assets/docs.js" defer></script>`
+			: "";
 	return `<!doctype html>
 <html lang="en">
 ${head({ title, description, canonical })}
@@ -145,7 +158,7 @@ export function docPage({
 		: "";
 	const body = `		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
 ${sidebar(navModel, current.url)}
 				<article class="doc-article">
 					<header class="doc-article-head">${eyebrowHtml}

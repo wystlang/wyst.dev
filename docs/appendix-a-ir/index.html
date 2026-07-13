@@ -8,6 +8,20 @@
 		<meta name="description" content="Compiler IR, SSA, effect representation, verifier invariants, register allocation, and lowering internals." />
 		<title>Intermediate Representation · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/appendix-a-ir/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/appendix-a-ir/" />
+		<meta property="og:title" content="Intermediate Representation · Wyst" />
+		<meta property="og:description" content="Compiler IR, SSA, effect representation, verifier invariants, register allocation, and lowering internals." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Intermediate Representation · Wyst" />
+		<meta name="twitter:description" content="Compiler IR, SSA, effect representation, verifier invariants, register allocation, and lowering internals." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -90,7 +104,7 @@
 <p><strong>Canonical scope:</strong> the typed SSA IR consumed by every compiler pass between semantic analysis and ARM64 instruction selection. Defines values, ops, regions, control flow, type system, textual form, and verifier invariants. It is authoritative for compiler-internal IR only; <a href="/docs/source-of-truth/">source-of-truth.md</a> defines how IR documentation is resolved against user-visible language and ABI rules.
 <strong>Cross-references:</strong> <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> (Compiler Architecture, Internal IR), <a href="/docs/chapter-06-types/">chapter-06-types.md</a>, <a href="/docs/chapter-08-functions/">chapter-08-functions.md</a>, <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a>, <a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a>, <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a> (relocation vocabulary).</p>
 </blockquote>
-<h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-hidden="true">#</a> Appendix Scope</h2>
+<h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-label="Permalink to Appendix Scope">#</a> Appendix Scope</h2>
 <p>This advanced compiler-internal reference maps Wyst source concepts into SSA,
 verifier invariants, scheduling regions, allocation, and lowering. The source
 contracts it depends on are linked above.</p>
@@ -112,7 +126,7 @@ dependencies, no rolling unique IDs that vary across runs (use
 declaration-order IDs).</li>
 </ol>
 <hr>
-<h2 id="1.-pipeline-position" tabindex="-1"><a class="doc-anchor" href="#1.-pipeline-position" aria-hidden="true">#</a> 1. Pipeline Position</h2>
+<h2 id="1-pipeline-position" tabindex="-1"><a class="doc-anchor" href="#1-pipeline-position" aria-label="Permalink to 1. Pipeline Position">#</a> 1. Pipeline Position</h2>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">Source
   ↓        parser
 AST
@@ -136,7 +150,7 @@ Object Image (see chapter-16-object-format.md)
 the difference is which type information is still attached and which ops are
 permitted. The boundary is the <strong>type-erasure pass</strong> (§9).</p>
 <hr>
-<h2 id="2.-type-system" tabindex="-1"><a class="doc-anchor" href="#2.-type-system" aria-hidden="true">#</a> 2. Type System</h2>
+<h2 id="2-type-system" tabindex="-1"><a class="doc-anchor" href="#2-type-system" aria-label="Permalink to 2. Type System">#</a> 2. Type System</h2>
 <p>The IR uses <strong>Wyst's source-level type system directly</strong>, with two
 restrictions that hold from SSA construction onward:</p>
 <ul>
@@ -147,7 +161,7 @@ type-erasure pass.</li>
 accepts them interchangeably. A pass that ignores volatility or MMIO intent
 must reject IR involving those qualifiers.</li>
 </ul>
-<h3 id="2.1-scalar-types" tabindex="-1"><a class="doc-anchor" href="#2.1-scalar-types" aria-hidden="true">#</a> 2.1 Scalar Types</h3>
+<h3 id="21-scalar-types" tabindex="-1"><a class="doc-anchor" href="#21-scalar-types" aria-label="Permalink to 2.1 Scalar Types">#</a> 2.1 Scalar Types</h3>
 <table>
 <thead>
 <tr>
@@ -181,7 +195,7 @@ must reject IR involving those qualifiers.</li>
 </table>
 <p><code>u128</code> and <code>i128</code> are <strong>not</strong> scalar IR types. 128-bit values come from NEON
 loads/stores (<code>load.v16i8</code> etc.) and live in vector types.</p>
-<h3 id="2.2-address-types" tabindex="-1"><a class="doc-anchor" href="#2.2-address-types" aria-hidden="true">#</a> 2.2 Address Types</h3>
+<h3 id="22-address-types" tabindex="-1"><a class="doc-anchor" href="#22-address-types" aria-label="Permalink to 2.2 Address Types">#</a> 2.2 Address Types</h3>
 <table>
 <thead>
 <tr>
@@ -206,7 +220,7 @@ loads/stores (<code>load.v16i8</code> etc.) and live in vector types.</p>
 </table>
 <p>The element lens is used while lowering source address arithmetic: <code>(p : @u32) + 1</code> becomes a byte-offset operation with offset <code>4</code>. After that point,
 lower-level address operations use byte offsets.</p>
-<h3 id="2.3-aggregate-types" tabindex="-1"><a class="doc-anchor" href="#2.3-aggregate-types" aria-hidden="true">#</a> 2.3 Aggregate Types</h3>
+<h3 id="23-aggregate-types" tabindex="-1"><a class="doc-anchor" href="#23-aggregate-types" aria-label="Permalink to 2.3 Aggregate Types">#</a> 2.3 Aggregate Types</h3>
 <table>
 <thead>
 <tr>
@@ -263,7 +277,7 @@ and emitted data all agree on field order, size, alignment, and inactive bytes.<
 offsets. Raw addresses are integers or <code>@u8</code> byte-lens addresses: once source
 chooses integer arithmetic or an <code>@u8</code> lens, later offsets are byte counts and
 do not regain element scaling automatically.</p>
-<h3 id="2.4-type-erasure" tabindex="-1"><a class="doc-anchor" href="#2.4-type-erasure" aria-hidden="true">#</a> 2.4 Type Erasure</h3>
+<h3 id="24-type-erasure" tabindex="-1"><a class="doc-anchor" href="#24-type-erasure" aria-label="Permalink to 2.4 Type Erasure">#</a> 2.4 Type Erasure</h3>
 <p>After the type-erasure pass:</p>
 <ul>
 <li>All <code>struct</code> types are dissolved; field accesses become <code>gep</code> + scalar load/store.</li>
@@ -288,7 +302,7 @@ lowering picks the required native load/store and byte-swap sequence.</li>
 <p>Passes that run after type erasure are <strong>forbidden</strong> from creating any of
 the erased types.</p>
 <hr>
-<h2 id="3.-module-ir" tabindex="-1"><a class="doc-anchor" href="#3.-module-ir" aria-hidden="true">#</a> 3. Module IR</h2>
+<h2 id="3-module-ir" tabindex="-1"><a class="doc-anchor" href="#3-module-ir" aria-label="Permalink to 3. Module IR">#</a> 3. Module IR</h2>
 <p>A compilation unit's IR is a list of typed top-level declarations:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">module := decl*
 
@@ -311,7 +325,7 @@ that rewrite, move, or lower an op must preserve the source span that best
 identifies the originating source construct. These spans survive through
 post-placement verification.</p>
 <hr>
-<h2 id="4.-function-ir" tabindex="-1"><a class="doc-anchor" href="#4.-function-ir" aria-hidden="true">#</a> 4. Function IR</h2>
+<h2 id="4-function-ir" tabindex="-1"><a class="doc-anchor" href="#4-function-ir" aria-label="Permalink to 4. Function IR">#</a> 4. Function IR</h2>
 <p>A function consists of:</p>
 <ul>
 <li>A <strong>signature</strong>: typed parameters, return type, calling convention, attribute set.</li>
@@ -322,7 +336,7 @@ belongs to exactly one leaf region.</li>
 <li>A <strong>value table</strong>: SSA values with their defining op, type, and (after
 liveness) a live range.</li>
 </ul>
-<h3 id="4.1-basic-blocks" tabindex="-1"><a class="doc-anchor" href="#4.1-basic-blocks" aria-hidden="true">#</a> 4.1 Basic Blocks</h3>
+<h3 id="41-basic-blocks" tabindex="-1"><a class="doc-anchor" href="#41-basic-blocks" aria-label="Permalink to 4.1 Basic Blocks">#</a> 4.1 Basic Blocks</h3>
 <p>A basic block has:</p>
 <ul>
 <li>A unique block name (<code>bb0</code>, <code>bb1</code>, …; assigned in IR-construction order).</li>
@@ -333,7 +347,7 @@ here from multiple predecessors).</li>
 </ul>
 <p>Every basic block has exactly one entry point (the top) and exactly one
 exit (the terminator). No fall-through except via explicit <code>jmp</code>.</p>
-<h3 id="4.2-ssa-discipline" tabindex="-1"><a class="doc-anchor" href="#4.2-ssa-discipline" aria-hidden="true">#</a> 4.2 SSA Discipline</h3>
+<h3 id="42-ssa-discipline" tabindex="-1"><a class="doc-anchor" href="#42-ssa-discipline" aria-label="Permalink to 4.2 SSA Discipline">#</a> 4.2 SSA Discipline</h3>
 <ul>
 <li>Every value is defined exactly once.</li>
 <li>Even values whose source bits are indeterminate have an explicit defining
@@ -348,7 +362,7 @@ are pairs <code>(predecessor-block, value)</code>; one operand per incoming edge
 that block as a successor. The IR builder inserts split blocks where
 needed.</li>
 </ul>
-<h3 id="4.3-region-tree" tabindex="-1"><a class="doc-anchor" href="#4.3-region-tree" aria-hidden="true">#</a> 4.3 Region Tree</h3>
+<h3 id="43-region-tree" tabindex="-1"><a class="doc-anchor" href="#43-region-tree" aria-label="Permalink to 4.3 Region Tree">#</a> 4.3 Region Tree</h3>
 <p>Regions form a tree rooted at the function's body. The standard region
 kinds, with semantics that match Wyst surface syntax:</p>
 <table>
@@ -407,7 +421,7 @@ through every pass until the type-erasure pass, after which they may
 collapse only when their boundary is no longer load-bearing (e.g. an empty
 <code>schedule.relaxed</code> is dropped).</p>
 <hr>
-<h2 id="5.-ssa-values" tabindex="-1"><a class="doc-anchor" href="#5.-ssa-values" aria-hidden="true">#</a> 5. SSA Values</h2>
+<h2 id="5-ssa-values" tabindex="-1"><a class="doc-anchor" href="#5-ssa-values" aria-label="Permalink to 5. SSA Values">#</a> 5. SSA Values</h2>
 <p>Every value has:</p>
 <ul>
 <li>A type (§2).</li>
@@ -416,7 +430,7 @@ collapse only when their boundary is no longer load-bearing (e.g. an empty
 order within a function. Names are stable across passes (a pass that
 deletes <code>%v3</code> does <strong>not</strong> renumber later values).</li>
 </ul>
-<h3 id="5.1-constants" tabindex="-1"><a class="doc-anchor" href="#5.1-constants" aria-hidden="true">#</a> 5.1 Constants</h3>
+<h3 id="51-constants" tabindex="-1"><a class="doc-anchor" href="#51-constants" aria-label="Permalink to 5.1 Constants">#</a> 5.1 Constants</h3>
 <p>Constants are <strong>inline literals</strong>, not SSA values, unless their use requires
 a register. The textual form distinguishes:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">%r = add u32 %a, 1            ; immediate
@@ -429,7 +443,7 @@ materialized as a separate <code>const</code> op:</p>
 </code></pre>
 <p>This makes the cost of materializing a constant visible in the IR.</p>
 <hr>
-<h2 id="6.-op-vocabulary" tabindex="-1"><a class="doc-anchor" href="#6.-op-vocabulary" aria-hidden="true">#</a> 6. Op Vocabulary</h2>
+<h2 id="6-op-vocabulary" tabindex="-1"><a class="doc-anchor" href="#6-op-vocabulary" aria-label="Permalink to 6. Op Vocabulary">#</a> 6. Op Vocabulary</h2>
 <p>The IR has <strong>32 op kinds</strong>, grouped below. Each op section lists:</p>
 <ul>
 <li><strong>Signature</strong> — input types, output type.</li>
@@ -440,11 +454,11 @@ materialized as a separate <code>const</code> op:</p>
 only at the type-erasure boundary; passes above that boundary need not
 agree.)</li>
 </ul>
-<h3 id="6.1-arithmetic-and-logical" tabindex="-1"><a class="doc-anchor" href="#6.1-arithmetic-and-logical" aria-hidden="true">#</a> 6.1 Arithmetic and Logical</h3>
+<h3 id="61-arithmetic-and-logical" tabindex="-1"><a class="doc-anchor" href="#61-arithmetic-and-logical" aria-label="Permalink to 6.1 Arithmetic and Logical">#</a> 6.1 Arithmetic and Logical</h3>
 <p>All binary op operands are produced in source evaluation order before the op is
 created: left operand first, then right operand. A pass may reorder pure
 producer ops only when the move is legal under Chapter 9 and Chapter 13.</p>
-<h4><code>add</code> / <code>sub</code> / <code>mul</code></h4>
+<h4 id="add-sub-mul" tabindex="-1"><a class="doc-anchor" href="#add-sub-mul" aria-label="Permalink to add / sub / mul">#</a> <code>add</code> / <code>sub</code> / <code>mul</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T) -&gt; T</code> where <code>T</code> is integer (signed or unsigned, any width).</li>
 <li><strong>Semantics:</strong> two's-complement arithmetic. <strong>Wraps on overflow</strong> (matches Wyst's &quot;no compiler-exploitable UB&quot; rule in <code>chapter-01-language-design.md</code>).</li>
@@ -452,7 +466,7 @@ producer ops only when the move is legal under Chapter 9 and Chapter 13.</p>
 <li><strong>Legality:</strong> any T from §2.1 that's integer. Bitfield and bool rejected.</li>
 <li><strong>Lowering:</strong> <code>add</code> / <code>sub</code> / <code>mul</code> (or <code>madd</code>/<code>msub</code> when the pattern matches).</li>
 </ul>
-<h4><code>udiv</code> / <code>sdiv</code> / <code>umod</code> / <code>smod</code></h4>
+<h4 id="udiv-sdiv-umod-smod" tabindex="-1"><a class="doc-anchor" href="#udiv-sdiv-umod-smod" aria-label="Permalink to udiv / sdiv / umod / smod">#</a> <code>udiv</code> / <code>sdiv</code> / <code>umod</code> / <code>smod</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T) -&gt; T</code>.</li>
 <li><strong>Semantics:</strong> integer division follows the operator rules in
@@ -465,13 +479,13 @@ target sequence proven to produce the dividend when the divisor is zero.</li>
 <li><strong>Lowering:</strong> <code>udiv</code>/<code>sdiv</code> + <code>msub</code> for the truncated remainder; signed
 floored remainder adds the sign-adjustment sequence.</li>
 </ul>
-<h4><code>and</code> / <code>or</code> / <code>xor</code></h4>
+<h4 id="and-or-xor" tabindex="-1"><a class="doc-anchor" href="#and-or-xor" aria-label="Permalink to and / or / xor">#</a> <code>and</code> / <code>or</code> / <code>xor</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T) -&gt; T</code> for integer T.</li>
 <li><strong>Semantics:</strong> bitwise. The result preserves the input type.</li>
 <li><strong>Lowering:</strong> <code>and</code>/<code>orr</code>/<code>eor</code>.</li>
 </ul>
-<h4><code>shl</code> / <code>lshr</code> / <code>ashr</code></h4>
+<h4 id="shl-lshr-ashr" tabindex="-1"><a class="doc-anchor" href="#shl-lshr-ashr" aria-label="Permalink to shl / lshr / ashr">#</a> <code>shl</code> / <code>lshr</code> / <code>ashr</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, U) -&gt; T</code>, where <code>T</code> is an integer type and <code>U</code> is an
 unsigned integer shift-count type.</li>
@@ -481,7 +495,7 @@ shifting. The result preserves <code>T</code>.</li>
 <code>T</code> widths up to 32 bits and the 64-bit instruction form for scalar <code>u64</code> and
 <code>i64</code>. No hidden range check or synthetic narrow-count mask is inserted.</li>
 </ul>
-<h4><code>cmp</code></h4>
+<h4 id="cmp" tabindex="-1"><a class="doc-anchor" href="#cmp" aria-label="Permalink to cmp">#</a> <code>cmp</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T) -&gt; bool</code> where T is integer or data address for all
 comparison ops, or function-pointer for <code>eq</code> and <code>ne</code> only. Source-level
@@ -494,8 +508,8 @@ pointer checks lower through explicit <code>as.address u64</code> conversions be
 Mixed-sign and mixed-width are forbidden (Phase 0.4 rules).</li>
 <li><strong>Lowering:</strong> <code>cmp</code> + <code>cset</code>/<code>csel</code>.</li>
 </ul>
-<h3 id="6.2-memory" tabindex="-1"><a class="doc-anchor" href="#6.2-memory" aria-hidden="true">#</a> 6.2 Memory</h3>
-<h4><code>load</code></h4>
+<h3 id="62-memory" tabindex="-1"><a class="doc-anchor" href="#62-memory" aria-label="Permalink to 6.2 Memory">#</a> 6.2 Memory</h3>
+<h4 id="load" tabindex="-1"><a class="doc-anchor" href="#load" aria-label="Permalink to load">#</a> <code>load</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T) -&gt; T</code>.</li>
 <li><strong>Attributes:</strong> <code>volatile : bool</code>, <code>order : { plain, acquire, seq_cst }</code>, <code>align : u32</code> (computed from the source's known alignment).</li>
@@ -506,7 +520,7 @@ deterministic scalar chunks for aggregate values per
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.6</a>; <code>ldar</code>/<code>ldaxr</code>
 for acquire/seq_cst.</li>
 </ul>
-<h4><code>store</code></h4>
+<h4 id="store" tabindex="-1"><a class="doc-anchor" href="#store" aria-label="Permalink to store">#</a> <code>store</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, T) -&gt; void</code>.</li>
 <li><strong>Attributes:</strong> <code>volatile : bool</code>, <code>order : { plain, release, seq_cst }</code>, <code>align : u32</code>.</li>
@@ -517,7 +531,7 @@ deterministic scalar chunks for aggregate values per
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.6</a>; <code>stlr</code>/<code>stlxr</code>
 for release/seq_cst.</li>
 </ul>
-<h4><code>load.be</code> / <code>load.le</code></h4>
+<h4 id="loadbe-loadle" tabindex="-1"><a class="doc-anchor" href="#loadbe-loadle" aria-label="Permalink to load.be / load.le">#</a> <code>load.be</code> / <code>load.le</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@U) -&gt; T</code>, where <code>T</code> is a 16-, 32-, or 64-bit integer.</li>
 <li><strong>Attributes:</strong> <code>endian : { be, le }</code>, <code>volatile : bool</code>.</li>
@@ -525,7 +539,7 @@ for release/seq_cst.</li>
 produces an ordinary host-order integer value.</li>
 <li><strong>Lowering:</strong> native <code>ldr</code>/<code>ldrh</code> plus <code>rev</code>/<code>rev16</code> as needed.</li>
 </ul>
-<h4><code>store.be</code> / <code>store.le</code></h4>
+<h4 id="storebe-storele" tabindex="-1"><a class="doc-anchor" href="#storebe-storele" aria-label="Permalink to store.be / store.le">#</a> <code>store.be</code> / <code>store.le</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@U, T) -&gt; void</code>, where <code>T</code> is a 16-, 32-, or 64-bit
 integer.</li>
@@ -534,7 +548,7 @@ integer.</li>
 order.</li>
 <li><strong>Lowering:</strong> <code>rev</code>/<code>rev16</code> as needed before native <code>str</code>/<code>strh</code>.</li>
 </ul>
-<h4><code>indeterminate_read</code></h4>
+<h4 id="indeterminate_read" tabindex="-1"><a class="doc-anchor" href="#indeterminate_read" aria-label="Permalink to indeterminate_read">#</a> <code>indeterminate_read</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(storage : T) -&gt; T</code>.</li>
 <li><strong>Source spelling:</strong> <code>%read_uninit(storage)</code> where <code>storage</code> is
@@ -548,37 +562,37 @@ definitionless SSA values.</li>
 <li><strong>Lowering:</strong> copy or load the storage home into a normal result home using
 the same storage class and type-erased representation as <code>T</code>.</li>
 </ul>
-<h3 id="6.3-atomic-rmw" tabindex="-1"><a class="doc-anchor" href="#6.3-atomic-rmw" aria-hidden="true">#</a> 6.3 Atomic RMW</h3>
-<h4><code>atomic.cas</code></h4>
+<h3 id="63-atomic-rmw" tabindex="-1"><a class="doc-anchor" href="#63-atomic-rmw" aria-label="Permalink to 6.3 Atomic RMW">#</a> 6.3 Atomic RMW</h3>
+<h4 id="atomiccas" tabindex="-1"><a class="doc-anchor" href="#atomiccas" aria-label="Permalink to atomic.cas">#</a> <code>atomic.cas</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, T, T) -&gt; (T, bool)</code> — (prior, ok).</li>
 <li><strong>Attribute:</strong> <code>order : { relaxed, acquire, release, acqrel, seq_cst }</code>.</li>
 <li><strong>Lowering:</strong> <code>cas{,a,l,al}</code> on LSE targets; <code>ldxr</code>/<code>stxr</code> loop otherwise (per <code>#target features = (lse)</code>). The non-LSE loop retries store-exclusive failure until the compare-and-swap operation completes; it has no retry budget or hidden fallback result.</li>
 </ul>
-<h4><code>atomic.rmw</code></h4>
+<h4 id="atomicrmw" tabindex="-1"><a class="doc-anchor" href="#atomicrmw" aria-label="Permalink to atomic.rmw">#</a> <code>atomic.rmw</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, T) -&gt; T</code> (returns prior value).</li>
 <li><strong>Attribute:</strong> <code>op : { add, or, and, xor, xchg, bit_set, bit_clear }</code>, <code>order : same as cas</code>.</li>
 <li><strong>Lowering:</strong> <code>ldadd</code>/<code>ldset</code>/<code>ldclr</code>/<code>ldeor</code>/<code>swp</code> (LSE); <code>ldxr</code>+arith+<code>stxr</code> loop otherwise. The non-LSE loop retries store-exclusive failure until the update store succeeds; it does not lower through a bounded internal retry count, fallback lock, or runtime helper.</li>
 </ul>
-<h4><code>atomic.load</code> / <code>atomic.store</code></h4>
+<h4 id="atomicload-atomicstore" tabindex="-1"><a class="doc-anchor" href="#atomicload-atomicstore" aria-label="Permalink to atomic.load / atomic.store">#</a> <code>atomic.load</code> / <code>atomic.store</code></h4>
 <ul>
 <li>Like <code>load</code>/<code>store</code> but <code>order</code> is restricted to <code>{ relaxed, seq_cst }</code> (acquire/release continue to use the <code>#acquire</code>/<code>#release</code> directives, which lower to <code>load</code>/<code>store</code> with <code>order=acquire</code>/<code>release</code> — see §1.3.2).</li>
 </ul>
-<h3 id="6.4-control-flow" tabindex="-1"><a class="doc-anchor" href="#6.4-control-flow" aria-hidden="true">#</a> 6.4 Control Flow</h3>
-<h4><code>br</code></h4>
+<h3 id="64-control-flow" tabindex="-1"><a class="doc-anchor" href="#64-control-flow" aria-label="Permalink to 6.4 Control Flow">#</a> 6.4 Control Flow</h3>
+<h4 id="br" tabindex="-1"><a class="doc-anchor" href="#br" aria-label="Permalink to br">#</a> <code>br</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(bool) -&gt; noreturn</code>.</li>
 <li><strong>Operands:</strong> condition, true-target block, false-target block.</li>
 <li><strong>Terminator-only.</strong></li>
 </ul>
-<h4><code>jmp</code></h4>
+<h4 id="jmp" tabindex="-1"><a class="doc-anchor" href="#jmp" aria-label="Permalink to jmp">#</a> <code>jmp</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; noreturn</code>.</li>
 <li><strong>Operand:</strong> target block.</li>
 <li><strong>Terminator-only.</strong></li>
 </ul>
-<h4><code>call</code></h4>
+<h4 id="call" tabindex="-1"><a class="doc-anchor" href="#call" aria-label="Permalink to call">#</a> <code>call</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(fn(T0, T1, ...) -&gt; R, T0, T1, ...) -&gt; R</code>.</li>
 <li><strong>Attributes:</strong> <code>cc : { wyst, aapcs }</code>, <code>tail : bool</code>.</li>
@@ -587,23 +601,23 @@ first, then call arguments left-to-right. Direct calls produce arguments
 left-to-right before the call op.</li>
 <li><strong>Effects:</strong> AAPCS or Wyst-native register clobber per <code>cc</code>; full compiler memory fence unless attribute <code>pure : bool = true</code> (rare; only for pure-function intrinsics).</li>
 </ul>
-<h4><code>tail</code></h4>
+<h4 id="tail" tabindex="-1"><a class="doc-anchor" href="#tail" aria-label="Permalink to tail">#</a> <code>tail</code></h4>
 <ul>
 <li><strong>Like <code>call</code> but terminator-only, and reuses the caller's frame.</strong> Used for <code>goto</code> to a <code>label</code> symbol (intra- or inter-module).</li>
 </ul>
-<h4><code>ret</code></h4>
+<h4 id="ret" tabindex="-1"><a class="doc-anchor" href="#ret" aria-label="Permalink to ret">#</a> <code>ret</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(R) -&gt; noreturn</code> where R is the function return type, or <code>() -&gt; noreturn</code> for void.</li>
 <li><strong>Terminator-only.</strong></li>
 </ul>
-<h4><code>unreachable</code></h4>
+<h4 id="unreachable" tabindex="-1"><a class="doc-anchor" href="#unreachable" aria-label="Permalink to unreachable">#</a> <code>unreachable</code></h4>
 <ul>
 <li><strong>Terminator-only.</strong> Generated for code following <code>%eret</code>, a direct
 <code>#noreturn</code> call, or another operation the verifier proves cannot return;
 also used for switch arms the verifier can prove dead.</li>
 </ul>
-<h3 id="6.5-addressing" tabindex="-1"><a class="doc-anchor" href="#6.5-addressing" aria-hidden="true">#</a> 6.5 Addressing</h3>
-<h4><code>addr_of</code></h4>
+<h3 id="65-addressing" tabindex="-1"><a class="doc-anchor" href="#65-addressing" aria-label="Permalink to 6.5 Addressing">#</a> 6.5 Addressing</h3>
+<h4 id="addr_of" tabindex="-1"><a class="doc-anchor" href="#addr_of" aria-label="Permalink to addr_of">#</a> <code>addr_of</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; @T</code>.</li>
 <li><strong>Operand:</strong> symbol reference (function name, label name, global name, or <code>#start(.section)</code>).</li>
@@ -614,7 +628,7 @@ initializers, per-instance object references, veneers, jump-table entries,
 and address-bearing instruction operands are represented separately.</li>
 <li><strong>Lowering:</strong> <code>adrp</code> + <code>add</code> page pair (or <code>adrp</code> + <code>ldr</code> when stored into data).</li>
 </ul>
-<h4><code>gep</code></h4>
+<h4 id="gep" tabindex="-1"><a class="doc-anchor" href="#gep" aria-label="Permalink to gep">#</a> <code>gep</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(@T, i64) -&gt; @T</code>.</li>
 <li><strong>Semantics:</strong> byte-offset addressing in IR. This is not the source-level
@@ -624,7 +638,7 @@ member access, and byte-lens source arithmetic all compile to <code>gep</code> p
 compile-time-or-runtime byte offset.</li>
 <li><strong>Lowering:</strong> <code>add</code> with immediate or <code>add xN, xM, xK, lsl #s</code>.</li>
 </ul>
-<h4>Relocation-Producing Origins</h4>
+<h4 id="relocation-producing-origins" tabindex="-1"><a class="doc-anchor" href="#relocation-producing-origins" aria-label="Permalink to Relocation-Producing Origins">#</a> Relocation-Producing Origins</h4>
 <p>Relocation-producing origins are explicit in IR or in the lowering artifact
 records that consume IR. The current compiler recognizes these origins:</p>
 <table>
@@ -677,15 +691,15 @@ records that consume IR. The current compiler recognizes these origins:</p>
 from later uses of a bound address local. A relocation origin is carried by the
 IR node or lowering patch that names the symbol, object, string, section, or
 future jump-table entry.</p>
-<h3 id="6.6-casts-and-construction" tabindex="-1"><a class="doc-anchor" href="#6.6-casts-and-construction" aria-hidden="true">#</a> 6.6 Casts and Construction</h3>
-<h4><code>cast</code></h4>
+<h3 id="66-casts-and-construction" tabindex="-1"><a class="doc-anchor" href="#66-casts-and-construction" aria-label="Permalink to 6.6 Casts and Construction">#</a> 6.6 Casts and Construction</h3>
+<h4 id="cast" tabindex="-1"><a class="doc-anchor" href="#cast" aria-label="Permalink to cast">#</a> <code>cast</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(S) -&gt; T</code>.</li>
 <li><strong>Attribute:</strong> <code>kind : { zext, sext, trunc, bitcast, addr_to_int, int_to_addr, fp_to_int, int_to_fp, byteswap }</code>.</li>
 <li><strong>Semantics:</strong> each kind is a distinct cast operation; the verifier checks that the (S, T) pair matches the kind. This mirrors the Phase 0.4 <code>as</code>-pair rules.</li>
 <li><strong>Lowering:</strong> zero-cost (<code>bitcast</code> when on a register of the right size), <code>sxtb</code>/<code>sxth</code>/<code>sxtw</code> (<code>sext</code>), <code>and</code> (<code>trunc</code>), <code>rev</code>/<code>rev16</code>/<code>rev32</code> (<code>byteswap</code>).</li>
 </ul>
-<h4><code>select</code></h4>
+<h4 id="select" tabindex="-1"><a class="doc-anchor" href="#select" aria-label="Permalink to select">#</a> <code>select</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(bool, T, T) -&gt; T</code>.</li>
 <li><strong>Semantics:</strong> operands are produced in source order: condition, true arm,
@@ -693,18 +707,18 @@ false arm. Both arms are evaluated unconditionally before the <code>select</code
 effectful arm producers retain that order.</li>
 <li><strong>Lowering:</strong> <code>csel</code>.</li>
 </ul>
-<h4><code>const</code></h4>
+<h4 id="const" tabindex="-1"><a class="doc-anchor" href="#const" aria-label="Permalink to const">#</a> <code>const</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; T</code>.</li>
 <li><strong>Attribute:</strong> the literal value.</li>
 <li><strong>Used for</strong> constants too large to inline in an op operand.</li>
 </ul>
-<h4><code>phi</code></h4>
+<h4 id="phi" tabindex="-1"><a class="doc-anchor" href="#phi" aria-label="Permalink to phi">#</a> <code>phi</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T, T, ..., T) -&gt; T</code> — one operand per CFG predecessor.</li>
 <li><strong>Top-of-block-only.</strong></li>
 </ul>
-<h4><code>aggregate</code></h4>
+<h4 id="aggregate" tabindex="-1"><a class="doc-anchor" href="#aggregate" aria-label="Permalink to aggregate">#</a> <code>aggregate</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T0, T1, ...) -&gt; S</code> where <code>S</code> is a struct, slice, or enum variant.</li>
 <li><strong>Semantics:</strong> constructs an aggregate from its parts. Used pre-type-erasure.
@@ -713,14 +727,14 @@ stored in declaration order after their initializer expressions have been
 evaluated in written source order.</li>
 <li><strong>Lowering:</strong> decomposed by type erasure; no direct ARM64 lowering.</li>
 </ul>
-<h4><code>extract</code></h4>
+<h4 id="extract" tabindex="-1"><a class="doc-anchor" href="#extract" aria-label="Permalink to extract">#</a> <code>extract</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(S) -&gt; Ti</code> where Ti is one field of aggregate S.</li>
 <li><strong>Attribute:</strong> field index.</li>
 <li><strong>Lowering:</strong> decomposed by type erasure.</li>
 </ul>
-<h3 id="6.7-inline-assembly-and-barriers" tabindex="-1"><a class="doc-anchor" href="#6.7-inline-assembly-and-barriers" aria-hidden="true">#</a> 6.7 Inline Assembly and Barriers</h3>
-<h4><code>asm.block</code></h4>
+<h3 id="67-inline-assembly-and-barriers" tabindex="-1"><a class="doc-anchor" href="#67-inline-assembly-and-barriers" aria-label="Permalink to 6.7 Inline Assembly and Barriers">#</a> 6.7 Inline Assembly and Barriers</h3>
+<h4 id="asmblock" tabindex="-1"><a class="doc-anchor" href="#asmblock" aria-label="Permalink to asm.block">#</a> <code>asm.block</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(in0, in1, ...) -&gt; (out0, out1, ...)</code>.</li>
 <li><strong>Attributes:</strong> template, constraint strings, clobbers, <code>pure : bool</code> (per §2.9).</li>
@@ -728,14 +742,14 @@ evaluated in written source order.</li>
 <li><strong>Opaque to alias analysis</strong> (per <code>chapter-01-language-design.md</code>'s consequence statement in §9.2).</li>
 <li><strong>Lowering:</strong> verbatim, with operand interpolation.</li>
 </ul>
-<h4><code>barrier.compiler</code></h4>
+<h4 id="barriercompiler" tabindex="-1"><a class="doc-anchor" href="#barriercompiler" aria-label="Permalink to barrier.compiler">#</a> <code>barrier.compiler</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; void</code>.</li>
 <li><strong>Effects:</strong> reorder barrier in IR only. Emits no instruction.</li>
 <li><strong>Source spelling:</strong> <code>%compiler_barrier()</code>.</li>
 <li><strong>Use:</strong> sequence point insertion by source or passes that need to constrain reordering without an architectural fence.</li>
 </ul>
-<h4><code>barrier.arch</code></h4>
+<h4 id="barrierarch" tabindex="-1"><a class="doc-anchor" href="#barrierarch" aria-label="Permalink to barrier.arch">#</a> <code>barrier.arch</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>() -&gt; void</code>.</li>
 <li><strong>Attribute:</strong> <code>kind : { dmb, dsb, isb }</code>; <code>dmb</code> and <code>dsb</code> carry one of the
@@ -744,8 +758,8 @@ ARM64 domains <code>sy</code>, <code>st</code>, <code>ld</code>, <code>ish</code
 <li><strong>Effects:</strong> architectural barrier plus full two-way compiler memory fence.</li>
 <li><strong>Lowering:</strong> the named instruction.</li>
 </ul>
-<h3 id="6.8-runtime-primitive-ir" tabindex="-1"><a class="doc-anchor" href="#6.8-runtime-primitive-ir" aria-hidden="true">#</a> 6.8 Runtime Primitive IR</h3>
-<h4><code>intrinsic</code></h4>
+<h3 id="68-runtime-primitive-ir" tabindex="-1"><a class="doc-anchor" href="#68-runtime-primitive-ir" aria-label="Permalink to 6.8 Runtime Primitive IR">#</a> 6.8 Runtime Primitive IR</h3>
+<h4 id="intrinsic" tabindex="-1"><a class="doc-anchor" href="#intrinsic" aria-label="Permalink to intrinsic">#</a> <code>intrinsic</code></h4>
 <ul>
 <li><strong>Signature:</strong> <code>(T0, T1, ...) -&gt; R</code> where <code>R</code> is <code>void</code> or a single type.</li>
 <li><strong>Attributes:</strong> <code>name : enum</code>, plus name-specific attributes (immediate ranges, EL gating, fence kind, clobber set).</li>
@@ -921,7 +935,7 @@ computes the transitive closure for every function.</p>
 <p>Passes consult these attributes; the front-end is the only thing that
 populates them.</p>
 <hr>
-<h3 id="6.9-dependency-chain-queries" tabindex="-1"><a class="doc-anchor" href="#6.9-dependency-chain-queries" aria-hidden="true">#</a> 6.9 Dependency Chain Queries</h3>
+<h3 id="69-dependency-chain-queries" tabindex="-1"><a class="doc-anchor" href="#69-dependency-chain-queries" aria-label="Permalink to 6.9 Dependency Chain Queries">#</a> 6.9 Dependency Chain Queries</h3>
 <p>A <strong>dependency chain</strong> is a sequence of ops linked by SSA def-use edges: each
 op in the chain consumes the value produced by the preceding op. The
 <strong>critical path</strong> of a region is the longest dependency chain measured in
@@ -944,7 +958,7 @@ with dependency and latency information for TMA-style analysis (see
 descriptor is available, <code>critical_path</code> reports chain length in ops rather
 than estimated cycles.</p>
 <hr>
-<h2 id="7.-function-and-module-verifier-invariants" tabindex="-1"><a class="doc-anchor" href="#7.-function-and-module-verifier-invariants" aria-hidden="true">#</a> 7. Function and Module Verifier Invariants</h2>
+<h2 id="7-function-and-module-verifier-invariants" tabindex="-1"><a class="doc-anchor" href="#7-function-and-module-verifier-invariants" aria-label="Permalink to 7. Function and Module Verifier Invariants">#</a> 7. Function and Module Verifier Invariants</h2>
 <p>Every IR must satisfy these conditions; the verifier runs after IR
 construction and after every pass that mutates IR.</p>
 <ol>
@@ -971,7 +985,7 @@ construction and after every pass that mutates IR.</p>
 diagnostic — with two exceptions: invariant 16 (effect deny violation)
 and invariant 17 (branch to non-executable section) produce user-facing
 diagnostics because they reflect source-level mistakes, not compiler bugs.</p>
-<h3 id="7.1-branch-target-section-validation" tabindex="-1"><a class="doc-anchor" href="#7.1-branch-target-section-validation" aria-hidden="true">#</a> 7.1 Branch Target Section Validation</h3>
+<h3 id="71-branch-target-section-validation" tabindex="-1"><a class="doc-anchor" href="#71-branch-target-section-validation" aria-label="Permalink to 7.1 Branch Target Section Validation">#</a> 7.1 Branch Target Section Validation</h3>
 <p>After symbol placement (when every symbol has a section assignment and
 every section has ELF flags), the verifier performs a second pass over
 control-flow ops to detect branches into non-executable memory.</p>
@@ -1002,7 +1016,7 @@ runtime.</p>
 <p><strong>Computed branches</strong> (calls through function pointers, <code>blr</code> via <code>#asm</code>)
 cannot be checked statically and are not covered by this rule. The
 programmer retains responsibility for computed branch targets.</p>
-<h3 id="7.2-%23asm-stack-bounds-diagnostic" tabindex="-1"><a class="doc-anchor" href="#7.2-%23asm-stack-bounds-diagnostic" aria-hidden="true">#</a> 7.2 <code>#asm</code> Stack Bounds Diagnostic</h3>
+<h3 id="72-asm-stack-bounds-diagnostic" tabindex="-1"><a class="doc-anchor" href="#72-asm-stack-bounds-diagnostic" aria-label="Permalink to 7.2 #asm Stack Bounds Diagnostic">#</a> 7.2 <code>#asm</code> Stack Bounds Diagnostic</h3>
 <p>For any non-<code>#naked</code> function, the compiler owns frame layout and checks
 stack-pointer-relative memory operands in the <code>#asm</code> template against the
 function's <strong>final compiler-owned frame</strong>. This is a post-RA, post-placement
@@ -1033,7 +1047,7 @@ does not control their frame layout. Stack-relative accesses in <code>#naked</co
 <p><strong>Interaction with <code>#pin</code>:</strong> Wyst rejects <code>#pin(x29)</code>, so
 <code>x29</code>-relative <code>#asm</code> bounds refinement is not performed.</p>
 <hr>
-<h2 id="8.-textual-ir-form" tabindex="-1"><a class="doc-anchor" href="#8.-textual-ir-form" aria-hidden="true">#</a> 8. Textual IR Form</h2>
+<h2 id="8-textual-ir-form" tabindex="-1"><a class="doc-anchor" href="#8-textual-ir-form" aria-label="Permalink to 8. Textual IR Form">#</a> 8. Textual IR Form</h2>
 <p>The IR has a human-readable textual form used for:</p>
 <ul>
 <li>Compiler debugging output (<code>wync --emit-ir</code>).</li>
@@ -1042,7 +1056,7 @@ does not control their frame layout. Stack-relative accesses in <code>#naked</co
 </ul>
 <p>The textual form is <strong>not guaranteed to parse back across compiler versions</strong>.
 It is a stable dump format within a single compiler version.</p>
-<h3 id="8.1-grammar-sketch" tabindex="-1"><a class="doc-anchor" href="#8.1-grammar-sketch" aria-hidden="true">#</a> 8.1 Grammar Sketch</h3>
+<h3 id="81-grammar-sketch" tabindex="-1"><a class="doc-anchor" href="#81-grammar-sketch" aria-label="Permalink to 8.1 Grammar Sketch">#</a> 8.1 Grammar Sketch</h3>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">ir-file       := module-line decl*
 module-line   := "module" name newline
 decl          := function | global | type-decl
@@ -1061,9 +1075,8 @@ terminator    := op operands attribute-block? newline
 value-binding := "%" identifier "="
 attribute-block := "[" attribute-list "]"
 </code></pre>
-<h3 id="8.2-worked-example" tabindex="-1"><a class="doc-anchor" href="#8.2-worked-example" aria-hidden="true">#</a> 8.2 Worked Example</h3>
+<h3 id="82-worked-example" tabindex="-1"><a class="doc-anchor" href="#82-worked-example" aria-label="Permalink to 8.2 Worked Example">#</a> 8.2 Worked Example</h3>
 <p>The Wyst surface code:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">uart_write</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">byte</span> <span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -1119,7 +1132,7 @@ represented by their own IR terminators or lowering patch records
 (<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a> §6).</li>
 </ul>
 <hr>
-<h2 id="9.-the-type-erasure-pass" tabindex="-1"><a class="doc-anchor" href="#9.-the-type-erasure-pass" aria-hidden="true">#</a> 9. The Type-Erasure Pass</h2>
+<h2 id="9-the-type-erasure-pass" tabindex="-1"><a class="doc-anchor" href="#9-the-type-erasure-pass" aria-label="Permalink to 9. The Type-Erasure Pass">#</a> 9. The Type-Erasure Pass</h2>
 <p>A single pass between scheduling and register allocation <strong>dissolves
 aggregate types</strong> and lowers <code>bitfield</code> operations to bit-fiddling. The
 pass:</p>
@@ -1140,7 +1153,7 @@ earlier.)</li>
 <p>After type erasure, the IR uses only scalar types and <code>[T:N]</code> vectors. It is
 ready for register allocation (Phase 5.3) and instruction selection.</p>
 <hr>
-<h2 id="10.-determinism" tabindex="-1"><a class="doc-anchor" href="#10.-determinism" aria-hidden="true">#</a> 10. Determinism</h2>
+<h2 id="10-determinism" tabindex="-1"><a class="doc-anchor" href="#10-determinism" aria-label="Permalink to 10. Determinism">#</a> 10. Determinism</h2>
 <p>Every pass must be deterministic. Specific requirements:</p>
 <ul>
 <li><strong>Iteration order</strong> over basic blocks is <strong>reverse postorder</strong> (computed
@@ -1160,7 +1173,7 @@ in a fixed order. There is no cost-driven pass selection.</li>
 build optimization mode, target, and <code>#schedule</code> modes → identical IR →
 identical object output.</p>
 <hr>
-<h2 id="11.-register-allocation" tabindex="-1"><a class="doc-anchor" href="#11.-register-allocation" aria-hidden="true">#</a> 11. Register Allocation</h2>
+<h2 id="11-register-allocation" tabindex="-1"><a class="doc-anchor" href="#11-register-allocation" aria-label="Permalink to 11. Register Allocation">#</a> 11. Register Allocation</h2>
 <p>The Wyst register allocator is a pass over the IR after type erasure (§9) and
 before instruction selection. Its output is the same IR with every non-void SSA
 value assigned either to a physical register home or to a deterministic
@@ -1170,7 +1183,7 @@ this SSA-based allocator and these tie-breaks. The Reproducibility Model
 (<a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a>) requires it:
 two compilers that allocate differently produce different ELF bytes and
 different debug location lists.</p>
-<h3 id="11.1-algorithm" tabindex="-1"><a class="doc-anchor" href="#11.1-algorithm" aria-hidden="true">#</a> 11.1 Algorithm</h3>
+<h3 id="111-algorithm" tabindex="-1"><a class="doc-anchor" href="#111-algorithm" aria-label="Permalink to 11.1 Algorithm">#</a> 11.1 Algorithm</h3>
 <p>The allocator uses deterministic SSA interference coloring:</p>
 <ol>
 <li><strong>Classify homes.</strong> Scalar integer, pointer, function-pointer, bitfield,
@@ -1212,7 +1225,7 @@ value to stack. Pinned values are never spilled.</li>
 <p>This is not a graph-coloring license for implementation-defined behavior: the
 graph construction, ordering, register choice, and spill fallback above are part
 of conformance.</p>
-<h3 id="11.2-register-pool" tabindex="-1"><a class="doc-anchor" href="#11.2-register-pool" aria-hidden="true">#</a> 11.2 Register Pool</h3>
+<h3 id="112-register-pool" tabindex="-1"><a class="doc-anchor" href="#112-register-pool" aria-label="Permalink to 11.2 Register Pool">#</a> 11.2 Register Pool</h3>
 <p>For the current AArch64 backend, the allocator-controlled pool is still
 deliberately constrained, but it is call-shape aware. These registers are never
 allocator-controlled automatic homes:</p>
@@ -1253,7 +1266,7 @@ still permits <code>#pin(vN)</code> for the same reasons as <code>#pin(xN)</code
 occasionally needs register stability for vector lanes, especially across an
 <code>#asm</code> block. Automatic FPR/vector allocation is deferred until the backend can
 model caller-saved vector clobbers without creating misleading debug locations.</p>
-<h3 id="11.3-tie-breaking-and-spill-selection" tabindex="-1"><a class="doc-anchor" href="#11.3-tie-breaking-and-spill-selection" aria-hidden="true">#</a> 11.3 Tie-Breaking and Spill Selection</h3>
+<h3 id="113-tie-breaking-and-spill-selection" tabindex="-1"><a class="doc-anchor" href="#113-tie-breaking-and-spill-selection" aria-label="Permalink to 11.3 Tie-Breaking and Spill Selection">#</a> 11.3 Tie-Breaking and Spill Selection</h3>
 <p>Tie-breaks are part of the algorithm:</p>
 <ul>
 <li><strong>Static use weight</strong> is the count of SSA uses, counting ordinary operands,
@@ -1270,7 +1283,7 @@ class and call-shape (§11.2).</li>
 <li><strong>Spill choice</strong> is implicit: a value spills only when every register in its
 class is already occupied by an interfering colored neighbor.</li>
 </ul>
-<h3 id="11.4-pin-resolution-order" tabindex="-1"><a class="doc-anchor" href="#11.4-pin-resolution-order" aria-hidden="true">#</a> 11.4 Pin Resolution Order</h3>
+<h3 id="114-pin-resolution-order" tabindex="-1"><a class="doc-anchor" href="#114-pin-resolution-order" aria-label="Permalink to 11.4 Pin Resolution Order">#</a> 11.4 Pin Resolution Order</h3>
 <p>The pin pre-pass processes pins in source declaration order. Source-level pins
 that request the same register in the same function scope are rejected before
 allocation, matching the rule table in
@@ -1287,7 +1300,7 @@ the allocator also rejects it as a register-allocation conflict.</p>
 <p>If the program over-constrains via <code>#pin</code>, the programmer must revise the
 pin set. This is consistent with the language's general &quot;make conflicts
 visible&quot; stance.</p>
-<h3 id="11.5-spill-slot-layout" tabindex="-1"><a class="doc-anchor" href="#11.5-spill-slot-layout" aria-hidden="true">#</a> 11.5 Spill Slot Layout</h3>
+<h3 id="115-spill-slot-layout" tabindex="-1"><a class="doc-anchor" href="#115-spill-slot-layout" aria-label="Permalink to 11.5 Spill Slot Layout">#</a> 11.5 Spill Slot Layout</h3>
 <p>Spill slots are allocated in the function's frame, immediately after the
 saved-callee-saved-register area. Slot offsets are assigned in
 <strong>first stack-home order</strong>. A value is introduced to the spill-slot layout at
@@ -1296,13 +1309,13 @@ event is recorded once per SSA value. If multiple values first become
 stack-resident at the same position, lower <code>%vN</code> IDs receive earlier slots.</p>
 <p>Slot sizes match the spilled value's type size (8 bytes for <code>u64</code>/<code>i64</code>/<code>@T</code>,
 16 bytes for vector pairs, etc.) with natural alignment.</p>
-<h3 id="11.6-coalescing" tabindex="-1"><a class="doc-anchor" href="#11.6-coalescing" aria-hidden="true">#</a> 11.6 Coalescing</h3>
+<h3 id="116-coalescing" tabindex="-1"><a class="doc-anchor" href="#116-coalescing" aria-label="Permalink to 11.6 Coalescing">#</a> 11.6 Coalescing</h3>
 <p>Coalescing is represented by non-interference, not by a separate destructive
 pass. If two SSA values are connected only by a <code>phi</code> edge or copy-like local
 binding and the SSA liveness graph does not give them an interference edge, the
 coloring step may assign them the same register. The allocator does not merge
 graph vertices, does not rewrite SSA, and never invalidates a pin.</p>
-<h3 id="11.7-interaction-with-%23asm" tabindex="-1"><a class="doc-anchor" href="#11.7-interaction-with-%23asm" aria-hidden="true">#</a> 11.7 Interaction with <code>#asm</code></h3>
+<h3 id="117-interaction-with-asm" tabindex="-1"><a class="doc-anchor" href="#117-interaction-with-asm" aria-label="Permalink to 11.7 Interaction with #asm">#</a> 11.7 Interaction with <code>#asm</code></h3>
 <p><code>#asm</code> blocks declare their operand and clobber sets explicitly (§2.9).
 Because the current allocator does not split live ranges after coloring, the
 AArch64 backend forces non-pinned automatic GPR candidates to stack for any
@@ -1311,7 +1324,7 @@ constraints; if a pinned value conflicts with an operand or clobber, the
 verifier rejects the program rather than silently moving the value.</p>
 <p><code>#asm(pure)</code> blocks (§2.9) have the same input/output handling but no
 implicit memory clobber.</p>
-<h3 id="11.8-determinism-guarantees" tabindex="-1"><a class="doc-anchor" href="#11.8-determinism-guarantees" aria-hidden="true">#</a> 11.8 Determinism Guarantees</h3>
+<h3 id="118-determinism-guarantees" tabindex="-1"><a class="doc-anchor" href="#118-determinism-guarantees" aria-label="Permalink to 11.8 Determinism Guarantees">#</a> 11.8 Determinism Guarantees</h3>
 <p>Given identical IR input, identical <code>#target</code> declaration, and identical
 <code>#schedule</code> mode, the register allocator produces:</p>
 <ul>
@@ -1324,7 +1337,7 @@ implicit memory clobber.</p>
 machines running the same compiler version</strong> — there is no nondeterminism
 from heap layout, hashtable iteration, or threading. The allocator is
 single-threaded by spec.</p>
-<h3 id="11.9-out-of-scope" tabindex="-1"><a class="doc-anchor" href="#11.9-out-of-scope" aria-hidden="true">#</a> 11.9 Out of Scope</h3>
+<h3 id="119-out-of-scope" tabindex="-1"><a class="doc-anchor" href="#119-out-of-scope" aria-label="Permalink to 11.9 Out of Scope">#</a> 11.9 Out of Scope</h3>
 <ul>
 <li><strong>Live-range splitting after coloring.</strong> The allocator either colors a value
 for its whole SSA allocation range or assigns that value to stack.</li>
@@ -1340,7 +1353,7 @@ bodies are part of the caller's interval set), but no allocation flows
 across non-inlined calls — the AAPCS or Wyst-native ABI handles that.</li>
 </ul>
 <hr>
-<h2 id="12.-open-questions" tabindex="-1"><a class="doc-anchor" href="#12.-open-questions" aria-hidden="true">#</a> 12. Open Questions</h2>
+<h2 id="12-open-questions" tabindex="-1"><a class="doc-anchor" href="#12-open-questions" aria-label="Permalink to 12. Open Questions">#</a> 12. Open Questions</h2>
 <p>These remain outside this IR model:</p>
 <ul>
 <li><strong>Profile-guided scheduling</strong>: the <code>br</code> op now carries an optional <code>hint</code>
@@ -1360,7 +1373,7 @@ symbols. This matches the whole-program single-pass model in
 are available while imported call sites are lowered.</li>
 </ul>
 <hr>
-<h2 id="13.-cross-references" tabindex="-1"><a class="doc-anchor" href="#13.-cross-references" aria-hidden="true">#</a> 13. Cross-References</h2>
+<h2 id="13-cross-references" tabindex="-1"><a class="doc-anchor" href="#13-cross-references" aria-label="Permalink to 13. Cross-References">#</a> 13. Cross-References</h2>
 <table>
 <thead>
 <tr>
@@ -1440,13 +1453,13 @@ are available while imported call sites are lowered.</li>
 </tbody>
 </table>
 <hr>
-<h2 id="14.-target-descriptor" tabindex="-1"><a class="doc-anchor" href="#14.-target-descriptor" aria-hidden="true">#</a> 14. Target Descriptor</h2>
+<h2 id="14-target-descriptor" tabindex="-1"><a class="doc-anchor" href="#14-target-descriptor" aria-label="Permalink to 14. Target Descriptor">#</a> 14. Target Descriptor</h2>
 <p>The target descriptor is a per-<code>#target</code> data table mapping instruction
 classes to estimated latency and throughput. It is consumed by <code>wyst explain</code>
 for dependency chain analysis and TMA-style bottleneck estimation. It does
 <strong>not</strong> drive codegen — scheduling decisions use the simpler rules in
 <a href="/docs/chapter-13-scheduling/">chapter-13-scheduling.md</a>.</p>
-<h3 id="14.1-entry-format" tabindex="-1"><a class="doc-anchor" href="#14.1-entry-format" aria-hidden="true">#</a> 14.1 Entry Format</h3>
+<h3 id="141-entry-format" tabindex="-1"><a class="doc-anchor" href="#141-entry-format" aria-label="Permalink to 14.1 Entry Format">#</a> 14.1 Entry Format</h3>
 <p>Each entry maps an instruction class to two values:</p>
 <table>
 <thead>
@@ -1469,7 +1482,7 @@ for dependency chain analysis and TMA-style bottleneck estimation. It does
 </tr>
 </tbody>
 </table>
-<h3 id="14.2-representative-entries-(cortex-a-class)" tabindex="-1"><a class="doc-anchor" href="#14.2-representative-entries-(cortex-a-class)" aria-hidden="true">#</a> 14.2 Representative Entries (Cortex-A class)</h3>
+<h3 id="142-representative-entries-cortex-a-class" tabindex="-1"><a class="doc-anchor" href="#142-representative-entries-cortex-a-class" aria-label="Permalink to 14.2 Representative Entries (Cortex-A class)">#</a> 14.2 Representative Entries (Cortex-A class)</h3>
 <table>
 <thead>
 <tr>
@@ -1557,7 +1570,7 @@ for dependency chain analysis and TMA-style bottleneck estimation. It does
 <p>These values are approximate, representative of a generic Cortex-A78 class
 core. They are not cycle-accurate and should not be used for precise
 performance modeling.</p>
-<h3 id="14.3-scope-and-limitations" tabindex="-1"><a class="doc-anchor" href="#14.3-scope-and-limitations" aria-hidden="true">#</a> 14.3 Scope and Limitations</h3>
+<h3 id="143-scope-and-limitations" tabindex="-1"><a class="doc-anchor" href="#143-scope-and-limitations" aria-label="Permalink to 14.3 Scope and Limitations">#</a> 14.3 Scope and Limitations</h3>
 <ul>
 <li>The target descriptor is part of the compiler, not user-configurable. Same
 compiler version + same <code>#target</code> = same descriptor values.</li>
@@ -1577,53 +1590,53 @@ If no descriptor is loaded, they report chain length in ops.</li>
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#appendix-scope">Appendix Scope</a></li>
-				<li class="lvl-2"><a href="#1.-pipeline-position">1. Pipeline Position</a></li>
-				<li class="lvl-2"><a href="#2.-type-system">2. Type System</a></li>
-				<li class="lvl-3"><a href="#2.1-scalar-types">2.1 Scalar Types</a></li>
-				<li class="lvl-3"><a href="#2.2-address-types">2.2 Address Types</a></li>
-				<li class="lvl-3"><a href="#2.3-aggregate-types">2.3 Aggregate Types</a></li>
-				<li class="lvl-3"><a href="#2.4-type-erasure">2.4 Type Erasure</a></li>
-				<li class="lvl-2"><a href="#3.-module-ir">3. Module IR</a></li>
-				<li class="lvl-2"><a href="#4.-function-ir">4. Function IR</a></li>
-				<li class="lvl-3"><a href="#4.1-basic-blocks">4.1 Basic Blocks</a></li>
-				<li class="lvl-3"><a href="#4.2-ssa-discipline">4.2 SSA Discipline</a></li>
-				<li class="lvl-3"><a href="#4.3-region-tree">4.3 Region Tree</a></li>
-				<li class="lvl-2"><a href="#5.-ssa-values">5. SSA Values</a></li>
-				<li class="lvl-3"><a href="#5.1-constants">5.1 Constants</a></li>
-				<li class="lvl-2"><a href="#6.-op-vocabulary">6. Op Vocabulary</a></li>
-				<li class="lvl-3"><a href="#6.1-arithmetic-and-logical">6.1 Arithmetic and Logical</a></li>
-				<li class="lvl-3"><a href="#6.2-memory">6.2 Memory</a></li>
-				<li class="lvl-3"><a href="#6.3-atomic-rmw">6.3 Atomic RMW</a></li>
-				<li class="lvl-3"><a href="#6.4-control-flow">6.4 Control Flow</a></li>
-				<li class="lvl-3"><a href="#6.5-addressing">6.5 Addressing</a></li>
-				<li class="lvl-3"><a href="#6.6-casts-and-construction">6.6 Casts and Construction</a></li>
-				<li class="lvl-3"><a href="#6.7-inline-assembly-and-barriers">6.7 Inline Assembly and Barriers</a></li>
-				<li class="lvl-3"><a href="#6.8-runtime-primitive-ir">6.8 Runtime Primitive IR</a></li>
-				<li class="lvl-3"><a href="#6.9-dependency-chain-queries">6.9 Dependency Chain Queries</a></li>
-				<li class="lvl-2"><a href="#7.-function-and-module-verifier-invariants">7. Function and Module Verifier Invariants</a></li>
-				<li class="lvl-3"><a href="#7.1-branch-target-section-validation">7.1 Branch Target Section Validation</a></li>
-				<li class="lvl-3"><a href="#7.2-%23asm-stack-bounds-diagnostic">7.2 #asm Stack Bounds Diagnostic</a></li>
-				<li class="lvl-2"><a href="#8.-textual-ir-form">8. Textual IR Form</a></li>
-				<li class="lvl-3"><a href="#8.1-grammar-sketch">8.1 Grammar Sketch</a></li>
-				<li class="lvl-3"><a href="#8.2-worked-example">8.2 Worked Example</a></li>
-				<li class="lvl-2"><a href="#9.-the-type-erasure-pass">9. The Type-Erasure Pass</a></li>
-				<li class="lvl-2"><a href="#10.-determinism">10. Determinism</a></li>
-				<li class="lvl-2"><a href="#11.-register-allocation">11. Register Allocation</a></li>
-				<li class="lvl-3"><a href="#11.1-algorithm">11.1 Algorithm</a></li>
-				<li class="lvl-3"><a href="#11.2-register-pool">11.2 Register Pool</a></li>
-				<li class="lvl-3"><a href="#11.3-tie-breaking-and-spill-selection">11.3 Tie-Breaking and Spill Selection</a></li>
-				<li class="lvl-3"><a href="#11.4-pin-resolution-order">11.4 Pin Resolution Order</a></li>
-				<li class="lvl-3"><a href="#11.5-spill-slot-layout">11.5 Spill Slot Layout</a></li>
-				<li class="lvl-3"><a href="#11.6-coalescing">11.6 Coalescing</a></li>
-				<li class="lvl-3"><a href="#11.7-interaction-with-%23asm">11.7 Interaction with #asm</a></li>
-				<li class="lvl-3"><a href="#11.8-determinism-guarantees">11.8 Determinism Guarantees</a></li>
-				<li class="lvl-3"><a href="#11.9-out-of-scope">11.9 Out of Scope</a></li>
-				<li class="lvl-2"><a href="#12.-open-questions">12. Open Questions</a></li>
-				<li class="lvl-2"><a href="#13.-cross-references">13. Cross-References</a></li>
-				<li class="lvl-2"><a href="#14.-target-descriptor">14. Target Descriptor</a></li>
-				<li class="lvl-3"><a href="#14.1-entry-format">14.1 Entry Format</a></li>
-				<li class="lvl-3"><a href="#14.2-representative-entries-(cortex-a-class)">14.2 Representative Entries (Cortex-A class)</a></li>
-				<li class="lvl-3"><a href="#14.3-scope-and-limitations">14.3 Scope and Limitations</a></li>
+				<li class="lvl-2"><a href="#1-pipeline-position">1. Pipeline Position</a></li>
+				<li class="lvl-2"><a href="#2-type-system">2. Type System</a></li>
+				<li class="lvl-3"><a href="#21-scalar-types">2.1 Scalar Types</a></li>
+				<li class="lvl-3"><a href="#22-address-types">2.2 Address Types</a></li>
+				<li class="lvl-3"><a href="#23-aggregate-types">2.3 Aggregate Types</a></li>
+				<li class="lvl-3"><a href="#24-type-erasure">2.4 Type Erasure</a></li>
+				<li class="lvl-2"><a href="#3-module-ir">3. Module IR</a></li>
+				<li class="lvl-2"><a href="#4-function-ir">4. Function IR</a></li>
+				<li class="lvl-3"><a href="#41-basic-blocks">4.1 Basic Blocks</a></li>
+				<li class="lvl-3"><a href="#42-ssa-discipline">4.2 SSA Discipline</a></li>
+				<li class="lvl-3"><a href="#43-region-tree">4.3 Region Tree</a></li>
+				<li class="lvl-2"><a href="#5-ssa-values">5. SSA Values</a></li>
+				<li class="lvl-3"><a href="#51-constants">5.1 Constants</a></li>
+				<li class="lvl-2"><a href="#6-op-vocabulary">6. Op Vocabulary</a></li>
+				<li class="lvl-3"><a href="#61-arithmetic-and-logical">6.1 Arithmetic and Logical</a></li>
+				<li class="lvl-3"><a href="#62-memory">6.2 Memory</a></li>
+				<li class="lvl-3"><a href="#63-atomic-rmw">6.3 Atomic RMW</a></li>
+				<li class="lvl-3"><a href="#64-control-flow">6.4 Control Flow</a></li>
+				<li class="lvl-3"><a href="#65-addressing">6.5 Addressing</a></li>
+				<li class="lvl-3"><a href="#66-casts-and-construction">6.6 Casts and Construction</a></li>
+				<li class="lvl-3"><a href="#67-inline-assembly-and-barriers">6.7 Inline Assembly and Barriers</a></li>
+				<li class="lvl-3"><a href="#68-runtime-primitive-ir">6.8 Runtime Primitive IR</a></li>
+				<li class="lvl-3"><a href="#69-dependency-chain-queries">6.9 Dependency Chain Queries</a></li>
+				<li class="lvl-2"><a href="#7-function-and-module-verifier-invariants">7. Function and Module Verifier Invariants</a></li>
+				<li class="lvl-3"><a href="#71-branch-target-section-validation">7.1 Branch Target Section Validation</a></li>
+				<li class="lvl-3"><a href="#72-asm-stack-bounds-diagnostic">7.2 #asm Stack Bounds Diagnostic</a></li>
+				<li class="lvl-2"><a href="#8-textual-ir-form">8. Textual IR Form</a></li>
+				<li class="lvl-3"><a href="#81-grammar-sketch">8.1 Grammar Sketch</a></li>
+				<li class="lvl-3"><a href="#82-worked-example">8.2 Worked Example</a></li>
+				<li class="lvl-2"><a href="#9-the-type-erasure-pass">9. The Type-Erasure Pass</a></li>
+				<li class="lvl-2"><a href="#10-determinism">10. Determinism</a></li>
+				<li class="lvl-2"><a href="#11-register-allocation">11. Register Allocation</a></li>
+				<li class="lvl-3"><a href="#111-algorithm">11.1 Algorithm</a></li>
+				<li class="lvl-3"><a href="#112-register-pool">11.2 Register Pool</a></li>
+				<li class="lvl-3"><a href="#113-tie-breaking-and-spill-selection">11.3 Tie-Breaking and Spill Selection</a></li>
+				<li class="lvl-3"><a href="#114-pin-resolution-order">11.4 Pin Resolution Order</a></li>
+				<li class="lvl-3"><a href="#115-spill-slot-layout">11.5 Spill Slot Layout</a></li>
+				<li class="lvl-3"><a href="#116-coalescing">11.6 Coalescing</a></li>
+				<li class="lvl-3"><a href="#117-interaction-with-asm">11.7 Interaction with #asm</a></li>
+				<li class="lvl-3"><a href="#118-determinism-guarantees">11.8 Determinism Guarantees</a></li>
+				<li class="lvl-3"><a href="#119-out-of-scope">11.9 Out of Scope</a></li>
+				<li class="lvl-2"><a href="#12-open-questions">12. Open Questions</a></li>
+				<li class="lvl-2"><a href="#13-cross-references">13. Cross-References</a></li>
+				<li class="lvl-2"><a href="#14-target-descriptor">14. Target Descriptor</a></li>
+				<li class="lvl-3"><a href="#141-entry-format">14.1 Entry Format</a></li>
+				<li class="lvl-3"><a href="#142-representative-entries-cortex-a-class">14.2 Representative Entries (Cortex-A class)</a></li>
+				<li class="lvl-3"><a href="#143-scope-and-limitations">14.3 Scope and Limitations</a></li>
 			</ul>
 			</aside>
 			</div>
@@ -1634,12 +1647,6 @@ If no descriptor is loaded, they report chain length in ops.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

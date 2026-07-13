@@ -181,6 +181,7 @@ body.docs header.site .wrap {
 .brand {
 	display: inline-flex;
 	align-items: center;
+	min-height: 44px;
 	gap: var(--space-sm);
 	color: var(--text);
 	text-decoration: none;
@@ -209,6 +210,9 @@ body.docs header.site .wrap {
 }
 
 .nav-links a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
 	color: var(--muted);
 	text-decoration-color: transparent;
 }
@@ -384,6 +388,9 @@ body.docs header.site .wrap {
 }
 
 .artifact-bar a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
 	flex: none;
 	text-decoration-color: transparent;
 }
@@ -486,6 +493,9 @@ footer.site {
 }
 
 .foot-simple > a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
 	font-family: var(--mono);
 	font-size: var(--text-xs);
 }

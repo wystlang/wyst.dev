@@ -8,6 +8,20 @@
 		<meta name="description" content="Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries." />
 		<title>Runtime And Allocation · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-10-runtime/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-10-runtime/" />
+		<meta property="og:title" content="Runtime And Allocation · Wyst" />
+		<meta property="og:description" content="Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Runtime And Allocation · Wyst" />
+		<meta name="twitter:description" content="Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -92,11 +106,11 @@ allocation or runtime-owned containers.</p>
 <p>Allocation is described as visible storage contracts rather than hidden
 language behavior. The memory model and the storage and library contracts
 remain separate concerns.</p>
-<h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-hidden="true">#</a> Thesis</h2>
+<h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-label="Permalink to Thesis">#</a> Thesis</h2>
 <p>Wyst should preserve explicit control over storage. Allocation belongs in visible
 APIs, generated bindings, standard-library modules, or target/runtime profiles,
 not in implicit language behavior.</p>
-<h2 id="core-rules" tabindex="-1"><a class="doc-anchor" href="#core-rules" aria-hidden="true">#</a> Core Rules</h2>
+<h2 id="core-rules" tabindex="-1"><a class="doc-anchor" href="#core-rules" aria-label="Permalink to Core Rules">#</a> Core Rules</h2>
 <ul>
 <li>Generated code must not perform hidden global allocation.</li>
 <li>The language must not add implicit region inference, garbage collection,
@@ -107,7 +121,7 @@ memory.</li>
 <li>Generic allocator interfaces may exist later, but they must not erase the
 lifetime and reset behavior that make arenas useful.</li>
 </ul>
-<h2 id="arena-first-vocabulary" tabindex="-1"><a class="doc-anchor" href="#arena-first-vocabulary" aria-hidden="true">#</a> Arena-First Vocabulary</h2>
+<h2 id="arena-first-vocabulary" tabindex="-1"><a class="doc-anchor" href="#arena-first-vocabulary" aria-label="Permalink to Arena-First Vocabulary">#</a> Arena-First Vocabulary</h2>
 <p>The allocation vocabulary makes arena contracts concrete:</p>
 <ul>
 <li>backing storage or growth policy;</li>
@@ -118,7 +132,7 @@ lifetime and reset behavior that make arenas useful.</li>
 <li>scratch arena conflicts and nesting rules.</li>
 </ul>
 <p>These facts are visible to diagnostics, examples, and <code>wync explain storage</code>.</p>
-<h2 id="storage-contracts" tabindex="-1"><a class="doc-anchor" href="#storage-contracts" aria-hidden="true">#</a> Storage Contracts</h2>
+<h2 id="storage-contracts" tabindex="-1"><a class="doc-anchor" href="#storage-contracts" aria-label="Permalink to Storage Contracts">#</a> Storage Contracts</h2>
 <p>Storage contracts are expressed as explicit standard-library-shaped API calls
 plus <code>wync explain storage</code> facts. These calls remain ordinary Wyst functions in
 source and do not become hidden language allocation:</p>
@@ -138,7 +152,7 @@ allocations by contract.</li>
 space for fixed buffers, pools, per-CPU storage, DMA-coherent storage, and
 target/runtime storage sources without implementing them as hidden core
 language allocation.</p>
-<h2 id="dynamic-array-descriptors" tabindex="-1"><a class="doc-anchor" href="#dynamic-array-descriptors" aria-hidden="true">#</a> Dynamic Array Descriptors</h2>
+<h2 id="dynamic-array-descriptors" tabindex="-1"><a class="doc-anchor" href="#dynamic-array-descriptors" aria-label="Permalink to Dynamic Array Descriptors">#</a> Dynamic Array Descriptors</h2>
 <p><code>[dynamic]T</code> is a concrete descriptor type. The descriptor is storage for
 facts, not an allocation trigger: annotation-time allocation is <code>none</code>, and
 initialization must happen through a visible typed wrapper such as
@@ -365,7 +379,7 @@ they want the initialized-element view.</p>
 length, capacity, storage identity, growth policy, failure policy, and movement
 policy. It does not compare elements, and dynamic arrays have no ordered
 comparison or integer-zero comparison.</p>
-<h2 id="typed-handles" tabindex="-1"><a class="doc-anchor" href="#typed-handles" aria-hidden="true">#</a> Typed Handles</h2>
+<h2 id="typed-handles" tabindex="-1"><a class="doc-anchor" href="#typed-handles" aria-label="Permalink to Typed Handles">#</a> Typed Handles</h2>
 <p>Stable-index typed-handle contracts use monomorphic
 <code>typed_handle_&lt;operation&gt;_&lt;T&gt;</code> wrapper calls for report facts. The wrappers
 remain ordinary Wyst functions and do not imply a runtime-owned container.</p>
@@ -381,7 +395,7 @@ reject the handle.</p>
 APIs, pointer-stable containers, unordered swap-back arrays, dense/sparse sets,
 hidden bounds checks, and general generic container syntax remain outside the
 typed-handle surface.</p>
-<h2 id="buffer-and-string-api-contracts" tabindex="-1"><a class="doc-anchor" href="#buffer-and-string-api-contracts" aria-hidden="true">#</a> Buffer And String API Contracts</h2>
+<h2 id="buffer-and-string-api-contracts" tabindex="-1"><a class="doc-anchor" href="#buffer-and-string-api-contracts" aria-label="Permalink to Buffer And String API Contracts">#</a> Buffer And String API Contracts</h2>
 <p>The buffer/string contract covers length/capacity-carrying byte buffers and
 explicit string-to-C-string conversion costs. As with the earlier storage
 surfaces, ordinary standard-library-shaped calls provide report facts; Wyst does
@@ -396,19 +410,19 @@ failure facts.</p>
 the byte copy, the trailing NUL sentinel write, and the failure policy; Wyst
 strings remain length-carrying byte strings and do not become implicitly
 NUL-terminated at ABI boundaries.</p>
-<h2 id="target-and-runtime-boundary" tabindex="-1"><a class="doc-anchor" href="#target-and-runtime-boundary" aria-hidden="true">#</a> Target And Runtime Boundary</h2>
+<h2 id="target-and-runtime-boundary" tabindex="-1"><a class="doc-anchor" href="#target-and-runtime-boundary" aria-label="Permalink to Target And Runtime Boundary">#</a> Target And Runtime Boundary</h2>
 <p>Page reserve/commit, guard pages, TLS or per-CPU arenas, interrupt-time
 storage, firmware services, and OS allocation calls are target or runtime
 contracts. They should be exposed through profiles, standard-library modules,
 or generated bindings with stable provenance instead of special core-language
 rules.</p>
-<h2 id="effect-boundary" tabindex="-1"><a class="doc-anchor" href="#effect-boundary" aria-hidden="true">#</a> Effect Boundary</h2>
+<h2 id="effect-boundary" tabindex="-1"><a class="doc-anchor" href="#effect-boundary" aria-label="Permalink to Effect Boundary">#</a> Effect Boundary</h2>
 <p>Dynamic storage acquisition through known runtime APIs is a semantic operation
 that can be reported by storage diagnostics and explain output. Compiler-owned
 frame slots, spills, reloads, register-class pressure, and caller-owned
 aggregate copies are generated backend resources instead; they belong in
 post-lowering constraints and reports, not in <code>#deny</code>.</p>
-<h2 id="kernel-initcalls%2C-panic%2C-and-logging" tabindex="-1"><a class="doc-anchor" href="#kernel-initcalls%2C-panic%2C-and-logging" aria-hidden="true">#</a> Kernel Initcalls, Panic, And Logging</h2>
+<h2 id="kernel-initcalls-panic-and-logging" tabindex="-1"><a class="doc-anchor" href="#kernel-initcalls-panic-and-logging" aria-label="Permalink to Kernel Initcalls, Panic, And Logging">#</a> Kernel Initcalls, Panic, And Logging</h2>
 <p>A small kernel-runtime metadata contract provides initcall tables without
 introducing a hidden runtime. A function marked <code>#initcall(order)</code> contributes one inspectable
 <code>.initcalls</code> entry. Entries are written deterministically as
@@ -430,7 +444,7 @@ plain, inspectable entry points such as <code>panic_code(code : u64) #noreturn</
 <code>log_event(code : u64)</code>. Formatting, buffers, UART routing, and persistence are
 chosen by the profile or example; they are not variadic and do not allocate
 unless a visible logging API takes explicit storage.</p>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>Do not add a borrow checker or mandatory ownership system as part of this
 runtime design.</li>
@@ -453,7 +467,7 @@ runtime design.</li>
 				<li class="lvl-2"><a href="#buffer-and-string-api-contracts">Buffer And String API Contracts</a></li>
 				<li class="lvl-2"><a href="#target-and-runtime-boundary">Target And Runtime Boundary</a></li>
 				<li class="lvl-2"><a href="#effect-boundary">Effect Boundary</a></li>
-				<li class="lvl-2"><a href="#kernel-initcalls%2C-panic%2C-and-logging">Kernel Initcalls, Panic, And Logging</a></li>
+				<li class="lvl-2"><a href="#kernel-initcalls-panic-and-logging">Kernel Initcalls, Panic, And Logging</a></li>
 				<li class="lvl-2"><a href="#non-goals">Non-Goals</a></li>
 			</ul>
 			</aside>
@@ -465,12 +479,6 @@ runtime design.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

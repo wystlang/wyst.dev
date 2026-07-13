@@ -7,7 +7,9 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "audit": "node tools/audit-site.mjs",
-    "build": "node build/generate.mjs",
+    "audit:browser": "node tools/audit-browser.mjs",
+    "audit:live": "node tools/audit-live-site.mjs",
+    "build": "node build/generate.mjs && node build/generate-sitemap.mjs",
     "build:worker-assets": "node build/generate-404.mjs && node tools/prepare-worker-assets.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
     "deploy": "wrangler deploy",

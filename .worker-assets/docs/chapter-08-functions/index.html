@@ -8,11 +8,25 @@
 		<meta name="description" content="Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches." />
 		<title>Functions, Control Flow, and Inline Assembly · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-08-functions/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-08-functions/" />
+		<meta property="og:title" content="Functions, Control Flow, and Inline Assembly · Wyst" />
+		<meta property="og:description" content="Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Functions, Control Flow, and Inline Assembly · Wyst" />
+		<meta name="twitter:description" content="Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -98,7 +112,7 @@ structured control flow. Register pinning, <code>#naked</code>, <code>#ventry</c
 assembly are explicit machine-level escape hatches whose ABI and
 exception-vector rules are defined elsewhere.</p>
 <hr>
-<h3 id="functions-and-control-flow" tabindex="-1"><a class="doc-anchor" href="#functions-and-control-flow" aria-hidden="true">#</a> Functions and Control Flow</h3>
+<h3 id="functions-and-control-flow" tabindex="-1"><a class="doc-anchor" href="#functions-and-control-flow" aria-label="Permalink to Functions and Control Flow">#</a> Functions and Control Flow</h3>
 <p>Wyst uses a <strong>unified declaration syntax</strong> for everything:</p>
 <pre class="wyst-code"><code class="">name : type = value     // local variable (mutable)
 name :: type = value    // constant binding (immutable)
@@ -112,14 +126,13 @@ allowed; at top level it also introduces named declarations such as functions,
 labels, and types. There is no <code>fn</code> keyword
 prefix, no type-before-name ordering, and no dot-prefixed labels.</p>
 <hr>
-<h2 id="2.1-unified-declarations" tabindex="-1"><a class="doc-anchor" href="#2.1-unified-declarations" aria-hidden="true">#</a> 2.1 Unified Declarations</h2>
+<h2 id="21-unified-declarations" tabindex="-1"><a class="doc-anchor" href="#21-unified-declarations" aria-label="Permalink to 2.1 Unified Declarations">#</a> 2.1 Unified Declarations</h2>
 <p>All declarations follow the same pattern:</p>
 <pre class="wyst-code"><code class="">name : type = value     // mutable storage (local or global by scope)
 name :: type = value    // constant binding (local or top-level by scope)
 </code></pre>
-<h3 id="type-inference" tabindex="-1"><a class="doc-anchor" href="#type-inference" aria-hidden="true">#</a> Type Inference</h3>
+<h3 id="type-inference" tabindex="-1"><a class="doc-anchor" href="#type-inference" aria-label="Permalink to Type Inference">#</a> Type Inference</h3>
 <p>The type annotation can be omitted. When absent, the compiler infers the type from the right-hand side:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"># Explicit type
 <span class="token parameter">counter</span>  <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 
@@ -131,7 +144,7 @@ name :: type = value    // constant binding (local or top-level by scope)
 </code></pre>
 <p><code>:=</code> and <code>::=</code> are declaration tokens. Whitespace is not allowed inside
 them: <code>counter : = 0</code> and <code>LIMIT :: = 16</code> are syntax errors.</p>
-<h4>Literal Typing</h4>
+<h4 id="literal-typing" tabindex="-1"><a class="doc-anchor" href="#literal-typing" aria-label="Permalink to Literal Typing">#</a> Literal Typing</h4>
 <p>Integer and float literals are <strong>untyped</strong> until they are bound to a context
 that requires a concrete type. The compiler then checks that the value
 fits in the target type. See §1.4.1 for the complete model.</p>
@@ -199,7 +212,6 @@ errors. Write <code>x : u64 = 0</code> or <code>s : string = &quot;hello&quot;</
 is intended.</p>
 <p>Constant inference uses the same type rules with <code>::=</code>, but the right-hand
 side must be a constant expression:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token constant">NAME</span> <span class="token operator">::=</span> <span class="token string">"wyst"</span> <span class="token comment">// NAME :: string = "wyst"</span>
 <span class="token constant">LIMIT</span> <span class="token operator">::=</span> <span class="token number">16</span> <span class="token comment">// LIMIT :: i64 = 16</span>
 <span class="token constant">MASK</span> <span class="token operator">::=</span> <span class="token number">1</span> <span class="token operator">&lt;&lt;</span> <span class="token number">5</span> <span class="token comment">// MASK :: i64 = 32</span>
@@ -207,7 +219,6 @@ side must be a constant expression:</p>
 <p>Inside a function body, <code>::</code> and <code>::=</code> introduce <strong>local constants</strong>. They are
 block scoped, visible only after their declaration, and have no addressable
 stack storage:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">zero_bss</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   stride <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">8</span>
   half <span class="token operator">::=</span> stride <span class="token operator">/</span> <span class="token number">2</span>
@@ -229,23 +240,19 @@ immutable values rather than local storage slots.</p>
 <p>The current constant evaluator folds integer arithmetic, boolean logic, and
 the compile-time query forms. Floating-point literals may bind directly, but
 floating-point arithmetic in a constant expression is future work:</p>
-<!-- wyst-contract: future -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token constant">HALF_PI</span> <span class="token operator">::=</span> <span class="token number">3.141592653589793</span> <span class="token operator">/</span> <span class="token number">2.0</span>
 </code></pre>
 <p>Use annotations or categorized conversions to select a narrower literal type:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">123</span>      <span class="token comment">// annotation gives the literal a target type</span>
 <span class="token variable">y</span> <span class="token operator">:=</span> <span class="token number">0x4000</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u64</span>
 <span class="token variable">z</span> <span class="token operator">:=</span> <span class="token number">3.14</span> <span class="token keyword">as</span><span class="token punctuation">.</span>float <span class="token builtin type">f32</span>
 </code></pre>
 <p>Out-of-range literals are rejected at the bind site:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">256</span> <span class="token comment">// compile error: 256 not representable in u8</span>
 <span class="token parameter">mask</span> <span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token number">0xFF</span> <span class="token comment">// OK</span>
 </code></pre>
-<h4>Inference from Memory Operations</h4>
+<h4 id="inference-from-memory-operations" tabindex="-1"><a class="doc-anchor" href="#inference-from-memory-operations" aria-label="Permalink to Inference from Memory Operations">#</a> Inference from Memory Operations</h4>
 <p>Loads and stores also drive inference:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">mem</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 # Type inferred from the load — x <span class="token keyword">is</span> <span class="token builtin type">u64</span>
@@ -254,8 +261,7 @@ floating-point arithmetic in a constant expression is future work:</p>
 # Explicit form — equivalent
 <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>mem<span class="token punctuation">]</span>
 </code></pre>
-<h4>Full Examples</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="full-examples" tabindex="-1"><a class="doc-anchor" href="#full-examples" aria-label="Permalink to Full Examples">#</a> Full Examples</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"># Local <span class="token function">variables</span> <span class="token punctuation">(</span>mutable<span class="token punctuation">)</span>
 <span class="token parameter">counter</span>  <span class="token operator">:</span> <span class="token builtin type">u64</span>          <span class="token operator">=</span> <span class="token number">0</span>        <span class="token comment">// explicit</span>
 <span class="token variable">count</span>    <span class="token operator">:=</span> <span class="token number">0</span>                       <span class="token comment">// i64 (default when no context demands a type)</span>
@@ -267,19 +273,16 @@ floating-point arithmetic in a constant expression is future work:</p>
 <span class="token constant">BASE</span> <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4000_0000</span>
 </code></pre>
 <hr>
-<h2 id="2.2-functions" tabindex="-1"><a class="doc-anchor" href="#2.2-functions" aria-hidden="true">#</a> 2.2 Functions</h2>
+<h2 id="22-functions" tabindex="-1"><a class="doc-anchor" href="#22-functions" aria-label="Permalink to 2.2 Functions">#</a> 2.2 Functions</h2>
 <p>Functions are declared with <code>::</code> binding. No <code>fn</code> keyword — the signature itself is the type:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">name</span> <span class="token operator">::</span> <span class="token punctuation">(</span>args<span class="token punctuation">)</span> <span class="token operator">-></span> ret <span class="token punctuation">{</span> body <span class="token punctuation">}</span>              <span class="token comment">// returns a value</span>
 <span class="token function">name</span> <span class="token operator">::</span> <span class="token punctuation">(</span>args<span class="token punctuation">)</span> <span class="token punctuation">{</span> body <span class="token punctuation">}</span>                      <span class="token comment">// no return value (omit -> entirely)</span>
 <span class="token function">name</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span> body <span class="token punctuation">}</span>                <span class="token comment">// never returns to caller</span>
 </code></pre>
 <p>Named tuple multi-return syntax:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">name</span> <span class="token operator">::</span> <span class="token punctuation">(</span>args<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">a</span><span class="token operator">:</span> <span class="token constant">T1</span><span class="token punctuation">,</span> <span class="token parameter">b</span><span class="token operator">:</span> <span class="token constant">T2</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> body <span class="token punctuation">}</span>
 </code></pre>
 <p>Example:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">sum</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">data</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token parameter">count</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
 
   <span class="token parameter">total</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
@@ -307,9 +310,8 @@ loop body. The counter starts at <code>0</code> and reaches <code>N - 1</code>; 
 executes its body. Unbound <code>repeat N { ... }</code> remains the same form. <code>repeat</code>
 does not have range syntax; write the count expression directly.</p>
 <hr>
-<h2 id="2.2.1-multiple-return-values" tabindex="-1"><a class="doc-anchor" href="#2.2.1-multiple-return-values" aria-hidden="true">#</a> 2.2.1 Multiple Return Values</h2>
+<h2 id="221-multiple-return-values" tabindex="-1"><a class="doc-anchor" href="#221-multiple-return-values" aria-label="Permalink to 2.2.1 Multiple Return Values">#</a> 2.2.1 Multiple Return Values</h2>
 <p>Functions can return multiple values using a <strong>tuple return type</strong>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">foo</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -334,8 +336,7 @@ does not have range syntax; write the count expression directly.</p>
 </table>
 <p>The names in the return type (<code>x</code>, <code>y</code>) are the <strong>field names</strong> of the return
 tuple. They exist so the caller can inspect fields by name.</p>
-<h3 id="binding-multiple-return-values" tabindex="-1"><a class="doc-anchor" href="#binding-multiple-return-values" aria-hidden="true">#</a> Binding Multiple Return Values</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="binding-multiple-return-values" tabindex="-1"><a class="doc-anchor" href="#binding-multiple-return-values" aria-label="Permalink to Binding Multiple Return Values">#</a> Binding Multiple Return Values</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">result</span> <span class="token operator">:</span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token function">foo</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 x_val <span class="token operator">=</span> result<span class="token punctuation">.</span>x
 y_val <span class="token operator">=</span> result<span class="token punctuation">.</span>y
@@ -345,18 +346,16 @@ x<span class="token punctuation">,</span> <span class="token variable">y</span> 
 <p>Call results bind as tuple values whose fields are read by name. The order of
 field names in the return type determines the ABI return-register order and
 the positional order for tuple destructuring. Use <code>_</code> to discard a field:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">_<span class="token punctuation">,</span> <span class="token variable">remainder</span> <span class="token operator">:=</span> <span class="token function">divmod</span><span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">)</span>
 </code></pre>
-<h3 id="single-element-tuples" tabindex="-1"><a class="doc-anchor" href="#single-element-tuples" aria-hidden="true">#</a> Single-Element Tuples</h3>
+<h3 id="single-element-tuples" tabindex="-1"><a class="doc-anchor" href="#single-element-tuples" aria-label="Permalink to Single-Element Tuples">#</a> Single-Element Tuples</h3>
 <p>A single return value is just the plain type (no tuple needed):</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">get_count</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token number">42</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Tuples are only required for <strong>two or more</strong> return values.</p>
-<h3 id="arm64-lowering" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <p>Multiple return values map directly to Wyst Native ABI return registers:</p>
 <table>
 <thead>
@@ -387,7 +386,6 @@ the positional order for tuple destructuring. Use <code>_</code> to discard a fi
 <p>Note: AAPCS64 functions use a separate compatibility surface. <code>[aapcs]</code> tuple
 returns are outside the direct multi-return model; the 4-register return is a
 Wyst Native ABI extension.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"># Wyst
 <span class="token function">foo</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span>
@@ -399,25 +397,23 @@ mov x1<span class="token punctuation">,</span> <span class="token operator">#</s
 ret
 </code></pre>
 <p>Wider types (f64, vectors) use the appropriate register class (d0-d3 for floats, v0-v3 for SIMD).</p>
-<h3 id="function-pointer-types" tabindex="-1"><a class="doc-anchor" href="#function-pointer-types" aria-hidden="true">#</a> Function Pointer Types</h3>
+<h3 id="function-pointer-types" tabindex="-1"><a class="doc-anchor" href="#function-pointer-types" aria-label="Permalink to Function Pointer Types">#</a> Function Pointer Types</h3>
 <p>Multi-return signatures are valid function shapes and may appear in a function
 pointer type:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">callback</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u8</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>foo<span class="token punctuation">)</span>
 </code></pre>
 <p>See §2.6 for the full rules on function pointer types — in particular, that
 the bare shape <code>() -&gt; (x: u8, y: u64)</code> is only legal as a function
 declaration's signature, and a storage variable must use <code>@(...)</code>.</p>
-<h3 id="tuple-parameter-boundary" tabindex="-1"><a class="doc-anchor" href="#tuple-parameter-boundary" aria-hidden="true">#</a> Tuple Parameter Boundary</h3>
+<h3 id="tuple-parameter-boundary" tabindex="-1"><a class="doc-anchor" href="#tuple-parameter-boundary" aria-label="Permalink to Tuple Parameter Boundary">#</a> Tuple Parameter Boundary</h3>
 <p>Tuple types are currently a multi-return value surface. They may appear as
 function return types, in function-pointer return shapes, in result storage,
 and in tuple destructuring. They are not parameter types in the current
 compiler contract. Pass the fields as separate parameters or wrap them in a
 named <code>struct</code>.</p>
-<!-- wyst-contract: future -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">consume_pair</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">pair</span> <span class="token operator">:</span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -444,14 +440,14 @@ named <code>struct</code>.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="tradeoffs" tabindex="-1"><a class="doc-anchor" href="#tradeoffs" aria-hidden="true">#</a> Tradeoffs</h3>
+<h3 id="tradeoffs" tabindex="-1"><a class="doc-anchor" href="#tradeoffs" aria-label="Permalink to Tradeoffs">#</a> Tradeoffs</h3>
 <ul>
 <li><strong>Register limit</strong> — more than 4 return values requires stack allocation or a hidden struct. The exact limit depends on type widths (e.g., two f64s use both float return slots).</li>
 <li><strong>Name requirement</strong> — field names in the return type are mandatory; anonymous tuples like <code>-&gt; (u8, u64)</code> are outside the model. Names improve call-site clarity.</li>
 <li><strong>No nesting</strong> — nested tuples like <code>-&gt; (x: u8, y: (a: u64, b: u64))</code> are outside the model. Flatten to a single tuple level.</li>
 </ul>
 <hr>
-<h2 id="2.3-register-pinning" tabindex="-1"><a class="doc-anchor" href="#2.3-register-pinning" aria-hidden="true">#</a> 2.3 Register Pinning</h2>
+<h2 id="23-register-pinning" tabindex="-1"><a class="doc-anchor" href="#23-register-pinning" aria-label="Permalink to 2.3 Register Pinning">#</a> 2.3 Register Pinning</h2>
 <p>Register pinning constrains the assembler to place a specific variable or
 parameter in a named ARM64 register. It is an explicit override of normal
 register allocation.</p>
@@ -467,9 +463,8 @@ from callers. A local constant has no storage slot to pin. If a platform
 requires a globally reserved register (e.g. a dedicated thread-pointer), that
 belongs in the ABI definition, not in a variable declaration.</p>
 <hr>
-<h3 id="canonical-forms" tabindex="-1"><a class="doc-anchor" href="#canonical-forms" aria-hidden="true">#</a> Canonical Forms</h3>
+<h3 id="canonical-forms" tabindex="-1"><a class="doc-anchor" href="#canonical-forms" aria-label="Permalink to Canonical Forms">#</a> Canonical Forms</h3>
 <p>There are exactly two syntactic forms for <code>#pin</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">name</span> <span class="token operator">:</span> type <span class="token directive macro">#pin</span><span class="token punctuation">(</span>reg<span class="token punctuation">)</span>              <span class="token comment">// declare-without-init</span>
 <span class="token parameter">name</span> <span class="token operator">:</span> type <span class="token directive macro">#pin</span><span class="token punctuation">(</span>reg<span class="token punctuation">)</span> <span class="token operator">=</span> value      <span class="token comment">// declare-with-init</span>
 </code></pre>
@@ -478,7 +473,6 @@ declaration. There is no post-hoc form — <code>name #pin(reg)</code> as a stan
 statement that re-pins an existing binding is <strong>rejected by the grammar</strong>.
 A binding is pinned at the point it is declared, for its entire lifetime,
 or it is not pinned at all.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">expected</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 expected <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span>        <span class="token comment">// compile error: post-hoc pin is not a legal form</span>
 </code></pre>
@@ -487,8 +481,7 @@ inhabits is determined entirely by the line that introduces the name. Liveness
 windows for pins line up with binding scopes, which keeps the conflict rules
 (below) decidable from declarations alone.</p>
 <hr>
-<h3 id="pinning-local-variables" tabindex="-1"><a class="doc-anchor" href="#pinning-local-variables" aria-hidden="true">#</a> Pinning Local Variables</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="pinning-local-variables" tabindex="-1"><a class="doc-anchor" href="#pinning-local-variables" aria-label="Permalink to Pinning Local Variables">#</a> Pinning Local Variables</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">setup</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
 
@@ -501,11 +494,10 @@ windows for pins line up with binding scopes, which keeps the conflict rules
 If <code>x19</code> is unavailable at the pin site, the compiler emits a compile error —
 it will not silently move the pin.</p>
 <hr>
-<h3 id="pinning-function-parameters" tabindex="-1"><a class="doc-anchor" href="#pinning-function-parameters" aria-hidden="true">#</a> Pinning Function Parameters</h3>
+<h3 id="pinning-function-parameters" tabindex="-1"><a class="doc-anchor" href="#pinning-function-parameters" aria-label="Permalink to Pinning Function Parameters">#</a> Pinning Function Parameters</h3>
 <p>Parameters are pinned at function entry. This is the primary use case for
 <code>#pin</code>: receiving values placed in specific registers by firmware, hardware,
 or a foreign calling convention.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
 <span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// dtb is guaranteed to be in x0 at entry</span>
@@ -517,7 +509,6 @@ or a foreign calling convention.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Multiple parameters can be pinned independently:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">el2_entry</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">arg0</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">arg1</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token directive macro">#noreturn</span> <span class="token punctuation">{</span>
     <span class="token operator">..</span><span class="token punctuation">.</span>
 <span class="token punctuation">}</span>
@@ -527,11 +518,10 @@ order. The pin overrides the ABI assignment for that parameter. The caller
 is responsible for placing values in the declared registers before branching
 to the function.</p>
 <hr>
-<h3 id="non-escaping-address-parameters" tabindex="-1"><a class="doc-anchor" href="#non-escaping-address-parameters" aria-hidden="true">#</a> Non-Escaping Address Parameters</h3>
+<h3 id="non-escaping-address-parameters" tabindex="-1"><a class="doc-anchor" href="#non-escaping-address-parameters" aria-label="Permalink to Non-Escaping Address Parameters">#</a> Non-Escaping Address Parameters</h3>
 <p><code>#noescape</code> marks an address parameter as a call-scoped borrow of storage the
 callee must not retain or expose. It allows callers to pass <code>%addr_of(local)</code>
 to helper functions without forcing the storage into a global:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">fill</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">out</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -558,7 +548,6 @@ tuple, aggregate, or slice value, be assigned to another local, be returned, be
 stored through memory as a value, be passed to an ordinary or indirect call, be
 observed as a condition or ordinary arithmetic/comparison value, or be exposed to
 <code>#asm</code> or directive operands. Violations are compile errors:</p>
-<!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">bad</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">ptr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token directive macro">#noescape</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u64</span> <span class="token punctuation">{</span>
@@ -569,13 +558,12 @@ observed as a condition or ordinary arithmetic/comparison value, or be exposed t
 model. Function pointer types do not carry it, so indirect calls remain
 conservative and reject stack-local address arguments.</p>
 <hr>
-<h3 id="pinning-callee-saved-registers-(prologue-ownership)" tabindex="-1"><a class="doc-anchor" href="#pinning-callee-saved-registers-(prologue-ownership)" aria-hidden="true">#</a> Pinning Callee-Saved Registers (Prologue Ownership)</h3>
+<h3 id="pinning-callee-saved-registers-prologue-ownership" tabindex="-1"><a class="doc-anchor" href="#pinning-callee-saved-registers-prologue-ownership" aria-label="Permalink to Pinning Callee-Saved Registers (Prologue Ownership)">#</a> Pinning Callee-Saved Registers (Prologue Ownership)</h3>
 <p>When a non-<code>#naked</code> function pins a local variable to a callee-saved register
 (<code>x19</code>–<code>x28</code>, <code>x29</code>), the function's prologue <strong>always</strong> saves that register,
 and the epilogue <strong>always</strong> restores it. The save is unconditional: it does
 not depend on liveness analysis, on whether the function makes calls, or on
 how many paths through the body actually read the pin.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">setup</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
   <span class="token comment">// prologue emits: stp x19, ..., [sp, #-N]!</span>
@@ -592,12 +580,11 @@ rely on the optimizer to remove the save.</p>
 <p>This rule does not apply inside <code>#naked</code> functions — see &quot;Interaction with
 <code>#naked</code>&quot; below.</p>
 <hr>
-<h3 id="pinning-caller-saved-registers-and-call-boundaries" tabindex="-1"><a class="doc-anchor" href="#pinning-caller-saved-registers-and-call-boundaries" aria-hidden="true">#</a> Pinning Caller-Saved Registers and Call Boundaries</h3>
+<h3 id="pinning-caller-saved-registers-and-call-boundaries" tabindex="-1"><a class="doc-anchor" href="#pinning-caller-saved-registers-and-call-boundaries" aria-label="Permalink to Pinning Caller-Saved Registers and Call Boundaries">#</a> Pinning Caller-Saved Registers and Call Boundaries</h3>
 <p>When a local variable is pinned to a caller-saved register (<code>x0</code>–<code>x17</code>),
 the pin lasts for the binding's lifetime, and the caller-saved register is
 clobbered across any <code>bl</code>/<code>blr</code>/<code>svc</code>/<code>hvc</code>/<code>smc</code>/<code>brk</code> call. If the pinned
 binding is live across such a call, the program is rejected at compile time:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">work</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">handler</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">state</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0xdead</span> <span class="token comment">// pin to caller-saved x0</span>
   <span class="token variable">result</span> <span class="token operator">:=</span> <span class="token function">handler</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span> <span class="token comment">// x0 clobbered by call — state live across it</span>
@@ -611,7 +598,6 @@ Doing so would violate the pin's &quot;this name lives in this register&quot; co
 between the save and restore, no register holds the value.</p>
 <p>To make the program compile, narrow the pin's lifetime so it ends before the
 call, or pick a callee-saved register:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">work</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">handler</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token punctuation">{</span>
         <span class="token parameter">state</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0xdead</span>
@@ -633,7 +619,7 @@ call, or pick a callee-saved register:</p>
 after a call is a compile error unless its value has been moved to a
 callee-saved location first.</p>
 <hr>
-<h3 id="pinning-special-purpose-registers" tabindex="-1"><a class="doc-anchor" href="#pinning-special-purpose-registers" aria-hidden="true">#</a> Pinning Special-Purpose Registers</h3>
+<h3 id="pinning-special-purpose-registers" tabindex="-1"><a class="doc-anchor" href="#pinning-special-purpose-registers" aria-label="Permalink to Pinning Special-Purpose Registers">#</a> Pinning Special-Purpose Registers</h3>
 <p>ARM64 has four registers with architectural roles:</p>
 <table>
 <thead>
@@ -670,7 +656,6 @@ callee-saved location first.</p>
 at the declaration point. It introduces an immutable local binding initialized
 to the current value of the architectural register, and it constrains the
 compiler not to mutate that architectural register while the binding is live.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 <span class="token function">exception_handler</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">saved_lr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>lr<span class="token punctuation">)</span> <span class="token comment">// snapshot of lr at entry</span>
@@ -685,7 +670,6 @@ compiler not to mutate that architectural register while the binding is live.</p
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Read-only means assignment is rejected:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">saved_lr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>lr<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>          <span class="token comment">// compile error: special-register pins</span>
                                      <span class="token comment">// cannot take an initializer; the</span>
                                      <span class="token comment">// initializer is the register's value</span>
@@ -695,7 +679,7 @@ saved_lr <span class="token operator">=</span> <span class="token number">1</spa
 functions. Wyst rejects both forms. Use <code>#asm(sets_sp)</code> to initialize
 <code>sp</code>; use explicit <code>#asm</code> if a raw entry stub must inspect <code>sp</code> or <code>x29</code>.</p>
 <hr>
-<h3 id="interaction-with-%23naked" tabindex="-1"><a class="doc-anchor" href="#interaction-with-%23naked" aria-hidden="true">#</a> Interaction with <code>#naked</code></h3>
+<h3 id="interaction-with-naked" tabindex="-1"><a class="doc-anchor" href="#interaction-with-naked" aria-label="Permalink to Interaction with #naked">#</a> Interaction with <code>#naked</code></h3>
 <p><code>#naked</code> suppresses the standard prologue and epilogue. That changes which
 forms of <code>#pin</code> are legal inside the function:</p>
 <table>
@@ -741,7 +725,6 @@ caller's state. There is no useful middle ground.</p>
 <p>If a <code>#naked</code> function legitimately needs to use a callee-saved register, the
 function body must contain an <code>#asm</code> block that saves and restores it
 explicitly:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 <span class="token function">exception_save</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -757,7 +740,7 @@ explicitly:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="conflict-rules" tabindex="-1"><a class="doc-anchor" href="#conflict-rules" aria-hidden="true">#</a> Conflict Rules</h3>
+<h3 id="conflict-rules" tabindex="-1"><a class="doc-anchor" href="#conflict-rules" aria-label="Permalink to Conflict Rules">#</a> Conflict Rules</h3>
 <p>The assembler enforces pinning strictly:</p>
 <table>
 <thead>
@@ -813,11 +796,10 @@ explicitly:</p>
 spills a pinned binding around a call, or silently inserts a prologue into a
 <code>#naked</code> function. If a pin cannot be satisfied, it is always a compile error.</p>
 <hr>
-<h3 id="relationship-to-%23asm" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23asm" aria-hidden="true">#</a> Relationship to <code>#asm</code></h3>
+<h3 id="relationship-to-asm" tabindex="-1"><a class="doc-anchor" href="#relationship-to-asm" aria-label="Permalink to Relationship to #asm">#</a> Relationship to <code>#asm</code></h3>
 <p>A pinned variable referenced as an <code>#asm</code> operand resolves to its pinned
 register. The allocator guarantees the variable is live in that register
 at both entry and exit of the block:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
 
 <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -834,7 +816,6 @@ at both entry and exit of the block:</p>
 </code></pre>
 <p>For the common in-out case (read the value, modify it, write it back),
 use the <code>inout_gpr</code> constraint:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x19<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
 
 <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -848,7 +829,7 @@ use the <code>inout_gpr</code> constraint:</p>
 register already bound to an operand, the block is rejected at compile
 time.</p>
 <hr>
-<h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -896,10 +877,9 @@ time.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="2.4-labels" tabindex="-1"><a class="doc-anchor" href="#2.4-labels" aria-hidden="true">#</a> 2.4 Labels</h2>
+<h2 id="24-labels" tabindex="-1"><a class="doc-anchor" href="#24-labels" aria-label="Permalink to 2.4 Labels">#</a> 2.4 Labels</h2>
 <p>Labels are bare code regions, declared at <strong>module top level</strong> with the
 <code>label</code> type. They are not nested inside functions.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">name <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token punctuation">{</span>
   body
 <span class="token punctuation">}</span> <span class="token comment">// bare code region</span>
@@ -924,11 +904,10 @@ name <span class="token operator">::</span> <span class="token keyword">label</s
 targets. They use the same raw stack discipline as <code>#naked</code> functions: any
 save area, stack switch, register preservation, and eventual <code>eret</code>/halt path
 must be visible in source, normally through explicit <code>#asm</code>.</p>
-<h3 id="visibility-and-cross-module-references" tabindex="-1"><a class="doc-anchor" href="#visibility-and-cross-module-references" aria-hidden="true">#</a> Visibility and Cross-Module References</h3>
+<h3 id="visibility-and-cross-module-references" tabindex="-1"><a class="doc-anchor" href="#visibility-and-cross-module-references" aria-label="Permalink to Visibility and Cross-Module References">#</a> Visibility and Cross-Module References</h3>
 <p>Labels follow the same <code>pub</code> / <code>#import</code> machinery as functions. A label
 declared without <code>pub</code> is module-private; with <code>pub</code>, it is visible
 to other modules that <code>#import</code> the module.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>handlers
 
 <span class="token keyword">pub</span> handle_sync <span class="token operator">::</span> <span class="token keyword">label</span> <span class="token punctuation">{</span>
@@ -941,7 +920,6 @@ resume <span class="token operator">::</span> <span class="token keyword">label<
   <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>vectors
 
 <span class="token directive macro">#import</span> boot<span class="token punctuation">.</span>handlers <span class="token comment">// brings `handle_sync` into scope</span>
@@ -960,7 +938,7 @@ In the final ELF symbol table, source labels are executable text symbols but
 not function symbols: they use <code>STT_NOTYPE</code> so external tools do not confuse
 <code>goto</code> targets with callable functions that have ordinary prologue/epilogue
 semantics.</p>
-<h3 id="why-labels-are-top-level" tabindex="-1"><a class="doc-anchor" href="#why-labels-are-top-level" aria-hidden="true">#</a> Why Labels Are Top-Level</h3>
+<h3 id="why-labels-are-top-level" tabindex="-1"><a class="doc-anchor" href="#why-labels-are-top-level" aria-label="Permalink to Why Labels Are Top-Level">#</a> Why Labels Are Top-Level</h3>
 <p>Labels are not in-function constructs because the only legal way to enter
 them is <code>goto</code>, and <code>goto</code> is bare-context only (see §2.5). There is no
 in-function position where a label could be entered, so there is no
@@ -968,9 +946,8 @@ in-function position where one can be declared.</p>
 <p>This also closes off the C-style <code>goto label;</code> foot-gun by construction:
 the syntax does not exist.</p>
 <hr>
-<h2 id="2.5-control-flow" tabindex="-1"><a class="doc-anchor" href="#2.5-control-flow" aria-hidden="true">#</a> 2.5 Control Flow</h2>
-<h3 id="goto-and-function-calls" tabindex="-1"><a class="doc-anchor" href="#goto-and-function-calls" aria-hidden="true">#</a> goto and function calls</h3>
-<!-- wyst-contract: sketch -->
+<h2 id="25-control-flow" tabindex="-1"><a class="doc-anchor" href="#25-control-flow" aria-label="Permalink to 2.5 Control Flow">#</a> 2.5 Control Flow</h2>
+<h3 id="goto-and-function-calls" tabindex="-1"><a class="doc-anchor" href="#goto-and-function-calls" aria-label="Permalink to goto and function calls">#</a> goto and function calls</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">goto</span> label_name     <span class="token comment">// transfer to label, no return</span>
 <span class="token function">fn_name</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span>       <span class="token comment">// invoke function — statement position</span>
 <span class="token function">fn_ptr</span><span class="token punctuation">(</span>args<span class="token punctuation">)</span>        <span class="token comment">// invoke function pointer — statement position</span>
@@ -978,9 +955,8 @@ the syntax does not exist.</p>
 <p><code>goto</code> is a statement keyword. Function calls use the same postfix call
 syntax in statement position and expression position. The old exploratory
 <code>call f(args)</code> statement form is not part of Wyst.</p>
-<h4>Statement-Position Calls</h4>
+<h4 id="statement-position-calls" tabindex="-1"><a class="doc-anchor" href="#statement-position-calls" aria-label="Permalink to Statement-Position Calls">#</a> Statement-Position Calls</h4>
 <p>A call expression may appear as a standalone statement:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">init_uart</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token function">clear_screen</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 handler_table<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span>    <span class="token comment">// computed function-pointer call</span>
@@ -989,16 +965,15 @@ handler_table<span class="token punctuation">[</span>i<span class="token punctua
 and discards the result. An expression statement whose top-level expression
 is not a call remains a compile error, so stray statements like <code>x + y</code> do
 not silently do nothing.</p>
-<h4>Expression-Position Calls</h4>
+<h4 id="expression-position-calls" tabindex="-1"><a class="doc-anchor" href="#expression-position-calls" aria-label="Permalink to Expression-Position Calls">#</a> Expression-Position Calls</h4>
 <p>The same syntax is used when the return value is consumed by an enclosing
 expression:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">x</span> <span class="token operator">:=</span> <span class="token function">sum</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span><span class="token operator">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
 total   <span class="token operator">=</span> a <span class="token operator">+</span> <span class="token function">sum</span><span class="token punctuation">(</span>arr<span class="token punctuation">[</span><span class="token operator">:</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">+</span> b
 result  <span class="token operator">=</span> <span class="token function">callback</span><span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">)</span>              <span class="token comment">// function-pointer call</span>
 <span class="token function">process</span><span class="token punctuation">(</span><span class="token function">transform</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">)</span>
 </code></pre>
-<h4>Summary Table</h4>
+<h4 id="summary-table" tabindex="-1"><a class="doc-anchor" href="#summary-table" aria-label="Permalink to Summary Table">#</a> Summary Table</h4>
 <table>
 <thead>
 <tr>
@@ -1032,7 +1007,7 @@ result  <span class="token operator">=</span> <span class="token function">callb
 </table>
 <p>The <code>call</code> word is not a keyword. <code>call f(args)</code> is invalid syntax
 because it is two adjacent expressions, not a call form.</p>
-<h4><code>goto</code> Scope Rules</h4>
+<h4 id="goto-scope-rules" tabindex="-1"><a class="doc-anchor" href="#goto-scope-rules" aria-label="Permalink to goto Scope Rules">#</a> <code>goto</code> Scope Rules</h4>
 <p><code>goto</code> is a <strong>bare-context tail transfer</strong>. It is legal only when the
 current execution context has no live frame to abandon — i.e. when no
 prologue has been emitted and no caller is waiting for a return value. In
@@ -1046,7 +1021,7 @@ trampoline directive)</li>
 <p><code>goto</code> in an ordinary function body is a <strong>compile error</strong>, even if the
 function has no live locals. The diagnostic suggests <code>return</code> (to exit) or
 extracting the work into a <code>label</code>.</p>
-<h4>What <code>goto</code> Cannot Cross</h4>
+<h4 id="what-goto-cannot-cross" tabindex="-1"><a class="doc-anchor" href="#what-goto-cannot-cross" aria-label="Permalink to What goto Cannot Cross">#</a> What <code>goto</code> Cannot Cross</h4>
 <table>
 <thead>
 <tr>
@@ -1092,17 +1067,16 @@ extracting the work into a <code>label</code>.</p>
 boundary&quot; from earlier drafts: if control flow has reached a point where a
 called function is expected to return, that return cannot be skipped by a
 <code>goto</code>.</p>
-<h4>What <code>goto</code> Targets</h4>
+<h4 id="what-goto-targets" tabindex="-1"><a class="doc-anchor" href="#what-goto-targets" aria-label="Permalink to What goto Targets">#</a> What <code>goto</code> Targets</h4>
 <p>The target is a bare identifier naming a <code>label</code> (or <code>#ventry</code> slot's
 enclosing <code>label</code>). The label must be in scope — either declared in the
 current module or imported via <code>#import</code>. There is no label literal, no
 computed <code>goto</code>, no <code>goto *expr</code>. Dispatch tables are built from function
 pointers (see §2.6), not label addresses.</p>
-<h4><code>break</code> and <code>continue</code></h4>
+<h4 id="break-and-continue" tabindex="-1"><a class="doc-anchor" href="#break-and-continue" aria-label="Permalink to break and continue">#</a> <code>break</code> and <code>continue</code></h4>
 <p><code>break</code> and <code>continue</code> are structural control-flow statements inside
 <code>loop</code>, <code>while</code>, and <code>repeat</code>. They are statement-position keywords with
 no operands and produce no value.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">break</span>          <span class="token comment">// exit the innermost enclosing loop</span>
 <span class="token keyword">continue</span>       <span class="token comment">// jump to the header of the innermost enclosing loop</span>
 </code></pre>
@@ -1127,7 +1101,6 @@ new function-local identifier scope the language does not have.</p>
 <p><strong><code>continue</code> in <code>repeat</code>:</strong> the implicit iteration counter advances
 before the next iteration runs, exactly as if the loop body had reached
 its closing brace.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Skip rows where the first byte is zero:</span>
 <span class="token comment">// `base` is @u8, and `row_size` is measured in bytes.</span>
 <span class="token keyword">repeat</span> <span class="token number">100</span><span class="token punctuation">,</span> i <span class="token punctuation">{</span>
@@ -1138,7 +1111,6 @@ its closing brace.</p>
 <p><strong><code>loop</code> is not an expression</strong> — <code>loop { ... }</code> produces no value, so
 <code>break value</code> and <code>loop</code>-as-rvalue are not part of the language. Use a
 mutable variable assigned before <code>break</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">result</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token keyword">loop</span> <span class="token punctuation">{</span>
     <span class="token keyword">if</span> condition_met <span class="token punctuation">{</span>
@@ -1148,7 +1120,7 @@ mutable variable assigned before <code>break</code>:</p>
 <span class="token punctuation">}</span>
 <span class="token keyword">return</span> result
 </code></pre>
-<h4>ARM64 Lowering</h4>
+<h4 id="arm64-lowering-1" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-1" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h4>
 <p><code>break</code> lowers to an unconditional branch to the instruction immediately
 following the innermost loop's last instruction. <code>continue</code> lowers to an
 unconditional branch to the loop header (the test instruction for
@@ -1158,46 +1130,40 @@ back-edge for <code>loop</code>).</p>
 no register state is preserved or restored at the branch point (a <code>break</code>
 out of the middle of a basic block leaves all locals in whatever state
 they were in; this is the same as falling through to the loop's end).</p>
-<h3 id="if" tabindex="-1"><a class="doc-anchor" href="#if" aria-hidden="true">#</a> If</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="if" tabindex="-1"><a class="doc-anchor" href="#if" aria-label="Permalink to If">#</a> If</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> count <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token keyword">return</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="if-expressions" tabindex="-1"><a class="doc-anchor" href="#if-expressions" aria-hidden="true">#</a> If Expressions</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="if-expressions" tabindex="-1"><a class="doc-anchor" href="#if-expressions" aria-label="Permalink to If Expressions">#</a> If Expressions</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">value <span class="token operator">=</span> <span class="token keyword">if</span> cond <span class="token punctuation">{</span>
     <span class="token number">10</span>
 <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
     <span class="token number">20</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="repeat" tabindex="-1"><a class="doc-anchor" href="#repeat" aria-hidden="true">#</a> Repeat</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="repeat" tabindex="-1"><a class="doc-anchor" href="#repeat" aria-label="Permalink to Repeat">#</a> Repeat</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">repeat</span> count<span class="token punctuation">,</span> i <span class="token punctuation">{</span>
     total <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>data <span class="token operator">+</span> i<span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="while" tabindex="-1"><a class="doc-anchor" href="#while" aria-hidden="true">#</a> While</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="while" tabindex="-1"><a class="doc-anchor" href="#while" aria-label="Permalink to While">#</a> While</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// UARTFR is declared `@volatile u32` elsewhere</span>
 <span class="token keyword">while</span> <span class="token builtin type">u32</span><span class="token operator">@</span><span class="token punctuation">[</span><span class="token constant">UARTFR</span><span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token constant">TXFF</span> <span class="token operator">!=</span> <span class="token number">0</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%nop</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="infinite-loop" tabindex="-1"><a class="doc-anchor" href="#infinite-loop" aria-hidden="true">#</a> Infinite Loop</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="infinite-loop" tabindex="-1"><a class="doc-anchor" href="#infinite-loop" aria-label="Permalink to Infinite Loop">#</a> Infinite Loop</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">loop</span> <span class="token punctuation">{</span>
     <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="switch-%E2%80%94-exhaustive-enum-discrimination" tabindex="-1"><a class="doc-anchor" href="#switch-%E2%80%94-exhaustive-enum-discrimination" aria-hidden="true">#</a> Switch — Exhaustive Enum Discrimination</h3>
+<h3 id="switch-exhaustive-enum-discrimination" tabindex="-1"><a class="doc-anchor" href="#switch-exhaustive-enum-discrimination" aria-label="Permalink to Switch — Exhaustive Enum Discrimination">#</a> Switch — Exhaustive Enum Discrimination</h3>
 <p><code>switch</code> is the exhaustive form for reading enum values (§1.6.2). Each
 arm is a <code>case</code> matching a single variant, optionally binding payload
 elements. Exhaustiveness is checked at compile time: an unhandled variant
 is an error unless an <code>else:</code> arm is present or the switch is annotated
 <code>#partial</code>.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">switch</span> m <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token parameter">Quit</span><span class="token operator">:</span>             <span class="token function">handle_quit</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
     <span class="token keyword">case</span> <span class="token function">Write</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token operator">:</span>         <span class="token function">handle_write</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span>
@@ -1241,9 +1207,8 @@ is an error unless an <code>else:</code> arm is present or the switch is annotat
 </table>
 <p>A <code>case</code> arm body is a statement context. Function calls in arm bodies
 follow the statement-position call rule from §2.5 above.</p>
-<h4><code>#partial switch</code></h4>
+<h4 id="partial-switch" tabindex="-1"><a class="doc-anchor" href="#partial-switch" aria-label="Permalink to #partial switch">#</a> <code>#partial switch</code></h4>
 <p>Annotated to opt out of the exhaustiveness check entirely:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#partial</span> <span class="token keyword">switch</span> m <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token function">Write</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token operator">:</span>         <span class="token function">handle_write</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span>
     <span class="token comment">// Quit and Custom are silently skipped — no compile error</span>
@@ -1252,9 +1217,8 @@ follow the statement-position call rule from §2.5 above.</p>
 <p>Use <code>#partial</code> when only a subset of variants is relevant at this site
 and reaching an unhandled variant should silently do nothing. Without
 <code>#partial</code>, the same code is a compile error.</p>
-<h4>Exhaustive switch on plain enums</h4>
+<h4 id="exhaustive-switch-on-plain-enums" tabindex="-1"><a class="doc-anchor" href="#exhaustive-switch-on-plain-enums" aria-label="Permalink to Exhaustive switch on plain enums">#</a> Exhaustive switch on plain enums</h4>
 <p>The same rules apply to payload-less enums:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">switch</span> d <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token parameter">North</span><span class="token operator">:</span>   <span class="token operator">..</span><span class="token punctuation">.</span>
     <span class="token keyword">case</span> <span class="token parameter">East</span><span class="token operator">:</span>    <span class="token operator">..</span><span class="token punctuation">.</span>
@@ -1263,17 +1227,15 @@ and reaching an unhandled variant should silently do nothing. Without
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Missing any variant is a compile error; <code>else:</code> or <code>#partial</code> opts out.</p>
-<h4>Pattern Binding Scope</h4>
+<h4 id="pattern-binding-scope" tabindex="-1"><a class="doc-anchor" href="#pattern-binding-scope" aria-label="Permalink to Pattern Binding Scope">#</a> Pattern Binding Scope</h4>
 <p>Pattern-bound names are local to the arm's body and immutable within it.
 Assignment to a binding is a compile error:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">switch</span> m <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token function">Custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span><span class="token operator">:</span>
         code <span class="token operator">=</span> <span class="token number">5</span>         <span class="token comment">// compile error: pattern bindings are immutable</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>To produce a mutable local, rebind:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">switch</span> m <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token function">Custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span><span class="token operator">:</span>
         <span class="token variable">mx</span> <span class="token operator">:=</span> code       <span class="token comment">// mx is a new mutable local</span>
@@ -1281,12 +1243,11 @@ Assignment to a binding is a compile error:</p>
         <span class="token function">process</span><span class="token punctuation">(</span>mx<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Patterns Are Not Nested</h4>
+<h4 id="patterns-are-not-nested" tabindex="-1"><a class="doc-anchor" href="#patterns-are-not-nested" aria-label="Permalink to Patterns Are Not Nested">#</a> Patterns Are Not Nested</h4>
 <p><code>case Variant(a, b)</code> is outside the enum payload model and cannot
 itself contain a sub-pattern. To
 destructure a payload that is itself an enum, nest a <code>switch</code> or <code>is</code> in
 the body:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">switch</span> outer <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token function">Wrap</span><span class="token punctuation">(</span>inner<span class="token punctuation">)</span><span class="token operator">:</span>
         <span class="token keyword">switch</span> inner <span class="token punctuation">{</span>
@@ -1295,10 +1256,9 @@ the body:</p>
         <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><code>switch</code> Is a Statement, Not an Expression</h4>
+<h4 id="switch-is-a-statement-not-an-expression" tabindex="-1"><a class="doc-anchor" href="#switch-is-a-statement-not-an-expression" aria-label="Permalink to switch Is a Statement, Not an Expression">#</a> <code>switch</code> Is a Statement, Not an Expression</h4>
 <p><code>switch</code> produces no value. To compute a value across variants, use a
 mutable local:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token keyword">switch</span> m <span class="token punctuation">{</span>
     <span class="token keyword">case</span> <span class="token parameter">Quit</span><span class="token operator">:</span>             n <span class="token operator">=</span> <span class="token number">0</span>
@@ -1307,12 +1267,11 @@ mutable local:</p>
 <span class="token punctuation">}</span>
 <span class="token keyword">return</span> n
 </code></pre>
-<h3 id="is-%E2%80%94-single-variant-test-and-bind" tabindex="-1"><a class="doc-anchor" href="#is-%E2%80%94-single-variant-test-and-bind" aria-hidden="true">#</a> <code>is</code> — Single-Variant Test and Bind</h3>
+<h3 id="is-single-variant-test-and-bind" tabindex="-1"><a class="doc-anchor" href="#is-single-variant-test-and-bind" aria-label="Permalink to is — Single-Variant Test and Bind">#</a> <code>is</code> — Single-Variant Test and Bind</h3>
 <p><code>is</code> tests one enum value against one variant pattern (the same shape as a
 single-variant <code>case</code> pattern). When <code>is</code> appears as the direct condition of
 an <code>if</code>, the pattern bindings are in scope within the <code>if</code>-true body and
 immutable.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> m <span class="token keyword">is</span> <span class="token function">Custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token function">handle_custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -1347,11 +1306,10 @@ immutable.</p>
 </tr>
 </tbody>
 </table>
-<h4>Binding Scope</h4>
+<h4 id="binding-scope" tabindex="-1"><a class="doc-anchor" href="#binding-scope" aria-label="Permalink to Binding Scope">#</a> Binding Scope</h4>
 <p>Bindings introduced by <code>is</code> are valid <strong>only</strong> in the <code>if</code>-true block.
 They are not visible in the <code>else</code> block, after the <code>if</code>, or in a
 compound condition's other clauses:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> m <span class="token keyword">is</span> <span class="token function">Custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token function">use</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span>            <span class="token comment">// ok — bindings valid here</span>
 <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
@@ -1363,11 +1321,10 @@ compound condition's other clauses:</p>
 binding. Use <code>_</code> to explicitly discard a payload. A binding such as
 <code>m is Custom(code) &amp;&amp; ready</code> is rejected because the binding's scope would be
 ambiguous. Use a direct <code>if m is Custom(code)</code> or a <code>switch</code> instead.</p>
-<h4>Negation</h4>
+<h4 id="negation" tabindex="-1"><a class="doc-anchor" href="#negation" aria-label="Permalink to Negation">#</a> Negation</h4>
 <p>Negated <code>is</code> patterns are allowed only when they introduce no payload binding.
 No bindings are introduced by a negated <code>is</code> because the payload bindings would
 be undefined if the test is false.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> <span class="token operator">!</span><span class="token punctuation">(</span>m <span class="token keyword">is</span> Quit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// m is some other variant — but the specific variant is unknown here</span>
     <span class="token function">process_active</span><span class="token punctuation">(</span>m<span class="token punctuation">)</span>
@@ -1377,11 +1334,10 @@ be undefined if the test is false.</p>
     <span class="token function">process_active</span><span class="token punctuation">(</span>m<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><code>is</code> vs <code>switch</code></h4>
+<h4 id="is-vs-switch" tabindex="-1"><a class="doc-anchor" href="#is-vs-switch" aria-label="Permalink to is vs switch">#</a> <code>is</code> vs <code>switch</code></h4>
 <p><code>is</code> is for &quot;check one variant, do one thing.&quot; <code>switch</code> is for &quot;dispatch
 on all variants.&quot; When more than one variant needs handling, prefer
 <code>switch</code> — it gets exhaustiveness checking; chained <code>if … is</code> does not.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Bad — no exhaustiveness check, easy to forget a variant:</span>
 <span class="token keyword">if</span>      m <span class="token keyword">is</span> Quit          <span class="token punctuation">{</span> <span class="token function">handle_quit</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span>
 <span class="token keyword">else</span> <span class="token keyword">if</span> m <span class="token keyword">is</span> <span class="token function">Custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span>  <span class="token punctuation">{</span> <span class="token function">handle_custom</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span> <span class="token punctuation">}</span>
@@ -1396,7 +1352,7 @@ on all variants.&quot; When more than one variant needs handling, prefer
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h2 id="2.6-function-pointers" tabindex="-1"><a class="doc-anchor" href="#2.6-function-pointers" aria-hidden="true">#</a> 2.6 Function Pointers</h2>
+<h2 id="26-function-pointers" tabindex="-1"><a class="doc-anchor" href="#26-function-pointers" aria-label="Permalink to 2.6 Function Pointers">#</a> 2.6 Function Pointers</h2>
 <p>A <strong>function shape</strong> is the syntactic form <code>(args) -&gt; ret</code> (or its multi-return
 variant). Function shapes describe the parameter and return types of a
 function. A function shape by itself is not a value type and not a storable
@@ -1404,13 +1360,12 @@ type.</p>
 <p>A <strong>function pointer</strong> is an address of a function with a given shape. The type
 is written <code>@(args) -&gt; ret</code>, applying the <code>@T</code> rule to a function shape exactly
 the way it applies to data:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">handler</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span> <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span> <span class="token punctuation">}</span>
 
 <span class="token parameter">callback</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span>    <span class="token comment">// pointer to function</span>
 <span class="token variable">result</span>   <span class="token operator">:=</span> <span class="token function">callback</span><span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">)</span>                         <span class="token comment">// call through the pointer</span>
 </code></pre>
-<h3 id="where-each-form-is-legal" tabindex="-1"><a class="doc-anchor" href="#where-each-form-is-legal" aria-hidden="true">#</a> Where Each Form Is Legal</h3>
+<h3 id="where-each-form-is-legal" tabindex="-1"><a class="doc-anchor" href="#where-each-form-is-legal" aria-label="Permalink to Where Each Form Is Legal">#</a> Where Each Form Is Legal</h3>
 <table>
 <thead>
 <tr>
@@ -1432,7 +1387,6 @@ the way it applies to data:</p>
 <p>A declaration like <code>cb : (u64) -&gt; u64 = ...</code> is a <strong>compile error</strong> — bare
 function shapes cannot appear in a value context. The diagnostic suggests
 the <code>@(...)</code> form:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">cb</span> <span class="token operator">:</span> <span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span>
 <span class="token comment">// compile error: bare function shape `(u64) -> u64` is not a value type;</span>
 <span class="token comment">// did you mean `@(u64) -> u64`?</span>
@@ -1441,11 +1395,10 @@ the <code>@(...)</code> form:</p>
 which Wyst does not allow programs to read, copy, or store. What a program
 actually holds is the function's address. Distinguishing the two in the type
 system means the source always reflects what's in memory.</p>
-<h3 id="address-taking" tabindex="-1"><a class="doc-anchor" href="#address-taking" aria-hidden="true">#</a> Address-Taking</h3>
+<h3 id="address-taking" tabindex="-1"><a class="doc-anchor" href="#address-taking" aria-label="Permalink to Address-Taking">#</a> Address-Taking</h3>
 <p><code>#addr_of(name)</code> produces a value of type <code>@(args) -&gt; ret</code> when <code>name</code> is a
 function declaration. There is no implicit &quot;function-name decays to pointer&quot;
 rule — assigning a bare function name without <code>#addr_of</code> is rejected:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">cb</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> handler <span class="token comment">// compile error: implicit address-of</span>
 <span class="token comment">// a function is not allowed; write</span>
 <span class="token comment">// `#addr_of(handler)`</span>
@@ -1468,7 +1421,6 @@ indirect-result return shapes do not loosen the rule; the argument pin map
 still has to be known before an indirect call can be marshalled safely. Wyst
 has no return-value <code>#pin</code> syntax; result placement is owned by the selected
 calling convention.</p>
-<!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">pinned_entry</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">arg</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x7<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
@@ -1480,11 +1432,10 @@ calling convention.</p>
   <span class="token keyword">return</span> <span class="token function">cb</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="conversions" tabindex="-1"><a class="doc-anchor" href="#conversions" aria-hidden="true">#</a> Conversions</h3>
+<h3 id="conversions" tabindex="-1"><a class="doc-anchor" href="#conversions" aria-label="Permalink to Conversions">#</a> Conversions</h3>
 <p>A function pointer converts to <code>u64</code> (the bare address bits) via <code>as.address</code>.
 Constructing a function pointer from a raw integer address requires the
 explicit <code>#trusted_cast</code> form:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">fp</span>   <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span>
 <span class="token variable">addr</span> <span class="token operator">:=</span> fp <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>                        <span class="token comment">// extract address</span>
 
@@ -1499,7 +1450,7 @@ conversion between function pointer types of different shapes or different
 calling conventions. Two function pointer types are the same type only if
 their shapes and (per §2.7 / chapter-15-abi-spec.md B) their calling-convention
 annotations match exactly.</p>
-<h3 id="operators" tabindex="-1"><a class="doc-anchor" href="#operators" aria-hidden="true">#</a> Operators</h3>
+<h3 id="operators" tabindex="-1"><a class="doc-anchor" href="#operators" aria-label="Permalink to Operators">#</a> Operators</h3>
 <p>Function pointers are code addresses, not data address lenses. The supported
 operations are:</p>
 <ul>
@@ -1516,7 +1467,6 @@ ordered comparisons (<code>callback &lt; other</code>), nonzero integer comparis
 (<code>callback == 1</code>), or <code>type[address]</code> memory access. Use an explicit
 <code>as.address u64</code> conversion first if numeric address inspection is truly
 intended.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">handler</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
@@ -1532,18 +1482,16 @@ intended.</p>
   <span class="token keyword">return</span> <span class="token number">0</span> <span class="token operator">!=</span> callback
 <span class="token punctuation">}</span>
 </code></pre>
-<!-- wyst-contract: check-fail -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token function">bad_compare</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">callback</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> callback <span class="token operator">==</span> <span class="token number">1</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="calling-convention-in-the-type" tabindex="-1"><a class="doc-anchor" href="#calling-convention-in-the-type" aria-hidden="true">#</a> Calling Convention in the Type</h3>
+<h3 id="calling-convention-in-the-type" tabindex="-1"><a class="doc-anchor" href="#calling-convention-in-the-type" aria-label="Permalink to Calling Convention in the Type">#</a> Calling Convention in the Type</h3>
 <p>A function declared with <code>[aapcs]</code> has a pointer type written
 <code>@[aapcs] (args) -&gt; ret</code>. The annotation is part of the type and not
 implicitly compatible with the native form:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token function">puts</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
@@ -1555,7 +1503,7 @@ implicitly compatible with the native form:</p>
 type. The compiler picks <code>bl</code> vs <code>blr</code> and the argument-marshaling sequence
 from the pointer's type alone — there is no per-call-site convention
 override. See <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md B.5</a> for the cross-language rules.</p>
-<h3 id="interaction-with-%23deny" tabindex="-1"><a class="doc-anchor" href="#interaction-with-%23deny" aria-hidden="true">#</a> Interaction with <code>#deny</code></h3>
+<h3 id="interaction-with-deny" tabindex="-1"><a class="doc-anchor" href="#interaction-with-deny" aria-label="Permalink to Interaction with #deny">#</a> Interaction with <code>#deny</code></h3>
 <p>Indirect calls do not bypass effect checking. A call through a function
 pointer contributes the conservative effect upper bound of the pointer value
 to the caller's inferred effect set:</p>
@@ -1570,7 +1518,7 @@ pointer is treated as all effect categories for <code>#deny</code> checking.</li
 <p>When an indirect call violates <code>#deny</code>, the diagnostic points at the call and
 lists the known candidate target or explains that the target is unknown.</p>
 <hr>
-<h2 id="2.7-function-attributes" tabindex="-1"><a class="doc-anchor" href="#2.7-function-attributes" aria-hidden="true">#</a> 2.7 Function Attributes</h2>
+<h2 id="27-function-attributes" tabindex="-1"><a class="doc-anchor" href="#27-function-attributes" aria-label="Permalink to 2.7 Function Attributes">#</a> 2.7 Function Attributes</h2>
 <table>
 <thead>
 <tr>
@@ -1628,15 +1576,14 @@ lists the known candidate target or explains that the target is unknown.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="2.7.1-%23inline-%E2%80%94-always-inline-semantics" tabindex="-1"><a class="doc-anchor" href="#2.7.1-%23inline-%E2%80%94-always-inline-semantics" aria-hidden="true">#</a> 2.7.1 <code>#inline</code> — Always-Inline Semantics</h2>
+<h2 id="271-inline-always-inline-semantics" tabindex="-1"><a class="doc-anchor" href="#271-inline-always-inline-semantics" aria-label="Permalink to 2.7.1 #inline — Always-Inline Semantics">#</a> 2.7.1 <code>#inline</code> — Always-Inline Semantics</h2>
 <p><code>#inline</code> is an <strong>always-inline</strong> directive, not a hint. The compiler must
 inline every call to the function. If inlining is impossible, compilation
 fails with a diagnostic at the function definition.</p>
 <p>This is consistent with Wyst's design principle: the programmer declares
 intent, and the compiler either satisfies it or rejects the program. There
 is no silently degraded behavior.</p>
-<h3 id="syntax" tabindex="-1"><a class="doc-anchor" href="#syntax" aria-hidden="true">#</a> Syntax</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="syntax" tabindex="-1"><a class="doc-anchor" href="#syntax" aria-label="Permalink to Syntax">#</a> Syntax</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">helper</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> x <span class="token operator">+</span> <span class="token number">1</span>
@@ -1646,7 +1593,6 @@ is no silently degraded behavior.</p>
 When a declaration has two or more annotations, the canonical formatter spelling
 is a single grouped line. This keeps directives out of the parameter and
 return-type shape:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>naked<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 <span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
@@ -1658,25 +1604,24 @@ return-type shape:</p>
 <code>#</code> once for the whole group. A single annotation remains bare, for example
 <code>#cold</code>, and parameter annotations such as <code>#pin(x0)</code> stay inline on the
 parameter.</p>
-<h3 id="when-inlining-is-mandatory" tabindex="-1"><a class="doc-anchor" href="#when-inlining-is-mandatory" aria-hidden="true">#</a> When Inlining Is Mandatory</h3>
+<h3 id="when-inlining-is-mandatory" tabindex="-1"><a class="doc-anchor" href="#when-inlining-is-mandatory" aria-label="Permalink to When Inlining Is Mandatory">#</a> When Inlining Is Mandatory</h3>
 <p>Every call site to an <code>#inline</code> function must be replaced with the function
 body. The call disappears from the output — no branch, no <code>blr</code>, no prologue
 or epilogue for the callee. The callee's parameters are bound to the caller's
 arguments directly.</p>
-<h3 id="definition-time-semantic-checks" tabindex="-1"><a class="doc-anchor" href="#definition-time-semantic-checks" aria-hidden="true">#</a> Definition-Time Semantic Checks</h3>
+<h3 id="definition-time-semantic-checks" tabindex="-1"><a class="doc-anchor" href="#definition-time-semantic-checks" aria-label="Permalink to Definition-Time Semantic Checks">#</a> Definition-Time Semantic Checks</h3>
 <p>An <code>#inline</code> function body is semantically checked at the function definition,
 independent of call sites. <code>#static_assert</code> directives inside the body are
 therefore evaluated even when the <code>#inline</code> function is unreachable or has no
 calls. Statement-level <code>#if</code> expansion still happens first, so only the selected
 branch contributes <code>#static_assert</code> directives to that definition-time check.</p>
-<h3 id="raw-context-inline-call-sites" tabindex="-1"><a class="doc-anchor" href="#raw-context-inline-call-sites" aria-hidden="true">#</a> Raw-Context Inline Call Sites</h3>
+<h3 id="raw-context-inline-call-sites" tabindex="-1"><a class="doc-anchor" href="#raw-context-inline-call-sites" aria-label="Permalink to Raw-Context Inline Call Sites">#</a> Raw-Context Inline Call Sites</h3>
 <p>Calls to <code>#inline</code> helpers from raw contexts such as <code>#naked</code> functions,
 labels, and <code>#ventry</code> slots get an additional stackless proof. These call sites
 cannot rely on ordinary compiler-owned stack slots, so the helper must be void
 and limited to stackless statements: intrinsic expression statements, nested
 stackless inline helper calls, <code>#static_assert</code>, simple <code>if</code> control flow, and a
 final loop whose body is recursively stackless.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">#<span class="token punctuation">[</span>inline<span class="token punctuation">,</span> noreturn<span class="token punctuation">]</span>
 <span class="token function">idle</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">loop</span> <span class="token punctuation">{</span>
@@ -1691,7 +1636,7 @@ final loop whose body is recursively stackless.</p>
 </code></pre>
 <p>The final loop rule exists so reusable idle tails can be factored without
 weakening <code>#naked</code>'s no-implicit-stack boundary.</p>
-<h3 id="when-inlining-is-impossible-(compile-errors)" tabindex="-1"><a class="doc-anchor" href="#when-inlining-is-impossible-(compile-errors)" aria-hidden="true">#</a> When Inlining Is Impossible (Compile Errors)</h3>
+<h3 id="when-inlining-is-impossible-compile-errors" tabindex="-1"><a class="doc-anchor" href="#when-inlining-is-impossible-compile-errors" aria-label="Permalink to When Inlining Is Impossible (Compile Errors)">#</a> When Inlining Is Impossible (Compile Errors)</h3>
 <p>The compiler emits a hard error at the <code>#inline</code> function definition if any
 of the following conditions make inlining impossible:</p>
 <table>
@@ -1740,9 +1685,8 @@ of the following conditions make inlining impossible:</p>
 </tr>
 </tbody>
 </table>
-<h4>Recursion</h4>
+<h4 id="recursion" tabindex="-1"><a class="doc-anchor" href="#recursion" aria-label="Permalink to Recursion">#</a> Recursion</h4>
 <p>Directly recursive <code>#inline</code> functions are rejected:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">fact</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token keyword">if</span> n <span class="token operator">&lt;=</span> <span class="token number">1</span> <span class="token punctuation">{</span>
@@ -1752,7 +1696,6 @@ of the following conditions make inlining impossible:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Indirect recursion is also rejected:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">a</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">if</span> n <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span>
@@ -1767,11 +1710,10 @@ of the following conditions make inlining impossible:</p>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><code>#asm</code> Bodies</h4>
+<h4 id="asm-bodies" tabindex="-1"><a class="doc-anchor" href="#asm-bodies" aria-label="Permalink to #asm Bodies">#</a> <code>#asm</code> Bodies</h4>
 <p>Functions containing <code>#asm</code> blocks cannot be inlined because inline assembly
 may have side effects, register constraints, or clobber lists that are not
 safe to duplicate at arbitrary call sites:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">read_ctr</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
     <span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
@@ -1784,7 +1726,7 @@ safe to duplicate at arbitrary call sites:</p>
     <span class="token keyword">return</span> val
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><code>#ventry</code> Slot Overflow</h4>
+<h4 id="ventry-slot-overflow" tabindex="-1"><a class="doc-anchor" href="#ventry-slot-overflow" aria-label="Permalink to #ventry Slot Overflow">#</a> <code>#ventry</code> Slot Overflow</h4>
 <p>This is the most important interaction. A <code>#ventry</code> slot has a hard 128-byte
 budget. Whether an <code>#inline</code> function will fit depends on <strong>register
 pressure at the call site</strong> — a body that fits with three callee-saved
@@ -1821,7 +1763,6 @@ worst-case register-pressure model:</p>
 the 128-byte slot budget. If the body <strong>cannot fit even in the most
 optimistic call site</strong> (a slot whose only content is this one call), the
 error fires at the <code>#inline</code> function definition:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">large_helper</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// ... worst-case lowering: 160 bytes after spills ...</span>
@@ -1857,7 +1798,6 @@ body).</li>
 </ol>
 <p>If the total exceeds 128 bytes, the error fires <strong>at the <code>#ventry</code> slot</strong>,
 with a note pointing back to the <code>#inline</code> function:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">medium_helper</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// worst-case 100 bytes; under low pressure 80 bytes</span>
@@ -1915,7 +1855,6 @@ the slot's other contents&quot;).</p>
 label that is itself a function, no indirect calls via <code>#addr_of</code>. The
 restriction applies transitively: any <code>#inline</code> function the body invokes
 must also be call-free.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">helper</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token function">other_function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// ERROR if `helper` is reachable from any #ventry slot</span>
@@ -1932,12 +1871,11 @@ call inside <code>#ventry</code>, place it directly in the <code>#ventry</code> 
 an <code>#inline</code> helper. The <code>#ventry</code> body's own size analysis (Check 2)
 accounts for the call's clobber set; the <code>#inline</code> body's analysis
 (Check 1) does not.</p>
-<h4>Public <code>#inline</code> Functions</h4>
+<h4 id="public-inline-functions" tabindex="-1"><a class="doc-anchor" href="#public-inline-functions" aria-label="Permalink to Public #inline Functions">#</a> Public <code>#inline</code> Functions</h4>
 <p><code>pub</code> and <code>#inline</code> are compatible, but they control different surfaces.
 <code>pub</code> makes the helper visible to importing Wyst modules. <code>#inline</code> keeps it
 inline-only: every call must be expanded at the call site, no callable code
 body is emitted, and the helper is not an ABI-exported symbol.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> helpers
 
 <span class="token directive macro">#inline</span>
@@ -1957,11 +1895,10 @@ body is emitted, and the helper is not an ABI-exported symbol.</p>
 instead of falling back to a call. <code>#addr_of(helper)</code> remains illegal for
 both private and public inline helpers because there is no function address
 to capture.</p>
-<h4>Function Pointer Capture</h4>
+<h4 id="function-pointer-capture" tabindex="-1"><a class="doc-anchor" href="#function-pointer-capture" aria-label="Permalink to Function Pointer Capture">#</a> Function Pointer Capture</h4>
 <p>If the address of an <code>#inline</code> function is taken (stored in a variable,
 passed as a callback, etc.), inlining is impossible because there is no
 code address to capture:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#inline</span>
 <span class="token function">compare</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i64</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> a <span class="token keyword">as</span><span class="token punctuation">.</span>signedness <span class="token builtin type">i64</span> <span class="token operator">-</span> b <span class="token keyword">as</span><span class="token punctuation">.</span>signedness <span class="token builtin type">i64</span>
@@ -1972,7 +1909,7 @@ code address to capture:</p>
   <span class="token comment">// ...</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="design-rationale-2" tabindex="-1"><a class="doc-anchor" href="#design-rationale-2" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-2" tabindex="-1"><a class="doc-anchor" href="#design-rationale-2" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -2015,7 +1952,7 @@ code address to capture:</p>
 </tr>
 </tbody>
 </table>
-<h3 id="tradeoffs-1" tabindex="-1"><a class="doc-anchor" href="#tradeoffs-1" aria-hidden="true">#</a> Tradeoffs</h3>
+<h3 id="tradeoffs-1" tabindex="-1"><a class="doc-anchor" href="#tradeoffs-1" aria-label="Permalink to Tradeoffs">#</a> Tradeoffs</h3>
 <ul>
 <li><strong>No recursive helpers</strong> — common patterns like tree traversal require
 non-inline functions. This is intentional: recursion needs a stack frame,
@@ -2026,9 +1963,8 @@ controls this explicitly by choosing which functions get <code>#inline</code>.</
 to a call. If you need that, don't use <code>#inline</code>.</li>
 </ul>
 <hr>
-<h2 id="2.7.2-branch-hints-and-cold-marking" tabindex="-1"><a class="doc-anchor" href="#2.7.2-branch-hints-and-cold-marking" aria-hidden="true">#</a> 2.7.2 Branch Hints and Cold Marking</h2>
-<h3 id="%23likely-%2F-%23unlikely" tabindex="-1"><a class="doc-anchor" href="#%23likely-%2F-%23unlikely" aria-hidden="true">#</a> <code>#likely</code> / <code>#unlikely</code></h3>
-<!-- wyst-contract: sketch -->
+<h2 id="272-branch-hints-and-cold-marking" tabindex="-1"><a class="doc-anchor" href="#272-branch-hints-and-cold-marking" aria-label="Permalink to 2.7.2 Branch Hints and Cold Marking">#</a> 2.7.2 Branch Hints and Cold Marking</h2>
+<h3 id="likely-unlikely" tabindex="-1"><a class="doc-anchor" href="#likely-unlikely" aria-label="Permalink to #likely / #unlikely">#</a> <code>#likely</code> / <code>#unlikely</code></h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> <span class="token directive macro">#likely</span> cond <span class="token punctuation">{</span>
     <span class="token function">hot_path</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
@@ -2065,13 +2001,11 @@ without interaction. See <a href="/docs/chapter-13-scheduling/">chapter-13-sched
 constraint rule.</p>
 <p><strong>Legal positions:</strong> <code>#likely</code> and <code>#unlikely</code> may appear before the
 condition expression in <code>if</code> and <code>while</code> statements only.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">if</span> <span class="token directive macro">#likely</span> x <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>          <span class="token comment">// OK</span>
 <span class="token keyword">while</span> <span class="token directive macro">#unlikely</span> queue_empty <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span> <span class="token comment">// OK</span>
 <span class="token comment">// repeat N { ... }                // no condition — hints not applicable</span>
 </code></pre>
-<h3 id="%23cold" tabindex="-1"><a class="doc-anchor" href="#%23cold" aria-hidden="true">#</a> <code>#cold</code></h3>
-<!-- wyst-contract: sketch -->
+<h3 id="cold" tabindex="-1"><a class="doc-anchor" href="#cold" aria-label="Permalink to #cold">#</a> <code>#cold</code></h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#cold</span>
 <span class="token function">error_handler</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token function">log_error</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -2097,7 +2031,7 @@ the inlined cold code is treated as unlikely.</li>
 an optimization hint. Same source = same section placement.</p>
 <p>See <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a> for <code>.text.hot</code> / <code>.text.cold</code> section
 conventions.</p>
-<h3 id="updated-attribute-table" tabindex="-1"><a class="doc-anchor" href="#updated-attribute-table" aria-hidden="true">#</a> Updated Attribute Table</h3>
+<h3 id="updated-attribute-table" tabindex="-1"><a class="doc-anchor" href="#updated-attribute-table" aria-label="Permalink to Updated Attribute Table">#</a> Updated Attribute Table</h3>
 <table>
 <thead>
 <tr>
@@ -2155,7 +2089,7 @@ conventions.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="2.8-constraints" tabindex="-1"><a class="doc-anchor" href="#2.8-constraints" aria-hidden="true">#</a> 2.8 Constraints</h2>
+<h2 id="28-constraints" tabindex="-1"><a class="doc-anchor" href="#28-constraints" aria-label="Permalink to 2.8 Constraints">#</a> 2.8 Constraints</h2>
 <table>
 <thead>
 <tr>
@@ -2191,7 +2125,7 @@ conventions.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="2.9-inline-assembly" tabindex="-1"><a class="doc-anchor" href="#2.9-inline-assembly" aria-hidden="true">#</a> 2.9 Inline Assembly</h2>
+<h2 id="29-inline-assembly" tabindex="-1"><a class="doc-anchor" href="#29-inline-assembly" aria-label="Permalink to 2.9 Inline Assembly">#</a> 2.9 Inline Assembly</h2>
 <p><code>#asm</code> is Wyst's checked escape hatch into explicit ARM64. Use it for
 instructions the language does not (or cannot) expose directly:
 system-register access, traps, cache and TLB maintenance, exclusive monitor
@@ -2207,10 +2141,9 @@ declares its register/memory I/O contract; the compiler honors that contract
 for register allocation and treats the block as a full two-way memory fence
 unless the programmer explicitly opts out via <code>#asm(pure)</code>.</p>
 <hr>
-<h3 id="block-structure" tabindex="-1"><a class="doc-anchor" href="#block-structure" aria-hidden="true">#</a> Block Structure</h3>
+<h3 id="block-structure" tabindex="-1"><a class="doc-anchor" href="#block-structure" aria-label="Permalink to Block Structure">#</a> Block Structure</h3>
 <p>An <code>#asm</code> block has up to four named sections in fixed order, then a <code>body</code>
 section containing the literal instructions:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
         <span class="token operator">&lt;</span>operand<span class="token operator">-</span>list<span class="token operator">></span>
@@ -2232,14 +2165,13 @@ section containing the literal instructions:</p>
 <p>All sections except <code>body</code> are optional. The sections must appear in the
 order shown. Section names are not reserved identifiers outside <code>#asm</code>.</p>
 <hr>
-<h3 id="operands" tabindex="-1"><a class="doc-anchor" href="#operands" aria-hidden="true">#</a> Operands</h3>
+<h3 id="operands" tabindex="-1"><a class="doc-anchor" href="#operands" aria-label="Permalink to Operands">#</a> Operands</h3>
 <p>Each operand in <code>inputs</code> and <code>outputs</code> has the form:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">name = constraint(wyst-expression)
 </code></pre>
 <p>where <code>name</code> is the identifier used in the body to refer to the operand,
 <code>constraint</code> is one of the constraint vocabulary tokens below, and
 <code>wyst-expression</code> is the Wyst-side value the constraint binds to.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
         addr <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span>
@@ -2263,7 +2195,7 @@ order shown. Section names are not reserved identifiers outside <code>#asm</code
 <p>Operand names are local to the <code>#asm</code> block. Two operands in one block
 may not share a name. Names beginning with <code>_</code> are reserved for the
 compiler.</p>
-<h4>Operand Width Selectors</h4>
+<h4 id="operand-width-selectors" tabindex="-1"><a class="doc-anchor" href="#operand-width-selectors" aria-label="Permalink to Operand Width Selectors">#</a> Operand Width Selectors</h4>
 <p>In the body, an operand reference may be prefixed with a register-view
 selector to access a sub-width of the chosen register:</p>
 <table>
@@ -2310,7 +2242,7 @@ mismatches are a compile error. Example: <code>stlxr</code> writes a 32-bit stat
 code, so the destination operand is referenced as <code>{w:status}</code> even when
 the Wyst variable backing it is <code>u64</code>.</p>
 <hr>
-<h3 id="constraint-vocabulary" tabindex="-1"><a class="doc-anchor" href="#constraint-vocabulary" aria-hidden="true">#</a> Constraint Vocabulary</h3>
+<h3 id="constraint-vocabulary" tabindex="-1"><a class="doc-anchor" href="#constraint-vocabulary" aria-label="Permalink to Constraint Vocabulary">#</a> Constraint Vocabulary</h3>
 <p>The full set of constraints. Each takes one Wyst expression as its argument.</p>
 <table>
 <thead>
@@ -2363,7 +2295,6 @@ the Wyst variable backing it is <code>u64</code>.</p>
 <p>There is no early-clobber or commutativity hint. A variable that needs to
 live in a specific physical register is <code>#pin</code>'d at its declaration site;
 the constraint then resolves that pin transparently:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">syndrome</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span>
 
 <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -2375,10 +2306,9 @@ the constraint then resolves that pin transparently:</p>
 </code></pre>
 <p>If <code>syndrome</code> were not pinned, the allocator would pick any free GPR.</p>
 <hr>
-<h3 id="clobbers" tabindex="-1"><a class="doc-anchor" href="#clobbers" aria-hidden="true">#</a> Clobbers</h3>
+<h3 id="clobbers" tabindex="-1"><a class="doc-anchor" href="#clobbers" aria-label="Permalink to Clobbers">#</a> Clobbers</h3>
 <p><code>clobbers</code> lists registers and memory regions that the block may overwrite
 beyond its declared outputs:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
         addr <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span>
@@ -2428,7 +2358,7 @@ The <code>memory</code> clobber is allowed as documentation for an opaque block 
 touches memory, but it does not make the block stronger. <code>#asm(pure)</code> is the
 only opt-out from the default fence, and <code>#asm(pure)</code> must not list <code>memory</code>.</p>
 <hr>
-<h3 id="options" tabindex="-1"><a class="doc-anchor" href="#options" aria-hidden="true">#</a> Options</h3>
+<h3 id="options" tabindex="-1"><a class="doc-anchor" href="#options" aria-label="Permalink to Options">#</a> Options</h3>
 <p><code>options</code> is a comma-separated list of keywords that modify the block's
 contract with the compiler:</p>
 <table>
@@ -2491,7 +2421,7 @@ verifier and contains no instruction rejected by the <code>effects: none</code> 
 module may deny every effect category and still use a verifier-approved
 <code>sets_sp</code> block to establish the initial stack in <code>#naked</code> entry code.</p>
 <hr>
-<h3 id="memory-fence-semantics" tabindex="-1"><a class="doc-anchor" href="#memory-fence-semantics" aria-hidden="true">#</a> Memory Fence Semantics</h3>
+<h3 id="memory-fence-semantics" tabindex="-1"><a class="doc-anchor" href="#memory-fence-semantics" aria-label="Permalink to Memory Fence Semantics">#</a> Memory Fence Semantics</h3>
 <p><strong>Default behavior: every <code>#asm</code> block is a full two-way compiler memory
 fence.</strong> The compiler may not move any memory operation across the block
 in either direction, regardless of declared I/O. This is the safe default;
@@ -2504,7 +2434,6 @@ inherits this fence behavior by default.</p>
 at the hardware level, insert <code>%dsb</code>, <code>%dmb</code>, or <code>%isb()</code> (or an explicit
 barrier inside the body).</p>
 <p>To declare a block that is safe to reorder, mark it <code>pure</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#asm</span><span class="token punctuation">(</span>pure<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
         v <span class="token operator">=</span> <span class="token function">gpr</span><span class="token punctuation">(</span>x<span class="token punctuation">)</span>
@@ -2527,11 +2456,10 @@ barrier inside the body).</p>
 Use <code>pure</code> only when the body is genuinely a pure register-to-register
 computation.</p>
 <hr>
-<h3 id="pinned-variables-and-%23asm" tabindex="-1"><a class="doc-anchor" href="#pinned-variables-and-%23asm" aria-hidden="true">#</a> Pinned Variables and <code>#asm</code></h3>
+<h3 id="pinned-variables-and-asm" tabindex="-1"><a class="doc-anchor" href="#pinned-variables-and-asm" aria-label="Permalink to Pinned Variables and #asm">#</a> Pinned Variables and <code>#asm</code></h3>
 <p>A <code>#pin</code>'d variable referenced as an <code>#asm</code> operand resolves to its pinned
 register. The allocator guarantees the variable is live in that register
 at both the entry and exit of the block:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">dtb</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span>
 
 <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -2548,13 +2476,12 @@ at both the entry and exit of the block:</p>
 same register, or a clobber names a register that is also an operand), the
 block is rejected at compile time.</p>
 <hr>
-<h3 id="worked-examples" tabindex="-1"><a class="doc-anchor" href="#worked-examples" aria-hidden="true">#</a> Worked Examples</h3>
-<h4><code>mrs</code> / <code>msr</code> — System Register Access</h4>
+<h3 id="worked-examples" tabindex="-1"><a class="doc-anchor" href="#worked-examples" aria-label="Permalink to Worked Examples">#</a> Worked Examples</h3>
+<h4 id="mrs-msr-system-register-access" tabindex="-1"><a class="doc-anchor" href="#mrs-msr-system-register-access" aria-label="Permalink to mrs / msr — System Register Access">#</a> <code>mrs</code> / <code>msr</code> — System Register Access</h4>
 <p>This example exists as a pedagogical reference for <code>#asm</code> operand
 interpolation. <strong>Production code should use <code>%mrs</code> and <code>%msr</code> (§1.3.3)</strong>,
 which encode register-name legality, access permissions, and reserved
 encodings in the type system rather than the assembler.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">read_tcr</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token parameter">raw</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
   <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -2583,11 +2510,10 @@ encodings in the type system rather than the assembler.</p>
 <p>The block is a full fence by default; the surrounding compiler cannot
 reorder loads or stores across the <code>msr</code>/<code>isb</code>, which is required because
 <code>TCR_EL1</code> changes the address translation regime.</p>
-<h4><code>svc</code> — Supervisor Call</h4>
+<h4 id="svc-supervisor-call" tabindex="-1"><a class="doc-anchor" href="#svc-supervisor-call" aria-label="Permalink to svc — Supervisor Call">#</a> <code>svc</code> — Supervisor Call</h4>
 <p>This example exists as a pedagogical reference for <code>#asm</code> operand
 interpolation and clobbers. <strong>Production code should use <code>%svc</code>
 (§1.3.4)</strong> with <code>#pin</code>'d locals to express the syscall ABI.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">syscall</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">a0</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token parameter">ret</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
   <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
@@ -2615,12 +2541,11 @@ interpolation and clobbers. <strong>Production code should use <code>%svc</code>
 <p><code>memory</code> clobber: the supervisor handler may touch arbitrary memory on the
 caller's behalf. <code>cc</code> clobber: the handler may return with arbitrary flag
 state.</p>
-<h4><code>ldxr</code> / <code>stxr</code> — Atomic Compare-and-Swap</h4>
+<h4 id="ldxr-stxr-atomic-compare-and-swap" tabindex="-1"><a class="doc-anchor" href="#ldxr-stxr-atomic-compare-and-swap" aria-label="Permalink to ldxr / stxr — Atomic Compare-and-Swap">#</a> <code>ldxr</code> / <code>stxr</code> — Atomic Compare-and-Swap</h4>
 <p>This example exists as a pedagogical reference for <code>#asm</code> operand
 interpolation, width selectors, and the <code>memory</code> clobber. <strong>Production
 code should use <code>%cas</code> (§1.3.2)</strong>, which lowers to the same sequence on
 ARMv8.0 and to a single <code>casa</code>/<code>casal</code> instruction on ARMv8.1 LSE.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">cas_u64</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token parameter">old</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">new</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token parameter">result</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 0 on success, 1 on failure</span>
   <span class="token parameter">seen</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
@@ -2655,12 +2580,11 @@ ARMv8.0 and to a single <code>casa</code>/<code>casal</code> instruction on ARMv
 <p><code>{w:s}</code> selects the 32-bit <code>wN</code> view because <code>stlxr</code> writes a 32-bit
 status code. The <code>memory</code> clobber is documentation here; ordinary <code>#asm</code> is
 already a compiler memory fence.</p>
-<h4><code>tlbi</code> — TLB Invalidation</h4>
+<h4 id="tlbi-tlb-invalidation" tabindex="-1"><a class="doc-anchor" href="#tlbi-tlb-invalidation" aria-label="Permalink to tlbi — TLB Invalidation">#</a> <code>tlbi</code> — TLB Invalidation</h4>
 <p>This example exists as a pedagogical reference. <strong>Production code should
 use <code>%tlbi_vaae1is</code> (§1.3.5)</strong> with explicit barriers — the lowering is
 identical, but the intrinsic form is grep-able and the operand legality
 is checked.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">invalidate_tlb_va</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">vaddr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
@@ -2681,10 +2605,9 @@ is checked.</p>
 <p><code>memory</code> clobber: invalidating a translation changes the meaning of every
 subsequent load and store. The compiler must not assume any prior
 address-to-value mapping survives this block.</p>
-<h4><code>dc cvac</code> — Cache Maintenance</h4>
+<h4 id="dc-cvac-cache-maintenance" tabindex="-1"><a class="doc-anchor" href="#dc-cvac-cache-maintenance" aria-label="Permalink to dc cvac — Cache Maintenance">#</a> <code>dc cvac</code> — Cache Maintenance</h4>
 <p>This example exists as a pedagogical reference. <strong>Production code should
 use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">clean_cacheline</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token directive macro">#asm</span> <span class="token punctuation">{</span>
     inputs <span class="token punctuation">{</span>
@@ -2701,7 +2624,7 @@ use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="design-rationale-3" tabindex="-1"><a class="doc-anchor" href="#design-rationale-3" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-3" tabindex="-1"><a class="doc-anchor" href="#design-rationale-3" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -2747,10 +2670,10 @@ use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
 				<li class="lvl-3"><a href="#functions-and-control-flow">Functions and Control Flow</a></li>
-				<li class="lvl-2"><a href="#2.1-unified-declarations">2.1 Unified Declarations</a></li>
+				<li class="lvl-2"><a href="#21-unified-declarations">2.1 Unified Declarations</a></li>
 				<li class="lvl-3"><a href="#type-inference">Type Inference</a></li>
-				<li class="lvl-2"><a href="#2.2-functions">2.2 Functions</a></li>
-				<li class="lvl-2"><a href="#2.2.1-multiple-return-values">2.2.1 Multiple Return Values</a></li>
+				<li class="lvl-2"><a href="#22-functions">2.2 Functions</a></li>
+				<li class="lvl-2"><a href="#221-multiple-return-values">2.2.1 Multiple Return Values</a></li>
 				<li class="lvl-3"><a href="#binding-multiple-return-values">Binding Multiple Return Values</a></li>
 				<li class="lvl-3"><a href="#single-element-tuples">Single-Element Tuples</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering">ARM64 Lowering</a></li>
@@ -2758,59 +2681,59 @@ use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
 				<li class="lvl-3"><a href="#tuple-parameter-boundary">Tuple Parameter Boundary</a></li>
 				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
 				<li class="lvl-3"><a href="#tradeoffs">Tradeoffs</a></li>
-				<li class="lvl-2"><a href="#2.3-register-pinning">2.3 Register Pinning</a></li>
+				<li class="lvl-2"><a href="#23-register-pinning">2.3 Register Pinning</a></li>
 				<li class="lvl-3"><a href="#canonical-forms">Canonical Forms</a></li>
 				<li class="lvl-3"><a href="#pinning-local-variables">Pinning Local Variables</a></li>
 				<li class="lvl-3"><a href="#pinning-function-parameters">Pinning Function Parameters</a></li>
 				<li class="lvl-3"><a href="#non-escaping-address-parameters">Non-Escaping Address Parameters</a></li>
-				<li class="lvl-3"><a href="#pinning-callee-saved-registers-(prologue-ownership)">Pinning Callee-Saved Registers (Prologue Ownership)</a></li>
+				<li class="lvl-3"><a href="#pinning-callee-saved-registers-prologue-ownership">Pinning Callee-Saved Registers (Prologue Ownership)</a></li>
 				<li class="lvl-3"><a href="#pinning-caller-saved-registers-and-call-boundaries">Pinning Caller-Saved Registers and Call Boundaries</a></li>
 				<li class="lvl-3"><a href="#pinning-special-purpose-registers">Pinning Special-Purpose Registers</a></li>
-				<li class="lvl-3"><a href="#interaction-with-%23naked">Interaction with #naked</a></li>
+				<li class="lvl-3"><a href="#interaction-with-naked">Interaction with #naked</a></li>
 				<li class="lvl-3"><a href="#conflict-rules">Conflict Rules</a></li>
-				<li class="lvl-3"><a href="#relationship-to-%23asm">Relationship to #asm</a></li>
+				<li class="lvl-3"><a href="#relationship-to-asm">Relationship to #asm</a></li>
 				<li class="lvl-3"><a href="#design-rationale-1">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#2.4-labels">2.4 Labels</a></li>
+				<li class="lvl-2"><a href="#24-labels">2.4 Labels</a></li>
 				<li class="lvl-3"><a href="#visibility-and-cross-module-references">Visibility and Cross-Module References</a></li>
 				<li class="lvl-3"><a href="#why-labels-are-top-level">Why Labels Are Top-Level</a></li>
-				<li class="lvl-2"><a href="#2.5-control-flow">2.5 Control Flow</a></li>
+				<li class="lvl-2"><a href="#25-control-flow">2.5 Control Flow</a></li>
 				<li class="lvl-3"><a href="#goto-and-function-calls">goto and function calls</a></li>
 				<li class="lvl-3"><a href="#if">If</a></li>
 				<li class="lvl-3"><a href="#if-expressions">If Expressions</a></li>
 				<li class="lvl-3"><a href="#repeat">Repeat</a></li>
 				<li class="lvl-3"><a href="#while">While</a></li>
 				<li class="lvl-3"><a href="#infinite-loop">Infinite Loop</a></li>
-				<li class="lvl-3"><a href="#switch-%E2%80%94-exhaustive-enum-discrimination">Switch — Exhaustive Enum Discrimination</a></li>
-				<li class="lvl-3"><a href="#is-%E2%80%94-single-variant-test-and-bind">is — Single-Variant Test and Bind</a></li>
-				<li class="lvl-2"><a href="#2.6-function-pointers">2.6 Function Pointers</a></li>
+				<li class="lvl-3"><a href="#switch-exhaustive-enum-discrimination">Switch — Exhaustive Enum Discrimination</a></li>
+				<li class="lvl-3"><a href="#is-single-variant-test-and-bind">is — Single-Variant Test and Bind</a></li>
+				<li class="lvl-2"><a href="#26-function-pointers">2.6 Function Pointers</a></li>
 				<li class="lvl-3"><a href="#where-each-form-is-legal">Where Each Form Is Legal</a></li>
 				<li class="lvl-3"><a href="#address-taking">Address-Taking</a></li>
 				<li class="lvl-3"><a href="#conversions">Conversions</a></li>
 				<li class="lvl-3"><a href="#operators">Operators</a></li>
 				<li class="lvl-3"><a href="#calling-convention-in-the-type">Calling Convention in the Type</a></li>
-				<li class="lvl-3"><a href="#interaction-with-%23deny">Interaction with #deny</a></li>
-				<li class="lvl-2"><a href="#2.7-function-attributes">2.7 Function Attributes</a></li>
-				<li class="lvl-2"><a href="#2.7.1-%23inline-%E2%80%94-always-inline-semantics">2.7.1 #inline — Always-Inline Semantics</a></li>
+				<li class="lvl-3"><a href="#interaction-with-deny">Interaction with #deny</a></li>
+				<li class="lvl-2"><a href="#27-function-attributes">2.7 Function Attributes</a></li>
+				<li class="lvl-2"><a href="#271-inline-always-inline-semantics">2.7.1 #inline — Always-Inline Semantics</a></li>
 				<li class="lvl-3"><a href="#syntax">Syntax</a></li>
 				<li class="lvl-3"><a href="#when-inlining-is-mandatory">When Inlining Is Mandatory</a></li>
 				<li class="lvl-3"><a href="#definition-time-semantic-checks">Definition-Time Semantic Checks</a></li>
 				<li class="lvl-3"><a href="#raw-context-inline-call-sites">Raw-Context Inline Call Sites</a></li>
-				<li class="lvl-3"><a href="#when-inlining-is-impossible-(compile-errors)">When Inlining Is Impossible (Compile Errors)</a></li>
+				<li class="lvl-3"><a href="#when-inlining-is-impossible-compile-errors">When Inlining Is Impossible (Compile Errors)</a></li>
 				<li class="lvl-3"><a href="#design-rationale-2">Design Rationale</a></li>
 				<li class="lvl-3"><a href="#tradeoffs-1">Tradeoffs</a></li>
-				<li class="lvl-2"><a href="#2.7.2-branch-hints-and-cold-marking">2.7.2 Branch Hints and Cold Marking</a></li>
-				<li class="lvl-3"><a href="#%23likely-%2F-%23unlikely">#likely / #unlikely</a></li>
-				<li class="lvl-3"><a href="#%23cold">#cold</a></li>
+				<li class="lvl-2"><a href="#272-branch-hints-and-cold-marking">2.7.2 Branch Hints and Cold Marking</a></li>
+				<li class="lvl-3"><a href="#likely-unlikely">#likely / #unlikely</a></li>
+				<li class="lvl-3"><a href="#cold">#cold</a></li>
 				<li class="lvl-3"><a href="#updated-attribute-table">Updated Attribute Table</a></li>
-				<li class="lvl-2"><a href="#2.8-constraints">2.8 Constraints</a></li>
-				<li class="lvl-2"><a href="#2.9-inline-assembly">2.9 Inline Assembly</a></li>
+				<li class="lvl-2"><a href="#28-constraints">2.8 Constraints</a></li>
+				<li class="lvl-2"><a href="#29-inline-assembly">2.9 Inline Assembly</a></li>
 				<li class="lvl-3"><a href="#block-structure">Block Structure</a></li>
 				<li class="lvl-3"><a href="#operands">Operands</a></li>
 				<li class="lvl-3"><a href="#constraint-vocabulary">Constraint Vocabulary</a></li>
 				<li class="lvl-3"><a href="#clobbers">Clobbers</a></li>
 				<li class="lvl-3"><a href="#options">Options</a></li>
 				<li class="lvl-3"><a href="#memory-fence-semantics">Memory Fence Semantics</a></li>
-				<li class="lvl-3"><a href="#pinned-variables-and-%23asm">Pinned Variables and #asm</a></li>
+				<li class="lvl-3"><a href="#pinned-variables-and-asm">Pinned Variables and #asm</a></li>
 				<li class="lvl-3"><a href="#worked-examples">Worked Examples</a></li>
 				<li class="lvl-3"><a href="#design-rationale-3">Design Rationale</a></li>
 			</ul>
@@ -2823,12 +2746,6 @@ use <code>%dc_cvac</code> (§1.3.5)</strong>.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

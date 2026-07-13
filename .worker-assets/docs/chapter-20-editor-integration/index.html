@@ -8,11 +8,25 @@
 		<meta name="description" content="Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries." />
 		<title>Editor Integration · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-20-editor-integration/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-20-editor-integration/" />
+		<meta property="og:title" content="Editor Integration · Wyst" />
+		<meta property="og:description" content="Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Editor Integration · Wyst" />
+		<meta name="twitter:description" content="Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -92,7 +106,7 @@ language server, and editor task/debug templates.</p>
 <a href="/docs/chapter-18-check-format-diagnostics/">chapter 18</a> and
 <a href="/docs/chapter-19-learning-diagnostics/">chapter 19</a>. This chapter specifies
 transport, LSP capabilities, packaging, and task/debug templates.</p>
-<h2 id="goals" tabindex="-1"><a class="doc-anchor" href="#goals" aria-hidden="true">#</a> Goals</h2>
+<h2 id="goals" tabindex="-1"><a class="doc-anchor" href="#goals" aria-label="Permalink to Goals">#</a> Goals</h2>
 <ul>
 <li>Keep compiler facts in <code>wync</code>; editor adapters should not own a second parser,
 checker, or project model.</li>
@@ -102,7 +116,7 @@ behavior across CLI and editor entry points.</li>
 <li>Make Zed packaging publishable without changing the compiler repository into
 an editor-only extension repository.</li>
 </ul>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>Broad refactoring suites beyond narrow rename and focused high-confidence code
 actions.</li>
@@ -113,7 +127,7 @@ modeling, or whole-program dynamic call graphs.</li>
 <li>Editor-specific behavior that cannot be reproduced by compiler-owned
 protocol payloads.</li>
 </ul>
-<h2 id="architecture" tabindex="-1"><a class="doc-anchor" href="#architecture" aria-hidden="true">#</a> Architecture</h2>
+<h2 id="architecture" tabindex="-1"><a class="doc-anchor" href="#architecture" aria-label="Permalink to Architecture">#</a> Architecture</h2>
 <p>The preferred shape is:</p>
 <ol>
 <li><code>wync lsp</code> runs as a persistent stdin/stdout language server.</li>
@@ -133,7 +147,7 @@ binary.</li>
 </ol>
 <p>Automatic compiler downloads require a versioning and distribution policy for
 editor-distributed binaries.</p>
-<h2 id="language-server-protocol-surface" tabindex="-1"><a class="doc-anchor" href="#language-server-protocol-surface" aria-hidden="true">#</a> Language Server Protocol Surface</h2>
+<h2 id="language-server-protocol-surface" tabindex="-1"><a class="doc-anchor" href="#language-server-protocol-surface" aria-label="Permalink to Language Server Protocol Surface">#</a> Language Server Protocol Surface</h2>
 <p><code>wync lsp</code> starts a persistent stdio JSON-RPC server using standard
 <code>Content-Length</code> framed messages. The surface handles:</p>
 <ul>
@@ -218,7 +232,7 @@ forking parser or checker logic into editor adapters.</p>
 through a Rust/Wasm extension wrapper. It resolves the binary from Zed
 <code>lsp.wync.binary.path</code> settings, then <code>wync</code> on the workspace <code>PATH</code>, then a
 documented local development path.</p>
-<h2 id="typed-editor-index" tabindex="-1"><a class="doc-anchor" href="#typed-editor-index" aria-hidden="true">#</a> Typed Editor Index</h2>
+<h2 id="typed-editor-index" tabindex="-1"><a class="doc-anchor" href="#typed-editor-index" aria-label="Permalink to Typed Editor Index">#</a> Typed Editor Index</h2>
 <p>The compiler owns a typed editor index as the authority for editor
 navigation facts. The index is built from one source graph abstraction in both
 project and loose-file modes, using the open in-memory document plus related
@@ -231,7 +245,7 @@ symbols, and direct call hierarchy consume those identities instead of falling
 back to token-text matches. When a semantic identity is missing or ambiguous,
 the editor feature fails closed with an empty result or compact protocol error;
 it does not guess from raw text.</p>
-<h2 id="type-aware-editor-actions" tabindex="-1"><a class="doc-anchor" href="#type-aware-editor-actions" aria-hidden="true">#</a> Type-Aware Editor Actions</h2>
+<h2 id="type-aware-editor-actions" tabindex="-1"><a class="doc-anchor" href="#type-aware-editor-actions" aria-label="Permalink to Type-Aware Editor Actions">#</a> Type-Aware Editor Actions</h2>
 <p>Type-aware editor actions build on the typed index. Rename now
 supports local typed identities in addition to top-level symbols: parameters,
 locals, and enum-pattern bindings are renamed by symbol identity, so shadowed
@@ -243,7 +257,7 @@ an explicit conversion where the compiler-visible expected type comes from a typ
 local/global/constant initializer or function return. The action data includes
 the diagnostic ID, help text, and source span so editors can present the fix
 without scraping diagnostic messages.</p>
-<h2 id="language-server-capabilities" tabindex="-1"><a class="doc-anchor" href="#language-server-capabilities" aria-hidden="true">#</a> Language Server Capabilities</h2>
+<h2 id="language-server-capabilities" tabindex="-1"><a class="doc-anchor" href="#language-server-capabilities" aria-label="Permalink to Language Server Capabilities">#</a> Language Server Capabilities</h2>
 <p>The language-server surface includes:</p>
 <ul>
 <li><code>textDocument/publishDiagnostics</code> from the same <code>Diagnostic</code> values used by
@@ -267,7 +281,7 @@ hierarchy.</li>
 <p>The language server must treat project membership the same way as project
 builds and checks: <code>wyst.project</code> manifests and explicit root-file mode are
 compiler contracts, not editor conventions.</p>
-<h2 id="editor-task-and-debug-capabilities" tabindex="-1"><a class="doc-anchor" href="#editor-task-and-debug-capabilities" aria-hidden="true">#</a> Editor Task And Debug Capabilities</h2>
+<h2 id="editor-task-and-debug-capabilities" tabindex="-1"><a class="doc-anchor" href="#editor-task-and-debug-capabilities" aria-label="Permalink to Editor Task And Debug Capabilities">#</a> Editor Task And Debug Capabilities</h2>
 <p>Editor task and debug templates expose documented compiler commands rather than
 inventing editor-only behavior:</p>
 <ul>
@@ -332,12 +346,6 @@ variable-location lists, type DIEs, or call-frame information (see
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

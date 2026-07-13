@@ -13,15 +13,20 @@ assets/
   docs.css              Documentation layout + prose + syntax-highlight colors
   …                     Fonts, icons, social imagery
 docs/                   GENERATED — one folder per chapter/appendix (commit this)
+robots.txt              Crawler policy and sitemap discovery
+sitemap.xml             GENERATED — canonical public routes (commit this)
 build/
   generate.mjs          Markdown → HTML generator
   generate-404.mjs      404 page generator
+  generate-sitemap.mjs  Public route sitemap generator
   template.mjs          Shared page shell (header/footer/sidebar)
   prism-wyst.mjs        Prism grammar for the Wyst language
   serve.mjs             Tiny static server for local preview
 tools/
-  prepare-worker-assets.mjs
-                          Copies committed site files into .worker-assets/
+  audit-site.mjs        Local routes, assets, fragments, and reachability gate
+  audit-browser.mjs     Chrome mobile overflow and interaction gate
+  audit-live-site.mjs   Post-deploy HTTPS, header, and injected-script gate
+  prepare-worker-assets.mjs  Copies committed site files into .worker-assets/
 ```
 
 The homepage and the docs share **one** design system (`assets/wyst.css`),
@@ -32,9 +37,10 @@ so deploys remain plain static files with no build step on Cloudflare's side.
 
 Website-ready brand exports and source design-system CSS snapshots come from
 `wystlang/brand`. The site still serves assets from stable `/assets/...` URLs;
-`tools/sync-brand-assets.mjs` replaces this repo's `assets/` directory with the
-approved web manifest from a local checkout of the brand repo. Removed manifest
-entries are pruned instead of lingering as stale public assets.
+`tools/sync-brand-assets.mjs` replaces the brand-managed contents of this repo's
+`assets/` directory from a local brand checkout while preserving site-owned
+runtime assets. Removed manifest entries are pruned instead of lingering as
+stale public assets.
 
 The brand repo is not a submodule here. That keeps Cloudflare Workers Builds
 from needing access to the private `wystlang/brand` repository during checkout.
@@ -90,15 +96,40 @@ npx wrangler deploy
 ```
 
 Wrangler deploys `.worker-assets/` as static Worker assets. That directory is a
-committed deploy artifact containing `index.html`, `404.html`, `assets/`,
-`docs/`, and generated `_headers`. CSS filenames are fingerprinted
-inside `.worker-assets/assets/`. Regenerate and commit the artifact whenever
-those source files change:
+committed deploy artifact containing `index.html`, `404.html`, `robots.txt`,
+`sitemap.xml`, `assets/`, `docs/`, and generated `_headers`. CSS and JavaScript
+filenames are fingerprinted inside `.worker-assets/assets/`. Regenerate and
+commit the artifact whenever those source files change:
 
 ```sh
 npm run build:worker-assets
 git add .worker-assets
 ```
+
+### Edge security settings
+
+The artifact's generated `_headers` applies CSP, HSTS, clickjacking,
+content-type, referrer, permissions, and opener policies. Two controls live at
+the Cloudflare zone rather than in this repository and must remain configured:
+
+1. Enable **SSL/TLS → Edge Certificates → Always Use HTTPS**. Static asset
+   `_redirects` rules cannot match a protocol or domain, so this layer guarantees
+   HTTP requests redirect before content is served.
+2. Disable automatic **Web Analytics** injection and **Security → Bots →
+   JavaScript Detections** (including Bot Fight Mode if it forces detections).
+   The site intentionally ships only its fingerprinted documentation disclosure
+   script; Cloudflare RUM and challenge scripts are not part of the site.
+
+After each production deployment, verify both edge-owned controls and the
+committed headers:
+
+```sh
+npm run audit:live
+```
+
+See Cloudflare's documentation for [Always Use HTTPS](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/always-use-https/),
+[Web Analytics automatic setup](https://developers.cloudflare.com/web-analytics/get-started/),
+and [JavaScript Detections](https://developers.cloudflare.com/cloudflare-challenges/challenge-types/javascript-detections/).
 
 ### Automatic regeneration (git hook)
 
@@ -120,15 +151,26 @@ and its artifact together (avoid committing a partial `git add -p` of a source
 file without its matching artifact). Hooks don't run on Cloudflare — only the
 committed artifact is deployed.
 
+### CI integrity gate
+
+`.github/workflows/site-integrity.yml` repeats the locked install, docs/sitemap
+generation, Worker asset preparation, tests, full public-reference audit, and
+all-route mobile Chrome audit. It fails if committed generated files drift.
+Configure the repository secret `WYST_REPO_TOKEN` as a fine-grained, read-only
+token for the private
+`wystlang/wyst` repository so CI can read the authoritative design sources.
+
 ## Build
 
 ```sh
 npm install
-npm test         # runs node --test tests/*.test.mjs
-npm run audit    # checks CSS references and public-route reachability
-npm run build        # regenerates docs/
+npm test                    # runs node --test tests/*.test.mjs
+npm run audit               # checks routes/assets/fragments/reachability
+npm run audit:browser       # checks every route at mobile width in Chrome
+npm run build               # regenerates docs/ and sitemap.xml
 npm run build:worker-assets # refreshes committed Worker deploy artifact
-node build/serve.mjs # preview at http://localhost:8347
+npm run audit:live          # verifies the deployed edge configuration
+node build/serve.mjs        # preview at http://localhost:8347
 ```
 
 ## Updating the site when docs change

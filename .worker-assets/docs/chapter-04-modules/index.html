@@ -8,11 +8,25 @@
 		<meta name="description" content="Modules, imports, visibility, source references, and layout/module boundaries." />
 		<title>Modules, Targets, and Layout · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-04-modules/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-04-modules/" />
+		<meta property="og:title" content="Modules, Targets, and Layout · Wyst" />
+		<meta property="og:description" content="Modules, imports, visibility, source references, and layout/module boundaries." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Modules, Targets, and Layout · Wyst" />
+		<meta name="twitter:description" content="Modules, imports, visibility, source references, and layout/module boundaries." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -95,13 +109,12 @@ in <a href="/docs/chapter-15-abi-spec/">chapter-15-abi-spec.md</a>.</p>
 <p>Module design covers source files, module names, imports, exported symbols,
 and the layout module boundary.</p>
 <hr>
-<h3 id="modules-and-targets" tabindex="-1"><a class="doc-anchor" href="#modules-and-targets" aria-hidden="true">#</a> Modules and Targets</h3>
+<h3 id="modules-and-targets" tabindex="-1"><a class="doc-anchor" href="#modules-and-targets" aria-label="Permalink to Modules and Targets">#</a> Modules and Targets</h3>
 <hr>
-<h2 id="modules" tabindex="-1"><a class="doc-anchor" href="#modules" aria-hidden="true">#</a> Modules</h2>
+<h2 id="modules" tabindex="-1"><a class="doc-anchor" href="#modules" aria-label="Permalink to Modules">#</a> Modules</h2>
 <p>A <strong>module</strong> is a directory of one or more Wyst source files that share a
 namespace. Every source file declares which module it belongs to with
 <code>#module name</code> on the first non-comment line:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>hello
 </code></pre>
 <p>The module name is a single identifier; dots are part of the name, not a
@@ -115,7 +128,7 @@ file must declare the same module name, and a given module name may appear in
 only one directory across a compilation.</p>
 <p>A file may declare its module exactly once. Re-declaring <code>#module</code> later in
 the same file is a compile error.</p>
-<h3 id="multi-file-modules" tabindex="-1"><a class="doc-anchor" href="#multi-file-modules" aria-hidden="true">#</a> Multi-File Modules</h3>
+<h3 id="multi-file-modules" tabindex="-1"><a class="doc-anchor" href="#multi-file-modules" aria-label="Permalink to Multi-File Modules">#</a> Multi-File Modules</h3>
 <p>Participating files in the same module directory that declare the same module
 name contribute to one shared namespace. Cross-file references within a module
 need no import — any item declared in any participating file of module <code>foo</code>
@@ -132,7 +145,7 @@ each other's declarations without <code>#import</code>. <code>drivers.uart</code
 <p>A module declaration has no body delimiters. Everything below a <code>#module</code>
 line and above any directive (other than <code>#import</code> or <code>#deny</code>) belongs to
 the module.</p>
-<h3 id="top-level-name-collection" tabindex="-1"><a class="doc-anchor" href="#top-level-name-collection" aria-hidden="true">#</a> Top-Level Name Collection</h3>
+<h3 id="top-level-name-collection" tabindex="-1"><a class="doc-anchor" href="#top-level-name-collection" aria-label="Permalink to Top-Level Name Collection">#</a> Top-Level Name Collection</h3>
 <p>The compiler collects top-level declaration names across the participating
 files of a module before it evaluates top-level constants. This makes
 acyclic top-level constant dependencies order-independent within the visible
@@ -142,7 +155,7 @@ later in source order.</p>
 control flow through the file, such as import placement rules, layout section
 concatenation, and statement-local lexical scopes. Local constants inside
 function bodies are not part of the top-level dependency graph.</p>
-<h3 id="file-level-constraints" tabindex="-1"><a class="doc-anchor" href="#file-level-constraints" aria-hidden="true">#</a> File-Level Constraints</h3>
+<h3 id="file-level-constraints" tabindex="-1"><a class="doc-anchor" href="#file-level-constraints" aria-label="Permalink to File-Level Constraints">#</a> File-Level Constraints</h3>
 <ul>
 <li><strong><code>#requires</code></strong>: a module has one source requirement contract. Any file in the
 module may declare <code>#requires(...)</code>, but multiple declarations must describe
@@ -162,11 +175,10 @@ file that declares it. Two files in the same module each import their
 own dependencies independently. This keeps every source file
 self-documenting about what it depends on.</li>
 </ul>
-<h3 id="module-level-%23deny" tabindex="-1"><a class="doc-anchor" href="#module-level-%23deny" aria-hidden="true">#</a> Module-Level <code>#deny</code></h3>
+<h3 id="module-level-deny" tabindex="-1"><a class="doc-anchor" href="#module-level-deny" aria-label="Permalink to Module-Level #deny">#</a> Module-Level <code>#deny</code></h3>
 <p>A <code>#deny</code> directive may appear immediately after the <code>#module</code> declaration
 (before <code>#import</code> lines) to restrict effect categories for every function
 in the module:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> userspace_lib
 
 <span class="token directive macro">#deny</span><span class="token punctuation">(</span>sysreg<span class="token punctuation">,</span> trap<span class="token punctuation">,</span> interrupt_mask<span class="token punctuation">,</span> exception_return<span class="token punctuation">,</span> cache_maintenance<span class="token punctuation">,</span> tlb_maintenance<span class="token punctuation">)</span>
@@ -181,8 +193,7 @@ but cannot un-deny a module-level restriction.</p>
 <p>See <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a> Effect System for the full
 specification.</p>
 <hr>
-<h2 id="imports" tabindex="-1"><a class="doc-anchor" href="#imports" aria-hidden="true">#</a> Imports</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="imports" tabindex="-1"><a class="doc-anchor" href="#imports" aria-label="Permalink to Imports">#</a> Imports</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> <span class="token punctuation">(</span>
   drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
   runtime<span class="token punctuation">.</span>clock <span class="token punctuation">{</span> now<span class="token punctuation">,</span> Instant <span class="token keyword">as</span> ClockInstant <span class="token punctuation">}</span>
@@ -192,7 +203,6 @@ specification.</p>
 declarations available through a qualified namespace. It does not place those
 declarations into the importing file's bare namespace. Two or more imports are
 usually written in a block:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> <span class="token punctuation">(</span>
   drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
   runtime<span class="token punctuation">.</span>clock
@@ -201,7 +211,6 @@ usually written in a block:</p>
 <p>Each block entry is the same import item as a standalone <code>#import name</code> line,
 with the same optional <code>as alias</code> clause and optional selective import list.
 With an alias, the alias is the qualified namespace:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> drivers<span class="token punctuation">.</span>uart <span class="token keyword">as</span> uart
 
 <span class="token function">_start</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -209,7 +218,6 @@ With an alias, the alias is the qualified namespace:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Without an alias, the full module name is the qualified namespace:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock
 
 <span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -217,7 +225,6 @@ With an alias, the alias is the qualified namespace:</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>An import can explicitly select public names for unqualified use:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock <span class="token punctuation">{</span> now<span class="token punctuation">,</span> Instant <span class="token keyword">as</span> ClockInstant <span class="token punctuation">}</span>
 
 <span class="token function">tick</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
@@ -230,7 +237,6 @@ stamp <span class="token operator">::</span> ClockInstant <span class="token ope
 name, or under the selection alias when the selection uses <code>as</code>. The module
 dependency remains module-qualified at the same time, so <code>runtime.clock.now()</code>
 or <code>clock.now()</code> remains valid when the import also has a module alias:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>clock <span class="token keyword">as</span> clock <span class="token punctuation">{</span> now <span class="token punctuation">}</span>
 </code></pre>
 <p>Imports are not transitive. <code>#import A</code> exposes A's exports only to the file
@@ -249,7 +255,7 @@ inside that local scope.</p>
 explicitly.</p>
 <p><code>#import</code> may appear only at module scope, before any non-import top-level
 declaration. The order of imports does not matter.</p>
-<h3 id="import-resolution" tabindex="-1"><a class="doc-anchor" href="#import-resolution" aria-hidden="true">#</a> Import Resolution</h3>
+<h3 id="import-resolution" tabindex="-1"><a class="doc-anchor" href="#import-resolution" aria-label="Permalink to Import Resolution">#</a> Import Resolution</h3>
 <p>In explicit source-list mode, the compiler is invoked with an explicit list of
 source files. It reads each file, groups them by parent directory, indexes
 the directories by the <code>#module</code> declarations they contain, and resolves
@@ -287,7 +293,7 @@ compile directories that no module in the closure imports. See
 This keeps the compiler's notion of a build deterministic and inspectable:
 project mode names the root and source roots explicitly, while explicit
 source-list mode names the source files directly.</p>
-<h3 id="symbol-references" tabindex="-1"><a class="doc-anchor" href="#symbol-references" aria-hidden="true">#</a> Symbol References</h3>
+<h3 id="symbol-references" tabindex="-1"><a class="doc-anchor" href="#symbol-references" aria-label="Permalink to Symbol References">#</a> Symbol References</h3>
 <p>After resolution, public symbols of an imported module are visible through
 their qualified namespace: <code>module.symbol</code> or <code>alias.symbol</code>. They are visible
 as bare <code>symbol</code> only when the source explicitly selects that name in the
@@ -300,7 +306,6 @@ import that introduces the conflict is a compile error. The diagnostic points
 at the conflicting selected name and at the first bare name in that scope.
 Keep both dependencies qualified, or alias one selected name before importing
 both modules into the same scope.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> main
 
 <span class="token directive macro">#import</span> <span class="token punctuation">(</span>
@@ -314,11 +319,10 @@ both modules into the same scope.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h2 id="visibility" tabindex="-1"><a class="doc-anchor" href="#visibility" aria-hidden="true">#</a> Visibility</h2>
+<h2 id="visibility" tabindex="-1"><a class="doc-anchor" href="#visibility" aria-label="Permalink to Visibility">#</a> Visibility</h2>
 <p>Every top-level declaration in a module is <strong>private to that module by
 default</strong>. A declaration is visible to importers only when prefixed with
 <code>pub</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>uart
 
 <span class="token constant">UART0_BASE</span> <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x0900_0000</span>          <span class="token comment">// private — internal helper</span>
@@ -330,7 +334,7 @@ default</strong>. A declaration is visible to importers only when prefixed with
 <p>Private declarations are not accessible from outside the defining module
 under any form (no &quot;friend&quot; mechanism, no escape hatch). The <code>pub</code> keyword
 is the only way a name crosses a module boundary.</p>
-<h3 id="what-can-be-exported" tabindex="-1"><a class="doc-anchor" href="#what-can-be-exported" aria-hidden="true">#</a> What Can Be Exported</h3>
+<h3 id="what-can-be-exported" tabindex="-1"><a class="doc-anchor" href="#what-can-be-exported" aria-label="Permalink to What Can Be Exported">#</a> What Can Be Exported</h3>
 <p><code>pub</code> is legal on:</p>
 <ul>
 <li><strong>Functions</strong> (<code>name :: (args) -&gt; ret { ... }</code>)</li>
@@ -350,18 +354,17 @@ address of a public inline helper is still illegal.</p>
 <li><strong>Local variables</strong> inside function bodies (they have no module-level name).</li>
 <li><strong>Function parameters</strong>.</li>
 </ul>
-<h3 id="mutable-exports" tabindex="-1"><a class="doc-anchor" href="#mutable-exports" aria-hidden="true">#</a> Mutable Exports</h3>
+<h3 id="mutable-exports" tabindex="-1"><a class="doc-anchor" href="#mutable-exports" aria-label="Permalink to Mutable Exports">#</a> Mutable Exports</h3>
 <p>A mutable global marked <code>pub</code> is visible to importers as a writable global.
 Cross-module writes are allowed; the ABI implications are the programmer's
 responsibility. This is the same hazard as any shared mutable global in C —
 there is no language-level synchronization. Use atomics
 (<a href="/docs/chapter-11-intrinsics/">chapter-11-intrinsics.md §1.3.2</a>) or explicit serialization for
 any concurrent access.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">pub</span> <span class="token parameter">boot_counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// visible and writable by every importer</span>
 </code></pre>
 <hr>
-<h2 id="symbol-visibility" tabindex="-1"><a class="doc-anchor" href="#symbol-visibility" aria-hidden="true">#</a> Symbol Visibility</h2>
+<h2 id="symbol-visibility" tabindex="-1"><a class="doc-anchor" href="#symbol-visibility" aria-label="Permalink to Symbol Visibility">#</a> Symbol Visibility</h2>
 <p><code>pub</code> is the only symbol visibility modifier the language defines. There
 is no <code>#weak</code> (overrideable definition), no <code>#hidden</code> (shared-object
 visibility control), and no symbol-alias mechanism.</p>
@@ -369,12 +372,11 @@ visibility control), and no symbol-alias mechanism.</p>
 patches and default implementations) and <code>#hidden</code> (for shared-library
 ABIs). They are not required for kernel-only or freestanding code.</p>
 <hr>
-<h2 id="source-requirements-and-target-declaration" tabindex="-1"><a class="doc-anchor" href="#source-requirements-and-target-declaration" aria-hidden="true">#</a> Source Requirements And Target Declaration</h2>
+<h2 id="source-requirements-and-target-declaration" tabindex="-1"><a class="doc-anchor" href="#source-requirements-and-target-declaration" aria-label="Permalink to Source Requirements And Target Declaration">#</a> Source Requirements And Target Declaration</h2>
 <p>Reusable modules state source requirements with <code>#requires(...)</code>. This
 construct accepts minimum architecture revision, required ISA features, minimum
 exception level, and required ABI capabilities. It does not select a CPU or a
 complete machine profile.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> reusable_spin
 
 <span class="token directive macro">#requires</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> abi <span class="token operator">=</span> <span class="token punctuation">(</span> aapcs64 <span class="token punctuation">)</span><span class="token punctuation">)</span>
@@ -386,19 +388,15 @@ complete machine profile.</p>
 <p>Build selections such as ABI selection, executable environment, object format,
 CPU model, tuning model, loader, device map, exception-level entry, and
 platform services belong in project or artifact configuration.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Baseline module target:</span>
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">)</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// With CPU feature opt-ins:</span>
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> cortex<span class="token operator">-</span>a72<span class="token punctuation">,</span> features <span class="token operator">=</span> <span class="token punctuation">(</span>lse<span class="token punctuation">)</span><span class="token punctuation">)</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// With execution-level declaration (gates EL-restricted intrinsics):</span>
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// With cache-line override for compile-time layout queries:</span>
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> cache_line <span class="token operator">=</span> <span class="token number">128</span><span class="token punctuation">)</span>
 </code></pre>
@@ -479,7 +477,7 @@ modules, generated artifacts, or project manifests with ABI/effect metadata,
 not as one-off core language declarations.</li>
 </ul>
 <hr>
-<h2 id="layout" tabindex="-1"><a class="doc-anchor" href="#layout" aria-hidden="true">#</a> Layout</h2>
+<h2 id="layout" tabindex="-1"><a class="doc-anchor" href="#layout" aria-label="Permalink to Layout">#</a> Layout</h2>
 <p>A layout file is a valid Wyst module. It uses the same language, same type
 system, same tool. No foreign file format to learn.</p>
 <p>The builtins <code>#start()</code> and <code>#end()</code> are layout-time constant forms. They are
@@ -488,20 +486,17 @@ after final placement computes section addresses. Layout exports initialized
 from section-boundary forms are typed layout-time constants: immutable and
 imported like other module exports after layout, but not ordinary
 frontend-time constants.</p>
-<h3 id="entry-point" tabindex="-1"><a class="doc-anchor" href="#entry-point" aria-hidden="true">#</a> Entry Point</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="entry-point" tabindex="-1"><a class="doc-anchor" href="#entry-point" aria-label="Permalink to Entry Point">#</a> Entry Point</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#entry</span> _start at <span class="token number">0x0008_0000</span>
 </code></pre>
 <p>The entry symbol and its load address are declared together.</p>
-<h3 id="regions" tabindex="-1"><a class="doc-anchor" href="#regions" aria-hidden="true">#</a> Regions</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="regions" tabindex="-1"><a class="doc-anchor" href="#regions" aria-label="Permalink to Regions">#</a> Regions</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#region</span> <span class="token parameter">rom</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x0000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x0010_0000</span><span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readonly<span class="token punctuation">)</span>
 <span class="token directive macro">#region</span> <span class="token parameter">ram</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x8000_0000</span>
 <span class="token directive macro">#region</span> <span class="token parameter">stack</span> <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x8000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> <span class="token number">0x4000</span>
 </code></pre>
 <p>Regions name address ranges with optional attributes (<code>readonly</code>).</p>
-<h3 id="sections" tabindex="-1"><a class="doc-anchor" href="#sections" aria-hidden="true">#</a> Sections</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="sections" tabindex="-1"><a class="doc-anchor" href="#sections" aria-label="Permalink to Sections">#</a> Sections</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">data</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
@@ -509,7 +504,7 @@ frontend-time constants.</p>
 </code></pre>
 <p>Sections are placed by constraint: <code>in</code> pins to a region, <code>after</code> chains
 sequentially. Alignment is explicit.</p>
-<h3 id="deterministic-placement-solver" tabindex="-1"><a class="doc-anchor" href="#deterministic-placement-solver" aria-hidden="true">#</a> Deterministic Placement Solver</h3>
+<h3 id="deterministic-placement-solver" tabindex="-1"><a class="doc-anchor" href="#deterministic-placement-solver" aria-label="Permalink to Deterministic Placement Solver">#</a> Deterministic Placement Solver</h3>
 <p>Final placement is a deterministic constraint problem owned by
 <code>phase.placement_constraints</code> and <code>phase.placement_solving</code>. A conforming
 implementation must normalize the same build inputs into the same constraint
@@ -518,7 +513,7 @@ diagnostic. A solver may use any internal algorithm, but its observable result
 must match the rules below; hash-map iteration, pointer addresses, thread
 scheduling, host path enumeration, and platform linker behavior are never
 tie-breakers.</p>
-<h4>Constraint Inputs</h4>
+<h4 id="constraint-inputs" tabindex="-1"><a class="doc-anchor" href="#constraint-inputs" aria-label="Permalink to Constraint Inputs">#</a> Constraint Inputs</h4>
 <p>The placement constraint set contains only finalized products:</p>
 <ul>
 <li>region declarations: name, origin, size, and attributes;</li>
@@ -538,7 +533,7 @@ sections not explicitly ordered by the layout file.</li>
 file offset, start address, file size, memory size, alignment, and end address.
 <code>end = start + memory_size</code>; for <code>NOBITS</code> sections, <code>file_size</code> may be smaller
 than <code>memory_size</code>, but the address interval uses <code>memory_size</code>.</p>
-<h4>Normalization</h4>
+<h4 id="normalization" tabindex="-1"><a class="doc-anchor" href="#normalization" aria-label="Permalink to Normalization">#</a> Normalization</h4>
 <p>Constraint collection is deterministic and rejects malformed input before
 solving:</p>
 <ul>
@@ -566,7 +561,7 @@ constraint <code>A - offset(sym)</code>. If that subtraction underflows, or if a
 addition used to compute an end address overflows, the solver reports address
 overflow.</li>
 </ul>
-<h4>Region Inheritance</h4>
+<h4 id="region-inheritance" tabindex="-1"><a class="doc-anchor" href="#region-inheritance" aria-label="Permalink to Region Inheritance">#</a> Region Inheritance</h4>
 <p><code>in = region</code> is an explicit region constraint. A section without <code>in</code> but with
 one or more <code>after</code> predecessors inherits the direct predecessors' region only
 when every direct predecessor has the same resolved region. This inherited
@@ -578,7 +573,7 @@ section is placed at the first address in its explicit region that also
 satisfies all <code>after</code> lower bounds, alignment, and fixed-address constraints.
 If no such address exists, the diagnostic is a region-bounds, overlap, or
 fixed-address conflict as appropriate.</p>
-<h4>Solve Order And Ties</h4>
+<h4 id="solve-order-and-ties" tabindex="-1"><a class="doc-anchor" href="#solve-order-and-ties" aria-label="Permalink to Solve Order And Ties">#</a> Solve Order And Ties</h4>
 <p>The dependency graph contains one node per section and one directed edge
 <code>predecessor -&gt; section</code> for each <code>after</code> constraint. Cycles are illegal,
 including self-cycles. The cycle diagnostic must identify every edge in the
@@ -599,7 +594,7 @@ ordering ties: changing layout file order may change placement among otherwise
 independent, equal-priority sections. Inside a section, source declaration order
 still controls contribution order as specified in &quot;Concatenation Order&quot;; the
 solver may insert padding for alignment, but it must not reorder contributions.</p>
-<h4>Placement Formula</h4>
+<h4 id="placement-formula" tabindex="-1"><a class="doc-anchor" href="#placement-formula" aria-label="Permalink to Placement Formula">#</a> Placement Formula</h4>
 <p>For each section in solve order:</p>
 <ol>
 <li>Start with the maximum of: the image base or zero for the first unconstrained
@@ -626,7 +621,7 @@ They still receive deterministic <code>#start</code> and <code>#end</code> value
 overlap any other section. An implementation may omit an empty section header
 only when no source-visible layout export, synthesized bookend, or object
 schema rule requires that header; omission must not change any solved address.</p>
-<h4>Padding And Fill</h4>
+<h4 id="padding-and-fill" tabindex="-1"><a class="doc-anchor" href="#padding-and-fill" aria-label="Permalink to Padding And Fill">#</a> Padding And Fill</h4>
 <p>All section-specific padding and fill bytes are deterministic:</p>
 <ul>
 <li>executable sections use the AArch64 <code>nop</code> instruction bytes
@@ -641,7 +636,7 @@ owning chapters, defaulting to <code>00</code> when no stricter rule exists.</li
 </ul>
 <p>The fill byte policy is derived from section class. Wyst does not expose a
 layout-module attribute that changes fill bytes.</p>
-<h4>Required Diagnostics</h4>
+<h4 id="required-diagnostics" tabindex="-1"><a class="doc-anchor" href="#required-diagnostics" aria-label="Permalink to Required Diagnostics">#</a> Required Diagnostics</h4>
 <p>Every placement diagnostic must identify the conflicting constraints and name
 the normalized entities involved. For cycle, overlap, or overflow, the
 diagnostic must also show the dependency path that made the failure reachable:</p>
@@ -668,8 +663,7 @@ so users can distinguish emptiness from missing placement.</li>
 <p>The completion rule is: two conforming implementations given the same
 normalized source, layout, target, and compiler-version contract must therefore
 produce either the same placement or the same required diagnostic.</p>
-<h3 id="exports" tabindex="-1"><a class="doc-anchor" href="#exports" aria-hidden="true">#</a> Exports</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="exports" tabindex="-1"><a class="doc-anchor" href="#exports" aria-label="Permalink to Exports">#</a> Exports</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">pub</span> __text_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
 <span class="token keyword">pub</span> __text_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">)</span>
 <span class="token keyword">pub</span> __bss_start <span class="token operator">::=</span> <span class="token directive macro">#start</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
@@ -679,8 +673,7 @@ produce either the same placement or the same required diagnostic.</p>
 <p>Section boundaries are exported as typed <code>u64</code> layout-time constants. Their
 values become fixed after the integrated layout pass places every referenced
 section.</p>
-<h3 id="complete-layout-module" tabindex="-1"><a class="doc-anchor" href="#complete-layout-module" aria-hidden="true">#</a> Complete Layout Module</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="complete-layout-module" tabindex="-1"><a class="doc-anchor" href="#complete-layout-module" aria-label="Permalink to Complete Layout Module">#</a> Complete Layout Module</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>layout
 
 <span class="token directive macro">#entry</span> _start at <span class="token number">0x0008_0000</span>
@@ -698,8 +691,7 @@ section.</p>
 <span class="token keyword">pub</span> __bss_end <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
 <span class="token keyword">pub</span> __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x8000_4000</span>
 </code></pre>
-<h3 id="usage-from-source" tabindex="-1"><a class="doc-anchor" href="#usage-from-source" aria-hidden="true">#</a> Usage from Source</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="usage-from-source" tabindex="-1"><a class="doc-anchor" href="#usage-from-source" aria-label="Permalink to Usage from Source">#</a> Usage from Source</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>hello
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">)</span>
@@ -712,12 +704,11 @@ section.</p>
 </code></pre>
 <p>The compiler is invoked with <code>--layout boot.layout</code>. The layout module exports
 typed values; the source module uses them by bare name after final placement.</p>
-<h3 id="custom-sections-from-user-declarations" tabindex="-1"><a class="doc-anchor" href="#custom-sections-from-user-declarations" aria-hidden="true">#</a> Custom Sections from User Declarations</h3>
+<h3 id="custom-sections-from-user-declarations" tabindex="-1"><a class="doc-anchor" href="#custom-sections-from-user-declarations" aria-label="Permalink to Custom Sections from User Declarations">#</a> Custom Sections from User Declarations</h3>
 <p>The layout module defines a section's placement, alignment, and region.
 The per-declaration <code>#section(.name)</code> attribute names <em>which</em> section a
 specific declaration belongs to. Together they express the pattern
 &quot;these declarations go into this section, which lives at this address.&quot;</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span>
 <span class="token function">bring_up_uart</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// boot-time code; can be unmapped after init</span>
@@ -729,11 +720,10 @@ specific declaration belongs to. Together they express the pattern
 module_name <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_driver_v1"</span>
 </code></pre>
 <p>The layout module places those sections:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">modinfo</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
 </code></pre>
-<h4>Legal Placements</h4>
+<h4 id="legal-placements" tabindex="-1"><a class="doc-anchor" href="#legal-placements" aria-label="Permalink to Legal Placements">#</a> Legal Placements</h4>
 <p><code>#section(.name)</code> is legal on:</p>
 <ul>
 <li>Function declarations</li>
@@ -752,7 +742,7 @@ module_name <span class="token operator">::</span> <span class="token punctuatio
 </ul>
 <p>Applying <code>#section(.name)</code> to one of the illegal kinds is a compile
 error at the declaration site.</p>
-<h4>Section Name Constraints</h4>
+<h4 id="section-name-constraints" tabindex="-1"><a class="doc-anchor" href="#section-name-constraints" aria-label="Permalink to Section Name Constraints">#</a> Section Name Constraints</h4>
 <p>A custom section name must:</p>
 <ul>
 <li>Start with <code>.</code></li>
@@ -766,7 +756,7 @@ otherwise use).</li>
 <li>Not begin with <code>.wyst.</code> (compiler-reserved namespace).</li>
 </ul>
 <p>Violating any of these is a compile error at the attribute site.</p>
-<h4>Layout-Module Entry Required</h4>
+<h4 id="layout-module-entry-required" tabindex="-1"><a class="doc-anchor" href="#layout-module-entry-required" aria-label="Permalink to Layout-Module Entry Required">#</a> Layout-Module Entry Required</h4>
 <p>Any <code>#section(.foo)</code> used in user code must have a matching
 <code>#section .foo : ...</code> entry in the layout module. A missing layout
 entry is a compile error at the use site that names the missing layout
@@ -777,7 +767,7 @@ declaration:</p>
 <p>This rule keeps the layout module the single source of truth for
 section placement — declarations <em>name</em> sections; layout <em>places</em> them.
 No surprise sections appear in the linked image.</p>
-<h4>Section Flags</h4>
+<h4 id="section-flags" tabindex="-1"><a class="doc-anchor" href="#section-flags" aria-label="Permalink to Section Flags">#</a> Section Flags</h4>
 <p>Section flags (<code>ALLOC</code>, <code>WRITE</code>, <code>EXECINSTR</code>, <code>NOBITS</code>) are <strong>derived</strong>
 from the declaration kind, not specified by the user:</p>
 <table>
@@ -816,7 +806,7 @@ the design is deliberately less expressive than GCC's
 <code>__attribute__((section, ...))</code> for this reason. The kind-derived rule
 covers the kernel patterns Wyst targets without requiring users to
 reason about ELF flag combinations.</p>
-<h4>Concatenation Order</h4>
+<h4 id="concatenation-order" tabindex="-1"><a class="doc-anchor" href="#concatenation-order" aria-label="Permalink to Concatenation Order">#</a> Concatenation Order</h4>
 <p>Multiple declarations targeting the same section are concatenated in:</p>
 <ol>
 <li><strong>Source-declaration order</strong> within a single module.</li>
@@ -827,7 +817,7 @@ Model (<code>chapter-01-language-design.md</code>).</li>
 <p>The compiler does not reorder declarations within a custom section for
 alignment or other reasons. The user controls placement order by
 controlling declaration order.</p>
-<h4>Bookend Symbols</h4>
+<h4 id="bookend-symbols" tabindex="-1"><a class="doc-anchor" href="#bookend-symbols" aria-label="Permalink to Bookend Symbols">#</a> Bookend Symbols</h4>
 <p>For every custom section that has at least one declaration, the
 compiler auto-synthesizes two symbols:</p>
 <table>
@@ -855,7 +845,6 @@ dropped. So <code>.init.text</code> produces <code>__init_text_start</code> and
 <p>These match the convention already used for canonical sections (see
 <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §4</a>) and unblock the kernel pattern
 of freeing <code>.init.text</code> after early bring-up:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">free_init_text</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token variable">start</span> <span class="token operator">:=</span> __init_text_start
   <span class="token variable">end</span> <span class="token operator">:=</span> __init_text_end
@@ -868,7 +857,7 @@ case the user-written export wins and the auto-synthesized symbol is
 suppressed). Users who want a bookend visible across modules write an
 explicit layout-module export — the auto-synthesized form is for
 local use within the same image.</p>
-<h4>Cross-Module Section Aggregation</h4>
+<h4 id="cross-module-section-aggregation" tabindex="-1"><a class="doc-anchor" href="#cross-module-section-aggregation" aria-label="Permalink to Cross-Module Section Aggregation">#</a> Cross-Module Section Aggregation</h4>
 <p>A custom section can receive contributions from multiple modules.
 This is the mechanism for kernel-style metadata tables: each driver
 module contributes one entry to <code>.modinfo</code>; the layout module places
@@ -877,8 +866,7 @@ to enumerate drivers.</p>
 <p>There is no per-module restriction. Any module can write
 <code>#section(.modinfo)</code> for any declaration. The layout module's
 <code>#section .modinfo : ...</code> is the single placement authority.</p>
-<h4>Worked Example: <code>.init.text</code></h4>
-<!-- wyst-contract: sketch -->
+<h4 id="worked-example-inittext" tabindex="-1"><a class="doc-anchor" href="#worked-example-inittext" aria-label="Permalink to Worked Example: .init.text">#</a> Worked Example: <code>.init.text</code></h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>init
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>init<span class="token punctuation">.</span>text<span class="token punctuation">)</span>
@@ -906,7 +894,6 @@ to enumerate drivers.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Layout module:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>init<span class="token punctuation">.</span>text
@@ -914,20 +901,17 @@ to enumerate drivers.</p>
 <p>After link, <code>__init_text_start</code> and <code>__init_text_end</code> bracket the
 <code>bring_up_uart</code> + <code>bring_up_gic</code> bytes; <code>free_init_section</code> reclaims
 that range.</p>
-<h4>Worked Example: <code>.modinfo</code> Aggregation</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="worked-example-modinfo-aggregation" tabindex="-1"><a class="doc-anchor" href="#worked-example-modinfo-aggregation" aria-label="Permalink to Worked Example: .modinfo Aggregation">#</a> Worked Example: <code>.modinfo</code> Aggregation</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> driver<span class="token punctuation">.</span>uart
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>
 uart_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"uart_pl011_v1"</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> driver<span class="token punctuation">.</span>gic
 
 <span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>modinfo<span class="token punctuation">)</span>
 gic_modinfo <span class="token operator">::</span> <span class="token punctuation">[</span><span class="token number">16</span><span class="token punctuation">]</span><span class="token builtin type">u8</span> <span class="token operator">=</span> <span class="token string">"gic_v3"</span>
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> kernel<span class="token punctuation">.</span>modinfo_walk
 
 <span class="token function">walk_modinfo</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -942,7 +926,7 @@ gic_modinfo <span class="token operator">::</span> <span class="token punctuatio
 <p>Each driver contributes 16 bytes; the compiler zero-fills the remaining
 bytes in each <code>[16]u8</code> string initializer after escape processing, and the
 kernel walks the aggregated table. The layout module places <code>.modinfo</code> once.</p>
-<h4>Hot/Cold Section Conventions</h4>
+<h4 id="hotcold-section-conventions" tabindex="-1"><a class="doc-anchor" href="#hotcold-section-conventions" aria-label="Permalink to Hot/Cold Section Conventions">#</a> Hot/Cold Section Conventions</h4>
 <p>Two conventional text sections separate frequently-executed code from
 rarely-executed code to improve i-cache density:</p>
 <table>
@@ -973,7 +957,6 @@ overrides this. <code>#cold</code> is the common case; explicit <code>.text.cold
 is for code that is not a function declaration (e.g. a <code>label</code>).</p>
 <p><strong>Non-<code>#cold</code> functions</strong> stay in <code>.text</code> by default. A function may
 explicitly opt into <code>.text.hot</code> via <code>#section(.text.hot)</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span><span class="token punctuation">(</span><span class="token punctuation">.</span>text<span class="token punctuation">.</span>hot<span class="token punctuation">)</span>
 <span class="token function">inner_loop</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// hot loop body — keep in i-cache</span>
@@ -992,7 +975,6 @@ function lands in. See <a href="/docs/chapter-08-functions/">chapter-08-function
 <p><strong>Layout module requirement:</strong> If a <code>#cold</code> function is implicitly placed in
 <code>.text.cold</code> and the program has a layout module, the layout module must
 declare <code>.text.cold</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span><span class="token parameter">hot</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text <span class="token comment">// optional</span>
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span>text<span class="token punctuation">.</span><span class="token parameter">cold</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata <span class="token comment">// required for implicit #cold placement</span>
@@ -1009,7 +991,7 @@ not required unless another function is implicitly placed there.</p>
 <p>The compiler does not auto-generate <code>.text.cold</code>. This follows the existing
 &quot;Layout-Module Entry Required&quot; rule: the layout module is the only source of
 section order, alignment, and region placement.</p>
-<h4>Design Rationale</h4>
+<h4 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h4>
 <table>
 <thead>
 <tr>
@@ -1044,7 +1026,7 @@ section order, alignment, and region placement.</p>
 </tr>
 </tbody>
 </table>
-<h4>Tradeoffs</h4>
+<h4 id="tradeoffs" tabindex="-1"><a class="doc-anchor" href="#tradeoffs" aria-label="Permalink to Tradeoffs">#</a> Tradeoffs</h4>
 <ul>
 <li><strong>Cost:</strong> the user must add a <code>#section .foo : ...</code> layout-module
 entry for every custom section they use. This is a small redundancy
@@ -1060,7 +1042,7 @@ before it picks the section, so the flag computation is local.</li>
 tables, and similar runtime-metadata sections all work from day one
 with no special-cased compiler support beyond this attribute.</li>
 </ul>
-<h3 id="comparison-with-gnu-ld" tabindex="-1"><a class="doc-anchor" href="#comparison-with-gnu-ld" aria-hidden="true">#</a> Comparison with GNU LD</h3>
+<h3 id="comparison-with-gnu-ld" tabindex="-1"><a class="doc-anchor" href="#comparison-with-gnu-ld" aria-label="Permalink to Comparison with GNU LD">#</a> Comparison with GNU LD</h3>
 <table>
 <thead>
 <tr>
@@ -1107,7 +1089,7 @@ with no special-cased compiler support beyond this attribute.</li>
 </tr>
 </tbody>
 </table>
-<h3 id="design-goals" tabindex="-1"><a class="doc-anchor" href="#design-goals" aria-hidden="true">#</a> Design Goals</h3>
+<h3 id="design-goals" tabindex="-1"><a class="doc-anchor" href="#design-goals" aria-label="Permalink to Design Goals">#</a> Design Goals</h3>
 <table>
 <thead>
 <tr>
@@ -1151,7 +1133,7 @@ invocation. The binary container — ELF64 little-endian AArch64 executable,
 canonical section catalog, relocation vocabulary, symbol table discipline —
 is specified in <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md</a>.</p>
 <hr>
-<h3 id="duplicate-symbol-policy" tabindex="-1"><a class="doc-anchor" href="#duplicate-symbol-policy" aria-hidden="true">#</a> Duplicate Symbol Policy</h3>
+<h3 id="duplicate-symbol-policy" tabindex="-1"><a class="doc-anchor" href="#duplicate-symbol-policy" aria-label="Permalink to Duplicate Symbol Policy">#</a> Duplicate Symbol Policy</h3>
 <p>Qualified import references do not collide merely because imported modules
 contain public declarations. A compile error is reported when source creates an
 actual namespace collision: duplicate qualified import namespaces, duplicate
@@ -1174,7 +1156,7 @@ explicitly.</p>
 				<li class="lvl-3"><a href="#multi-file-modules">Multi-File Modules</a></li>
 				<li class="lvl-3"><a href="#top-level-name-collection">Top-Level Name Collection</a></li>
 				<li class="lvl-3"><a href="#file-level-constraints">File-Level Constraints</a></li>
-				<li class="lvl-3"><a href="#module-level-%23deny">Module-Level #deny</a></li>
+				<li class="lvl-3"><a href="#module-level-deny">Module-Level #deny</a></li>
 				<li class="lvl-2"><a href="#imports">Imports</a></li>
 				<li class="lvl-3"><a href="#import-resolution">Import Resolution</a></li>
 				<li class="lvl-3"><a href="#symbol-references">Symbol References</a></li>
@@ -1205,12 +1187,6 @@ explicitly.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

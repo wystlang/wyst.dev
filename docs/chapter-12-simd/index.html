@@ -8,6 +8,20 @@
 		<meta name="description" content="Explicit vector types, lane operations, vector loads/stores, and non-autovectorization policy." />
 		<title>SIMD and Vector Syntax · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-12-simd/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-12-simd/" />
+		<meta property="og:title" content="SIMD and Vector Syntax · Wyst" />
+		<meta property="og:description" content="Explicit vector types, lane operations, vector loads/stores, and non-autovectorization policy." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="SIMD and Vector Syntax · Wyst" />
+		<meta name="twitter:description" content="Explicit vector types, lane operations, vector loads/stores, and non-autovectorization policy." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -92,14 +106,14 @@ intrinsics. Element-wise operator semantics live in
 <a href="/docs/chapter-07-operators/">chapter-07-operators.md</a>; type-system rules for vectors live in
 <a href="/docs/chapter-06-types/">chapter-06-types.md</a>.</p>
 </blockquote>
-<h3 id="design-boundary" tabindex="-1"><a class="doc-anchor" href="#design-boundary" aria-hidden="true">#</a> Design Boundary</h3>
+<h3 id="design-boundary" tabindex="-1"><a class="doc-anchor" href="#design-boundary" aria-label="Permalink to Design Boundary">#</a> Design Boundary</h3>
 <p>SIMD syntax is explicit and reserved as <code>[T:N]</code>; <code>[N]T</code> remains an array. Wyst
 does not promise hidden autovectorization. Additional SIMD behavior enters
 through visible vector types, operations, and primitives.</p>
 <hr>
-<h3 id="simd-and-vector-syntax" tabindex="-1"><a class="doc-anchor" href="#simd-and-vector-syntax" aria-hidden="true">#</a> SIMD and Vector Syntax</h3>
+<h3 id="simd-and-vector-syntax" tabindex="-1"><a class="doc-anchor" href="#simd-and-vector-syntax" aria-label="Permalink to SIMD and Vector Syntax">#</a> SIMD and Vector Syntax</h3>
 <hr>
-<h2 id="3.1-vector-types" tabindex="-1"><a class="doc-anchor" href="#3.1-vector-types" aria-hidden="true">#</a> 3.1 Vector Types</h2>
+<h2 id="31-vector-types" tabindex="-1"><a class="doc-anchor" href="#31-vector-types" aria-label="Permalink to 3.1 Vector Types">#</a> 3.1 Vector Types</h2>
 <table>
 <thead>
 <tr>
@@ -127,8 +141,7 @@ through visible vector types, operations, and primitives.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="3.2-vector-arithmetic" tabindex="-1"><a class="doc-anchor" href="#3.2-vector-arithmetic" aria-hidden="true">#</a> 3.2 Vector Arithmetic</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="32-vector-arithmetic" tabindex="-1"><a class="doc-anchor" href="#32-vector-arithmetic" aria-label="Permalink to 3.2 Vector Arithmetic">#</a> 3.2 Vector Arithmetic</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">1.0</span><span class="token punctuation">,</span> <span class="token number">2.0</span><span class="token punctuation">,</span> <span class="token number">3.0</span><span class="token punctuation">,</span> <span class="token number">4.0</span><span class="token punctuation">}</span>
 <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">0.5</span><span class="token punctuation">}</span>
 <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> a <span class="token operator">+</span> b
@@ -140,7 +153,6 @@ through visible vector types, operations, and primitives.</p>
 category. Integer vector arithmetic, bitwise vector operations, vector loads,
 and vector stores do not introduce <code>fp_state</code> unless another rule applies.</p>
 <p>The same operation as a complete checked source contract:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> simd_demo
 
 <span class="token function">add_vec</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token builtin type">u32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token punctuation">{</span>
@@ -148,10 +160,9 @@ and vector stores do not introduce <code>fp_state</code> unless another rule app
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h2 id="3.3-vector-loads" tabindex="-1"><a class="doc-anchor" href="#3.3-vector-loads" aria-hidden="true">#</a> 3.3 Vector Loads</h2>
+<h2 id="33-vector-loads" tabindex="-1"><a class="doc-anchor" href="#33-vector-loads" aria-label="Permalink to 3.3 Vector Loads">#</a> 3.3 Vector Loads</h2>
 <p>Vector loads use the same <code>type@[addr]</code> model as scalar loads. The
 vector type <code>[T:N]</code> serves as the load type prefix:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">base</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 <span class="token parameter">v</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token operator">@</span><span class="token punctuation">[</span>base<span class="token punctuation">]</span>     <span class="token comment">// load 4 f32s from base</span>
@@ -165,9 +176,8 @@ ldr q1<span class="token punctuation">,</span> <span class="token punctuation">[
 <code>[f32:4]@[addr]</code> is a vector load. The parser distinguishes them by
 whether the bracket content contains a colon.</p>
 <hr>
-<h2 id="3.4-vector-stores" tabindex="-1"><a class="doc-anchor" href="#3.4-vector-stores" aria-hidden="true">#</a> 3.4 Vector Stores</h2>
+<h2 id="34-vector-stores" tabindex="-1"><a class="doc-anchor" href="#34-vector-stores" aria-label="Permalink to 3.4 Vector Stores">#</a> 3.4 Vector Stores</h2>
 <p>Same model — vector type prefix on the store target:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">base</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0x4000</span>
 
 <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token operator">@</span><span class="token punctuation">[</span>base<span class="token punctuation">]</span> <span class="token operator">=</span> result
@@ -178,8 +188,7 @@ whether the bracket content contains a colon.</p>
 str q1<span class="token punctuation">,</span> <span class="token punctuation">[</span>x0<span class="token punctuation">,</span> <span class="token operator">#</span><span class="token number">16</span><span class="token punctuation">]</span>
 </code></pre>
 <hr>
-<h2 id="3.5-intrinsics" tabindex="-1"><a class="doc-anchor" href="#3.5-intrinsics" aria-hidden="true">#</a> 3.5 Intrinsics</h2>
-<!-- wyst-contract: sketch -->
+<h2 id="35-intrinsics" tabindex="-1"><a class="doc-anchor" href="#35-intrinsics" aria-label="Permalink to 3.5 Intrinsics">#</a> 3.5 Intrinsics</h2>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">b</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token primitive macro">%sqrt</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span>
 <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token primitive macro">%abs</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span>
 <span class="token parameter">d</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token builtin type">f32</span><span class="token operator">:</span> <span class="token number">4</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token primitive macro">%neg</span><span class="token punctuation">(</span>a<span class="token punctuation">)</span>
@@ -201,11 +210,11 @@ floating-point scalar or vector values. Integer forms do not introduce
 				<ul class="doc-toc-list">
 				<li class="lvl-3"><a href="#design-boundary">Design Boundary</a></li>
 				<li class="lvl-3"><a href="#simd-and-vector-syntax">SIMD and Vector Syntax</a></li>
-				<li class="lvl-2"><a href="#3.1-vector-types">3.1 Vector Types</a></li>
-				<li class="lvl-2"><a href="#3.2-vector-arithmetic">3.2 Vector Arithmetic</a></li>
-				<li class="lvl-2"><a href="#3.3-vector-loads">3.3 Vector Loads</a></li>
-				<li class="lvl-2"><a href="#3.4-vector-stores">3.4 Vector Stores</a></li>
-				<li class="lvl-2"><a href="#3.5-intrinsics">3.5 Intrinsics</a></li>
+				<li class="lvl-2"><a href="#31-vector-types">3.1 Vector Types</a></li>
+				<li class="lvl-2"><a href="#32-vector-arithmetic">3.2 Vector Arithmetic</a></li>
+				<li class="lvl-2"><a href="#33-vector-loads">3.3 Vector Loads</a></li>
+				<li class="lvl-2"><a href="#34-vector-stores">3.4 Vector Stores</a></li>
+				<li class="lvl-2"><a href="#35-intrinsics">3.5 Intrinsics</a></li>
 			</ul>
 			</aside>
 			</div>
@@ -216,12 +225,6 @@ floating-point scalar or vector values. Integer forms do not introduce
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

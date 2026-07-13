@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+	<url><loc>https://wyst.dev/</loc></url>
+	<url><loc>https://wyst.dev/docs/</loc></url>
+	<url><loc>https://wyst.dev/docs/appendix-a-ir/</loc></url>
+	<url><loc>https://wyst.dev/docs/appendix-b-grammar/</loc></url>
+	<url><loc>https://wyst.dev/docs/appendix-c-doc-example-contracts/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-01-language-design/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-02-targets/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-03-project-builds/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-04-modules/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-05-boot/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-06-types/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-07-operators/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-08-functions/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-09-memory-model/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-10-runtime/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-11-intrinsics/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-12-simd/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-13-scheduling/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-14-exception-vectors/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-15-abi-spec/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-16-object-format/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-17-optimization-modes/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-18-check-format-diagnostics/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-19-learning-diagnostics/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-20-editor-integration/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-21-explain/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-22-generated-manifest/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-23-debug-info/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-24-scale/</loc></url>
+	<url><loc>https://wyst.dev/docs/chapter-25-compilation-phases/</loc></url>
+	<url><loc>https://wyst.dev/docs/conformance-index/</loc></url>
+	<url><loc>https://wyst.dev/docs/source-of-truth/</loc></url>
+</urlset>

@@ -8,6 +8,20 @@
 		<meta name="description" content="Optimization modes and the boundary between explicit source behavior and compiler choices." />
 		<title>Build Optimization Modes · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-17-optimization-modes/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-17-optimization-modes/" />
+		<meta property="og:title" content="Build Optimization Modes · Wyst" />
+		<meta property="og:description" content="Optimization modes and the boundary between explicit source behavior and compiler choices." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Build Optimization Modes · Wyst" />
+		<meta name="twitter:description" content="Optimization modes and the boundary between explicit source behavior and compiler choices." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -119,19 +133,19 @@ directive described in <a href="/docs/chapter-13-scheduling/">chapter-13-schedul
 <code>#schedule(strict | relaxed | throughput | latency)</code> controls instruction
 scheduling permissions inside source regions; it does not select a build
 optimization mode.</p>
-<h2 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-hidden="true">#</a> Semantic Boundary</h2>
+<h2 id="semantic-boundary" tabindex="-1"><a class="doc-anchor" href="#semantic-boundary" aria-label="Permalink to Semantic Boundary">#</a> Semantic Boundary</h2>
 <p>Build optimization modes choose lowering strategy inside the already-defined
 source semantics. They must not introduce hidden allocation, hidden cache
 maintenance, weaker memory ordering, or source-observable behavior that was
 not requested by the program or build profile.</p>
-<h2 id="mode-selection-boundary" tabindex="-1"><a class="doc-anchor" href="#mode-selection-boundary" aria-hidden="true">#</a> Mode Selection Boundary</h2>
+<h2 id="mode-selection-boundary" tabindex="-1"><a class="doc-anchor" href="#mode-selection-boundary" aria-label="Permalink to Mode Selection Boundary">#</a> Mode Selection Boundary</h2>
 <p>Builds carry the selected build optimization mode into IR lowering. Explicit
 root-file builds default to <code>reproducible</code> unless <code>--optimization</code> is supplied.
 Project builds may name an <code>optimization = &quot;...&quot;</code> mode in <code>wyst.project</code>, and a
 command-line <code>--optimization</code> value overrides that manifest setting for the
 build. Non-default modes branch from that explicit boundary instead of changing
 the default path in place.</p>
-<h2 id="relationship-to-%23schedule" tabindex="-1"><a class="doc-anchor" href="#relationship-to-%23schedule" aria-hidden="true">#</a> Relationship to <code>#schedule</code></h2>
+<h2 id="relationship-to-schedule" tabindex="-1"><a class="doc-anchor" href="#relationship-to-schedule" aria-label="Permalink to Relationship to #schedule">#</a> Relationship to <code>#schedule</code></h2>
 <p><code>--optimization</code> and <code>#schedule</code> are independent inputs at different levels:</p>
 <ul>
 <li><code>--optimization</code> is a build-level lowering policy chosen by the command line
@@ -143,7 +157,7 @@ ordering inside a source region.</li>
 For example, <code>--optimization switch-dispatch</code> may change enum-switch lowering,
 but it must not move instructions across a <code>#schedule(strict)</code> boundary or
 reinterpret <code>#schedule(throughput)</code> as a build-wide optimization request.</p>
-<h2 id="switch-dispatch" tabindex="-1"><a class="doc-anchor" href="#switch-dispatch" aria-hidden="true">#</a> <code>switch-dispatch</code></h2>
+<h2 id="switch-dispatch" tabindex="-1"><a class="doc-anchor" href="#switch-dispatch" aria-label="Permalink to switch-dispatch">#</a> <code>switch-dispatch</code></h2>
 <p><code>switch-dispatch</code> is an opt-in, deterministic mode for enum switch dispatch. It
 replaces the default equality-value chain with an IR <code>switch</code>
 terminator that the ARM64 backend lowers as a linear compare/conditional-branch
@@ -154,7 +168,7 @@ reproducible under the input catalog in
 <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a>. It is not a
 promise of optimal dispatch shape: no jump tables, dispatch tables, decision
 trees, or target-tuned heuristics are part of this mode.</p>
-<h2 id="reproducible-switch-dispatch-baseline" tabindex="-1"><a class="doc-anchor" href="#reproducible-switch-dispatch-baseline" aria-hidden="true">#</a> Reproducible Switch Dispatch Baseline</h2>
+<h2 id="reproducible-switch-dispatch-baseline" tabindex="-1"><a class="doc-anchor" href="#reproducible-switch-dispatch-baseline" aria-label="Permalink to Reproducible Switch Dispatch Baseline">#</a> Reproducible Switch Dispatch Baseline</h2>
 <p>In <code>reproducible</code>, enum <code>switch</code> still lowers through the direct deterministic
 chain used before build optimization modes were named:</p>
 <ul>
@@ -169,7 +183,7 @@ default block;</li>
 <li>no jump tables, dispatch tables, or decision trees are introduced by the
 default mode.</li>
 </ul>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>No <code>fast</code>, <code>small</code>, or target-tuned build optimization mode.</li>
 <li>No hidden global optimization in default builds.</li>
@@ -184,7 +198,7 @@ default mode.</li>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#semantic-boundary">Semantic Boundary</a></li>
 				<li class="lvl-2"><a href="#mode-selection-boundary">Mode Selection Boundary</a></li>
-				<li class="lvl-2"><a href="#relationship-to-%23schedule">Relationship to #schedule</a></li>
+				<li class="lvl-2"><a href="#relationship-to-schedule">Relationship to #schedule</a></li>
 				<li class="lvl-2"><a href="#switch-dispatch">switch-dispatch</a></li>
 				<li class="lvl-2"><a href="#reproducible-switch-dispatch-baseline">Reproducible Switch Dispatch Baseline</a></li>
 				<li class="lvl-2"><a href="#non-goals">Non-Goals</a></li>
@@ -198,12 +212,6 @@ default mode.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

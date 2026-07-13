@@ -8,6 +8,20 @@
 		<meta name="description" content="Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters." />
 		<title>Compilation Phases · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-25-compilation-phases/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-25-compilation-phases/" />
+		<meta property="og:title" content="Compilation Phases · Wyst" />
+		<meta property="og:description" content="Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Compilation Phases · Wyst" />
+		<meta name="twitter:description" content="Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -88,12 +102,12 @@
 <p>The compilation phase contract defines which compiler phase owns each
 semantic fact, which products later phases may consume, and which terminal
 products are reports only. The machine-readable registry is
-<a href="semantic-db.json"><code>semantic-db.json</code></a>, under <code>compilationPhases</code> and
+<a href="/docs/semantic-db.json"><code>semantic-db.json</code></a>, under <code>compilationPhases</code> and
 <code>semanticFactOwners</code>.</p>
 <p>This chapter adds no source syntax, CLI mode, ABI rule, object format, or
 report schema. It constrains compiler architecture and documentation authority
 for existing language and tool contracts.</p>
-<h2 id="compilation-phase-contract" tabindex="-1"><a class="doc-anchor" href="#compilation-phase-contract" aria-hidden="true">#</a> Compilation Phase Contract</h2>
+<h2 id="compilation-phase-contract" tabindex="-1"><a class="doc-anchor" href="#compilation-phase-contract" aria-label="Permalink to Compilation Phase Contract">#</a> Compilation Phase Contract</h2>
 <p>Each phase has one stable <code>phase.*</code> identifier in the semantic database.
 Phase identifiers are sorted lexicographically in JSON so diffs are stable;
 the dependency graph below defines the compilation order.</p>
@@ -227,7 +241,7 @@ A phase must not consume products named in <code>forbiddenDependencies</code>.</
 </tr>
 </tbody>
 </table>
-<h2 id="phase-product-model" tabindex="-1"><a class="doc-anchor" href="#phase-product-model" aria-hidden="true">#</a> Phase Product Model</h2>
+<h2 id="phase-product-model" tabindex="-1"><a class="doc-anchor" href="#phase-product-model" aria-label="Permalink to Phase Product Model">#</a> Phase Product Model</h2>
 <p>Phase products are immutable after their owner phase completes. A later phase
 may refine its own product using earlier products, but it must not rewrite the
 earlier product or become a second owner for the same semantic fact.</p>
@@ -245,7 +259,7 @@ manifest provenance, benchmark metadata, and release evidence.</li>
 <p>The semantic database names the authoritative output of each phase. If a
 compiler implementation stores the same fact in a broader carrier object for
 today, that carrier is an adapter and does not own the fact.</p>
-<h2 id="partial-order" tabindex="-1"><a class="doc-anchor" href="#partial-order" aria-hidden="true">#</a> Partial Order</h2>
+<h2 id="partial-order" tabindex="-1"><a class="doc-anchor" href="#partial-order" aria-label="Permalink to Partial Order">#</a> Partial Order</h2>
 <p>The target dependency order is:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">build_inputs
   -> source_acquisition
@@ -283,7 +297,7 @@ any phase diagnostic record -> diagnostic_rendering
 <p>This is a partial order, not a required implementation loop shape. Independent
 work inside one phase may be parallelized if the observable products use the
 phase's deterministic ordering rule.</p>
-<h2 id="semantic-fact-ownership" tabindex="-1"><a class="doc-anchor" href="#semantic-fact-ownership" aria-hidden="true">#</a> Semantic Fact Ownership</h2>
+<h2 id="semantic-fact-ownership" tabindex="-1"><a class="doc-anchor" href="#semantic-fact-ownership" aria-label="Permalink to Semantic Fact Ownership">#</a> Semantic Fact Ownership</h2>
 <p>Every semantic fact listed below has exactly one owner. Consumers may read the
 fact after the owner phase completes; consumers must not recompute it as a
 new authority.</p>
@@ -372,7 +386,7 @@ explicit and prevents <code>sema::Program</code> from acting as an authoritative
 carrier. Current semantic diagnostic and cycle-trace products also carry an
 internal origin phase so diagnostic rendering and future cycle reports can
 preserve ownership metadata without changing public diagnostic output.</p>
-<h2 id="dependency-rules-and-cycles" tabindex="-1"><a class="doc-anchor" href="#dependency-rules-and-cycles" aria-hidden="true">#</a> Dependency Rules And Cycles</h2>
+<h2 id="dependency-rules-and-cycles" tabindex="-1"><a class="doc-anchor" href="#dependency-rules-and-cycles" aria-label="Permalink to Dependency Rules And Cycles">#</a> Dependency Rules And Cycles</h2>
 <p>The <code>cycleOwner</code> field names the phase responsible for detecting and reporting
 cycles in that phase's dependency domain. <code>none</code> means the phase must not
 create a cyclic dependency domain of its own.</p>
@@ -389,7 +403,7 @@ reinterpret an earlier phase's accepted or rejected status.</li>
 <li>Cycles are reported by the nearest owner phase for the cyclic product, not
 by an arbitrary later consumer.</li>
 </ul>
-<h2 id="report-only-facts-are-terminal" tabindex="-1"><a class="doc-anchor" href="#report-only-facts-are-terminal" aria-hidden="true">#</a> Report-Only Facts Are Terminal</h2>
+<h2 id="report-only-facts-are-terminal" tabindex="-1"><a class="doc-anchor" href="#report-only-facts-are-terminal" aria-label="Permalink to Report-Only Facts Are Terminal">#</a> Report-Only Facts Are Terminal</h2>
 <p><code>phase.report_only_fact_computation</code> is terminal. Its outputs have
 <code>reportOnly: true</code>, <code>mayAffectAcceptedPrograms: false</code>, and
 <code>mayAffectEmittedBytes: false</code>.</p>
@@ -398,7 +412,7 @@ they must not feed back into parsing, semantic checking, IR construction, ABI
 classification, lowering, register allocation, artifact preparation,
 diagnostic rendering, or build acceptance. Adding a report-only fact does not
 change source meaning or emitted bytes.</p>
-<h2 id="diagnostic-rendering" tabindex="-1"><a class="doc-anchor" href="#diagnostic-rendering" aria-hidden="true">#</a> Diagnostic Rendering</h2>
+<h2 id="diagnostic-rendering" tabindex="-1"><a class="doc-anchor" href="#diagnostic-rendering" aria-label="Permalink to Diagnostic Rendering">#</a> Diagnostic Rendering</h2>
 <p>Diagnostic ownership belongs to the phase that detects the condition.
 <code>phase.diagnostic_rendering</code> only renders already produced diagnostic records
 into text, JSON, and LSP payloads.</p>
@@ -412,7 +426,7 @@ into text, JSON, and LSP payloads.</p>
 </ul>
 <p>If rendering reveals that a diagnostic needs more structured data, the owning
 phase must add that data to its diagnostic record before rendering.</p>
-<h2 id="non-semantic-rendering-compatibility-adapters" tabindex="-1"><a class="doc-anchor" href="#non-semantic-rendering-compatibility-adapters" aria-hidden="true">#</a> Non-Semantic Rendering Compatibility Adapters</h2>
+<h2 id="non-semantic-rendering-compatibility-adapters" tabindex="-1"><a class="doc-anchor" href="#non-semantic-rendering-compatibility-adapters" aria-label="Permalink to Non-Semantic Rendering Compatibility Adapters">#</a> Non-Semantic Rendering Compatibility Adapters</h2>
 <p>The adapters below preserve public text/report compatibility only. They must
 not own or feed module identity, declaration identity, semantic caches, IR
 identity, or artifact bytes.</p>
@@ -462,12 +476,6 @@ identity, or artifact bytes.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

@@ -8,6 +8,20 @@
 		<meta name="description" content="Diagnostic explanations, learning fields, source insights, and teachable compiler feedback." />
 		<title>Learning Diagnostics And Source Insights · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-19-learning-diagnostics/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-19-learning-diagnostics/" />
+		<meta property="og:title" content="Learning Diagnostics And Source Insights · Wyst" />
+		<meta property="og:description" content="Diagnostic explanations, learning fields, source insights, and teachable compiler feedback." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Learning Diagnostics And Source Insights · Wyst" />
+		<meta name="twitter:description" content="Diagnostic explanations, learning fields, source insights, and teachable compiler feedback." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -90,7 +104,7 @@ the stable diagnostic renderer and editor delivery path. It does not create a
 second diagnostic model in editor adapters.</p>
 <p>Explanation lookup, teaching content, and source insights extend the core
 diagnostic data without changing its model.</p>
-<h2 id="diagnostic-explanation-registry" tabindex="-1"><a class="doc-anchor" href="#diagnostic-explanation-registry" aria-hidden="true">#</a> Diagnostic Explanation Registry</h2>
+<h2 id="diagnostic-explanation-registry" tabindex="-1"><a class="doc-anchor" href="#diagnostic-explanation-registry" aria-label="Permalink to Diagnostic Explanation Registry">#</a> Diagnostic Explanation Registry</h2>
 <p>The compiler owns a registry keyed by stable diagnostic codes such as <code>E0210</code>.
 Each registered entry contains:</p>
 <ul>
@@ -104,7 +118,7 @@ Each registered entry contains:</p>
 <p>The registry is deliberately static and deterministic. Adding, removing, or
 renaming explanations is an explicit compiler change rather than incidental
 output churn.</p>
-<h2 id="wync-explain" tabindex="-1"><a class="doc-anchor" href="#wync-explain" aria-hidden="true">#</a> <code>wync explain</code></h2>
+<h2 id="wync-explain" tabindex="-1"><a class="doc-anchor" href="#wync-explain" aria-label="Permalink to wync explain">#</a> <code>wync explain</code></h2>
 <p><code>wync explain E####</code> prints the long-form explanation for a diagnostic code
 without requiring a failing source file. This lets terminal users and editor
 adapters offer teaching help for diagnostics that have already been reported.</p>
@@ -124,7 +138,7 @@ Example fixes:
 </code></pre>
 <p>Unknown codes fail with a normal diagnostic so scripts can distinguish missing
 registry coverage from successful explanation lookup.</p>
-<h2 id="learning-coverage" tabindex="-1"><a class="doc-anchor" href="#learning-coverage" aria-hidden="true">#</a> Learning Coverage</h2>
+<h2 id="learning-coverage" tabindex="-1"><a class="doc-anchor" href="#learning-coverage" aria-label="Permalink to Learning Coverage">#</a> Learning Coverage</h2>
 <p>The learning diagnostics corpus should cover:</p>
 <ul>
 <li>duplicate top-level names;</li>
@@ -139,7 +153,7 @@ feature.</li>
 </ul>
 <p>Every diagnostic code that appears in user-facing diagnostics should be covered
 by <code>wync explain E####</code>.</p>
-<h2 id="structured-diagnostic-data" tabindex="-1"><a class="doc-anchor" href="#structured-diagnostic-data" aria-hidden="true">#</a> Structured Diagnostic Data</h2>
+<h2 id="structured-diagnostic-data" tabindex="-1"><a class="doc-anchor" href="#structured-diagnostic-data" aria-label="Permalink to Structured Diagnostic Data">#</a> Structured Diagnostic Data</h2>
 <p>Structured fields are added to the same <code>Diagnostic</code> value used by text, JSON,
 and LSP-compatible JSON renderers. The fields are optional and should be present
 only when they add learning value:</p>
@@ -177,7 +191,7 @@ errors. Import diagnostics include structured help for unresolved or ambiguous
 module namespaces, and escaped-address diagnostics identify both the source
 stack lifetime and the escaping use in text, JSON, and LSP-compatible
 JSON.</p>
-<h2 id="source-insights" tabindex="-1"><a class="doc-anchor" href="#source-insights" aria-hidden="true">#</a> Source Insights</h2>
+<h2 id="source-insights" tabindex="-1"><a class="doc-anchor" href="#source-insights" aria-label="Permalink to Source Insights">#</a> Source Insights</h2>
 <p>Performance implications are source insights, not broad linting. A performance
 suggestion must be high-confidence and tied to a named source rule, target
 fact, lowering fact, static estimate, or measured evidence. Unlabeled
@@ -207,12 +221,6 @@ that profile. The confidence is <code>high</code>, and the provenance labels are
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

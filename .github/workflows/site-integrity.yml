@@ -1,0 +1,122 @@
+name: Site integrity
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/site-integrity.yml"
+      - ".githooks/**"
+      - ".worker-assets/**"
+      - "404.html"
+      - "assets/**"
+      - "build/**"
+      - "docs/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "tests/**"
+      - "tools/**"
+      - "wrangler.jsonc"
+  push:
+    paths:
+      - ".github/workflows/site-integrity.yml"
+      - ".githooks/**"
+      - ".worker-assets/**"
+      - "404.html"
+      - "assets/**"
+      - "build/**"
+      - "docs/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "tests/**"
+      - "tools/**"
+      - "wrangler.jsonc"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out website
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          path: wyst.dev
+          persist-credentials: false
+
+      # The language reference is private and remains authoritative in the
+      # compiler repository. Configure WYST_REPO_TOKEN as a read-only token
+      # with access to wystlang/wyst.
+      - name: Require documentation source token
+        env:
+          WYST_REPO_TOKEN: ${{ secrets.WYST_REPO_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$WYST_REPO_TOKEN" ]]; then
+            echo "::error::Configure WYST_REPO_TOKEN with read access to wystlang/wyst"
+            exit 1
+          fi
+
+      - name: Check out documentation source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: wystlang/wyst
+          path: wyst
+          token: ${{ secrets.WYST_REPO_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: wyst.dev/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: wyst.dev
+        run: npm ci
+
+      - name: Regenerate documentation and sitemap
+        working-directory: wyst.dev
+        env:
+          WYST_DOCS_DIR: ${{ github.workspace }}/wyst/design
+        run: npm run build
+
+      - name: Regenerate 404 and Worker assets
+        working-directory: wyst.dev
+        run: npm run build:worker-assets
+
+      - name: Verify committed generated artifacts
+        working-directory: wyst.dev
+        shell: bash
+        run: |
+          git diff --exit-code -- 404.html docs sitemap.xml .worker-assets
+          untracked="$(git ls-files --others --exclude-standard -- 404.html docs sitemap.xml .worker-assets)"
+          if [[ -n "$untracked" ]]; then
+            echo "Untracked generated artifacts:"
+            echo "$untracked"
+            exit 1
+          fi
+
+      - name: Run tests
+        working-directory: wyst.dev
+        run: npm test
+
+      - name: Audit public site
+        working-directory: wyst.dev
+        run: npm run audit
+
+      - name: Audit rendered site in Chrome
+        working-directory: wyst.dev
+        run: npm run audit:browser

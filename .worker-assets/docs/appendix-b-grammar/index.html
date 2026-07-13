@@ -8,11 +8,25 @@
 		<meta name="description" content="Formal grammar, lexical rules, parsing forms, reserved syntax, and conformance." />
 		<title>Formal Grammar · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/appendix-b-grammar/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/appendix-b-grammar/" />
+		<meta property="og:title" content="Formal Grammar · Wyst" />
+		<meta property="og:description" content="Formal grammar, lexical rules, parsing forms, reserved syntax, and conformance." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Formal Grammar · Wyst" />
+		<meta name="twitter:description" content="Formal grammar, lexical rules, parsing forms, reserved syntax, and conformance." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -86,14 +100,14 @@
 						<p class="doc-lede">Formal grammar, lexical rules, parsing forms, reserved syntax, and conformance.</p>
 					</header>
 					<div class="doc-body">
-<h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-hidden="true">#</a> Appendix Scope</h2>
+<h2 id="appendix-scope" tabindex="-1"><a class="doc-anchor" href="#appendix-scope" aria-label="Permalink to Appendix Scope">#</a> Appendix Scope</h2>
 <p>This is the formal parsing reference. It uses names and concepts from the
 language contracts. Rules tagged as reserved describe syntax that belongs to
 the grammar vocabulary but is not part of the current language surface. The
 feature-state registry in <a href="/docs/source-of-truth/">source-of-truth.md</a> decides
 whether a parsed form is implemented, future-version normative, experimental,
 reserved, deprecated, or removed.</p>
-<h2 id="notation" tabindex="-1"><a class="doc-anchor" href="#notation" aria-hidden="true">#</a> Notation</h2>
+<h2 id="notation" tabindex="-1"><a class="doc-anchor" href="#notation" aria-label="Permalink to Notation">#</a> Notation</h2>
 <p>The grammar is written as a <strong>Parsing Expression Grammar</strong> (PEG). Each rule
 has the form <code>Name &lt;- expression</code>. Operators:</p>
 <table>
@@ -163,10 +177,10 @@ distinguished by a longest-match rule: <code>ifoo</code> is one identifier, not
 <p>Rules tagged as reserved describe forms kept in the reference grammar's
 reserved syntax vocabulary.</p>
 <hr>
-<h2 id="1.-lexical-structure" tabindex="-1"><a class="doc-anchor" href="#1.-lexical-structure" aria-hidden="true">#</a> 1. Lexical Structure</h2>
+<h2 id="1-lexical-structure" tabindex="-1"><a class="doc-anchor" href="#1-lexical-structure" aria-label="Permalink to 1. Lexical Structure">#</a> 1. Lexical Structure</h2>
 <p>Wyst source files are UTF-8. Lexical spans are byte offsets into that UTF-8
 source text, and the lexer does not normalize Unicode text before tokenization.</p>
-<h3 id="1.1-whitespace-and-comments" tabindex="-1"><a class="doc-anchor" href="#1.1-whitespace-and-comments" aria-hidden="true">#</a> 1.1 Whitespace and Comments</h3>
+<h3 id="11-whitespace-and-comments" tabindex="-1"><a class="doc-anchor" href="#11-whitespace-and-comments" aria-label="Permalink to 1.1 Whitespace and Comments">#</a> 1.1 Whitespace and Comments</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Whitespace   &lt;- (Space / Newline / Comment)*
 Space        &lt;- ' ' / '\t'
 Newline      &lt;- '\r\n' / '\n' / '\r'
@@ -181,7 +195,7 @@ exactly one. In particular, <code>'\r\n'</code> is one newline token and one sou
 advance, not two. Lexical spans remain byte offsets into the original UTF-8
 source text; newline normalization affects only line/column mapping and
 newline-sensitive grammar decisions such as line comments.</p>
-<h3 id="1.2-identifiers-and-keywords" tabindex="-1"><a class="doc-anchor" href="#1.2-identifiers-and-keywords" aria-hidden="true">#</a> 1.2 Identifiers and Keywords</h3>
+<h3 id="12-identifiers-and-keywords" tabindex="-1"><a class="doc-anchor" href="#12-identifiers-and-keywords" aria-label="Permalink to 1.2 Identifiers and Keywords">#</a> 1.2 Identifiers and Keywords</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Identifier   &lt;- !Keyword IdentStart IdentCont*
 IdentStart   &lt;- [a-zA-Z_]
 IdentCont    &lt;- [a-zA-Z0-9_]
@@ -205,7 +219,7 @@ contexts.</p>
 <p>Identifiers, keywords, directive names, and runtime primitive names are
 intentionally ASCII-only. Non-ASCII text is valid in comments and string
 literal contents, but not in user-defined names.</p>
-<h3 id="1.3-directives%2C-compile-time-forms%2C-and-runtime-primitives" tabindex="-1"><a class="doc-anchor" href="#1.3-directives%2C-compile-time-forms%2C-and-runtime-primitives" aria-hidden="true">#</a> 1.3 Directives, Compile-Time Forms, and Runtime Primitives</h3>
+<h3 id="13-directives-compile-time-forms-and-runtime-primitives" tabindex="-1"><a class="doc-anchor" href="#13-directives-compile-time-forms-and-runtime-primitives" aria-label="Permalink to 1.3 Directives, Compile-Time Forms, and Runtime Primitives">#</a> 1.3 Directives, Compile-Time Forms, and Runtime Primitives</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Directive        &lt;- '#' DirectiveName
 RuntimePrimitive &lt;- '%' IdentStart IdentCont*
 
@@ -244,7 +258,7 @@ and <code>@mmio</code> address qualifiers).</p>
 <code>wyst.language.v0.8</code> target 33. The current compiler recognizes both spellings
 for diagnostics and rejects them; Appendix B lists them only so tooling can
 preserve the token and produce the version-gated diagnostic.</p>
-<h3 id="1.4-numeric-literals" tabindex="-1"><a class="doc-anchor" href="#1.4-numeric-literals" aria-hidden="true">#</a> 1.4 Numeric Literals</h3>
+<h3 id="14-numeric-literals" tabindex="-1"><a class="doc-anchor" href="#14-numeric-literals" aria-label="Permalink to 1.4 Numeric Literals">#</a> 1.4 Numeric Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">IntLiteral   &lt;- HexLiteral / BinLiteral / OctLiteral / DecLiteral
 HexLiteral   &lt;- '0x' HexDigit ('_'? HexDigit)*
 BinLiteral   &lt;- '0b' BinDigit ('_'? BinDigit)*
@@ -267,7 +281,7 @@ strips <code>_</code> after lexing. Decimal exponent-only forms such as <code>1e
 <code>FloatLiteral</code>s. Hexadecimal floating-point literals such as <code>0x1.fp3</code> are not
 Wyst syntax. Type suffixes (<code>5_u8</code>, <code>1.0_f32</code>) are rejected. Use a type
 annotation or categorized conversion instead.</p>
-<h3 id="1.5-string-literals" tabindex="-1"><a class="doc-anchor" href="#1.5-string-literals" aria-hidden="true">#</a> 1.5 String Literals</h3>
+<h3 id="15-string-literals" tabindex="-1"><a class="doc-anchor" href="#15-string-literals" aria-label="Permalink to 1.5 String Literals">#</a> 1.5 String Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">StringLiteral   &lt;- SimpleString / MultilineString
 SimpleString    &lt;- '&quot;' (StringChar / EscapeSeq)* '&quot;'
 StringChar      &lt;- !('&quot;' / '\\' / Newline) .
@@ -289,7 +303,7 @@ array after escape processing: decoded length less than <code>N</code> is zero-f
 decoded length equal to <code>N</code> is an exact fit, and decoded length greater than
 <code>N</code> is rejected. This is semantic binding of an existing <code>StringLiteral</code>
 expression, not a separate lexical form.</p>
-<h3 id="1.5.1-character-literals" tabindex="-1"><a class="doc-anchor" href="#1.5.1-character-literals" aria-hidden="true">#</a> 1.5.1 Character Literals</h3>
+<h3 id="151-character-literals" tabindex="-1"><a class="doc-anchor" href="#151-character-literals" aria-label="Permalink to 1.5.1 Character Literals">#</a> 1.5.1 Character Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">CharLiteral &lt;- &quot;'&quot; (CharChar / CharEscape) &quot;'&quot;
 CharChar    &lt;- ASCIIChar - (&quot;'&quot; / '\\' / Newline)
 ASCIIChar   &lt;- [\x00-\x7f]
@@ -303,7 +317,7 @@ truncated. UTF-8 text belongs in string literals; non-ASCII bytes in character
 literals must be written explicitly with <code>\xHH</code>.</p>
 <p>Character literals share string escapes for backslash, control bytes, and
 <code>\xHH</code> byte values, exclude <code>\&quot;</code>, and add <code>\'</code>.</p>
-<h3 id="1.6-punctuation-and-operator-tokens" tabindex="-1"><a class="doc-anchor" href="#1.6-punctuation-and-operator-tokens" aria-hidden="true">#</a> 1.6 Punctuation and Operator Tokens</h3>
+<h3 id="16-punctuation-and-operator-tokens" tabindex="-1"><a class="doc-anchor" href="#16-punctuation-and-operator-tokens" aria-label="Permalink to 1.6 Punctuation and Operator Tokens">#</a> 1.6 Punctuation and Operator Tokens</h3>
 <p>The following multi-character tokens are recognized greedily (longest
 match wins). The lexer commits to the longest token at each position:</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">::=  ::  :=  ->
@@ -320,14 +334,14 @@ forms such as <code>#size_of(T)</code> and <code>#len(arr)</code> are valid expr
 token at the start of a type position begins an address type or address qualifier (<code>@T</code>,
 <code>@volatile T</code>, <code>@mmio T</code>). The <code>%</code> token starts a runtime primitive in prefix expression
 position and remains the remainder operator in infix expression position.</p>
-<h3 id="1.7-boolean-and-null-literals" tabindex="-1"><a class="doc-anchor" href="#1.7-boolean-and-null-literals" aria-hidden="true">#</a> 1.7 Boolean and Null Literals</h3>
+<h3 id="17-boolean-and-null-literals" tabindex="-1"><a class="doc-anchor" href="#17-boolean-and-null-literals" aria-label="Permalink to 1.7 Boolean and Null Literals">#</a> 1.7 Boolean and Null Literals</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">BoolLiteral  &lt;- 'true' !IdentCont / 'false' !IdentCont
 </code></pre>
 <p><code>null</code> is <strong>not</strong> a literal in Wyst — see the type-system chapter
 (<a href="/docs/chapter-06-types/">chapter-06-types.md §1.4.1</a>) for the chosen treatment of address
 zero.</p>
 <hr>
-<h2 id="2.-types" tabindex="-1"><a class="doc-anchor" href="#2.-types" aria-hidden="true">#</a> 2. Types</h2>
+<h2 id="2-types" tabindex="-1"><a class="doc-anchor" href="#2-types" aria-label="Permalink to 2. Types">#</a> 2. Types</h2>
 <p>The type sublanguage is parsed by the <code>Type</code> rule. Types appear in
 declarations, function signatures, struct fields, categorized conversions
 (<code>as.&lt;category&gt; T</code>), and a few directives (<code>#static_assert(#size_of(T), ...)</code>).
@@ -379,7 +393,6 @@ ReturnType    &lt;- Type / TupleType
 shape, but semantic analysis currently accepts tuple types only as
 multi-return values and related result storage. Tuple parameters in ordinary
 functions or function pointer types are a future surface:</p>
-<!-- wyst-contract: future -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">accept_pair</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">pair</span> <span class="token operator">:</span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">y</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>Wyst generics use angle-bracket type parameter and type argument lists.
@@ -469,11 +482,11 @@ declared later in source order; the compiler evaluates those references only
 if their dependency graph is acyclic. For block-scoped local constants,
 &quot;visible&quot; remains lexical and excludes later local declarations.</p>
 <hr>
-<h2 id="3.-expressions" tabindex="-1"><a class="doc-anchor" href="#3.-expressions" aria-hidden="true">#</a> 3. Expressions</h2>
+<h2 id="3-expressions" tabindex="-1"><a class="doc-anchor" href="#3-expressions" aria-label="Permalink to 3. Expressions">#</a> 3. Expressions</h2>
 <p>Expressions are parsed with a Pratt-style precedence climbing layered
 over the PEG. The grammar below names each precedence level explicitly;
 each level matches a single binary operator class.</p>
-<h3 id="3.1-precedence-table" tabindex="-1"><a class="doc-anchor" href="#3.1-precedence-table" aria-hidden="true">#</a> 3.1 Precedence Table</h3>
+<h3 id="31-precedence-table" tabindex="-1"><a class="doc-anchor" href="#31-precedence-table" aria-label="Permalink to 3.1 Precedence Table">#</a> 3.1 Precedence Table</h3>
 <p>From lowest (parses outermost) to highest (parses innermost):</p>
 <table>
 <thead>
@@ -547,7 +560,7 @@ each level matches a single binary operator class.</p>
 </tbody>
 </table>
 <p>Level 3 is non-associative: <code>a &lt; b &lt; c</code> is a parse error.</p>
-<h3 id="3.2-expression-rules" tabindex="-1"><a class="doc-anchor" href="#3.2-expression-rules" aria-hidden="true">#</a> 3.2 Expression Rules</h3>
+<h3 id="32-expression-rules" tabindex="-1"><a class="doc-anchor" href="#32-expression-rules" aria-label="Permalink to 3.2 Expression Rules">#</a> 3.2 Expression Rules</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Expr        &lt;- OrExpr
 OrExpr      &lt;- AndExpr ('||' AndExpr)*
 AndExpr     &lt;- CmpExpr ('&amp;&amp;' CmpExpr)*
@@ -638,7 +651,7 @@ comparison when applicable.</p>
 field. The fields may appear in either order. In constant/global initializer
 contexts, <code>data</code> must be a compile-time address value and <code>len</code> must be a
 constant non-negative integer expression.</p>
-<h3 id="3.3-memory-loads-(the-t%40%5Baddr%5D-family)" tabindex="-1"><a class="doc-anchor" href="#3.3-memory-loads-(the-t%40%5Baddr%5D-family)" aria-hidden="true">#</a> 3.3 Memory Loads (the <code>T@[addr]</code> family)</h3>
+<h3 id="33-memory-loads-the-taddr-family" tabindex="-1"><a class="doc-anchor" href="#33-memory-loads-the-taddr-family" aria-label="Permalink to 3.3 Memory Loads (the T@[addr] family)">#</a> 3.3 Memory Loads (the <code>T@[addr]</code> family)</h3>
 <p>Memory loads use an explicit <code>@[</code> address marker so typed memory access is
 syntactically distinct from array, slice, and dynamic-array indexing.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">MemoryLoad
@@ -677,7 +690,7 @@ A <code>VectorLoad</code> is <code>[T:N]@[addr]</code>. The required <code>@[</c
 syntactic marker that makes the form an expression.</p>
 <p>In <em>type</em> position, only <code>VectorType</code> is tried — <code>VectorLoad</code> is not a
 type.</p>
-<h3 id="3.4-compile-time%2Flayout-time-forms-and-runtime-primitive-calls" tabindex="-1"><a class="doc-anchor" href="#3.4-compile-time%2Flayout-time-forms-and-runtime-primitive-calls" aria-hidden="true">#</a> 3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls</h3>
+<h3 id="34-compile-timelayout-time-forms-and-runtime-primitive-calls" tabindex="-1"><a class="doc-anchor" href="#34-compile-timelayout-time-forms-and-runtime-primitive-calls" aria-label="Permalink to 3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls">#</a> 3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">CompileTimeForm
     &lt;- '#size_of' '(' Type ','? ')'
      / '#align_of' '(' Type ','? ')'
@@ -723,7 +736,7 @@ the grammar intentionally accepts any <code>PrimitiveIntType</code> so parsing a
 tooling can preserve the call shape. Semantic analysis rejects <code>u8</code>/<code>i8</code> and
 reports the diagnostic on the type argument because byte order does not apply
 to single-byte values.</p>
-<h3 id="3.5-select-(branchless-conditional)" tabindex="-1"><a class="doc-anchor" href="#3.5-select-(branchless-conditional)" aria-hidden="true">#</a> 3.5 Select (Branchless Conditional)</h3>
+<h3 id="35-select-branchless-conditional" tabindex="-1"><a class="doc-anchor" href="#35-select-branchless-conditional" aria-label="Permalink to 3.5 Select (Branchless Conditional)">#</a> 3.5 Select (Branchless Conditional)</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">SelectCall
     &lt;- 'select' '(' Expr ',' Expr ',' Expr ','? ')'
 </code></pre>
@@ -731,13 +744,13 @@ to single-byte values.</p>
 three arguments: a <code>bool</code> condition, a true-arm expression, and a false-arm
 expression. Both arms must have the same type. The result type equals the arm
 type. See <a href="/docs/chapter-07-operators/">chapter-07-operators.md</a> for semantics and supported types.</p>
-<h3 id="3.6-if-expressions" tabindex="-1"><a class="doc-anchor" href="#3.6-if-expressions" aria-hidden="true">#</a> 3.6 If Expressions</h3>
+<h3 id="36-if-expressions" tabindex="-1"><a class="doc-anchor" href="#36-if-expressions" aria-label="Permalink to 3.6 If Expressions">#</a> 3.6 If Expressions</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">IfExpr
     &lt;- 'if' Expr Block 'else' Block                   // both branches required for expr form
 </code></pre>
 <p>An <code>IfExpr</code> requires an <code>else</code> branch. <code>if</code> without <code>else</code> is only legal
 as a statement (§4).</p>
-<h3 id="3.7-literals-(composite)" tabindex="-1"><a class="doc-anchor" href="#3.7-literals-(composite)" aria-hidden="true">#</a> 3.7 Literals (Composite)</h3>
+<h3 id="37-literals-composite" tabindex="-1"><a class="doc-anchor" href="#37-literals-composite" aria-label="Permalink to 3.7 Literals (Composite)">#</a> 3.7 Literals (Composite)</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ArrayLiteral   &lt;- '{' (Expr (',' Expr)* ','?)? '}'
 StructLiteral  &lt;- NamedType '{' (FieldInit (',' FieldInit)* ','?)? '}'
 FieldInit      &lt;- Identifier ':' Expr
@@ -749,7 +762,7 @@ to disambiguate from a block.</p>
 <p>A <code>StringLiteral</code> may also appear as the initializer expression for a typed
 <code>[N]u8</code> declaration; semantic analysis expands it to the same byte array that
 an explicitly zero-padded brace literal would produce.</p>
-<h3 id="3.8-address-of" tabindex="-1"><a class="doc-anchor" href="#3.8-address-of" aria-hidden="true">#</a> 3.8 Address-Of</h3>
+<h3 id="38-address-of" tabindex="-1"><a class="doc-anchor" href="#38-address-of" aria-label="Permalink to 3.8 Address-Of">#</a> 3.8 Address-Of</h3>
 <p><code>#addr_of(name)</code> is parsed by <code>CompileTimeForm</code> and is the only form that
 takes a function, label, global, or other compile-time symbol name as an
 address value. <code>%addr_of(name)</code> is parsed by <code>RuntimePrimitiveCall</code> and takes
@@ -761,7 +774,7 @@ context rather than defaulting the lens in an inferred binding. Stack-local
 <code>%addr_of(local)</code> follows the same no-default-lens rule and needs an explicit
 address context or cast.</p>
 <hr>
-<h2 id="4.-statements" tabindex="-1"><a class="doc-anchor" href="#4.-statements" aria-hidden="true">#</a> 4. Statements</h2>
+<h2 id="4-statements" tabindex="-1"><a class="doc-anchor" href="#4-statements" aria-label="Permalink to 4. Statements">#</a> 4. Statements</h2>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Statement
     &lt;- Block
      / IfStmt
@@ -812,7 +825,7 @@ statements. <code>SwitchVariant</code> accepts either an inferred variant name
 (<code>case Ready:</code>) or an explicit enum-qualified name (<code>case State.Ready:</code>).
 Bindings are shallow payload names; nested patterns are rejected by the
 semantic enum rules.</p>
-<h3 id="4.1-function-call-statement-form" tabindex="-1"><a class="doc-anchor" href="#4.1-function-call-statement-form" aria-hidden="true">#</a> 4.1 Function Call Statement Form</h3>
+<h3 id="41-function-call-statement-form" tabindex="-1"><a class="doc-anchor" href="#41-function-call-statement-form" aria-label="Permalink to 4.1 Function Call Statement Form">#</a> 4.1 Function Call Statement Form</h3>
 <p>A statement-position function call is an <code>ExprStmt</code> whose top-level postfix
 expression ends in an argument list. Wyst has no <code>call</code> keyword.</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ExprStmt &lt;- Expr                       // semantically restricted
@@ -825,7 +838,7 @@ table '[' i ']' '(' ')'         // call through computed function pointer
 <p>An <code>ExprStmt</code> whose top-level expression is not a function call or runtime
 primitive call is a semantic error. This keeps stray expression statements
 like <code>x + y</code> illegal while allowing ordinary calls such as <code>init_uart()</code>.</p>
-<h3 id="4.2-goto-statement-form" tabindex="-1"><a class="doc-anchor" href="#4.2-goto-statement-form" aria-hidden="true">#</a> 4.2 Goto Statement Form</h3>
+<h3 id="42-goto-statement-form" tabindex="-1"><a class="doc-anchor" href="#42-goto-statement-form" aria-label="Permalink to 4.2 Goto Statement Form">#</a> 4.2 Goto Statement Form</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">GotoStmt &lt;- 'goto' BareName
 </code></pre>
 <p><code>goto</code> takes only a bare label name (possibly module-qualified via the
@@ -839,7 +852,7 @@ parse:</p>
 <li>Target must resolve to a <code>label</code> declaration visible by name (same
 module or <code>#import</code>ed module).</li>
 </ul>
-<h3 id="4.3-declarations-and-assignments" tabindex="-1"><a class="doc-anchor" href="#4.3-declarations-and-assignments" aria-hidden="true">#</a> 4.3 Declarations and Assignments</h3>
+<h3 id="43-declarations-and-assignments" tabindex="-1"><a class="doc-anchor" href="#43-declarations-and-assignments" aria-label="Permalink to 4.3 Declarations and Assignments">#</a> 4.3 Declarations and Assignments</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">Declaration
     &lt;- LocalDecl
      / ConstDecl
@@ -895,14 +908,14 @@ block-scoped local constants; at top level they are <code>ConstDecl</code>.
 Top-level <code>ConstDecl</code> references to other visible top-level constants are
 source-order independent when acyclic; block-scoped local constants are
 visible only after their declaration.</p>
-<h3 id="4.4-tuple-destructuring" tabindex="-1"><a class="doc-anchor" href="#4.4-tuple-destructuring" aria-hidden="true">#</a> 4.4 Tuple Destructuring</h3>
+<h3 id="44-tuple-destructuring" tabindex="-1"><a class="doc-anchor" href="#44-tuple-destructuring" aria-label="Permalink to 4.4 Tuple Destructuring">#</a> 4.4 Tuple Destructuring</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">TupleDecl
     &lt;- '(' Identifier (',' Identifier)+ ','? ')' '=' Expr
 </code></pre>
 <p>The RHS must produce a tuple type whose arity matches the LHS. Used
 exclusively for multi-return function calls
 (<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.2.1</a>).</p>
-<h3 id="4.5-directive-statements" tabindex="-1"><a class="doc-anchor" href="#4.5-directive-statements" aria-hidden="true">#</a> 4.5 Directive Statements</h3>
+<h3 id="45-directive-statements" tabindex="-1"><a class="doc-anchor" href="#45-directive-statements" aria-label="Permalink to 4.5 Directive Statements">#</a> 4.5 Directive Statements</h3>
 <p>A subset of directives are statements (they appear inside function or
 label bodies). The full directive list above:</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">DirectiveStmt
@@ -932,7 +945,7 @@ explicit synchronization. There is no per-access <code>#volatile</code> directiv
 per-access volatility was removed, so declare volatility at the
 address-type level with <code>@volatile T</code> or MMIO intent with <code>@mmio T</code> (see
 chapter-09 §1.3).</p>
-<h3 id="4.6-inline-assembly-statement" tabindex="-1"><a class="doc-anchor" href="#4.6-inline-assembly-statement" aria-hidden="true">#</a> 4.6 Inline Assembly Statement</h3>
+<h3 id="46-inline-assembly-statement" tabindex="-1"><a class="doc-anchor" href="#46-inline-assembly-statement" aria-label="Permalink to 4.6 Inline Assembly Statement">#</a> 4.6 Inline Assembly Statement</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">AsmBlock
     &lt;- '#asm' AsmOptions? '{' AsmSection* AsmBody '}'
 
@@ -979,7 +992,7 @@ by a sublexer that recognizes operand references (<code>{name}</code>,
 <code>{w:name}</code>, <code>{x:name}</code>) and otherwise passes the text through to
 the assembler back-end verbatim.</p>
 <hr>
-<h2 id="5.-top-level-declarations" tabindex="-1"><a class="doc-anchor" href="#5.-top-level-declarations" aria-hidden="true">#</a> 5. Top-Level Declarations</h2>
+<h2 id="5-top-level-declarations" tabindex="-1"><a class="doc-anchor" href="#5-top-level-declarations" aria-label="Permalink to 5. Top-Level Declarations">#</a> 5. Top-Level Declarations</h2>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">File
     &lt;- ModuleDecl
        ModuleDeny?                                           // module-level effect restriction
@@ -1079,7 +1092,7 @@ keyword and is never valid inside an annotation group. Parameter annotations
 such as <code>#pin(x0)</code> and <code>#noescape</code> stay on the parameter and are not
 <code>DeclAnnotation</code>s. The formatter sorts grouped declaration annotations with the
 canonical order from <a href="/docs/chapter-18-check-format-diagnostics/">chapter-18-check-format-diagnostics.md</a>.</p>
-<h3 id="5.1-function-declaration" tabindex="-1"><a class="doc-anchor" href="#5.1-function-declaration" aria-hidden="true">#</a> 5.1 Function Declaration</h3>
+<h3 id="51-function-declaration" tabindex="-1"><a class="doc-anchor" href="#51-function-declaration" aria-label="Permalink to 5.1 Function Declaration">#</a> 5.1 Function Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">FnDecl
     &lt;- Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? DeclAnnotation* Block
      / Identifier GenericTypeParamList? '::' CallingConv? '(' ParamList? ')' ('-&gt;' ReturnType)? DeclAnnotation*   // forward decl
@@ -1100,14 +1113,14 @@ supplied by an object/link-capable build mode, such as a linked library; see
 may type-check these signatures but rejects calls to, or <code>#addr_of</code> uses of,
 unresolved external declarations because it has no linker relocation target for
 them.</p>
-<h3 id="5.2-label-declaration" tabindex="-1"><a class="doc-anchor" href="#5.2-label-declaration" aria-hidden="true">#</a> 5.2 Label Declaration</h3>
+<h3 id="52-label-declaration" tabindex="-1"><a class="doc-anchor" href="#52-label-declaration" aria-label="Permalink to 5.2 Label Declaration">#</a> 5.2 Label Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">LabelDecl
     &lt;- Identifier '::' 'label' DeclAnnotation* Block
 </code></pre>
 <p>A <code>label</code> body must terminate with <code>goto</code> or a <code>#noreturn</code> call (no
 fall-through). <code>#naked</code> is legal on labels used as architectural entry targets;
 the raw stack and register discipline is checked post-parse.</p>
-<h3 id="5.3-struct-and-bitfield-declarations" tabindex="-1"><a class="doc-anchor" href="#5.3-struct-and-bitfield-declarations" aria-hidden="true">#</a> 5.3 Struct and Bitfield Declarations</h3>
+<h3 id="53-struct-and-bitfield-declarations" tabindex="-1"><a class="doc-anchor" href="#53-struct-and-bitfield-declarations" aria-label="Permalink to 5.3 Struct and Bitfield Declarations">#</a> 5.3 Struct and Bitfield Declarations</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ReprAttr    &lt;- '#repr' '(' 'field_order' ':' 'preserve' ','? ')'
 TrapFrameAttr &lt;- '#trap_frame' '(' Identifier ','? ')'
 StructDecl
@@ -1137,7 +1150,7 @@ payload-word value per variant and rejects tuple payloads, structures, slices,
 floating-point payloads, and nested enum payloads. Generic type parameters are
 legal on enum declarations, but direct generic enum payload parameters must
 declare a payload-compatible bound such as <code>payload_word</code>.</p>
-<h3 id="5.4-global-%2F-constant-declarations" tabindex="-1"><a class="doc-anchor" href="#5.4-global-%2F-constant-declarations" aria-hidden="true">#</a> 5.4 Global / Constant Declarations</h3>
+<h3 id="54-global-constant-declarations" tabindex="-1"><a class="doc-anchor" href="#54-global-constant-declarations" aria-label="Permalink to 5.4 Global / Constant Declarations">#</a> 5.4 Global / Constant Declarations</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">GlobalDecl  &lt;- Identifier ':' StorageAttr* Type '=' Expr
 StorageAttr &lt;- '#percpu' / '#tls' / '#shared'                // mutually exclusive; see §9.12
 ConstDecl   &lt;- Identifier '::' Type '=' ConstExpr            // immutable constant
@@ -1147,7 +1160,7 @@ ConstDecl   &lt;- Identifier '::' Type '=' ConstExpr            // immutable con
 (<a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>). <code>#shared</code> aligns and pads the variable to a full
 cache line to prevent false sharing — see
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.12</a>.</p>
-<h3 id="5.5-exception-vector-declaration" tabindex="-1"><a class="doc-anchor" href="#5.5-exception-vector-declaration" aria-hidden="true">#</a> 5.5 Exception Vector Declaration</h3>
+<h3 id="55-exception-vector-declaration" tabindex="-1"><a class="doc-anchor" href="#55-exception-vector-declaration" aria-label="Permalink to 5.5 Exception Vector Declaration">#</a> 5.5 Exception Vector Declaration</h3>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">ExceptionVectorDecl
     &lt;- Identifier '::' '#exception_vector' AlignAttr? '{' VEntrySlot* '}'
 VEntrySlot
@@ -1160,7 +1173,7 @@ body must fit in 128 bytes after lowering
 checked after parsing; the grammar accepts them through the ordinary
 declaration-attribute path, and semantic analysis enforces the ARM64
 trap-frame shape in chapter 14.</p>
-<h3 id="5.6-layout-module-declarations" tabindex="-1"><a class="doc-anchor" href="#5.6-layout-module-declarations" aria-hidden="true">#</a> 5.6 Layout Module Declarations</h3>
+<h3 id="56-layout-module-declarations" tabindex="-1"><a class="doc-anchor" href="#56-layout-module-declarations" aria-label="Permalink to 5.6 Layout Module Declarations">#</a> 5.6 Layout Module Declarations</h3>
 <p>These appear in modules tagged as layout modules (per
 <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>):</p>
 <pre class="wyst-code language-peg" data-lang="peg"><code class="language-peg">RegionDecl
@@ -1186,7 +1199,7 @@ EntryDecl
 syntax <code>key = value</code>. The full attribute vocabulary is specified in
 <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>.</p>
 <hr>
-<h2 id="6.-disambiguation-summary" tabindex="-1"><a class="doc-anchor" href="#6.-disambiguation-summary" aria-hidden="true">#</a> 6. Disambiguation Summary</h2>
+<h2 id="6-disambiguation-summary" tabindex="-1"><a class="doc-anchor" href="#6-disambiguation-summary" aria-label="Permalink to 6. Disambiguation Summary">#</a> 6. Disambiguation Summary</h2>
 <p>The following table consolidates every potentially ambiguous form in the
 grammar and lists the rule that resolves it. Each row corresponds to a
 case the prose specification flagged as needing clarification.</p>
@@ -1323,7 +1336,7 @@ case the prose specification flagged as needing clarification.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="7.-reserved-for-future-use" tabindex="-1"><a class="doc-anchor" href="#7.-reserved-for-future-use" aria-hidden="true">#</a> 7. Reserved For Future Use</h2>
+<h2 id="7-reserved-for-future-use" tabindex="-1"><a class="doc-anchor" href="#7-reserved-for-future-use" aria-label="Permalink to 7. Reserved For Future Use">#</a> 7. Reserved For Future Use</h2>
 <p>The following symbols and forms remain reserved for future use:</p>
 <ul>
 <li><code>$</code> — reserved.</li>
@@ -1339,7 +1352,7 @@ form appears in source.</p>
 <code>wyst.language.v0.8</code> target 33. The current compiler recognizes both spellings
 for diagnostics and rejects them until that target is implemented.</p>
 <hr>
-<h2 id="8.-conformance" tabindex="-1"><a class="doc-anchor" href="#8.-conformance" aria-hidden="true">#</a> 8. Conformance</h2>
+<h2 id="8-conformance" tabindex="-1"><a class="doc-anchor" href="#8-conformance" aria-label="Permalink to 8. Conformance">#</a> 8. Conformance</h2>
 <p>Parser conformance is defined by this grammar, the prose rules in the chapters
 that precede it, and the conflict order in
 <a href="/docs/source-of-truth/">source-of-truth.md</a>.</p>
@@ -1367,42 +1380,42 @@ manifest and the linked tests in the same change.</p>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#appendix-scope">Appendix Scope</a></li>
 				<li class="lvl-2"><a href="#notation">Notation</a></li>
-				<li class="lvl-2"><a href="#1.-lexical-structure">1. Lexical Structure</a></li>
-				<li class="lvl-3"><a href="#1.1-whitespace-and-comments">1.1 Whitespace and Comments</a></li>
-				<li class="lvl-3"><a href="#1.2-identifiers-and-keywords">1.2 Identifiers and Keywords</a></li>
-				<li class="lvl-3"><a href="#1.3-directives%2C-compile-time-forms%2C-and-runtime-primitives">1.3 Directives, Compile-Time Forms, and Runtime Primitives</a></li>
-				<li class="lvl-3"><a href="#1.4-numeric-literals">1.4 Numeric Literals</a></li>
-				<li class="lvl-3"><a href="#1.5-string-literals">1.5 String Literals</a></li>
-				<li class="lvl-3"><a href="#1.5.1-character-literals">1.5.1 Character Literals</a></li>
-				<li class="lvl-3"><a href="#1.6-punctuation-and-operator-tokens">1.6 Punctuation and Operator Tokens</a></li>
-				<li class="lvl-3"><a href="#1.7-boolean-and-null-literals">1.7 Boolean and Null Literals</a></li>
-				<li class="lvl-2"><a href="#2.-types">2. Types</a></li>
-				<li class="lvl-2"><a href="#3.-expressions">3. Expressions</a></li>
-				<li class="lvl-3"><a href="#3.1-precedence-table">3.1 Precedence Table</a></li>
-				<li class="lvl-3"><a href="#3.2-expression-rules">3.2 Expression Rules</a></li>
-				<li class="lvl-3"><a href="#3.3-memory-loads-(the-t%40%5Baddr%5D-family)">3.3 Memory Loads (the T@[addr] family)</a></li>
-				<li class="lvl-3"><a href="#3.4-compile-time%2Flayout-time-forms-and-runtime-primitive-calls">3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls</a></li>
-				<li class="lvl-3"><a href="#3.5-select-(branchless-conditional)">3.5 Select (Branchless Conditional)</a></li>
-				<li class="lvl-3"><a href="#3.6-if-expressions">3.6 If Expressions</a></li>
-				<li class="lvl-3"><a href="#3.7-literals-(composite)">3.7 Literals (Composite)</a></li>
-				<li class="lvl-3"><a href="#3.8-address-of">3.8 Address-Of</a></li>
-				<li class="lvl-2"><a href="#4.-statements">4. Statements</a></li>
-				<li class="lvl-3"><a href="#4.1-function-call-statement-form">4.1 Function Call Statement Form</a></li>
-				<li class="lvl-3"><a href="#4.2-goto-statement-form">4.2 Goto Statement Form</a></li>
-				<li class="lvl-3"><a href="#4.3-declarations-and-assignments">4.3 Declarations and Assignments</a></li>
-				<li class="lvl-3"><a href="#4.4-tuple-destructuring">4.4 Tuple Destructuring</a></li>
-				<li class="lvl-3"><a href="#4.5-directive-statements">4.5 Directive Statements</a></li>
-				<li class="lvl-3"><a href="#4.6-inline-assembly-statement">4.6 Inline Assembly Statement</a></li>
-				<li class="lvl-2"><a href="#5.-top-level-declarations">5. Top-Level Declarations</a></li>
-				<li class="lvl-3"><a href="#5.1-function-declaration">5.1 Function Declaration</a></li>
-				<li class="lvl-3"><a href="#5.2-label-declaration">5.2 Label Declaration</a></li>
-				<li class="lvl-3"><a href="#5.3-struct-and-bitfield-declarations">5.3 Struct and Bitfield Declarations</a></li>
-				<li class="lvl-3"><a href="#5.4-global-%2F-constant-declarations">5.4 Global / Constant Declarations</a></li>
-				<li class="lvl-3"><a href="#5.5-exception-vector-declaration">5.5 Exception Vector Declaration</a></li>
-				<li class="lvl-3"><a href="#5.6-layout-module-declarations">5.6 Layout Module Declarations</a></li>
-				<li class="lvl-2"><a href="#6.-disambiguation-summary">6. Disambiguation Summary</a></li>
-				<li class="lvl-2"><a href="#7.-reserved-for-future-use">7. Reserved For Future Use</a></li>
-				<li class="lvl-2"><a href="#8.-conformance">8. Conformance</a></li>
+				<li class="lvl-2"><a href="#1-lexical-structure">1. Lexical Structure</a></li>
+				<li class="lvl-3"><a href="#11-whitespace-and-comments">1.1 Whitespace and Comments</a></li>
+				<li class="lvl-3"><a href="#12-identifiers-and-keywords">1.2 Identifiers and Keywords</a></li>
+				<li class="lvl-3"><a href="#13-directives-compile-time-forms-and-runtime-primitives">1.3 Directives, Compile-Time Forms, and Runtime Primitives</a></li>
+				<li class="lvl-3"><a href="#14-numeric-literals">1.4 Numeric Literals</a></li>
+				<li class="lvl-3"><a href="#15-string-literals">1.5 String Literals</a></li>
+				<li class="lvl-3"><a href="#151-character-literals">1.5.1 Character Literals</a></li>
+				<li class="lvl-3"><a href="#16-punctuation-and-operator-tokens">1.6 Punctuation and Operator Tokens</a></li>
+				<li class="lvl-3"><a href="#17-boolean-and-null-literals">1.7 Boolean and Null Literals</a></li>
+				<li class="lvl-2"><a href="#2-types">2. Types</a></li>
+				<li class="lvl-2"><a href="#3-expressions">3. Expressions</a></li>
+				<li class="lvl-3"><a href="#31-precedence-table">3.1 Precedence Table</a></li>
+				<li class="lvl-3"><a href="#32-expression-rules">3.2 Expression Rules</a></li>
+				<li class="lvl-3"><a href="#33-memory-loads-the-taddr-family">3.3 Memory Loads (the T@[addr] family)</a></li>
+				<li class="lvl-3"><a href="#34-compile-timelayout-time-forms-and-runtime-primitive-calls">3.4 Compile-Time/Layout-Time Forms and Runtime Primitive Calls</a></li>
+				<li class="lvl-3"><a href="#35-select-branchless-conditional">3.5 Select (Branchless Conditional)</a></li>
+				<li class="lvl-3"><a href="#36-if-expressions">3.6 If Expressions</a></li>
+				<li class="lvl-3"><a href="#37-literals-composite">3.7 Literals (Composite)</a></li>
+				<li class="lvl-3"><a href="#38-address-of">3.8 Address-Of</a></li>
+				<li class="lvl-2"><a href="#4-statements">4. Statements</a></li>
+				<li class="lvl-3"><a href="#41-function-call-statement-form">4.1 Function Call Statement Form</a></li>
+				<li class="lvl-3"><a href="#42-goto-statement-form">4.2 Goto Statement Form</a></li>
+				<li class="lvl-3"><a href="#43-declarations-and-assignments">4.3 Declarations and Assignments</a></li>
+				<li class="lvl-3"><a href="#44-tuple-destructuring">4.4 Tuple Destructuring</a></li>
+				<li class="lvl-3"><a href="#45-directive-statements">4.5 Directive Statements</a></li>
+				<li class="lvl-3"><a href="#46-inline-assembly-statement">4.6 Inline Assembly Statement</a></li>
+				<li class="lvl-2"><a href="#5-top-level-declarations">5. Top-Level Declarations</a></li>
+				<li class="lvl-3"><a href="#51-function-declaration">5.1 Function Declaration</a></li>
+				<li class="lvl-3"><a href="#52-label-declaration">5.2 Label Declaration</a></li>
+				<li class="lvl-3"><a href="#53-struct-and-bitfield-declarations">5.3 Struct and Bitfield Declarations</a></li>
+				<li class="lvl-3"><a href="#54-global-constant-declarations">5.4 Global / Constant Declarations</a></li>
+				<li class="lvl-3"><a href="#55-exception-vector-declaration">5.5 Exception Vector Declaration</a></li>
+				<li class="lvl-3"><a href="#56-layout-module-declarations">5.6 Layout Module Declarations</a></li>
+				<li class="lvl-2"><a href="#6-disambiguation-summary">6. Disambiguation Summary</a></li>
+				<li class="lvl-2"><a href="#7-reserved-for-future-use">7. Reserved For Future Use</a></li>
+				<li class="lvl-2"><a href="#8-conformance">8. Conformance</a></li>
 			</ul>
 			</aside>
 			</div>
@@ -1413,12 +1426,6 @@ manifest and the linked tests in the same change.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

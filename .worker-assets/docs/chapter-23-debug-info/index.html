@@ -8,11 +8,25 @@
 		<meta name="description" content="Debug information goals, DWARF sections, DIEs, locations, and determinism." />
 		<title>Debug Information · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-23-debug-info/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-23-debug-info/" />
+		<meta property="og:title" content="Debug Information · Wyst" />
+		<meta property="og:description" content="Debug information goals, DWARF sections, DIEs, locations, and determinism." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Debug Information · Wyst" />
+		<meta name="twitter:description" content="Debug information goals, DWARF sections, DIEs, locations, and determinism." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -97,7 +111,7 @@ source-location attributes. The section catalog overlaps with
 <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §3</a>.</p>
 </blockquote>
 <hr>
-<h2 id="debug-information" tabindex="-1"><a class="doc-anchor" href="#debug-information" aria-hidden="true">#</a> Debug Information</h2>
+<h2 id="debug-information" tabindex="-1"><a class="doc-anchor" href="#debug-information" aria-label="Permalink to Debug Information">#</a> Debug Information</h2>
 <p>Debug information — mappings from instruction addresses to source file, line
 number, variable names, and types — is specified by this part. The
 deterministic source floor defines the minimum source-location contract; richer
@@ -106,13 +120,13 @@ defined by the full contract below. The emission contract is pinned here so the 
 location-attribute representation (see <a href="/docs/appendix-a-ir/">appendix-a-ir.md §17</a>) can be designed
 against a fixed target.</p>
 <hr>
-<h2 id="11.1-debug-info-floors" tabindex="-1"><a class="doc-anchor" href="#11.1-debug-info-floors" aria-hidden="true">#</a> 11.1 Debug-Info Floors</h2>
+<h2 id="111-debug-info-floors" tabindex="-1"><a class="doc-anchor" href="#111-debug-info-floors" aria-label="Permalink to 11.1 Debug-Info Floors">#</a> 11.1 Debug-Info Floors</h2>
 <p>The reserved section names (<code>.debug_info</code>, <code>.debug_line</code>, <code>.debug_str</code>,
 <code>.debug_loc</code>, <code>.debug_abbrev</code>, <code>.debug_line_str</code>, <code>.debug_aranges</code> — see
 <a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §3</a>) are present in the canonical section
 table. The source floor emits the deterministic symbol and source-location
 subset; richer location lists and DIE payloads belong to the full contract.</p>
-<h3 id="11.1.1-required-floors" tabindex="-1"><a class="doc-anchor" href="#11.1.1-required-floors" aria-hidden="true">#</a> 11.1.1 Required Floors</h3>
+<h3 id="1111-required-floors" tabindex="-1"><a class="doc-anchor" href="#1111-required-floors" aria-label="Permalink to 11.1.1 Required Floors">#</a> 11.1.1 Required Floors</h3>
 <p>The full DWARF contract below remains the canonical target. Two explicit
 floors define what a binary may claim:</p>
 <table>
@@ -150,7 +164,7 @@ values and terminators when machine-code offsets are available. Variable
 locations, type DIEs, inline expansion DIEs, column-accurate stepping, and the
 full statement-row policy are outside the source floor.</p>
 <hr>
-<h2 id="11.2-format-and-dialect" tabindex="-1"><a class="doc-anchor" href="#11.2-format-and-dialect" aria-hidden="true">#</a> 11.2 Format and Dialect</h2>
+<h2 id="112-format-and-dialect" tabindex="-1"><a class="doc-anchor" href="#112-format-and-dialect" aria-label="Permalink to 11.2 Format and Dialect">#</a> 11.2 Format and Dialect</h2>
 <ul>
 <li><strong>DWARF version:</strong> strictly DWARF 5. No GNU extensions. No DWARF-4
 fallback. The <code>version</code> field of every <code>.debug_info</code> compilation-unit
@@ -163,7 +177,7 @@ the 32-bit format halves the size of every section-relative reference.</li>
 <li><strong>Segment selector size:</strong> 0 (no segmentation on AArch64).</li>
 </ul>
 <hr>
-<h2 id="11.3-section-set" tabindex="-1"><a class="doc-anchor" href="#11.3-section-set" aria-hidden="true">#</a> 11.3 Section Set</h2>
+<h2 id="113-section-set" tabindex="-1"><a class="doc-anchor" href="#113-section-set" aria-label="Permalink to 11.3 Section Set">#</a> 11.3 Section Set</h2>
 <p>The locked debug sections are:</p>
 <table>
 <thead>
@@ -228,7 +242,7 @@ present. Wyst has no exceptions, so <code>.eh_frame</code> provides nothing Wyst
 Leaf functions that omit the frame record are the only current case CFI would
 help. CFI may be added if optimized leaf prologues become useful.</p>
 <hr>
-<h2 id="11.4-die-vocabulary-(closed-set)" tabindex="-1"><a class="doc-anchor" href="#11.4-die-vocabulary-(closed-set)" aria-hidden="true">#</a> 11.4 DIE Vocabulary (Closed Set)</h2>
+<h2 id="114-die-vocabulary-closed-set" tabindex="-1"><a class="doc-anchor" href="#114-die-vocabulary-closed-set" aria-label="Permalink to 11.4 DIE Vocabulary (Closed Set)">#</a> 11.4 DIE Vocabulary (Closed Set)</h2>
 <p>The compiler emits <strong>only</strong> the tags listed below. An emitted DIE that
 does not appear in this table is a compiler bug.</p>
 <table>
@@ -326,7 +340,7 @@ namespaces), no <code>DW_TAG_class_type</code>, no <code>DW_TAG_template_*</code
 <code>DW_TAG_imported_*</code> (the IR has already flattened imports per
 <a href="/docs/appendix-a-ir/">appendix-a-ir.md §3</a>).</p>
 <hr>
-<h2 id="11.5-attribute-encoding-rules" tabindex="-1"><a class="doc-anchor" href="#11.5-attribute-encoding-rules" aria-hidden="true">#</a> 11.5 Attribute Encoding Rules</h2>
+<h2 id="115-attribute-encoding-rules" tabindex="-1"><a class="doc-anchor" href="#115-attribute-encoding-rules" aria-label="Permalink to 11.5 Attribute Encoding Rules">#</a> 11.5 Attribute Encoding Rules</h2>
 <p>These are the non-obvious DWARF mappings — anywhere DWARF gives a choice
 of attribute, Wyst picks one and uses only that form.</p>
 <p><strong>Bitfields.</strong> Members of a <code>bitfield(T)</code> are emitted with
@@ -366,7 +380,7 @@ location expressed as <code>DW_AT_location = DW_OP_addr &lt;symbol&gt;</code>, w
 emitter realizes via the same <code>ABS64</code> relocation already used for data
 pointers (<a href="/docs/chapter-16-object-format/">chapter-16-object-format.md §5</a>).</p>
 <hr>
-<h2 id="11.6-line-number-program" tabindex="-1"><a class="doc-anchor" href="#11.6-line-number-program" aria-hidden="true">#</a> 11.6 Line Number Program</h2>
+<h2 id="116-line-number-program" tabindex="-1"><a class="doc-anchor" href="#116-line-number-program" aria-label="Permalink to 11.6 Line Number Program">#</a> 11.6 Line Number Program</h2>
 <p><code>.debug_line</code> emits a standard DWARF-5 line number program with:</p>
 <ul>
 <li><strong>One row per source statement.</strong> <code>is_stmt</code> is set on the row that
@@ -389,7 +403,7 @@ spans elsewhere.</p>
 are interned in <code>.debug_line_str</code> and referenced by offset, not stored
 inline in <code>.debug_line</code>.</p>
 <hr>
-<h2 id="11.7-inline-expansion" tabindex="-1"><a class="doc-anchor" href="#11.7-inline-expansion" aria-hidden="true">#</a> 11.7 Inline Expansion</h2>
+<h2 id="117-inline-expansion" tabindex="-1"><a class="doc-anchor" href="#117-inline-expansion" aria-label="Permalink to 11.7 Inline Expansion">#</a> 11.7 Inline Expansion</h2>
 <p><code>#inline</code> expansions emit <code>DW_TAG_inlined_subroutine</code> DIEs. Each carries:</p>
 <ul>
 <li><code>DW_AT_abstract_origin</code> → the <code>DW_TAG_subprogram</code> DIE of the inlined
@@ -409,7 +423,7 @@ bounded by the source.</p>
 the same DIEs; debuggers see the inline tree as it actually was at
 emission time.</p>
 <hr>
-<h2 id="11.8-location-lists" tabindex="-1"><a class="doc-anchor" href="#11.8-location-lists" aria-hidden="true">#</a> 11.8 Location Lists</h2>
+<h2 id="118-location-lists" tabindex="-1"><a class="doc-anchor" href="#118-location-lists" aria-label="Permalink to 11.8 Location Lists">#</a> 11.8 Location Lists</h2>
 <p>Variables whose storage location does not change across their lifetime
 get a single <code>DW_AT_location</code> with one operation:</p>
 <ul>
@@ -429,7 +443,7 @@ multiple registers; location pieces are therefore outside the model.</p>
 slot's offset from the frame pointer (<code>x29</code>). Slot offsets are
 deterministic per <a href="/docs/appendix-a-ir/">appendix-a-ir.md §11.5</a>.</p>
 <hr>
-<h2 id="11.9-determinism" tabindex="-1"><a class="doc-anchor" href="#11.9-determinism" aria-hidden="true">#</a> 11.9 Determinism</h2>
+<h2 id="119-determinism" tabindex="-1"><a class="doc-anchor" href="#119-determinism" aria-label="Permalink to 11.9 Determinism">#</a> 11.9 Determinism</h2>
 <p>Debug info is part of the bit-for-bit reproducibility contract
 (<a href="/docs/chapter-01-language-design/">chapter-01-language-design.md &quot;Reproducibility Model&quot;</a>).
 Determinism rules:</p>
@@ -453,7 +467,7 @@ the order CUs appear in <code>.debug_info</code>.</li>
 <p>The same source input manifest, compiler version, build optimization mode,
 target, and <code>#schedule</code> modes produce byte-identical debug sections.</p>
 <hr>
-<h2 id="11.10-priority" tabindex="-1"><a class="doc-anchor" href="#11.10-priority" aria-hidden="true">#</a> 11.10 Priority</h2>
+<h2 id="1110-priority" tabindex="-1"><a class="doc-anchor" href="#1110-priority" aria-label="Permalink to 11.10 Priority">#</a> 11.10 Priority</h2>
 <p>Medium. Debug information is not required for correct operation of
 firmware on target hardware. It is, however, a significant productivity
 gap. Without it, diagnosing a crash on real hardware requires manual
@@ -470,17 +484,17 @@ firmware development. The spec above is the design target.</p>
 				<div class="doc-toc-title">On this page</div>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#debug-information">Debug Information</a></li>
-				<li class="lvl-2"><a href="#11.1-debug-info-floors">11.1 Debug-Info Floors</a></li>
-				<li class="lvl-3"><a href="#11.1.1-required-floors">11.1.1 Required Floors</a></li>
-				<li class="lvl-2"><a href="#11.2-format-and-dialect">11.2 Format and Dialect</a></li>
-				<li class="lvl-2"><a href="#11.3-section-set">11.3 Section Set</a></li>
-				<li class="lvl-2"><a href="#11.4-die-vocabulary-(closed-set)">11.4 DIE Vocabulary (Closed Set)</a></li>
-				<li class="lvl-2"><a href="#11.5-attribute-encoding-rules">11.5 Attribute Encoding Rules</a></li>
-				<li class="lvl-2"><a href="#11.6-line-number-program">11.6 Line Number Program</a></li>
-				<li class="lvl-2"><a href="#11.7-inline-expansion">11.7 Inline Expansion</a></li>
-				<li class="lvl-2"><a href="#11.8-location-lists">11.8 Location Lists</a></li>
-				<li class="lvl-2"><a href="#11.9-determinism">11.9 Determinism</a></li>
-				<li class="lvl-2"><a href="#11.10-priority">11.10 Priority</a></li>
+				<li class="lvl-2"><a href="#111-debug-info-floors">11.1 Debug-Info Floors</a></li>
+				<li class="lvl-3"><a href="#1111-required-floors">11.1.1 Required Floors</a></li>
+				<li class="lvl-2"><a href="#112-format-and-dialect">11.2 Format and Dialect</a></li>
+				<li class="lvl-2"><a href="#113-section-set">11.3 Section Set</a></li>
+				<li class="lvl-2"><a href="#114-die-vocabulary-closed-set">11.4 DIE Vocabulary (Closed Set)</a></li>
+				<li class="lvl-2"><a href="#115-attribute-encoding-rules">11.5 Attribute Encoding Rules</a></li>
+				<li class="lvl-2"><a href="#116-line-number-program">11.6 Line Number Program</a></li>
+				<li class="lvl-2"><a href="#117-inline-expansion">11.7 Inline Expansion</a></li>
+				<li class="lvl-2"><a href="#118-location-lists">11.8 Location Lists</a></li>
+				<li class="lvl-2"><a href="#119-determinism">11.9 Determinism</a></li>
+				<li class="lvl-2"><a href="#1110-priority">11.10 Priority</a></li>
 			</ul>
 			</aside>
 			</div>
@@ -491,12 +505,6 @@ firmware development. The spec above is the design target.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

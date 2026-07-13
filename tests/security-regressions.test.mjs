@@ -136,10 +136,15 @@ test("pre-commit artifact rebuild trigger includes every deployed source directo
 		"assets/wyst.css",
 		"docs/index.html",
 		"build/generate.mjs",
+		"build/generate-sitemap.mjs",
 		"build/generate-404.mjs",
 		"build/template.mjs",
 		"build/prism-wyst.mjs",
 		"tools/prepare-worker-assets.mjs",
+		"robots.txt",
+		"sitemap.xml",
+		"package.json",
+		"package-lock.json",
 	]) {
 		assert.equal(
 			patterns.some((pattern) => hookPatternMatches(pattern, path)),
@@ -148,8 +153,8 @@ test("pre-commit artifact rebuild trigger includes every deployed source directo
 		);
 	}
 	assert.match(hook, /npm run --silent build\b/);
-	assert.match(hook, /git add docs/);
-	assert.match(hook, /git add 404\.html \.worker-assets/);
+	assert.match(hook, /git add docs sitemap\.xml/);
+	assert.match(hook, /git add 404\.html sitemap\.xml \.worker-assets/);
 });
 
 test("stable favicon assets always revalidate", async () => {
@@ -168,4 +173,46 @@ test("stable favicon assets always revalidate", async () => {
 			`${path} should not retain a stale icon across deploys`,
 		);
 	}
+});
+
+test("Worker assets apply the complete static-site security policy", async () => {
+	const headers = await readFile(
+		new URL("../.worker-assets/_headers", import.meta.url),
+		"utf8",
+	);
+	for (const expected of [
+		"Content-Security-Policy: default-src 'none'",
+		"base-uri 'none'",
+		"connect-src 'none'",
+		"form-action 'none'",
+		"frame-ancestors 'none'",
+		"Cross-Origin-Opener-Policy: same-origin",
+		"Permissions-Policy:",
+		"Referrer-Policy: strict-origin-when-cross-origin",
+		"Strict-Transport-Security: max-age=31536000",
+		"X-Content-Type-Options: nosniff",
+		"X-Frame-Options: DENY",
+	]) {
+		assert.ok(headers.includes(expected), `missing ${expected}`);
+	}
+});
+
+test("deploy artifact contains discovery files and no injected script markup", async () => {
+	const [home, docs, robots, sitemap] = await Promise.all([
+		readFile(new URL("../.worker-assets/index.html", import.meta.url), "utf8"),
+		readFile(new URL("../.worker-assets/docs/index.html", import.meta.url), "utf8"),
+		readFile(new URL("../.worker-assets/robots.txt", import.meta.url), "utf8"),
+		readFile(new URL("../.worker-assets/sitemap.xml", import.meta.url), "utf8"),
+	]);
+	assert.doesNotMatch(home, /<script\b/i);
+	assert.match(
+		docs,
+		/<script src="\/assets\/docs\.[a-f0-9]{8}\.js" defer><\/script>/,
+	);
+	assert.doesNotMatch(
+		`${home}\n${docs}`,
+		/static\.cloudflareinsights\.com|data-cf-beacon|\/cdn-cgi\/challenge-platform/i,
+	);
+	assert.match(robots, /^Sitemap: https:\/\/wyst\.dev\/sitemap\.xml$/m);
+	assert.match(sitemap, /<loc>https:\/\/wyst\.dev\/docs\/<\/loc>/);
 });

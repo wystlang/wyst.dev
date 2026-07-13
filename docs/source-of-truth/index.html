@@ -8,6 +8,20 @@
 		<meta name="description" content="Versioned authority, conflict resolution, feature states, and schema versions." />
 		<title>Source Of Truth · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/source-of-truth/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/source-of-truth/" />
+		<meta property="og:title" content="Source Of Truth · Wyst" />
+		<meta property="og:description" content="Versioned authority, conflict resolution, feature states, and schema versions." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Source Of Truth · Wyst" />
+		<meta name="twitter:description" content="Versioned authority, conflict resolution, feature states, and schema versions." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -88,7 +102,7 @@
 					<div class="doc-body">
 <p>This document is the human-readable view of the versioned Wyst semantic
 authority. The machine-readable registry is
-<a href="semantic-db.json"><code>design/semantic-db.json</code></a>; it owns enumerated semantic
+<a href="/docs/semantic-db.json"><code>design/semantic-db.json</code></a>; it owns enumerated semantic
 facts such as feature states, version identifiers, operator spellings, effect
 names, public vocabularies, ABI classifications, and schema names. Detailed
 rules still live in the chapters and appendices under the precedence order
@@ -143,7 +157,7 @@ conformance row must be added or updated at the same time.</p>
 <p>Released <code>wync</code> package version <code>0.8.0</code> implements the <code>v0.8</code> release line.
 Rows marked implemented below are part of the current release unless they
 explicitly name an earlier released version.</p>
-<h2 id="authority-order" tabindex="-1"><a class="doc-anchor" href="#authority-order" aria-hidden="true">#</a> Authority Order</h2>
+<h2 id="authority-order" tabindex="-1"><a class="doc-anchor" href="#authority-order" aria-label="Permalink to Authority Order">#</a> Authority Order</h2>
 <p>When normative prose, grammar, IR documentation, ABI rules, object schemas, or
 checked examples conflict, use this order:</p>
 <ol>
@@ -167,7 +181,7 @@ never create language semantics by themselves.</li>
 If Appendix A conflicts with user-visible semantics, ABI rules, or object
 schemas, the higher-authority semantic, ABI, or object rule wins and Appendix A
 must be corrected.</p>
-<h2 id="feature-states" tabindex="-1"><a class="doc-anchor" href="#feature-states" aria-hidden="true">#</a> Feature States</h2>
+<h2 id="feature-states" tabindex="-1"><a class="doc-anchor" href="#feature-states" aria-label="Permalink to Feature States">#</a> Feature States</h2>
 <p>Every feature row uses one of these states:</p>
 <table>
 <thead>
@@ -207,8 +221,8 @@ must be corrected.</p>
 family. A chapter that introduces a new externally visible syntax form, ABI
 rule, report field, CLI payload, object artifact, or editor behavior must add
 or update a row in this registry.</p>
-<h2 id="feature-status-registry" tabindex="-1"><a class="doc-anchor" href="#feature-status-registry" aria-hidden="true">#</a> Feature Status Registry</h2>
-<h3 id="core-language" tabindex="-1"><a class="doc-anchor" href="#core-language" aria-hidden="true">#</a> Core Language</h3>
+<h2 id="feature-status-registry" tabindex="-1"><a class="doc-anchor" href="#feature-status-registry" aria-label="Permalink to Feature Status Registry">#</a> Feature Status Registry</h2>
+<h3 id="core-language" tabindex="-1"><a class="doc-anchor" href="#core-language" aria-label="Permalink to Core Language">#</a> Core Language</h3>
 <table>
 <thead>
 <tr>
@@ -503,7 +517,7 @@ or update a row in this registry.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="targets%2C-build%2C-runtime%2C-and-memory" tabindex="-1"><a class="doc-anchor" href="#targets%2C-build%2C-runtime%2C-and-memory" aria-hidden="true">#</a> Targets, Build, Runtime, And Memory</h3>
+<h3 id="targets-build-runtime-and-memory" tabindex="-1"><a class="doc-anchor" href="#targets-build-runtime-and-memory" aria-label="Permalink to Targets, Build, Runtime, And Memory">#</a> Targets, Build, Runtime, And Memory</h3>
 <table>
 <thead>
 <tr>
@@ -624,7 +638,7 @@ or update a row in this registry.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="native-abi%2C-foreign-abi%2C-and-artifacts" tabindex="-1"><a class="doc-anchor" href="#native-abi%2C-foreign-abi%2C-and-artifacts" aria-hidden="true">#</a> Native ABI, Foreign ABI, And Artifacts</h3>
+<h3 id="native-abi-foreign-abi-and-artifacts" tabindex="-1"><a class="doc-anchor" href="#native-abi-foreign-abi-and-artifacts" aria-label="Permalink to Native ABI, Foreign ABI, And Artifacts">#</a> Native ABI, Foreign ABI, And Artifacts</h3>
 <table>
 <thead>
 <tr>
@@ -745,7 +759,7 @@ or update a row in this registry.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="tooling%2C-reports%2C-and-interfaces" tabindex="-1"><a class="doc-anchor" href="#tooling%2C-reports%2C-and-interfaces" aria-hidden="true">#</a> Tooling, Reports, And Interfaces</h3>
+<h3 id="tooling-reports-and-interfaces" tabindex="-1"><a class="doc-anchor" href="#tooling-reports-and-interfaces" aria-label="Permalink to Tooling, Reports, And Interfaces">#</a> Tooling, Reports, And Interfaces</h3>
 <table>
 <thead>
 <tr>
@@ -836,8 +850,8 @@ or update a row in this registry.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="schema-registry" tabindex="-1"><a class="doc-anchor" href="#schema-registry" aria-hidden="true">#</a> Schema Registry</h2>
-<h3 id="report-schemas" tabindex="-1"><a class="doc-anchor" href="#report-schemas" aria-hidden="true">#</a> Report Schemas</h3>
+<h2 id="schema-registry" tabindex="-1"><a class="doc-anchor" href="#schema-registry" aria-label="Permalink to Schema Registry">#</a> Schema Registry</h2>
+<h3 id="report-schemas" tabindex="-1"><a class="doc-anchor" href="#report-schemas" aria-label="Permalink to Report Schemas">#</a> Report Schemas</h3>
 <table>
 <thead>
 <tr>
@@ -889,7 +903,7 @@ or update a row in this registry.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="interface-schemas" tabindex="-1"><a class="doc-anchor" href="#interface-schemas" aria-hidden="true">#</a> Interface Schemas</h3>
+<h3 id="interface-schemas" tabindex="-1"><a class="doc-anchor" href="#interface-schemas" aria-label="Permalink to Interface Schemas">#</a> Interface Schemas</h3>
 <table>
 <thead>
 <tr>
@@ -928,7 +942,7 @@ or update a row in this registry.</p>
 </table>
 <p>Schema version changes require updating this registry, the owning chapter, the
 producer, and the snapshot tests in the same change.</p>
-<h2 id="compatibility-and-change-process" tabindex="-1"><a class="doc-anchor" href="#compatibility-and-change-process" aria-hidden="true">#</a> Compatibility And Change Process</h2>
+<h2 id="compatibility-and-change-process" tabindex="-1"><a class="doc-anchor" href="#compatibility-and-change-process" aria-label="Permalink to Compatibility And Change Process">#</a> Compatibility And Change Process</h2>
 <p>A change is source-compatible when existing accepted source continues to parse,
 check, format, and lower with the same user-visible meaning under the same
 language version. A change is source-breaking when it rejects previously
@@ -959,7 +973,7 @@ examples.</p>
 compiler-visible vocabulary together. New compiler-visible features must add a
 semantic database feature row before they can be documented as implemented,
 future-version normative, experimental, reserved, deprecated, or removed.</p>
-<h2 id="conformance-completion-gate" tabindex="-1"><a class="doc-anchor" href="#conformance-completion-gate" aria-hidden="true">#</a> Conformance Completion Gate</h2>
+<h2 id="conformance-completion-gate" tabindex="-1"><a class="doc-anchor" href="#conformance-completion-gate" aria-label="Permalink to Conformance Completion Gate">#</a> Conformance Completion Gate</h2>
 <p>Every semantic database feature row is a normative semantic clause for
 traceability purposes. Each clause must have an entry in
 <a href="/docs/conformance-index/"><code>design/conformance-index.md</code></a> with, as applicable:</p>
@@ -998,9 +1012,9 @@ test-link validity.</p>
 				<li class="lvl-2"><a href="#feature-states">Feature States</a></li>
 				<li class="lvl-2"><a href="#feature-status-registry">Feature Status Registry</a></li>
 				<li class="lvl-3"><a href="#core-language">Core Language</a></li>
-				<li class="lvl-3"><a href="#targets%2C-build%2C-runtime%2C-and-memory">Targets, Build, Runtime, And Memory</a></li>
-				<li class="lvl-3"><a href="#native-abi%2C-foreign-abi%2C-and-artifacts">Native ABI, Foreign ABI, And Artifacts</a></li>
-				<li class="lvl-3"><a href="#tooling%2C-reports%2C-and-interfaces">Tooling, Reports, And Interfaces</a></li>
+				<li class="lvl-3"><a href="#targets-build-runtime-and-memory">Targets, Build, Runtime, And Memory</a></li>
+				<li class="lvl-3"><a href="#native-abi-foreign-abi-and-artifacts">Native ABI, Foreign ABI, And Artifacts</a></li>
+				<li class="lvl-3"><a href="#tooling-reports-and-interfaces">Tooling, Reports, And Interfaces</a></li>
 				<li class="lvl-2"><a href="#schema-registry">Schema Registry</a></li>
 				<li class="lvl-3"><a href="#report-schemas">Report Schemas</a></li>
 				<li class="lvl-3"><a href="#interface-schemas">Interface Schemas</a></li>
@@ -1016,12 +1030,6 @@ test-link validity.</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

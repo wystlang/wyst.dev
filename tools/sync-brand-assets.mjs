@@ -52,10 +52,18 @@ const files = [
 	["design-system/wyst.dev/docs.css", "docs.css"],
 ];
 
+// These runtime assets belong to the site rather than the brand repository.
+// Carry them through the atomic directory replacement so a brand refresh cannot
+// silently remove site behavior.
+const siteOwnedFiles = ["docs.js"];
+
 const brandRoot = await resolveBrandRoot();
 const stagingDir = await mkdtemp(path.join(root, ".assets-sync-"));
 
 try {
+	for (const file of siteOwnedFiles) {
+		await copyFile(path.join(assetsDir, file), path.join(stagingDir, file));
+	}
 	for (const [from, to] of files) {
 		const destination = path.join(stagingDir, to);
 		await mkdir(path.dirname(destination), { recursive: true });

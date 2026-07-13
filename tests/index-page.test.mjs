@@ -93,6 +93,14 @@ function anchors(pageHtml) {
 	);
 }
 
+function metaContent(pageHtml, attribute, value) {
+	for (const [, attributes] of pageHtml.matchAll(/<meta\b([^>]*)>/gi)) {
+		const attrs = attributeMap(attributes);
+		if (attrs[attribute] === value) return attrs.content ?? "";
+	}
+	assert.fail(`missing meta[${attribute}="${value}"]`);
+}
+
 function siteHeaderHtml(pageHtml) {
 	const match = pageHtml.match(/<header\b[^>]*class="[^"]*\bsite\b[^"]*"[^>]*>([\s\S]*?)<\/header>/i);
 	assert.ok(match, "missing site header");
@@ -237,7 +245,27 @@ test("shared headers keep only Reference and Source", () => {
 	}
 });
 
-test("homepage opens with a minimal personal introduction and separate project facts", () => {
+test("homepage metadata states the current project value without a release claim", () => {
+	const title = textContent(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+	const description =
+		"Wyst is a personal ARM64 language and compiler project with explicit low-level behavior and inspectable lowering.";
+	const socialDescription =
+		"A personal language project with explicit low-level behavior and inspectable ARM64 lowering.";
+	const socialAlt =
+		"Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering.";
+
+	assert.equal(title, "Wyst — an explicit ARM64 language and compiler");
+	assert.equal(metaContent(html, "name", "description"), description);
+	assert.equal(metaContent(html, "property", "og:title"), title);
+	assert.equal(metaContent(html, "property", "og:description"), socialDescription);
+	assert.equal(metaContent(html, "name", "twitter:title"), title);
+	assert.equal(metaContent(html, "name", "twitter:description"), socialDescription);
+	assert.equal(metaContent(html, "property", "og:image:alt"), socialAlt);
+	assert.equal(metaContent(html, "name", "twitter:image:alt"), socialAlt);
+	assert.doesNotMatch(html, /\bv0\.8\b|building for fun/i);
+});
+
+test("homepage leads with evidence and keeps a minimal personal introduction", () => {
 	const introText = textContent(
 		taggedElementWithOpeningMatch(
 			html,
@@ -246,12 +274,17 @@ test("homepage opens with a minimal personal introduction and separate project f
 		),
 	);
 	for (const [idea, pattern] of [
-		["web-interface day job", /\bday job\b[^.]*\bweb interfaces\b/i],
+		["web-interface day job", /\bday job\b[^.]*\bbuilding web interfaces\b/i],
 		["low-level programming itch", /\blow-level programming itch\b/i],
 		["ARM64 language and compiler", /\bARM64 language and compiler\b/i],
-		["visual learning goal", /\bvisualize what the machine is actually doing\b/i],
+		["explicit low-level behavior", /\blow-level behavior explicit and inspectable\b/i],
 		["computer science degree", /\bCS degree\b/i],
-		["candid AI use", /\busing AI to help build Wyst and the tooling\b/i],
+		["author ownership", /\bI own the language and compiler decisions\b/i],
+		["candid AI use", /\bAI assists implementation\b/i],
+		["conformance evidence", /\bConformance tests\b/i],
+		["determinism evidence", /\bbyte-identical kernel builds\b/i],
+		["fuzzing evidence", /\bfuzzing\b/i],
+		["runtime evidence", /\bQEMU fixtures\b/i],
 	]) {
 		assert.match(introText, pattern, `the introduction should include ${idea}`);
 	}
@@ -273,6 +306,15 @@ test("homepage opens with a minimal personal introduction and separate project f
 		introText.indexOf("ARM64 language and compiler") <
 			introText.indexOf("My day job"),
 		"the introduction should define Wyst before explaining the author's motivation",
+	);
+	assert.ok(
+		introText.indexOf("Conformance tests") < introText.indexOf("AI assists"),
+		"the introduction should establish verification evidence before disclosing AI assistance",
+	);
+	assert.ok(
+		introText.indexOf("I own the language and compiler decisions") <
+			introText.indexOf("AI assists"),
+		"the introduction should establish author ownership before disclosing AI assistance",
 	);
 	assert.doesNotMatch(html, /<footer\b/i, "the homepage should not have a footer");
 
@@ -354,7 +396,7 @@ test("documentation is a lookup reference rather than a tutorial path", () => {
 	);
 	assert.match(
 		docsSourceOfTruthHtml,
-		/<button class="doc-sidebar-toggle" type="button">☰ Contents<\/button>/,
+		/<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰<\/span> Contents<\/button>/,
 	);
 	assert.doesNotMatch(
 		docsSourceOfTruthHtml,

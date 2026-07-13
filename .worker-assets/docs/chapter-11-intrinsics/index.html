@@ -8,11 +8,25 @@
 		<meta name="description" content="Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks." />
 		<title>Runtime Primitives · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-11-intrinsics/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-11-intrinsics/" />
+		<meta property="og:title" content="Runtime Primitives · Wyst" />
+		<meta property="og:description" content="Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Runtime Primitives · Wyst" />
+		<meta name="twitter:description" content="Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -102,9 +116,8 @@ still use the internal term <code>intrinsic</code> for opaque runtime-lowered op
 they are legal to reorder; this chapter defines what operation each primitive
 requests from the target.</p>
 <hr>
-<h3 id="checked-primitive-example" tabindex="-1"><a class="doc-anchor" href="#checked-primitive-example" aria-hidden="true">#</a> Checked Primitive Example</h3>
+<h3 id="checked-primitive-example" tabindex="-1"><a class="doc-anchor" href="#checked-primitive-example" aria-label="Permalink to Checked Primitive Example">#</a> Checked Primitive Example</h3>
 <p>CPU hint primitives are explicit runtime operations:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> intrinsics_demo
 
 <span class="token directive macro">#noreturn</span>
@@ -114,8 +127,7 @@ requests from the target.</p>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="runtime-address-materialization" tabindex="-1"><a class="doc-anchor" href="#runtime-address-materialization" aria-hidden="true">#</a> Runtime Address Materialization</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="runtime-address-materialization" tabindex="-1"><a class="doc-anchor" href="#runtime-address-materialization" aria-label="Permalink to Runtime Address Materialization">#</a> Runtime Address Materialization</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span><span class="token parameter">local</span> <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@T</span> in an explicit address context
 <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span><span class="token parameter">local</span> <span class="token operator">:</span> <span class="token punctuation">[</span>N<span class="token punctuation">]</span>T<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@T</span> or <span class="token operator">@</span><span class="token punctuation">[</span>N<span class="token punctuation">]</span>T in an explicit address context
 </code></pre>
@@ -130,7 +142,6 @@ semantic effect. Stack-address escape remains checked by the lifetime/authority
 rules; backend frame facts are reported after lowering.</p>
 <p><code>%addr_of(local)</code> does not choose a default lens in an inferred binding. Write
 an explicit annotation or categorized conversion:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">word</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token parameter">word_ptr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span>
 <span class="token variable">word_ptr2</span> <span class="token operator">:=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>word<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
@@ -141,7 +152,6 @@ an explicit annotation or categorized conversion:</p>
 </code></pre>
 <p>The resulting address may be used for direct memory operations inside the
 containing function:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">value</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">41</span>
 <span class="token parameter">ptr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token primitive macro">%addr_of</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span>
 <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>ptr<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>ptr<span class="token punctuation">]</span> <span class="token operator">+</span> <span class="token number">1</span>
@@ -155,8 +165,7 @@ casts, aliases, stores of the address value, indirect calls, and ordinary value
 observations are rejected. Use <code>#addr_of(symbol)</code> for globals, functions,
 labels, exception vectors, and other linkable storage.</p>
 <hr>
-<h3 id="explicit-raw-storage" tabindex="-1"><a class="doc-anchor" href="#explicit-raw-storage" aria-hidden="true">#</a> Explicit Raw Storage</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="explicit-raw-storage" tabindex="-1"><a class="doc-anchor" href="#explicit-raw-storage" aria-label="Permalink to Explicit Raw Storage">#</a> Explicit Raw Storage</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%read_uninit</span><span class="token punctuation">(</span><span class="token parameter">storage</span> <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span> <span class="token operator">-></span> T
 <span class="token primitive macro">%write_uninit</span><span class="token punctuation">(</span><span class="token parameter">storage</span> <span class="token operator">:</span> MaybeUninit<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">,</span> <span class="token parameter">value</span> <span class="token operator">:</span> T<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">void</span>
 </code></pre>
@@ -178,8 +187,7 @@ read-only snapshots and cannot be used as mutable raw storage.</p>
 do not by themselves materialize an address, touch external memory, or cross an
 architectural boundary.</p>
 <hr>
-<h3 id="runtime-enum-tag-projection" tabindex="-1"><a class="doc-anchor" href="#runtime-enum-tag-projection" aria-hidden="true">#</a> Runtime Enum Tag Projection</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="runtime-enum-tag-projection" tabindex="-1"><a class="doc-anchor" href="#runtime-enum-tag-projection" aria-label="Permalink to Runtime Enum Tag Projection">#</a> Runtime Enum Tag Projection</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%tag_of</span><span class="token punctuation">(</span><span class="token parameter">value</span> <span class="token operator">:</span> Enum<span class="token punctuation">)</span> <span class="token operator">-></span> the <span class="token keyword">enum</span>'s declared discriminator type
 </code></pre>
 <p><code>%tag_of(value)</code> projects the active discriminator from an enum value at
@@ -189,7 +197,6 @@ restricted to compile-time variant metadata.</p>
 validate payload bytes, branch on variants, or read inactive payload storage.
 The <code>as</code> operator still does not convert enums to integers; <code>%tag_of</code> is the
 explicit spelling for this payload-discarding projection.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">Event</span> <span class="token operator">::</span> <span class="token keyword">enum</span><span class="token operator">:</span> <span class="token builtin type">u8</span> <span class="token punctuation">{</span>
   Empty
   <span class="token function">Data</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span>
@@ -205,7 +212,7 @@ from the fixed two-word enum representation.
 There is no inverse runtime primitive for constructing an enum from a raw tag
 and payload bytes.</p>
 <hr>
-<h2 id="1.3.2-atomic-operations" tabindex="-1"><a class="doc-anchor" href="#1.3.2-atomic-operations" aria-hidden="true">#</a> 1.3.2 Atomic Operations</h2>
+<h2 id="132-atomic-operations" tabindex="-1"><a class="doc-anchor" href="#132-atomic-operations" aria-label="Permalink to 1.3.2 Atomic Operations">#</a> 1.3.2 Atomic Operations</h2>
 <p>Atomic operations are the language-level primitives for atomic
 inter-agent communication. Where <code>#acquire</code> and <code>#release</code> cover ordered
 plain loads and stores, atomic operations cover <strong>read-modify-write</strong> (RMW)
@@ -213,7 +220,7 @@ sequences — compare-and-swap, fetch-and-add, exchange, and single-bit
 updates — that have no equivalent in the plain-access shape and that
 hand-written <code>ldxr</code>/<code>stxr</code> loops in <code>#asm</code> get wrong with monotonous
 regularity.</p>
-<h3 id="when-to-use-each-form" tabindex="-1"><a class="doc-anchor" href="#when-to-use-each-form" aria-hidden="true">#</a> When to Use Each Form</h3>
+<h3 id="when-to-use-each-form" tabindex="-1"><a class="doc-anchor" href="#when-to-use-each-form" aria-label="Permalink to When to Use Each Form">#</a> When to Use Each Form</h3>
 <table>
 <thead>
 <tr>
@@ -269,7 +276,7 @@ Acquire- and release-ordered single-word loads and stores stay in the
 directive form; the remaining atomic read-modify-write and relaxed/seq_cst
 load-store operations are runtime primitives.</p>
 <hr>
-<h3 id="memory-order-vocabulary" tabindex="-1"><a class="doc-anchor" href="#memory-order-vocabulary" aria-hidden="true">#</a> Memory Order Vocabulary</h3>
+<h3 id="memory-order-vocabulary" tabindex="-1"><a class="doc-anchor" href="#memory-order-vocabulary" aria-label="Permalink to Memory Order Vocabulary">#</a> Memory Order Vocabulary</h3>
 <p>Five orderings are recognized. The order argument is a keyword from this
 closed set; no other identifier is accepted:</p>
 <table>
@@ -329,12 +336,11 @@ closed set; no other identifier is accepted:</p>
 instead. <code>%atomic_store</code> does not accept <code>release</code> — write
 <code>#release u32@[addr] = v</code> instead. The redundant forms are invalid.</p>
 <hr>
-<h3 id="atomic-types" tabindex="-1"><a class="doc-anchor" href="#atomic-types" aria-hidden="true">#</a> Atomic Types</h3>
+<h3 id="atomic-types" tabindex="-1"><a class="doc-anchor" href="#atomic-types" aria-label="Permalink to Atomic Types">#</a> Atomic Types</h3>
 <p>Atomic operations are defined on naturally aligned <code>u8</code>, <code>u16</code>, <code>u32</code>,
 <code>u64</code>, <code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>, and address types (<code>@T</code>, <code>@volatile T</code>,
 <code>@mmio T</code>).
 The address argument has element type matching the value type:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span><span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>counter<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
 </code></pre>
@@ -347,8 +353,7 @@ architectural memory type still comes from the runtime mapping.</p>
 (<code>ldxp</code>/<code>stxp</code>, <code>casp</code>) are accessible only via <code>#asm</code>; the language does
 not model 128-bit value types.</p>
 <hr>
-<h3 id="atomic-load-and-store" tabindex="-1"><a class="doc-anchor" href="#atomic-load-and-store" aria-hidden="true">#</a> Atomic Load and Store</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="atomic-load-and-store" tabindex="-1"><a class="doc-anchor" href="#atomic-load-and-store" aria-label="Permalink to Atomic Load and Store">#</a> Atomic Load and Store</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%atomic_load</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> <span class="token punctuation">{</span> relaxed<span class="token punctuation">,</span> seq_cst <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">-></span> T
 <span class="token primitive macro">%atomic_store</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">val</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> <span class="token punctuation">{</span> relaxed<span class="token punctuation">,</span> seq_cst <span class="token punctuation">}</span><span class="token punctuation">)</span>
 </code></pre>
@@ -357,7 +362,6 @@ torn read on a misaligned-by-compiler-spill or shared word) but does not
 need any inter-access ordering. Sequentially-consistent forms exist for
 algorithms that require the global total-order guarantee that
 acquire/release alone cannot provide.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Relaxed read of a shared counter. Atomic at the word level; no ordering</span>
 <span class="token comment">// relative to surrounding code.</span>
 <span class="token variable">n</span> <span class="token operator">:=</span> <span class="token primitive macro">%atomic_load</span><span class="token punctuation">(</span>counter_addr<span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
@@ -367,8 +371,7 @@ acquire/release alone cannot provide.</p>
 <span class="token primitive macro">%atomic_store</span><span class="token punctuation">(</span>flag_addr<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">as</span><span class="token punctuation">.</span>numeric <span class="token builtin type">u32</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> seq_cst<span class="token punctuation">)</span>
 </code></pre>
 <hr>
-<h3 id="compare-and-swap" tabindex="-1"><a class="doc-anchor" href="#compare-and-swap" aria-hidden="true">#</a> Compare-and-Swap</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="compare-and-swap" tabindex="-1"><a class="doc-anchor" href="#compare-and-swap" aria-label="Permalink to Compare-and-Swap">#</a> Compare-and-Swap</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%cas</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">expected</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">new</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">prev</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">ok</span> <span class="token operator">:</span> <span class="token builtin type">bool</span><span class="token punctuation">)</span>
 </code></pre>
 <p>Returns a two-element tuple: <code>prev</code> is the value that was at <code>addr</code>
@@ -380,7 +383,6 @@ path performs the load with the same barrier configuration as the success
 path. Wyst therefore takes a single <code>order:</code> argument rather than the
 C++/Rust pair. <code>acqrel</code> and <code>seq_cst</code> <code>%cas</code> are RMW orderings; <code>acquire</code>
 applies to both the read and the write, <code>release</code> likewise.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">LOCK</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token number">0x8000</span>
 
 <span class="token function">spin_lock</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -399,7 +401,7 @@ applies to both the read and the write, <code>release</code> likewise.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="fetch-and-modify" tabindex="-1"><a class="doc-anchor" href="#fetch-and-modify" aria-hidden="true">#</a> Fetch-and-Modify</h3>
+<h3 id="fetch-and-modify" tabindex="-1"><a class="doc-anchor" href="#fetch-and-modify" aria-label="Permalink to Fetch-and-Modify">#</a> Fetch-and-Modify</h3>
 <p>All <code>%fetch_*</code> operations and <code>%xchg</code> perform the named modify on the
 location and return the <strong>prior</strong> value. This matches the ARMv8.1 LSE
 instruction semantics (<code>ldadd</code>, <code>ldset</code>, <code>ldclr</code>, <code>ldeor</code>, <code>swp</code> all
@@ -407,7 +409,6 @@ return the previous memory contents; <code>%fetch_sub</code> uses <code>ldadd</c
 negated operand on LSE targets). Returning the prior value is
 universal — the new value is always recomputable from <code>(prev, delta)</code>,
 but the prior value is not recomputable from the new value alone.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">delta</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> T   <span class="token comment">// returns old</span>
 <span class="token primitive macro">%fetch_sub</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">delta</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> T
 <span class="token primitive macro">%fetch_or</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span>  <span class="token parameter">mask</span>  <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> T
@@ -415,7 +416,6 @@ but the prior value is not recomputable from the new value alone.</p>
 <span class="token primitive macro">%fetch_xor</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">mask</span>  <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> T
 <span class="token primitive macro">%xchg</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span>      <span class="token parameter">val</span>   <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> T
 </code></pre>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Reference counting:</span>
 <span class="token variable">prev</span> <span class="token operator">:=</span> <span class="token primitive macro">%fetch_add</span><span class="token punctuation">(</span>refcount_addr<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> relaxed<span class="token punctuation">)</span>
 
@@ -426,19 +426,17 @@ but the prior value is not recomputable from the new value alone.</p>
 <span class="token variable">old_head</span> <span class="token operator">:=</span> <span class="token primitive macro">%xchg</span><span class="token punctuation">(</span>head_addr<span class="token punctuation">,</span> new_head<span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> acqrel<span class="token punctuation">)</span>
 </code></pre>
 <hr>
-<h3 id="atomic-bit-operations" tabindex="-1"><a class="doc-anchor" href="#atomic-bit-operations" aria-hidden="true">#</a> Atomic Bit Operations</h3>
+<h3 id="atomic-bit-operations" tabindex="-1"><a class="doc-anchor" href="#atomic-bit-operations" aria-label="Permalink to Atomic Bit Operations">#</a> Atomic Bit Operations</h3>
 <p>Single-bit atomic operations are a frequent enough kernel idiom to warrant
 their own intrinsics — <code>%fetch_or(addr, 1 &lt;&lt; n, ...)</code> works but obscures
 intent and forces the compiler through a fetch_or-shaped lowering when LSE
 provides <code>ldset</code>/<code>ldclr</code> directly.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%atomic_bit_set</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span>   <span class="token parameter">bit</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span>   <span class="token comment">// returns prior bit</span>
 <span class="token primitive macro">%atomic_bit_clear</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">bit</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> <span class="token parameter">order</span> <span class="token operator">:</span> Order<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">bool</span>   <span class="token comment">// returns prior bit</span>
 </code></pre>
 <p><code>bit</code> is the bit index, <code>0</code> being the least significant. The result is the
 value of that bit <em>before</em> the operation. <code>bit</code> must be a compile-time
 constant less than <code>8 * #size_of(T)</code>; out-of-range is a compile error.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Test-and-set the lock bit:</span>
 <span class="token variable">was_locked</span> <span class="token operator">:=</span> <span class="token primitive macro">%atomic_bit_set</span><span class="token punctuation">(</span>status_addr<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token parameter">order</span><span class="token operator">:</span> acquire<span class="token punctuation">)</span>
 <span class="token keyword">if</span> was_locked <span class="token operator">==</span> <span class="token boolean">false</span> <span class="token punctuation">{</span>
@@ -446,7 +444,7 @@ constant less than <code>8 * #size_of(T)</code>; out-of-range is a compile error
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="arm64-lowering" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <p>The reference lowering targets ARMv8.0-A (the language baseline). With
 <code>features = lse</code> declared on the <code>#target</code> (see <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>), the compiler
 emits the corresponding LSE single-instruction forms instead.</p>
@@ -594,7 +592,7 @@ runtime-assisted atomics, that assistance must be explicit in the operation's
 effects, generated storage, and lowering reports rather than hidden behind the
 same infallible primitive surface.</p>
 <hr>
-<h3 id="interaction-with-the-memory-model" tabindex="-1"><a class="doc-anchor" href="#interaction-with-the-memory-model" aria-hidden="true">#</a> Interaction with the Memory Model</h3>
+<h3 id="interaction-with-the-memory-model" tabindex="-1"><a class="doc-anchor" href="#interaction-with-the-memory-model" aria-label="Permalink to Interaction with the Memory Model">#</a> Interaction with the Memory Model</h3>
 <p>Atomic operations participate in the happens-before relation described in
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md</a> on
 the same footing as <code>#acquire</code>/<code>#release</code> directives:</p>
@@ -614,7 +612,7 @@ guarantee single-copy atomicity at the access only.</li>
 <p>The reordering table in <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §9.4</a> applies unchanged: an atomic access of order
 O is treated as a memory operation of the corresponding row/column.</p>
 <hr>
-<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -674,7 +672,7 @@ O is treated as a memory operation of the corresponding row/column.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.3-system-register-access" tabindex="-1"><a class="doc-anchor" href="#1.3.3-system-register-access" aria-hidden="true">#</a> 1.3.3 System Register Access</h2>
+<h2 id="133-system-register-access" tabindex="-1"><a class="doc-anchor" href="#133-system-register-access" aria-label="Permalink to 1.3.3 System Register Access">#</a> 1.3.3 System Register Access</h2>
 <p>The compiler's architectural system-register table is closed for the named
 <code>%mrs</code> / <code>%msr</code> forms: registers not listed there and noncanonical case
 variants are rejected. Each named register has exactly one canonical spelling,
@@ -687,7 +685,6 @@ kernel reads and writes them constantly. Wyst provides direct intrinsics
 for system-register access, eliminating the <code>#asm { mrs … }</code> /
 <code>#asm { msr … }</code> boilerplate that otherwise dominates early-boot and
 trap-handling code.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%mrs</span><span class="token punctuation">(</span>reg<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>                  <span class="token comment">// read system register</span>
 <span class="token primitive macro">%msr</span><span class="token punctuation">(</span>reg<span class="token punctuation">,</span> <span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>              <span class="token comment">// write system register</span>
 </code></pre>
@@ -696,7 +693,7 @@ bare identifier directly in the <code>%mrs</code>/<code>%msr</code> argument pos
 compiler resolves the name against the architectural system register
 table (see appendix); an unknown name is a compile error.</p>
 <hr>
-<h3 id="register-name-namespace" tabindex="-1"><a class="doc-anchor" href="#register-name-namespace" aria-hidden="true">#</a> Register Name Namespace</h3>
+<h3 id="register-name-namespace" tabindex="-1"><a class="doc-anchor" href="#register-name-namespace" aria-label="Permalink to Register Name Namespace">#</a> Register Name Namespace</h3>
 <p>System register names occupy a dedicated namespace recognized <strong>only</strong> in
 the <code>%mrs</code> / <code>%msr</code> / <code>%mrs_s</code> / <code>%msr_s</code> argument position. They cannot
 appear in expression position, are not values, and cannot be assigned to
@@ -705,7 +702,6 @@ variables.</p>
 (e.g. <code>TCR_EL1</code> is both an architectural register and a conventional
 bitfield type declaration) without ambiguity — the syntactic positions
 are disjoint:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">TCR_EL1</span> <span class="token operator">::</span> <span class="token keyword">bitfield</span><span class="token punctuation">(</span><span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>   <span class="token comment">// TCR_EL1 is a type here</span>
 
 <span class="token variable">raw</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">TCR_EL1</span><span class="token punctuation">)</span>                <span class="token comment">// TCR_EL1 is a register name here</span>
@@ -717,7 +713,7 @@ names such as <code>CurrentEL</code> and <code>SPSel</code> keep that spelling. 
 accepted canonical names, diagnostics reject other case variants, and editor
 completion only suggests canonical names.</p>
 <hr>
-<h3 id="access-permissions" tabindex="-1"><a class="doc-anchor" href="#access-permissions" aria-hidden="true">#</a> Access Permissions</h3>
+<h3 id="access-permissions" tabindex="-1"><a class="doc-anchor" href="#access-permissions" aria-label="Permalink to Access Permissions">#</a> Access Permissions</h3>
 <p>The system register table encodes each register's access permissions.
 Wyst rejects illegal accesses:</p>
 <table>
@@ -755,11 +751,10 @@ Wyst rejects illegal accesses:</p>
 running at EL1 traps at runtime; the compiler additionally rejects this
 statically when the target declares EL1 as its execution level.</p>
 <hr>
-<h3 id="return-type-discipline" tabindex="-1"><a class="doc-anchor" href="#return-type-discipline" aria-hidden="true">#</a> Return Type Discipline</h3>
+<h3 id="return-type-discipline" tabindex="-1"><a class="doc-anchor" href="#return-type-discipline" aria-label="Permalink to Return Type Discipline">#</a> Return Type Discipline</h3>
 <p><code>%mrs</code> always returns <code>u64</code> — the raw register width as the ARM64
 architecture defines it. The caller converts to a bitfield via the
 standard <code>as.bits</code> conversion (see <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6.1</a>):</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Read TCR_EL1, modify a field, write it back:</span>
 <span class="token variable">raw</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">TCR_EL1</span><span class="token punctuation">)</span>
 <span class="token variable">tcr</span> <span class="token operator">:=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token constant">TCR_EL1</span>
@@ -777,7 +772,7 @@ the strict typing discipline established in <a href="/docs/chapter-06-types/">ch
 encodings) are zero-extended on <code>%mrs</code> and have their upper 32 bits
 ignored on <code>%msr</code>. The intrinsic interface is uniformly 64-bit.</p>
 <hr>
-<h3 id="no-implicit-synchronization" tabindex="-1"><a class="doc-anchor" href="#no-implicit-synchronization" aria-hidden="true">#</a> No Implicit Synchronization</h3>
+<h3 id="no-implicit-synchronization" tabindex="-1"><a class="doc-anchor" href="#no-implicit-synchronization" aria-label="Permalink to No Implicit Synchronization">#</a> No Implicit Synchronization</h3>
 <p><code>%msr</code> does not emit <code>isb</code>, <code>dsb</code>, or any other barrier. Writes to
 fetch-affecting registers (<code>SCTLR_ELx</code>, <code>VBAR_ELx</code>, <code>TCR_ELx</code>,
 <code>TTBR0_ELx</code>, <code>MAIR_ELx</code>, etc.) require an explicit <code>%isb()</code>
@@ -788,11 +783,10 @@ translation-affecting registers require explicit <code>%dsb</code> + <code>%tlbi
 write. Treat every <code>%msr</code> as a register-write only; emit the
 synchronization sequence the architecture documents for that register.</p>
 <hr>
-<h3 id="daif-manipulation" tabindex="-1"><a class="doc-anchor" href="#daif-manipulation" aria-hidden="true">#</a> DAIF Manipulation</h3>
+<h3 id="daif-manipulation" tabindex="-1"><a class="doc-anchor" href="#daif-manipulation" aria-label="Permalink to DAIF Manipulation">#</a> DAIF Manipulation</h3>
 <p><code>DAIFSet</code> and <code>DAIFClr</code> are special — they take a 4-bit immediate (a
 bitmask of <code>D</code>/<code>A</code>/<code>I</code>/<code>F</code> interrupt categories) rather than a register
 value. They get their own intrinsics:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%daif_set</span><span class="token punctuation">(</span><span class="token parameter">mask</span> <span class="token operator">:</span> u4<span class="token punctuation">)</span>              <span class="token comment">// mask interrupts</span>
 <span class="token primitive macro">%daif_clr</span><span class="token punctuation">(</span><span class="token parameter">mask</span> <span class="token operator">:</span> u4<span class="token punctuation">)</span>              <span class="token comment">// unmask interrupts</span>
 </code></pre>
@@ -829,7 +823,6 @@ positions follow ARM ARM convention:</p>
 </tr>
 </tbody>
 </table>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%daif_set</span><span class="token punctuation">(</span><span class="token number">0b0010</span><span class="token punctuation">)</span>    <span class="token comment">// mask IRQs</span>
 <span class="token comment">// ... critical section ...</span>
 <span class="token primitive macro">%daif_clr</span><span class="token punctuation">(</span><span class="token number">0b0010</span><span class="token punctuation">)</span>    <span class="token comment">// unmask IRQs</span>
@@ -839,11 +832,10 @@ written via the regular <code>%mrs(DAIF)</code> / <code>%msr(DAIF, val)</code> i
 <code>%daif_set</code> / <code>%daif_clr</code> forms specifically lower to the immediate-form
 <code>msr daifset, #imm</code> / <code>msr daifclr, #imm</code> instructions.</p>
 <hr>
-<h3 id="implementation-defined-registers" tabindex="-1"><a class="doc-anchor" href="#implementation-defined-registers" aria-hidden="true">#</a> Implementation-Defined Registers</h3>
+<h3 id="implementation-defined-registers" tabindex="-1"><a class="doc-anchor" href="#implementation-defined-registers" aria-label="Permalink to Implementation-Defined Registers">#</a> Implementation-Defined Registers</h3>
 <p>ARM-architectural registers cover the standard surface. Implementation-
 defined registers (Apple silicon performance counters, Cortex-A errata
 workarounds, vendor-specific debug registers) use the S-encoded form:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%mrs_s</span><span class="token punctuation">(</span><span class="token parameter">op0</span> <span class="token operator">:</span> u2<span class="token punctuation">,</span> <span class="token parameter">op1</span> <span class="token operator">:</span> u3<span class="token punctuation">,</span> <span class="token parameter">crn</span> <span class="token operator">:</span> u4<span class="token punctuation">,</span> <span class="token parameter">crm</span> <span class="token operator">:</span> u4<span class="token punctuation">,</span> <span class="token parameter">op2</span> <span class="token operator">:</span> u3<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 <span class="token primitive macro">%msr_s</span><span class="token punctuation">(</span><span class="token parameter">op0</span> <span class="token operator">:</span> u2<span class="token punctuation">,</span> <span class="token parameter">op1</span> <span class="token operator">:</span> u3<span class="token punctuation">,</span> <span class="token parameter">crn</span> <span class="token operator">:</span> u4<span class="token punctuation">,</span> <span class="token parameter">crm</span> <span class="token operator">:</span> u4<span class="token punctuation">,</span> <span class="token parameter">op2</span> <span class="token operator">:</span> u3<span class="token punctuation">,</span> <span class="token parameter">val</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>
 </code></pre>
@@ -853,16 +845,14 @@ field widths: <code>op0</code> is 2 bits, <code>op1</code> is 3 bits, <code>crn<
 <code>mrs xN, S&lt;op0&gt;_&lt;op1&gt;_C&lt;crn&gt;_C&lt;crm&gt;_&lt;op2&gt;</code> and
 <code>msr S&lt;op0&gt;_&lt;op1&gt;_C&lt;crn&gt;_C&lt;crm&gt;_&lt;op2&gt;, xN</code> directly.</p>
 <p>Example — read the Apple silicon <code>APRR_EL1</code> register:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">raw</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs_s</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
 </code></pre>
 <p>The compiler does not validate S-encoded register access against any
 table — by definition these registers are not architectural. The
 programmer asserts the encoding is correct.</p>
 <hr>
-<h3 id="worked-examples" tabindex="-1"><a class="doc-anchor" href="#worked-examples" aria-hidden="true">#</a> Worked Examples</h3>
-<h4>Read-modify-write of a configuration register</h4>
-<!-- wyst-contract: sketch -->
+<h3 id="worked-examples" tabindex="-1"><a class="doc-anchor" href="#worked-examples" aria-label="Permalink to Worked Examples">#</a> Worked Examples</h3>
+<h4 id="read-modify-write-of-a-configuration-register" tabindex="-1"><a class="doc-anchor" href="#read-modify-write-of-a-configuration-register" aria-label="Permalink to Read-modify-write of a configuration register">#</a> Read-modify-write of a configuration register</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">configure_tcr</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token variable">raw</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">TCR_EL1</span><span class="token punctuation">)</span>
   <span class="token variable">tcr</span> <span class="token operator">:=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token constant">TCR_EL1</span>
@@ -874,15 +864,13 @@ programmer asserts the encoding is correct.</p>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>VBAR install</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="vbar-install" tabindex="-1"><a class="doc-anchor" href="#vbar-install" aria-label="Permalink to VBAR install">#</a> VBAR install</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">install_vectors</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">VBAR_EL1</span><span class="token punctuation">,</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>el1_vectors<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span><span class="token punctuation">)</span>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>SCTLR cache enable</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="sctlr-cache-enable" tabindex="-1"><a class="doc-anchor" href="#sctlr-cache-enable" aria-label="Permalink to SCTLR cache enable">#</a> SCTLR cache enable</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">enable_caches</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token variable">raw</span> <span class="token operator">:=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">SCTLR_EL1</span><span class="token punctuation">)</span>
   <span class="token variable">sctlr</span> <span class="token operator">:=</span> raw <span class="token keyword">as</span><span class="token punctuation">.</span>bits <span class="token constant">SCTLR_EL1</span>
@@ -893,8 +881,7 @@ programmer asserts the encoding is correct.</p>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Critical section with DAIF masking</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="critical-section-with-daif-masking" tabindex="-1"><a class="doc-anchor" href="#critical-section-with-daif-masking" aria-label="Permalink to Critical section with DAIF masking">#</a> Critical section with DAIF masking</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">update_shared</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%daif_set</span><span class="token punctuation">(</span><span class="token number">0b0010</span><span class="token punctuation">)</span> <span class="token comment">// mask IRQ</span>
   shared_word <span class="token operator">+=</span> <span class="token number">1</span>
@@ -902,7 +889,7 @@ programmer asserts the encoding is correct.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="arm64-lowering-1" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-1" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering-1" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-1" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <table>
 <thead>
 <tr>
@@ -943,7 +930,7 @@ or barrier may be reordered across it. This matches the architectural
 reality that system-register state can affect arbitrary subsequent
 behavior (translation, exception handling, cache behavior).</p>
 <hr>
-<h3 id="named-register-set" tabindex="-1"><a class="doc-anchor" href="#named-register-set" aria-hidden="true">#</a> Named Register Set</h3>
+<h3 id="named-register-set" tabindex="-1"><a class="doc-anchor" href="#named-register-set" aria-label="Permalink to Named Register Set">#</a> Named Register Set</h3>
 <p>The named <code>%mrs</code> / <code>%msr</code> forms currently accept this closed compiler table.
 Other architectural registers use <code>%mrs_s</code> / <code>%msr_s</code> with explicit
 S-encodings until a later feature adds named rows:</p>
@@ -1174,7 +1161,7 @@ S-encodings until a later feature adds named rows:</p>
 populated from ARM ARM D17 - System Register Encoding). Until then, named
 system-register completion is generated only from the compiler table above.</p>
 <hr>
-<h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -1218,14 +1205,13 @@ system-register completion is generated only from the compiler table above.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.4-trap-and-exception-intrinsics" tabindex="-1"><a class="doc-anchor" href="#1.3.4-trap-and-exception-intrinsics" aria-hidden="true">#</a> 1.3.4 Trap and Exception Intrinsics</h2>
+<h2 id="134-trap-and-exception-intrinsics" tabindex="-1"><a class="doc-anchor" href="#134-trap-and-exception-intrinsics" aria-label="Permalink to 1.3.4 Trap and Exception Intrinsics">#</a> 1.3.4 Trap and Exception Intrinsics</h2>
 <p>Synchronous exceptions are the boundary between EL0 user code and EL1
 kernel code, between EL1 kernel and EL2 hypervisor, and between
 non-secure and secure worlds. Every system call, every hypervisor call,
 every monitor call, every brk-trap debugger interaction lowers to one of
 the six ARM64 trap instructions. Wyst provides direct intrinsics for each
 so trap-call sites are not stuck in <code>#asm</code>.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%svc</span><span class="token punctuation">(</span><span class="token parameter">imm</span> <span class="token operator">:</span> <span class="token builtin type">u16</span><span class="token punctuation">)</span>                  <span class="token comment">// supervisor call — to EL1</span>
 <span class="token primitive macro">%hvc</span><span class="token punctuation">(</span><span class="token parameter">imm</span> <span class="token operator">:</span> <span class="token builtin type">u16</span><span class="token punctuation">)</span>                  <span class="token comment">// hypervisor call — to EL2</span>
 <span class="token primitive macro">%smc</span><span class="token punctuation">(</span><span class="token parameter">imm</span> <span class="token operator">:</span> <span class="token builtin type">u16</span><span class="token punctuation">)</span>                  <span class="token comment">// secure monitor call — to EL3 (or trapped to EL2)</span>
@@ -1236,11 +1222,10 @@ so trap-call sites are not stuck in <code>#asm</code>.</p>
 <p><code>imm</code> must be a compile-time constant in the range <code>0..=65535</code>; out-of-
 range or non-constant immediates are a compile error.</p>
 <hr>
-<h3 id="operand-and-clobber-model" tabindex="-1"><a class="doc-anchor" href="#operand-and-clobber-model" aria-hidden="true">#</a> Operand and Clobber Model</h3>
+<h3 id="operand-and-clobber-model" tabindex="-1"><a class="doc-anchor" href="#operand-and-clobber-model" aria-label="Permalink to Operand and Clobber Model">#</a> Operand and Clobber Model</h3>
 <p>Each trap intrinsic is the architectural primitive only — no syscall ABI
 is baked in. The caller is responsible for marshaling arguments into and
 results out of registers using <code>#pin</code> (see <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.3</a>):</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">linux_write</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">fd</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x2<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">nr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x8<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">64</span> <span class="token comment">// Linux __NR_write</span>
   <span class="token primitive macro">%svc</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
@@ -1263,7 +1248,7 @@ out is the result.</p>
 suggests (some hypervisor calls, some firmware interfaces), wrap the
 intrinsic in <code>#asm</code> with a narrower clobber list.</p>
 <hr>
-<h3 id="exception-level-gating" tabindex="-1"><a class="doc-anchor" href="#exception-level-gating" aria-hidden="true">#</a> Exception Level Gating</h3>
+<h3 id="exception-level-gating" tabindex="-1"><a class="doc-anchor" href="#exception-level-gating" aria-label="Permalink to Exception Level Gating">#</a> Exception Level Gating</h3>
 <p>Trap intrinsics are gated against the <code>#target</code>-declared Exception Level:</p>
 <table>
 <thead>
@@ -1309,11 +1294,10 @@ intrinsic in <code>#asm</code> with a narrower clobber list.</p>
 <p>If <code>#target</code> does not declare an EL, the compiler assumes EL1 and emits
 all intrinsics that are legal at EL1.</p>
 <hr>
-<h3 id="%25eret-semantics" tabindex="-1"><a class="doc-anchor" href="#%25eret-semantics" aria-hidden="true">#</a> <code>%eret</code> Semantics</h3>
+<h3 id="eret-semantics" tabindex="-1"><a class="doc-anchor" href="#eret-semantics" aria-label="Permalink to %eret Semantics">#</a> <code>%eret</code> Semantics</h3>
 <p><code>%eret</code> is <code>#noreturn</code>. Control transfers to the address in <code>ELR_ELx</code>
 with status <code>SPSR_ELx</code>, where <code>x</code> is the current EL. The compiler treats
 the enclosing function as <code>#noreturn</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
 <span class="token function">return_to_el0</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">target_pc</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">target_sp</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">spsr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">ELR_EL1</span><span class="token punctuation">,</span> target_pc<span class="token punctuation">)</span>
@@ -1329,22 +1313,19 @@ compiler can prove that every control path ends in <code>%eret()</code> (or anot
 <code>%msr</code> before the primitive. This matches the ARM ARM exactly and avoids
 hiding two <code>msr</code> instructions inside a single primitive call.</p>
 <hr>
-<h3 id="worked-examples-1" tabindex="-1"><a class="doc-anchor" href="#worked-examples-1" aria-hidden="true">#</a> Worked Examples</h3>
-<h4>Linux syscall shim</h4>
-<!-- wyst-contract: sketch -->
+<h3 id="worked-examples-1" tabindex="-1"><a class="doc-anchor" href="#worked-examples-1" aria-label="Permalink to Worked Examples">#</a> Worked Examples</h3>
+<h4 id="linux-syscall-shim" tabindex="-1"><a class="doc-anchor" href="#linux-syscall-shim" aria-label="Permalink to Linux syscall shim">#</a> Linux syscall shim</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">linux_syscall</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">nr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x8<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">a0</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">a1</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x1<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token parameter">a2</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x2<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%svc</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
   <span class="token keyword">return</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Software breakpoint with code</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="software-breakpoint-with-code" tabindex="-1"><a class="doc-anchor" href="#software-breakpoint-with-code" aria-label="Permalink to Software breakpoint with code">#</a> Software breakpoint with code</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">debug_trap</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%brk</span><span class="token punctuation">(</span><span class="token number">0xDEAD</span><span class="token punctuation">)</span> <span class="token comment">// attach a debugger to inspect</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>PSCI CPU_OFF call (EL1 → EL3 via HVC if virtualized, SMC if firmware)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="psci-cpu_off-call-el1-el3-via-hvc-if-virtualized-smc-if-firmware" tabindex="-1"><a class="doc-anchor" href="#psci-cpu_off-call-el1-el3-via-hvc-if-virtualized-smc-if-firmware" aria-label="Permalink to PSCI CPU_OFF call (EL1 → EL3 via HVC if virtualized, SMC if firmware)">#</a> PSCI CPU_OFF call (EL1 → EL3 via HVC if virtualized, SMC if firmware)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
 <span class="token function">psci_cpu_off</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">func_id</span> <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0x8400_0002</span> <span class="token comment">// PSCI_CPU_OFF</span>
@@ -1354,8 +1335,7 @@ hiding two <code>msr</code> instructions inside a single primitive call.</p>
   <span class="token punctuation">}</span> <span class="token comment">// fallback if firmware returns from CPU_OFF</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Exception return to userspace</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="exception-return-to-userspace" tabindex="-1"><a class="doc-anchor" href="#exception-return-to-userspace" aria-label="Permalink to Exception return to userspace">#</a> Exception return to userspace</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#noreturn</span>
 <span class="token function">return_to_user</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">pc</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">user_sp</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%msr</span><span class="token punctuation">(</span><span class="token constant">ELR_EL1</span><span class="token punctuation">,</span> pc<span class="token punctuation">)</span>
@@ -1365,7 +1345,7 @@ hiding two <code>msr</code> instructions inside a single primitive call.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="arm64-lowering-2" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-2" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering-2" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-2" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <table>
 <thead>
 <tr>
@@ -1411,7 +1391,7 @@ hiding two <code>msr</code> instructions inside a single primitive call.</p>
 If the handler's effects depend on prior stores being globally observed,
 the caller emits <code>%dsb</code> before the trap.</p>
 <hr>
-<h3 id="design-rationale-2" tabindex="-1"><a class="doc-anchor" href="#design-rationale-2" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-2" tabindex="-1"><a class="doc-anchor" href="#design-rationale-2" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -1451,13 +1431,12 @@ the caller emits <code>%dsb</code> before the trap.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.5-cache-and-tlb-maintenance-intrinsics" tabindex="-1"><a class="doc-anchor" href="#1.3.5-cache-and-tlb-maintenance-intrinsics" aria-hidden="true">#</a> 1.3.5 Cache and TLB Maintenance Intrinsics</h2>
+<h2 id="135-cache-and-tlb-maintenance-intrinsics" tabindex="-1"><a class="doc-anchor" href="#135-cache-and-tlb-maintenance-intrinsics" aria-label="Permalink to 1.3.5 Cache and TLB Maintenance Intrinsics">#</a> 1.3.5 Cache and TLB Maintenance Intrinsics</h2>
 <p>Bringing up an MMU, mapping a new page, modifying executable code,
 managing DMA-coherent buffers — all require explicit cache and TLB
 maintenance on ARM64. Wyst provides one intrinsic per architectural
 maintenance instruction; the canonical synchronization sequences are
 documented as worked examples rather than hidden inside the intrinsics.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Data cache by virtual address (to Point of Coherency unless noted):</span>
 <span class="token primitive macro">%dc_cvac</span><span class="token punctuation">(</span><span class="token parameter">addr</span>  <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>            <span class="token comment">// clean</span>
 <span class="token primitive macro">%dc_civac</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span>            <span class="token comment">// clean + invalidate</span>
@@ -1520,7 +1499,7 @@ mnemonic exactly after the <code>%tlbi_</code> prefix; there are no generic
 This split lets driver code permit cache-line maintenance for DMA while still
 denying address-translation invalidation.</p>
 <hr>
-<h3 id="no-implicit-barriers" tabindex="-1"><a class="doc-anchor" href="#no-implicit-barriers" aria-hidden="true">#</a> No Implicit Barriers</h3>
+<h3 id="no-implicit-barriers" tabindex="-1"><a class="doc-anchor" href="#no-implicit-barriers" aria-label="Permalink to No Implicit Barriers">#</a> No Implicit Barriers</h3>
 <p>Every intrinsic emits exactly its single ARM instruction. No <code>dsb</code>,
 <code>isb</code>, or surrounding fence is inserted. The caller is responsible for
 the architectural synchronization sequence.</p>
@@ -1530,11 +1509,10 @@ changes the meaning of every subsequent address translation; a
 <code>%dc_civac</code> changes what every subsequent load can observe. The compiler
 treats both categories as opaque effects.</p>
 <hr>
-<h3 id="canonical-synchronization-sequences" tabindex="-1"><a class="doc-anchor" href="#canonical-synchronization-sequences" aria-hidden="true">#</a> Canonical Synchronization Sequences</h3>
+<h3 id="canonical-synchronization-sequences" tabindex="-1"><a class="doc-anchor" href="#canonical-synchronization-sequences" aria-label="Permalink to Canonical Synchronization Sequences">#</a> Canonical Synchronization Sequences</h3>
 <p>The patterns below are the standard ARM ARM sequences for the common
 maintenance operations.</p>
-<h4>Invalidate a TLB entry after a page-table update</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="invalidate-a-tlb-entry-after-a-page-table-update" tabindex="-1"><a class="doc-anchor" href="#invalidate-a-tlb-entry-after-a-page-table-update" aria-label="Permalink to Invalidate a TLB entry after a page-table update">#</a> Invalidate a TLB entry after a page-table update</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">invalidate_va</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">va</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ishst<span class="token punctuation">)</span> <span class="token comment">// wait for prior page-table store to be observable</span>
   <span class="token primitive macro">%tlbi_vaae1is</span><span class="token punctuation">(</span>va<span class="token punctuation">)</span> <span class="token comment">// broadcast invalidation to all PEs</span>
@@ -1542,28 +1520,25 @@ maintenance operations.</p>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment">// local pipeline sync</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Flush a single cache line back to memory (for DMA-out)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="flush-a-single-cache-line-back-to-memory-for-dma-out" tabindex="-1"><a class="doc-anchor" href="#flush-a-single-cache-line-back-to-memory-for-dma-out" aria-label="Permalink to Flush a single cache line back to memory (for DMA-out)">#</a> Flush a single cache line back to memory (for DMA-out)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">flush_for_dma</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%dc_cvac</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
   <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span> <span class="token comment">// wait until the clean reaches the PoC and the DMA device</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Invalidate before a DMA-in read</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="invalidate-before-a-dma-in-read" tabindex="-1"><a class="doc-anchor" href="#invalidate-before-a-dma-in-read" aria-label="Permalink to Invalidate before a DMA-in read">#</a> Invalidate before a DMA-in read</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">prepare_dma_in</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%dc_civac</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span> <span class="token comment">// ensure no stale cached value shadows the DMA write</span>
   <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>sy<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>DMA Cache Release Recipe</h4>
+<h4 id="dma-cache-release-recipe" tabindex="-1"><a class="doc-anchor" href="#dma-cache-release-recipe" aria-label="Permalink to DMA Cache Release Recipe">#</a> DMA Cache Release Recipe</h4>
 <p>This is an executable recipe for the two
 cache-maintenance edges most kernel DMA paths need. It runs on QEMU
 <code>virt</code> and uses a CPU-side device simulator so the build and UART signal
 are deterministic; it proves the emitted instruction sequence and source
 ordering, not the electrical behavior of a physical DMA controller.</p>
 <p>The recipe keeps each buffer in one explicitly aligned cache line:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x40</span><span class="token punctuation">)</span>
 <span class="token parameter">dma_tx_line</span> <span class="token operator">:</span> <span class="token punctuation">[</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token directive macro">#align</span><span class="token punctuation">(</span><span class="token number">0x40</span><span class="token punctuation">)</span>
@@ -1588,8 +1563,7 @@ checked transmit words and receive words match. The cache operations and
 barriers are deliberately in Wyst source; the compiler does not infer DMA
 ownership, insert hidden cache maintenance, or synthesize barriers around
 volatile accesses.</p>
-<h4>Synchronize newly written instructions (self-modifying code)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="synchronize-newly-written-instructions-self-modifying-code" tabindex="-1"><a class="doc-anchor" href="#synchronize-newly-written-instructions-self-modifying-code" aria-label="Permalink to Synchronize newly written instructions (self-modifying code)">#</a> Synchronize newly written instructions (self-modifying code)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">sync_icache</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%dc_cvau</span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span> <span class="token comment">// clean D-cache line to PoU</span>
   <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ish<span class="token punctuation">)</span>
@@ -1598,8 +1572,7 @@ volatile accesses.</p>
   <span class="token primitive macro">%isb</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4>Initial MMU bring-up: invalidate all TLBs</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="initial-mmu-bring-up-invalidate-all-tlbs" tabindex="-1"><a class="doc-anchor" href="#initial-mmu-bring-up-invalidate-all-tlbs" aria-label="Permalink to Initial MMU bring-up: invalidate all TLBs">#</a> Initial MMU bring-up: invalidate all TLBs</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">flush_tlb_all</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token primitive macro">%dsb</span><span class="token punctuation">(</span>ishst<span class="token punctuation">)</span>
   <span class="token primitive macro">%tlbi_vmalle1</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -1608,7 +1581,7 @@ volatile accesses.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="%25dc_zva-alignment" tabindex="-1"><a class="doc-anchor" href="#%25dc_zva-alignment" aria-hidden="true">#</a> <code>%dc_zva</code> Alignment</h3>
+<h3 id="dc_zva-alignment" tabindex="-1"><a class="doc-anchor" href="#dc_zva-alignment" aria-label="Permalink to %dc_zva Alignment">#</a> <code>%dc_zva</code> Alignment</h3>
 <p><code>%dc_zva(addr)</code> zeroes a single DC ZVA block. The address must be aligned
 to the block size reported by <code>DCZID_EL0</code>. Misaligned addresses produce a
 fault. The block size is implementation-defined and may differ from the
@@ -1619,7 +1592,6 @@ and returns <code>0</code> when <code>DCZID_EL0.DZP</code> reports that <code>dc
 It has the <code>sysreg</code> effect category and is a full two-way compiler memory
 fence. It emits no cache maintenance and no architectural barrier; callers
 still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">zero_page</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">page_base</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">4096</span>
   <span class="token variable">addr</span> <span class="token operator">:=</span> page_base
@@ -1636,7 +1608,7 @@ still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="arm64-lowering-3" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-3" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering-3" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-3" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <table>
 <thead>
 <tr>
@@ -1710,7 +1682,7 @@ still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
 </tbody>
 </table>
 <hr>
-<h3 id="design-rationale-3" tabindex="-1"><a class="doc-anchor" href="#design-rationale-3" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-3" tabindex="-1"><a class="doc-anchor" href="#design-rationale-3" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -1746,12 +1718,11 @@ still write <code>%dc_zva</code> loops and synchronization explicitly.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.6-cpu-hint-intrinsics" tabindex="-1"><a class="doc-anchor" href="#1.3.6-cpu-hint-intrinsics" aria-hidden="true">#</a> 1.3.6 CPU Hint Intrinsics</h2>
+<h2 id="136-cpu-hint-intrinsics" tabindex="-1"><a class="doc-anchor" href="#136-cpu-hint-intrinsics" aria-label="Permalink to 1.3.6 CPU Hint Intrinsics">#</a> 1.3.6 CPU Hint Intrinsics</h2>
 <p>The ARM64 hint instructions communicate scheduling information to the CPU
 — wait for a wakeup, signal other PEs, yield to a SMT sibling, take no
 action. They appear throughout boot code, idle loops, spinlocks, and
 exception handlers; they are first-class intrinsics in Wyst.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%wfi</span><span class="token punctuation">(</span><span class="token punctuation">)</span>        <span class="token comment">// wait for interrupt — CPU enters low-power state until an interrupt</span>
 <span class="token primitive macro">%wfe</span><span class="token punctuation">(</span><span class="token punctuation">)</span>        <span class="token comment">// wait for event — CPU enters low-power state until an event</span>
 <span class="token primitive macro">%sev</span><span class="token punctuation">(</span><span class="token punctuation">)</span>        <span class="token comment">// send event to all PEs in the inner-shareable domain</span>
@@ -1819,8 +1790,7 @@ automatic — see <a href="/docs/chapter-14-exception-vectors/">chapter-14-excep
 get one intrinsic each.&quot; The interesting design choices are above this
 layer.</p>
 <hr>
-<h3 id="%25compiler_barrier-%E2%80%94-compiler-memory-fence" tabindex="-1"><a class="doc-anchor" href="#%25compiler_barrier-%E2%80%94-compiler-memory-fence" aria-hidden="true">#</a> <code>%compiler_barrier</code> — Compiler Memory Fence</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="compiler_barrier-compiler-memory-fence" tabindex="-1"><a class="doc-anchor" href="#compiler_barrier-compiler-memory-fence" aria-label="Permalink to %compiler_barrier — Compiler Memory Fence">#</a> <code>%compiler_barrier</code> — Compiler Memory Fence</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%compiler_barrier</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
 <p><code>%compiler_barrier()</code> is a statement-level full two-way compiler memory
@@ -1848,7 +1818,7 @@ CPU must execute an architectural barrier.</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.7-per-cpu-and-thread-local-data" tabindex="-1"><a class="doc-anchor" href="#1.3.7-per-cpu-and-thread-local-data" aria-hidden="true">#</a> 1.3.7 Per-CPU and Thread-Local Data</h2>
+<h2 id="137-per-cpu-and-thread-local-data" tabindex="-1"><a class="doc-anchor" href="#137-per-cpu-and-thread-local-data" aria-label="Permalink to 1.3.7 Per-CPU and Thread-Local Data">#</a> 1.3.7 Per-CPU and Thread-Local Data</h2>
 <p>A kernel needs a way to declare data that has one instance per logical
 CPU (per-CPU variables — current-running-thread pointer, idle stats,
 softirq queues) and a user runtime needs a way to declare data that has
@@ -1856,7 +1826,6 @@ one instance per thread (TLS — errno, thread-local caches). ARM64
 provides two dedicated thread/CPU pointer registers — <code>TPIDR_EL1</code> for
 EL1 kernel use and <code>TPIDR_EL0</code> for EL0 user use — and Wyst lifts both
 into the language as declaration attributes.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#percpu</span>
 <span class="token parameter">my_counter</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0</span> <span class="token comment">// one u64 per logical CPU, EL1</span>
 <span class="token directive macro">#tls</span>
@@ -1867,8 +1836,7 @@ special section that is per-CPU- or per-thread-instantiated by the
 runtime at boot or thread creation. Access through the bare variable
 name reads or writes the current instance.</p>
 <hr>
-<h3 id="declaration" tabindex="-1"><a class="doc-anchor" href="#declaration" aria-hidden="true">#</a> Declaration</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="declaration" tabindex="-1"><a class="doc-anchor" href="#declaration" aria-label="Permalink to Declaration">#</a> Declaration</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Per-CPU (EL1 kernel data; one instance per logical CPU):</span>
 <span class="token parameter">current_task</span> <span class="token operator">:</span> <span class="token directive macro">#percpu</span> <span class="token address-qualifier type">@task</span> <span class="token operator">=</span> <span class="token number">0</span>
 <span class="token parameter">softirq_pending</span> <span class="token operator">:</span> <span class="token directive macro">#percpu</span> <span class="token builtin type">u32</span> <span class="token operator">=</span> <span class="token number">0</span>
@@ -1921,8 +1889,7 @@ instance.</li>
 define exactly which function symbol references are legal in copied master
 sections.</p>
 <hr>
-<h3 id="access" tabindex="-1"><a class="doc-anchor" href="#access" aria-hidden="true">#</a> Access</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="access" tabindex="-1"><a class="doc-anchor" href="#access" aria-label="Permalink to Access">#</a> Access</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Read the current CPU's instance:</span>
 <span class="token variable">n</span> <span class="token operator">:=</span> my_counter
 
@@ -1941,7 +1908,6 @@ register across uses within a single function (deterministic CSE; the
 base is materialized exactly once per function unless escaped via a call
 that may clobber <code>TPIDR_EL1</code>). Programs that need explicit control can
 <code>#pin</code> a local to <code>TPIDR_EL1</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">update_stats</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token parameter">base</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span><span class="token constant">TPIDR_EL1</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token primitive macro">%mrs</span><span class="token punctuation">(</span><span class="token constant">TPIDR_EL1</span><span class="token punctuation">)</span>
   cpu_stats<span class="token punctuation">.</span>calls <span class="token operator">+=</span> <span class="token number">1</span>
@@ -1952,7 +1918,6 @@ that may clobber <code>TPIDR_EL1</code>). Programs that need explicit control ca
 address materialization because it reads <code>TPIDR_EL1</code> and adds the
 per-CPU offset at runtime. To compute another CPU's instance address, use
 <code>#percpu_offset_of</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#percpu_offset_of</span><span class="token punctuation">(</span>var<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>             <span class="token comment">// section-relative offset; constant</span>
 <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu_id<span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>        <span class="token comment">// provided by the runtime</span>
 </code></pre>
@@ -1970,7 +1935,6 @@ The compiler emits warning <code>W0203</code> for <code>#percpu_offset_of</code>
 identities or recompute offsets for the current image; do not persist the
 numeric value as a cross-build protocol value.</p>
 <p>A cross-CPU access:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">peek_remote_counter</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">cpu</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token parameter">base</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token operator">=</span> <span class="token function">percpu_base_for_cpu</span><span class="token punctuation">(</span>cpu<span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token address-qualifier type">@u8</span>
   <span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span> <span class="token operator">=</span> <span class="token punctuation">(</span>base <span class="token operator">+</span> <span class="token directive macro">#percpu_offset_of</span><span class="token punctuation">(</span>my_counter<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">as</span><span class="token punctuation">.</span>lens <span class="token address-qualifier type">@u64</span>
@@ -1979,10 +1943,9 @@ numeric value as a cross-build protocol value.</p>
 </code></pre>
 <p><code>#tls</code> accesses are symmetric, using <code>TPIDR_EL0</code> and <code>#tls_offset_of</code>.</p>
 <hr>
-<h3 id="layout" tabindex="-1"><a class="doc-anchor" href="#layout" aria-hidden="true">#</a> Layout</h3>
+<h3 id="layout" tabindex="-1"><a class="doc-anchor" href="#layout" aria-label="Permalink to Layout">#</a> Layout</h3>
 <p>The layout module must declare the <code>.percpu</code> and <code>.tls</code> sections (see
 <a href="/docs/chapter-04-modules/">chapter-04-modules.md</a>) for the symbols to have a home. Common practice:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">text</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> rom
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">rodata</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>text
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">data</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">8</span><span class="token punctuation">,</span> after <span class="token operator">=</span> <span class="token punctuation">.</span>rodata
@@ -1991,7 +1954,6 @@ numeric value as a cross-build protocol value.</p>
 <span class="token directive macro">#section</span> <span class="token punctuation">.</span><span class="token parameter">tls</span> <span class="token operator">:</span> align <span class="token operator">=</span> <span class="token number">16</span><span class="token punctuation">,</span> in <span class="token operator">=</span> ram <span class="token comment">// master copy for TLS</span>
 </code></pre>
 <p>The compiler additionally exports the section size for runtime use:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token keyword">pub</span> __percpu_size <span class="token operator">::=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>percpu<span class="token punctuation">)</span>
 <span class="token keyword">pub</span> __tls_size    <span class="token operator">::=</span> <span class="token directive macro">#size_of</span><span class="token punctuation">(</span><span class="token punctuation">.</span>tls<span class="token punctuation">)</span>
 </code></pre>
@@ -2004,7 +1966,7 @@ numeric value as a cross-build protocol value.</p>
 <p>Wyst does not provide a runtime; the kernel writes this sequence using
 the primitives above.</p>
 <hr>
-<h3 id="arm64-lowering-4" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-4" aria-hidden="true">#</a> ARM64 Lowering</h3>
+<h3 id="arm64-lowering-4" tabindex="-1"><a class="doc-anchor" href="#arm64-lowering-4" aria-label="Permalink to ARM64 Lowering">#</a> ARM64 Lowering</h3>
 <table>
 <thead>
 <tr>
@@ -2041,7 +2003,7 @@ the primitives above.</p>
 have not annotated <code>#preserves(TPIDR_EL1)</code> all invalidate the cached
 base. (The <code>#preserves</code> attribute is outside this model.)</p>
 <hr>
-<h3 id="design-rationale-4" tabindex="-1"><a class="doc-anchor" href="#design-rationale-4" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-4" tabindex="-1"><a class="doc-anchor" href="#design-rationale-4" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -2085,14 +2047,13 @@ base. (The <code>#preserves</code> attribute is outside this model.)</p>
 </tbody>
 </table>
 <hr>
-<h2 id="1.3.8-performance-intrinsics" tabindex="-1"><a class="doc-anchor" href="#1.3.8-performance-intrinsics" aria-hidden="true">#</a> 1.3.8 Performance Intrinsics</h2>
+<h2 id="138-performance-intrinsics" tabindex="-1"><a class="doc-anchor" href="#138-performance-intrinsics" aria-label="Permalink to 1.3.8 Performance Intrinsics">#</a> 1.3.8 Performance Intrinsics</h2>
 <p>Performance intrinsics expose ARM64 hardware hints and counters that have
 no effect on program correctness but influence cache behaviour, memory
 ordering visibility, and measurement. None of these intrinsics are compiler
 fences unless stated otherwise.</p>
 <hr>
-<h3 id="%25prefetch-%E2%80%94-cache-prefetch-hint" tabindex="-1"><a class="doc-anchor" href="#%25prefetch-%E2%80%94-cache-prefetch-hint" aria-hidden="true">#</a> <code>%prefetch</code> — Cache Prefetch Hint</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="prefetch-cache-prefetch-hint" tabindex="-1"><a class="doc-anchor" href="#prefetch-cache-prefetch-hint" aria-label="Permalink to %prefetch — Cache Prefetch Hint">#</a> <code>%prefetch</code> — Cache Prefetch Hint</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%prefetch</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">access</span> <span class="token operator">:</span> <span class="token punctuation">{</span> read<span class="token punctuation">,</span> write <span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token parameter">locality</span> <span class="token operator">:</span> <span class="token punctuation">{</span> streaming<span class="token punctuation">,</span> low<span class="token punctuation">,</span> medium<span class="token punctuation">,</span> high <span class="token punctuation">}</span><span class="token punctuation">)</span>
 </code></pre>
 <p>Hints to the hardware that <code>addr</code> will be accessed soon. The CPU may
@@ -2197,15 +2158,13 @@ pure hint: it may be freely reordered relative to all other operations by
 any <code>#schedule</code> mode. It never traps, never clobbers registers, and never
 modifies memory.</p>
 <p><strong>Example:</strong></p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Prefetch the next cache line while processing the current element.</span>
 <span class="token comment">// The prefetch overlaps with the computation below.</span>
 <span class="token primitive macro">%prefetch</span><span class="token punctuation">(</span>ptr <span class="token operator">+</span> <span class="token number">64</span><span class="token punctuation">,</span> read<span class="token punctuation">,</span> high<span class="token punctuation">)</span>
 sum <span class="token operator">+=</span> <span class="token builtin type">u64</span><span class="token operator">@</span><span class="token punctuation">[</span>ptr<span class="token punctuation">]</span>
 </code></pre>
 <hr>
-<h3 id="%25ldnp-%2F-%25stnp-%E2%80%94-non-temporal-load%2Fstore-pair" tabindex="-1"><a class="doc-anchor" href="#%25ldnp-%2F-%25stnp-%E2%80%94-non-temporal-load%2Fstore-pair" aria-hidden="true">#</a> <code>%ldnp</code> / <code>%stnp</code> — Non-Temporal Load/Store Pair</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="ldnp-stnp-non-temporal-loadstore-pair" tabindex="-1"><a class="doc-anchor" href="#ldnp-stnp-non-temporal-loadstore-pair" aria-label="Permalink to %ldnp / %stnp — Non-Temporal Load/Store Pair">#</a> <code>%ldnp</code> / <code>%stnp</code> — Non-Temporal Load/Store Pair</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%ldnp</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span>T<span class="token punctuation">,</span> T<span class="token punctuation">)</span>
 <span class="token primitive macro">%stnp</span><span class="token punctuation">(</span><span class="token parameter">addr</span> <span class="token operator">:</span> <span class="token address-qualifier type">@T</span><span class="token punctuation">,</span> <span class="token parameter">val1</span> <span class="token operator">:</span> T<span class="token punctuation">,</span> <span class="token parameter">val2</span> <span class="token operator">:</span> T<span class="token punctuation">)</span>
 </code></pre>
@@ -2277,14 +2236,12 @@ after a batch of non-temporal stores may be needed before the data is
 guaranteed visible to other agents. See
 <a href="/docs/chapter-09-memory-model/">chapter-09-memory-model.md §1.3.1</a> for barrier semantics.</p>
 <p><strong>Example:</strong></p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Streaming copy: data is read once and written once with no reuse.</span>
 <span class="token punctuation">(</span>a<span class="token punctuation">,</span> b<span class="token punctuation">)</span> <span class="token operator">:=</span> <span class="token primitive macro">%ldnp</span><span class="token punctuation">(</span>src<span class="token punctuation">)</span>
 <span class="token primitive macro">%stnp</span><span class="token punctuation">(</span>dst<span class="token punctuation">,</span> a<span class="token punctuation">,</span> b<span class="token punctuation">)</span>
 </code></pre>
 <hr>
-<h3 id="%25read_cycle_counter-%E2%80%94-cycle-counter-read" tabindex="-1"><a class="doc-anchor" href="#%25read_cycle_counter-%E2%80%94-cycle-counter-read" aria-hidden="true">#</a> <code>%read_cycle_counter</code> — Cycle Counter Read</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="read_cycle_counter-cycle-counter-read" tabindex="-1"><a class="doc-anchor" href="#read_cycle_counter-cycle-counter-read" aria-label="Permalink to %read_cycle_counter — Cycle Counter Read">#</a> <code>%read_cycle_counter</code> — Cycle Counter Read</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token primitive macro">%read_cycle_counter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <p>Reads the ARM64 performance cycle counter. Returns the current value of
@@ -2322,7 +2279,6 @@ current PMU state.</p>
 </table>
 <p>PMU availability is determined by the <code>#target(features = ...)</code> declaration.</p>
 <p><strong>Example:</strong></p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">start</span> <span class="token operator">:=</span> <span class="token primitive macro">%read_cycle_counter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token function">compute</span><span class="token punctuation">(</span>data<span class="token punctuation">)</span>
 <span class="token variable">end</span> <span class="token operator">:=</span> <span class="token primitive macro">%read_cycle_counter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -2333,7 +2289,7 @@ intrinsic. Future versions may add <code>%read_pmu_counter(idx : u32)</code> for
 access to general-purpose PMU counters (e.g. cache-miss, branch-miss
 event counts).</p>
 <hr>
-<h3 id="design-rationale-5" tabindex="-1"><a class="doc-anchor" href="#design-rationale-5" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-5" tabindex="-1"><a class="doc-anchor" href="#design-rationale-5" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -2374,7 +2330,7 @@ event counts).</p>
 				<li class="lvl-3"><a href="#runtime-address-materialization">Runtime Address Materialization</a></li>
 				<li class="lvl-3"><a href="#explicit-raw-storage">Explicit Raw Storage</a></li>
 				<li class="lvl-3"><a href="#runtime-enum-tag-projection">Runtime Enum Tag Projection</a></li>
-				<li class="lvl-2"><a href="#1.3.2-atomic-operations">1.3.2 Atomic Operations</a></li>
+				<li class="lvl-2"><a href="#132-atomic-operations">1.3.2 Atomic Operations</a></li>
 				<li class="lvl-3"><a href="#when-to-use-each-form">When to Use Each Form</a></li>
 				<li class="lvl-3"><a href="#memory-order-vocabulary">Memory Order Vocabulary</a></li>
 				<li class="lvl-3"><a href="#atomic-types">Atomic Types</a></li>
@@ -2385,7 +2341,7 @@ event counts).</p>
 				<li class="lvl-3"><a href="#arm64-lowering">ARM64 Lowering</a></li>
 				<li class="lvl-3"><a href="#interaction-with-the-memory-model">Interaction with the Memory Model</a></li>
 				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#1.3.3-system-register-access">1.3.3 System Register Access</a></li>
+				<li class="lvl-2"><a href="#133-system-register-access">1.3.3 System Register Access</a></li>
 				<li class="lvl-3"><a href="#register-name-namespace">Register Name Namespace</a></li>
 				<li class="lvl-3"><a href="#access-permissions">Access Permissions</a></li>
 				<li class="lvl-3"><a href="#return-type-discipline">Return Type Discipline</a></li>
@@ -2396,31 +2352,31 @@ event counts).</p>
 				<li class="lvl-3"><a href="#arm64-lowering-1">ARM64 Lowering</a></li>
 				<li class="lvl-3"><a href="#named-register-set">Named Register Set</a></li>
 				<li class="lvl-3"><a href="#design-rationale-1">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#1.3.4-trap-and-exception-intrinsics">1.3.4 Trap and Exception Intrinsics</a></li>
+				<li class="lvl-2"><a href="#134-trap-and-exception-intrinsics">1.3.4 Trap and Exception Intrinsics</a></li>
 				<li class="lvl-3"><a href="#operand-and-clobber-model">Operand and Clobber Model</a></li>
 				<li class="lvl-3"><a href="#exception-level-gating">Exception Level Gating</a></li>
-				<li class="lvl-3"><a href="#%25eret-semantics">%eret Semantics</a></li>
+				<li class="lvl-3"><a href="#eret-semantics">%eret Semantics</a></li>
 				<li class="lvl-3"><a href="#worked-examples-1">Worked Examples</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering-2">ARM64 Lowering</a></li>
 				<li class="lvl-3"><a href="#design-rationale-2">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#1.3.5-cache-and-tlb-maintenance-intrinsics">1.3.5 Cache and TLB Maintenance Intrinsics</a></li>
+				<li class="lvl-2"><a href="#135-cache-and-tlb-maintenance-intrinsics">1.3.5 Cache and TLB Maintenance Intrinsics</a></li>
 				<li class="lvl-3"><a href="#no-implicit-barriers">No Implicit Barriers</a></li>
 				<li class="lvl-3"><a href="#canonical-synchronization-sequences">Canonical Synchronization Sequences</a></li>
-				<li class="lvl-3"><a href="#%25dc_zva-alignment">%dc_zva Alignment</a></li>
+				<li class="lvl-3"><a href="#dc_zva-alignment">%dc_zva Alignment</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering-3">ARM64 Lowering</a></li>
 				<li class="lvl-3"><a href="#design-rationale-3">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#1.3.6-cpu-hint-intrinsics">1.3.6 CPU Hint Intrinsics</a></li>
-				<li class="lvl-3"><a href="#%25compiler_barrier-%E2%80%94-compiler-memory-fence">%compiler_barrier — Compiler Memory Fence</a></li>
-				<li class="lvl-2"><a href="#1.3.7-per-cpu-and-thread-local-data">1.3.7 Per-CPU and Thread-Local Data</a></li>
+				<li class="lvl-2"><a href="#136-cpu-hint-intrinsics">1.3.6 CPU Hint Intrinsics</a></li>
+				<li class="lvl-3"><a href="#compiler_barrier-compiler-memory-fence">%compiler_barrier — Compiler Memory Fence</a></li>
+				<li class="lvl-2"><a href="#137-per-cpu-and-thread-local-data">1.3.7 Per-CPU and Thread-Local Data</a></li>
 				<li class="lvl-3"><a href="#declaration">Declaration</a></li>
 				<li class="lvl-3"><a href="#access">Access</a></li>
 				<li class="lvl-3"><a href="#layout">Layout</a></li>
 				<li class="lvl-3"><a href="#arm64-lowering-4">ARM64 Lowering</a></li>
 				<li class="lvl-3"><a href="#design-rationale-4">Design Rationale</a></li>
-				<li class="lvl-2"><a href="#1.3.8-performance-intrinsics">1.3.8 Performance Intrinsics</a></li>
-				<li class="lvl-3"><a href="#%25prefetch-%E2%80%94-cache-prefetch-hint">%prefetch — Cache Prefetch Hint</a></li>
-				<li class="lvl-3"><a href="#%25ldnp-%2F-%25stnp-%E2%80%94-non-temporal-load%2Fstore-pair">%ldnp / %stnp — Non-Temporal Load/Store Pair</a></li>
-				<li class="lvl-3"><a href="#%25read_cycle_counter-%E2%80%94-cycle-counter-read">%read_cycle_counter — Cycle Counter Read</a></li>
+				<li class="lvl-2"><a href="#138-performance-intrinsics">1.3.8 Performance Intrinsics</a></li>
+				<li class="lvl-3"><a href="#prefetch-cache-prefetch-hint">%prefetch — Cache Prefetch Hint</a></li>
+				<li class="lvl-3"><a href="#ldnp-stnp-non-temporal-loadstore-pair">%ldnp / %stnp — Non-Temporal Load/Store Pair</a></li>
+				<li class="lvl-3"><a href="#read_cycle_counter-cycle-counter-read">%read_cycle_counter — Cycle Counter Read</a></li>
 				<li class="lvl-3"><a href="#design-rationale-5">Design Rationale</a></li>
 			</ul>
 			</aside>
@@ -2432,12 +2388,6 @@ event counts).</p>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

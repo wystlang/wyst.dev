@@ -8,6 +8,20 @@
 		<meta name="description" content="Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership." />
 		<title>ABI Specification · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-15-abi-spec/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-15-abi-spec/" />
+		<meta property="og:title" content="ABI Specification · Wyst" />
+		<meta property="og:description" content="Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="ABI Specification · Wyst" />
+		<meta name="twitter:description" content="Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -97,7 +111,7 @@
 classification, and stack behavior. Its rules depend on functions, address
 types, <code>#pin</code>, <code>#naked</code>, and exception-vector context.</p>
 <hr>
-<h2 id="overview" tabindex="-1"><a class="doc-anchor" href="#overview" aria-hidden="true">#</a> Overview</h2>
+<h2 id="overview" tabindex="-1"><a class="doc-anchor" href="#overview" aria-label="Permalink to Overview">#</a> Overview</h2>
 <p>Wyst supports two calling conventions:</p>
 <table>
 <thead>
@@ -126,9 +140,9 @@ types, <code>#pin</code>, <code>#naked</code>, and exception-vector context.</p>
 <p>The native ABI is the default. It deliberately diverges from AAPCS64 in the areas where AAPCS64 leaves performance on the table: struct passing, multi-value return, and frame pointer policy. AAPCS64 compatibility is <strong>opt-in</strong> and applies exactly to the annotated function — it does not affect callers or other functions in the same translation unit.</p>
 <p>Because Wyst's calling convention is explicit and reproducible, a mismatch between caller and callee conventions is always a programmer error and is detectable statically. The compiler must emit a diagnostic if a Wyst-Native caller directly calls an <code>[aapcs]</code> function without the annotation at the call site, or vice versa.</p>
 <hr>
-<h3 id="wyst-native-abi" tabindex="-1"><a class="doc-anchor" href="#wyst-native-abi" aria-hidden="true">#</a> Wyst Native ABI</h3>
+<h3 id="wyst-native-abi" tabindex="-1"><a class="doc-anchor" href="#wyst-native-abi" aria-label="Permalink to Wyst Native ABI">#</a> Wyst Native ABI</h3>
 <hr>
-<h3 id="a.1-register-classification" tabindex="-1"><a class="doc-anchor" href="#a.1-register-classification" aria-hidden="true">#</a> A.1 Register Classification</h3>
+<h3 id="a1-register-classification" tabindex="-1"><a class="doc-anchor" href="#a1-register-classification" aria-label="Permalink to A.1 Register Classification">#</a> A.1 Register Classification</h3>
 <p>All ARM64 general-purpose and SIMD registers fall into one of four classes under the Wyst Native ABI:</p>
 <table>
 <thead>
@@ -169,10 +183,10 @@ applies to that function: if it makes any returning call, including a call to a
 Wyst-native helper, it saves and restores <code>d8</code>-<code>d15</code> around its body.</p>
 <p><code>x30</code> (the link register) is callee-saved in the sense that a non-leaf function must save it before issuing any call and restore it before returning. See §A.6 (Frame Layout).</p>
 <hr>
-<h3 id="a.2-argument-passing" tabindex="-1"><a class="doc-anchor" href="#a.2-argument-passing" aria-hidden="true">#</a> A.2 Argument Passing</h3>
+<h3 id="a2-argument-passing" tabindex="-1"><a class="doc-anchor" href="#a2-argument-passing" aria-label="Permalink to A.2 Argument Passing">#</a> A.2 Argument Passing</h3>
 <p>Arguments are processed left-to-right from the function signature.</p>
 <p>The &quot;memory image&quot; of a struct argument referred to throughout this section is the byte sequence produced by the layout rules in <a href="/docs/chapter-06-types/">chapter-06-types.md §1.6</a> — natural alignment, declaration field order, inter-field padding and trailing padding as specified there. <code>size_of</code> and <code>align_of</code> in this document refer to the formulas defined there. The size thresholds below (≤ 8, 9–16, &gt; 16, ≤ 32, &gt; 32) apply to <code>size_of(S)</code> including trailing padding.</p>
-<h4>Integer and Pointer Arguments</h4>
+<h4 id="integer-and-pointer-arguments" tabindex="-1"><a class="doc-anchor" href="#integer-and-pointer-arguments" aria-label="Permalink to Integer and Pointer Arguments">#</a> Integer and Pointer Arguments</h4>
 <p>The first eight integer or pointer arguments are placed in <code>x0</code>–<code>x7</code> in order. Each argument occupies exactly one register regardless of width:</p>
 <table>
 <thead>
@@ -206,7 +220,7 @@ Wyst-native helper, it saves and restores <code>d8</code>-<code>d15</code> aroun
 </tbody>
 </table>
 <p>If more than eight integer arguments are present, the remaining arguments are passed on the stack (see §A.5).</p>
-<h4>Enum Arguments</h4>
+<h4 id="enum-arguments" tabindex="-1"><a class="doc-anchor" href="#enum-arguments" aria-label="Permalink to Enum Arguments">#</a> Enum Arguments</h4>
 <p>Payload-less enum arguments are classified as their discriminator integer.
 They consume one GPR argument slot under the Native ABI; the value in the
 register is the zero-extended tag value for unsigned tag types narrower than
@@ -219,7 +233,7 @@ declared tag width and independent of the active variant's payload width.
 Only payload-word source types may inhabit that second word; structures,
 slices, floating-point values, and nested enum values are rejected before ABI
 classification.</p>
-<h4>Floating-Point and Vector Arguments</h4>
+<h4 id="floating-point-and-vector-arguments" tabindex="-1"><a class="doc-anchor" href="#floating-point-and-vector-arguments" aria-label="Permalink to Floating-Point and Vector Arguments">#</a> Floating-Point and Vector Arguments</h4>
 <p>The first eight <code>f32</code>, <code>f64</code>, or <code>[T:N]</code> arguments are placed in <code>v0</code>–<code>v7</code> in order, independently of the integer argument registers. Integer and vector argument slots do not share an allocation pool.</p>
 <table>
 <thead>
@@ -248,9 +262,8 @@ classification.</p>
 </tbody>
 </table>
 <p>If more than eight floating-point or vector arguments are present, the remaining arguments are passed on the stack (see §A.5).</p>
-<h4>Small Struct Arguments (≤ 8 bytes)</h4>
+<h4 id="small-struct-arguments-8-bytes" tabindex="-1"><a class="doc-anchor" href="#small-struct-arguments-8-bytes" aria-label="Permalink to Small Struct Arguments (≤ 8 bytes)">#</a> Small Struct Arguments (≤ 8 bytes)</h4>
 <p>A struct whose total size is at most 8 bytes is packed into a single integer argument register. Field bytes are packed in memory layout order, occupying the low bytes of the register:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">point</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 0</span>
   <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u32</span> <span class="token comment">// offset 4</span>
@@ -259,9 +272,8 @@ classification.</p>
 <span class="token comment">// i.e., bits [31:0] = x, bits [63:32] = y</span>
 </code></pre>
 <p>The register holds the struct's memory image — the same bytes that a <code>u64@[addr]</code> load of a properly aligned struct would produce. The callee unpacks fields using shifts or the normal struct field access syntax.</p>
-<h4>Medium Struct Arguments (9–16 bytes)</h4>
+<h4 id="medium-struct-arguments-916-bytes" tabindex="-1"><a class="doc-anchor" href="#medium-struct-arguments-916-bytes" aria-label="Permalink to Medium Struct Arguments (9–16 bytes)">#</a> Medium Struct Arguments (9–16 bytes)</h4>
 <p>A struct whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), the second holds the remaining bytes (zero-padded to 8 bytes if the struct is not a multiple of 8 bytes in size):</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">string</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">data</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span> <span class="token comment">// offset 0, 8 bytes</span>
   <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// offset 8, 8 bytes</span>
@@ -270,9 +282,8 @@ classification.</p>
 <span class="token comment">// consumes two argument register slots</span>
 </code></pre>
 <p>If only one integer argument register remains when a medium struct is to be passed, the struct is passed on the stack instead (see §A.5). Structs are not split across the register/stack boundary.</p>
-<h4>Large Struct Arguments (&gt; 16 bytes)</h4>
+<h4 id="large-struct-arguments-16-bytes" tabindex="-1"><a class="doc-anchor" href="#large-struct-arguments-16-bytes" aria-label="Permalink to Large Struct Arguments (&gt; 16 bytes)">#</a> Large Struct Arguments (&gt; 16 bytes)</h4>
 <p>A struct larger than 16 bytes is not passed in registers. The caller allocates storage for the struct on its stack, copies the argument value there, and passes the address of that storage in the next available integer argument register:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">big</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
   <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
@@ -286,11 +297,11 @@ classification.</p>
 </code></pre>
 <p>The callee may read the struct through the received pointer but must not write to it — the storage is owned by the caller and may alias the caller's local variable. If the callee needs to modify a copy, it must allocate its own storage.</p>
 <hr>
-<h3 id="a.3-return-values" tabindex="-1"><a class="doc-anchor" href="#a.3-return-values" aria-hidden="true">#</a> A.3 Return Values</h3>
+<h3 id="a3-return-values" tabindex="-1"><a class="doc-anchor" href="#a3-return-values" aria-label="Permalink to A.3 Return Values">#</a> A.3 Return Values</h3>
 <p>Native Wyst functions support zero, one, or named tuple return values. AAPCS64
 interop remains narrower and rejects out-of-scope multi-value return shapes at
 the boundary.</p>
-<h4>Single Integer Return</h4>
+<h4 id="single-integer-return" tabindex="-1"><a class="doc-anchor" href="#single-integer-return" aria-label="Permalink to Single Integer Return">#</a> Single Integer Return</h4>
 <p>A single integer or pointer return value is placed in <code>x0</code>.</p>
 <p>Payload-less enum return values follow the same rule as their discriminator
 integer and return in <code>x0</code>.</p>
@@ -298,9 +309,9 @@ integer and return in <code>x0</code>.</p>
 value used for arguments: the tag word in <code>x0</code> and the payload word in <code>x1</code>.
 Inactive payload bytes and padding bytes are not part of the returned
 source-level value.</p>
-<h4>Single Float or Vector Return</h4>
+<h4 id="single-float-or-vector-return" tabindex="-1"><a class="doc-anchor" href="#single-float-or-vector-return" aria-label="Permalink to Single Float or Vector Return">#</a> Single Float or Vector Return</h4>
 <p>A single <code>f32</code>, <code>f64</code>, or <code>[T:N]</code> return value is placed in <code>v0</code> (using <code>s0</code>, <code>d0</code>, or <code>v0</code> respectively).</p>
-<h4>Multi-Value Return</h4>
+<h4 id="multi-value-return" tabindex="-1"><a class="doc-anchor" href="#multi-value-return" aria-label="Permalink to Multi-Value Return">#</a> Multi-Value Return</h4>
 <p>Multiple return values are distributed across registers up to the limits below. Wyst's tuple return syntax (<a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.2</a>) maps directly to this:</p>
 <table>
 <thead>
@@ -329,7 +340,6 @@ source-level value.</p>
 </tbody>
 </table>
 <p>Example:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">divmod</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token parameter">q</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">r</span><span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">return</span> <span class="token punctuation">(</span>a <span class="token operator">/</span> b<span class="token punctuation">,</span> a <span class="token operator">%</span> b<span class="token punctuation">)</span>
 <span class="token punctuation">}</span>
@@ -339,18 +349,17 @@ source-level value.</p>
 msub x1<span class="token punctuation">,</span> x0<span class="token punctuation">,</span> x1<span class="token punctuation">,</span> x2 <span class="token operator">/</span><span class="token operator">/</span> r <span class="token operator">-</span><span class="token operator">></span> x1  <span class="token punctuation">(</span>uses original a<span class="token punctuation">,</span> b from x0<span class="token punctuation">,</span> x1<span class="token punctuation">,</span> x2... see note<span class="token punctuation">)</span>
 ret
 </code></pre>
-<h4>Struct Return (≤ 32 bytes)</h4>
+<h4 id="struct-return-32-bytes" tabindex="-1"><a class="doc-anchor" href="#struct-return-32-bytes" aria-label="Permalink to Struct Return (≤ 32 bytes)">#</a> Struct Return (≤ 32 bytes)</h4>
 <p>A struct return value whose total size is at most 32 bytes is packed into <code>x0</code>–<code>x3</code> using the same memory-image packing rules as struct argument passing. A float-only struct with one to four scalar <code>f32</code>/<code>f64</code> leaf fields returns those fields in declaration/layout order through <code>v0</code>–<code>v3</code>, using <code>sN</code> for <code>f32</code> fields and <code>dN</code> for <code>f64</code> fields. No indirection is introduced.</p>
-<h4>Indirect Return (&gt; 32 bytes)</h4>
+<h4 id="indirect-return-32-bytes" tabindex="-1"><a class="doc-anchor" href="#indirect-return-32-bytes" aria-label="Permalink to Indirect Return (&gt; 32 bytes)">#</a> Indirect Return (&gt; 32 bytes)</h4>
 <p>When the return type exceeds 32 bytes, the caller allocates storage and passes its address in <code>x8</code> (the indirect result location register). The callee writes the return value to that address and does not place any value in <code>x0</code>–<code>x3</code> for the struct fields. <code>x8</code> is not preserved across the call.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// Return type > 32 bytes</span>
 <span class="token comment">// caller allocates result storage, passes address in x8</span>
 <span class="token comment">// callee writes result to [x8]</span>
 <span class="token comment">// x8 is caller-saved; callee may clobber it after the write</span>
 </code></pre>
 <hr>
-<h3 id="a.4-callee-saved-registers" tabindex="-1"><a class="doc-anchor" href="#a.4-callee-saved-registers" aria-hidden="true">#</a> A.4 Callee-Saved Registers</h3>
+<h3 id="a4-callee-saved-registers" tabindex="-1"><a class="doc-anchor" href="#a4-callee-saved-registers" aria-label="Permalink to A.4 Callee-Saved Registers">#</a> A.4 Callee-Saved Registers</h3>
 <p>The following registers must be preserved by any function that uses them:</p>
 <table>
 <thead>
@@ -392,14 +401,14 @@ call because Wyst-native callees may legally clobber all SIMD registers.
 Leaf <code>[aapcs]</code> functions save only the <code>d8</code>-<code>d15</code> registers that they directly
 use or declare as clobbered. Wyst-native functions never save SIMD registers by
 convention.</p>
-<h4>Interaction with <code>#pin</code></h4>
+<h4 id="interaction-with-pin" tabindex="-1"><a class="doc-anchor" href="#interaction-with-pin" aria-label="Permalink to Interaction with #pin">#</a> Interaction with <code>#pin</code></h4>
 <p>A declaration of the form <code>name : T #pin(reg) [= value]</code> on a callee-saved register inside a non-<code>#naked</code> function counts as &quot;using&quot; that register for the purpose of this table. An allocator-chosen scalar GPR home in a callee-saved register (<code>x19</code>-<code>x28</code>) also counts as using that register; an allocator-chosen caller-scratch home does not. The standard prologue unconditionally saves and the epilogue unconditionally restores every used callee-saved register — regardless of whether the body actually reads a pinned binding, regardless of leaf/non-leaf status. The full rules, including the legality of <code>#pin</code> inside <code>#naked</code> and the compile-error case for caller-saved pins live across a call, live in <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.3</a>. This document only states the frame-construction consequence: a <code>#pin(x19)</code> declaration or allocator home in <code>x19</code> is equivalent, for prologue purposes, to any other reference to <code>x19</code>.</p>
 <hr>
-<h3 id="a.5-stack-protocol" tabindex="-1"><a class="doc-anchor" href="#a.5-stack-protocol" aria-hidden="true">#</a> A.5 Stack Protocol</h3>
-<h4>Stack Alignment</h4>
+<h3 id="a5-stack-protocol" tabindex="-1"><a class="doc-anchor" href="#a5-stack-protocol" aria-label="Permalink to A.5 Stack Protocol">#</a> A.5 Stack Protocol</h3>
+<h4 id="stack-alignment" tabindex="-1"><a class="doc-anchor" href="#stack-alignment" aria-label="Permalink to Stack Alignment">#</a> Stack Alignment</h4>
 <p>The stack pointer must be 16-byte aligned at every call site — at the moment the <code>bl</code> or <code>blr</code> instruction executes. This is an ARM64 hardware requirement for SIMD loads and stores and must be maintained regardless of whether the function uses SIMD.</p>
 <p>If a function's local frame (saved registers + local variables) would leave the stack pointer non-16-byte-aligned, the compiler must pad the frame to restore alignment before issuing any call.</p>
-<h4>Stack Argument Layout</h4>
+<h4 id="stack-argument-layout" tabindex="-1"><a class="doc-anchor" href="#stack-argument-layout" aria-label="Permalink to Stack Argument Layout">#</a> Stack Argument Layout</h4>
 <p>When integer or vector argument registers are exhausted, remaining arguments are pushed onto the stack in <strong>right-to-left order</strong> (last argument is pushed first). At the call site, the first stack argument is at the lowest address (<code>sp[0]</code> after the callee's frame is set up):</p>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">Higher addresses
   ┌───────────────────────┐
@@ -412,12 +421,12 @@ convention.</p>
 Lower addresses
 </code></pre>
 <p>The callee accesses stack arguments at positive offsets from the incoming <code>sp</code>. Stack arguments are not popped by the callee — the caller is responsible for reclaiming the stack space after the call returns.</p>
-<h4>Stack Argument Sizing</h4>
+<h4 id="stack-argument-sizing" tabindex="-1"><a class="doc-anchor" href="#stack-argument-sizing" aria-label="Permalink to Stack Argument Sizing">#</a> Stack Argument Sizing</h4>
 <p>Each stack argument occupies 8 bytes regardless of its actual type width. Values narrower than 8 bytes are zero-extended (unsigned types) or sign-extended (signed types) to 8 bytes. This ensures 8-byte alignment for all stack arguments.</p>
 <p>Structs passed on the stack are placed at the next 8-byte-aligned offset and occupy <code>ceil(size / 8) * 8</code> bytes.</p>
 <hr>
-<h3 id="a.6-frame-layout" tabindex="-1"><a class="doc-anchor" href="#a.6-frame-layout" aria-hidden="true">#</a> A.6 Frame Layout</h3>
-<h4>Non-Leaf Functions</h4>
+<h3 id="a6-frame-layout" tabindex="-1"><a class="doc-anchor" href="#a6-frame-layout" aria-label="Permalink to A.6 Frame Layout">#</a> A.6 Frame Layout</h3>
+<h4 id="non-leaf-functions" tabindex="-1"><a class="doc-anchor" href="#non-leaf-functions" aria-label="Permalink to Non-Leaf Functions">#</a> Non-Leaf Functions</h4>
 <p>A non-leaf function must save the frame pointer (<code>x29</code>) and link register (<code>x30</code>) as a frame record. The canonical prologue:</p>
 <pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm">stp  x29<span class="token punctuation">,</span> x30<span class="token punctuation">,</span> <span class="token punctuation">[</span>sp<span class="token punctuation">,</span> <span class="token operator">#</span><span class="token operator">-</span>frame_size<span class="token punctuation">]</span><span class="token operator">!</span>   <span class="token operator">/</span><span class="token operator">/</span> save fp and <span class="token register symbol">lr</span><span class="token comment">; allocate frame</span>
 mov  x29<span class="token punctuation">,</span> sp                          <span class="token operator">/</span><span class="token operator">/</span> fp points to frame record
@@ -428,7 +437,7 @@ mov  x29<span class="token punctuation">,</span> sp                          <sp
 ret
 </code></pre>
 <p>Callee-saved registers (<code>x19</code>–<code>x28</code>) used by the function are saved adjacent to the frame record, in implementation-defined order within the frame. The frame pointer and link register must always occupy the lowest two slots of the frame (the canonical ARM64 frame record position).</p>
-<h4>Leaf Functions</h4>
+<h4 id="leaf-functions" tabindex="-1"><a class="doc-anchor" href="#leaf-functions" aria-label="Permalink to Leaf Functions">#</a> Leaf Functions</h4>
 <p>Leaf functions that do not use any callee-saved registers and do not need local stack storage may omit the frame record entirely and return via <code>ret</code> with <code>sp</code> unchanged:</p>
 <pre class="wyst-code language-asm" data-lang="asm"><code class="language-asm"><span class="token operator">/</span><span class="token operator">/</span> leaf function with no frame record
 add  x0<span class="token punctuation">,</span> x0<span class="token punctuation">,</span> x1
@@ -440,7 +449,7 @@ without a frame record, stack unwinding and <code>wyst explain</code> backtraces
 traverse the frame. A future debug-build mode will require a frame record in
 every function. The <code>#backtrace</code> source attribute spelling is reserved and does
 not have current source semantics.</p>
-<h4>Frame Pointer Convention Summary</h4>
+<h4 id="frame-pointer-convention-summary" tabindex="-1"><a class="doc-anchor" href="#frame-pointer-convention-summary" aria-label="Permalink to Frame Pointer Convention Summary">#</a> Frame Pointer Convention Summary</h4>
 <table>
 <thead>
 <tr>
@@ -472,7 +481,7 @@ not have current source semantics.</p>
 </tbody>
 </table>
 <hr>
-<h3 id="a.7-pac-behavior" tabindex="-1"><a class="doc-anchor" href="#a.7-pac-behavior" aria-hidden="true">#</a> A.7 PAC Behavior</h3>
+<h3 id="a7-pac-behavior" tabindex="-1"><a class="doc-anchor" href="#a7-pac-behavior" aria-label="Permalink to A.7 PAC Behavior">#</a> A.7 PAC Behavior</h3>
 <p>The Wyst Native ABI does <strong>not</strong> emit Pointer Authentication Code instructions in prologues or epilogues. The compiler does not insert <code>paciasp</code> / <code>autiasp</code> around frame records.</p>
 <p>This is consistent with Wyst's model of treating addresses as plain <code>u64</code> integers. PAC tagging is incompatible with that model without explicit type system support.</p>
 <p>Functions may opt into PAC prologue/epilogue signing via a <code>#pac</code> directive (specified as an extension point in the &quot;ARM64 Feature Scope&quot; section of <a href="/docs/chapter-01-language-design/">chapter-01-language-design.md</a>). When <code>#pac</code> is present:</p>
@@ -483,26 +492,24 @@ not have current source semantics.</p>
 </ul>
 <p><code>#pac</code> and <code>[aapcs]</code> may be combined. When both are present, the AAPCS64 calling convention applies and PAC signing is also emitted.</p>
 <hr>
-<h3 id="a.8-variadic-functions" tabindex="-1"><a class="doc-anchor" href="#a.8-variadic-functions" aria-hidden="true">#</a> A.8 Variadic Functions</h3>
+<h3 id="a8-variadic-functions" tabindex="-1"><a class="doc-anchor" href="#a8-variadic-functions" aria-label="Permalink to A.8 Variadic Functions">#</a> A.8 Variadic Functions</h3>
 <p>The Wyst Native ABI does not define a variadic calling convention. C-style <code>va_list</code> / <code>...</code> parameter lists do not exist in Wyst.</p>
 <p>Functions that accept a variable number of arguments use explicit count-and-pointer parameters:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token comment">// idiomatic Wyst variadic-style function</span>
 <span class="token function">print_all</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">args</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u64</span><span class="token punctuation">,</span> <span class="token parameter">count</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>This means Wyst native functions cannot be called as C variadics. A function intended to be a C variadic (e.g. a custom <code>printf</code>-like) must use <code>[aapcs]</code> and accept <code>va_list</code> through <code>#asm</code> blocks. See <a href="#b63-calling-variadic-c-functions-printf-via-va_list">B.6.3</a> for the worked example.</p>
 <hr>
-<h3 id="aapcs64-interop-convention" tabindex="-1"><a class="doc-anchor" href="#aapcs64-interop-convention" aria-hidden="true">#</a> AAPCS64 Interop Convention</h3>
+<h3 id="aapcs64-interop-convention" tabindex="-1"><a class="doc-anchor" href="#aapcs64-interop-convention" aria-label="Permalink to AAPCS64 Interop Convention">#</a> AAPCS64 Interop Convention</h3>
 <hr>
-<h3 id="b.1-annotation" tabindex="-1"><a class="doc-anchor" href="#b.1-annotation" aria-hidden="true">#</a> B.1 Annotation</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="b1-annotation" tabindex="-1"><a class="doc-anchor" href="#b1-annotation" aria-label="Permalink to B.1 Annotation">#</a> B.1 Annotation</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token function">my_function</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">,</span> <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">u32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span> <span class="token operator">..</span><span class="token punctuation">.</span> <span class="token punctuation">}</span>
 </code></pre>
 <p>The <code>[aapcs]</code> attribute declares that the function conforms fully to the ARM64 Procedure Call Standard (AAPCS64, document IHI0055). The compiler applies AAPCS64 rules for argument passing, register preservation, struct passing (including HFA/HVA rules), return values, and frame records.</p>
 <p><code>[aapcs]</code> applies to the <strong>function it annotates</strong>. It does not change the convention of callers or of other functions in the same module.</p>
 <hr>
-<h3 id="b.2-when-to-use-%5Baapcs%5D" tabindex="-1"><a class="doc-anchor" href="#b.2-when-to-use-%5Baapcs%5D" aria-hidden="true">#</a> B.2 When to Use <code>[aapcs]</code></h3>
+<h3 id="b2-when-to-use-aapcs" tabindex="-1"><a class="doc-anchor" href="#b2-when-to-use-aapcs" aria-label="Permalink to B.2 When to Use [aapcs]">#</a> B.2 When to Use <code>[aapcs]</code></h3>
 <table>
 <thead>
 <tr>
@@ -534,7 +541,7 @@ not have current source semantics.</p>
 </tbody>
 </table>
 <hr>
-<h3 id="b.3-aapcs64-vs-wyst-native%3A-key-differences" tabindex="-1"><a class="doc-anchor" href="#b.3-aapcs64-vs-wyst-native%3A-key-differences" aria-hidden="true">#</a> B.3 AAPCS64 vs Wyst Native: Key Differences</h3>
+<h3 id="b3-aapcs64-vs-wyst-native-key-differences" tabindex="-1"><a class="doc-anchor" href="#b3-aapcs64-vs-wyst-native-key-differences" aria-label="Permalink to B.3 AAPCS64 vs Wyst Native: Key Differences">#</a> B.3 AAPCS64 vs Wyst Native: Key Differences</h3>
 <table>
 <thead>
 <tr>
@@ -603,9 +610,8 @@ not have current source semantics.</p>
 </table>
 <p>The most significant differences are: (1) Wyst native returns up to 4 integers in <code>x0</code>–<code>x3</code> where AAPCS64 only uses <code>x0</code>–<code>x1</code>; (2) <code>v8</code>–<code>v15</code> are caller-saved in Wyst native, eliminating SIMD callee-save overhead in hot paths; (3) HFA/HVA recognition is reserved for explicit <code>[aapcs]</code> boundaries.</p>
 <hr>
-<h3 id="b.4-declaring-foreign-functions" tabindex="-1"><a class="doc-anchor" href="#b.4-declaring-foreign-functions" aria-hidden="true">#</a> B.4 Declaring Foreign Functions</h3>
+<h3 id="b4-declaring-foreign-functions" tabindex="-1"><a class="doc-anchor" href="#b4-declaring-foreign-functions" aria-label="Permalink to B.4 Declaring Foreign Functions">#</a> B.4 Declaring Foreign Functions</h3>
 <p>Foreign C functions called from Wyst must be declared with <code>[aapcs]</code>:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token function">memcpy</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">n</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span>
 
@@ -615,7 +621,7 @@ not have current source semantics.</p>
 <p>The compiler will generate a call using AAPCS64 argument passing rules for any
 call to an <code>[aapcs]</code>-annotated function.</p>
 <hr>
-<h3 id="b.5-function-pointer-type-discipline" tabindex="-1"><a class="doc-anchor" href="#b.5-function-pointer-type-discipline" aria-hidden="true">#</a> B.5 Function Pointer Type Discipline</h3>
+<h3 id="b5-function-pointer-type-discipline" tabindex="-1"><a class="doc-anchor" href="#b5-function-pointer-type-discipline" aria-label="Permalink to B.5 Function Pointer Type Discipline">#</a> B.5 Function Pointer Type Discipline</h3>
 <p>Calling convention is encoded in the function pointer type. The two pointer forms are:</p>
 <table>
 <thead>
@@ -639,7 +645,7 @@ call to an <code>[aapcs]</code>-annotated function.</p>
 </tbody>
 </table>
 <p>The shape <code>(args) -&gt; ret</code> is the bare function signature and is not a value type (see <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.6</a>); only the <code>@(...)</code> and <code>@[aapcs] (...)</code> forms are storable.</p>
-<h4>Type Identity</h4>
+<h4 id="type-identity" tabindex="-1"><a class="doc-anchor" href="#type-identity" aria-label="Permalink to Type Identity">#</a> Type Identity</h4>
 <p>Two function pointer types are the same type only when <strong>both</strong> match:</p>
 <ol>
 <li>The convention annotation matches exactly (<code>@(...)</code> ≡ <code>@(...)</code>; <code>@[aapcs] (...)</code> ≡ <code>@[aapcs] (...)</code>; never <code>@(...)</code> ≡ <code>@[aapcs] (...)</code>).</li>
@@ -655,25 +661,23 @@ slots require an ordinary-ABI wrapper or a future pin-map-aware convention
 type. Large aggregate and indirect-result returns still use the convention's
 ordinary result locations and do not encode argument pins.</p>
 <p>There is no implicit conversion between <code>@(...)</code> and <code>@[aapcs] (...)</code> in either direction. Wyst rejects:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token function">puts</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
 <span class="token parameter">native_fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// compile error</span>
 <span class="token parameter">aapcs_fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>puts<span class="token punctuation">)</span> <span class="token comment">// OK</span>
 </code></pre>
-<h4><code>#addr_of</code> and Convention</h4>
+<h4 id="addr_of-and-convention" tabindex="-1"><a class="doc-anchor" href="#addr_of-and-convention" aria-label="Permalink to #addr_of and Convention">#</a> <code>#addr_of</code> and Convention</h4>
 <p><code>#addr_of(name)</code> produces a function pointer whose convention matches the declaration of <code>name</code>:</p>
 <ul>
 <li><code>#addr_of</code> of a function declared without <code>[aapcs]</code> has type <code>@(args) -&gt; ret</code>.</li>
 <li><code>#addr_of</code> of a function declared <code>[aapcs]</code> has type <code>@[aapcs] (args) -&gt; ret</code>.</li>
 </ul>
 <p>There is no <code>[aapcs]</code>-stripping form of <code>#addr_of</code>. To call a Wyst-native function from C, the function itself must be declared <code>[aapcs]</code>. To call an <code>[aapcs]</code> function as if it were native, write a Wyst-native trampoline that re-marshals arguments and calls through.</p>
-<h4>Conversion to and from <code>u64</code></h4>
+<h4 id="conversion-to-and-from-u64" tabindex="-1"><a class="doc-anchor" href="#conversion-to-and-from-u64" aria-label="Permalink to Conversion to and from u64">#</a> Conversion to and from <code>u64</code></h4>
 <p>A function pointer of either convention converts to <code>u64</code> via <code>as.address</code>.
 Constructing a function pointer of either convention from a raw integer address
 requires the explicit trusted form:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token variable">addr</span> <span class="token operator">:=</span> aapcs_fp <span class="token keyword">as</span><span class="token punctuation">.</span>address <span class="token builtin type">u64</span>
 <span class="token variable">fp</span>   <span class="token operator">:=</span> <span class="token directive macro">#trusted_cast</span><span class="token operator">&lt;</span><span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span><span class="token operator">></span><span class="token punctuation">(</span>addr<span class="token punctuation">)</span>
 </code></pre>
@@ -691,7 +695,7 @@ call uses the declared convention and may corrupt registers, stack, or control
 flow, but the compiler must not exploit that possibility for optimization. The
 resulting function pointer has an unknown effect origin for <code>#deny</code> until the
 compiler can prove a more specific target through ordinary <code>#addr_of</code> flow.</p>
-<h4>Storage and Aggregate Use</h4>
+<h4 id="storage-and-aggregate-use" tabindex="-1"><a class="doc-anchor" href="#storage-and-aggregate-use" aria-label="Permalink to Storage and Aggregate Use">#</a> Storage and Aggregate Use</h4>
 <p>Function pointers participate in struct layout (<a href="/docs/chapter-06-types/">chapter-06-types.md §1.6</a>) as 8-byte values with 8-byte alignment, identical to <code>@T</code>. The convention annotation is part of the type for layout-identity purposes but does not affect size or alignment.</p>
 <p>Wyst enum types do not have a direct foreign layout. A C enum should be
 declared at the boundary as the integer type used by that C ABI. A C tagged
@@ -700,13 +704,12 @@ whose fields match the C layout. <code>[aapcs]</code> function signatures reject
 Wyst enum parameters and returns rather than silently treating the Wyst enum
 representation as a C layout.</p>
 <hr>
-<h3 id="b.6-foreign-function-idioms" tabindex="-1"><a class="doc-anchor" href="#b.6-foreign-function-idioms" aria-hidden="true">#</a> B.6 Foreign Function Idioms</h3>
+<h3 id="b6-foreign-function-idioms" tabindex="-1"><a class="doc-anchor" href="#b6-foreign-function-idioms" aria-label="Permalink to B.6 Foreign Function Idioms">#</a> B.6 Foreign Function Idioms</h3>
 <p>This section gives worked examples for the three FFI shapes that come up in
 practice: scalar arguments (<code>memcpy</code>), AAPCS struct passing, and C variadics
 via <code>va_list</code>.</p>
-<h4>B.6.1 Calling <code>memcpy</code> (Scalar Arguments)</h4>
+<h4 id="b61-calling-memcpy-scalar-arguments" tabindex="-1"><a class="doc-anchor" href="#b61-calling-memcpy-scalar-arguments" aria-label="Permalink to B.6.1 Calling memcpy (Scalar Arguments)">#</a> B.6.1 Calling <code>memcpy</code> (Scalar Arguments)</h4>
 <p>The simplest FFI case — pointer and integer arguments, pointer return.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>libc
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
@@ -723,7 +726,6 @@ bodies are provided by the linked C runtime. Current static-ELF output accepts
 and checks these signatures, but rejects calls to or addresses of unresolved
 external symbols until that build mode exists. Usage in an object/link-capable
 mode:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>libc
 
 <span class="token function">copy_packet</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">dst_buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">src_buf</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">len</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token address-qualifier type">@u8</span> <span class="token punctuation">{</span>
@@ -818,7 +820,7 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 </tbody>
 </table>
 <p>Any C type not in this table (anonymous unions, bit fields, packed structs, <code>_Atomic T</code>, function-like macros) requires hand translation with the user verifying the AAPCS64 layout matches.</p>
-<h4>B.6.2 AAPCS Struct Passing</h4>
+<h4 id="b62-aapcs-struct-passing" tabindex="-1"><a class="doc-anchor" href="#b62-aapcs-struct-passing" aria-label="Permalink to B.6.2 AAPCS Struct Passing">#</a> B.6.2 AAPCS Struct Passing</h4>
 <p>When a C function takes a struct by value, AAPCS64 rules determine whether the struct is passed in registers, on the stack, or through a caller-owned copy whose address is passed as an ordinary integer argument. Wyst does not change those rules for <code>[aapcs]</code> calls. The user's job is to declare the struct with the right layout and to keep <code>x8</code> reserved for indirect results.</p>
 <p>Worked example: a hypothetical <code>c_timespec</code> C call.</p>
 <pre class="wyst-code language-c" data-lang="c"><code class="language-c"><span class="token comment">// C side:</span>
@@ -827,7 +829,6 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 <span class="token keyword">int</span> <span class="token function">clock_diff</span><span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">timespec</span> a<span class="token punctuation">,</span> <span class="token keyword">struct</span> <span class="token class-name">timespec</span> b<span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">// by value</span>
 </code></pre>
 <p>Wyst side:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>posix_time
 
 <span class="token keyword">pub</span> <span class="token class-name type">timespec</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
@@ -849,7 +850,7 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 <p>This is AAPCS64 aggregate classification applied to the supported fixed-arity surface. For structs &gt; 16 bytes that are not HFA/HVA, Wyst's <code>[aapcs]</code> lowering uses a caller-owned stack copy and replaces the source argument with a pointer to that copy. That pointer is then allocated exactly like an ordinary pointer argument: it uses the next available <code>x0</code>-<code>x7</code> slot, or the next stack argument slot after integer argument registers are exhausted. Multiple large by-value aggregate parameters are therefore valid, and they may coexist with an indirect aggregate return; <code>x8</code> is reserved for the indirect result pointer only. The Wyst struct layout (<a href="/docs/chapter-06-types/">chapter-06-types.md §1.6</a> alignment + tail-padding rules) matches AAPCS64's, so there is no Wyst-side adjustment required for <code>[aapcs]</code>.</p>
 <p>Scalar HFAs are structs whose leaf fields are one to four homogeneous <code>f32</code> or <code>f64</code> values. Vector HVAs are structs whose leaf fields are one to four homogeneous SIMD vector values. Under <code>[aapcs]</code>, those fields pass and return in consecutive SIMD/floating-point registers; the Native ABI treats the same struct as a byte-image aggregate unless another Native rule applies. Mixed or non-homogeneous float/vector structs are not HFA/HVA aggregates, so they use the ordinary byte-image struct rows above.</p>
 <p><strong>Where this can go wrong:</strong> Wyst's strict layout means <code>#packed</code> structs do <em>not</em> match the C ABI on the same source declaration unless the C struct is also packed. If a C library uses <code>__attribute__((packed))</code>, the Wyst declaration must use <code>#packed</code>. If the C library uses any other layout attribute (<code>__attribute__((aligned(N)))</code>, MS-style bit fields), the user must hand-verify the layout with <code>#static_assert(#size_of(T) == ..., ...)</code> and <code>#static_assert(#field_offset(T, field) == ..., ...)</code> style invariants.</p>
-<h4>B.6.3 Calling Variadic C Functions: <code>printf</code> via <code>va_list</code></h4>
+<h4 id="b63-calling-variadic-c-functions-printf-via-va_list" tabindex="-1"><a class="doc-anchor" href="#b63-calling-variadic-c-functions-printf-via-va_list" aria-label="Permalink to B.6.3 Calling Variadic C Functions: printf via va_list">#</a> B.6.3 Calling Variadic C Functions: <code>printf</code> via <code>va_list</code></h4>
 <p>C variadic functions (<code>printf</code>, <code>fprintf</code>, <code>vsnprintf</code>) are the awkward FFI case. AAPCS64 §6.4 defines variadic argument passing: the first 8 arguments may be passed in registers as for fixed arguments, and remaining arguments go on the stack at 8-byte alignment.</p>
 <p>Wyst does <strong>not</strong> support declaring variadic Wyst functions (per <a href="#a8-variadic-functions">§A.8</a>). The supported FFI patterns are:</p>
 <ol>
@@ -858,7 +859,6 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 </ol>
 <h5>Pattern 1: Direct variadic call</h5>
 <p>Declare <code>printf</code> once per call shape used:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token keyword">pub</span> <span class="token function">printf_1s</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">fmt</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">,</span> <span class="token parameter">s</span> <span class="token operator">:</span> <span class="token address-qualifier type">@u8</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">i32</span>
 
@@ -879,7 +879,6 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 <span class="token punctuation">}</span><span class="token punctuation">;</span>
 </code></pre>
 <p>Wyst declares this layout directly:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> runtime<span class="token punctuation">.</span>va_list
 
 <span class="token keyword">pub</span> <span class="token class-name type">va_list</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
@@ -894,7 +893,6 @@ argument-passing rules: <code>dst</code> in <code>x0</code>, <code>src</code> in
 </code></pre>
 <p>The static assert is the load-bearing check: any miscompile of layout against AAPCS64 surfaces here.</p>
 <p><strong>Declaring <code>vprintf</code>:</strong></p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#import</span> runtime<span class="token punctuation">.</span>va_list
 
 <span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
@@ -960,22 +958,20 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
 }
 </code></pre>
 <p>This is the <code>#asm</code> workaround abi-spec §A.8 / chapter-15-abi-spec.md:321 refers to. The <code>#asm</code> block runs under the rules of <a href="/docs/chapter-08-functions/">chapter-08-functions.md §2.9</a> — full compiler memory fence; declared <code>memory</code> clobber; named operand interpolation.</p>
-<h4>B.6.4 Wyst-side Callbacks Called from C</h4>
+<h4 id="b64-wyst-side-callbacks-called-from-c" tabindex="-1"><a class="doc-anchor" href="#b64-wyst-side-callbacks-called-from-c" aria-label="Permalink to B.6.4 Wyst-side Callbacks Called from C">#</a> B.6.4 Wyst-side Callbacks Called from C</h4>
 <p>The reverse direction: a C library accepts a function pointer that it later calls back. The Wyst-side callback must be declared <code>[aapcs]</code> and marked <code>pub</code> so the linker can find it:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span>
 <span class="token keyword">pub</span> <span class="token function">on_signal</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">sig</span> <span class="token operator">:</span> <span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token comment">// ... handler body</span>
 <span class="token punctuation">}</span>
 </code></pre>
 <p>Passing the function pointer is via <code>#addr_of</code>, which produces a function pointer with the convention of the declaration:</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token parameter">fp</span> <span class="token operator">:</span> <span class="token operator">@</span><span class="token punctuation">[</span>aapcs<span class="token punctuation">]</span> <span class="token punctuation">(</span><span class="token builtin type">i32</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token directive macro">#addr_of</span><span class="token punctuation">(</span>on_signal<span class="token punctuation">)</span>
 <span class="token function">signal_register</span><span class="token punctuation">(</span><span class="token constant">SIGUSR1</span><span class="token punctuation">,</span> fp<span class="token punctuation">)</span>
 </code></pre>
 <p>This is the same <code>#addr_of</code> discipline from <a href="#b5-function-pointer-type-discipline">B.5</a>. No special FFI rule.</p>
 <hr>
-<h3 id="b.7-c-declaration-boundary" tabindex="-1"><a class="doc-anchor" href="#b.7-c-declaration-boundary" aria-hidden="true">#</a> B.7 C Declaration Boundary</h3>
+<h3 id="b7-c-declaration-boundary" tabindex="-1"><a class="doc-anchor" href="#b7-c-declaration-boundary" aria-label="Permalink to B.7 C Declaration Boundary">#</a> B.7 C Declaration Boundary</h3>
 <p>The FFI boundary is hand-written <code>[aapcs]</code> functions and generated Wyst
 declaration modules. Direct C header import remains outside this boundary. A
 working C header importer requires a C preprocessor (macros, includes,
@@ -985,7 +981,7 @@ parser, a type-translation layer with documented rules for every C feature
 backing, function-like macros, <code>va_list</code>, <code>restrict</code>,
 <code>__attribute__((...))</code>, packed structs, anonymous structs in struct members),
 and a strategy for reconciling C's loose typing with Wyst's strict typing.</p>
-<h4>Import Boundary</h4>
+<h4 id="import-boundary" tabindex="-1"><a class="doc-anchor" href="#import-boundary" aria-label="Permalink to Import Boundary">#</a> Import Boundary</h4>
 <p>The boundary is generated Wyst source, not direct C header parsing during
 ordinary compilation. A C binding producer emits an ordinary <code>.wyst</code>
 module containing <code>#module</code>, <code>pub</code>, <code>[aapcs]</code>, type, and
@@ -1036,7 +1032,7 @@ pointers, <code>_Atomic</code>, platform-ambiguous enums, or macros.</p>
 <p>No-body foreign declarations require an object/link-capable mode where
 undefined external symbols are represented explicitly and resolved by a linker.
 Dynamic linking is outside this FFI boundary.</p>
-<h4>Constraints Locked on Header Importers</h4>
+<h4 id="constraints-locked-on-header-importers" tabindex="-1"><a class="doc-anchor" href="#constraints-locked-on-header-importers" aria-label="Permalink to Constraints Locked on Header Importers">#</a> Constraints Locked on Header Importers</h4>
 <p>Any C header import design must satisfy:</p>
 <table>
 <thead>
@@ -1076,7 +1072,7 @@ Dynamic linking is outside this FFI boundary.</p>
 </tr>
 </tbody>
 </table>
-<h4>Workflow for Heavy FFI</h4>
+<h4 id="workflow-for-heavy-ffi" tabindex="-1"><a class="doc-anchor" href="#workflow-for-heavy-ffi" aria-label="Permalink to Workflow for Heavy FFI">#</a> Workflow for Heavy FFI</h4>
 <p>With the generated-declaration boundary, a user who needs to interop
 with a large C surface can use this workflow:</p>
 <ol>
@@ -1092,7 +1088,7 @@ C struct once by-value aggregate support exists, with <code>N</code> taken from
 project input, then <code>#import</code> it.</li>
 </ol>
 <p>The cost is one-time per header; the result is auditable Wyst source that participates in the reproducibility contract from day one.</p>
-<h4>Design Rationale</h4>
+<h4 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h4>
 <table>
 <thead>
 <tr>
@@ -1124,9 +1120,9 @@ project input, then <code>#import</code> it.</li>
 </tbody>
 </table>
 <hr>
-<h3 id="complete-reference-table" tabindex="-1"><a class="doc-anchor" href="#complete-reference-table" aria-hidden="true">#</a> Complete Reference Table</h3>
+<h3 id="complete-reference-table" tabindex="-1"><a class="doc-anchor" href="#complete-reference-table" aria-label="Permalink to Complete Reference Table">#</a> Complete Reference Table</h3>
 <hr>
-<h3 id="c.1-full-abi-table" tabindex="-1"><a class="doc-anchor" href="#c.1-full-abi-table" aria-hidden="true">#</a> C.1 Full ABI Table</h3>
+<h3 id="c1-full-abi-table" tabindex="-1"><a class="doc-anchor" href="#c1-full-abi-table" aria-label="Permalink to C.1 Full ABI Table">#</a> C.1 Full ABI Table</h3>
 <table>
 <thead>
 <tr>
@@ -1259,16 +1255,14 @@ project input, then <code>#import</code> it.</li>
 </tbody>
 </table>
 <hr>
-<h3 id="c.2-argument-register-allocation-examples" tabindex="-1"><a class="doc-anchor" href="#c.2-argument-register-allocation-examples" aria-hidden="true">#</a> C.2 Argument Register Allocation Examples</h3>
-<h4>Eight integer arguments — all in registers</h4>
-<!-- wyst-contract: sketch -->
+<h3 id="c2-argument-register-allocation-examples" tabindex="-1"><a class="doc-anchor" href="#c2-argument-register-allocation-examples" aria-label="Permalink to C.2 Argument Register Allocation Examples">#</a> C.2 Argument Register Allocation Examples</h3>
+<h4 id="eight-integer-arguments-all-in-registers" tabindex="-1"><a class="doc-anchor" href="#eight-integer-arguments-all-in-registers" aria-label="Permalink to Eight integer arguments — all in registers">#</a> Eight integer arguments — all in registers</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">f</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">d</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">e</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">f</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">g</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">h</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">a → x0   b → x1   c → x2   d → x3
 e → x4   f → x5   g → x6   h → x7
 </code></pre>
-<h4>Nine integer arguments — ninth on stack</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="nine-integer-arguments-ninth-on-stack" tabindex="-1"><a class="doc-anchor" href="#nine-integer-arguments-ninth-on-stack" aria-label="Permalink to Nine integer arguments — ninth on stack">#</a> Nine integer arguments — ninth on stack</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">g</span> <span class="token operator">::</span> <span class="token punctuation">(</span>a <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">c</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">d</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
       <span class="token parameter">e</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">f</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">g</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">h</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span>
       <span class="token parameter">i</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
@@ -1277,16 +1271,14 @@ e → x4   f → x5   g → x6   h → x7
 e → x4   f → x5   g → x6   h → x7
 i → [sp + 0]                          // first stack argument at sp[0] in callee
 </code></pre>
-<h4>Mixed integer and float arguments</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="mixed-integer-and-float-arguments" tabindex="-1"><a class="doc-anchor" href="#mixed-integer-and-float-arguments" aria-label="Permalink to Mixed integer and float arguments">#</a> Mixed integer and float arguments</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">h</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">x</span> <span class="token operator">:</span> <span class="token builtin type">f32</span><span class="token punctuation">,</span> <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">y</span> <span class="token operator">:</span> <span class="token builtin type">f64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span>
 </code></pre>
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">a → x0   b → x1          // integers fill x0, x1 in order
 x → s0   y → d1          // floats fill v0, v1 in order
                           // integer and float registers are independent
 </code></pre>
-<h4>Medium struct argument</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="medium-struct-argument" tabindex="-1"><a class="doc-anchor" href="#medium-struct-argument" aria-label="Permalink to Medium struct argument">#</a> Medium struct argument</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">bounds</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">lo</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 16 bytes</span>
   <span class="token parameter">hi</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
@@ -1297,8 +1289,7 @@ x → s0   y → d1          // floats fill v0, v1 in order
 <pre class="wyst-code language-text" data-lang="text"><code class="language-text">range.lo → x0   range.hi → x1    // struct occupies two consecutive registers
 val      → x2
 </code></pre>
-<h4>Large struct argument</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="large-struct-argument" tabindex="-1"><a class="doc-anchor" href="#large-struct-argument" aria-label="Permalink to Large struct argument">#</a> Large struct argument</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token class-name type">transform</span> <span class="token operator">::</span> <span class="token keyword">struct</span> <span class="token punctuation">{</span>
   <span class="token parameter">a</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token comment">// 24 bytes — too large</span>
   <span class="token parameter">b</span> <span class="token operator">:</span> <span class="token builtin type">u64</span>
@@ -1315,7 +1306,7 @@ val      → x2
 apply call: x0 = &amp;transform_copy, x1 = v
 </code></pre>
 <hr>
-<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale-1" tabindex="-1"><a class="doc-anchor" href="#design-rationale-1" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -1355,7 +1346,7 @@ apply call: x0 = &amp;transform_copy, x1 = v
 </tbody>
 </table>
 <hr>
-<h3 id="compiler-requirements" tabindex="-1"><a class="doc-anchor" href="#compiler-requirements" aria-hidden="true">#</a> Compiler Requirements</h3>
+<h3 id="compiler-requirements" tabindex="-1"><a class="doc-anchor" href="#compiler-requirements" aria-label="Permalink to Compiler Requirements">#</a> Compiler Requirements</h3>
 <p>The compiler must:</p>
 <ul>
 <li>Emit a <strong>hard error</strong> if a Wyst-native caller passes a <code>[aapcs]</code>-annotated function to a function pointer typed as a Wyst-native function pointer, or vice versa.</li>
@@ -1379,26 +1370,26 @@ generated by the convention.</li>
 				<ul class="doc-toc-list">
 				<li class="lvl-2"><a href="#overview">Overview</a></li>
 				<li class="lvl-3"><a href="#wyst-native-abi">Wyst Native ABI</a></li>
-				<li class="lvl-3"><a href="#a.1-register-classification">A.1 Register Classification</a></li>
-				<li class="lvl-3"><a href="#a.2-argument-passing">A.2 Argument Passing</a></li>
-				<li class="lvl-3"><a href="#a.3-return-values">A.3 Return Values</a></li>
-				<li class="lvl-3"><a href="#a.4-callee-saved-registers">A.4 Callee-Saved Registers</a></li>
-				<li class="lvl-3"><a href="#a.5-stack-protocol">A.5 Stack Protocol</a></li>
-				<li class="lvl-3"><a href="#a.6-frame-layout">A.6 Frame Layout</a></li>
-				<li class="lvl-3"><a href="#a.7-pac-behavior">A.7 PAC Behavior</a></li>
-				<li class="lvl-3"><a href="#a.8-variadic-functions">A.8 Variadic Functions</a></li>
+				<li class="lvl-3"><a href="#a1-register-classification">A.1 Register Classification</a></li>
+				<li class="lvl-3"><a href="#a2-argument-passing">A.2 Argument Passing</a></li>
+				<li class="lvl-3"><a href="#a3-return-values">A.3 Return Values</a></li>
+				<li class="lvl-3"><a href="#a4-callee-saved-registers">A.4 Callee-Saved Registers</a></li>
+				<li class="lvl-3"><a href="#a5-stack-protocol">A.5 Stack Protocol</a></li>
+				<li class="lvl-3"><a href="#a6-frame-layout">A.6 Frame Layout</a></li>
+				<li class="lvl-3"><a href="#a7-pac-behavior">A.7 PAC Behavior</a></li>
+				<li class="lvl-3"><a href="#a8-variadic-functions">A.8 Variadic Functions</a></li>
 				<li class="lvl-3"><a href="#aapcs64-interop-convention">AAPCS64 Interop Convention</a></li>
-				<li class="lvl-3"><a href="#b.1-annotation">B.1 Annotation</a></li>
-				<li class="lvl-3"><a href="#b.2-when-to-use-%5Baapcs%5D">B.2 When to Use [aapcs]</a></li>
-				<li class="lvl-3"><a href="#b.3-aapcs64-vs-wyst-native%3A-key-differences">B.3 AAPCS64 vs Wyst Native: Key Differences</a></li>
-				<li class="lvl-3"><a href="#b.4-declaring-foreign-functions">B.4 Declaring Foreign Functions</a></li>
-				<li class="lvl-3"><a href="#b.5-function-pointer-type-discipline">B.5 Function Pointer Type Discipline</a></li>
-				<li class="lvl-3"><a href="#b.6-foreign-function-idioms">B.6 Foreign Function Idioms</a></li>
-				<li class="lvl-3"><a href="#b.7-c-declaration-boundary">B.7 C Declaration Boundary</a></li>
+				<li class="lvl-3"><a href="#b1-annotation">B.1 Annotation</a></li>
+				<li class="lvl-3"><a href="#b2-when-to-use-aapcs">B.2 When to Use [aapcs]</a></li>
+				<li class="lvl-3"><a href="#b3-aapcs64-vs-wyst-native-key-differences">B.3 AAPCS64 vs Wyst Native: Key Differences</a></li>
+				<li class="lvl-3"><a href="#b4-declaring-foreign-functions">B.4 Declaring Foreign Functions</a></li>
+				<li class="lvl-3"><a href="#b5-function-pointer-type-discipline">B.5 Function Pointer Type Discipline</a></li>
+				<li class="lvl-3"><a href="#b6-foreign-function-idioms">B.6 Foreign Function Idioms</a></li>
+				<li class="lvl-3"><a href="#b7-c-declaration-boundary">B.7 C Declaration Boundary</a></li>
 				<li class="lvl-3"><a href="#complete-reference-table">Complete Reference Table</a></li>
-				<li class="lvl-3"><a href="#c.1-full-abi-table">C.1 Full ABI Table</a></li>
-				<li class="lvl-3"><a href="#c.2-argument-register-allocation-examples">C.2 Argument Register Allocation Examples</a></li>
-				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
+				<li class="lvl-3"><a href="#c1-full-abi-table">C.1 Full ABI Table</a></li>
+				<li class="lvl-3"><a href="#c2-argument-register-allocation-examples">C.2 Argument Register Allocation Examples</a></li>
+				<li class="lvl-3"><a href="#design-rationale-1">Design Rationale</a></li>
 				<li class="lvl-3"><a href="#compiler-requirements">Compiler Requirements</a></li>
 			</ul>
 			</aside>
@@ -1410,12 +1401,6 @@ generated by the convention.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>

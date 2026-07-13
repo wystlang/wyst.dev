@@ -8,11 +8,25 @@
 		<meta name="description" content="Target facts, execution environments, and why runnability is explicit." />
 		<title>Target Descriptors · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-02-targets/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-02-targets/" />
+		<meta property="og:title" content="Target Descriptors · Wyst" />
+		<meta property="og:description" content="Target facts, execution environments, and why runnability is explicit." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Target Descriptors · Wyst" />
+		<meta name="twitter:description" content="Target facts, execution environments, and why runnability is explicit." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
-		<link rel="stylesheet" href="/assets/wyst.8e583439.css" />
-		<link rel="stylesheet" href="/assets/docs.0db89e64.css" />
+		<link rel="stylesheet" href="/assets/wyst.677d44c0.css" />
+		<link rel="stylesheet" href="/assets/docs.90a6629c.css" />
 	</head>
 	<body class="docs">
 		<a class="skip" href="#main">Skip to content</a>
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -89,13 +103,13 @@
 <p>Runnable code depends on more than an ISA name. This chapter distinguishes
 source-level <code>#requires</code> declarations, exact <code>#target</code> facts for target-bound
 modules, project profiles, and full target descriptors.</p>
-<h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-hidden="true">#</a> Thesis</h2>
+<h2 id="thesis" tabindex="-1"><a class="doc-anchor" href="#thesis" aria-label="Permalink to Thesis">#</a> Thesis</h2>
 <p>A named ISA is not a complete machine contract. AArch64 code may share
 instructions while differing in ABI, exception level, binary format, loader
 rules, firmware or OS services, MMIO ranges, device protocols, signing, and
 run/copy policy. Wyst target descriptors therefore separate target facts into
 layers instead of flattening everything into one target string.</p>
-<h2 id="layers" tabindex="-1"><a class="doc-anchor" href="#layers" aria-hidden="true">#</a> Layers</h2>
+<h2 id="layers" tabindex="-1"><a class="doc-anchor" href="#layers" aria-label="Permalink to Layers">#</a> Layers</h2>
 <table>
 <thead>
 <tr>
@@ -127,12 +141,11 @@ layers instead of flattening everything into one target string.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="source-boundary" tabindex="-1"><a class="doc-anchor" href="#source-boundary" aria-hidden="true">#</a> Source Boundary</h2>
+<h2 id="source-boundary" tabindex="-1"><a class="doc-anchor" href="#source-boundary" aria-label="Permalink to Source Boundary">#</a> Source Boundary</h2>
 <p><code>#requires</code> is the reusable source-level declaration for target requirements a
 module depends on. It states minimum or required capabilities, not a complete
 machine selection. A reusable library should use <code>#requires(...)</code> when it needs
 an ISA baseline, ISA feature, minimum exception level, or ABI capability.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> source_requirement_demo
 
 <span class="token directive macro">#requires</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span> abi <span class="token operator">=</span> <span class="token punctuation">(</span> aapcs64 <span class="token punctuation">)</span><span class="token punctuation">)</span>
@@ -177,7 +190,6 @@ boot/runtime modules and compatibility source. It is optional for reusable
 source: if a module omits exact target facts, project artifact builds must
 supply artifact-affecting facts from <code>wyst.project</code>, while source-only and
 loose-file checks may use compiler analysis defaults.</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> target_demo
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span>
@@ -187,7 +199,6 @@ belong in target profiles, generated artifacts, standard-library modules, or
 project manifests with stable provenance.</p>
 <p>Compact source-level mapping facts may be stated when a module needs to expose
 known architectural memory type ranges to diagnostics or reports:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> target_memory_demo
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> device_memory <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token number">0x0900_0000</span><span class="token operator">..</span><span class="token number">0x0900_1000</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
@@ -201,7 +212,7 @@ page-table property.</p>
 Multi-file modules may repeat <code>#target(...)</code> or <code>#requires(...)</code>, but repeated
 declarations of the same construct must describe the same normalized
 named-argument set; Wyst does not merge partial declarations.</p>
-<h2 id="project-profile-floor" tabindex="-1"><a class="doc-anchor" href="#project-profile-floor" aria-hidden="true">#</a> Project Profile Floor</h2>
+<h2 id="project-profile-floor" tabindex="-1"><a class="doc-anchor" href="#project-profile-floor" aria-label="Permalink to Project Profile Floor">#</a> Project Profile Floor</h2>
 <p>Project builds bind source requirements and exact source target facts to named
 target profiles, explicit project target facts, or both. If both profile and
 explicit project facts are present, they must agree. If a module declares
@@ -234,7 +245,7 @@ emulation; it does not claim physical Raspberry Pi 4B hardware bring-up.</p>
 <p>The full layered descriptor schema is outside the project-manifest surface.
 See <a href="/docs/chapter-03-project-builds/">chapter-03-project-builds.md</a> for the project
 manifest contract.</p>
-<h2 id="uses" tabindex="-1"><a class="doc-anchor" href="#uses" aria-hidden="true">#</a> Uses</h2>
+<h2 id="uses" tabindex="-1"><a class="doc-anchor" href="#uses" aria-label="Permalink to Uses">#</a> Uses</h2>
 <p>Target descriptors may drive:</p>
 <ul>
 <li>feature gating for intrinsics and instruction forms;</li>
@@ -247,7 +258,7 @@ manifest contract.</p>
 </ul>
 <p>Microarchitectural estimates are report inputs by default. They do not change
 emitted code unless an explicit scheduling or optimization mode consumes them.</p>
-<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-hidden="true">#</a> Non-Goals</h2>
+<h2 id="non-goals" tabindex="-1"><a class="doc-anchor" href="#non-goals" aria-label="Permalink to Non-Goals">#</a> Non-Goals</h2>
 <ul>
 <li>Do not make UEFI, Linux, QEMU, or any board model core language semantics.</li>
 <li>Do not treat firmware, OS, or device protocols as portable source facts.</li>
@@ -277,12 +288,6 @@ emitted code.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.a272b5fb.js" defer></script>
 	</body>
 </html>

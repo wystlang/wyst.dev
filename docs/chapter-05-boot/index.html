@@ -8,6 +8,20 @@
 		<meta name="description" content="First runnable program shape, boot entry assumptions, and early runtime setup." />
 		<title>Boot Entry Contract · Wyst</title>
 		<link rel="canonical" href="https://wyst.dev/docs/chapter-05-boot/" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Wyst" />
+		<meta property="og:url" content="https://wyst.dev/docs/chapter-05-boot/" />
+		<meta property="og:title" content="Boot Entry Contract · Wyst" />
+		<meta property="og:description" content="First runnable program shape, boot entry assumptions, and early runtime setup." />
+		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Boot Entry Contract · Wyst" />
+		<meta name="twitter:description" content="First runnable program shape, boot entry assumptions, and early runtime setup." />
+		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
+		<meta name="twitter:image:alt" content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering." />
 		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg?v=96d86d9d" />
 		<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png?v=feef7b4f" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png?v=39df437e" />
@@ -37,8 +51,8 @@
 	</header>
 		<main id="main" class="doc">
 			<div class="wrap doc-wrap">
-				<button class="doc-sidebar-toggle" type="button">☰ Contents</button>
-<aside class="doc-sidebar" aria-label="Documentation">
+				<button class="doc-sidebar-toggle" type="button" aria-expanded="false" aria-controls="doc-sidebar"><span aria-hidden="true">☰</span> Contents</button>
+<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
 			<a class="doc-sidebar-home" href="/docs/">Reference Manual</a>
 			<div class="doc-nav-group">
 				<div class="doc-nav-title">Topics</div>
@@ -98,9 +112,8 @@ Exception vectors live in
 EL transitions, exception vectors, and SMP recipe depend on the machine
 primitive and exception-vector contracts linked above.</p>
 <hr>
-<h3 id="checked-entry-skeleton" tabindex="-1"><a class="doc-anchor" href="#checked-entry-skeleton" aria-hidden="true">#</a> Checked Entry Skeleton</h3>
+<h3 id="checked-entry-skeleton" tabindex="-1"><a class="doc-anchor" href="#checked-entry-skeleton" aria-label="Permalink to Checked Entry Skeleton">#</a> Checked Entry Skeleton</h3>
 <p>The minimal boot-entry shape is a no-return <code>_start</code> symbol:</p>
-<!-- wyst-contract: check-pass -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#noreturn</span>
@@ -110,8 +123,7 @@ primitive and exception-vector contracts linked above.</p>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h3 id="complete-uart-example" tabindex="-1"><a class="doc-anchor" href="#complete-uart-example" aria-hidden="true">#</a> Complete UART Example</h3>
-<!-- wyst-contract: sketch -->
+<h3 id="complete-uart-example" tabindex="-1"><a class="doc-anchor" href="#complete-uart-example" aria-label="Permalink to Complete UART Example">#</a> Complete UART Example</h3>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>hello
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span>
@@ -167,7 +179,7 @@ The <code>effects: none</code> annotation in the entry stub means the block intr
 tracked effect category while the separate <code>sets_sp</code> verifier proves that the
 stack pointer is initialized from the aligned <code>stack</code> input.</p>
 <hr>
-<h3 id="boot-entry-contract" tabindex="-1"><a class="doc-anchor" href="#boot-entry-contract" aria-hidden="true">#</a> Boot Entry Contract</h3>
+<h3 id="boot-entry-contract" tabindex="-1"><a class="doc-anchor" href="#boot-entry-contract" aria-label="Permalink to Boot Entry Contract">#</a> Boot Entry Contract</h3>
 <p>The reset state of an ARMv8-A CPU is platform-defined. This part
 specifies the contract Wyst assumes for the QEMU <code>virt</code> machine (the
 canonical development target) and provides a worked example of a
@@ -176,7 +188,7 @@ minimal EL2-to-EL1 drop with vector-table installation.</p>
 firmware/bootloader contract and adapt; the structure of the boot code
 is similar, but specific register values differ.</p>
 <hr>
-<h3 id="qemu-virt-reset-state" tabindex="-1"><a class="doc-anchor" href="#qemu-virt-reset-state" aria-hidden="true">#</a> QEMU <code>virt</code> Reset State</h3>
+<h3 id="qemu-virt-reset-state" tabindex="-1"><a class="doc-anchor" href="#qemu-virt-reset-state" aria-label="Permalink to QEMU virt Reset State">#</a> QEMU <code>virt</code> Reset State</h3>
 <p>On entry to the kernel image loaded via <code>qemu-system-aarch64 -machine virt</code>:</p>
 <table>
 <thead>
@@ -270,12 +282,11 @@ interrupt jumps to an undefined address.</p>
 </li>
 </ol>
 <hr>
-<h3 id="minimal-el2-%E2%86%92-el1-drop-with-vector-install" tabindex="-1"><a class="doc-anchor" href="#minimal-el2-%E2%86%92-el1-drop-with-vector-install" aria-hidden="true">#</a> Minimal EL2 → EL1 Drop with Vector Install</h3>
+<h3 id="minimal-el2-el1-drop-with-vector-install" tabindex="-1"><a class="doc-anchor" href="#minimal-el2-el1-drop-with-vector-install" aria-label="Permalink to Minimal EL2 → EL1 Drop with Vector Install">#</a> Minimal EL2 → EL1 Drop with Vector Install</h3>
 <p>This example walks from CPU reset at EL2 to executing kernel code at EL1
 with the vector table installed and the BSS zeroed. It uses only Wyst
 primitives covered in earlier parts.</p>
-<h4>Layout module (<code>boot.layout</code>)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="layout-module-bootlayout" tabindex="-1"><a class="doc-anchor" href="#layout-module-bootlayout" aria-label="Permalink to Layout module (boot.layout)">#</a> Layout module (<code>boot.layout</code>)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot<span class="token punctuation">.</span>layout
 
 <span class="token directive macro">#region</span> <span class="token parameter">ram</span>   <span class="token operator">:</span> origin <span class="token operator">=</span> <span class="token number">0x4000_0000</span><span class="token punctuation">,</span> size <span class="token operator">=</span> 128M<span class="token punctuation">,</span> attrs <span class="token operator">=</span> <span class="token punctuation">(</span>readwrite<span class="token punctuation">)</span>
@@ -291,8 +302,7 @@ primitives covered in earlier parts.</p>
 <span class="token keyword">pub</span> __bss_end   <span class="token operator">::=</span> <span class="token directive macro">#end</span><span class="token punctuation">(</span><span class="token punctuation">.</span>bss<span class="token punctuation">)</span>
 <span class="token keyword">pub</span> __stack_top <span class="token operator">::</span> <span class="token builtin type">u64</span> <span class="token operator">=</span> <span class="token number">0x4010_0000</span>   <span class="token comment">// 1MB of stack, top-down</span>
 </code></pre>
-<h4>Kernel module (<code>boot</code>)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="kernel-module-boot" tabindex="-1"><a class="doc-anchor" href="#kernel-module-boot" aria-label="Permalink to Kernel module (boot)">#</a> Kernel module (<code>boot</code>)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token directive macro">#module</span> boot
 
 <span class="token directive macro">#target</span><span class="token punctuation">(</span>arch <span class="token operator">=</span> arm64<span class="token operator">-</span>v8a<span class="token punctuation">,</span> cpu <span class="token operator">=</span> generic<span class="token punctuation">,</span> el <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">)</span>
@@ -359,8 +369,7 @@ primitives covered in earlier parts.</p>
 <p>The stack-setting assembly is inline in <code>_start</code> rather than a helper call:
 before that block executes, <code>sp</code> is undefined, and ordinary calls are illegal
 under the <code>#naked</code> verifier.</p>
-<h4>Vector declarations (same program module)</h4>
-<!-- wyst-contract: sketch -->
+<h4 id="vector-declarations-same-program-module" tabindex="-1"><a class="doc-anchor" href="#vector-declarations-same-program-module" aria-label="Permalink to Vector declarations (same program module)">#</a> Vector declarations (same program module)</h4>
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst">el1_vectors <span class="token operator">::</span> <span class="token directive macro">#exception_vector</span> <span class="token punctuation">{</span>
   <span class="token parameter">current_el_sp0_sync</span> <span class="token operator">:</span> <span class="token directive macro">#ventry</span><span class="token punctuation">(</span><span class="token keyword">label</span> <span class="token operator">=</span> <span class="token string">"el1t_sync"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">goto</span> unexpected
@@ -446,13 +455,12 @@ unexpected <span class="token operator">::</span> <span class="token keyword">la
 <span class="token punctuation">}</span>
 </code></pre>
 <hr>
-<h3 id="secondary-cpu-bring-up-(psci)" tabindex="-1"><a class="doc-anchor" href="#secondary-cpu-bring-up-(psci)" aria-hidden="true">#</a> Secondary CPU Bring-Up (PSCI)</h3>
+<h3 id="secondary-cpu-bring-up-psci" tabindex="-1"><a class="doc-anchor" href="#secondary-cpu-bring-up-psci" aria-label="Permalink to Secondary CPU Bring-Up (PSCI)">#</a> Secondary CPU Bring-Up (PSCI)</h3>
 <p>QEMU <code>virt</code> advertises PSCI through the DTB. After the primary CPU
 parses the DTB to discover the secondary CPUs' MPIDR values, it brings
 each online with the PSCI <code>CPU_ON</code> SMCCC call. The EL2 SMP example
 uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
 conduit when the DTB says so.</p>
-<!-- wyst-contract: sketch -->
 <pre class="wyst-code language-wyst" data-lang="wyst"><code class="language-wyst"><span class="token function">psci_cpu_on</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token parameter">mpidr</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">entry_point</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">,</span> <span class="token parameter">context_id</span> <span class="token operator">:</span> <span class="token builtin type">u64</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin type">u64</span> <span class="token punctuation">{</span>
   <span class="token parameter">status</span> <span class="token operator">:</span> <span class="token builtin type">u64</span> <span class="token directive macro">#pin</span><span class="token punctuation">(</span>x0<span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">0</span>
   <span class="token directive macro">#asm</span><span class="token punctuation">(</span><span class="token parameter">effects</span><span class="token operator">:</span> trap<span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -496,7 +504,7 @@ same <code>#naked</code> discipline as <code>_start</code>. Each secondary sets 
 stack (typically from a per-CPU stack array indexed by MPIDR or by an
 atomically-incremented online counter), installs <code>VBAR_EL1</code>, and joins
 the kernel scheduler.</p>
-<h4>QEMU <code>virt</code> SMP Recipe</h4>
+<h4 id="qemu-virt-smp-recipe" tabindex="-1"><a class="doc-anchor" href="#qemu-virt-smp-recipe" aria-label="Permalink to QEMU virt SMP Recipe">#</a> QEMU <code>virt</code> SMP Recipe</h4>
 <p>This SMP bring-up recipe is intentionally narrow: QEMU <code>virt</code>, EL2 entry, PSCI via
 <code>smc #0</code>, two Cortex-A53 CPUs, and a checked shared-memory handoff. It is
 not a scheduler, per-CPU-storage implementation, or generic topology
@@ -534,7 +542,7 @@ mismatched value, or timeout exits through the semihosting panic path.</li>
 the SMP synchronization sequence, does not insert implicit cache
 maintenance, and does not rewrite the wait loop into a runtime primitive.</p>
 <hr>
-<h3 id="boot-time-cache-and-tlb-maintenance" tabindex="-1"><a class="doc-anchor" href="#boot-time-cache-and-tlb-maintenance" aria-hidden="true">#</a> Boot-Time Cache and TLB Maintenance</h3>
+<h3 id="boot-time-cache-and-tlb-maintenance" tabindex="-1"><a class="doc-anchor" href="#boot-time-cache-and-tlb-maintenance" aria-label="Permalink to Boot-Time Cache and TLB Maintenance">#</a> Boot-Time Cache and TLB Maintenance</h3>
 <table>
 <thead>
 <tr>
@@ -566,7 +574,7 @@ it is verbose and typically lives in a separate helper function that
 reads the architectural CLIDR and CCSIDR registers to discover the topology. Wyst source should
 provide this as a library; it is too long to inline in every boot sequence.</p>
 <hr>
-<h3 id="what-this-contract-does-not-cover" tabindex="-1"><a class="doc-anchor" href="#what-this-contract-does-not-cover" aria-hidden="true">#</a> What This Contract Does Not Cover</h3>
+<h3 id="what-this-contract-does-not-cover" tabindex="-1"><a class="doc-anchor" href="#what-this-contract-does-not-cover" aria-label="Permalink to What This Contract Does Not Cover">#</a> What This Contract Does Not Cover</h3>
 <ul>
 <li><strong>U-Boot / EDK2 hand-off conventions</strong> — those bootloaders deliver
 control with a different register and memory state (e.g. U-Boot 64-bit
@@ -584,7 +592,7 @@ contract is highly platform-specific (TF-A's <code>bl1</code>/<code>bl2</code> b
 sequence). Not covered here.</li>
 </ul>
 <hr>
-<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-hidden="true">#</a> Design Rationale</h3>
+<h3 id="design-rationale" tabindex="-1"><a class="doc-anchor" href="#design-rationale" aria-label="Permalink to Design Rationale">#</a> Design Rationale</h3>
 <table>
 <thead>
 <tr>
@@ -620,7 +628,7 @@ sequence). Not covered here.</li>
 </tbody>
 </table>
 <hr>
-<h2 id="final-direction" tabindex="-1"><a class="doc-anchor" href="#final-direction" aria-hidden="true">#</a> Final Direction</h2>
+<h2 id="final-direction" tabindex="-1"><a class="doc-anchor" href="#final-direction" aria-label="Permalink to Final Direction">#</a> Final Direction</h2>
 <p>The syntax should optimize for:</p>
 <ul>
 <li>visible semantics</li>
@@ -642,8 +650,8 @@ sequence). Not covered here.</li>
 				<li class="lvl-3"><a href="#complete-uart-example">Complete UART Example</a></li>
 				<li class="lvl-3"><a href="#boot-entry-contract">Boot Entry Contract</a></li>
 				<li class="lvl-3"><a href="#qemu-virt-reset-state">QEMU virt Reset State</a></li>
-				<li class="lvl-3"><a href="#minimal-el2-%E2%86%92-el1-drop-with-vector-install">Minimal EL2 → EL1 Drop with Vector Install</a></li>
-				<li class="lvl-3"><a href="#secondary-cpu-bring-up-(psci)">Secondary CPU Bring-Up (PSCI)</a></li>
+				<li class="lvl-3"><a href="#minimal-el2-el1-drop-with-vector-install">Minimal EL2 → EL1 Drop with Vector Install</a></li>
+				<li class="lvl-3"><a href="#secondary-cpu-bring-up-psci">Secondary CPU Bring-Up (PSCI)</a></li>
 				<li class="lvl-3"><a href="#boot-time-cache-and-tlb-maintenance">Boot-Time Cache and TLB Maintenance</a></li>
 				<li class="lvl-3"><a href="#what-this-contract-does-not-cover">What This Contract Does Not Cover</a></li>
 				<li class="lvl-3"><a href="#design-rationale">Design Rationale</a></li>
@@ -658,12 +666,6 @@ sequence). Not covered here.</li>
 			<a href="https://github.com/wystlang/wyst#license" rel="noopener">license</a>
 		</div>
 	</footer>
-		<script>
-(() => {
-	const t = document.querySelector(".doc-sidebar-toggle");
-	const sb = document.querySelector(".doc-sidebar");
-	if (t && sb) t.addEventListener("click", () => sb.classList.toggle("is-open"));
-})();
-</script>
+		<script src="/assets/docs.js" defer></script>
 	</body>
 </html>
