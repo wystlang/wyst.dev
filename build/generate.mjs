@@ -201,23 +201,54 @@ export function makeMd() {
 	return md;
 }
 
-// ---- build an "on this page" TOC from rendered h2/h3 -----------------------
-function buildToc(html) {
-	const re = /<h([23]) id="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g;
+// ---- build an "on this page" TOC from parsed h2/h3 tokens ------------------
+function headingText(inline) {
+	let text = "";
+	let insidePermalink = false;
+	for (const token of inline.children || []) {
+		if (
+			token.type === "link_open" &&
+			token.attrGet("class")?.split(/\s+/).includes("doc-anchor")
+		) {
+			insidePermalink = true;
+			continue;
+		}
+		if (insidePermalink) {
+			if (token.type === "link_close") insidePermalink = false;
+			continue;
+		}
+		if (token.type === "html_inline" && /^<br\s*\/?>$/i.test(token.content)) {
+			text += " ";
+		} else if (
+			["text", "code_inline", "html_inline", "image"].includes(token.type)
+		) {
+			text += token.content;
+		} else if (token.type === "softbreak" || token.type === "hardbreak") {
+			text += " ";
+		}
+	}
+	return text.trim();
+}
+
+export function buildToc(tokens) {
 	const items = [];
-	let m;
-	while ((m = re.exec(html))) {
-		const text = m[3]
-			.replace(/<a class="doc-anchor"[\s\S]*?<\/a>/g, "")
-			.replace(/<[^>]+>/g, "")
-			.trim();
-		if (text) items.push({ level: Number(m[1]), id: m[2], text });
+	for (let index = 0; index < tokens.length; index++) {
+		const heading = tokens[index];
+		if (heading.type !== "heading_open" || !/^h[23]$/.test(heading.tag)) {
+			continue;
+		}
+		const inline = tokens[index + 1];
+		const id = heading.attrGet("id");
+		const text = inline?.type === "inline" ? headingText(inline) : "";
+		if (id && text) {
+			items.push({ level: Number(heading.tag.slice(1)), id, text });
+		}
 	}
 	if (items.length < 2) return "";
 	const lis = items
 		.map(
 			(it) =>
-				`<li class="lvl-${it.level}"><a href="#${it.id}">${escapeHtml(it.text)}</a></li>`,
+				`<li class="lvl-${it.level}"><a href="#${escapeHtml(it.id)}">${escapeHtml(it.text)}</a></li>`,
 		)
 		.join("\n\t\t\t\t");
 	return `<ul class="doc-toc-list">\n\t\t\t\t${lis}\n\t\t\t</ul>`;
@@ -304,8 +335,10 @@ export function generateDocs({
 			continue;
 		}
 
-		const articleHtml = md.render(body);
-		const tocHtml = buildToc(articleHtml);
+		const env = {};
+		const tokens = md.parse(body, env);
+		const articleHtml = md.renderer.render(tokens, md.options, env);
+		const tocHtml = buildToc(tokens);
 
 		const eyebrow = page.isIndex
 			? "Reference"

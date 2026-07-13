@@ -145,4 +145,15 @@ test("static HTML sanity rejects duplicate IDs and missing alternative text", ()
 		() => validateHtml(HTML.replace(' alt=""', ""), "index.html"),
 		/image elements without alt attributes/,
 	);
+	assert.throws(
+		() =>
+			validateHtml(
+				HTML.replace(
+					"<title>Fixture</title>",
+					"<title><strong>Fixture</strong></title>",
+				),
+				"index.html",
+			),
+		/title must not contain raw markup/,
+	);
 });
