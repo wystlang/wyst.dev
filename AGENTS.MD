@@ -28,8 +28,9 @@ never committed; GitHub Actions deploys the exact verified `dist/` artifact.
 ## Coding Style & Naming Conventions
 
 Use ES modules (`*.mjs`) for scripts and keep filenames lowercase and
-descriptive. Keep CSS changes in the shared design-system files unless a page
-needs truly local structure. Preserve stable asset URLs under `/assets/...`.
+descriptive. This repository owns the complete `assets/wyst.css` and
+`assets/docs.css` implementations; keep their reusable visual decisions aligned
+with the brand guidelines. Preserve stable asset URLs under `/assets/...`.
 Generated docs should be changed by editing `wystlang/wyst` design sources,
 refreshing `vendor/wyst-design/`, and rebuilding locally. Never edit or commit
 `dist/`.
