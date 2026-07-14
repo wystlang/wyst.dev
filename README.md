@@ -91,7 +91,9 @@ git add vendor/wyst-design vendor/wyst-snapshot.json tests/fixtures/wyst
 ```
 
 Website-ready brand exports can similarly be refreshed from a sibling
-`../brand` checkout or `WYST_BRAND_DIR`:
+`../brand` checkout or `WYST_BRAND_DIR`. The brand manifest selects approved
+identity, icon, social, and font assets; site-owned CSS and runtime files remain
+in place:
 
 ```sh
 npm run sync:brand
