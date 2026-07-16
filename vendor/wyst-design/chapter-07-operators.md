@@ -102,7 +102,16 @@ compute the operator result, and store or rebind the result. Logical compound
 assignments keep their short-circuit behavior after the target/current value is
 established.
 
-Runtime `if`, `while`, `repeat`, `switch`, and expression-valued `if`
+An item-42 `per_cpu` assignment preserves that source order for every explicit
+target expression: a written base or index is evaluated before the assigned
+value. Its current-core base acquisition is hidden target support, not a
+source-visible address expression. Lowering performs that one fresh acquisition
+only after the target expressions and assigned value have completed, immediately
+before the final offset calculation and store. Therefore no call or other
+effectful RHS can leave a stale current-core base live across the effect, and a
+terminal target or RHS produces neither an acquisition nor a store.
+
+Runtime `if`, `while`, integer-range `for`, `switch`, and expression-valued `if`
 constructs evaluate their condition or selector before any branch body or arm
 body is entered. Branch bodies are not eagerly evaluated: only the selected
 runtime path evaluates its expressions. Expression-valued `if` follows the same
@@ -110,7 +119,7 @@ condition-first branch rule; it is the branching counterpart to eager
 `select`.
 
 Scheduling may move pure work only when the move is observationally equivalent
-under the memory model, effect system, and active `#schedule` region. It may not
+under the memory model, effect system, and active scheduling region. It may not
 change the order of observable effects such as volatile accesses, atomics,
 barriers, calls, inline assembly, floating-point state effects, traps, or
 short-circuit suppression.
@@ -219,7 +228,8 @@ Address comparisons are defined for the same address lens: `@T == @T`,
 `@T != @T`, `@T < @T`, `@T <= @T`, `@T > @T`, and `@T >= @T` are valid and
 use unsigned numeric address ordering. Slice, dynamic-array, enum, and
 function-pointer comparisons are equality-only. `[]T == []T`,
-`[dynamic]T == [dynamic]T`, `@(u64) -> u64 == @(u64) -> u64`, and their `!=`
+`DynamicArray<T> == DynamicArray<T>`, `@(u64) -> u64 == @(u64) -> u64`, and
+their `!=`
 forms are valid, but ordered checks require explicit field comparisons or
 explicit comparisons such as `s.len < t.len`, `arr.capacity < other.capacity`,
 or `(callback as.address u64) < (other as.address u64)`.
@@ -622,7 +632,7 @@ if result == result {   // NaN check: NaN != NaN by IEEE 754
 ```
 
 Runtime floating-point arithmetic, comparisons, casts, unary negation, and
-`%fma` introduce the `fp_state` effect category. Floating-point literals and
+`fma` introduce the `fp_state` effect category. Floating-point literals and
 pure register moves do not introduce `fp_state` by themselves.
 
 ### Fused Operations
@@ -631,12 +641,12 @@ Floating-point operations are **not fused by default**. `a * b + c` is always
 two operations with two roundings, matching the written source expression.
 
 To explicitly request a fused multiply-add (single rounding, using ARM64
-`fmadd`/`fmsub`), use the `%fma` intrinsic:
+`fmadd`/`fmsub`), use the unshadowable `fma` operation:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-result := %fma(a, b, c)          // a * b + c, fused — single rounding
-result := %fma(a, b, -c)         // a * b - c, fused — lowers to fmsub
+const result = fma(a, b, c)          // a * b + c, fused — single rounding
+const difference = fma(a, b, -c)     // a * b - c, fused — lowers to fmsub
 ```
 
 The distinction matters for:
@@ -644,11 +654,11 @@ The distinction matters for:
 - **Reproducibility**: `a * b + c` always produces the two-rounded result,
   regardless of platform or compiler version.
 - **Checksums**: sequential rounding is exact and consistent.
-- **Performance-sensitive paths**: `%fma` is explicitly faster where available
+- **Performance-sensitive paths**: `fma` is explicitly faster where available
   and the programmer has decided the rounding difference is acceptable.
 
 There is no opt-out mechanism for accidental fusion. If the source does not
-use `%fma`, the compiler does not fuse.
+use `fma`, the compiler does not fuse.
 
 ---
 
@@ -753,7 +763,7 @@ conflicts with existing operators and is grep-friendly.
 | `a &^ b`        | `bic xD, xA, xB`              | direct ARM64 instruction                                         |
 | `a << b`        | `lsl wD/xD, wA/xA, wB/xB`     | count taken modulo `max(32,width(T))`; single instruction        |
 | `a >> b`        | `asr` / `lsr`                 | signed → `asr`, unsigned → `lsr`; same count domain as `<<`      |
-| `%fma(a,b,c)`   | `fmadd dD, dA, dB, dC`        | explicit fused multiply-add; single rounding                     |
+| `fma(a,b,c)`    | `fmadd dD, dA, dB, dC`        | explicit fused multiply-add; single rounding                     |
 | `-x`            | `neg xD, xA`                  |                                                                  |
 | `~x`            | `mvn xD, xA`                  |                                                                  |
 | `!x`            | `cmp xA, #0` + `cset`         |                                                                  |

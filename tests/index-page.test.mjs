@@ -160,11 +160,30 @@ function uartExampleHtml() {
 }
 
 function sourceLines(markup) {
-	return decodeHtml(textOutsideTags(markup))
+	return sourceText(markup)
 		.replaceAll("\r", "")
 		.split("\n")
 		.map((line) => line.trim())
 		.filter(Boolean);
+}
+
+function sourceText(markup) {
+	return decodeHtml(textOutsideTags(markup)).replaceAll("\r", "").trim();
+}
+
+function homepageFixtureExcerpt(source) {
+	const startMarker = "// homepage-example:start";
+	const endMarker = "// homepage-example:end";
+	const start = source.indexOf(startMarker);
+	const end = source.indexOf(endMarker);
+	assert.notEqual(start, -1, `${UART_EXAMPLE_PATH} should mark the homepage excerpt`);
+	assert.notEqual(end, -1, `${UART_EXAMPLE_PATH} should close the homepage excerpt`);
+	assert.ok(start < end, "homepage fixture markers should be ordered");
+
+	return source
+		.slice(start + startMarker.length, end)
+		.replaceAll("\r", "")
+		.trim();
 }
 
 function cssHexVar(name) {
@@ -256,7 +275,7 @@ test("homepage metadata states the current project value without a release claim
 	const socialAlt =
 		"Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering.";
 
-	assert.equal(title, "Wyst — an explicit ARM64 language and compiler");
+	assert.equal(title, "Wyst — an ARM64 language and compiler");
 	assert.equal(metaContent(html, "name", "description"), description);
 	assert.equal(metaContent(html, "property", "og:title"), title);
 	assert.equal(metaContent(html, "property", "og:description"), socialDescription);
@@ -519,6 +538,11 @@ test("shared identity uses the integrated wordmark", () => {
 	}
 
 	assert.match(siteCss, /font-family:\s*"Commit Mono"/);
+	assert.match(
+		siteCss,
+		/src:\s*url\("commit-mono-v143\.woff2"\) format\("woff2"\);/,
+		"the homepage font should load from both file and HTTP previews",
+	);
 	assert.equal(siteCss.match(/@font-face/g)?.length, 1);
 	assert.match(siteCss, /--sans:\s*ui-sans-serif/);
 	assert.match(siteCss, /body\s*\{[\s\S]*?font-family:\s*var\(--sans\)/);
@@ -534,7 +558,7 @@ test("shared identity uses the integrated wordmark", () => {
 	);
 	assert.match(
 		siteCss,
-		/\.artifact\s*>\s*pre\s*\{[\s\S]*?font-size:\s*clamp\(14px,\s*1\.6vw,\s*15px\);[\s\S]*?font-weight:\s*450;/,
+		/\.source-viewport\s*>\s*pre\s*\{[\s\S]*?font-size:\s*clamp\(14px,\s*1\.6vw,\s*15px\);[\s\S]*?font-weight:\s*450;/,
 		"homepage source should remain at least 14px with a medium variable-font weight",
 	);
 	assert.match(
@@ -547,7 +571,12 @@ test("shared identity uses the integrated wordmark", () => {
 		/font-style:\s*italic/,
 		"source comments should not rely on a synthetic italic face",
 	);
-	assert.doesNotMatch(siteCss, /linear-gradient|radial-gradient|backdrop-filter|box-shadow/);
+	assert.doesNotMatch(siteCss, /radial-gradient|backdrop-filter|box-shadow/);
+	assert.equal(
+		siteCss.match(/linear-gradient/g)?.length,
+		1,
+		"the source-overflow cue should be the site's only gradient",
+	);
 });
 
 test("homepage contains only the introduction and real example", () => {
@@ -567,13 +596,48 @@ test("homepage contains only the introduction and real example", () => {
 	);
 	assert.match(
 		siteCss,
-		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*34rem\)\s+max-content;[\s\S]*?justify-content:\s*center;/,
-		"the homepage should center the introduction beside a content-sized example",
+		/\.home-split\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*34rem\)\s+max-content;[\s\S]*?align-items:\s*start;[\s\S]*?justify-content:\s*center;/,
+		"the homepage should top-align the introduction beside a content-sized example",
+	);
+	assert.match(
+		siteCss,
+		/\.notebook-hero\s*\{[^}]*padding:\s*clamp\(72px,\s*11vh,\s*128px\)\s+0;/,
+		"the introduction should use the shared desktop top inset",
+	);
+	assert.match(
+		siteCss,
+		/\.notebook-section\s*\{[^}]*padding:\s*clamp\(72px,\s*11vh,\s*128px\)\s+0;/,
+		"the example should use the shared desktop top inset",
 	);
 	assert.match(
 		siteCss,
 		/\.source-artifact\s*\{[^}]*max-width:\s*32rem;/,
 		"the UART example should stay compact if its source grows",
+	);
+	assert.match(
+		siteCss,
+		/@media \(min-width:\s*961px\)\s*\{[\s\S]*?\.source-viewport\s*>\s*pre\s*\{[^}]*max-height:\s*min\(64svh,\s*44rem\);[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;/,
+		"long source should scroll inside a balanced desktop hero",
+	);
+	assert.match(
+		siteCss,
+		/\.source-viewport::after\s*\{[^}]*linear-gradient\(to bottom,\s*transparent,\s*var\(--bg-code\)\);[^}]*opacity:\s*var\(--source-scroll-cue-opacity\);[^}]*pointer-events:\s*none;/,
+		"the desktop source viewport should fade toward hidden content",
+	);
+	assert.match(
+		siteCss,
+		/\.source-scroll-hint\s*\{[^}]*position:\s*absolute;[^}]*display:\s*block;[^}]*opacity:\s*var\(--source-scroll-cue-opacity\);[^}]*pointer-events:\s*none;/,
+		"the desktop source viewport should visibly identify its scroll affordance",
+	);
+	assert.match(
+		siteCss,
+		/\.source-viewport:focus-within::after,\s*\.source-viewport:focus-within \.source-scroll-hint\s*\{[^}]*opacity:\s*0;/,
+		"the scroll cue should clear when a keyboard user enters the source pane",
+	);
+	assert.doesNotMatch(
+		siteCss,
+		/animation-timeline|animation-range|scroll-timeline|timeline-scope/,
+		"the scroll cue should not depend on partial scroll-animation support",
 	);
 	assert.match(
 		siteCss,
@@ -604,43 +668,84 @@ test("homepage shows one static UART example from the real fixture", () => {
 	assert.equal(matches.length, 1, "the UART source example should appear once");
 
 	const example = uartExampleHtml();
+	assert.match(example, /<span>main\.wyst · excerpt<\/span>/);
+	assert.match(
+		example,
+		/<button\b(?=[^>]*class="artifact-copy")(?=[^>]*type="button")(?=[^>]*aria-label="Copy Wyst example")(?=[^>]*aria-controls="uart-source")(?=[^>]*aria-describedby="uart-copy-status")(?=[^>]*data-copy-target="uart-source")[^>]*>\s*copy<\/button>/,
+		"the example should expose one accessible source-copy control",
+	);
+	assert.match(
+		example,
+		/<span\b(?=[^>]*id="uart-copy-status")(?=[^>]*role="status")(?=[^>]*aria-live="polite")(?=[^>]*aria-atomic="true")[^>]*><\/span>/,
+		"copy results should be announced without moving visible content",
+	);
 	assert.ok(
 		anchors(example).some(({ href }) => href === UART_SOURCE_URL),
 		"the UART example should link to its public versioned site fixture",
 	);
 	const codeBlocks = [...example.matchAll(/<code\b[^>]*>([\s\S]*?)<\/code>/gi)];
+	assert.match(
+		example,
+		/<pre\b(?=[^>]*aria-label="Wyst UART source")(?=[^>]*aria-describedby="uart-scroll-hint")(?=[^>]*tabindex="0")[^>]*>/,
+		"the scrollable source should be keyboard-focusable and described",
+	);
+	assert.match(
+		example,
+		/<span id="uart-scroll-hint" class="source-scroll-hint"\s*>scroll for more ↓<\/span\s*>/,
+		"the source viewport should announce that more code is available",
+	);
 	const sourceBlock = codeBlocks
 		.map((match) => ({ markup: match[1], lines: sourceLines(match[1]) }))
-		.find(({ lines }) => lines.some((line) => line.startsWith("UARTDR ::")));
+		.find(({ lines }) => lines.some((line) => line.startsWith("register_map Pl011")));
 	assert.ok(sourceBlock, "UART example should contain a static Wyst source block");
 	assert.match(
 		sourceBlock.markup,
-		/<span class="const">UARTDR<\/span>/,
-		"the example should distinguish named constants from variables",
+		/<span data-token="keyword" data-token-modifiers="defaultLibrary">register_map<\/span>/,
+		"the example should use the compiler's current declaration token",
 	);
-
-	const fixtureLines = new Set(
-		uartFixtureSource
-			.replaceAll("\r", "")
-			.split("\n")
-			.map((line) => line.trim())
-			.filter(Boolean),
+	assert.match(
+		sourceBlock.markup,
+		/<span class="source-comment block-comment-line">\* QEMU `virt`/,
+		"block-comment continuation lines should use the alignment hook",
 	);
-	for (const line of sourceBlock.lines) {
-		assert.ok(
-			fixtureLines.has(line),
-			`displayed UART line should come from ${UART_EXAMPLE_PATH}: ${line}`,
-		);
-	}
+	assert.match(
+		siteCss,
+		/\.block-comment-line\s*\{[^}]*display:\s*inline-block;[^}]*padding-left:\s*1ch;/,
+		"block-comment stars should align with the opener",
+	);
+	assert.equal(
+		sourceText(sourceBlock.markup),
+		homepageFixtureExcerpt(uartFixtureSource),
+		`the homepage must be the exact marked excerpt from ${UART_EXAMPLE_PATH}`,
+	);
 
 	for (const line of [
-		"UARTDR :: @volatile u32 = UART0_BASE + 0x00",
-		"UARTFR :: @volatile u32 = UART0_BASE + 0x18",
-		"uart_write :: (byte : u8) {",
-		"uart_hello :: () {",
+		"* QEMU `virt` is a generic virtual Arm board.",
+		"* UART registers are memory-mapped I/O (MMIO):",
+		"* A register address is UART0's base plus its",
+		"* PL011 byte offset. QEMU maps UART0's base at",
+		"* 0x0900_0000.",
+		"// DR is the data register.",
+		"// DATA is its eight-bit transmit payload.",
+		"// FR is the flag register.",
+		"// TXFF means the transmit FIFO is full.",
+		"// Poll for space in the transmit FIFO.",
+		"// UART output is byte-oriented.",
+		"// #len is compile-time metadata;",
+		"// the array has no runtime length field.",
+		"register_map Pl011 {",
+		"mmio UART0: Pl011 at 0x0900_0000",
+		"const msg: [6]u8 = ['h', 'e', 'l', 'l', 'o', '\\n']",
+		"for i in 0 ..< #len(msg) {",
+		"uart_write(msg[i])",
 	]) {
 		assert.ok(sourceBlock.lines.includes(line), `UART snippet should include: ${line}`);
 	}
+	assert.doesNotMatch(
+		sourceText(sourceBlock.markup),
+		/::|@volatile|u32@\[|%nop|as\.widen/,
+		"the homepage should not regress to removed v0.8 syntax",
+	);
 
 	const terminal = taggedElementWithOpeningMatch(
 		sectionHtml(html, "example"),
@@ -653,8 +758,13 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"terminal should contain the fixture's real `hello` output",
 	);
 
-	assert.doesNotMatch(example, /<textarea\b|contenteditable|<button\b/i);
+	assert.doesNotMatch(example, /<textarea\b|contenteditable/i);
 	assert.doesNotMatch(html, /\bcodeBlocks\b|fetch\s*\(|WebSocket|eval\s*\(/);
+	assert.deepEqual(
+		[...html.matchAll(/<script\b[^>]*>/gi)].map(([opening]) => opening),
+		['<script src="assets/home.js" defer>'],
+		"homepage behavior should load from one file-safe external script",
+	);
 });
 
 test("marketing funnel furniture is absent", () => {
@@ -681,7 +791,12 @@ test("marketing funnel furniture is absent", () => {
 		);
 	}
 
-	assert.doesNotMatch(html, /<button\b|role="button"|aria-expanded=/i);
+	assert.equal(
+		[...html.matchAll(/<button\b/gi)].length,
+		1,
+		"the source copy control should be the homepage's only button",
+	);
+	assert.doesNotMatch(html, /role="button"|aria-expanded=/i);
 	assert.doesNotMatch(html, /data-code="compare-|\bsum_to\b|Side by side/i);
 	assert.doesNotMatch(html, /\bNon-goals\b|<details\b/i);
 	assert.deepEqual(

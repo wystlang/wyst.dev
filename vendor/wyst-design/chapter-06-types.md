@@ -3,13 +3,13 @@ title: "Chapter 6: Wyst Type System"
 group: chapter
 chapter: 6
 order: 6
-summary: "Scalar values, constants, conversions, addresses, arrays, slices, structs, bitfields, and enums."
+summary: "Scalar values, constants, conversions, addresses, arrays, slices, structs, bitstructs, and enums."
 ---
 
 # Chapter 6: Wyst Type System
 
 > **Canonical scope.** Scalar primitives, non-scalar built-in type forms,
-> conversions, arrays, slices, structs, bitfields, enums, strings, numeric
+> conversions, arrays, slices, structs, bitstructs, enums, strings, numeric
 > literals, comments, compile-time conditionals, `#static_assert`, and the
 > generic type-parameter model.
 > Operator semantics live in [chapter-07-operators.md](chapter-07-operators.md); grammar in
@@ -17,11 +17,294 @@ summary: "Scalar values, constants, conversions, addresses, arrays, slices, stru
 > [chapter-09-memory-model.md](chapter-09-memory-model.md).
 
 The sections below independently specify scalars, literals, conversions,
-addresses, arrays, slices, structs, bitfields, enums, compile-time conditions,
+addresses, arrays, slices, structs, bitstructs, enums, compile-time conditions,
 and generics. Generic syntax is implemented and can be consulted separately
 from the scalar and aggregate rules.
 
 ---
+
+## v0.9 Types, Aggregates, and Generics (Current)
+
+Wyst v0.9 keeps fixed arrays (`[N]T`), slices (`[]T`), vectors (`[T:N]`),
+addresses, callable shapes, and nominal types, but removes `[dynamic]T`.
+Dynamic containers use the authenticated ordinary generic declaration whose
+canonical identity is `core.collections.DynamicArray`; source must import it
+explicitly and then apply the locally bound type as `DynamicArray<T>` (or its
+import qualifier/alias). Chapter 10 defines that role and its storage contract.
+
+Nominal aggregate declarations are keyword-led. Generic parameter lists are
+permitted only on `struct`, `enum`, and `fn` declarations:
+
+<!-- wyst-contract: sketch -->
+```wyst
+struct Pair<T, U> {
+  first: T
+  second: U
+}
+
+enum Result<T: payload_word, E: payload_word> {
+  ok(T)
+  err(E)
+}
+```
+
+Struct values use the expected-type literal `{ field = value, ... }`. The
+complete nominal type must come from an annotation, assignment target,
+callable parameter, or return type; field names never infer it. Every declared
+field appears exactly once, and unknown, duplicate, shorthand, colon-valued,
+and missing fields are errors. Field expressions evaluate once in written
+order; declaration order still owns layout.
+
+<!-- wyst-contract: sketch -->
+```wyst
+const origin: Point = { x = 0, y = 0 }
+
+fn make_point() -> Point {
+  return { x = 4, y = 8 }
+}
+
+draw(point = { x = 10, y = 20 })
+const bytes: [4]u8 = [1, 2, 3, 4]
+```
+
+`Type { ... }`, `Type(...)` as a struct-construction spelling, `{ value, ... }`
+array literals, and `field: value` literal entries are removed. Arrays and
+vectors use `[value, ...]`; named multi-results use `(value, ...)`. A
+payload-free enum variant may use expected-type shorthand such as
+`const idle: Message = .quit`; payload variants use the enum constructor,
+for example `Message.write(packet)`.
+
+Generics are explicit and type-only. Parameter and argument lists are
+non-empty; every application supplies the complete type-argument list, and
+arguments are full types that may nest. Wyst v0.9 has no generic inference,
+defaults, value parameters, aliases, user-defined bounds, traits, or turbofish.
+Bounds come only from the closed compiler-defined capability catalog. Built-in
+or duplicate parameter names and incorrect arity are errors.
+The versioned [`wyst.genericBounds.v0.9`](generic-bounds.tsv) table is the
+machine-readable authority for every active bound's spelling, subject set,
+capability contract, and enum-payload eligibility; adding a bound requires one
+complete atomic registry row.
+
+After a value path, `<...>` is a generic application only when its matching
+`>` is followed by `(`, `.`, `[`, `)`, `]`, `,`, `}`, or end of file;
+otherwise comparison parsing wins. Within an already committed generic list,
+`>>` and `>>=` split contextually into the required closing `>` tokens and any
+remainder, so `Outer<Inner<u8>>` needs no separating whitespace.
+
+Every instantiation is keyed by semantic declaration identity plus its complete
+ordered concrete type arguments (and an empty value-argument tuple in v0.9).
+Revisiting the same canonical key closes a legitimate recursive cycle. A
+strictly growing instantiation chain is rejected with a deterministic
+root-to-demand trace. A compiler safety budget is a distinct resource failure
+and reports that same canonical trace; it is not the semantic termination rule.
+
+### v0.9 Named Conversions, Addresses, and Slices
+
+This section is the current source and semantic authority for conversions,
+addresses, memory access, address offsets, and slices. The released v0.8
+snapshot below remains useful background, but its `as.<category>`,
+`T@[address]`, typed-address arithmetic, `%addr_of`, endian primitive, colon
+slice, and raw slice-descriptor spellings are not accepted v0.9 alternatives.
+
+#### Named conversion operations
+
+Wyst has no implicit numeric conversion. A context may give an untyped literal
+its first concrete type when the literal is representable; that is literal
+typing, not conversion of an already typed value. Every conversion of an
+already typed value uses exactly one unshadowable compiler-owned operation:
+
+| Operation | Closed legality | Result |
+| --- | --- | --- |
+| `widen<T>(value)` | integer source and wider integer `T` with the same signedness | zero-extension for unsigned values; sign-extension for signed values |
+| `truncate<T>(value)` | integer source and narrower integer `T` | low `#size_of(T) * 8` bits; discarded high bits are not checked |
+| `signcast<T>(value)` | equal-width integer source and `T` with opposite signedness | identical complete bit pattern interpreted with `T`'s signedness |
+| `numeric<T>(value)` | representable untyped integer; integer identity; wider integer target with different signedness; or an explicit integer/`bool` crossing | extend a wider crossing according to the source signedness, then interpret as `T`; integer-to-`bool` is nonzero, and `bool`-to-integer is zero or one |
+| `bitcast<T>(value)` | a compiler-listed equal-representation pair, including a `bitstruct` and its exact backing integer | identical complete bit pattern, with no validation or normalization |
+| `address<T>(value)` | `u64` to a data-address type, or any one-word data/callable address to `u64` | identical target-word address bits |
+| `relens<T>(value)` | data address to complete target address type `T` with the same ordinary/volatile/MMIO qualifier set and a different pointee | identical address bits with `T`'s pointee lens |
+| `qualify<T>(value)` | data address to complete target address type `T` with the same pointee and a different ordinary/volatile/MMIO qualifier set | identical address bits with `T`'s explicitly selected qualifier intent |
+| `floatcast<T>(value)` | an admitted scalar conversion involving `f32` or `f64` | IEEE value when representable; exceptional float-to-integer cases are target-defined |
+| `saturate<T>(value)` | integer source and narrower integer `T` with the same signedness | clamp the mathematical value to `T.min .. T.max`, then produce `T` |
+| `truncate_bits(value, width)` | fixed-width integer value and compile-time constant `width` in `1 ..= bit_width(value)` | the same declared integer type, with only the low `width` representation bits retained and every higher bit zero |
+
+For `truncate_bits`, a width equal to the source width is identity. For a signed
+source and a smaller width, clearing the higher bits makes the result
+non-negative; the operation does not sign-extend the retained field. The value
+is evaluated once before the width is validated. `saturate` is not a floating
+conversion and is not an alias for target float-to-integer behavior.
+
+The type argument is mandatory on every operation that shows `<T>` above,
+denotes the complete result type (including a complete address type), and is
+never inferred or defaulted. Even an untyped integer literal requires
+`address<@U>(literal)` to become an address; an address context does not bind it
+implicitly. These names cannot be declared, imported,
+aliased, shadowed, taken as callable values, or overloaded. Each operation is
+pure and performs no allocation, branch, trap, or memory access. A conversion
+whose source and target types are outside its row is a compile-time error; the
+compiler never silently selects another conversion class.
+
+Raw integer construction of a callable remains a trust boundary and uses the
+separately specified `#trusted_cast`, not `address<T>`. `checked<T>(value)` is a
+reserved spelling and is rejected until its failure model is implemented.
+
+#### Address types and explicit access
+
+`@T`, `@volatile T`, and `@mmio T` are one-target-word address types. The
+qualifier is part of the type. `@volatile` controls compiler-visible access
+observability and ordering; `@mmio` adds programmer MMIO intent; neither type
+establishes the architectural page-table memory type. Merely applying
+`qualify<T>` performs no access and introduces no `volatile_access` or `mmio`
+effect. Removing either qualifier produces the existing qualifier-loss warning.
+
+The contextual word `at` is not an address operator. It appears only in a
+declarative placement production, such as a layout entry or another
+compiler-defined declaration space. Runtime address values continue to use the
+`@` type prefix.
+
+An address exposes these compiler-owned methods:
+
+<!-- wyst-contract: sketch -->
+```wyst
+const word: u32 = word_address.load()
+word_address.store(word)
+```
+
+The receiver fixes the exact pointee type and qualifier. `.load()` takes no
+argument and returns `T`; `.store(value)` requires exactly `T` except for normal
+contextual typing of an untyped literal. Each call emits exactly one typed
+memory event. An ordinary receiver has no effect, a volatile receiver has
+`volatile_access`, and an MMIO receiver has both `volatile_access` and `mmio`.
+No method performs an implicit `relens`, qualifier change, allocation, fence,
+or alignment repair.
+
+A byte-lensed address additionally supports explicit-endian integer access:
+
+<!-- wyst-contract: sketch -->
+```wyst
+const magic: u32 = bytes.load<u32>(endian = .big)
+bytes.store<u16>(count, endian = .little)
+```
+
+The receiver must be exactly `@u8`, `@volatile u8`, or `@mmio u8`. The explicit
+type is exactly `u16`, `i16`, `u32`, `i32`, `u64`, or `i64`; `endian` is a
+mandatory label and its value is exactly `.big` or `.little`. Neither the type
+nor byte order is inferred or defaulted. Raw integers, non-byte address lenses,
+and atomic addresses are rejected. The operation is one width-`T` access plus
+only the byte reversal required by the selected target. Bytewise fallback,
+temporary storage, an adjusted address, hidden fences, and multiple memory
+events are forbidden.
+
+For the current AArch64 target, ordinary and volatile 16-, 32-, and 64-bit
+scalar accesses explicitly permit an unaligned address. Eight-bit access is
+naturally aligned at every byte address. MMIO access instead requires natural
+alignment for its width. The compiler rejects a provably misaligned MMIO
+access. It inserts no runtime check for a dynamically aligned address; a
+dynamically misaligned MMIO operation is a possible
+`architectural_fault_or_trap`, never compiler-exploitable undefined behavior or
+a trusted assertion. Semantic reports record the required alignment, the
+selected target's unaligned-access fact, and whether an architectural fault is
+possible.
+
+#### Unit-explicit address operations
+
+Typed addresses support none of `+`, `-`, `+=`, or `-=`. Address traversal uses
+exactly these unshadowable operations:
+
+<!-- wyst-contract: sketch -->
+```wyst
+const next_byte: @u8 = byte_offset(bytes, byte_count)
+const next_word: @u32 = element_offset(words, element_count)
+const length_address: @u64 = field_addr(header, Header.length)
+```
+
+`byte_offset(pointer, count)` counts bytes and preserves the receiver lens and
+qualifiers. `element_offset(pointer, count)` counts complete receiver pointees,
+scales once by `#size_of(T)`, and preserves the receiver type.
+`field_addr(pointer, Header.field)` requires a pointer whose pointee is
+`Header`, adds that declared field's byte offset, changes the result lens to the
+field type, and preserves address qualifiers. The field selector is a
+compile-time type-field identity, not a runtime value.
+
+The count may have any fixed-width integer type; it is not implicitly converted.
+Its signed or unsigned mathematical value and any element scaling are computed
+in arbitrary precision, then the final one-word address is reduced modulo
+`2^64`. Thus negative signed counts move backward and address overflow wraps at
+the target word. Relocation addends are always bytes. A constant
+`element_offset` addend is scaled exactly once before becoming a relocation
+addend; `byte_offset` and `field_addr` addends are already byte counts.
+
+`addr_of(local)` materializes the runtime address of addressable local storage
+without reading or writing it:
+
+<!-- wyst-contract: sketch -->
+```wyst
+var slot: u64 = 0
+const slot_address: @u64 = addr_of(slot)
+```
+
+The result preserves the local's exact declared type, so an existing
+`MaybeUninit<T>` local produces `@MaybeUninit<T>`. Materialization may force
+a reported frame/addressability resource and is rejected for hard
+register-placed storage. Existing `noescape` and local-address lifetime rules
+reject returning, storing, or otherwise escaping the result. This operation is
+distinct from relocation-producing `#addr_of(symbol)`.
+
+#### Slice range views and raw views
+
+`[]T` remains a non-owning two-word view with read-only `.data: @T` and
+`.len: u64` projections. A fixed array or an existing slice supports exactly
+these end-exclusive range forms:
+
+<!-- wyst-contract: sketch -->
+```wyst
+const whole: []u8 = buffer[..]
+const middle: []u8 = buffer[2 ..< 5]
+const head: []u8 = buffer[..< 5]
+const tail: []u8 = buffer[2 ..]
+```
+
+`..<` separates two present bounds. `..` denotes omitted start and/or end only
+inside this slice grammar. Slice ranges and integer-loop ranges are syntax, not
+first-class range values. The compiler evaluates the source, then a present
+start, then a present end, exactly once each from left to right. Forming the
+view performs no allocation, copy, bounds check, or memory access. Only a bound
+or ordering that is provably invalid at compile time is rejected; dynamic
+bounds remain unchecked.
+
+Slice subscripts do not apply directly to `DynamicArray<T>`. That type's own
+operation contract may expose a slice separately, but its descriptor is not an
+array or slice source for this grammar.
+
+An ordinary `@T` address has the sole raw-view constructor:
+
+<!-- wyst-contract: sketch -->
+```wyst
+const base: @u8 = address<@u8>(0x4000)
+const raw: []u8 = base.slice(elements = 64)
+const tail_raw: []u8 = element_offset(base, 8).slice(elements = 56)
+```
+
+The receiver must be ordinary, not volatile or MMIO. The `elements` label is
+mandatory and always counts `T` elements, never bytes. The count is a
+fixed-width integer and a provably negative value is rejected. The receiver
+and count are evaluated once from left to right. Construction itself performs
+no memory access or allocation.
+
+The predecessor spellings `source[start:end]`, `[]T{data = ..., len = ...}`,
+`[]T { data = ..., len = ... }`, `T@[address]`, every `as.<category>` form,
+typed-address arithmetic, `%addr_of(local)`, `%load_be`, `%load_le`,
+`%store_be`, and `%store_le` are removed and rejected in v0.9.
+
+## Released v0.8 Syntax Snapshot
+
+> The remainder of this chapter preserves the released v0.8 exposition and
+> remains authoritative for type semantics that do not conflict with the
+> current section. Its punctuation-led declarations, `[dynamic]T`, typed
+> `Type { ... }` struct literals, brace array literals, `as.<category>`,
+> `T@[address]`, typed-address arithmetic, `%addr_of`, endian primitives, colon
+> slices, raw slice descriptors, and related examples are historical v0.8
+> syntax, not accepted alternatives in v0.9. The current v0.9 forms above take
+> precedence wherever wording or examples conflict.
 
 ## 1.4 Scalar Primitive Types
 
@@ -59,7 +342,7 @@ single irreducible scalar value.
 | [T:N]       | SIMD vector type                                          |
 | [N]T        | fixed-size stack array                                    |
 | []T         | slice descriptor                                          |
-| [dynamic]T  | dynamic array descriptor                                  |
+| DynamicArray<T> | explicitly imported dynamic array descriptor            |
 
 The built-in `string` type is a length-carrying byte string for UTF-8 text.
 Its `len` field is the number of bytes, not the number of Unicode scalar
@@ -94,7 +377,7 @@ every binary operator has operands of the same concrete type.
 
 This chapter defines the complete conversion model: untyped constants,
 the `as` operator, mixed-signedness rules, `bool` semantics, raw bit-pattern
-work with unsigned integers and `bitfield(T)`, endian-typed integers, address
+work with unsigned integers and `bitstruct`, endian-typed integers, address
 types, and the boolean of the model ("does this code compile, and if not
 why").
 
@@ -203,7 +486,7 @@ the source contract and names the conversion's risk profile:
 | `as.truncate` | truncation | integer narrowing or untyped-integer binding that discards high bits |
 | `as.signedness` | signedness reinterpretation | same-width signed/unsigned integer reinterpretation |
 | `as.numeric` | numeric conversion | other integer/bool numeric conversions, including bool/integer and representable untyped integer constants |
-| `as.bits` | bit reinterpretation | bitfield-to-backing-integer and backing-integer-to-bitfield conversion |
+| `as.bits` | removed predecessor syntax | use `bitcast<T>(value)` for the exact-backing `bitstruct` boundary |
 | `as.address` | integer/address conversion | data address, function pointer, and raw `u64` address-bit extraction or construction where permitted |
 | `as.lens` | address-lens change | retargeting `@T` to `@U` while keeping the same volatility/MMIO qualifier set |
 | `as.qualifier` | volatility/MMIO qualifier change | adding or stripping `@volatile` or `@mmio` intent on an address type |
@@ -500,12 +783,12 @@ integers to `bool` for `!`.
 
 Wyst has no separate `b8`/`b16`/`b32`/`b64` bit-vector scalar family. Raw bit
 patterns use unsigned integers (`u8`, `u16`, `u32`, `u64`). Named hardware or
-wire-layout fields use `bitfield(T)` over an unsigned integer backing type.
+wire-layout fields use `bitstruct` over an unsigned integer backing type.
 
 Unsigned integers support both arithmetic and bitwise operators. The type
 system does not try to prove whether a particular `u32` is a count, an
 address-sized value, a mask, or a register image. Use names, constants, and
-`bitfield(T)` declarations to make that intent explicit at the source level.
+`bitstruct` declarations to make that intent explicit at the source level.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -517,17 +800,17 @@ tx_full := (status & UARTFR_TXFF) != 0
 rx_empty := (status & UARTFR_RXFE) != 0
 ```
 
-For structured register values, prefer `bitfield(T)`:
+For structured register values, prefer `bitstruct`:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-UARTFR_BITS :: bitfield(u32) {
-    txff : bits(5, 5)
-    rxfe : bits(4, 4)
+bitstruct UartFrBits: u32 {
+    TXFF: bool at 5
+    RXFE: bool at 4
 }
 
-flags := u32@[UARTFR] as.bits UARTFR_BITS
-tx_full := flags.txff != 0
+const flags: UartFrBits = bitcast<UartFrBits>(UARTFR.load())
+const tx_full: bool = flags.TXFF
 ```
 
 ---
@@ -611,7 +894,9 @@ Type-system rules:
   operand-position expectation, or categorized conversion); inferred bindings such as
   `p := #addr_of(word)` are rejected. The operand must resolve to a
   compile-time symbol such as a global, function, label, exception vector, or
-  fixed-array/global storage symbol. Function symbols have one natural
+  fixed-array/global storage symbol. A module constant has no address unless
+  `#[section(".name")]` materializes it; type declarations and unsectioned
+  constants are not linkable `#addr_of` operands. Function symbols have one natural
   function-pointer type, so `cb := #addr_of(handler)` may infer that type.
 - For fixed-array storage, `#addr_of(array)` may bind to the element lens
   (`@T` for `[N]T`), the whole-array lens (`@[N]T`), or `u64` when an explicit
@@ -1067,7 +1352,7 @@ byte_orderless : u8 = %load_be<u8>(packet)  // ERROR: endian load of 8-bit value
 | `as` for every cross-type conversion | One mechanism; no second-guessing what the compiler will do                  |
 | Untyped integer literals             | Range-checked at the bind site; high-bit `i64` defaults warn before wrapping |
 | `bool` is not an integer             | The `if u32 { ... }` C pattern is a class of bug; the type system rejects it |
-| Raw bit patterns use `uN`            | Avoids a parallel scalar family; `bitfield(T)` carries named layout intent   |
+| Raw bit patterns use `uN`            | Avoids a parallel scalar family; `bitstruct` carries named layout intent   |
 | Endian-aware memory primitives       | Byte order is visible exactly where bytes cross between memory and values    |
 | `@T ≠ u64` at runtime                | Addresses keep element-stepped arithmetic and equality distinct from numeric ordering |
 | No `null`                            | Avoids a magic value the language must specify everywhere; `0` works         |
@@ -1140,7 +1425,8 @@ arr : [3]u8 = {5, 10, 15}
 ```
 
 The canonical source spelling is `[N]T` with no space; the formatter emits
-that form for fixed arrays, slices (`[]T`), and dynamic arrays (`[dynamic]T`).
+that form for fixed arrays and slices (`[]T`). Dynamic arrays format as the
+explicitly imported generic application `DynamicArray<T>`.
 
 | Part          | Meaning                                         |
 | ------------- | ----------------------------------------------- |
@@ -1525,7 +1811,7 @@ arr : [4]u64 = {10, 20, 30, 40}
 sum :: (data : @u64, count : u64) -> u64 {
   total : u64 = 0
 
-  repeat count, i {
+  for i in 0 ..< count {
     total += u64@[data + i]
   }
 
@@ -1937,8 +2223,8 @@ No allocation occurs. A slice is a view into existing memory.
 
 ## 1.5.3 Dynamic Array Descriptors
 
-`[dynamic]T` is the accepted spelling for a dynamic array descriptor whose element
-type is `T`. The annotation itself does not allocate and does not imply a
+`DynamicArray<T>` is the explicitly imported dynamic array descriptor whose
+element type is `T`. The annotation itself does not allocate and does not imply a
 global allocator or mandatory runtime. A value must be initialized through an
 explicit standard-library-shaped API that names its storage source and policy.
 The compatibility surface uses concrete monomorphic wrapper names such as
@@ -1976,7 +2262,7 @@ Range forms follow the same unchecked arithmetic as slice reslicing:
 `arr[lo:hi]` produces `data = arr.data + lo` and `len = hi - lo`;
 `arr[lo:]` uses `arr.len` as the end bound; `arr[:hi]` starts at zero. The
 compiler does not compare range bounds against `arr.len` or `arr.capacity`.
-There is no implicit `[dynamic]T` to `[]T` conversion in assignments, calls, or
+There is no implicit `DynamicArray<T>` to `[]T` conversion in assignments, calls, or
 other typed binding contexts. Passing initialized dynamic-array elements to a
 slice parameter must use the explicit view expression `arr[:]`.
 
@@ -1995,7 +2281,7 @@ push-from-address, reserve-only, allocate-slot, initialize-slot, and
 commit-slot paths, including the dot-syntax forms `arr.push(value)`,
 `arr.push_from_address(ptr)`, `arr.reserve(capacity = ..., growth = ...)`,
 `arr.alloc_slot()`, `arr.init_slot(slot)`, and `arr.commit_slot(slot)` for a
-local, global, or aggregate-field `[dynamic]T` descriptor storage path. These
+local, global, or aggregate-field `DynamicArray<T>` descriptor storage path. These
 mutating forms require assignable descriptor storage; temporaries and constants
 are rejected.
 
@@ -2072,7 +2358,7 @@ Scalar primitives and built-in field forms have natural alignment:
 | `[T:N]` (vector)    | sizeof(T)·N  | 16        |
 | `string`            | 16           | 8         |
 | `[]T`               | 16           | 8         |
-| `[dynamic]T`        | 56           | 8         |
+| `DynamicArray<T>`   | 56           | 8         |
 
 For an aggregate type (struct or fixed-size array):
 
@@ -2307,348 +2593,233 @@ fr_val := u32@[fr_addr]
 
 ---
 
-## 1.6.1 Bitfields
+## 1.6.1 Bitstructs and Typed Bit Fields
 
-Bitfields provide named, structured access to bit ranges within an integer
-register. They are the primary tool for working with ARM64 system registers
-and hardware control registers where individual fields occupy specific bit
-positions.
-
----
-
-### Declaration
+`bitstruct` declares a nominal value whose complete representation is one
+unsigned backing scalar. It provides typed, named access to contiguous bit
+locations without introducing arbitrary-width scalar types.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-name :: bitfield(T) {
-    field : bits(lo, hi)
-    ...
+enum UartMode: u8 {
+  disabled = 0
+  normal = 1
+  fifo = 2
+  reserved = 3
+}
+
+bitstruct Control: u32 {
+  ENABLE: bool at 0
+  MODE: UartMode at 6..=7
+  DIVISOR: u8 at 8..=11
 }
 ```
 
-| Part           | Meaning                                                      |
-| -------------- | ------------------------------------------------------------ |
-| `T`            | unsigned backing integer type — `u8`, `u16`, `u32`, or `u64` |
-| `field`        | field name                                                   |
-| `bits(lo, hi)` | inclusive bit range: `lo` is LSB, `hi` is MSB                |
+The backing type is exactly one of `u8`, `u16`, `u32`, or `u64`. A field has an
+explicit `bool`, fixed-width integer, or payload-less enum carrier and one
+location.
+`at N` denotes one bit. `at A..=B` denotes the inclusive low-to-high range
+whose width is `B - A + 1`. All positions are constant, `A <= B`, the derived
+width is positive, every bit is within the backing type, and fields do not
+overlap. A `bool` field occupies exactly one bit.
 
-`lo` and `hi` must be compile-time constants. `lo <= hi`. Both must be within
-the bit width of `T`. Fields may not overlap — overlapping ranges are a
-compile error.
+`width N`, `bits(...)`, an intervening `bit` word, exclusive or descending
+ranges, empty ranges, non-contiguous ranges, and alternate range spellings are
+not part of the language. A logical value split across non-adjacent hardware
+locations is represented by separate fields and combined explicitly by the
+program.
 
-Each field names exactly one contiguous inclusive range. `bits` takes exactly
-two arguments; non-contiguous composite fields are not part of the language.
-Declarations that try to attach multiple ranges to one field are rejected.
-Declare each contiguous range as its own field instead.
+### Carrier and Encoding Rules
 
-The field width in bits is `hi - lo + 1`. The field type is the smallest
-unsigned integer that can hold that width: `u8` for 1–8 bits, `u16` for
-9–16 bits, `u32` for 17–32 bits, `u64` for 33–64 bits.
+A field read extracts its location and returns the declared carrier type. An
+enum carrier must be payload-less and must declare exactly one variant for
+every encoding representable by the field width. Duplicate, missing, negative,
+or out-of-range encodings are rejected. A hardware field with reserved or
+unknown encodings must name those variants or use an unsigned integer carrier
+and decode explicitly. Extraction can therefore never manufacture an invalid
+enum value.
 
----
+An unsigned carrier zero-extends the extracted encoding. A signed integer
+carrier sign-extends from the field width into the declared carrier width, so a
+three-bit `i8` field interprets encoding `0b111` as `-1`.
 
-### Field Access
+Because coverage is complete, the all-zero backing/reset image also decodes to
+a valid value for every enum-backed field; no raw import can create a missing
+enum encoding.
 
-Fields are read and written using dot syntax on a value of the bitfield type:
+A carrier may be wider than its location. An enum value or a constant value
+proven to fit the encoded width may be written directly. A runtime integer
+whose carrier has more representation bits than the field requires must pass
+through `truncate_bits(value, width)` with the field's exact width. This
+operation keeps the carrier type while making the discarded high bits explicit.
+No field write silently truncates.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-val : TCR_EL1 = ...
-
-t0sz := val.t0sz     // read field — extracts bits, zero-extends to field type
-val.tg0 = 0b01       // write field — shifts and masks into backing integer
+var control: Control = bitcast<Control>(raw)
+control.ENABLE = true
+control.MODE = .fifo
+control.DIVISOR = truncate_bits(dynamic_divisor, 4)
 ```
 
-A field read extracts the bits at the declared range and returns them as an
-unsigned integer of the field type. A field write shifts the value into the
-declared range and writes it back with the surrounding bits preserved via a
-read-modify-write sequence.
+A field mutation preserves every backing bit outside the selected location.
+For addressable storage this is one logical source read-modify-write and is not
+an atomic memory operation. It does not protect shared memory or MMIO from
+concurrent access; use the relevant atomic operation or external
+synchronization when another agent may update the same backing word.
 
----
+### Complete Construction
 
-### Non-Contiguous Registers
-
-ARM64 system registers sometimes place logically related data at
-non-adjacent bit positions. The correct model is to declare each contiguous
-range as a separate named field, then combine them at the call site:
+The expected-type aggregate form constructs a `bitstruct`:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// TCR_EL1 — selected fields
-TCR_EL1 :: bitfield(u64) {
-  t0sz : bits(0, 5) // size offset for TTBR0 region
-  epd0 : bits(7, 7) // TTBR0 walk disable
-  irgn0 : bits(8, 9) // inner cacheability for TTBR0 walk
-  orgn0 : bits(10, 11) // outer cacheability for TTBR0 walk
-  sh0 : bits(12, 13) // shareability for TTBR0 walk
-  tg0 : bits(14, 15) // TTBR0 granule size
-  t1sz : bits(16, 21) // size offset for TTBR1 region
-  epd1 : bits(23, 23) // TTBR1 walk disable
-  irgn1 : bits(24, 25) // inner cacheability for TTBR1 walk
-  orgn1 : bits(26, 27) // outer cacheability for TTBR1 walk
-  sh1 : bits(28, 29) // shareability for TTBR1 walk
-  tg1 : bits(30, 31) // TTBR1 granule size
-  ips : bits(32, 34) // intermediate physical address size
-  tbi0 : bits(37, 37) // top byte ignore for TTBR0
-  tbi1 : bits(38, 38) // top byte ignore for TTBR1
+const initial: Control = {
+  ENABLE = true,
+  MODE = .normal,
+  DIVISOR = 4,
 }
 ```
 
-`t0sz` and `t1sz` are logically paired but non-adjacent — they are declared
-as separate fields. The programmer accesses them independently, which matches
-how they are actually used (TTBR0 and TTBR1 are configured separately).
+Every declared field must appear exactly once. Unknown, duplicate, or missing
+fields are rejected. Field expressions are evaluated once in written order.
+Construction begins with a zero backing value and inserts the named fields, so
+every unoccupied backing bit is zero. A later field mutation instead preserves
+all bits outside the selected field, including unnamed bits imported from a
+raw backing value.
 
-When a hardware field is logically split across non-adjacent ranges, Wyst still
-does not provide a combined bitfield member. Source assignments to the separate
-fields are separate field writes, with the normal read-modify-write semantics
-for each assignment. The compiler does not infer an atomic combined update from
-multiple field writes.
+A fieldless bitstruct is constructed by the complete empty aggregate `{}` and
+therefore has the all-zero backing value. For a bitstruct with any declared
+field, `{}` is incomplete and is rejected by the same completeness rule.
 
-If the hardware requires multiple non-adjacent bits to change as one visible
-operation, construct the full backing value explicitly and write it once, or use
-the appropriate atomic or synchronization primitive for the storage location.
+### Raw Boundary
 
----
-
-### Conversion to and from the Backing Integer
-
-A bitfield value can be converted to its backing integer and back:
+`bitcast` is the sole raw import/export boundary:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-raw := tcr as.bits u64               // bitfield -> integer (zero-extends unused bits)
-tcr := raw as.bits TCR_EL1           // integer -> bitfield (no masking; all bits taken as-is)
+const control: Control = bitcast<Control>(raw)
+const encoded: u32 = bitcast<u32>(control)
 ```
 
-This is the primary mechanism for reading and writing system registers
-via `%mrs` / `%msr` (§1.3.3):
+The conversion is legal only between a `bitstruct` and its exact declared
+backing type. It preserves every backing bit, including unnamed bits, with no
+masking, validation, normalization, memory access, or hidden instruction.
+There is no implicit conversion and no `from_bits`, `to_bits`, or constructor
+alias.
 
-<!-- wyst-contract: sketch -->
-```wyst
-// read TCR_EL1
-raw := %mrs(TCR_EL1)
-tcr := raw as.bits TCR_EL1
+### Lowering and Diagnostics
 
-// modify a field
-tcr.t0sz = 25
+The compiler records one normalized typed-field description for declaration
+checking, field access, formatting/editor metadata, semantic reports, typed IR,
+and target lowering. The description contains the nominal owner, exact backing
+type, carrier type, low bit, encoded width, mask, and enum encoding coverage.
+Diagnostics and reports are derived from that description rather than
+re-parsing field syntax in later phases.
+Hardware register declarations that expose named bit locations consume this
+same normalized interface; they do not define a second field grammar or
+encoding checker.
 
-// write back
-%msr(TCR_EL1, tcr as.bits u64)
-%isb()                          // required because the write affects translation
-```
+On AArch64, an integer or boolean extraction/insertion may select `ubfx`/`bfi`
+when those instructions implement the typed operation exactly. Enum carriers
+use their complete checked encoding. Target lowering is deterministic and may
+use an equivalent instruction sequence when required by the carrier, but it
+must not add an access, implicit truncation, validation, or normalization.
 
----
-
-### Reserved Fields and Padding
-
-Hardware registers often contain reserved bits that must be preserved (RES0
-or RES1). Declare them explicitly to document the layout:
-
-<!-- wyst-contract: sketch -->
-```wyst
-TCR_EL1 :: bitfield(u64) {
-    t0sz   : bits(0,  5)
-    _res0  : bits(6,  6)    // reserved — must be zero
-    epd0   : bits(7,  7)
-    ...
-    _res1  : bits(35, 35)   // reserved — must be preserved
-}
-```
-
-Fields prefixed with `_` are conventional reserved-field names. Reading and
-writing them is allowed and uses the same field-access rules as any other
-bitfield member. The prefix documents hardware intent; it does not create a
-compiler-enforced write barrier.
-
-A named field write preserves every surrounding bit in the current bitfield
-value, including `_` fields. Full backing-integer conversions remain raw:
-`raw as.bits TCR_EL1` takes all bits as-is, and `tcr as.bits u64` returns all bits as-is.
-Preserving RES0/RES1 values across a full register write is therefore the
-programmer's responsibility via an explicit read-modify-write sequence or a
-known-good full-register value.
+The generic capability bound is spelled `bitstruct`. It admits nominal
+`bitstruct` types and promises whole-value equality, storage, passing,
+returning, and address-taking. The predecessor `bitfield` bound is removed.
 
 ---
 
-### ARM64 Lowering
+## 1.6.2 Hardware Register Snapshot Types
 
-| Operation   | Wyst                    | ARM64                      |
-| ----------- | ---------------------- | -------------------------- |
-| field read  | `val.field`            | `ubfx xD, xN, #lo, #width` |
-| field write | `val.field = x`        | `bfi xD, xN, #lo, #width`  |
-| full read   | `raw as bitfield_type` | (no-op — reinterpretation) |
-| full write  | `bitfield as.bits u64` | (no-op reinterpretation) |
-
-`ubfx` (unsigned bitfield extract) and `bfi` (bitfield insert) are direct
-ARM64 instructions. The assembler selects them from the field's `bits(lo, hi)`
-declaration. No shift-and-mask sequence is generated unless the target
-encoding requires it.
-
-Because fields are contiguous-only, every field read or write maps to one
-contiguous bitfield operation. Wyst does not lower one named field to multiple
-`ubfx`/`bfi` operations for split masks; users spell split hardware fields as
-multiple source fields or as explicit backing-integer masks.
-
-Both `ubfx` and `bfi` operate on **register operands only**. They do not
-access memory. This means a field write is an atomic register operation but
-the surrounding load-store sequence (reading the word from memory, modifying
-via `bfi`, writing back) is **not atomic** with respect to other agents
-accessing the same memory location. See **Concurrency and Atomicity** below.
-
----
-
-### Concurrency and Atomicity
-
-Bitfield field reads and writes are **not atomic** with respect to other
-cores, interrupt handlers, or DMA agents that may access the same backing
-word concurrently.
-
-#### Field Reads
-
-A field read (`val.field`) lowers to a single `ubfx` instruction operating
-on a register value. This is atomic with respect to the register read — it
-cannot produce a torn value. However, if the backing word itself was loaded
-from memory before the extract, the load and the extract are not atomic as a
-pair. Between the load from memory and the extract, another agent may have
-modified the word.
-
-#### Field Writes
-
-A field write (`val.field = x`) lowers to a single `bfi` instruction that
-inserts the new field value into the backing integer while preserving all
-other bits. This is a **read-modify-write** on the backing word: the existing
-value must be available (in a register) and the result replaces it.
-
-If the backing word is stored to a memory location that is also accessible
-from an interrupt handler, another core, or a DMA engine, concurrent writes
-to _different_ fields in the _same_ backing word will corrupt each other.
-
-##### Race Example
+Hardware register declarations separate a register's captured value from the
+object that performs the hardware access. A reusable MMIO register map declares
+register offsets and backing widths; a placed `mmio` declaration supplies the
+base address:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// Shared status register accessible from both main code and an ISR.
+register_map Pl011 {
+  DR: readwrite u32 at 0x00 {
+    DATA: u8 at 0..=7
+  }
 
-status :: bitfield(u32) {
-    tx_busy : bits(0,  0)
-    rx_busy : bits(1,  1)
-    error   : bits(2,  7)
+  FR: readonly u32 at 0x18 {
+    TXFF: bool at 5
+  }
 }
 
-// Main code — marking TX as busy:
-raw := u32@[STATUS_ADDR]          // read:    0b0000_0000
-tcr := raw as status
-tcr.tx_busy = 1                  // bfi:     0b0000_0001
-// ^^^ INTERRUPT FIRES HERE ^^^
-//     Handler reads:           0b0000_0001 (has our tx_busy bit)
-//     Handler sets rx_busy:    0b0000_0011
-//     Handler stores:          0b0000_0011
-// ^^^ INTERRUPT RETURNS ^^^
-raw = tcr as.bits u32            // our register still has: 0b0000_0001
-u32@[STATUS_ADDR] = raw           // store:   0b0000_0001
-// rx_busy bit from handler is now LOST — silently overwritten
+mmio UART0: Pl011 at 0x0900_0000
 ```
 
-The handler's `rx_busy = 1` is destroyed because the main code's `bfi`
-operated on a stale snapshot of the word and overwrote the entire word on
-store.
+Each register in `register_map M` introduces exactly one nominal captured-value
+type named `M.REG.Value`. The type exists even when the register declaration has
+no field block. `UART0.FR.read()`, for example, performs one hardware read and
+returns `Pl011.FR.Value`. The returned value is an ordinary captured value: it
+may be bound, copied, passed, or returned according to ordinary value rules and
+never performs another hardware access by being observed.
 
-#### Safe Patterns
+Every snapshot has a read-only `.raw` projection whose type is the register's
+exact backing type. Each readable named field projects from the same captured
+backing value. A field projection therefore emits only the value extraction
+required by its carrier and bit location; it cannot reload the register. A
+write-only field has no readable projection. Snapshots are not implicitly
+convertible to their backing type and are not accepted by a raw register write;
+the explicit boundary is `snapshot.raw`. There is no source snapshot
+constructor, raw-to-snapshot conversion, writable `.raw`, `read_raw`, or
+`write_raw` surface.
 
-**For MMIO registers:** Do not use bitfield field writes on MMIO addresses
-that are accessed from multiple contexts. Instead:
+A register-map backing is exactly `u8`, `u16`, `u32`, or `u64`. This is both the
+snapshot's raw representation and the width of every full-register MMIO
+transfer. Signed integers, `bool`, enums, addresses, floating-point values,
+vectors, arrays, and aggregates are not map-register backing types. Named
+hardware fields continue to use the shared typed-field carriers and normalized
+locations from §1.6.1; their carriers do not change the backing width.
 
-1. **Write the full register value** when the hardware permits it (no
-   read-modify-write needed):
-
-   ```wyst
-   CTRL_REG : @mmio u32 = 0x0900_0030
-   u32@[CTRL_REG] = 0x0001    // write known value directly
-   ```
-
-2. **Use the atomic runtime primitives** (§1.3.2) for shared-memory status words.
-   `%atomic_bit_set`, `%atomic_bit_clear`, `%fetch_or`, `%fetch_and`,
-   `%cas` cover every common single-word RMW pattern and lower to a single
-   LSE instruction on ARMv8.1 or an `ldxr`/`stxr` loop on baseline:
-
-   ```wyst
-   // Set the tx_busy bit atomically; no race with the ISR.
-   was_set := %atomic_bit_set(SHARED_STATUS, 0, order: acqrel)
-   ```
-
-3. **Use barriers and disable interrupts** to serialize access:
-   ```wyst
-   // Disable interrupts during RMW to prevent handler interference
-   %daif_set(0b0010)            // mask IRQs
-   raw := u32@[STATUS_ADDR]
-   tcr := raw as status
-   tcr.tx_busy = 1
-   raw = tcr as.bits u32
-   u32@[STATUS_ADDR] = raw
-   %daif_clr(0b0010)            // unmask IRQs
-   ```
-
-**For local-only bitfield values** (e.g., reading a system register into
-a local variable, modifying fields, writing back):
+A system-register declaration creates the analogous nominal `NAME.Value` type,
+always with raw representation `u64`. The declaration may contain the same
+normalized hardware field descriptions. A fieldless catalog-named declaration
+uses an explicit empty field block, while a fieldless encoded target-extension
+declaration uses its canonical blockless form:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// This pattern is safe because the entire RMW sequence is local:
-// read register → modify fields in register → write register.
-// No other agent can modify the local register variable.
-raw := %mrs(TCR_EL1)
-tcr := raw as.bits TCR_EL1
-tcr.t0sz = 25                    // safe — local register only
-tcr.t1sz = 25
-%msr(TCR_EL1, tcr as.bits u64)
-%isb()
+system_register CurrentEL: readonly u64 {}
+system_register VENDOR_CTL: readwrite u64 at S3_0_C15_C2_0
 ```
 
-This is safe because `tcr` lives entirely in a register during modification.
-The race window is only between the `mrs` (read) and `msr` (write), which
-is the same window any system register RMW has regardless of bitfield syntax.
+Every other system-register backing is rejected, including signed or narrower
+integers, enums, bitstructs, vectors, and aggregates. Field carriers affect
+extraction and insertion only; one system-register transfer is always exactly
+64 bits.
 
-#### Summary
+A standalone scalar MMIO declaration deliberately does not create a nominal
+snapshot:
 
-| Access pattern                              | Atomic? | Safe without synchronization?            |
-| ------------------------------------------- | ------- | ---------------------------------------- |
-| field read from local register              | yes     | yes                                      |
-| field write to local register               | yes     | yes (no other agent sees it)             |
-| full register read (load from memory)       | yes     | single accessor                          |
-| full register write (store to memory)       | yes     | single accessor                          |
-| field write via RMW on shared memory        | no      | **no** — use atomic RMW or lock          |
-| field write via RMW on MMIO from ISR + main | no      | **no** — disable IRQs or use full writes |
+<!-- wyst-contract: sketch -->
+```wyst
+mmio TIMER: readonly u64 at 0x0200_bff8
+const ticks: u64 = TIMER.read()
+```
 
-Bitfield field writes are ergonomic for constructing register values in
-local registers. They are **not** a substitute for atomic operations on
-shared memory locations.
+Its read result and write operand are the declared scalar `T` directly. `T`
+must be a fixed-width scalar that the selected target can transfer with one
+load/store operation; vectors and aggregates are rejected because they require
+multiple accesses. A scalar MMIO object has no `.raw`, named-field projection,
+named write, or `modify` operation. Hardware that requires fields uses a
+one-register map instead.
 
-Multiple writes to fields that model one logical non-contiguous hardware value
-remain multiple read-modify-write operations. They are not one atomic update of
-the backing word.
-
-The formal atomicity rules — including natural alignment guarantees and the
-precise definition of what constitutes a data race on a bitfield backing word
-are specified in [chapter-09-memory-model.md](chapter-09-memory-model.md).
-
----
-
-### Design Rationale
-
-| Choice                          | Reason                                                                |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `bitfield(T)` not packed struct | backing type is explicit; no ambiguity about integer representation   |
-| `bits(lo, hi)` inclusive range  | matches ARM64 architecture manual notation exactly                    |
-| field type inferred from width  | no redundant type annotation; compiler derives smallest fit           |
-| contiguous fields only          | preserves one source field to one ARM64 bitfield op; split masks are explicit |
-| `_` reserved-field names        | documents reserved bits without hiding the raw backing integer model   |
-| `as.bits` for integer conversion | explicit conversion; no implicit coercion between bitfield and integer |
-| `ubfx`/`bfi` lowering           | direct ARM64 instructions; no hidden shift-and-mask overhead          |
-| no atomic field writes          | `bfi` is a register operation; atomicity requires memory instructions |
-| explicit `as` for I/O           | read-modify-write boundary is visible, not hidden                     |
+The declaration, field-policy, operation, and exact-access rules are specified
+in [Chapter 11](chapter-11-intrinsics.md). Compiler-event ordering and effects
+are specified in [Chapter 9](chapter-09-memory-model.md). These snapshot types do
+not alter the existing raw `@mmio T` address type or restore the removed
+`T@[address]` access form.
 
 ---
 
-## 1.6.2 Enums
+## 1.6.3 Enums
 
 `enum` declares a sum type — a value that is exactly one of a fixed set
 of named variants. Variants may carry a payload. A discriminator (tag)
@@ -2661,7 +2832,7 @@ the single `enum` construct. The payload surface supports zero or one
 payload-word value per variant.
 
 `union` is not a Wyst keyword. Untagged-overlay use cases that other
-languages spell as `union` are covered by `bitfield(T)` for register
+languages spell as `union` are covered by `bitstruct` for register
 shapes and by explicit `as`-conversion between a struct type and a
 backing integer for the rare byte-reinterpretation case.
 
@@ -2723,7 +2894,7 @@ variant selects the payload enum representation for the whole enum type.
 | Payload enum | The same declared-or-inferred discriminator type. The tag is stored in the first native word at byte offset 0; bytes `0..size_of(tag_type)` contain the tag value. | Same as payload-less enums. | offset 8 | one native word, exactly 8 bytes | 8 | 16 | bytes `size_of(tag_type)..8` are tag-word padding; bytes after the active payload value inside the payload word are payload-word padding |
 
 Payload enum variants may carry zero or one payload-word value: `bool`,
-integer scalars, address types, function-pointer types, or bitfield types.
+integer scalars, address types, function-pointer types, or `bitstruct` types.
 `f32`, `f64`, structures, arrays, slices, dynamic arrays, tuples, and nested
 enum values are not payload-word values. A payload-bearing variant stores its
 payload at offset 8 using the payload type's normal byte width and byte order.
@@ -3541,18 +3712,16 @@ uart_regs :: struct {
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// Register names (x0, x1, ..., sp, lr) are reserved tokens and cannot
-// appear as struct fields — saved registers are kept in a fixed-size
-// array indexed by GPR number, with system registers named explicitly.
-TrapFrame :: #trap_frame(arm64) struct {
-  x : [31]u64 // saved x0 through x30
-  elr : u64 // exception link register (saved PC)
-  spsr : u64 // saved PSTATE
-  interrupted_sp : u64 // interrupted stack pointer
+// Saved registers use the target profile's fixed field shape.
+trap_frame TrapFrame: aarch64 {
+  x: [31]u64 // saved x0 through x30
+  elr: u64 // exception link register (saved PC)
+  spsr: u64 // saved PSTATE
+  interrupted_sp: u64 // interrupted stack pointer
 }
 
-// The #trap_frame marker also verifies the canonical entry/restore labels;
-// see chapter 14 for the trap-frame ABI.
+// Hard establishes/restores label clauses verify the canonical transitions;
+// see Chapter 14 for the complete trap-frame ABI.
 #static_assert(#size_of(TrapFrame) == 0x110, "trap frame must match the ABI")
 ```
 
@@ -3594,7 +3763,7 @@ fdt_header :: struct {
 - module scope — checked when the module is compiled
 - inside a function body — checked at the function definition during semantic
   checking, even if the function is unreachable or marked `#inline`
-- inside a `bitfield`, `struct`, or `union` declaration — checked when the
+- inside a `bitstruct` or `struct` declaration — checked when the
   type is resolved
 
 Statement-level `#if` expansion happens before function-body semantic checking,
@@ -3715,7 +3884,7 @@ GenericBound     <- 'integer'
                   / 'numeric'
                   / 'scalar'
                   / 'address'
-                  / 'bitfield'
+                  / 'bitstruct'
                   / 'payload_word'
 ```
 
@@ -3737,8 +3906,8 @@ are valid for every concrete type in that closed family:
 | `numeric`          | all integer and float scalar types               | arithmetic and comparison common to integers and floats; no bitwise operators      |
 | `scalar`           | `bool`, all integer scalar types, and floats     | equality, inequality, storage, passing, returning, and address-taking              |
 | `address`          | pointer types such as `@T`, `@volatile T`, and `@mmio T` | pointer equality and address movement where pointer operations are already legal   |
-| `bitfield`         | nominal `bitfield` types                         | whole-value equality, storage, passing, returning, and address-taking              |
-| `payload_word`     | `bool`, integer scalar types, pointer types, function-pointer types, and nominal `bitfield` types | equality, inequality, storage, passing, returning, address-taking, and use as a generic enum payload |
+| `bitstruct`        | nominal `bitstruct` types                        | whole-value equality, storage, passing, returning, and address-taking              |
+| `payload_word`     | `bool`, integer scalar types, pointer types, function-pointer types, and nominal `bitstruct` types | equality, inequality, storage, passing, returning, address-taking, and use as a generic enum payload |
 
 The built-in bound set is intentionally narrow. It is not a trait, concept,
 interface, typeclass, or structural predicate system. User-defined capability
@@ -3764,7 +3933,7 @@ rejected because `bool` does not satisfy `integer`.
 Generic enum payloads are also a bounded capability. A payload variant that
 stores a type parameter directly, such as `Ok(T)`, must declare `T:
 payload_word` or a narrower payload-compatible bound: `integer`,
-`unsigned_integer`, `signed_integer`, `address`, or `bitfield`. The broader
+`unsigned_integer`, `signed_integer`, `address`, or `bitstruct`. The broader
 `scalar` and `numeric` bounds are not payload-compatible because they include
 floating-point types. Violations are rejected at the generic declaration or at
 the instantiation boundary:
@@ -3849,7 +4018,7 @@ choices, generated symbol names, and same-layout declarations do not change it.
 
 `TypeArgumentList` is the complete ordered list of canonical concrete type
 arguments. Each entry uses type identity after name resolution, including
-nominal declaration identity for structs, enums, and bitfields, and includes
+nominal declaration identity for structs, enums, and bitstructs, and includes
 the complete nested argument lists of any generic type arguments. A partial
 generic declaration such as `Box` without all of its type arguments has no
 canonical instantiation key.
@@ -3916,7 +4085,7 @@ The generic design must satisfy the following constraints:
 | Generic functions, structs, and enums only                                 | Covers generic algorithms, typed containers, and `Result<T, E>`/`Option<T>`-style sum types without adding aliases or interfaces.                                                              |
 | Nominal generic type instantiations                                        | Preserves Wyst's exact type identity model; same-layout generic structs/enums do not silently substitute for one another.                                                                       |
 | Nested generic type arguments                                              | Generic containers compose without special cases; `GenericTypeArgList` accepts `Type`, not only bare names.                                                                                    |
-| Unbounded by default; closed built-in bounds only                          | Useful storage, forwarding, and container patterns do not require bounds. Numeric/address/bitfield/payload-word helpers get explicit compile-time capability checks without a trait/interface system. |
+| Unbounded by default; closed built-in bounds only                          | Useful storage, forwarding, and container patterns do not require bounds. Numeric/address/bitstruct/payload-word helpers get explicit compile-time capability checks without a trait/interface system. |
 | Monomorphization, not erasure                                              | Wyst has no runtime; type-erased generics would require a runtime dispatch mechanism (vtables, dictionaries) that does not exist.                                                               |
 | One canonical function symbol per declaration/type tuple                   | Determinism: identical (`T`, `U`, ...) tuples for the same generic function declaration must produce one semantic symbol; different declarations never merge structurally.                     |
 | Canonical instantiation key includes declaration identity plus complete type and value arguments | Termination, diagnostics, debug info, and symbol generation all need the same identity rule. Value-argument identity is reserved as an empty list until a future value-parameter feature exists. |
@@ -3958,7 +4127,7 @@ spelling, and no value parameters.
 
 The implemented generic model above is the normative type-parameter surface.
 The patterns below remain useful when a problem does not need a generic
-declaration: manual monomorphization, `bitfield(T)` declarations, address-lens
+declaration: manual monomorphization, `bitstruct` declarations, address-lens
 code, and external code generation. `#if` is included here as the compile-time
 selection rule, not as a type-value mechanism.
 
@@ -4010,18 +4179,16 @@ type; only the selected branch is emitted. Wyst does not have type values or
 type aliases, so a configuration that changes storage type still uses explicit
 concrete declarations or manual monomorphization.
 
-#### `bitfield(T)` for Layout-Parametric Records
+#### `bitstruct` for Explicit Register Layouts
 
-For register-layout records, the built-in `bitfield(T)` declaration (see
-§1.6.1 above) already captures one common parametric shape: `T` is the backing
-unsigned integer. This handles the most common kernel need: register-layout
-records that vary by access width.
+For register-layout records, `bitstruct` (see §1.6.1) makes each backing
+width explicit. These declarations are nominal and are not generic aliases.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-SCTLR_EL1 :: bitfield(u64) { ... }       // 64-bit system register
-MIDR_EL1  :: bitfield(u64) { ... }       // 64-bit system register
-FSR_EL1   :: bitfield(u32) { ... }       // 32-bit fault status
+bitstruct SctlrEl1: u64 { ... } // 64-bit system register image
+bitstruct MidrEl1: u64 { ... }  // 64-bit system register image
+bitstruct FsrEl1: u32 { ... }   // 32-bit fault status image
 ```
 
 #### `@T` for Pointer-Parametric Code
@@ -4068,7 +4235,7 @@ the compiler checks is the concrete source in the build input.
 | Generic structs/enums instantiate nominally                 | A type's source declaration remains part of its identity after substitution. This avoids layout-based accidental compatibility and keeps diagnostics aligned with user-written names.                                 |
 | Generic functions instantiate by declaration and type tuple | Repeated uses of `swap<u64>` share one semantic symbol, while `swap<u64>` and `exchange<u64>` remain distinct even if their code is identical. This keeps debug info, diagnostics, and address identity unsurprising. |
 | Type arguments may nest                                     | Container patterns quickly need shapes such as `Pair<Box<u64>, Error>`; allowing type arguments to be full types avoids a second generics syntax expansion later.                                            |
-| `T` is unbounded by default, with narrow built-in bounds     | Storage, movement, forwarding, and descriptor code can be useful without bounds. Numeric, scalar, address, bitfield, and payload-word helpers get explicit compile-time capability checks without a general interface system. |
+| `T` is unbounded by default, with narrow built-in bounds     | Storage, movement, forwarding, and descriptor code can be useful without bounds. Numeric, scalar, address, bitstruct, and payload-word helpers get explicit compile-time capability checks without a general interface system. |
 | No type-argument inference or defaults                      | Every instantiation spells its concrete type tuple. This keeps diagnostics, symbol identity, and monomorphization deterministic.                                                                                      |
 | Canonical source-facing instantiation names                 | Diagnostics and debug info need stable names that users can map back to source; `Path.Name<canonical-args>` does that without exposing backend mangling.                                                              |
 | Document non-generic idioms explicitly                      | The idioms above cover common parametric patterns that do not need the generic model.                                                                                                                                 |

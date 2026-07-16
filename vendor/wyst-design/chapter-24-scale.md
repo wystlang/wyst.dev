@@ -82,7 +82,7 @@ On success, stdout is JSON:
 ```
 
 `optimization` records the build-level `--optimization` mode used for both
-iterations. It is not a source `#schedule` mode and not an incremental-build
+iterations. It is not a source scheduling policy and not an incremental-build
 mode. `elapsedMicros` is an observation, not a pass/fail threshold. The
 reproducibility check is the stable contract: byte-identical outputs are
 required.

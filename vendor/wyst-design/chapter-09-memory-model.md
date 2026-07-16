@@ -15,13 +15,145 @@ summary: "Normal memory, volatile memory, atomics, barriers, ordering, agents, a
 > visible-value-of-a-load, data races, atomicity, and interrupt handler
 > ordering.
 >
-> Atomic runtime primitives live in [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md);
+> Typed atomic storage and methods live in the generated
+> [atomic matrix](generated-atomic-matrix.md) and
+> [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md);
 > address types and conversion rules live in [chapter-06-types.md §1.4.1](chapter-06-types.md);
 > inline assembly fence semantics live in [chapter-08-functions.md §2.9](chapter-08-functions.md).
 
 The memory model defines ordering for normal and volatile memory,
 acquire/release operations, atomics, barriers, agents, and happens-before.
 Its address and access dependencies are linked above.
+
+> **Source-version boundary.** Sections explicitly headed as current v0.9
+> contracts use the active language surface. Other examples in this chapter
+> retain the released v0.8 memory-model exposition for compatibility context.
+> In those older sections, `T@[address]`, typed-address `+`/`-`, colon slices,
+> `%addr_of`, endian `%load_*`/`%store_*`, `as.<category>`, the old atomic
+> `%` primitives, and `#acquire`/`#release` are historical
+> spellings, not v0.9 alternatives. Chapter 6's named address methods,
+> unit-explicit offsets, `addr_of`, slice ranges, and named conversions
+> supersede those spellings without changing the ordering model.
+
+## v0.9 Atomic Acquire and Release Access (Current)
+
+Acquire and release ordering is part of the closed method surface of opaque
+atomic storage. The receiver is an `atomic<T>` binding or an explicit
+`@atomic<T>` address:
+
+<!-- wyst-contract: sketch -->
+```wyst
+var flag: atomic<u64> = atomic<u64>(0)
+const observed: u64 = flag.load(.acquire)
+flag.store(1, .release)
+```
+
+The receiver's exact atomic element type supplies `T`. `.load(.acquire)`
+performs one load-acquire; `.store(value, .release)` performs one store-release
+after evaluating the receiver and value once in source order. Ordinary,
+volatile, and MMIO addresses do not gain atomic ordering and cannot implicitly
+convert to `@atomic<T>`. The exact element/method/order matrix,
+compare-exchange failure orders, ARM64 mapping, and removal table are generated
+from [`atomic-matrix.json`](atomic-matrix.json). That matrix is the sole
+authority for atomic storage types, methods, orders, result shapes, and the
+disposition of the removed `#acquire`/`#release` directives. It does not own
+prefix-`%` mappings: the sole audit authority for those retired spellings is
+the non-parser
+[`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv).
+Later occurrences of old atomic `%` primitives or `#acquire`/`#release` in
+historical exposition are not current syntax.
+
+### Construction, lifetime, and modification order
+
+Direct construction creates the atomic location and contributes its initial
+write **I**. I is the first member of that location's modification order and
+happens-before every later atomic event on the location. For a runtime local,
+evaluation of the constructor operand is sequenced before I, and I is complete
+before the binding can escape or be observed. For module storage, I is part of
+static initialization before program access. For each `per_cpu` instance, the
+template bytes are copied only while that instance is unobserved; the resulting
+instance-specific I happens-before publication and its first access. The
+constructor has no order argument, is not a member of the global SC order, and
+does not invent a user-visible atomic load or store event.
+
+### Storage validity and exact width
+
+Every atomic event requires atomic-capable **Normal memory** and the natural
+alignment of its exact element width: 1, 2, 4, or 8 bytes, or the target word
+alignment for an address element. `atomic<T>` does not manufacture either
+property. Device/MMIO placement, under-aligned aggregate or packed placement,
+provably misaligned `@atomic<T>`, and mixed atomic/plain access are rejected. A
+dynamically constructed atomic address therefore carries an explicit audited
+Normal-memory and alignment assertion; it is never inferred from an ordinary,
+volatile, or MMIO address.
+
+<!-- wyst-contract: sketch -->
+```wyst
+fn mapped_counter(raw: u64) -> @atomic<u64> {
+    return address<@atomic<u64>>(raw)
+}
+```
+
+This exact named conversion is the sole raw construction path and is valid only
+in an executable function body so its trust-boundary fact remains traceable in
+human and JSON reports. It preserves the address bits and emits no memory event
+or runtime check. A constant that is misaligned or overlaps target-declared
+Device memory is rejected; for a dynamic value, natural alignment and
+atomic-capable Normal memory remain explicit programmer assertions rather than
+compiler proof. `relens`, qualifier conversion, reverse exposure to a plain
+address, and implicit conversion never construct an atomic address.
+
+The access width is exactly `#size_of(T)`. Checked 16-byte pair-atomic and
+exclusive operations are separate range operations: they do not add an atomic
+element class, turn `@atomic<u64>` into a 16-byte address, or otherwise widen
+the opaque storage boundary.
+
+### Sequential consistency and progress obligations
+
+The v0.9 ARM64 mapping uses acquire loads, release stores, and acquire-release
+RMW forms for `.seq_cst`, with no implicit `dmb`. Instruction selection alone
+is not a proof of sequential consistency. The single global SC-order rules in
+§9.3 and the normative store-buffering, load-buffering, and IRIW outcomes in
+§9.3's “Normative Litmus Outcomes” remain mandatory evidence for this mapping.
+A target-lowering change is invalid unless its architecture argument and
+litmus suite preserve every required and forbidden outcome.
+
+Every admitted operation uses an exact-width implementation with no hidden
+lock, allocation, or helper: a selected LSE instruction or an LL/SC loop that
+restarts after every store-exclusive failure. There is no retry budget,
+timeout, synthetic compare failure, or fallback lock; an unsupported target
+is a hard capability error. This is a lock-free implementation class, not a
+wait-free guarantee for an individual agent: under contention an LL/SC caller
+may retry indefinitely. Reports identify the selected lowering and progress
+class explicitly.
+
+## v0.9 Register and `per_cpu` Memory Contract (Current)
+
+Chapter 8 is the sole owner of item-42 source semantics. In v0.9, explicit
+register placement is written `in register`; `#pin` is removed. Parameter and
+result placement is part of callable identity, while `var name: T in register`
+is a hard local-storage requirement.
+
+A direct `per_cpu` scalar, field, or element use contributes the ordinary
+memory event requested by its type plus the target-defined current-core base
+acquisition needed for that use. The base acquisition and offset calculation
+are part of that source access: they may not be cached, hoisted, or commoned
+with another `per_cpu` access. An ordinary scalar read or write contributes one
+load or store. A named bitstruct-field write is one logical source operation but
+uses its normal confined backing-word read-modify-write sequence: one load,
+`BitfieldInsert`, and one store, all through the same freshly acquired base.
+Those operations have the same volatility, ordering, race, and alias rules as
+their ordinary non-`per_cpu` counterparts. Atomic `per_cpu` storage is accessed
+only through item-52 atomic methods; the storage class itself adds no atomicity
+or ordering.
+
+There is no source-visible address, template address, or whole-aggregate copy
+event for `per_cpu` storage. `#percpu_offset_of` is a compile-time final-template
+byte-offset query and performs no current-core acquisition or memory access.
+The target availability and single-instance gate are defined by Chapter 8 and
+projected into target lowering by Chapter 11. Before item 92, reachable access
+requires `#target(..., per_cpu = single_instance_tpidr_el1)` and its EL1+,
+16-byte-aligned `TPIDR_EL1` live-base contract.
 
 ---
 
@@ -34,8 +166,9 @@ Its address and access dependencies are linked above.
 ARM64 is fundamentally register-oriented. Wyst surfaces this register file
 as a set of **reserved tokens** rather than as a set of variables. The
 register allocator owns variable-to-register mapping; the programmer
-expresses register affinity only via `#pin` (section 2.3) and manipulates
-registers directly only inside `#asm` blocks (section 2.9).
+expresses exact register placement only via the item-42 `in register` clauses
+and manipulates machine operands directly only inside checked `asm` bodies
+(section 2.9).
 
 General-purpose:
 
@@ -64,8 +197,8 @@ These tokens are reserved by the lexer. Using one as a variable, parameter,
 constant, function, struct field, or label name is a syntax error. They may
 appear only:
 
-1. As the argument of a `#pin(...)` directive on a declaration.
-2. Inside the body of an `#asm { ... }` block.
+1. In a legal item-42 `in register` placement position.
+2. In a catalog-authorized position inside the body of an `asm { ... }` block.
 
 A Wyst statement like:
 
@@ -84,24 +217,30 @@ c : u64 = a + b // lowers to `add xD, xA, xB` for whichever GPRs the allocator p
 ```
 
 If the operation must use specific registers (firmware contract, fixed ABI),
-pin the variables:
+place the local variables explicitly:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-a : u64 #pin(x1) = 1
-b : u64 #pin(x2) = 2
-c : u64 #pin(x0) = a + b   // guaranteed `add x0, x1, x2`
+var a: u64 in x1 = 1
+var b: u64 in x2 = 2
+var c: u64 in x0 = a + b   // guaranteed `add x0, x1, x2`
 ```
 
-If the operation must be emitted as a literal instruction (the rest of the
-function is also hand-scheduled, or the encoding is load-bearing), use `#asm`:
+If an instruction must be emitted literally and its source form is active on
+the checked-assembly surface, use `asm`. For example, the pinned pack admits a
+load-bearing aligned NOP:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#asm {
-    body { add x0, x1, x2 }
+asm align 16 {
+    nop
 }
 ```
+
+The pinned v0.9 pack does not activate `add` as a checked source form, so the
+fixed-local expression above is the supported way to request `add x0, x1, x2`.
+A literal checked `add` remains a support error until a later profile activates
+its exact row.
 
 ---
 
@@ -229,8 +368,9 @@ A plain access may not be moved across a volatile access in either direction.
 **Volatility does not emit CPU memory barriers.** ARM64's weak memory model
 allows the CPU's store buffer to reorder writes to different addresses unless
 explicit barrier instructions are present. For MMIO sequences where access
-order must be observed by the device, use `%dsb` or `%dmb` between writes.
-See section 1.3.1 for barrier runtime primitives and MMIO ordering patterns.
+order must be observed by the device, import `core.arch.barrier` and use
+`barrier.dsb` or `barrier.dmb` between writes. See section 1.3.1 for the
+qualified barrier catalog and MMIO ordering patterns.
 
 **Volatility and MMIO intent do not control cacheability.** Whether an address
 is cached or uncached is determined by the page-table entry for that address
@@ -239,6 +379,45 @@ A volatile or MMIO-intent access to an address mapped as Normal-Cacheable in the
 page tables will still go through the cache. Platform initialization code is
 responsible for configuring MMIO regions with Device memory attributes
 (e.g. Device-nGnRE) before accessing them.
+
+### Declared Hardware Access Events
+
+Placed register maps and standalone scalar `mmio` declarations use the same
+observable access contract as raw access through `@mmio T`, while retaining
+their stronger declaration and value-type rules from Chapters 6 and 11. Each
+permitted `.read()` is exactly one volatile MMIO-intent load and each permitted
+raw or named `.write(...)` is exactly one volatile MMIO-intent store. Every such
+event carries both `volatile_access` and `mmio` effects.
+
+The receiver and all arguments are evaluated once, left to right in written
+order, before the hardware event. A policy-aware named write constructs its
+complete backing value before its one store. A permitted `.modify(...)`
+evaluates the receiver and arguments first, then performs exactly one hardware
+read followed by exactly one hardware write. The pair is one compiler-ordering
+unit but is not an atomic read-modify-write: another observer may update the
+register between its read and write.
+
+Every declared MMIO access is a full two-way compiler-memory boundary. A pass
+must not eliminate, duplicate, merge, split, speculate, or reorder it, and no
+plain, volatile, MMIO, atomic, barrier, or opaque memory event may cross it in
+either direction. A complete modify may not be separated, interleaved with an
+unrelated compiler memory event, or reduced to a single event. Field projection
+from a captured register snapshot is an ordinary value operation and is not a
+second event.
+
+System-register declaration operations are also full two-way compiler-memory
+boundaries. Their machine-semantic effects, privilege gates, faults, and
+implicit-state facts come from the authenticated A64 catalog rather than from
+the MMIO effect pair. A system-register modify likewise keeps its exact one
+read/one write sequence together as one compiler-ordering unit.
+
+These boundaries create no synchronizes-with or happens-before edge and provide
+no atomicity. They emit no implicit `dmb`, `dsb`, or `isb`. Any architectural
+barrier required by a device or system register remains a separate explicit
+source operation. Effects and lowering reports distinguish scalar reads,
+snapshot reads, raw full-width writes, policy-aware named writes, complete
+read-modify-writes, compiler-only ordering, and actually emitted barrier
+instructions.
 
 ### Address Types
 
@@ -370,7 +549,7 @@ UARTDR : @mmio u32 = 0x0900_0000
 TXFF   :: u32          = 1 << 5
 
 while u32@[UARTFR] & TXFF != 0 {
-    %nop()
+    cpu.nop()
 }
 
 u32@[UARTDR] = byte
@@ -412,18 +591,23 @@ Wyst intentionally favors semantic clarity over optimizer complexity.
 
 ---
 
-## 1.3.1 Memory Access Directives and Volatility
+## 1.3.1 Volatility, Historical Per-Access Directives, and Current Barriers
 
-Wyst distinguishes four orthogonal mechanisms for controlling memory
+The `@volatile T` and `@mmio T` qualifier discussion remains applicable to
+v0.9. The `#acquire` and `#release` subsections and examples are a released
+v0.8 snapshot only; v0.9 uses the typed atomic methods in the current section
+above. The qualified barrier subsection is an active v0.9 contract.
+
+Wyst distinguishes five orthogonal mechanisms for controlling memory
 operations:
 
 | Mechanism                | Form                             | Scope                                      |
 | ------------------------ | -------------------------------- | ------------------------------------------ |
 | Volatile access contract | `@volatile T` or `@mmio T` type  | every access through the typed address     |
 | MMIO intent              | `@mmio T` type                   | every access through the typed address     |
-| Synchronization ordering | `#acquire`/`#release` per access | one load or one store                      |
-| CPU memory ordering      | `%dsb`/`%dmb`/`%isb()` barrier   | hardware and compiler fence at one point   |
-| Compiler-only ordering   | `%compiler_barrier()`            | compiler fence at one point; emits nothing |
+| Released-v0.8 synchronization ordering | `#acquire`/`#release` per access | one load or one store             |
+| CPU memory ordering      | `barrier.dsb(...)`/`barrier.dmb(...)`/`barrier.isb()` | hardware and compiler fence at one point |
+| Compiler-only ordering   | `barrier.compiler()`              | compiler fence at one point; emits nothing |
 
 Volatility is **always** type-based. There is no per-access `#volatile`
 directive in Wyst. Acquire/release are per-access because synchronization
@@ -607,51 +791,55 @@ applying it to a load is a compile error.
 
 ---
 
-### Barrier Runtime Primitives
+### Qualified Barrier Operations (Current v0.9)
 
 Barriers enforce memory ordering at the CPU level, independent of any
 specific memory access. They are required wherever the ARM64 weak memory
 model would otherwise permit the CPU to reorder accesses in ways the program
 cannot tolerate.
 
+The examples below assume `import core.arch { barrier }`; the category name is
+not ambient.
+
 <!-- wyst-contract: sketch -->
 ```wyst
-%dsb(sy)    // data synchronization barrier — full system
+barrier.dsb(.sy)    // data synchronization barrier — full system
             // stalls until all preceding memory accesses complete
             // lowers to: dsb sy
 
-%dsb(st)    // data synchronization barrier — stores only
+barrier.dsb(.st)    // data synchronization barrier — stores only
             // stalls until all preceding stores complete
             // lowers to: dsb st
 
-%dsb(ld)    // data synchronization barrier — loads only
+barrier.dsb(.ld)    // data synchronization barrier — loads only
             // stalls until all preceding loads complete
             // lowers to: dsb ld
 
-%dsb(ish)   // data synchronization barrier — inner shareable domain
+barrier.dsb(.ish)   // data synchronization barrier — inner shareable domain
             // lowers to: dsb ish
 
-%dsb(osh)   // data synchronization barrier — outer shareable domain
+barrier.dsb(.osh)   // data synchronization barrier — outer shareable domain
             // lowers to: dsb osh
 
-%dsb(nsh)   // data synchronization barrier — non-shareable domain
+barrier.dsb(.nsh)   // data synchronization barrier — non-shareable domain
             // lowers to: dsb nsh
 
-%dmb(sy)    // data memory barrier — full system
+barrier.dmb(.sy)    // data memory barrier — full system
             // orders but does not stall; preceding accesses are ordered
             // before subsequent ones but the CPU need not wait
             // lowers to: dmb sy
 
-%dmb(ish)   // data memory barrier — inner shareable domain
+barrier.dmb(.ish)   // data memory barrier — inner shareable domain
             // lowers to: dmb ish
 
-%isb()      // instruction synchronization barrier
+barrier.isb()      // instruction synchronization barrier
             // flushes the pipeline; required after writing system registers
             // that affect instruction fetch or decode
             // lowers to: isb
 ```
 
-The accepted `%dsb` and `%dmb` domain tokens are:
+The accepted `barrier.dsb` and `barrier.dmb` arguments are dot-prefixed
+compile-time cases from this closed vocabulary:
 
 | Token family | Meaning |
 | ------------ | ------- |
@@ -671,18 +859,18 @@ The accepted `%dsb` and `%dmb` domain tokens are:
 The option tokens match the ARM64 architecture manual shareability/access
 domain notation.
 
-`%dsb`, `%dmb`, and `%isb()` are also full two-way compiler memory fences:
+`barrier.dsb`, `barrier.dmb`, and `barrier.isb()` are also full two-way compiler memory fences:
 the compiler must not move any load, store, atomic, volatile access, barrier,
 or opaque side effect across them. This fusion is intentional policy, not an
-accident of the current backend. Use `%compiler_barrier()` when source needs
+accident of the current backend. Use `barrier.compiler()` when source needs
 only compiler ordering and must not emit a hardware barrier:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-%compiler_barrier()   // full compiler memory fence; lowers to no instruction
+barrier.compiler()   // full compiler memory fence; lowers to no instruction
 ```
 
-`%compiler_barrier()` has no hardware memory-ordering effect. It does not
+`barrier.compiler()` has no hardware memory-ordering effect. It does not
 flush pipelines, drain store buffers, order cache or TLB maintenance, or
 create a happens-before edge between agents.
 
@@ -717,65 +905,71 @@ u32@[UART_CR]   = 0x301     // re-enable UART
 <!-- wyst-contract: sketch -->
 ```wyst
 u32@[UART_CR] = 0x0         // disable UART
-%dsb(sy)                   // wait until disable is observed
+barrier.dsb(.sy)            // wait until disable is observed
 u32@[UART_IBRD] = 1
 u32@[UART_FBRD] = 40
-%dsb(sy)                   // wait until baud writes complete
+barrier.dsb(.sy)            // wait until baud writes complete
 u32@[UART_CR] = 0x301       // re-enable UART
 ```
 
-Use `%dsb(sy)` when you need the CPU to stall until all preceding stores
-are globally observed. Use `%dmb(sy)` when ordering is required but
+Use `barrier.dsb(.sy)` when you need the CPU to stall until all preceding stores
+are globally observed. Use `barrier.dmb(.sy)` when ordering is required but
 the stall is not — for example, in a sequence of independent register
 writes where ordering relative to subsequent code matters but latency
 between the writes themselves does not.
 
 ---
 
-### Spinlock Example
+### Spinlock Migration Example
 
-A complete acquire/release spinlock using `%cas` for the compare-and-swap
-and `#release` for the unlock store. `%cas` lowers to a single `casa`
-instruction on ARMv8.1 LSE or an `ldaxr`/`stxr` loop on baseline ARMv8.0.
+The released-v0.8 spelling used `%cas` for compare-and-swap and `#release`
+for the unlock store. The current v0.9 spelling uses the typed methods on
+opaque atomic storage:
+
+The example assumes `import core.arch { cpu }`; the category name is not
+ambient.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-LOCK_ADDR :: @u64 = 0x8000
+var lock: atomic<u64> = atomic<u64>(0)
 
-spin_lock :: () {
+fn spin_lock() {
   loop {
-    _, ok := %cas(LOCK_ADDR, 0 as.numeric u64, 1 as.numeric u64, order:acquire)
+    var (_, ok) = lock.compare_exchange(0, 1, .acquire)
     if ok {
       return
     }
-    %wfe()
+    cpu.wfe()
   }
 }
 
-spin_unlock :: () {
-  #release u64@[LOCK_ADDR] = 0 // store-release clears the lock
-  %sev() // wake any waiters
+fn spin_unlock() {
+  lock.store(0, .release) // store-release clears the lock
+  cpu.sev() // wake any waiters
 }
 ```
 
-This is the canonical spelling. An equivalent open-coded
-`ldaxr`/`stlxr` version appears at §2.9 as a worked example of `#asm`
-operand interpolation, but production code uses `%cas`. The full atomic
-runtime primitive surface — `%cas`, `%fetch_*`, `%xchg`, `%atomic_bit_*`,
-`%atomic_load`, `%atomic_store` — is specified in [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md).
+This is the canonical v0.9 spelling. The pinned v0.9 checked-assembly pack does
+not activate open-coded `ldaxr`/`stlxr`, so production code uses the typed
+atomic methods. The retired `%cas`, `%fetch_*`, `%xchg`, `%atomic_bit_*`,
+`%atomic_load`, and `%atomic_store` spellings survive only in item 53's
+non-parser [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv)
+and the labeled released-v0.8 historical snapshot in
+[chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md).
 
 ---
 
-### Relationship to `#schedule`
+### Relationship to Scheduling
 
-Volatile accesses are implicitly `#schedule(strict)` relative to other
-volatile accesses — the compiler will not reorder them relative to each
+Volatile accesses remain in source event order relative to other volatile
+accesses — the compiler will not reorder them relative to each
 other. This is a **compiler scheduling** constraint only. It does not prevent
-CPU reordering at the hardware level; use `%dsb` or `%dmb` for that.
+CPU reordering at the hardware level; use `barrier.dsb` or `barrier.dmb` for that.
 
-`#acquire` and `#release` establish ordering at the hardware level via
-`ldar`/`stlr`; they do not constrain assembler scheduling of non-memory
-operations.
+The released-v0.8 `#acquire` and `#release` forms established ordering at the
+hardware level via `ldar`/`stlr`; they did not constrain assembler scheduling
+of non-memory operations. Current v0.9 expresses those same orderings through
+`.load(.acquire)` and `.store(value, .release)` on atomic storage.
 
 ---
 
@@ -876,33 +1070,31 @@ The model recognizes these source memory events:
 | Volatile store | `T@[addr] = val` where `addr : @volatile T` | yes | compiler-only fence |
 | MMIO-intent load | `T@[addr]` where `addr : @mmio T` | no | compiler-only fence plus `mmio` effect |
 | MMIO-intent store | `T@[addr] = val` where `addr : @mmio T` | yes | compiler-only fence plus `mmio` effect |
-| Acquire load | `#acquire T@[addr]` | no | acquire |
-| Release store | `#release T@[addr] = val` | yes | release |
-| Relaxed atomic load/store | `%atomic_load` / `%atomic_store` with `order: relaxed` | load: no, store: yes | no |
-| Seq-cst atomic load/store | `%atomic_load` / `%atomic_store` with `order: seq_cst` | load: no, store: yes | acquire/release plus SC |
-| Atomic RMW | `%cas`, `%fetch_*`, `%xchg`, `%atomic_bit_*` | success/RMW: yes; failed `%cas`: no | by `order:` |
+| Acquire atomic load | `atomic_addr.load(.acquire)` | no | acquire |
+| Release atomic store | `atomic_addr.store(val, .release)` | yes | release |
+| Relaxed atomic load/store | `.load(.relaxed)` / `.store(val, .relaxed)` | load: no, store: yes | no |
+| Seq-cst atomic load/store | `.load(.seq_cst)` / `.store(val, .seq_cst)` | load: no, store: yes | acquire/release plus SC |
+| Atomic RMW | `.compare_exchange`, `.exchange`, every `.fetch_*`, and both bit methods | success/RMW: yes; failed compare-exchange: no | by the closed order argument |
 
-An **atomic event** is a `#acquire` load, a `#release` store, a relaxed or
-`seq_cst` atomic load/store, or an atomic RMW. Atomic events on the same
+An **atomic event** is an ordered atomic load/store or an atomic RMW on an
+`atomic<T>` binding or `@atomic<T>` address. Atomic events on the same
 coherence location are single-copy atomic and do not tear. A read-modify-write
 (RMW) event contains a read part and, when it succeeds or is an unconditional
 RMW, a write part. A successful RMW's read and write are adjacent in the
-location's modification order. A failed `%cas` is an atomic read with no write.
+location's modification order. A failed `compare_exchange` is an atomic read
+with no write.
 
 Volatility is determined only by the static address type at the access site.
 Volatile and MMIO-intent accesses are observable compiler events, but they are
-not synchronization events unless the access also uses `#acquire`, `#release`,
-or an atomic intrinsic order that synchronizes.
-An atomic intrinsic whose address operand has type `@volatile T` or `@mmio T`
-is both atomic and volatile; `@mmio T` also adds MMIO intent. The strictest
-compiler-ordering, synchronizes-with, and data-race rules for the combined
-event all apply.
+not synchronization events. Atomic storage cannot be volatile- or
+MMIO-qualified and requires atomic-capable Normal memory; an ordinary,
+`@volatile T`, or `@mmio T` address never acquires atomic ordering implicitly.
 
-Barrier runtime primitives (`%dsb`, `%dmb`, `%isb()`) and
-`%compiler_barrier()` are **barrier events**, not loads or stores. They are in
+Qualified barrier operations (`barrier.dsb`, `barrier.dmb`, `barrier.isb()`)
+and `barrier.compiler()` are **barrier events**, not loads or stores. They are in
 source event order, constrain compiler event order, and have the hardware
-meaning described in §9.9. `%compiler_barrier()` has no architectural event.
-`#schedule(strict)` boundaries are compiler scheduling boundaries only.
+meaning described in §9.9. `barrier.compiler()` has no architectural event.
+`schedule source` boundaries are compiler scheduling boundaries only.
 
 ---
 
@@ -920,16 +1112,16 @@ For each coherence location used by atomic events, Wyst also defines a
 per-location modification order for that exact byte range, written **mo(X)**.
 `mo(X)` is a total order of the initial write, every access-atomic write to X,
 and every successful atomic RMW write to X. That includes plain, volatile,
-MMIO-intent, `#release`, atomic-store, and RMW writes when they touch the exact
-range X as one access-atomic event. Non-access-atomic writes appear only in the
-per-byte modification orders for their sub-accesses.
+MMIO-intent, atomic-store, and RMW writes when they touch the exact range X as
+one access-atomic event. Non-access-atomic writes appear only in the per-byte
+modification orders for their sub-accesses.
 
 `mo(X)` is consistent with the per-byte modification orders for X. RMW events
 are linearized at one point in `mo(X)`: their read part reads the immediately
 preceding value in `mo(X)`, and their write part, if any, follows that read
-without an intervening write to X. This is what makes the canonical `%cas` lock
-/ `#release` unlock pattern a defined synchronization pattern rather than an
-illicit mixed access.
+without an intervening write to X. This is what makes the canonical
+`.compare_exchange(..., .acquire)` lock / `.store(..., .release)` unlock
+pattern a defined synchronization pattern rather than an illicit mixed access.
 
 ### Reads-From
 
@@ -938,7 +1130,8 @@ Each load-like event has a **reads-from** relation:
 - An access-atomic scalar or atomic load from X reads from exactly one write W
   to X.
 - A successful RMW reads from the write immediately before it in `mo(X)`.
-- A failed `%cas` reads from one write in `mo(X)` and performs no write.
+- A failed `compare_exchange` reads from one write in `mo(X)` and performs no
+  write.
 - A non-access-atomic load reads from one write per sub-access. A wider load
   may therefore observe bytes from different writes.
 - A volatile or MMIO-intent load reads from the hardware-presented value at its
@@ -978,12 +1171,13 @@ Every atomic order has this language-level meaning:
 | `relaxed` | Atomicity and participation in `mo(X)` only. No synchronizes-with edge and no cross-location ordering. |
 | `acquire` | The read side is an acquire operation. Later source events in the same agent may not be observed before it. If it reads from a release sequence, it synchronizes with that release sequence's head. |
 | `release` | The write side is a release operation. Earlier source events in the same agent may not be observed after it. It can head a release sequence. |
-| `acqrel` | RMW-only. The event is both acquire and release; it can synchronize as a read and head or extend a release sequence as a write. |
+| `acq_rel` | RMW-only. The event is both acquire and release; it can synchronize as a read and head or extend a release sequence as a write. |
 | `seq_cst` | The event has acquire/release strength as applicable and participates in the single global sequentially consistent order. |
 
-`%atomic_load` supports only `relaxed` and `seq_cst`; acquire loads use
-`#acquire`. `%atomic_store` supports only `relaxed` and `seq_cst`; release
-stores use `#release`. RMW intrinsics support the full order set.
+`.load` accepts `.relaxed`, `.acquire`, and `.seq_cst`; `.store` accepts
+`.relaxed`, `.release`, and `.seq_cst`. `exchange`, `compare_exchange`, every
+`fetch_*`, and both bit methods accept all five closed orders. No method has a
+default order or runtime-dispatched order.
 
 ### Release Sequences
 
@@ -991,13 +1185,13 @@ Wyst supports release sequences. A **release sequence** on coherence location X
 is the maximal contiguous sequence in `mo(X)` that starts with a release write
 or release RMW H and continues through atomic RMW events on X, from any agent,
 where each RMW reads from the immediately previous member of the sequence.
-Plain stores, relaxed atomic stores, failed `%cas` reads, or writes to another
-location end the sequence.
+Plain stores, relaxed atomic stores, failed `compare_exchange` reads, or writes
+to another location end the sequence.
 
-The sequence head H may be a `#release` store, a `seq_cst` store, or a
-`release`/`acqrel`/`seq_cst` RMW. RMW operations that extend a release sequence
-do not need release ordering themselves; their read-from chain carries the
-sequence.
+The sequence head H may be a `.release`/`.seq_cst` atomic store or a
+`.release`/`.acq_rel`/`.seq_cst` RMW. RMW operations that extend a release
+sequence do not need release ordering themselves; their read-from chain
+carries the sequence.
 
 ### Synchronizes-With
 
@@ -1005,12 +1199,12 @@ The **synchronizes-with** relation, written **sw**, contains these edges:
 
 1. A release sequence head H on X synchronizes-with an acquire read A on X when
    A reads from any member of that release sequence. `seq_cst` loads and RMWs
-   count as acquire reads; `acquire`, `acqrel`, and `seq_cst` RMWs count as
+   count as acquire reads; `acquire`, `acq_rel`, and `seq_cst` RMWs count as
    acquire reads.
 2. A release-side architectural barrier B1 synchronizes-with an acquire-side
    architectural barrier B2 when all of these hold:
-   - B1 is `%dmb` or `%dsb` with an all-access or store-covering domain.
-   - B2 is `%dmb` or `%dsb` with an all-access or load-covering domain.
+   - B1 is `barrier.dmb` or `barrier.dsb` with an all-access or store-covering domain.
+   - B2 is `barrier.dmb` or `barrier.dsb` with an all-access or load-covering domain.
    - B1 is source-ordered before a store S to flag location F.
    - A load L from F reads-from S.
    - L is source-ordered before B2.
@@ -1019,8 +1213,8 @@ The **synchronizes-with** relation, written **sw**, contains these edges:
 
 Barrier-mediated synchronization is intentionally explicit and domain
 sensitive. Two agents issuing barriers without a read-from edge on a flag do
-not synchronize. `%compiler_barrier()` never synchronizes with another agent.
-`%isb()` orders instruction-side effects for one agent; by itself it does not
+not synchronize. `barrier.compiler()` never synchronizes with another agent.
+`barrier.isb()` orders instruction-side effects for one agent; by itself it does not
 create a memory synchronizes-with edge.
 
 ### Happens-Before
@@ -1040,9 +1234,8 @@ ordering relation used by visible-value, race, and transformation checks.
 ### Global Sequentially Consistent Order
 
 All `seq_cst` atomic events participate in one total order, written **S**. S
-contains every `%atomic_load(..., order: seq_cst)`, `%atomic_store(...,
-order: seq_cst)`, and RMW intrinsic with `order: seq_cst`. S must be consistent
-with:
+contains every `.load(.seq_cst)`, `.store(value, .seq_cst)`, and atomic RMW
+method requested with `.seq_cst`. S must be consistent with:
 
 - happens-before between `seq_cst` events;
 - each location's `mo(X)` for `seq_cst` writes and successful `seq_cst` RMWs
@@ -1076,14 +1269,16 @@ Acquire/release synchronization is the preferred CPU-to-CPU spelling:
 
 <!-- wyst-contract: sketch -->
 ```wyst
+var flag: atomic<u64> = atomic<u64>(0)
+
 // Agent 1
-u64@[buf] = data
-#release u64@[flag] = 1
+buf.store(data)
+flag.store(1, .release)
 
 // Agent 2
-seen = #acquire u64@[flag]
+const seen: u64 = flag.load(.acquire)
 if seen == 1 {
-    data = u64@[buf]
+    const data: u64 = buf.load()
 }
 ```
 
@@ -1097,12 +1292,12 @@ Barrier-mediated synchronization is valid but less composable:
 ```wyst
 // Agent 1
 u64@[buf] = data
-%dmb(ishst)
+barrier.dmb(.ishst)
 u64@[flag] = 1
 
 // Agent 2
 seen = u64@[flag]
-%dmb(ishld)
+barrier.dmb(.ishld)
 if seen == 1 {
     data = u64@[buf]
 }
@@ -1127,7 +1322,7 @@ that an instruction mnemonic changed.
 | Load buffering | Each agent loads one atomic location and then stores the other. | With `relaxed`, `r0 == 1 && r1 == 1` is allowed. With `seq_cst`, the same outcome is forbidden because it creates an SC cycle. |
 | Independent reads of independent writes (IRIW) | Two agents publish independent writes; two readers observe the locations in opposite orders. | Release/acquire permits the split observation when the reads synchronize only per location. `seq_cst` forbids the split observation through the global SC order. |
 | Release sequence | A release store to `flag` is followed in `mo(flag)` by a relaxed RMW that reads it; a later acquire load reads the RMW value. | The acquire synchronizes with the release-sequence head, so stale protected data is forbidden. |
-| Barrier message passing | Plain payload write, `%dmb(ishst)`, plain flag store; flag load, `%dmb(ishld)`, payload read. | If the flag load reads from the flag store and the domain covers both locations, stale payload is forbidden. Replacing the barriers with `%compiler_barrier()` allows the stale payload because no inter-agent sw edge exists. |
+| Barrier message passing | Plain payload write, `barrier.dmb(.ishst)`, plain flag store; flag load, `barrier.dmb(.ishld)`, payload read. | If the flag load reads from the flag store and the domain covers both locations, stale payload is forbidden. Replacing the barriers with `barrier.compiler()` allows the stale payload because no inter-agent sw edge exists. |
 | Mixed atomic/plain access | One agent performs a relaxed atomic store while another performs a plain load of the same scalar location without hb. | The outcome is a data race classified as target-defined for access-atomic scalar accesses, not optimizer-undefined behavior. |
 | Compiler scheduling and aliasing | A store followed by a load is compared with a load/store reordering. | Reordering may-alias accesses is forbidden when it admits a stale-load outcome. Reordering proven disjoint accesses is allowed when the transformed outcomes are a subset of the source outcomes. |
 
@@ -1147,15 +1342,15 @@ was emitted" or "`stlr` was emitted" is incomplete for Wyst `seq_cst`.
 
 The compiler emits a **compiler event order** for each agent: the order of
 loads, stores, atomics, volatile accesses, barrier events, calls with memory
-effects, and opaque `#asm` effects in the instruction stream. A transformation
+effects, and non-pure `asm` effects in the instruction stream. A transformation
 is legal only when every source execution admitted by the emitted program has a
 corresponding source execution admitted by this chapter with the same observable
 volatile, MMIO, atomic, barrier, trap, call, and plain-memory effects.
 
 Compiler event order is more constrained than architectural event order. For
 example, a volatile load must remain textually ordered in compiler event order,
-but the target may still need `%dmb` or `%dsb` for hardware ordering relative to
-another agent. Conversely, `%compiler_barrier()` constrains compiler event
+but the target may still need `barrier.dmb` or `barrier.dsb` for hardware ordering relative to
+another agent. Conversely, `barrier.compiler()` constrains compiler event
 order but produces no architectural event.
 
 ### Closed Alias Proof List
@@ -1204,9 +1399,9 @@ Given source event A before source event B, may the compiler emit B before A?
 | Atomic SC | no | no | no | no | no | no | no |
 | Barrier/opaque | no | no | no | no | no | no | no |
 
-"Barrier/opaque" includes `%dsb`, `%dmb`, `%isb()`, `%compiler_barrier()`,
+"Barrier/opaque" includes `barrier.dsb`, `barrier.dmb`, `barrier.isb()`, `barrier.compiler()`,
 strict schedule boundaries, calls whose memory effects are not proven absent,
-and opaque `#asm` blocks. A data, control, or address dependency is always a
+and non-pure `asm` blocks. A data, control, or address dependency is always a
 separate reason that reordering is illegal.
 
 ### Allowed Transformations
@@ -1242,9 +1437,9 @@ The compiler must not:
   MMIO intent, `@T` parameter names, or source casts;
 - eliminate, duplicate, merge, split, speculate, or reorder volatile or
   MMIO-intent accesses except as required by the explicit access itself;
-- move any memory event across `%dsb`, `%dmb`, `%isb()`,
-  `%compiler_barrier()`, a strict schedule boundary, or an opaque memory-effect
-  call or `#asm` block;
+- move any memory event across `barrier.dsb`, `barrier.dmb`, `barrier.isb()`,
+  `barrier.compiler()`, a strict schedule boundary, or an opaque memory-effect
+  call or non-pure `asm` block;
 - weaken an atomic order, remove an atomic event, split one atomic RMW into
   separately observable source events, or synthesize an atomic event the source
   did not request;
@@ -1311,16 +1506,18 @@ The canonical spinlock pattern is not a mixed-access race:
 
 <!-- wyst-contract: sketch -->
 ```wyst
+var lock: atomic<u64> = atomic<u64>(0)
+
 // acquire
-_, ok := %cas(lock, 0 as.numeric u64, 1 as.numeric u64, order: acquire)
+var (_, ok) = lock.compare_exchange(0, 1, .acquire)
 
 // release
-#release u64@[lock] = 0
+lock.store(0, .release)
 ```
 
 Both operations are atomic events on the same coherence location. The release
-store heads a release sequence; a later acquire `%cas` that reads the released
-value synchronizes with it.
+store heads a release sequence; a later acquire `compare_exchange` that reads
+the released value synchronizes with it.
 
 ### Volatile and MMIO Races
 
@@ -1445,13 +1642,14 @@ is no 16-byte single-copy atomic aggregate assignment.
 
 A concurrent agent reading `dst` while another agent issues this copy may observe
 `(old_x, new_y)` or `(new_x, old_y)` — values that no agent ever stored as a whole
-`Point`. Use `#acquire`/`#release` on a flag, atomic runtime primitives (§1.3.2),
-or interrupt masking when wider-than-8-byte aggregates are shared across agents.
+`Point`. Use typed acquire/release atomic methods on a flag, the other typed
+atomic methods (§1.3.2), or interrupt masking when wider-than-8-byte aggregates
+are shared across agents.
 
 #### Bitfield case
 
 Bitfield types (§1.6.1) use an unsigned `u8`/`u16`/`u32`/`u64` backing
-integer, so a bitfield read-modify-write itself never spans the
+integer, so a bitstruct field read-modify-write itself never spans the
 single-copy-atomic width and is not subject to pair-store tearing. The
 Bitfield Read-Modify-Write subsection below covers the _separate_ hazard of
 two agents writing different fields of the same backing word.
@@ -1465,19 +1663,19 @@ explicit 16-byte access or copy mode on platforms that support it; until that fe
 gate is added, the baseline scalar-chunk aggregate-copy rule stands and all
 multi-word aggregate copies are non-atomic.
 
-### Bitfield Read-Modify-Write
+### Bitstruct Field Read-Modify-Write
 
-A bitfield write `val.field = x` is a **read-modify-write**: the compiler reads the
+A bitstruct field write `val.field = x` is a **read-modify-write**: the compiler reads the
 backing word, modifies the target field, and writes the backing word back. This sequence
 is **not atomic** with respect to concurrent writes to other fields of the same backing
 word.
 
-Two agents concurrently writing different fields of the same bitfield backing word race
+Two agents concurrently writing different fields of the same bitstruct backing word race
 on the overlapping bytes. The result observes `Indeterminate bits` and is likely to
 corrupt one or both writes.
 
-Programs must not allow concurrent writes to different fields of the same bitfield backing
-word without external serialization. For MMIO registers this means bitfield writes must
+Programs must not allow concurrent writes to different fields of the same bitstruct backing
+word without external serialization. For MMIO registers this means bitstruct field writes must
 not be used from interrupt handlers that share a register with the interrupted code, unless
 the register is exclusively owned by one context at a time.
 
@@ -1506,7 +1704,7 @@ To share mutable data between foreground code and an interrupt handler on the sa
 1. Shared locations must be declared as `@volatile T` so that every access through them
    is a compiler barrier; the compiler cannot cache the value in a register across an
    interrupt point.
-2. For writes that must complete before the handler reads them, issue `%dsb(sy)` after the
+2. For writes that must complete before the handler reads them, issue `barrier.dsb(.sy)` after the
    write and before the signaling store.
 3. For multi-word data that must be read or written consistently, disable interrupts during
    the critical section.
@@ -1518,13 +1716,13 @@ result_ready : @volatile u64 = 0x4008      // volatility lives in the type
 
 // Foreground: write result and signal handler
 u64@[result_buf]   = computed_value         // write result (plain)
-%dsb(sy)                                   // ensure result is globally observable
+barrier.dsb(.sy)                           // ensure result is globally observable
 u64@[result_ready] = 1                       // signal (volatile via type)
 
 // Interrupt handler: read signal and consume result
 flag = u64@[result_ready]                   // volatile via type — compiler cannot cache
 if flag == 1 {
-    %dsb(ld)                               // ensure flag load completes before result read
+    barrier.dsb(.ld)                       // ensure flag load completes before result read
     val = u64@[result_buf]                  // safe: dsb orders this after the flag read
 }
 ```
@@ -1536,20 +1734,22 @@ does not apply. Use the acquire-release model:
 
 <!-- wyst-contract: sketch -->
 ```wyst
+var result_ready: atomic<u64> = atomic<u64>(0)
+
 // Producing core
-u64@[result_buf]        = computed_value    // write result
-#release u64@[result_ready] = 1             // store-release: result_buf ordered before this
+result_buf.store(computed_value) // write result
+result_ready.store(1, .release)  // result_buf ordered before this
 
 // Handler (any core)
-flag = #acquire u64@[result_ready]          // load-acquire: subsequent reads ordered after
+const flag: u64 = result_ready.load(.acquire)
 if flag == 1 {
-    val = u64@[result_buf]                  // happens-after the release; result is visible
+    const val: u64 = result_buf.load() // happens-after release; result is visible
 }
 ```
 
 ---
 
-## 9.8 Initial Values
+## 9.8 Initial Values and `MaybeUninit<T>` (Current v0.9)
 
 Memory locations not explicitly initialized contain `Indeterminate bits`:
 
@@ -1565,8 +1765,8 @@ initialization is a compile-time error.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-main :: () -> u64 {
-  x : u64
+fn main() -> u64 {
+  var x: u64
   return x // error[E0204]: local 'x' is read before it is initialized
 }
 ```
@@ -1576,21 +1776,24 @@ the operation:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-main :: () -> u64 {
-  storage : MaybeUninit<u64>
-  first : u64 = %read_uninit(storage)
-  %write_uninit(storage, 7)
-  second : u64 = %read_uninit(storage)
+fn main() -> u64 {
+  var storage = uninit<u64>()
+  const first: u64 = storage.read_uninit()
+  storage.write(7)
+  const second: u64 = storage.read()
   return first + second
 }
 ```
 
 `MaybeUninit<T>` reserves storage with the same layout, size, alignment, and
 calling-convention footprint as `T`, but it does not initialize a `T` value and
-does not imply automatic zeroing. `%read_uninit(storage)` is the explicit
+does not imply automatic zeroing. `storage.read_uninit()` is the explicit
 indeterminate read operation; it returns a `T` value whose bits come from the
-raw storage. `%write_uninit(storage, value)` writes a `T` value into that raw
-storage. After an indeterminate read is observed, the result is an ordinary
+raw storage and leaves the initialization state unchanged.
+`storage.write(value)` performs one complete typed write and establishes
+compiler-proved initialization, after which `storage.read()` is valid.
+`storage.assume_init()` is the trusted assertion form when no proof is
+available. After an indeterminate read is observed, the result is an ordinary
 typed value. It is never LLVM-style poison or `undef`, and the compiler must
 not use the read as a reason to delete or invent unrelated behavior.
 
@@ -1598,22 +1801,24 @@ Initialization state is tracked for ordinary locals as a whole binding on each
 source path. Fields and array elements inherit the initialization state of
 their enclosing ordinary storage; assigning one field or element does not make
 the whole ordinary aggregate readable if the aggregate itself was never
-initialized. Current raw-storage intrinsics operate on the whole
+initialized. Current raw-storage methods operate on the whole
 `MaybeUninit<T>` object. Future field- or element-granular raw APIs must keep
 the same explicit-read and explicit-write rule and must not introduce implicit
 zeroing.
 
-Moving `MaybeUninit<T>` moves the raw storage wrapper and its bytes. It does
-not initialize, read, or destroy a hidden `T`. Wyst currently has no implicit
-destructors or cleanup hooks for ordinary locals; `MaybeUninit<T>` therefore
-adds no hidden cleanup obligation. If a later language version adds destructors,
-the destructor for `T` must not run merely because `MaybeUninit<T>` storage
-goes out of scope.
+`MaybeUninit<T>` is non-copyable and cannot be passed or returned by value,
+embedded in an aggregate, converted, relensed, or used by ordinary value
+operations. It does not initialize, read, or destroy a hidden `T`. Wyst
+currently has no implicit destructors or cleanup hooks for ordinary locals;
+`MaybeUninit<T>` therefore adds no hidden cleanup obligation. If a later
+language version adds destructors, the destructor for `T` must not run merely
+because `MaybeUninit<T>` storage goes out of scope.
 
 Register-resident and stack-resident storage have identical source semantics.
-`#pin(x19)` or allocator placement may change where the storage lives, but not
+An explicit local `in x19` placement or allocator placement may change where
+the storage lives, but not
 whether an ordinary read is legal and not whether a raw read must be spelled
-with `%read_uninit`.
+with `.read_uninit()`.
 
 ---
 
@@ -1628,18 +1833,18 @@ Every guarantee Wyst makes is backed by a specific ARM64 hardware mechanism:
 | Plain store (via `@T`)             | `str`             | No ordering guarantee                                                                  |
 | Volatile load (via `@volatile T` or `@mmio T`)  | `ldr`             | Compiler barrier only; cacheability from page-table MAIR                               |
 | Volatile store (via `@volatile T` or `@mmio T`) | `str`             | Compiler barrier only; cacheability from page-table MAIR                               |
-| `#acquire` load                    | `ldar`            | One-way fence: all subsequent accesses observed after this load                        |
-| `#release` store                   | `stlr`            | One-way fence: all preceding accesses observed before this store                       |
-| `%dsb(sy)`                         | `dsb sy`          | Stall until all preceding explicit memory accesses are globally observed (full system) |
-| `%dsb(st)`                         | `dsb st`          | Stall until all preceding explicit stores are globally observed                        |
-| `%dsb(ld)`                         | `dsb ld`          | Stall until all preceding explicit loads are globally observed                         |
-| `%dsb(ish)`                        | `dsb ish`         | `dsb sy` scoped to inner shareable domain                                              |
-| `%dsb(osh)`                        | `dsb osh`         | `dsb sy` scoped to outer shareable domain                                              |
-| `%dsb(nsh)`                        | `dsb nsh`         | `dsb sy` scoped to non-shareable domain                                                |
-| `%dmb(sy)`                         | `dmb sy`          | Order preceding accesses before subsequent ones; no pipeline stall                     |
-| `%dmb(ish)`                        | `dmb ish`         | `dmb sy` scoped to inner shareable domain                                              |
-| `%isb()`                           | `isb`             | Flush pipeline; all preceding instructions retire before subsequent fetch              |
-| `%compiler_barrier()`              | none              | Full compiler fence only; no hardware memory-ordering guarantee                        |
+| Atomic `.load(.acquire)`           | `ldar`            | One-way fence: all subsequent accesses observed after this load                        |
+| Atomic `.store(value, .release)`   | `stlr`            | One-way fence: all preceding accesses observed before this store                       |
+| `barrier.dsb(.sy)`                 | `dsb sy`          | Stall until all preceding explicit memory accesses are globally observed (full system) |
+| `barrier.dsb(.st)`                 | `dsb st`          | Stall until all preceding explicit stores are globally observed                        |
+| `barrier.dsb(.ld)`                 | `dsb ld`          | Stall until all preceding explicit loads are globally observed                         |
+| `barrier.dsb(.ish)`                | `dsb ish`         | `dsb sy` scoped to inner shareable domain                                              |
+| `barrier.dsb(.osh)`                | `dsb osh`         | `dsb sy` scoped to outer shareable domain                                              |
+| `barrier.dsb(.nsh)`                | `dsb nsh`         | `dsb sy` scoped to non-shareable domain                                                |
+| `barrier.dmb(.sy)`                 | `dmb sy`          | Order preceding accesses before subsequent ones; no pipeline stall                     |
+| `barrier.dmb(.ish)`                | `dmb ish`         | `dmb sy` scoped to inner shareable domain                                              |
+| `barrier.isb()`                    | `isb`             | Flush pipeline; all preceding instructions retire before subsequent fetch              |
+| `barrier.compiler()`               | none              | Full compiler fence only; no hardware memory-ordering guarantee                        |
 
 **`ldar` one-way semantics:** The load value is observed, and all subsequent accesses in
 program order are observed after it. Preceding accesses may be observed before or after
@@ -1654,35 +1859,38 @@ accesses to any memory type are globally observed by all agents in the full syst
 shareability domain. `dsb` is stronger than `dmb`; use `dmb` when the stall is not
 required.
 
-**Beyond this model:** The ARM64 VMSA has additional mechanisms (load-exclusive/store-
-exclusive pairs for RMW atomicity, cache maintenance instructions, TLB invalidation) that
-are accessible through `#asm` but are not exposed as Wyst language primitives. For
-lock-free data structures, explicit cache maintenance, or TLB management, use `#asm`
-directly. `#asm` blocks are treated as full two-way compiler memory fences — the compiler
-assumes they may read or write any memory location.
+**Beyond this model:** The ARM64 VMSA has additional mechanisms
+(load-exclusive/store-exclusive pairs for RMW atomicity, cache maintenance
+instructions, and TLB invalidation). The pinned v0.9 checked-assembly pack does
+not activate those source forms; use the corresponding Wyst intrinsic where one
+exists, otherwise the compiler rejects the operation until a later profile adds
+its exact row. An admitted non-pure `asm` block is a full two-way compiler memory
+fence, with architectural effects and memory ranges derived from parsed rows.
 
 ---
 
-## 9.10 Known Hardware Hazards
+## 9.10 Potential Hardware Sensitivities
 
-Certain instruction patterns are legal and well-defined but trigger
-microarchitectural penalties that are invisible at the ISA level. Wyst
-documents these patterns so that `wyst explain` can flag them and programmers
-can avoid them.
+Certain instruction patterns are legal and well-defined but can behave
+differently across microarchitectures. These observations are non-normative:
+the language assigns no latency, cache, store-buffer, or throughput result to
+them, and the current compiler inspection reports do not diagnose or price
+them. A future modeled or measured performance surface must identify its model
+or observation and carry the common epistemic metadata before making such a
+claim.
 
 ---
 
 ### 9.10.1 Store-to-Load Forwarding (STLF)
 
-Modern ARM64 cores maintain a **store buffer** that allows a load to read a
-value from a preceding store before it reaches the cache. When forwarding
-succeeds, the load completes in a few cycles. When it fails, the core must
-drain the store buffer and re-read from cache, adding 10–20 cycles of penalty.
+ARM64 implementations commonly maintain a **store buffer** and may forward a
+preceding stored value to a later load. Whether forwarding occurs and its
+performance effect depend on the specific core, memory state, address proof,
+and dynamic execution. Source shape alone does not prove either outcome.
 
-#### When Forwarding Succeeds
+#### Common Forwarding-Compatible Shape
 
-Forwarding succeeds when the load reads exactly the bytes written by the most
-recent store to the same address:
+Exact-width, exact-address accesses are a commonly compatible shape:
 
 - Store and load are the same width and alignment.
 - The load address is identical to the store address.
@@ -1690,30 +1898,29 @@ recent store to the same address:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// STLF succeeds: matching width and alignment
+// Commonly forwarding-compatible: matching width and alignment
 u64@[@buf] = value
 result := u64@[@buf]        // forwarded from store buffer
 ```
 
-#### When Forwarding Fails
+#### Potentially Forwarding-Resistant Shapes
 
-Forwarding fails when the load cannot be satisfied entirely from a single
-store buffer entry. Common failure cases:
+The following shapes can prevent or complicate forwarding on some cores:
 
-| Pattern                                     | Example                                           | Problem                                          |
+| Pattern                                     | Example                                           | Structural concern                               |
 | ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
-| Width mismatch (narrow store, wider load)   | `u8@[p8] = x` then `u32@[p8 as.lens @u32]`          | Load spans bytes not in store buffer entry       |
-| Width mismatch (wider store, narrower load) | `u64@[p64] = x` then `u32@[p64 as.lens @u32]`       | Some cores forward; others do not - non-portable |
-| Partial overlap                             | Store to `p8`, load from `p8 + 2` where `p8 : @u8` | Load partially overlaps the store                |
-| Multiple stores                             | `u32@[p32] = a` then `u32@[p32 + 1] = b` then `u64@[p32 as.lens @u64]` | Load needs data from two store buffer entries    |
+| Width mismatch (narrow store, wider load)   | `u8@[p8] = x` then `u32@[p8 as.lens @u32]`        | The load spans bytes outside the narrow store    |
+| Width mismatch (wider store, narrower load) | `u64@[p64] = x` then `u32@[p64 as.lens @u32]`     | Forwarding rules vary by implementation          |
+| Partial overlap                             | Store to `p8`, load from `p8 + 2` where `p8 : @u8` | The accesses overlap without identical coverage |
+| Multiple stores                             | `u32@[p32] = a` then `u32@[p32 + 1] = b` then `u64@[p32 as.lens @u64]` | The load spans multiple source stores          |
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// STLF failure: narrow store followed by wider load
+// Potentially forwarding-resistant: narrow store followed by wider load
 buf : @u8 = 0x4000
 
 u8@[buf] = flags
-combined := u32@[buf as.lens @u32] // penalty: ~10-20 cycle stall
+combined := u32@[buf as.lens @u32]
 
 // STLF failure: constructing a value from sub-word stores
 p : @u8 = 0x5000
@@ -1722,51 +1929,46 @@ p64 : @u64 = p as.lens @u64
 
 u32@[p32]     = lo
 u32@[p32 + 1] = hi
-full := u64@[p64]            // penalty: two store buffer entries
+full := u64@[p64]
 ```
 
-#### Bitfield RMW and STLF
+#### Bitstruct RMW and STLF
 
-Bitfield field writes compile to read-modify-write sequences using `ubfx` and
+Bitstruct field writes compile to read-modify-write sequences using bit-field
+extract/insert operations such as `ubfx` and
 `bfi` (see [chapter-06-types.md §1.6.1](chapter-06-types.md)). A field write followed by a
 differently-sized read of the backing integer can trigger STLF failure:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-status :: bitfield(u32) {
-    ready : bits(0, 0)
-    error : bits(1, 1)
-    count : bits(2, 15)
+bitstruct Status: u32 {
+    READY: bool at 0
+    ERROR: bool at 1
+    COUNT: u16 at 2..=15
 }
 
 // Potential STLF hazard: field write is a u32 RMW,
 // but if the compiler or programmer batches sub-word
 // stores, a subsequent full read may stall.
-reg.ready = 1
-reg.error = 0
-reg.count = 42
-raw := reg as.bits u32     // safe: all writes are full-width u32 RMW
+reg.READY = true
+reg.ERROR = false
+reg.COUNT = 42
+const raw: u32 = bitcast<u32>(reg) // all writes are full-width u32 RMW
 ```
 
-In practice, bitfield field writes in Wyst are full-width RMW on the backing
+In practice, bitstruct field writes in Wyst are full-width RMW on the backing
 type, so they do not cause width-mismatch STLF failures by themselves. The
-hazard arises when mixing bitfield access with raw sub-word stores to the same
+hazard arises when mixing bitstruct access with raw sub-word stores to the same
 address, or when accessing the same memory at different widths through pointer
 casts.
 
-#### `wyst explain` Diagnostics
+#### Compiler Inspection Boundary
 
-`wyst explain` should flag the following patterns as potential STLF hazards:
-
-- A store of width N followed by a load of width M ≠ N at the same base
-  address (or provably overlapping addresses).
-- Two or more stores to adjacent sub-words followed by a wider load spanning
-  them.
-- A pointer cast that changes access width between a store and a subsequent
-  load to the same address.
-
-Diagnostics are informational. The patterns are well-defined; the penalty is
-a performance issue, not a correctness issue.
+The current compiler may display the exact typed accesses and final machine
+instructions as structural facts, but it does not label these patterns as a
+performance hazard or claim forwarding success, failure, or cost. Such a claim
+requires a target-applicable versioned model with explicit assumptions or a
+measured observation of an identified artifact and workload.
 
 #### Guidance
 
@@ -1787,8 +1989,8 @@ Given operation A before operation B in source, may the compiler emit B before A
 
 - A or B is a volatile or MMIO-intent access, unless the explicit access itself
   requires only its own lowered event.
-- A or B is `%dsb`, `%dmb`, `%isb()`, `%compiler_barrier()`, a strict schedule
-  boundary, an opaque `#asm`, or a call with unproven memory effects.
+- A or B is `barrier.dsb`, `barrier.dmb`, `barrier.isb()`, `barrier.compiler()`, a strict schedule
+  boundary, a non-pure `asm` block, or a call with unproven memory effects.
 - B is a release event or `seq_cst` event that would be hoisted above A.
 - A is an acquire event or `seq_cst` event that would have B moved before it.
 - A and B access overlapping ranges, or the compiler lacks one of the closed
@@ -1810,9 +2012,17 @@ MESI coherence protocol forces the line to bounce between caches — even if the
 cores never access the same variable. This is **false sharing**, and it can
 degrade throughput by 10–50×.
 
+> **Released v0.8 placement snapshot.** The `#shared`/`#percpu` declaration
+> forms and false-sharing diagnostic described below are historical v0.8
+> material. They are not v0.9 alternatives and do not modify item 42's
+> `per_cpu var` layout or access contract. `#shared` is removed in v0.9;
+> cache-isolated storage requires its later owning item. The independent
+> `#cache_line_width()` target query remains governed by its own current
+> semantic-authority row.
+
 ---
 
-### `#shared` — Cache-Line Isolation
+### Released v0.8 `#shared` Cache-Line Isolation (Historical)
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -1848,8 +2058,8 @@ declarations. It guarantees:
 - The total space consumed is `max(#size_of(T), #cache_line_width())`.
 - `#shared` is a placement attribute, not a type modifier — `@T` still
   points to the variable's natural type, not to a padded wrapper.
-- `#shared` does not add any memory ordering. For concurrent access, combine
-  with `#acquire` / `#release` or barrier runtime primitives as needed.
+- `#shared` does not add any memory ordering. For concurrent access, use typed
+  atomic acquire/release methods or barrier runtime primitives as needed.
 
 <!-- wyst-contract: sketch -->
 ```wyst

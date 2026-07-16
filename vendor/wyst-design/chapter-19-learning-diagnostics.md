@@ -1,41 +1,71 @@
 ---
-title: "Chapter 19: Wyst Learning Diagnostics And Source Insights"
+title: "Chapter 19: Diagnostic Explanations And Source Insights"
 group: chapter
 chapter: 19
 order: 19
-summary: "Diagnostic explanations, learning fields, source insights, and teachable compiler feedback."
+summary: "Canonical diagnostic kinds, explanation parity, suggestions, checked code actions, and evidence-labeled source insights."
 ---
 
-# Chapter 19: Wyst Learning Diagnostics And Source Insights
+# Chapter 19: Diagnostic Explanations And Source Insights
 
-The diagnostic teaching surface adds explanations and source insights on top of
-the stable diagnostic renderer and editor delivery path. It does not create a
-second diagnostic model in editor adapters.
+Diagnostic explanations and source insights extend the core diagnostic value.
+They do not create a second diagnostic model for CLI, JSON, LSP, editors, or
+documentation, and they are not marketed as teaching diagnostics until their
+semantic-parity gate is complete.
 
-Explanation lookup, teaching content, and source insights extend the core
-diagnostic data without changing its model.
+## Canonical Diagnostic-Kind Registry
 
-## Diagnostic Explanation Registry
+The compiler owns one typed diagnostic-kind registry. An emitter selects a
+`DiagnosticKind`; it does not embed an independently maintained `E####` or
+`W####` string. The registry is the sole owner of:
 
-The compiler owns a registry keyed by stable diagnostic codes such as `E0210`.
-Each registered entry contains:
+- stable code;
+- severity;
+- semantic subject;
+- short title and summary;
+- long explanation;
+- concise `why` and `help` metadata;
+- generic suggestions; and
+- active or explicitly reserved state.
 
-- a code;
-- a short title;
-- a short summary;
-- a longer explanation;
-- compact `why` and `help` text for opted-in diagnostics;
-- example fixes.
+An emitter supplies occurrence-specific data such as source labels, concrete
+names, values, dependency paths, notes, and checked edits. Rendering adapters
+look up registry metadata from the typed kind and cannot change its code,
+severity, or subject.
 
-The registry is deliberately static and deterministic. Adding, removing, or
-renaming explanations is an explicit compiler change rather than incidental
-output churn.
+The registry covers errors and warnings. Repository validation scans every
+reachable `E####` and `W####` emitter, verifies that it selects an active kind,
+and verifies the reverse direction: every registered entry has a reachable
+emitter or the explicit `reserved` state. Reserved entries are not presented as
+live explanations.
+
+One code may be shared by multiple emitters only when one subject, summary,
+explanation, and suggestion set truthfully covers all of them. Otherwise the
+registry defines separate kinds and codes.
+
+The naked-code diagnostic subjects are:
+
+| Code | Subject |
+| --- | --- |
+| `E0304` | a naked stack-pointer value violates the required alignment |
+| `E0306` | a naked function or label can reach its end without explicit control transfer |
+| `E0307` | a source `return` is used where naked code requires explicit control transfer |
+| `E0308` | a naked entry parameter would arrive on the incoming stack |
+| `E0309` | a naked indirect call lacks a statically verified register-only and terminality contract |
+| `E0310` | `addr_of(local)` in naked code would require compiler-owned stack storage |
+| `E0505` | an outgoing call from naked code would require stack arguments |
+
+These codes do not explain system registers, ordinary memory access, atomics,
+or section placement. If those subjects need distinct diagnostics, they use
+their own registered kinds.
 
 ## `wync explain`
 
-`wync explain E####` prints the long-form explanation for a diagnostic code
-without requiring a failing source file. This lets terminal users and editor
-adapters offer teaching help for diagnostics that have already been reported.
+`wync explain E####` and `wync explain W####` print the active registry entry
+without requiring a failing source file. Unknown and reserved codes fail with a
+normal diagnostic so scripts can distinguish them from live explanation
+coverage. In particular, reserved `E1001` is registry inventory, not a live
+standalone explanation.
 
 The text form is compact:
 
@@ -50,83 +80,74 @@ Why:
 Help:
   Rename one declaration or remove the duplicate item.
 
-Example fixes:
+Suggestions:
   - Rename one declaration to reflect its distinct role.
 ```
 
-Unknown codes fail with a normal diagnostic so scripts can distinguish missing
-registry coverage from successful explanation lookup.
+## Suggestions And Code Actions
 
-## Learning Coverage
+Generic prose is a `suggestion`. Text diagnostics render it with
+`suggestion:`, and structured diagnostics expose `suggestions`. A registry
+example, recommended manual change, or prose choice is never called a `fix` or
+`code_action`.
 
-The learning diagnostics corpus should cover:
+`fix` and `code_action` are reserved for an edit that is:
 
-- duplicate top-level names;
-- syntax errors with missing delimiters;
-- unknown names;
-- type mismatches;
-- bad intrinsic argument counts;
-- inline assembly contract mistakes;
-- target/profile mismatches;
-- one provenance-labeled performance implication for an unavailable target
-  feature.
+- bound to an exact source document and byte/UTF-16 range;
+- backed by the semantic fact that makes the replacement valid;
+- supplied with an exact replacement string;
+- checked for applicability against the current source version; and
+- rejected when the source, range, identity, or expected text has changed.
 
-Every diagnostic code that appears in user-facing diagnostics should be covered
-by `wync explain E####`.
+LSP `textDocument/codeAction` transports these checked edits. An editor adapter
+must not convert a suggestion into an edit by parsing prose.
 
 ## Structured Diagnostic Data
 
-Structured fields are added to the same `Diagnostic` value used by text, JSON,
-and LSP-compatible JSON renderers. The fields are optional and should be present
-only when they add learning value:
+Text, `wync.diagnostics.v1`, `wync.diagnostics.lsp.v1`, LSP publish
+diagnostics, editor hovers, generated documentation, and `wync explain` consume
+the same diagnostic-kind entry. Material fields have parity across surfaces.
+
+Occurrence data may add:
 
 - `why`: a concise reason tied to a compiler fact;
 - `help`: a concise next step;
-- fix choices;
-- source insight confidence and provenance labels.
+- `suggestions`: generic prose choices from the registry or emitter;
+- `codeActions`: checked range/replacement/applicability edits; and
+- `sourceInsights`: evidence-labeled non-edit observations.
 
-Terminal diagnostics should stay stable and compact. JSON and LSP-compatible
-diagnostics expose the same data under stable keys so editor clients can show
-expandable explanations and fix choices without reparsing source.
+Absent optional fields are omitted. LSP-compatible diagnostics expose the same
+fields under `Diagnostic.data`; the standard `message` may include concise
+`note`, `why`, `help`, and `suggestion` lines, but it does not label prose as a
+fix. Code actions remain structured protocol results rather than message text.
 
-When present, JSON diagnostics expose structured fields at the diagnostic
-object level:
-
-- `why`: string;
-- `help`: string;
-- `fixes`: array of `{ "label": string, "detail": string | null }`;
-- `sourceInsights`: array of
-  `{ "kind": string, "message": string, "confidence": string, "provenance": string[] }`.
-
-LSP-compatible diagnostics expose the same keys under `data`. Absent optional
-fields are omitted from both JSON forms so existing diagnostics keep their
-stable payload shape until they opt into learning data.
-
-For ordinary editor hovers, LSP-compatible diagnostics also fold compact
-`note`, `why`, `help`, `fix`, and source-insight lines into the diagnostic
-`message`. This keeps Zed and other clients useful without requiring
-editor-specific rendering of custom `Diagnostic.data`.
-
-Generic syntax errors use the registry differently from semantic learning
-diagnostics: parser and lexer `E0101` diagnostics add concise `why` and `help`
-context, but they do not attach generic fix choices to every parse error. The
-longer examples remain available through `wync explain E0101`.
-
-The same structured surface covers project-name diagnostics and stack lifetime
-errors. Import diagnostics include structured help for unresolved or ambiguous
-module namespaces, and escaped-address diagnostics identify both the source
-stack lifetime and the escaping use in text, JSON, and LSP-compatible
-JSON.
+Parser and lexer diagnostics may add concise registry context without attaching
+generic edits. Project, import, target, stack-lifetime, and warning diagnostics
+use the same registry and parity rules.
 
 ## Source Insights
 
-Performance implications are source insights, not broad linting. A performance
-suggestion must be high-confidence and tied to a named source rule, target
-fact, lowering fact, static estimate, or measured evidence. Unlabeled
-performance advice is rejected by the diagnostic policy.
+A source insight must state what kind of fact it is and which authoritative
+product supports it. It cannot imply a performance outcome without an actual
+operation, selected lowering difference, and appropriate evidence.
 
-The first performance implication is intentionally narrow: when a module
-requires the `lse` target feature but the selected target profile does not
-provide it, the diagnostic states that LSE atomic lowering is unavailable for
-that profile. The confidence is `high`, and the provenance labels are `target
-fact` and `lowering fact`.
+When a selected target lacks `lse`, the generic observation is a
+`target-capability` insight: the selected target does not provide that feature.
+It becomes a performance or lowering insight only when it identifies an
+affected source operation and the actual selected alternative lowering. It
+must not claim a speedup, latency, throughput, or cache effect without modeled
+or measured evidence carrying the Chapter 21 epistemic metadata.
+
+## Conformance
+
+Conformance validates:
+
+- every live error and warning in both registry-to-emitter directions;
+- subject-negative vocabulary, so an explanation does not mention an unrelated
+  semantic subject;
+- identical kind metadata on text, JSON, LSP, editor, documentation, and
+  standalone explanation surfaces;
+- generic suggestions never appearing as fixes or code actions;
+- checked edit range, replacement, applicability, and stale-source rejection;
+  and
+- target-capability insights not claiming unsupported performance results.

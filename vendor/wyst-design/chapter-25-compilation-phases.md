@@ -35,7 +35,7 @@ The target phase set is:
 | `phase.build_inputs` | Freeze the declared build input set. |
 | `phase.source_acquisition` | Read and fingerprint declared source text. |
 | `phase.parsing` | Produce tokens and module ASTs. |
-| `phase.source_graph` | Own module identity and the import graph. |
+| `phase.source_graph` | Own module identity, the import graph, and original-file source-map segments. |
 | `phase.declaration_collection` | Own declaration identity. |
 | `phase.name_resolution` | Own resolved symbols. |
 | `phase.type_checking` | Produce checked declarations and bodies. |
@@ -138,7 +138,10 @@ new authority.
 | Semantic fact | Owner phase |
 | --- | --- |
 | `fact.target_fact` | `phase.build_inputs` |
+| `fact.source_map` | `phase.source_graph` |
 | `fact.module_identity` | `phase.source_graph` |
+| `fact.selected_ast` | `phase.compile_time_selection` |
+| `fact.instantiated_ast` | `phase.generic_instantiation` |
 | `fact.declaration_identity` | `phase.declaration_collection` |
 | `fact.resolved_symbol` | `phase.name_resolution` |
 | `fact.type` | `phase.type_checking` |
@@ -149,8 +152,10 @@ new authority.
 | `fact.effect_authority_summary` | `phase.effect_authority_analysis` |
 | `fact.execution_level` | `phase.execution_level_analysis` |
 | `fact.callable_abi_classification` | `phase.callable_abi_classification` |
+| `fact.callable_abi_obligation` | `phase.abi_lowering` |
 | `fact.ir_module` | `phase.ir_construction` |
 | `fact.machine_code` | `phase.machine_lowering` |
+| `fact.register_assignment` | `phase.register_allocation` |
 | `fact.final_resource_summary` | `phase.final_resource_computation` |
 | `fact.artifact_bytes` | `phase.relocation_artifact_preparation` |
 | `fact.report_only_summary` | `phase.report_only_fact_computation` |
@@ -194,11 +199,32 @@ classification, lowering, register allocation, artifact preparation,
 diagnostic rendering, or build acceptance. Adding a report-only fact does not
 change source meaning or emitted bytes.
 
+Each report kind has one typed input constructor. That constructor consumes the
+specific immutable products needed by its schema and creates a closed report
+input; it does not accept a generic caller-constructed payload. In particular,
+inspection reports receive selected/instantiated source, original source-map,
+effect-authority, verified IR, ABI, machine-image, register-allocation, final-
+resource, and artifact products as applicable. A renderer cannot substitute a
+raw AST, concatenated source buffer, local semantic table, or recomputed
+backend fact.
+
+A terminal report product records `phase.report_only_fact_computation` as its
+producer and records the stable identity, fact kind, and owner phase of every
+input product. Renderers preserve that authority envelope in text and machine-
+readable output. Presentation-only derivatives are owned by the terminal report
+product and are never promoted to semantic evidence.
+
 ## Diagnostic Rendering
 
 Diagnostic ownership belongs to the phase that detects the condition.
 `phase.diagnostic_rendering` only renders already produced diagnostic records
 into text, JSON, and LSP payloads.
+
+The detecting phase selects a typed kind from the canonical diagnostic-kind
+registry and attaches occurrence-specific facts. Raw codes and independent
+severity, subject, summary, explanation, or suggestion metadata are not phase
+outputs. Diagnostic rendering reads the same kind entry used by standalone
+explanations, editor data, generated documentation, and registry validation.
 
 Diagnostic rendering must not:
 
@@ -219,4 +245,4 @@ identity, or artifact bytes.
 
 | Adapter ID | Current carrier | Allowed consumers | Forbidden consumers | Enforcement evidence | Removal condition |
 | --- | --- | --- | --- | --- | --- |
-| `adapter.synthetic_build_inputs_span` | Synthetic `<build inputs>` display identity for concatenated sources. | Diagnostic rendering and manifest/report provenance display through `SourceMapProduct` segments. | Module identity, declaration identity, semantic caches, IR identity, or artifact bytes. | Source graph/design contract tests and pre-23 characterization. | Public diagnostic/span snapshots migrate from synthetic display labels to original-file source spans. |
+| `adapter.synthetic_build_inputs_span` | Synthetic `<build inputs>` display identity for concatenated sources. | Diagnostic rendering and manifest/report provenance display through `SourceMapProduct` segments. | Module identity, declaration identity, semantic caches, IR identity, or artifact bytes. | Source graph/design contract tests and phase characterization. | Public diagnostic/span snapshots migrate from synthetic display labels to original-file source spans. |

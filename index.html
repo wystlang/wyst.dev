@@ -9,13 +9,13 @@
 			name="description"
 			content="Wyst is a personal ARM64 language and compiler project with explicit low-level behavior and inspectable lowering."
 		/>
-		<title>Wyst — an explicit ARM64 language and compiler</title>
+		<title>Wyst — an ARM64 language and compiler</title>
 		<link rel="canonical" href="https://wyst.dev/" />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content="https://wyst.dev/" />
 		<meta
 			property="og:title"
-			content="Wyst — an explicit ARM64 language and compiler"
+			content="Wyst — an ARM64 language and compiler"
 		/>
 		<meta
 			property="og:description"
@@ -31,7 +31,7 @@
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta
 			name="twitter:title"
-			content="Wyst — an explicit ARM64 language and compiler"
+			content="Wyst — an ARM64 language and compiler"
 		/>
 		<meta
 			name="twitter:description"
@@ -117,33 +117,84 @@
 					data-example-path="wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
 				>
 					<div class="artifact-bar">
-						<span>main.wyst</span>
-						<a
-							href="https://github.com/wystlang/wyst.dev/blob/main/tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
-							rel="noopener"
-							>source ↗</a
+						<span>main.wyst · excerpt</span>
+						<div class="artifact-actions">
+							<button
+								class="artifact-copy"
+								type="button"
+								aria-label="Copy Wyst example"
+								aria-controls="uart-source"
+								aria-describedby="uart-copy-status"
+								data-copy-target="uart-source"
+							>copy</button>
+							<a
+								href="https://github.com/wystlang/wyst.dev/blob/main/tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
+								rel="noopener"
+								>source ↗</a
+							>
+						</div>
+						<span
+							id="uart-copy-status"
+							class="visually-hidden"
+							role="status"
+							aria-live="polite"
+							aria-atomic="true"
+						></span>
+					</div>
+					<div class="source-viewport">
+						<!-- homepage-semantic-example:start -->
+						<pre aria-label="Wyst UART source" aria-describedby="uart-scroll-hint" tabindex="0"><code id="uart-source"><span class="source-comment">/*</span>
+<span class="source-comment block-comment-line">* QEMU `virt` is a generic virtual Arm board.</span>
+<span class="source-comment block-comment-line">* Its PL011 UART provides serial text output.</span>
+<span class="source-comment block-comment-line">*</span>
+<span class="source-comment block-comment-line">* UART registers are memory-mapped I/O (MMIO):</span>
+<span class="source-comment block-comment-line">* reads and writes at these addresses reach a</span>
+<span class="source-comment block-comment-line">* device rather than ordinary RAM.</span>
+<span class="source-comment block-comment-line">*</span>
+<span class="source-comment block-comment-line">* A register address is UART0's base plus its</span>
+<span class="source-comment block-comment-line">* PL011 byte offset. QEMU maps UART0's base at</span>
+<span class="source-comment block-comment-line">* 0x0900_0000.</span>
+<span class="source-comment block-comment-line">*/</span>
+<span data-token="keyword" data-token-modifiers="defaultLibrary">register_map</span> <span data-token="type" data-token-modifiers="declaration">Pl011</span> {
+  <span class="source-comment">// DR is the data register.</span>
+  <span class="source-comment">// DATA is its eight-bit transmit payload.</span>
+  <span data-token="property" data-token-modifiers="declaration">DR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">writeonly</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x00</span> {
+    <span data-token="property" data-token-modifiers="declaration">DATA</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">7</span>
+  }
+
+  <span class="source-comment">// FR is the flag register.</span>
+  <span class="source-comment">// TXFF means the transmit FIFO is full.</span>
+  <span data-token="property" data-token-modifiers="declaration">FR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readonly</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x18</span> {
+    <span data-token="property" data-token-modifiers="declaration">TXFF</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">5</span>
+  }
+}
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">mmio</span> <span data-token="variable" data-token-modifiers="declaration readonly">UART0</span>: <span data-token="type">Pl011</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x0900_0000</span>
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
+  <span class="source-comment">// Poll for space in the transmit FIFO.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> {
+    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
+  }
+
+  <span data-token="variable">UART0</span>.<span data-token="property">DR</span>.<span data-token="property">write</span>(<span data-token="property">DATA</span> <span data-token="operator">=</span> <span data-token="parameter">byte</span>)
+}
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {
+  <span class="source-comment">// UART output is byte-oriented.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [<span data-token="number">6</span>]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> [<span data-token="string">'h'</span>, <span data-token="string">'e'</span>, <span data-token="string">'l'</span>, <span data-token="string">'l'</span>, <span data-token="string">'o'</span>, <span data-token="string">'\n'</span>]
+
+  <span class="source-comment">// #len is compile-time metadata;</span>
+  <span class="source-comment">// the array has no runtime length field.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">i</span> in <span data-token="number">0</span> ..&lt; <span data-token="macro" data-token-modifiers="defaultLibrary">#len</span>(<span data-token="variable">msg</span>) {
+    <span data-token="function">uart_write</span>(<span data-token="variable">msg</span>[<span data-token="variable">i</span>])
+  }
+}</code></pre>
+						<!-- homepage-semantic-example:end -->
+						<span id="uart-scroll-hint" class="source-scroll-hint"
+							>scroll for more ↓</span
 						>
 					</div>
-					<pre aria-label="Wyst UART source"><code><span class="const">UARTDR</span> <span class="o">::</span> <span class="t">@volatile u32</span> <span class="o">=</span> <span class="const">UART0_BASE</span> <span class="o">+</span> <span class="n">0x00</span>
-<span class="const">UARTFR</span> <span class="o">::</span> <span class="t">@volatile u32</span> <span class="o">=</span> <span class="const">UART0_BASE</span> <span class="o">+</span> <span class="n">0x18</span>
-<span class="const">TXFF</span> <span class="o">::</span> <span class="t">u32</span> <span class="o">=</span> <span class="n">0x20</span>
-
-<span class="f">uart_write</span> <span class="o">::</span> <span class="p">(</span><span class="param">byte</span> <span class="o">:</span> <span class="t">u8</span><span class="p">) {</span>
-    <span class="k">while</span> <span class="p">(</span><span class="t">u32@</span><span class="p">[</span><span class="const">UARTFR</span><span class="p">]</span> <span class="o">&amp;</span> <span class="const">TXFF</span><span class="p">)</span> <span class="o">!=</span> <span class="n">0</span> <span class="p">{</span>
-        <span class="primitive">%nop</span><span class="p">()</span>
-    <span class="p">}</span>
-
-    <span class="t">u32@</span><span class="p">[</span><span class="const">UARTDR</span><span class="p">]</span> <span class="o">=</span> <span class="param">byte</span> <span class="k">as</span><span class="p">.</span>widen <span class="t">u32</span>
-<span class="p">}</span>
-
-<span class="f">uart_hello</span> <span class="o">::</span> <span class="p">() {</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'h'</span><span class="p">)</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'e'</span><span class="p">)</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'l'</span><span class="p">)</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'l'</span><span class="p">)</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'o'</span><span class="p">)</span>
-    <span class="f">uart_write</span><span class="p">(</span><span class="s">'\n'</span><span class="p">)</span>
-<span class="p">}</span></code></pre>
 					<figcaption class="artifact-output">
 						<span>qemu / virt</span>
 						<pre aria-label="QEMU UART output"><code>hello</code></pre>
@@ -151,5 +202,6 @@
 				</figure>
 			</section>
 		</main>
+		<script src="assets/home.js" defer></script>
 	</body>
 </html>

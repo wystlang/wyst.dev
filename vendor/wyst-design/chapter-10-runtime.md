@@ -17,6 +17,57 @@ Allocation is described as visible storage contracts rather than hidden
 language behavior. The memory model and the storage and library contracts
 remain separate concerns.
 
+## v0.9 Dynamic Container Role (Current)
+
+The v0.9 dynamic container is the ordinary explicit generic declaration with
+canonical identity `core.collections.DynamicArray`. It is not a prelude type
+and must be obtained from the sealed compiler-provided module before its local
+binding is applied as `DynamicArray<T>` (or through an import qualifier/alias):
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module packet.queue
+
+import core.collections { DynamicArray }
+
+fn process(values: @DynamicArray<u8>) {
+  // storage and growth remain explicit operations
+}
+```
+
+A whole public or private `import core.collections` is also valid and exposes
+the type as `collections.DynamicArray<T>`; selective imports may use a local
+alias, and `pub import` may re-export the authenticated declaration under the
+ordinary source-visibility rules.
+`DynamicArray` is authenticated by the sealed declaration's versioned
+`wyst.dynamicContainerRole.v0.9` metadata, not by its qualified or unqualified
+spelling. A project declaration with the same name cannot acquire the role or
+replace the sealed module.
+
+`DynamicArray<T>` preserves the explicit
+`wyst.dynamicArrayDescriptor.v0` storage representation and
+`wyst.dynamicArrayOperation.v0` operation contract described below. It is
+opaque at the Wyst type surface and otherwise participates in parsing, type
+checking, explicit generic instantiation, linking, debugging, and dead-code
+elimination like ordinary bundled generic library code. Importing the type
+does not allocate, initialize, run startup code, or retain operations. Every
+stored binding still has an explicit initializer, and allocation, capacity,
+growth, failure, movement, and storage identity remain visible in the selected
+storage API.
+
+`[dynamic]T` is removed syntax in v0.9; it is neither an alias nor a second
+accepted spelling. There is no transition mode in which both forms denote the
+same type.
+
+## Released v0.8 Syntax Snapshot
+
+> The remainder of this chapter preserves the released v0.8 storage and
+> allocation exposition. Its explicit allocation, descriptor, failure, and
+> movement semantics remain relevant to the authenticated v0.9 role, but every
+> `[dynamic]T` annotation and typed punctuation-led declaration shown below is
+> a historical v0.8 spelling. Read it as `DynamicArray<T>` with keyword-led
+> bindings when applying the contract to current v0.9 source.
+
 ## Thesis
 
 Wyst should preserve explicit control over storage. Allocation belongs in visible
@@ -71,15 +122,15 @@ language allocation.
 
 ## Dynamic Array Descriptors
 
-`[dynamic]T` is a concrete descriptor type. The descriptor is storage for
+`DynamicArray<T>` is a concrete descriptor type. The descriptor is storage for
 facts, not an allocation trigger: annotation-time allocation is `none`, and
 initialization must happen through a visible typed wrapper such as
 `dyn_array_init_Token`. The checked ergonomic surface also accepts
-`arr : [dynamic]u8 = dyn_array_init<u8>(arena, capacity = ..., growth = ...)`;
+`arr : DynamicArray<u8> = dyn_array_init<u8>(arena, capacity = ..., growth = ...)`;
 subsequent repeated operations can use `arr.push(value)`,
 `arr.push_from_address(ptr)`, `arr.reserve(capacity = ..., growth = ...)`,
 `arr.alloc_slot()`, `arr.init_slot(slot)`, and `arr.commit_slot(slot)` on any
-assignable `[dynamic]T` descriptor storage path, including locals, globals, and
+assignable `DynamicArray<T>` descriptor storage path, including locals, globals, and
 aggregate fields. Temporaries and constants are not valid mutating receivers.
 
 Where labels appear (`reserve` and `dyn_array_init<T>`), they are
@@ -90,7 +141,7 @@ only — labels on `push`, `push_from_address`, `init_slot`, or
 `commit_slot` are a compile error.
 
 The descriptor representation is public and normative under
-`wyst.dynamicArrayDescriptor.v0`. A `[dynamic]T` value has total size 56 bytes and alignment 8.
+`wyst.dynamicArrayDescriptor.v0`. A `DynamicArray<T>` value has total size 56 bytes and alignment 8.
 Its fields are fixed in this order:
 
 | Order | Field | Type | Offset | Size | Alignment | Meaning |
@@ -159,7 +210,7 @@ descriptor; the descriptor never extends arena, fixed-buffer, pool, DMA, or
 foreign storage lifetime. Wrapper APIs that release or recycle storage must
 state that behavior as their own visible contract.
 
-Native ABI consequences follow the public aggregate layout: `[dynamic]T` is a
+Native ABI consequences follow the public aggregate layout: `DynamicArray<T>` is a
 56-byte, 8-aligned aggregate, and ABI classification uses the ordinary aggregate
 rules for that size and alignment. DWARF debug info emits the same member names,
 order, offsets, and field types. Persistence is not promised: descriptor values
@@ -191,11 +242,11 @@ through reserve and slot allocation/initialization/commit operations.
 
 `arr[:]` produces a non-owning `[]T` view over initialized elements by using
 the descriptor data pointer and current length. Dynamic-array range slicing is
-unchecked; omitted end bounds use `arr.len`, not `arr.capacity`. A `[dynamic]T`
+unchecked; omitted end bounds use `arr.len`, not `arr.capacity`. A `DynamicArray<T>`
 never binds implicitly to a `[]T`; call and assignment sites use `arr[:]` when
 they want the initialized-element view.
 
-Same-type `[dynamic]T` equality compares descriptor state only: data pointer,
+Same-type `DynamicArray<T>` equality compares descriptor state only: data pointer,
 length, capacity, storage identity, growth policy, failure policy, and movement
 policy. It does not compare elements, and dynamic arrays have no ordered
 comparison or integer-zero comparison.
@@ -253,7 +304,7 @@ Dynamic storage acquisition through known runtime APIs is a semantic operation
 that can be reported by storage diagnostics and explain output. Compiler-owned
 frame slots, spills, reloads, register-class pressure, and caller-owned
 aggregate copies are generated backend resources instead; they belong in
-post-lowering constraints and reports, not in `#deny`.
+post-lowering constraints and reports, not in `#[deny_effects(...)]`.
 
 ## Kernel Initcalls, Panic, And Logging
 

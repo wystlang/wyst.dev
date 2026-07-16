@@ -20,6 +20,8 @@ index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
+vendor/wyst-homepage-semantic-tokens.json
+                           Compiler-produced token stream for the homepage example
 tests/fixtures/wyst/       Versioned Wyst sample fixtures used by tests
 build/                     Documentation generator, templates, and local server
 tools/                     Build, audit, snapshot, and reproducibility programs
@@ -82,12 +84,20 @@ build and public CI verify those committed bytes against the snapshot manifest;
 they do not fetch the private/local upstream checkout and therefore do not
 independently authenticate the commit attribution.
 
+The same sync asks that commit's `wync lsp` server for
+`textDocument/semanticTokens/full`, records the returned legend and token data
+in `vendor/wyst-homepage-semantic-tokens.json`, and regenerates the marked UART
+region in `index.html`. The normal site build fails if that generated markup is
+edited independently, so the example's semantic categories cannot drift back
+to handwritten highlighting.
+
 Refresh the snapshots from a sibling `../wyst` checkout or `WYST_REPO_DIR`:
 
 ```sh
 npm run sync:wyst
 npm run check
-git add vendor/wyst-design vendor/wyst-snapshot.json tests/fixtures/wyst
+git add index.html vendor/wyst-design vendor/wyst-snapshot.json \
+  vendor/wyst-homepage-semantic-tokens.json tests/fixtures/wyst
 ```
 
 Website-ready brand exports can similarly be refreshed from a sibling

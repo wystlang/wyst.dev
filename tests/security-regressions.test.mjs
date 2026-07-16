@@ -253,17 +253,25 @@ test("Worker assets apply the complete static-site security policy", async () =>
 	}
 });
 
-test("deploy artifact contains discovery files and no injected script markup", async () => {
+test("deploy artifact contains discovery files and only fingerprinted scripts", async () => {
 	const [home, docs, robots, sitemap] = await Promise.all([
 		readFile(new URL("../dist/index.html", import.meta.url), "utf8"),
 		readFile(new URL("../dist/docs/index.html", import.meta.url), "utf8"),
 		readFile(new URL("../dist/robots.txt", import.meta.url), "utf8"),
 		readFile(new URL("../dist/sitemap.xml", import.meta.url), "utf8"),
 	]);
-	assert.doesNotMatch(home, /<script\b/i);
+	assert.match(
+		home,
+		/<script src="assets\/home\.[a-f0-9]{8}\.js" defer><\/script>/,
+	);
 	assert.match(
 		docs,
 		/<script src="\/assets\/docs\.[a-f0-9]{8}\.js" defer><\/script>/,
+	);
+	assert.doesNotMatch(
+		`${home}\n${docs}`,
+		/<script\b(?![^>]*\bsrc=)[^>]*>/i,
+		"public pages should not contain inline scripts",
 	);
 	assert.doesNotMatch(
 		`${home}\n${docs}`,

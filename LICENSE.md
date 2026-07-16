@@ -7,7 +7,7 @@ contents. The applicable terms depend on the path:
 | --- | --- |
 | Site code, prose, configuration, and other files not listed below | Copyright Wyst contributors. All rights reserved. |
 | `assets/` except `assets/commit-mono-v143.woff2` and `assets/licenses/CommitMono-OFL.txt` | Wyst brand and identity assets. All rights reserved. Nominative, unmodified references must not imply sponsorship or endorsement. |
-| `vendor/wyst-design/` and `tests/fixtures/wyst/` | Snapshot material from `wystlang/wyst`, offered under your choice of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). |
+| `vendor/wyst-design/`, `vendor/wyst-homepage-semantic-tokens.json`, and `tests/fixtures/wyst/` | Snapshot material from `wystlang/wyst`, offered under your choice of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). |
 | `assets/commit-mono-v143.woff2` | Commit Mono, SIL Open Font License 1.1. The required notice is `assets/licenses/CommitMono-OFL.txt`. |
 
 No permission is granted to reuse the Wyst name, wordmark, visual identity, or

@@ -116,20 +116,20 @@ str q1, [x0, #16]
 
 ---
 
-## 3.5 Intrinsics
+## 3.5 Compiler-Owned Vector Operations
 
 <!-- wyst-contract: sketch -->
 ```wyst
-b : [f32: 4] = %sqrt(a)
-c : [f32: 4] = %abs(a)
-d : [f32: 4] = %neg(a)
+const b: [f32: 4] = a.sqrt()
+const c: [f32: 4] = a.abs()
+const d: [f32: 4] = -a
 ```
 
-`%sqrt`, `%abs`, and `%neg` introduce `fp_state` when they operate on
+`.sqrt()`, `.abs()`, and unary negation introduce `fp_state` when they operate on
 floating-point scalar or vector values. Integer forms do not introduce
 `fp_state`.
 
-Intrinsics should remain:
+Compiler-owned vector operations remain:
 
 - explicit
 - inspectable

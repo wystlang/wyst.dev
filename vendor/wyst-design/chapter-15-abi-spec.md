@@ -16,7 +16,7 @@ summary: "Native ABI, AAPCS64 interop, argument/return classification, stack pro
 
 The ABI contract specifies register ownership, argument and return
 classification, and stack behavior. Its rules depend on functions, address
-types, `#pin`, `#naked`, and exception-vector context.
+types, item-42 `in register` placement, `naked`, and exception-vector context.
 
 ---
 
@@ -24,14 +24,75 @@ types, `#pin`, `#naked`, and exception-vector context.
 
 Wyst supports two calling conventions:
 
-| Convention | Syntax    | Default | Purpose                                      |
-| ---------- | --------- | ------- | -------------------------------------------- |
-| Wyst Native | _(none)_  | yes     | Wyst-to-Wyst calls; optimised for register use |
-| AAPCS64    | `[aapcs]` | no      | C interop, OS calls, foreign callbacks       |
+| Convention | v0.9 callable syntax | Default | Purpose |
+| ---------- | ---------------------- | ------- | ------- |
+| Wyst Native | `fn(...) -> ...` | yes | Wyst-to-Wyst calls; optimized for register use |
+| AAPCS64 | `extern "C" fn(...) -> ...` | no | C interop, OS calls, foreign callbacks |
 
-The native ABI is the default. It deliberately diverges from AAPCS64 in the areas where AAPCS64 leaves performance on the table: struct passing, multi-value return, and frame pointer policy. AAPCS64 compatibility is **opt-in** and applies exactly to the annotated function — it does not affect callers or other functions in the same translation unit.
+The native ABI is the default. It deliberately diverges from AAPCS64 in the
+areas where AAPCS64 leaves performance on the table: struct passing,
+multi-value return, and frame pointer policy. AAPCS64 compatibility is
+**opt-in** and applies exactly to the `extern "C"` callable; it does not affect
+other functions in the same module.
 
-Because Wyst's calling convention is explicit and reproducible, a mismatch between caller and callee conventions is always a programmer error and is detectable statically. The compiler must emit a diagnostic if a Wyst-Native caller directly calls an `[aapcs]` function without the annotation at the call site, or vice versa.
+Because Wyst's calling convention is explicit and reproducible, a mismatch
+between caller and callee conventions is always a programmer error and is
+detectable statically. The compiler emits a diagnostic when a call is checked
+against a callable of the wrong convention; it does not adapt between native
+and `extern "C"` identities.
+
+## v0.9 Callable Boundary Identity and Explicit Placement (Current)
+
+Chapter 8 is the sole owner of item-42 source meaning. This section fixes its
+ABI projection. A callable identity contains the convention, ordered parameter
+types, each parameter's `noescape` bit and optional register placement, the
+result type (including `never`), and an optional register placement for one
+scalar result. Declaration parameter names are direct-call source labels only
+and are excluded. `pub`, declaration identity, and `naked` are also excluded.
+
+<!-- wyst-contract: sketch -->
+```wyst
+extern "C" fn(noescape @u8 in x0, u64 in x1) -> i32 in x0
+```
+
+An explicit parameter or result `in register` is a required ABI boundary
+location, not an allocator hint. It is preserved in callable values and direct
+declaration signatures and is checked exactly at every call. The register must
+be legal for the value's ABI class and target width, must not conflict with
+another simultaneously live required location, and must not be reserved by
+the selected convention or target. The compiler diagnoses an unsatisfied map;
+it does not insert a hidden adapter or silently use the convention's default
+location. Local `var name: T in register` placement is a storage constraint and
+does not become part of the enclosing callable identity.
+
+`noescape` is valid only on an address parameter. Its bit participates in exact
+identity even when two signatures otherwise marshal identically. Direct calls
+may use declaration parameter labels, but calls through callable values are
+always positional. No implicit conversion exists between native and
+`extern "C"` callables or between any pair whose placements or `noescape` bits
+differ.
+
+A `never` result has no result register and causes the call site to terminate
+its reachable ABI flow. `naked` is not a convention or callable-type property;
+it suppresses every compiler-generated prologue, epilogue, frame, spill,
+callee-save, hidden home, and return sequence. A naked body that cannot satisfy
+its ABI directly is rejected. Naked lowering does not impose a smaller
+register allowlist: an otherwise legal explicit GPR, scalar-FP, or SIMD map is
+accepted, including a parameter list longer than eight when every final
+location is a register. Classification rejects the declaration if even one
+parameter's final ABI location is stack-based.
+
+`pub` remains Wyst source visibility and re-export only. Item 42 does not turn
+a public function or `per_cpu` declaration into a raw linker-address export.
+
+> **Released v0.8 ABI syntax below.** The remainder of this chapter preserves
+> the released native/AAPCS64 classification tables and frame rules. Its
+> `[aapcs]`, `#pin`, `#noescape`, `#naked`, `#noreturn`, and legacy function
+> pointer spellings are historical syntax. Read them as `extern "C"`,
+> `in register`, `noescape`, `naked`, `never`, and v0.9 callable values where
+> the rules do not conflict; the current identity section above controls every
+> conflict. In particular, the later claim that pin maps are absent from
+> function-pointer identity is v0.8-only and false for v0.9.
 
 ---
 
@@ -52,7 +113,7 @@ All ARM64 general-purpose and SIMD registers fall into one of four classes under
 
 **Notes:**
 
-`x16` and `x17` are the linker scratch registers (IP0, IP1). They are caller-saved and available for compiler temporaries, but the linker may overwrite them in branch veneers. Code that uses `#asm` blocks must not assume `x16`/`x17` survive across a `bl` or `blr` instruction.
+`x16` and `x17` are the linker scratch registers (IP0, IP1). They are caller-saved and available for compiler temporaries, but the linker may overwrite them in branch veneers. Code that uses checked `asm` blocks must not assume `x16`/`x17` survive across an active `bl`; a future checked `blr` row carries the same rule, while the pinned v0.9 pack rejects `blr` as `known_unsupported`.
 
 `v8–v15` (the lower 64 bits, i.e. `d8–d15`) are callee-saved under AAPCS64. Under the Wyst Native ABI they are **caller-saved** in full — the entire 128-bit register is clobbered. This frees the compiler from generating SIMD save/restore in prologues unless the programmer explicitly pins to those registers.
 When a Wyst function is annotated `[aapcs]`, the AAPCS64 preservation rule
@@ -331,8 +392,9 @@ Leaf functions that need local stack storage must adjust `sp` and restore it
 before returning, but are not required to establish a frame record. However,
 without a frame record, stack unwinding and `wyst explain` backtraces cannot
 traverse the frame. A future debug-build mode will require a frame record in
-every function. The `#backtrace` source attribute spelling is reserved and does
-not have current source semantics.
+every function. The former `#backtrace` spelling is removed with no replacement;
+the future debug-build mode, if activated, remains a build policy rather than a
+declaration attribute.
 
 #### Frame Pointer Convention Summary
 
@@ -341,7 +403,7 @@ not have current source semantics.
 | Non-leaf          | Always                       |
 | Leaf, no locals   | No                           |
 | Leaf, with locals | No (but sp must be restored) |
-| Any, future `#backtrace` | Reserved spelling; no current semantics |
+| Any, former `#backtrace` | Removed spelling; no semantics |
 | Any, future debug build  | Always under `wyst.nativeAbi.next` |
 
 ---
@@ -374,7 +436,108 @@ Functions that accept a variable number of arguments use explicit count-and-poin
 print_all :: (args : @u64, count : u64) { ... }
 ```
 
-This means Wyst native functions cannot be called as C variadics. A function intended to be a C variadic (e.g. a custom `printf`-like) must use `[aapcs]` and accept `va_list` through `#asm` blocks. See [B.6.3](#b63-calling-variadic-c-functions-printf-via-va_list) for the worked example.
+This means Wyst native functions cannot be called as C variadics. A function intended to be a C variadic (e.g. a custom `printf`-like) must use `[aapcs]` and accept a `va_list`, constructing it with checked `asm` only when ordinary Wyst access is insufficient. See [B.6.3](#b63-calling-variadic-c-functions-printf-via-va_list) for the worked example.
+
+---
+
+### A.9 Callee-Entry Location Transfers
+
+Argument classification determines where values exist at the instant a callee
+is entered. Register allocation independently determines the compiler home of
+each live parameter. Moving from the entry locations to those homes is one
+**simultaneous typed transfer set** under both the Wyst Native and AAPCS64
+conventions. Source argument evaluation has already completed; transfer order
+does not alter the left-to-right evaluation rule in Chapter 7.
+
+Every scalar GPR, FP/SIMD, or stack component that can participate in a
+destructive location dependency enters the planner in parameter order and
+component order. Exact source/destination self-copies disappear. Every other
+planned component records its source location, destination location, register
+class, and width. Two distinct values may not claim overlapping destination
+storage.
+
+Register pairs, register lists, and aggregate register images whose compiler
+homes are byte-addressed storage are preserved into those homes before any
+scalar register home is changed. Their specialized pair/list/byte-image copier
+must choose scratch registers outside every live incoming source and final
+scalar home; it does not pretend an indirect aggregate pointer is the
+aggregate's value bits. This preservation stage and the scalar planner are one
+entry-transfer protocol with one liveness rule, not two competing general
+parallel-copy algorithms. Caller-owned stack inputs are consumed only after
+the register preservation stage has made their helper registers safe.
+
+All architectural views of the same register alias for dependency purposes:
+
+- `wN` and `xN` are one GPR location;
+- `bN`, `hN`, `sN`, `dN`, `qN`, and arranged SIMD views are one `vN`
+  location; and
+- overlapping stack byte ranges alias even when their displayed offsets or
+  widths differ.
+
+The emitted sequence must preserve the transfer set's simultaneous meaning. A
+destination is ready only when writing it cannot overwrite a source still
+needed by another pending transfer. This covers fan-out from repeated sources,
+register-to-register swaps, longer cycles, mixed register classes, incoming
+stack values, and explicit register placement. Parameter declaration order is
+not a license to emit destructive sequential moves.
+
+#### Deterministic planning
+
+The canonical planner performs these steps:
+
+1. Normalize aliases, discard exact self-copies, reject overlapping
+   destinations, and sort pending transfers by destination, then source, then
+   class and width.
+2. Emit the first sorted transfer whose destination aliases no still-needed
+   source, remove it, and repeat.
+3. If no transfer is ready, select the first sorted cycle transfer. Preserve
+   its source through the widest view required by every repeated use of that
+   exact source, rewrite those uses to the temporary, re-sort, and continue.
+
+This produces the same plan regardless of parameter collection order, map
+iteration, or host behavior. A GPR cycle chooses the first unoccupied,
+class-compatible register from `x9`–`x17`, then `x7` down through `x0`. An
+FP/SIMD cycle chooses the first unoccupied register from `v31` down through
+`v16`. A scratch candidate is ineligible when it aliases a source,
+destination, explicit pin, saved entry fact, or another protected location.
+
+The following locations are never general scratch registers:
+
+- `x8`, while it carries an indirect-result pointer;
+- `x18`, `x29`, `x30`, and `sp`, because of their platform, frame, link, or
+  stack roles;
+- architectural register 31 in a GPR operation (`xzr`, `wzr`, or the `sp`
+  encoding); and
+- an allocator pseudo-home such as `Register(Gpr(31))`, which means
+  rematerialization rather than physical storage.
+
+When the return convention uses `x8`, the prologue preserves that pointer in
+its planned home before any entry transfer or scratch selection may reuse
+register state. An explicit placement that would require the same entry bits
+to represent both an argument and the indirect-result pointer is rejected as
+an unsatisfiable callable boundary.
+
+If the deterministic scratch lists contain no legal register, frame planning
+allocates one cycle temporary at the lowest naturally aligned unoccupied
+compiler-owned frame offset after the already ordered fixed and value slots.
+Its size and alignment are those of the widest value that must be preserved;
+one sufficiently large slot is reused by non-overlapping entry cycles. The
+slot is allocated before instruction emission, contributes to both
+`#[frame(max_bytes = ...)]` and `#[frame(max_spills = ...)]`, and appears in frame and lowering
+reports as `incoming-parallel-copy-temporary` with ABI-lowering provenance,
+the preserved class and width, and the cycle that required it. It is not a
+semantic allocation effect.
+
+Incoming stack locations remain caller-owned sources addressed relative to
+the incoming stack pointer. Frame allocation must not make them alias a
+compiler-owned destination or temporary. A stack load that needs a helper
+register occurs only after every still-live entry value in that helper
+register has been preserved.
+
+The same planner is the canonical implementation surface for other
+ABI-boundary transfer sets. Callee entry is the boundary required here;
+outgoing arguments and results may add location kinds without changing these
+alias, ordering, cycle, or temporary-selection rules.
 
 ---
 
@@ -446,7 +609,11 @@ call to an `[aapcs]`-annotated function.
 
 ---
 
-### B.5 Function Pointer Type Discipline
+### B.5 Released v0.8 Function Pointer Type Discipline (Historical)
+
+> This subsection's two-field identity and address-bearing `@(...)` grammar are
+> retained only to document v0.8. The v0.9 identity tuple and callable grammar
+> are defined in the current section at the start of this chapter.
 
 Calling convention is encoded in the function pointer type. The two pointer forms are:
 
@@ -519,8 +686,9 @@ underlying code follows the declared convention; the compiler cannot verify
 this. A wrong convention assertion is an unchecked call-site error: the emitted
 call uses the declared convention and may corrupt registers, stack, or control
 flow, but the compiler must not exploit that possibility for optimization. The
-resulting function pointer has an unknown effect origin for `#deny` until the
-compiler can prove a more specific target through ordinary `#addr_of` flow.
+resulting function pointer defaults to `effects(all)` for `deny_effects`
+checking unless the visible callable type supplies a narrower trusted bound or
+the compiler proves a more specific target through ordinary symbol flow.
 
 #### Storage and Aggregate Use
 
@@ -716,7 +884,7 @@ pub vprintf :: (fmt : @u8, ap : @va_list) -> i32
 pub vsnprintf :: (buf : @u8, sz : u64, fmt : @u8, ap : @va_list) -> i32
 ```
 
-**Constructing a `va_list`.** Variadic argument construction _cannot_ be expressed in pure Wyst because Wyst has no variadic primitives. The construction requires an `#asm` block that places the user's argument values into the AAPCS-defined register-save area, then initializes the `va_list` struct to point at it. The examples below are Wyst-like pseudocode until the runtime local-address materialization syntax is chosen; `local_addr(x)` is not source syntax.
+**Constructing a `va_list`.** Variadic argument construction _cannot_ be expressed in pure Wyst because Wyst has no variadic primitives. A future profile may use a checked `asm` block to place values into the AAPCS-defined register-save area, followed by ordinary Wyst initialization of the `va_list` struct. The pinned v0.9 pack has no checked store rows and rejects that block. The examples below are Wyst-like pseudocode until both those rows and runtime local-address materialization are available; `local_addr(x)` is not source syntax.
 
 ```text
 #import (
@@ -750,24 +918,24 @@ print_three :: (fmt : @u8, a : i64, b : i64, c : i64) -> i32 {
 
 This is the worked example the spec promises. It is verbose because building a variadic call from scratch _is_ verbose — that is the AAPCS64 variadic-marshalling cost made visible. Most Wyst code should not do this; most Wyst code wants Pattern 1 (fixed-arity declarations).
 
-**Where `#asm` enters.** The example above uses ordinary Wyst loads/stores to fill the save area, which works because each argument is exactly 8 bytes (`i64`). Mixed-width arguments (a struct, an `f32`) require the user to mirror AAPCS64's per-type slot rules. For those cases, an `#asm` block that constructs the save area in one pass is clearer than a sequence of Wyst stores:
+**Future checked-assembly profile.** The example above uses ordinary Wyst
+loads/stores to fill the save area, which works because each argument is exactly
+8 bytes (`i64`). The following mixed-width sketch requires checked store rows
+that are not active in the pinned v0.9 pack and is rejected by that compiler. A
+later profile may use typed signature operands to construct the save area in one
+pass once those rows have complete memory and allocation contracts:
 
 ```text
 build_va_for_floats :: (a : f64, b : f64) -> va_list {
     fp_save : [16]u64 = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
-    #asm {
-        inputs {
-            base = gpr(local_addr(fp_save))
-        }
-        clobbers {
-            memory
-        }
-        body {
-            // d0, d1 are caller-loaded with a, b (Wyst Native passes them there).
-            // AAPCS64 expects them in the q-register save area at gr_top - 32.
-            str q0, [{base}, #0]
-            str q1, [{base}, #16]
-        }
+    asm (
+        base: @u8 = relens<@u8>(local_addr(fp_save)),
+        first: f64 in v0 = a,
+        second: f64 in v1 = b,
+    ) {
+        // AAPCS64 gives each vector argument a 16-byte save-area slot.
+        str first.d, [base, #0]
+        str second.d, [base, #16]
     }
     return va_list {
         stack   = local_addr(fp_save) as.lens @u8,
@@ -779,25 +947,33 @@ build_va_for_floats :: (a : f64, b : f64) -> va_list {
 }
 ```
 
-This is the `#asm` workaround abi-spec §A.8 / chapter-15-abi-spec.md:321 refers to. The `#asm` block runs under the rules of [chapter-08-functions.md §2.9](chapter-08-functions.md) — full compiler memory fence; declared `memory` clobber; named operand interpolation.
+This is the future checked-`asm` workaround abi-spec §A.8 /
+chapter-15-abi-spec.md:321 refers to, not a pinned-v0.9 source form. When its
+rows are activated, the block runs under the rules of
+[chapter-08-functions.md §2.9](chapter-08-functions.md): it is a full compiler
+memory fence, its memory range and register effects come from parsed rows, and
+its signature binders appear directly in the instruction body.
 
 #### B.6.4 Wyst-side Callbacks Called from C
 
-The reverse direction: a C library accepts a function pointer that it later calls back. The Wyst-side callback must be declared `[aapcs]` and marked `pub` so the linker can find it:
+The reverse direction: a C library accepts a function pointer that it later
+calls back. The Wyst-side callback uses `extern "C"` callable identity and an
+explicit export so the linker can find it. `pub` may be added independently if
+other Wyst modules also need source access:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-[aapcs]
-pub on_signal :: (sig : i32) -> () {
+extern "C" fn on_signal(sig: i32) {
   // ... handler body
 }
+export on_signal as symbol "on_signal"
 ```
 
 Passing the function pointer is via `#addr_of`, which produces a function pointer with the convention of the declaration:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-fp : @[aapcs] (i32) -> () = #addr_of(on_signal)
+var fp: extern "C" fn(i32) = #addr_of(on_signal)
 signal_register(SIGUSR1, fp)
 ```
 
@@ -894,7 +1070,7 @@ The cost is one-time per header; the result is auditable Wyst source that partic
 | Generated source is the boundary   | Header translation is substantial enough to keep separate from ordinary compilation. Generated Wyst source preserves auditability, deterministic imports, and the existing IR surface. |
 | Lock constraints, not syntax       | The constraint table above narrows the import design space without prejudging the syntax. The rules ensure whatever it picks fits with the rest of the language.                      |
 | Document the workflow              | AAPCS users need an auditable path before a header importer exists.                                                                                                                   |
-| `va_list` is a real Wyst struct now | Treating `va_list` as opaque or `[32]u8` would force every FFI user to drop into `#asm` for any variadic call. A real struct lets ordinary Wyst code fill it.                          |
+| `va_list` is a real Wyst struct now | Treating `va_list` as opaque or `[32]u8` would force every FFI user to drop into checked `asm` for any variadic call. A real struct lets ordinary Wyst code fill it.                    |
 | Generated source is the boundary   | Keeping C import output as ordinary Wyst source preserves auditability, deterministic imports, and the existing IR surface.                                                            |
 
 ---
@@ -1035,6 +1211,10 @@ apply call: x0 = &transform_copy, x1 = v
 
 The compiler must:
 
+- Materialize live callee-entry parameters as the simultaneous, alias-aware,
+  cycle-safe transfer set from §A.9. Sequential parameter-order moves are not
+  conforming, even when their final destination list matches the allocation
+  report.
 - Emit a **hard error** if a Wyst-native caller passes a `[aapcs]`-annotated function to a function pointer typed as a Wyst-native function pointer, or vice versa.
 - Track `[aapcs]` through function pointer types — an `[aapcs]` function's address has type `@[aapcs] (args) -> ret`, which is a distinct type from the non-annotated form `@(args) -> ret`. See §B.5 and [chapter-08-functions.md §2.6](chapter-08-functions.md).
 - Replace every large by-value `[aapcs]` aggregate argument that is not HFA/HVA
@@ -1046,4 +1226,4 @@ The compiler must:
   `d8`–`d15` registers. Under the Wyst native ABI, no SIMD save/restore is ever
   generated by the convention.
 - Correctly handle the register/stack split for structs: a medium struct that would require two registers but only one argument register slot remains must be moved to the stack entirely. Structs are never split across the register/stack boundary.
-- Generate the frame record (`stp x29, x30, [sp, #-N]! ; mov x29, sp`) for every non-leaf function under both conventions. The future debug-build mode will extend this requirement to every function; `#backtrace` is reserved until the semantic registry promotes it.
+- Generate the frame record (`stp x29, x30, [sp, #-N]! ; mov x29, sp`) for every non-leaf function under both conventions. A future debug-build mode may extend this requirement to every function; the removed `#backtrace` spelling cannot opt a declaration into it.

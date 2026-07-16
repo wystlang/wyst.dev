@@ -19,6 +19,71 @@ and the layout module boundary.
 
 ---
 
+## v0.9 Modules, Imports, and Visibility (Current)
+
+Wyst v0.9 source uses keyword-led hierarchical module and import declarations.
+After leading trivia, every source file declares exactly one module with
+`module path`; `#module` and `#import` are not v0.9 spellings.
+
+<!-- wyst-contract: sketch -->
+```wyst
+module platform.timer
+
+import platform.clock
+import platform.clock as timer
+import platform.clock { now, sleep as delay }
+pub import platform.errors { Error }
+```
+
+A path is a dot-separated sequence of case-sensitive ASCII identifiers. The
+path is one module identity; its dots do not grant parent visibility or imply
+imports. A whole-module import uses the final component as its local qualifier,
+so `import platform.clock` exposes public members as `clock.member`. An `as`
+clause replaces that qualifier. A selective import introduces only the named
+public declarations into bare scope; a selection may have a local alias.
+Wildcard imports do not exist. Duplicate module imports, missing selections,
+and every ambiguous collision with a local, import, alias, or re-export are
+errors.
+
+`pub` is source visibility only. A public declaration may be selected by
+another module, and `pub import` re-exports its selected public declarations to
+further Wyst consumers. A non-public import remains local to the importing
+module. Neither `pub` nor `pub import` exports a linker symbol, creates a linker
+alias, retains otherwise unreachable code or storage, or establishes an
+artifact root. Linkage and artifact reachability are owned by their explicit
+later declarations and layout contracts.
+
+`core` is a sealed compiler-provided package root. Project source cannot
+declare, replace, or shadow it. `core.collections` currently authenticates the
+ordinary generic declaration `DynamicArray<T>` and permits public or private
+whole and selective imports, including selection aliases. A public selective
+import may therefore re-export `DynamicArray` under the ordinary visibility
+and collision rules:
+
+<!-- wyst-contract: sketch -->
+```wyst
+import core.collections { DynamicArray }
+```
+
+`core.arch` and `core.environment` permit only non-public selective imports of
+cataloged category or service namespaces, optionally aliased. They reject
+whole-root imports, leaf imports, re-exports, and shadowing, and every module
+must directly import each category it uses. The current architecture categories
+are `cpu`, `barrier`, `cache`, `tlb`, `exception`, and `memory`; the current
+environment service is `semihost`. Their leaf operations come only from the
+semantic-operation catalog and cannot be selected as bare functions.
+Authentication is by sealed catalog identity, never by a user declaration with
+the same spelling.
+
+## Released v0.8 Syntax Snapshot
+
+> The remainder of this chapter preserves the released v0.8 exposition and
+> remains useful for non-conflicting module-discovery, target, layout, and
+> placement semantics. Its `#module`/`#import` spellings, full-path default
+> qualifier, and any claim that `pub` controls linker export are historical
+> v0.8 syntax and do not describe the current v0.9 language. Where the two
+> surfaces conflict, the v0.9 section above is authoritative.
+
 ### Modules and Targets
 
 ---
@@ -68,9 +133,9 @@ each other's declarations without `#import`. `drivers.uart` lives in
 `src/drivers/` as a separate module; module `kernel` must `#import
 drivers.uart` to use its exports.
 
-A module declaration has no body delimiters. Everything below a `#module`
-line and above any directive (other than `#import` or `#deny`) belongs to
-the module.
+A module declaration has no body delimiters. A leading declaration-attribute
+group belongs to the following keyword-led `module` declaration; the remaining
+top-level declarations in that source file participate in that module.
 
 ### Top-Level Name Collection
 
@@ -97,7 +162,7 @@ function bodies are not part of the top-level dependency graph.
   describe the same normalized named-argument set. Wyst does not merge
   partial target declarations across files; a missing argument in one
   declaration and an explicit argument in another is a compile error.
-- **`#deny`**: declarations in any file of a module are additive across
+- **`#[deny_effects(...)]`**: declarations in any file of a module are additive across
   files of the same module. A file may add restrictions; none can lift a
   restriction declared elsewhere in the module.
 - **`#import`**: each `#import` directive applies only to references in the
@@ -105,25 +170,23 @@ function bodies are not part of the top-level dependency graph.
   own dependencies independently. This keeps every source file
   self-documenting about what it depends on.
 
-### Module-Level `#deny`
+### Module-Level `deny_effects`
 
-A `#deny` directive may appear immediately after the `#module` declaration
-(before `#import` lines) to restrict effect categories for every function
-in the module:
+The attribute may appear on the module declaration to restrict effect
+categories for every function and label in the module:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#module userspace_lib
+#[deny_effects(sysreg, trap, interrupt_mask, exception_return, cache_maintenance, tlb_maintenance)]
+module userspace_lib
 
-#deny(sysreg, trap, interrupt_mask, exception_return, cache_maintenance, tlb_maintenance)
-
-#import runtime.alloc
+import runtime.alloc
 // every function in this module is guaranteed EL0-safe —
 // no privileged operations anywhere in the call graph
 ```
 
-A module-level `#deny` is additive with function-level `#deny` — a
-function can deny additional categories beyond its module's restrictions
+A module-level denial is additive with function- or label-level
+`deny_effects` — a declaration can deny additional categories beyond its module's restrictions
 but cannot un-deny a module-level restriction.
 
 See [chapter-01-language-design.md](chapter-01-language-design.md) Effect System for the full
@@ -330,7 +393,7 @@ is the only way a name crosses a module boundary.
 - **Labels** (`name :: label { ... }`) — see [chapter-08-functions.md §2.4](chapter-08-functions.md)
 - **Compile-time constants** (`name :: T = expr`, `name ::= expr`)
 - **Mutable globals** (`name : T = expr`)
-- **Type declarations** (`name :: struct { ... }`, `name :: bitfield(T) { ... }`)
+- **Type declarations** (`struct Name { ... }`, `bitstruct Name: Backing { ... }`)
 - **Layout symbols** (`pub __text_start ::= #start(.text)`)
 
 When `pub` is combined with `#inline`, `pub` exports the Wyst module
@@ -360,15 +423,62 @@ pub boot_counter : u64 = 0 // visible and writable by every importer
 
 ---
 
-## Symbol Visibility
+## Source Visibility And Linker Boundaries
 
-`pub` is the only symbol visibility modifier the language defines. There
-is no `#weak` (overrideable definition), no `#hidden` (shared-object
-visibility control), and no symbol-alias mechanism.
+`pub` is solely a Wyst source-visibility modifier. It makes a declaration
+importable by Wyst modules, and `pub import` may re-export a source name, but
+neither form creates or changes a linker-visible symbol.
 
-If a future use case demands them, candidates would be `#weak` (for runtime
-patches and default implementations) and `#hidden` (for shared-library
-ABIs). They are not required for kernel-only or freestanding code.
+Linker names enter source only through directional boundary declarations:
+
+<!-- wyst-contract: sketch -->
+```wyst
+import symbol "memcpy" as c_memcpy: extern "C" fn(@u8, @u8, u64) -> @u8
+import symbol "errno" as c_errno: @i32
+export checksum as symbol "wyst_checksum"
+export weak default_idle as symbol "platform_idle"
+export _start
+```
+
+An import maps one required external linker name to a fresh, typed Wyst name.
+Callable imports carry their complete `extern "C" fn(...)` identity; storage
+imports carry an address type. Weak imports are rejected because the language
+does not yet define a typed absence value. An export maps an existing function,
+label, or ordinary mutable global to one external name. Binding is
+strong by default; `weak` is legal only on an export. The omitted alias in
+`export _start` means `as symbol "_start"`.
+
+`per_cpu` and other per-instance storage templates cannot be exported: their
+symbol value is an instance-relative offset, not one process-wide address.
+The target must be a declaration owned by the module containing the `export`;
+a selected or re-exported Wyst import cannot be captured as if it were local.
+
+Mappings are declarations, not attributes. One local declaration may be
+exported repeatedly under independent external aliases and bindings. Two
+different local declarations may not claim the same external spelling in one
+whole-program build; the compiler reports the collision deterministically.
+There is no link-name attribute, no `#export` or `#weak` directive, no implicit
+linker export from `pub`, and no source form for hidden shared-object visibility.
+
+The current whole-program compiler keeps module-qualified semantic identities
+separate from these external spellings. Changing only `pub`, a module import
+alias, or source re-export therefore cannot change ELF identity. The canonical
+object-unit mangling and cross-object resolution rules remain owned by Roadmap
+item 61 and do not relax this source/linker separation.
+
+In the implemented `ET_EXEC` pipeline, each imported boundary must resolve to
+exactly one compatible explicit export in the selected whole program. Code
+versus data kind and the complete callable or pointee type must agree before
+lowering; an absent or incompatible mapping is a hard diagnostic. IR and
+lowering carry the semantic Wyst identity plus a typed relocation/fixup kind,
+never an untyped linker string.
+
+A checked-assembly `: symbol = path` operand resolves through the same semantic
+Wyst namespace. The path may name an ordinary declaration or the local Wyst
+name introduced by `import symbol`, but it cannot quote a linker spelling or
+capture an outer declaration implicitly. Assembly labels are scoped to their
+one checked block: they cannot be imported, exported, emitted as linker
+symbols, or resolve another block's fixup.
 
 ---
 
@@ -780,9 +890,9 @@ The layout module places those sections:
 
 `#section(.name)` is **illegal** on:
 
-- `struct`, `bitfield`, `enum`, `type` declarations — they emit no data.
-- `#exception_vector` declarations — they have their own dedicated
-  `.wyst.vectors.<name>` sections (see [§10.2](#)).
+- `struct`, `bitstruct`, and `enum` declarations — they emit no data.
+- `vector_table` declarations — their target profile owns a dedicated
+  `.wyst.vectors.<name>` section (see [Chapter 14 §10.2](chapter-14-exception-vectors.md)).
 - Local variables — they live on the stack, not in any data section.
 - `#percpu` and `#tls` declarations — they target the dedicated `.percpu`
   / `.tls` master-image sections (see [§1.3.7](#)).

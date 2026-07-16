@@ -1,177 +1,171 @@
 ---
-title: "Chapter 11: Wyst Runtime Primitives"
+title: "Chapter 11: Wyst Semantic Operations"
 group: chapter
 chapter: 11
 order: 11
-summary: "Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks."
+summary: "Qualified semantic operations, declared hardware access, target effects, and explicit uninitialized storage."
 ---
 
-# Chapter 11: Wyst Runtime Primitives
+# Chapter 11: Wyst Semantic Operations
 
-> **Canonical scope.** The `%`-prefixed primitives that lower to runtime
-> operations: stack-local address materialization, explicit raw-storage reads
-> and writes, runtime enum tag projection, atomics (§1.3.2), system register
-> access (§1.3.3), trap and exception entry (§1.3.4), cache and TLB maintenance
-> (§1.3.5), CPU hints (§1.3.6), and per-CPU / thread-local storage (§1.3.7).
-> The memory-access qualifier/directive forms (`@volatile T`, `@mmio T`,
-> `#acquire`, `#release`) live in [chapter-09-memory-model.md](chapter-09-memory-model.md). IR-level intrinsic
-> representation lives in [appendix-a-ir.md §6.8](appendix-a-ir.md).
->
-> **Terminology.** Source code uses **runtime primitive** for `%...` forms
-> and **compile-time form/directive** for `#...` forms. The compiler's IR may
-> still use the internal term `intrinsic` for opaque runtime-lowered ops.
+## v0.9 Operation Surface (Normative)
 
-`%` primitives are explicit machine operations. The memory model defines when
-they are legal to reorder; this chapter defines what operation each primitive
-requests from the target.
+Wyst v0.9 has **no prefix-`%` user syntax**. Every `%name(...)` spelling,
+whether known to v0.8 or not, is rejected before operation-name lookup. `%`
+may appear in internal compiler and IR notation and remains the arithmetic
+remainder operator where expression grammar permits it; neither use creates a
+source runtime-primitive namespace.
 
----
+The normative active operation registry is the versioned
+[`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv). Each row
+owns one stable semantic identity, source surface, compiler-internal lowering
+key, target plan, result and parameter contract, ordering contract, report
+identity, and implementation state. Target plans join the authenticated A64
+instruction, system-operation, and machine-semantics catalogs rather than
+forming a second instruction or effect table. The separate
+[`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv) is only
+release evidence for the exact 88 pre-v0.9 names. It is not grammar, tooling
+vocabulary, a migration alias table, or an operation-resolution input.
 
-### Checked Primitive Example
-
-CPU hint primitives are explicit runtime operations:
+Architecture operations are qualified-only members of sealed `core.arch`
+categories. A selective import binds the category, optionally under a local
+alias, while the operation's semantic identity remains unchanged:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module intrinsics_demo
+module semantic_operations
 
-#noreturn
-wait_forever :: () {
-  loop {
-    %wfe()
-  }
+import core.arch { cpu, barrier, cache, tlb, exception, memory as mem }
+
+fn wait_for_event() {
+  barrier.compiler()
+  cpu.wfe()
+}
+
+fn load_pair(location: @u64) -> (first: u64, second: u64) {
+  return mem.load_pair_non_temporal(location)
 }
 ```
 
-### Runtime Address Materialization
+The closed architecture categories are `cpu`, `barrier`, `cache`, `tlb`,
+`exception`, and `memory`. Bare leaf imports, unqualified leaf calls, expanded
+aliases, user wrappers masquerading as catalog declarations, and re-exports of
+sealed categories are not operation surface. Imports create compile-time
+namespace bindings only: they emit no wrapper, runtime symbol, dispatch, or
+call. Availability, privilege, effects, faults, ordering, and lowering are
+derived from the cataloged identity and selected target profile.
+
+Environment services follow the same identity and qualification rules under
+sealed `core.environment`, but are selected by the executable environment, not
+by architecture alone. For example:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-%addr_of(local : T) -> @T in an explicit address context
-%addr_of(local : [N]T) -> @T or @[N]T in an explicit address context
+import core.environment { semihost }
+
+const result: u64 = semihost.call(operation, parameter)
 ```
 
-`%addr_of(local)` materializes the address of stack-local storage in the
-current function. It is the runtime counterpart to `#addr_of(symbol)`: the
-result is an ordinary stack-frame address, not a relocation and not a
-compile-time constant. It is illegal in `#naked` functions because those
-functions do not have a compiler-owned frame.
+Importing `semihost` is valid only when the target selects its exact service
+descriptor and adds that descriptor to the artifact's required-service set.
+The current compatible profile selects executable environment
+`qemu-aarch64-semihost-v1`, which offers exactly
+`a64-semihost-hlt-f000-v1`; bare or unselected environments fail the import as
+a hard target-compatibility error. Artifact preparation rechecks the required
+set, and a runner must match the selected environment and satisfy every
+required descriptor before launch. Target and runner environments are selected
+independently; static artifact preparation invokes the runner preflight and
+rejects an absent runner selection, a mismatched environment identity, or an
+incomplete runner service set before producing the service-bearing artifact.
+On A64, `semihost.call` places its two `u64` arguments in `x0` and `x1`, emits
+`hlt #0xf000`, and returns `x0`. It remains distinct from
+`exception.hlt(0xf000)`, which has no semihost ABI meaning.
 
-**Effect category:** none. The primitive materializes a compiler-owned
-stack-frame address, which is a generated backend resource fact rather than a
-semantic effect. Stack-address escape remains checked by the lifetime/authority
-rules; backend frame facts are reported after lowering.
+Compiler-owned operations that naturally belong to a language type use that
+type's authenticated method or property surface: atomic methods come from the
+atomic matrix; system-register declarations provide `.read()`, `.write(...)`,
+and `.modify(...)`; endian access is an address method; vectors provide
+`.abs()`, `.sqrt()`, and unary negation; and enum values provide `.tag`. The
+bare `fma(a, b, c)` operation and generic `uninit<T>()` constructor are
+unshadowable. `addr_of(local)` is the v0.9 runtime address-materialization
+operation. These surfaces still carry catalog identities even though they do
+not require an architecture-category import.
 
-`%addr_of(local)` does not choose a default lens in an inferred binding. Write
-an explicit annotation or categorized conversion:
+### `MaybeUninit<T>` Whole-Object Storage
 
-<!-- wyst-contract: sketch -->
-```wyst
-word : u64 = 0
-word_ptr : @u64 = %addr_of(word)
-word_ptr2 := %addr_of(word) as.lens @u64
-
-bytes : @u8 = %addr_of(buf)
-whole : @[4]u8 = %addr_of(buf)
-bytes2 := %addr_of(buf) as.lens @u8
-```
-
-The resulting address may be used for direct memory operations inside the
-containing function:
-
-<!-- wyst-contract: sketch -->
-```wyst
-value : u64 = 41
-ptr : @u64 = %addr_of(value)
-u64@[ptr] = u64@[ptr] + 1
-```
-
-Returning the address, storing it into longer-lived storage, or passing it
-through an ordinary function call is rejected. Direct calls may receive it only
-through an address parameter marked `#noescape`, which the callee is checked
-not to retain or expose under the syntactic `#noescape` rule: direct memory
-access and direct forwarding to another `#noescape` parameter are allowed, while
-casts, aliases, stores of the address value, indirect calls, and ordinary value
-observations are rejected. Use `#addr_of(symbol)` for globals, functions,
-labels, exception vectors, and other linkable storage.
-
----
-
-### Explicit Raw Storage
+`MaybeUninit<T>` is opaque storage with exactly `T`'s size, alignment, storage
+class, and calling-convention footprint, but it does not contain a
+compiler-proved initialized `T` until a complete write establishes that fact.
+The complete v0.9 surface is:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-%read_uninit(storage : MaybeUninit<T>) -> T
-%write_uninit(storage : MaybeUninit<T>, value : T) -> void
-```
+module explicit_uninitialized_storage
 
-`MaybeUninit<T>` names raw storage with the same layout and storage class as
-`T` but without an initialized `T` value. `%read_uninit(storage)` is the only
-source-level way to deliberately observe the current bits of that raw storage
-as a `T`. `%write_uninit(storage, value)` writes a `T` value into the raw
-storage without changing the storage's type.
-
-These primitives do not zero memory, do not add fences, and do not introduce
-volatile or atomic ordering. The observed value from `%read_uninit` is an
-ordinary `T` value after the read, but the IR records the read as an explicit
-indeterminate-read operation rather than manufacturing an SSA value with no
-definition.
-
-The storage operand must be a local `MaybeUninit<T>` binding. Stack-resident
-and register-resident locals have identical source semantics; placement and
-`#pin` affect only where the storage lives. Special-register aliases remain
-read-only snapshots and cannot be used as mutable raw storage.
-
-**Effect category:** none. These primitives operate on local raw storage and
-do not by themselves materialize an address, touch external memory, or cross an
-architectural boundary.
-
----
-
-### Runtime Enum Tag Projection
-
-<!-- wyst-contract: sketch -->
-```wyst
-%tag_of(value : Enum) -> the enum's declared discriminator type
-```
-
-`%tag_of(value)` projects the active discriminator from an enum value at
-runtime. It is the runtime counterpart to `#tag_of(Enum.Variant)`, which is
-restricted to compile-time variant metadata.
-
-**Effect category:** none. `%tag_of` is a pure value projection. It does not
-validate payload bytes, branch on variants, or read inactive payload storage.
-The `as` operator still does not convert enums to integers; `%tag_of` is the
-explicit spelling for this payload-discarding projection.
-
-<!-- wyst-contract: sketch -->
-```wyst
-Event :: enum: u8 {
-  Empty
-  Data(u64)
-}
-
-event_tag :: (event : Event) -> u8 {
-  return %tag_of(event)
+fn example(value: u64) -> u64 {
+  var slot = uninit<u64>()
+  const raw: u64 = slot.read_uninit()
+  slot.write(value)
+  const proven: u64 = slot.read()
+  const asserted: u64 = slot.assume_init()
+  const slot_address: @MaybeUninit<u64> = addr_of(slot)
+  return raw + proven + asserted
 }
 ```
 
-Payload-less enum values lower as the discriminator value itself.
-Payload-carrying enum values lower to extraction of the tag word at offset 0
-from the fixed two-word enum representation.
-There is no inverse runtime primitive for constructing an enum from a raw tag
-and payload bytes.
+`uninit<T>()` reserves storage without zeroing, writing, allocating, or
+inventing initialization. `slot.write(value)` evaluates `value` once, performs
+one complete typed write, and establishes compiler-proved initialization.
+`slot.read()` performs one non-consuming typed read and is valid only when
+every incoming control-flow path proves complete initialization.
+
+`slot.read_uninit()` is valid in every initialization state. It performs one
+explicit indeterminate-bit observation, returns an ordinary `T`, leaves the
+state unchanged, and is represented distinctly in typed IR; its result is
+never compiler `poison` or `undef`. `slot.assume_init()` performs a typed read,
+records a trusted initialization assertion, and makes later evidence
+assertion-derived. A false assertion is a confined contract violation, not
+permission for unrelated optimizer assumptions.
+
+`MaybeUninit<T>` is non-copyable and cannot be passed or returned by value,
+embedded in an aggregate, converted, relensed, or used by ordinary value
+operations. v0.9 tracks initialization at whole-object granularity only.
+`addr_of(slot)` yields `@MaybeUninit<T>` without reading it; that address has no
+ordinary `.load()`, `.store()`, conversion, or relensing surface. A verified
+complete producer write may establish initialized state. Foreign or opaque
+mutation otherwise makes the state unknown, and the documented success path
+must use `assume_init()` when no proof is available.
+
+## Released v0.8 Prefix-`%` Reference (Historical, Non-Normative)
+
+Every prefix-`%` spelling and example below is retained only as released-v0.8
+design history. Present-tense descriptions in those historical sections state
+v0.8 behavior; they do not admit a v0.9 spelling, alias, parser production, or
+compatibility path. The active v0.9 authority is the section above and the
+semantic operation catalog.
+
+The following section also preserves old `#pin`, `#naked`, `#noescape`,
+`#noreturn`, `T@[address]`, colon-slice, typed-address, `as.<category>`, and
+legacy atomic examples. They are historical unless a later subsection is
+explicitly labeled v0.9 normative.
 
 ---
 
-## 1.3.2 Atomic Operations
+## 1.3.2 Atomic Operations (historical v0.8 surface; non-normative)
+
+The `%atomic_*`, `%cas`, `%fetch_*`, `%xchg`, `#acquire`, and `#release`
+spellings in this historical section are removed in v0.9. The normative v0.9
+type, method, element, result, and order catalog is the generated
+[atomic matrix](generated-atomic-matrix.md), sourced from
+[`atomic-matrix.json`](atomic-matrix.json). Implementations must not accept the
+historical spellings below as aliases.
 
 Atomic operations are the language-level primitives for atomic
 inter-agent communication. Where `#acquire` and `#release` cover ordered
 plain loads and stores, atomic operations cover **read-modify-write** (RMW)
 sequences — compare-and-swap, fetch-and-add, exchange, and single-bit
 updates — that have no equivalent in the plain-access shape and that
-hand-written `ldxr`/`stxr` loops in `#asm` get wrong with monotonous
+hand-written `ldxr`/`stxr` loops in checked `asm` get wrong with monotonous
 regularity.
 
 ### When to Use Each Form
@@ -180,14 +174,14 @@ regularity.
 | ------------------------------------ | --------------------------------------------------------------------------------- |
 | Acquire-load of plain memory         | `#acquire u32@[addr]`                                                              |
 | Release-store to plain memory        | `#release u32@[addr] = v`                                                          |
-| Relaxed atomic load                  | `%atomic_load(addr, order: relaxed)`                                              |
-| Sequentially-consistent atomic load  | `%atomic_load(addr, order: seq_cst)`                                              |
-| Relaxed atomic store                 | `%atomic_store(addr, v, order: relaxed)`                                          |
-| Sequentially-consistent atomic store | `%atomic_store(addr, v, order: seq_cst)`                                          |
-| Compare-and-swap                     | `%cas(addr, exp, new, order: ...)`                                                |
-| Fetch-and-add (and -sub, -or, -and, -xor) | `%fetch_add(addr, delta, order: ...)`                                        |
-| Exchange                             | `%xchg(addr, val, order: ...)`                                                    |
-| Set / clear a single bit             | `%atomic_bit_set(addr, n, order: ...)` / `%atomic_bit_clear(addr, n, order: ...)` |
+| Relaxed atomic load                  | `%atomic_load(addr, order = relaxed)`                                              |
+| Sequentially-consistent atomic load  | `%atomic_load(addr, order = seq_cst)`                                              |
+| Relaxed atomic store                 | `%atomic_store(addr, v, order = relaxed)`                                          |
+| Sequentially-consistent atomic store | `%atomic_store(addr, v, order = seq_cst)`                                          |
+| Compare-and-swap                     | `%cas(addr, exp, new, order = ...)`                                                |
+| Fetch-and-add (and -sub, -or, -and, -xor) | `%fetch_add(addr, delta, order = ...)`                                        |
+| Exchange                             | `%xchg(addr, val, order = ...)`                                                    |
+| Set / clear a single bit             | `%atomic_bit_set(addr, n, order = ...)` / `%atomic_bit_clear(addr, n, order = ...)` |
 
 There is exactly one canonical spelling per (operation, ordering) pair.
 Acquire- and release-ordered single-word loads and stores stay in the
@@ -233,7 +227,7 @@ The address argument has element type matching the value type:
 <!-- wyst-contract: sketch -->
 ```wyst
 counter : u64 = 0
-%fetch_add(#addr_of(counter), 1, order: relaxed)
+%fetch_add(#addr_of(counter), 1, order = relaxed)
 ```
 
 For RMW operations on `@volatile T` or `@mmio T`, the volatility of the address
@@ -243,8 +237,10 @@ _and_ atomic and emits the appropriate ARM64 instruction without any additional
 architectural memory type still comes from the runtime mapping.
 
 Floating-point atomics are outside the atomic surface. The 128-bit pair atomics
-(`ldxp`/`stxp`, `casp`) are accessible only via `#asm`; the language does
-not model 128-bit value types.
+(`ldxp`/`stxp`, `casp`) are also unavailable in the pinned v0.9 compiler: the
+language has no 128-bit value type and those checked-assembly rows are
+`known_unsupported`. A later profile must activate their complete resource and
+memory contracts before checked `asm` can expose them.
 
 ---
 
@@ -266,11 +262,11 @@ acquire/release alone cannot provide.
 ```wyst
 // Relaxed read of a shared counter. Atomic at the word level; no ordering
 // relative to surrounding code.
-n := %atomic_load(counter_addr, order: relaxed)
+n := %atomic_load(counter_addr, order = relaxed)
 
 // seq_cst store. Participates in the total order with all other seq_cst
 // operations.
-%atomic_store(flag_addr, 1 as.numeric u32, order: seq_cst)
+%atomic_store(flag_addr, 1 as.numeric u32, order = seq_cst)
 ```
 
 ---
@@ -289,7 +285,7 @@ the value at `addr` is unchanged.
 
 ARM64 does not distinguish success and failure orderings — the failure
 path performs the load with the same barrier configuration as the success
-path. Wyst therefore takes a single `order:` argument rather than the
+path. Wyst therefore takes a single `order = ...` argument rather than the
 C++/Rust pair. `acqrel` and `seq_cst` `%cas` are RMW orderings; `acquire`
 applies to both the read and the write, `release` likewise.
 
@@ -299,7 +295,7 @@ LOCK : @u64 = 0x8000
 
 spin_lock :: () {
   loop {
-    _, ok := %cas(LOCK, 0 as.numeric u64, 1 as.numeric u64, order:acquire)
+    _, ok := %cas(LOCK, 0 as.numeric u64, 1 as.numeric u64, order = acquire)
     if ok {
       return
     }
@@ -338,13 +334,13 @@ but the prior value is not recomputable from the new value alone.
 <!-- wyst-contract: sketch -->
 ```wyst
 // Reference counting:
-prev := %fetch_add(refcount_addr, 1, order: relaxed)
+prev := %fetch_add(refcount_addr, 1, order = relaxed)
 
 // Lock-free flag union (set bits 3 and 5 atomically):
-%fetch_or(flags_addr, (1 << 3) | (1 << 5), order: acqrel)
+%fetch_or(flags_addr, (1 << 3) | (1 << 5), order = acqrel)
 
 // Take the previous head of a singly-linked list and replace it with NEW:
-old_head := %xchg(head_addr, new_head, order: acqrel)
+old_head := %xchg(head_addr, new_head, order = acqrel)
 ```
 
 ---
@@ -369,7 +365,7 @@ constant less than `8 * #size_of(T)`; out-of-range is a compile error.
 <!-- wyst-contract: sketch -->
 ```wyst
 // Test-and-set the lock bit:
-was_locked := %atomic_bit_set(status_addr, 0, order: acquire)
+was_locked := %atomic_bit_set(status_addr, 0, order = acquire)
 if was_locked == false {
     // we own the lock
 }
@@ -466,8 +462,8 @@ O is treated as a memory operation of the corresponding row/column.
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Intrinsics for RMW; directives for ordered load/store  | Mirrors the language's existing modifier pattern for plain accesses (`@volatile T`, `@mmio T`, `#acquire`/`#release`). RMW has no plain-access equivalent so it gets a call form.                       |
 | One canonical spelling per (op, order)                 | Single form to learn; single form to grep; no documentation drift between "two ways to do the same thing."                                                                                   |
-| Keyword `order:` argument                              | Closed set of five orderings — naming each variant separately would balloon to ~30 intrinsics.                                                                                               |
-| Single `order:` on `%cas` (no failure order)           | ARM64 hardware cannot distinguish; C++/Rust two-argument form is always lowered with the failure order widened to match success on ARM. The redundant parameter is a footgun, not a feature. |
+| Labeled `order = ...` argument                         | Closed set of five orderings — naming each variant separately would balloon to ~30 intrinsics.                                                                                               |
+| Single `order = ...` on `%cas` (no failure order)      | ARM64 hardware cannot distinguish; C++/Rust two-argument form is always lowered with the failure order widened to match success on ARM. The redundant parameter is a footgun, not a feature. |
 | `%cas` returns `(prev, ok)`                            | Caller can branch on `ok` and inspect the racing value without a second load. Matches C11 `atomic_compare_exchange_strong`.                                                                  |
 | All `%fetch_*` and `%xchg` return prior value          | Matches LSE instruction semantics directly. Returning the prior value is universal — the new value is recomputable from `(prev, delta)`, but not vice versa.                                 |
 | `%atomic_bit_set` / `%atomic_bit_clear` as first-class | Single-bit RMW is frequent enough (flags, locks, ref-count bits) and LSE has dedicated `ldset`/`ldclr` — a generic `%fetch_or` would obscure intent and possibly miss the LSE lowering.      |
@@ -479,21 +475,236 @@ O is treated as a memory operation of the corresponding row/column.
 
 ---
 
-## 1.3.3 System Register Access
+## 1.3.3 Hardware Register Declarations and Access (v0.9 Normative Declarations)
 
-The compiler's architectural system-register table is closed for the named
-`%mrs` / `%msr` forms: registers not listed there and noncanonical case
-variants are rejected. Each named register has exactly one canonical spelling,
-the exact spelling stored in the compiler's system-register table. Diagnostics
-for case-only variants name the accepted replacement. Implementation-defined
-registers use the explicit S-encoded `%mrs_s` / `%msr_s` fallback form.
+The declaration, snapshot, field-policy, and compiler-owned method surface
+through **System Register Declarations** below is current v0.9. The later
+prefix-`%` register-call subsections are an explicitly labeled v0.8 snapshot;
+v0.9 uses the declared receiver methods described in the normative operation
+surface above.
+
+### Register Maps and MMIO Placement
+
+`register_map` describes a reusable set of MMIO registers. A register has one
+access mode, one unsigned backing width, one byte offset, and an optional field
+block. `mmio` places a map at one base address:
+
+<!-- wyst-contract: sketch -->
+```wyst
+register_map Pl011 {
+  DR: readwrite u32 at 0x00 {
+    DATA: u8 at 0..=7
+  }
+
+  FR: readonly u32 at 0x18 {
+    TXFF: bool at 5
+  }
+}
+
+mmio UART0: Pl011 at 0x0900_0000
+```
+
+Register offsets and MMIO placement addresses are compile-time integers. A
+placed register address is the base plus its byte offset, checked without
+wraparound. Each access must satisfy the backing width's natural MMIO alignment;
+a provably misaligned declaration or access is rejected. Register offsets are
+not source address expressions, and `at` remains a declarative-placement word.
+
+The register backing is exactly `u8`, `u16`, `u32`, or `u64`. A register may
+omit its field block and still creates the nominal `Map.Register.Value` snapshot
+defined in Chapter 6. A placed map exposes its registers only through the map
+instance, for example `UART0.FR`; placement does not copy storage, allocate
+memory, or perform an access.
+
+A standalone scalar MMIO declaration names one register directly:
+
+<!-- wyst-contract: sketch -->
+```wyst
+mmio TIMER: readonly u64 at 0x0200_bff8
+```
+
+Its declared type must be a target-supported fixed-width scalar that lowers to
+one load or store. It uses that scalar directly and has no snapshot wrapper,
+`.raw`, named-field write, or `modify` operation. Vectors and aggregates are
+invalid scalar MMIO types. The raw `@mmio T` address type remains available as
+the lower-level dynamic-address surface.
+
+`register_map`, `mmio`, and `system_register` are contextual declaration
+introducers and remain ordinary identifiers outside their registered top-level
+slots. `readonly`, `writeonly`, and `readwrite` are likewise contextual access
+modes only in hardware declaration positions. The spelling `access(...)` is
+not grammar. `device` is globally reserved and rejected pending a separately
+specified board/SoC model.
+
+### Captured Reads, Raw Writes, and Named Operations
+
+For a map register, `.read()` is available exactly when the register is
+readable. It performs one full-width hardware read and returns the register's
+nominal snapshot. Its read-only `.raw` and readable field projections observe
+that one captured value and cannot perform another access.
+
+A raw `.write(value)` is available exactly when the register is writable. It
+accepts exactly one value of the raw backing type and performs one full-width
+write. It deliberately bypasses named-field and reserved-bit construction
+policy and writes every supplied bit. A snapshot is not accepted implicitly;
+the caller writes `snapshot.raw`. There are no snapshot overloads, `read_raw`,
+or `write_raw` aliases.
+
+A named `.write(FIELD = value, ...)` begins with a deterministic zero backing,
+applies every field's write-policy encoding and the fixed reserved-bit image,
+and performs one full-width write. A named `.modify(FIELD = value, ...)`
+evaluates the receiver and arguments, performs one full-width read, applies the
+named updates to that captured backing under the field and reserved policies,
+and performs one full-width write. It is not atomic.
+
+Raw and named arguments cannot be mixed. Named write and modify require at
+least one argument; every label must name a unique writable field. Duplicate,
+unknown, unreadable-only, or policy-inert labels are rejected. Both operations
+return no value. The receiver and every argument are evaluated exactly once in
+left-to-right written order before any hardware access. No operation inserts a
+retry, truncation, architectural barrier, or extra access.
+
+### Hardware Fields and Policies
+
+Hardware fields use the same normalized carrier and `at N` / `at A..=B`
+location engine as `bitstruct`. Constant locations, positive width, bounds,
+overlap, carrier representability, complete payload-less-enum encoding, and
+explicit runtime truncation are checked once by that shared engine. Hardware
+policies do not extend standalone `bitstruct` declarations.
+
+A field without an access mode inherits its register's mode. An explicit field
+mode may only narrow the register mode to a non-empty subset. Thus a `readwrite`
+register may contain a `readonly` or `writeonly` field, while a `readonly`
+register cannot contain a writable field and a `writeonly` register cannot
+contain a readable field.
+
+The closed postfix policy vocabulary is:
+
+| Policy class | Spellings | Meaning |
+| --- | --- | --- |
+| Reset metadata | `reset VALUE` | records the field's declared reset encoding; it emits no access and creates no runtime initialization |
+| Read behavior | `read_clears`, `read_sets` | the hardware clears or sets the field as a consequence of the one declared read |
+| Write behavior | `write_ignored` | writes to the field have no hardware meaning and the field is not a named writable argument |
+| Write-one behavior | `write_one_clears`, `write_one_sets`, `write_one_toggles` | each one bit written requests the named action; zero is the inactive encoding |
+| Write-zero behavior | `write_zero_clears`, `write_zero_sets`, `write_zero_toggles` | each zero bit written requests the named action; one is the inactive encoding |
+
+Suffixes occur only in reset, read-policy, write-policy order and at most once
+per class. Missing reset metadata means unknown, not zero. A reset value must be
+constant and representable in the field width. Policies do not authorize an
+access direction that the register or field mode forbids. Impossible
+combinations are rejected rather than assigned approximate semantics.
+
+For action policies, a named argument is the action-bit mask in the field's
+carrier, not a promise of the post-write state. Unmentioned write-one fields use
+their zero inactive encoding and unmentioned write-zero fields use their one
+inactive encoding. A field without a write action policy is inserted normally
+into the zero base. This construction is admitted only when all unmentioned
+fields have a deterministic safe encoding for the one requested write.
+
+Bits not covered by a named field or explicit reserved region are implicitly
+reserved-zero for named writes. An explicit reserved region uses the same bit
+location grammar and only overrides that default:
+
+<!-- wyst-contract: sketch -->
+```wyst
+reserved at 8..=15 one
+reserved at 16..=31 preserve
+```
+
+Reserved regions have no field accessor and cannot appear as named arguments.
+`one` contributes ones to a named write. `preserve` copies the captured bits
+during a named modify and makes named write invalid because named write performs
+no implicit read. Reserved regions and fields may not overlap.
+
+Named modify is available only when the field engine can satisfy every field,
+reserved, and read-side-effect rule with exactly one read followed by one write.
+In particular, a destructive `read_clears` or `read_sets` policy cannot be
+silently compensated with another read or write. If the exact pair is not safe,
+modify is rejected; there is no fallback operation.
+
+### System Register Declarations
+
+ARM64 system registers use exactly `system_register NAME: ACCESS u64` plus the
+hardware field block. A catalog-named declaration omits `at`, uses the exact
+case-sensitive canonical catalog register name, and uses `{}` when it declares
+no fields:
+
+<!-- wyst-contract: sketch -->
+```wyst
+system_register CurrentEL: readonly u64 {}
+
+system_register SCTLR_EL1: readwrite u64 {
+  M: readwrite bool at 0
+  C: readwrite bool at 2
+  I: readwrite bool at 12
+}
+```
+
+Every declaration creates `NAME.Value`, including an empty declaration.
+`.read()` emits one `mrs` and returns that nominal snapshot. `.raw` is a
+read-only `u64`; fields project from the same captured value. Raw `.write(...)`
+accepts exactly `u64` and emits one `msr`; a snapshot requires explicit `.raw`.
+Named write and modify use the same policy engine as register maps and retain
+the exact one-write or one-read/one-write contract.
+
+The declared access mode cannot exceed the authenticated register directions.
+The compiler checks canonical identity, support disposition, selected target
+revision and features, execution level, security and implicit state, effects,
+faults, and field legality. All facts and the emitted `mrs`/`msr` instruction
+come exclusively from the normalized A64 authority, active support manifest,
+and compiler-semantic catalog. A declaration cannot create or override an
+architectural fact, and no compiler phase owns a parallel system-register
+table. Lowering consumes typed catalog identity and never constructs source
+`asm`.
+
+An authenticated implementation-defined target-extension register uses the
+sole encoded declaration spelling:
+
+<!-- wyst-contract: sketch -->
+```wyst
+system_register VENDOR_CTL: readwrite u64 at S3_0_C15_C2_0
+```
+
+The fieldless encoded form omits braces; an encoded declaration with fields
+places its field block after the literal. The literal's exact case-sensitive
+grammar is `S<op0>_<op1>_C<CRn>_C<CRm>_<op2>`. Components are canonical unsigned
+decimal without a leading zero except for `0`; their widths are respectively 2,
+3, 4, 4, and 3 bits. Strings, lowercase `s` or `c`, expressions, omitted
+components, alternate separators, and noncanonical aliases are rejected.
+
+The exact tuple must resolve to one active authenticated target-extension row
+with complete compiler semantics and selected-target availability. The literal
+selects that known row and never creates a register or instruction fact.
+Unknown or unnamed tuples are rejected. Generic encoded read/write operations,
+including `%mrs_s` and `%msr_s`, are unavailable in v0.9; there is no raw
+encoding escape.
+
+Each system-register read, write, and complete modify is a full two-way
+compiler-memory fence. No operation implies or emits `dmb`, `dsb`, or `isb`;
+architecture-required sequencing remains an explicit source operation. Reports
+distinguish the compiler-only fence from any emitted architectural barrier and
+distinguish snapshot reads, raw writes, named writes, and complete modifies.
+There are no register-specific weak-order exceptions.
+
+### Named System Register Runtime Primitives (Historical v0.8 `%` Surface)
+
+This subsection and its register-namespace, DAIF, examples, lowering, and
+rationale subsections preserve the v0.8 `%mrs`/`%msr` contract only. v0.9 has
+no generic raw system-register call: a declared register uses `.read().raw`,
+`.write(value)`, or its field-aware `.modify(...)` method.
+
+The distinct named `%mrs` / `%msr` runtime primitives remain defined in the
+current language. Their accepted register names and semantics use the same
+generated authority as declarations; they are not aliases for a declaration and
+do not provide an encoded-register escape. Registers absent from the catalog and
+noncanonical case variants are rejected. Each named register has exactly one
+canonical spelling, and diagnostics for case-only variants name that spelling.
 
 ARM64 system registers (TCR_ELx, SCTLR_ELx, VBAR_ELx, TTBR0_ELx, MAIR_ELx,
 etc.) are the primary configuration surface for the CPU. Every non-trivial
-kernel reads and writes them constantly. Wyst provides direct intrinsics
-for system-register access, eliminating the `#asm { mrs … }` /
-`#asm { msr … }` boilerplate that otherwise dominates early-boot and
-trap-handling code.
+kernel reads and writes them constantly. Wyst provides direct intrinsics for
+system-register access, eliminating repetitive checked-assembly `mrs`/`msr`
+blocks that would otherwise dominate early-boot and trap-handling code.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -511,21 +722,21 @@ table (see appendix); an unknown name is a compile error.
 ### Register Name Namespace
 
 System register names occupy a dedicated namespace recognized **only** in
-the `%mrs` / `%msr` / `%mrs_s` / `%msr_s` argument position. They cannot
+the `%mrs` / `%msr` argument position. They cannot
 appear in expression position, are not values, and cannot be assigned to
 variables.
 
-This means a register name may collide with a same-named bitfield type
+This means a register name may collide with a same-named bitstruct type
 (e.g. `TCR_EL1` is both an architectural register and a conventional
-bitfield type declaration) without ambiguity — the syntactic positions
+bitstruct type declaration) without ambiguity — the syntactic positions
 are disjoint:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-TCR_EL1 :: bitfield(u64) { ... }   // TCR_EL1 is a type here
+bitstruct TCR_EL1: u64 { ... }      // TCR_EL1 is a type here
 
-raw := %mrs(TCR_EL1)                // TCR_EL1 is a register name here
-tcr := raw as.bits TCR_EL1          // TCR_EL1 is a type here
+const raw: u64 = %mrs(TCR_EL1)       // TCR_EL1 is a register name here
+const tcr: TCR_EL1 = bitcast<TCR_EL1>(raw)
 ```
 
 Register names use the exact canonical table spelling. Most names use
@@ -538,7 +749,7 @@ completion only suggests canonical names.
 
 ### Access Permissions
 
-The system register table encodes each register's access permissions.
+The generated system-register authority encodes each register's access permissions.
 Wyst rejects illegal accesses:
 
 | Register kind                               | `%mrs(reg)`                                        | `%msr(reg, v)`    |
@@ -557,24 +768,24 @@ statically when the target declares EL1 as its execution level.
 ### Return Type Discipline
 
 `%mrs` always returns `u64` — the raw register width as the ARM64
-architecture defines it. The caller converts to a bitfield via the
-standard `as.bits` conversion (see [chapter-06-types.md §1.6.1](chapter-06-types.md)):
+architecture defines it. The caller converts to a bitstruct via the
+exact-backing `bitcast` conversion (see [chapter-06-types.md §1.6.1](chapter-06-types.md)):
 
 <!-- wyst-contract: sketch -->
 ```wyst
 // Read TCR_EL1, modify a field, write it back:
-raw := %mrs(TCR_EL1)
-tcr := raw as.bits TCR_EL1
-tcr.t0sz = 25
-tcr.t1sz = 25
-%msr(TCR_EL1, tcr as.bits u64)
+const raw: u64 = %mrs(TCR_EL1)
+var tcr: TCR_EL1 = bitcast<TCR_EL1>(raw)
+tcr.T0SZ = 25
+tcr.T1SZ = 25
+%msr(TCR_EL1, bitcast<u64>(tcr))
 %isb()                                 // required when the write affects translation
 ```
 
-Returning a bitfield-typed value implicitly would couple the
+Returning a bitstruct-typed value implicitly would couple the
 sysreg-lookup table to the type-name lookup table — a register's intrinsic
-return type would depend on whether a same-named bitfield type happens to
-be in scope. The explicit `as` is one extra line per access and matches
+return type would depend on whether a same-named bitstruct type happens to
+be in scope. The explicit `bitcast` is one extra operation per access and matches
 the strict typing discipline established in [chapter-06-types.md §1.4.1](chapter-06-types.md).
 
 The 32-bit-encoded system registers (e.g. `FPCR`, `FPSR` on some
@@ -636,32 +847,11 @@ written via the regular `%mrs(DAIF)` / `%msr(DAIF, val)` intrinsics. The
 
 ### Implementation-Defined Registers
 
-ARM-architectural registers cover the standard surface. Implementation-
-defined registers (Apple silicon performance counters, Cortex-A errata
-workarounds, vendor-specific debug registers) use the S-encoded form:
-
-<!-- wyst-contract: sketch -->
-```wyst
-%mrs_s(op0 : u2, op1 : u3, crn : u4, crm : u4, op2 : u3) -> u64
-%msr_s(op0 : u2, op1 : u3, crn : u4, crm : u4, op2 : u3, val : u64)
-```
-
-All five encoding fields must be compile-time constants and fit their ARM64
-field widths: `op0` is 2 bits, `op1` is 3 bits, `crn` is 4 bits, `crm` is
-4 bits, and `op2` is 3 bits. The backend emits
-`mrs xN, S<op0>_<op1>_C<crn>_C<crm>_<op2>` and
-`msr S<op0>_<op1>_C<crn>_C<crm>_<op2>, xN` directly.
-
-Example — read the Apple silicon `APRR_EL1` register:
-
-<!-- wyst-contract: sketch -->
-```wyst
-raw := %mrs_s(3, 4, 15, 2, 0)
-```
-
-The compiler does not validate S-encoded register access against any
-table — by definition these registers are not architectural. The
-programmer asserts the encoding is correct.
+Implementation-defined registers are available only through an authenticated
+target-extension row and the `system_register ... at S...` declaration above.
+The predecessor generic encoded `%mrs_s` and `%msr_s` calls are rejected. An
+unknown tuple, even one whose fields fit the architectural bit widths, never
+creates authority for an instruction.
 
 ---
 
@@ -727,8 +917,6 @@ update_shared :: () {
 | ---------------------- | ----------------------------------- |
 | `%mrs(reg)`            | `mrs xN, reg`                       |
 | `%msr(reg, val)`       | `msr reg, xN`                       |
-| `%mrs_s(o0,o1,n,m,o2)` | `mrs xN, S<o0>_<o1>_C<n>_C<m>_<o2>` |
-| `%msr_s(...)`          | `msr S<o0>_<o1>_C<n>_C<m>_<o2>, xN` |
 | `%daif_set(mask)`      | `msr daifset, #mask`                |
 | `%daif_clr(mask)`      | `msr daifclr, #mask`                |
 
@@ -742,46 +930,12 @@ behavior (translation, exception handling, cache behavior).
 
 ### Named Register Set
 
-The named `%mrs` / `%msr` forms currently accept this closed compiler table.
-Other architectural registers use `%mrs_s` / `%msr_s` with explicit
-S-encodings until a later feature adds named rows:
-
-| Register                                              | Width | EL  | R/W | Purpose                         |
-| ----------------------------------------------------- | ----- | --- | --- | ------------------------------- |
-| `CurrentEL`                                           | 64    | 1+  | R   | current exception level         |
-| `DAIF`                                                | 64    | 1+  | RW  | interrupt mask state            |
-| `SPSel`                                               | 64    | 1+  | RW  | stack pointer select            |
-| `SCTLR_EL1`                                           | 64    | 1+  | RW  | system control                  |
-| `TCR_EL1`                                             | 64    | 1+  | RW  | translation control             |
-| `TTBR0_EL1`                                           | 64    | 1+  | RW  | translation table base 0        |
-| `MAIR_EL1`                                            | 64    | 1+  | RW  | memory attribute indirection    |
-| `VBAR_EL1`                                            | 64    | 1+  | RW  | exception vector base           |
-| `ESR_EL1`                                             | 64    | 1+  | R   | exception syndrome              |
-| `FAR_EL1`                                             | 64    | 1+  | R   | fault address                   |
-| `ELR_EL1`                                             | 64    | 1+  | RW  | exception link register         |
-| `SPSR_EL1`                                            | 64    | 1+  | RW  | saved program status            |
-| `SP_EL1`                                              | 64    | 2+  | RW  | EL1 stack pointer               |
-| `TPIDR_EL0`                                           | 64    | any | RW  | thread pointer EL0              |
-| `TPIDR_EL1`                                           | 64    | 1+  | RW  | thread pointer EL1              |
-| `CNTVCT_EL0`                                          | 64    | any | R   | virtual count                   |
-| `PMCCNTR_EL0`                                         | 64    | any | R   | PMU cycle counter               |
-| `MPIDR_EL1`                                           | 64    | 1+  | R   | multiprocessor affinity         |
-| `DCZID_EL0`                                           | 64    | any | R   | DC ZVA block size and status    |
-| `SCTLR_EL2`                                           | 64    | 2+  | RW  | EL2 system control              |
-| `TCR_EL2`                                             | 64    | 2+  | RW  | EL2 translation control         |
-| `TTBR0_EL2`                                           | 64    | 2+  | RW  | EL2 translation table base 0    |
-| `MAIR_EL2`                                            | 64    | 2+  | RW  | EL2 memory attributes           |
-| `VBAR_EL2`                                            | 64    | 2+  | RW  | EL2 exception vector base       |
-| `ESR_EL2`                                             | 64    | 2+  | RW  | EL2 exception syndrome          |
-| `FAR_EL2`                                             | 64    | 2+  | RW  | EL2 fault address               |
-| `ELR_EL2`                                             | 64    | 2+  | RW  | EL2 exception link register     |
-| `SPSR_EL2`                                            | 64    | 2+  | RW  | EL2 saved program status        |
-| `CPTR_EL2`                                            | 64    | 2+  | RW  | EL2 architectural trap control  |
-| `HCR_EL2`                                             | 64    | 2+  | RW  | hypervisor configuration        |
-
-The full future register table belongs in appendix `design/sysregs.md` (TBD;
-populated from ARM ARM D17 - System Register Encoding). Until then, named
-system-register completion is generated only from the compiler table above.
+The named primitives and catalog-named declarations accept exactly the active
+system-register identities assigned to their compiler surface by the generated
+A64 support manifest. The normalized architecture authority and selected
+authenticated extensions are the only register set. Documentation, completion,
+diagnostics, reports, and lowering consume that generated set; this chapter does
+not maintain an illustrative or fallback register table.
 
 ---
 
@@ -790,24 +944,24 @@ system-register completion is generated only from the compiler table above.
 | Choice                                               | Reason                                                                                                                                                                                |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Bare identifier register names                       | One-to-one with ARM ARM mnemonics. No string quoting overhead. No `@`-prefix collision with intrinsic identifiers.                                                                    |
-| Dedicated namespace recognized only in `%mrs`/`%msr` | Allows a register's bitfield type to share its name without ambiguity (`TCR_EL1` is both a type and a register name).                                                                 |
+| Dedicated namespace recognized only in `%mrs`/`%msr` | Allows a register's bitstruct type to share its name without ambiguity (`TCR_EL1` is both a type and a register name).                                                                |
 | Always-`u64` return type                             | No coupling between sysreg table and type-name lookup. Explicit `as` matches §1.4.1 strict typing.                                                                                    |
-| Read-only / write-only enforced at compile time      | Eliminates a class of `#asm`-mediated mistakes that previously could only be caught at runtime by a synchronous abort.                                                                |
+| Read-only / write-only enforced at compile time      | Eliminates a class of checked-`asm` mistakes that previously could only be caught at runtime by a synchronous abort.                                                                  |
 | No implicit `isb` or barriers                        | The architecture defines distinct synchronization sequences per register (`isb` after `sctlr`, `dsb`+`isb` after `ttbr`/`tlbi`); the compiler cannot pick the right one mechanically. |
 | Separate `%daif_set` / `%daif_clr`                   | These take immediates, not register values. Folding them into generic `%msr` would lie about the operand type.                                                                        |
-| `%mrs_s` / `%msr_s` for implementation-defined       | Real silicon needs vendor registers. The S-encoded form is standard ARM assembler syntax; lifting it into the language keeps `#asm` reserved for genuinely unstructured cases.        |
+| Authenticated encoded declaration for implementation-defined registers | Real silicon needs vendor registers, but a selected extension must provide identity, semantics, availability, and conformance evidence before the compiler emits the encoding. |
 | Full two-way compiler fence on every access          | System-register writes can change translation, exception routing, cache behavior, etc. Treating them as opaque-effect is the only safe default.                                       |
 
 ---
 
-## 1.3.4 Trap and Exception Intrinsics
+## 1.3.4 Trap and Exception Intrinsics (Historical v0.8 `%` Surface; Non-Normative)
 
 Synchronous exceptions are the boundary between EL0 user code and EL1
 kernel code, between EL1 kernel and EL2 hypervisor, and between
 non-secure and secure worlds. Every system call, every hypervisor call,
 every monitor call, every brk-trap debugger interaction lowers to one of
 the six ARM64 trap instructions. Wyst provides direct intrinsics for each
-so trap-call sites are not stuck in `#asm`.
+so trap-call sites are not stuck in checked `asm`.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -853,9 +1007,11 @@ only via the convention the handler agrees to. This is exactly how
 syscall ABIs work: x0 going into `%svc` is the first argument; x0 coming
 out is the result.
 
-If the platform's ABI preserves more registers than AAPCS caller-saved
-suggests (some hypervisor calls, some firmware interfaces), wrap the
-intrinsic in `#asm` with a narrower clobber list.
+If the platform preserves more registers than this conservative intrinsic
+contract, the pinned v0.9 compiler still applies the contract above. A future
+checked-assembly profile may expose the trap row with fixed signature placements
+and an authenticated callable boundary; until then, checked `svc`/`hvc`/`smc`
+source forms are rejected rather than narrowed by a manual clobber list.
 
 ---
 
@@ -901,6 +1057,12 @@ compiler can prove that every control path ends in `%eret()` (or another
 `%eret()` does not take operands: `elr` and `spsr` must be configured via
 `%msr` before the primitive. This matches the ARM ARM exactly and avoids
 hiding two `msr` instructions inside a single primitive call.
+
+In canonical v0.9 IR, `%eret()` is the last value in its block and is followed
+only by an `unreachable` terminator. Before emitting the architectural `eret`,
+non-`naked` ARM64 lowering restores all compiler-owned saved registers and
+dismantles its frame without appending `ret`; `naked` lowering emits no
+compiler-owned epilogue.
 
 ---
 
@@ -976,7 +1138,7 @@ the caller emits `%dsb` before the trap.
 | Choice                                | Reason                                                                                                                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Architectural-only (no syscall ABI)   | Different OSes use different syscall conventions; baking one in (Linux x8/x0–x5, BSD x16/x0–x7, custom kernel) would tie the language to a platform. The `#pin`-based wrapper pattern composes cleanly. |
-| Compile-time immediate                | `svc`/`brk` immediates are part of the instruction encoding. Runtime values would require a `#asm` block anyway.                                                                                        |
+| Compile-time immediate                | `svc`/`brk` immediates are part of the instruction encoding. Runtime values cannot select an encoding; checked-assembly immediates are compile-time constants too.                                    |
 | AAPCS caller-saved clobber by default | Matches what GCC/Clang emit for plain `asm("svc #0")`. Conservative; OS-specific handlers preserving more can be wrapped.                                                                               |
 | `%eret` operand-less                  | ARM ARM matches; users see exactly which `%msr` calls set up the return state. Hiding them inside `%eret` would obscure the elr/spsr configuration.                                                     |
 | `%eret` is `#noreturn`                | Eliminates a class of "fell through `%eret`" bugs where the compiler thinks control continues. Composes with the function-attribute system.                                                             |
@@ -985,7 +1147,7 @@ the caller emits `%dsb` before the trap.
 
 ---
 
-## 1.3.5 Cache and TLB Maintenance Intrinsics
+## 1.3.5 Cache and TLB Maintenance Intrinsics (Historical v0.8 `%` Surface; Non-Normative)
 
 Bringing up an MMU, mapping a new page, modifying executable code,
 managing DMA-coherent buffers — all require explicit cache and TLB
@@ -1241,7 +1403,7 @@ zero_page :: (page_base : u64) {
 
 ---
 
-## 1.3.6 CPU Hint Intrinsics
+## 1.3.6 CPU Hint Intrinsics (Historical v0.8 `%` Surface; Non-Normative)
 
 The ARM64 hint instructions communicate scheduling information to the CPU
 — wait for a wakeup, signal other PEs, yield to a SMT sibling, take no
@@ -1258,19 +1420,22 @@ exception handlers; they are first-class intrinsics in Wyst.
 %nop()        // no operation — one instruction's worth of nothing
 ```
 
-All six lower to a single ARM hint instruction and have no operands. They
-do not act as compiler memory fences and may be freely scheduled relative
-to memory operations — they are pure CPU-scheduling hints with no
-memory-model effect.
+All six lower to a single ARM hint instruction and have no operands. They do
+not act as compiler memory fences and may be scheduled relative to memory
+operations when source-order and effect dependencies permit. `%sev` and `%sevl`
+introduce `cpu_event`; `%wfe` introduces both `cpu_event` and `cpu_halt` because
+it consumes event-register state and may wait; `%wfi` introduces `cpu_halt`;
+`%yield` and `%nop` have neither effect. These categories record CPU-state
+interaction, not a memory-model synchronization edge.
 
-| Intrinsic  | Lowering | Compiler fence |
-| ---------- | -------- | -------------- |
-| `%wfi()`   | `wfi`    | none           |
-| `%wfe()`   | `wfe`    | none           |
-| `%sev()`   | `sev`    | none           |
-| `%sevl()`  | `sevl`   | none           |
-| `%yield()` | `yield`  | none           |
-| `%nop()`   | `nop`    | none           |
+| Intrinsic  | Lowering | Compiler fence | Effect                  |
+| ---------- | -------- | -------------- | ----------------------- |
+| `%wfi()`   | `wfi`    | none           | `cpu_halt`              |
+| `%wfe()`   | `wfe`    | none           | `cpu_event`, `cpu_halt` |
+| `%sev()`   | `sev`    | none           | `cpu_event`             |
+| `%sevl()`  | `sevl`   | none           | `cpu_event`             |
+| `%yield()` | `yield`  | none           | none                    |
+| `%nop()`   | `nop`    | none           | none                    |
 
 `%wfi` requires an interrupt to be deliverable to wake the PE — typically
 this means at least one of IRQ/FIQ is unmasked at the time of the
@@ -1282,9 +1447,9 @@ unlocked `stxr` operation completing.
 The spinlock pattern at §1.3.2 uses `%wfe()` in the wait loop and `%sev()`
 in the unlock path; this is the canonical use.
 
-`%nop()` is occasionally useful for alignment padding when explicit
-control is needed (the `#exception_vector` slot padding is otherwise
-automatic — see [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md)).
+`%nop()` is occasionally useful for alignment padding when explicit control is
+needed. Padding inside a `vector_table` slot is target-owned and automatic;
+see [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md).
 
 There is no design rationale beyond "these are ARM hint instructions; they
 get one intrinsic each." The interesting design choices are above this
@@ -1301,7 +1466,7 @@ layer.
 
 `%compiler_barrier()` is a statement-level full two-way compiler memory
 fence. The compiler must not move loads, stores, atomics, volatile accesses,
-runtime primitives with side effects, or opaque `#asm` blocks across it in
+runtime primitives with side effects, or non-pure `asm` blocks across it in
 either direction.
 
 **Effects:** Full two-way compiler memory fence. Emits no ARM64 instruction.
@@ -1319,7 +1484,91 @@ CPU must execute an architectural barrier.
 
 ---
 
-## 1.3.7 Per-CPU and Thread-Local Data
+## 1.3.7 v0.9 `per_cpu` Target and Access Projection
+
+Chapter 8 is the sole source-semantic owner. This section defines the target
+facts and machine-operation projection required by that contract; it does not
+add an address-taking or TLS surface.
+
+For every selected executable target, the compiler's authoritative target
+product records these `per_cpu` facts:
+
+| Fact | Required meaning |
+| --- | --- |
+| availability | whether reachable current-core access is supported |
+| base mechanism | the exact register, system-register read, runtime hook, or other operation that obtains the live-instance base |
+| required alignment | the minimum alignment promised for that live base and checked against the template contract |
+| reserved state | every register, system register, exception-level, calling-convention, and clobber assumption used by the mechanism |
+| realization kind | `single-instance-test-runtime`, later per-core runtime realization, or unavailable |
+
+A mechanism name alone is insufficient. For example, `TPIDR_EL1` may be used
+only when the selected target explicitly declares its exception-level
+availability, base alignment, reservation/clobber rules, and realization kind.
+No generic ARM64 default silently grants that contract.
+
+The sole pre-item-92 access-enabling surface is
+`#target(..., per_cpu = single_instance_tpidr_el1)`. It installs this closed
+fact set in the target product:
+
+| Fact | `single_instance_tpidr_el1` value |
+| --- | --- |
+| availability | `available` |
+| base mechanism | one `MRS TPIDR_EL1` per direct source access |
+| minimum exception level | EL1 (`el >= 1`) |
+| required live-base alignment | 16 bytes |
+| reserved system state | `TPIDR_EL1` |
+| realization kind | `single-instance-test-runtime` |
+
+The runtime, not the compiler, installs the 16-byte-aligned live-instance base
+in `TPIDR_EL1`. A call or primitive may modify that reserved system state only
+when its own target contract says so; regardless, each later source access
+performs its own `MRS` and does not reuse an earlier value.
+
+One direct source read or write lowers to one fresh base acquisition, the
+binding's final linked `.percpu` byte offset plus any checked field/element
+offset, and exactly one type-appropriate logical operation. Ordinary scalar
+storage uses one typed load or store. A bitstruct-field write is the sole
+multi-instruction memory projection: one confined backing-word load,
+`BitfieldInsert`, and store share that source access's one base. Typed-IR
+verification accepts only that exact read-modify-write dataflow. The compiler
+may fold an encodable constant offset into the operation, but it may not reuse
+the base from an earlier access, create a compiler-owned cache slot, hoist the
+acquisition, or materialize a general address. An item-52 atomic method uses
+the same one-base and offset rule around its one requested atomic operation.
+The compile-time `#percpu_offset_of(binding)` query emits only the final
+template byte offset and does not acquire a base.
+
+Compound assignment is not one such operation: v0.9 rejects it for `per_cpu`
+storage and requires separate direct read and write expressions, each with its
+own fresh base acquisition.
+
+Before item 92, reachable access requires that exact selection. Its
+`single-instance-test-runtime` realization supplies live
+storage and the declared base contract; it may not make the `.percpu` template
+itself live storage. In its absence, declaration and offset layout may still be
+formed, but every reachable access receives a hard target diagnostic. Hardware
+discovery, a single-core observation, or the chosen exception level never
+implicitly selects the realization.
+
+Lowering and storage/explain reports expose the selected availability, base
+mechanism, required alignment, reserved state, realization kind, declaration
+identity, final offset, and source access origin. An unavailable fact is
+reported as unavailable rather than guessed. The compiler emits the immutable
+initialization template and access instruction sequence only: it performs no
+replication, allocation, base installation, startup copy, or ordinary-global
+collapse.
+
+Wyst v0.9 has no TLS storage class or TLS base mechanism. `#tls`,
+`#tls_offset_of`, `thread_local`, `.tls` template generation, `PT_TLS`, and ELF
+TLS relocations are outside the v0.9 language and target contract.
+
+### Released v0.8 `#percpu` and TLS Model (Historical)
+
+> Everything from this heading through the historical design-rationale table
+> immediately before §1.3.8 is a released v0.8 snapshot. Its address
+> materialization, cross-CPU access, base caching, runtime-copy recipe, exported
+> size symbols, `#percpu`, and TLS claims are not v0.9 behavior and cannot
+> override the current section above.
 
 A kernel needs a way to declare data that has one instance per logical
 CPU (per-CPU variables — current-running-thread pointer, idle stats,
@@ -1344,7 +1593,7 @@ name reads or writes the current instance.
 
 ---
 
-### Declaration
+#### Historical Declaration
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -1385,7 +1634,7 @@ sections.
 
 ---
 
-### Access
+#### Historical Access
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -1462,7 +1711,7 @@ peek_remote_counter :: (cpu : u32) -> u64 {
 
 ---
 
-### Layout
+#### Historical Layout
 
 The layout module must declare the `.percpu` and `.tls` sections (see
 [chapter-04-modules.md](chapter-04-modules.md)) for the symbols to have a home. Common practice:
@@ -1496,7 +1745,7 @@ the primitives above.
 
 ---
 
-### ARM64 Lowering
+#### Historical ARM64 Lowering
 
 | Construct                           | Lowering                                             |
 | ----------------------------------- | ---------------------------------------------------- |
@@ -1514,7 +1763,7 @@ base. (The `#preserves` attribute is outside this model.)
 
 ---
 
-### Design Rationale
+#### Historical Design Rationale
 
 | Choice                                                           | Reason                                                                                                                                                                                |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1529,7 +1778,7 @@ base. (The `#preserves` attribute is outside this model.)
 
 ---
 
-## 1.3.8 Performance Intrinsics
+## 1.3.8 Performance Intrinsics (Historical v0.8 `%` Surface; Non-Normative)
 
 Performance intrinsics expose ARM64 hardware hints and counters that have
 no effect on program correctness but influence cache behaviour, memory
@@ -1574,8 +1823,8 @@ The hardware is free to ignore the hint.
 | `write`  | `high`      | `prfm pstl1keep`  |
 
 **Effects:** No compiler fence. No memory ordering effect. `%prefetch` is a
-pure hint: it may be freely reordered relative to all other operations by
-any `#schedule` mode. It never traps, never clobbers registers, and never
+pure hint: it may be freely reordered relative to all other operations wherever
+the active scheduling policy permits. It never traps, never clobbers registers, and never
 modifies memory.
 
 **Example:**
@@ -1641,54 +1890,87 @@ guaranteed visible to other agents. See
 
 ---
 
-### `%read_cycle_counter` — Cycle Counter Read
+### `cpu.read_counter` — Target-Selected Measurement Counter
 
 <!-- wyst-contract: sketch -->
 ```wyst
-%read_cycle_counter() -> u64
+module measured_work
+import core.arch { cpu }
+
+fn sample() -> u64 {
+    return cpu.read_counter()
+}
 ```
 
-Reads the ARM64 performance cycle counter. Returns the current value of
-`PMCCNTR_EL0` when the PMU is enabled, or `CNTVCT_EL0` (the generic
-timer counter) as a fallback when the `#target` does not declare PMU
-support.
+`cpu.read_counter() -> u64` reads the one measurement-counter descriptor
+selected by the artifact target. The current QEMU `virt` and `raspi4b`
+artifact targets each explicitly select
+`a64-generic-virtual-counter-v1`. That descriptor authenticates one
+`CNTVCT_EL0` read, a 64-bit result, modulo-`2^64` wrapping,
+`runtime_register(CNTFRQ_EL0)` frequency, minimum EL0, the
+`CNTKCTL_EL1.EL0VCTEN_when_EL0` enablement condition, and
+`architectural_fault_or_trap` failure behavior.
+
+The v0.9 descriptor result-width contract is the closed range `1..=64`. The
+declared width may be narrower than the generated system-register carrier, but
+may never be wider. The operation still returns `u64`: bits below the declared
+width are the counter value and all higher bits are zero. Wrapping is modulo
+`2^width`.
+
+Runtime enablement is also a closed v0.9 vocabulary. It describes a condition
+that the execution environment must already satisfy; it is never an implicit
+compiler setup sequence.
+
+| Descriptor value | v0.9 meaning |
+| --- | --- |
+| `none` | No additional runtime-enablement condition is declared. |
+| `CNTKCTL_EL1.EL0VCTEN_when_EL0` | An EL0 read requires the generated `CNTKCTL_EL1.EL0VCTEN` dependency to permit virtual-counter access. |
+
+Unknown, malformed, or register/EL-inconsistent enablement values invalidate
+the descriptor. The compiler validates the named control register, its
+execution-level shape, and the selected source accessor's generated dependency
+facts where those facts are available.
+
+Selection is an artifact-target fact, not an architecture-feature inference.
+A source-only `#target(...)`, a custom/bare artifact target with no descriptor,
+an unknown descriptor, or duplicate/multiple descriptors does not expose the
+operation. The compiler rejects the call. In particular, a `pmu` feature never
+changes the selected source to `PMCCNTR_EL0`, and no generic-timer or PMU
+fallback is synthesized.
 
 **Effects:** Full two-way compiler memory fence. The compiler must not
-reorder loads or stores across a `%read_cycle_counter` call. This prevents
+reorder loads or stores across a `cpu.read_counter()` call. It is also a source
+scheduling boundary. This prevents
 the compiler from moving measured work outside the timing window.
 
 **Effect category:** `perf_counter`.
 
-**Hardware requirements:** `PMCCNTR_EL0` is readable from EL0 only when
-enabled via `PMUSERENR_EL0.EN = 1` and `PMCR_EL0.E = 1`. At EL1 and
-above, the counter is always accessible. The compiler does not check or
-enforce counter enablement — reading a disabled counter returns zero or
-enters `Architectural fault or trap`, depending on the selected target and
-current PMU state.
+**Lowering:** exactly one `mrs xN, CNTVCT_EL0`. A 64-bit descriptor adds no
+result-extraction instruction. A narrower descriptor adds exactly one
+authenticated `and xN, xN, #((1 << width) - 1)` to zero-extend the declared low
+width to `u64`; that extraction is not a second semantic counter read. There is
+no wrapper, dispatch, enablement sequence, frequency read, retry,
+architectural barrier, or fallback. The backend authenticates the descriptor
+ID, selected artifact-target identity, generated system-register accessor,
+encoding ID, and semantic-operation IR record before emitting the read word.
 
-**ARM64 lowering:**
-
-| PMU available | Instruction           |
-| ------------- | --------------------- |
-| yes           | `mrs xN, PMCCNTR_EL0` |
-| no (fallback) | `mrs xN, CNTVCT_EL0`  |
-
-PMU availability is determined by the `#target(features = ...)` declaration.
+Effects, lowering, and performance reports record the selected artifact target,
+descriptor identity, source, width, frequency class, minimum EL, enablement,
+failure, wrapping behavior, report identity, and catalog/authority origin.
 
 **Example:**
 
 <!-- wyst-contract: sketch -->
 ```wyst
-start := %read_cycle_counter()
+start := cpu.read_counter()
 compute(data)
-end := %read_cycle_counter()
+end := cpu.read_counter()
 elapsed := end - start
 ```
 
-**Note:** `%read_cycle_counter` is the first PMU-related performance
-intrinsic. Future versions may add `%read_pmu_counter(idx : u32)` for
-access to general-purpose PMU counters (e.g. cache-miss, branch-miss
-event counts).
+The v0.8 compatibility spelling `%read_cycle_counter()` remains a legacy
+language-version operation only. It is not accepted in v0.9 and does not define
+the semantics of `cpu.read_counter()`.
 
 ---
 
@@ -1699,5 +1981,5 @@ event counts).
 | `%prefetch` exposed directly, not auto-inserted | Auto-prefetching is a compiler transformation Wyst does not perform. Explicit prefetch lets the programmer control the distance and policy. |
 | Full ARM64 `PRFM` coverage                      | ARM64 distinguishes load/store × three cache levels × keep/stream. Abstracting to fewer options would hide machine semantics.              |
 | `%ldnp`/`%stnp` as pairs                        | ARM64 `LDNP`/`STNP` are pair instructions — exposing single-element non-temporal ops would require synthetic pair construction.            |
-| `%read_cycle_counter` is a full fence           | Without the fence, the compiler could move loads/stores into or out of the timed region, producing misleading measurements.                |
-| `CNTVCT_EL0` fallback                           | Many user-space environments disable `PMCCNTR_EL0`. The generic timer is always available and provides monotonic, high-resolution timing.  |
+| `cpu.read_counter` is a full fence               | Without the fence, the compiler could move loads/stores into or out of the timed region, producing misleading measurements.                |
+| Artifact target selects one descriptor           | Counter source, availability, privilege, frequency, and failure stay explicit; feature inference and fallback cannot change emitted code. |

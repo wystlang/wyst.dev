@@ -49,13 +49,14 @@ This formatting example is a language contract:
 
 <!-- wyst-contract: fmt -->
 ```wyst
-#module boot
+module boot
+
+import core.arch { cpu }
 
 // comments are preserved by the formatter
-#noreturn
-_start :: () {
+fn _start() -> never {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
@@ -65,12 +66,13 @@ layout:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module boot
+module boot
 
-#noreturn
-_start :: () {
+import core.arch { cpu }
+
+fn _start() -> never {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
