@@ -136,7 +136,7 @@ does not appear in this table is a compiler bug.
 | `DW_TAG_volatile_type`      | `@volatile T` and the volatile access contract inside `@mmio T`                   |
 | `DW_TAG_typedef`            | `type Name :: T` aliases                                                          |
 | `DW_TAG_structure_type`     | `struct { ... }`                                                                  |
-| `DW_TAG_member`             | Struct field and bitfield member                                                  |
+| `DW_TAG_member`             | Struct field and bitstruct bit-field member                                       |
 | `DW_TAG_array_type`         | `[N]T`, `[T:N]`, `[]T` slice (slice modeled as struct of `data`+`len` — see §11.5) |
 | `DW_TAG_subrange_type`      | Bound of an array DIE (`DW_AT_count = N`)                                         |
 | `DW_TAG_enumeration_type`   | C-style `enum`                                                                    |
@@ -157,11 +157,11 @@ namespaces), no `DW_TAG_class_type`, no `DW_TAG_template_*`, no
 These are the non-obvious DWARF mappings — anywhere DWARF gives a choice
 of attribute, Wyst picks one and uses only that form.
 
-**Bitfields.** Members of a `bitfield(T)` are emitted with
+**Bitstruct fields.** Members of a `bitstruct Name: Backing` are emitted with
 `DW_AT_data_bit_offset` + `DW_AT_bit_size` (DWARF 5 form). The deprecated
 `DW_AT_bit_offset` is not used. The containing DIE is a
 `DW_TAG_structure_type` whose `DW_AT_byte_size` is the backing
-`size_of(T)`.
+`size_of(Backing)`. The member's type is its declared carrier type.
 
 **Slices.** A `[]T` slice is emitted as a `DW_TAG_structure_type` with two
 members: `data : @T` (offset 0) and `len : u64` (offset 8), matching the
@@ -246,9 +246,8 @@ is one DIE per inline site. Since `#inline` is explicit in Wyst (see
 [§2.7.1](#)), the user knows where these appear and the count is
 bounded by the source.
 
-Inlining inside an `#inline`-reaching-`#ventry` slot (see §2.7.1) emits
-the same DIEs; debuggers see the inline tree as it actually was at
-emission time.
+Inlining a helper into a `vector_table` slot (see §2.7.1) emits the same DIEs;
+debuggers see the inline tree as it actually was at emission time.
 
 ---
 
@@ -299,7 +298,7 @@ Determinism rules:
   the order CUs appear in `.debug_info`.
 
 The same source input manifest, compiler version, build optimization mode,
-target, and `#schedule` modes produce byte-identical debug sections.
+target, and selected scheduling policies produce byte-identical debug sections.
 
 ---
 

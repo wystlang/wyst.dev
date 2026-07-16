@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+	chmod,
 	copyFile,
 	mkdir,
 	mkdtemp,
@@ -22,6 +23,7 @@ const designDir = path.join(root, "vendor", "wyst-design");
 const fixtureDir = path.join(root, "tests", "fixtures", "wyst");
 const syncScript = path.join(root, "tools", "sync-wyst-snapshot.mjs");
 const snapshotScript = path.join(root, "tools", "wyst-snapshot.mjs");
+const homepageExampleScript = path.join(root, "tools", "homepage-example.mjs");
 
 const expectedFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
@@ -63,6 +65,30 @@ async function makeWystRepo(t) {
 	t.after(() => rm(temporaryRoot, { recursive: true, force: true }));
 	const wystRoot = path.join(temporaryRoot, "wyst-source");
 	const siteRoot = path.join(temporaryRoot, "wyst.dev");
+	const fakeWync = `#!/usr/bin/env node
+const responses = [
+  {
+    jsonrpc: "2.0",
+    id: 1,
+    result: {
+      capabilities: {
+        semanticTokensProvider: {
+          legend: {
+            tokenTypes: ["namespace", "type", "function", "variable", "parameter", "property", "enumMember", "keyword", "number", "string", "operator", "macro"],
+            tokenModifiers: ["declaration", "readonly", "defaultLibrary"]
+          }
+        }
+      }
+    }
+  },
+  { jsonrpc: "2.0", id: 2, result: { data: [1, 0, 2, 7, 4, 0, 3, 4, 2, 1] } },
+  { jsonrpc: "2.0", id: 3, result: null }
+];
+for (const response of responses) {
+  const body = JSON.stringify(response);
+  process.stdout.write(\`Content-Length: \${Buffer.byteLength(body)}\\r\\n\\r\\n\${body}\`);
+}
+`;
 
 	const inputs = [
 		["design/README.md", "# Wyst design\n"],
@@ -70,15 +96,30 @@ async function makeWystRepo(t) {
 		["design/semantic-db.json", "{}\n"],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
+		["wync/src/main.rs", "fn compiler() {}\n"],
 		[expectedFixtures[0], "# semihost runtime\n"],
 		[expectedFixtures[1], "hello\n"],
 		[expectedFixtures[2], "layout fixture\n"],
-		[expectedFixtures[3], "main :: () {}\n"],
+		[
+			expectedFixtures[3],
+			"// homepage-example:start\nfn main() {}\n// homepage-example:end\n",
+		],
+		["wync/fake-wync.mjs", fakeWync],
 	];
 	await Promise.all(inputs.map(([file, contents]) => write(wystRoot, file, contents)));
 	await mkdir(path.join(siteRoot, "tools"), { recursive: true });
 	await copyFile(syncScript, path.join(siteRoot, "tools", "sync-wyst-snapshot.mjs"));
 	await copyFile(snapshotScript, path.join(siteRoot, "tools", "wyst-snapshot.mjs"));
+	await copyFile(
+		homepageExampleScript,
+		path.join(siteRoot, "tools", "homepage-example.mjs"),
+	);
+	await write(
+		siteRoot,
+		"index.html",
+		"<!-- homepage-semantic-example:start -->\n<pre>stale</pre>\n<!-- homepage-semantic-example:end -->\n",
+	);
+	await chmod(path.join(wystRoot, "wync", "fake-wync.mjs"), 0o755);
 
 	git(wystRoot, ["init", "--quiet"]);
 	git(wystRoot, ["add", "."]);
@@ -103,7 +144,12 @@ function runSync(siteRoot, wystRoot) {
 		{
 			cwd: siteRoot,
 			encoding: "utf8",
-			env: { ...process.env, WYST_REPO_DIR: wystRoot },
+			env: {
+				...process.env,
+				NODE_ENV: "test",
+				WYST_REPO_DIR: wystRoot,
+				WYST_TEST_WYNC_BIN: path.join(wystRoot, "wync", "fake-wync.mjs"),
+			},
 		},
 	);
 }
@@ -148,9 +194,16 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	const { siteRoot, wystRoot } = await makeWystRepo(t);
 	const result = runSync(siteRoot, wystRoot);
 	assert.equal(result.status, 0, result.stderr || result.stdout);
-	const manifest = JSON.parse(
-		await readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
-	);
+	const [manifestText, homepageTokenText, homepageIndex] = await Promise.all([
+		readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
+		readFile(
+			path.join(siteRoot, "vendor", "wyst-homepage-semantic-tokens.json"),
+			"utf8",
+		),
+		readFile(path.join(siteRoot, "index.html"), "utf8"),
+	]);
+	const manifest = JSON.parse(manifestText);
+	const homepageTokens = JSON.parse(homepageTokenText);
 	assert.equal(manifest.schema, 1);
 	assert.equal(manifest.sourceCommit, git(wystRoot, ["rev-parse", "HEAD"]).stdout.trim());
 	assert.match(manifest.snapshotSha256, /^[0-9a-f]{64}$/);
@@ -159,6 +212,31 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	for (const fixture of expectedFixtures) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
 	}
+	assert.equal(homepageTokens.source.gitCommit, manifest.sourceCommit);
+	assert.equal(homepageTokens.generator, "wync-lsp-semanticTokens/full");
+	assert.match(
+		homepageIndex,
+		/<span data-token="keyword" data-token-modifiers="defaultLibrary">fn<\/span>/,
+	);
+	assert.match(
+		homepageIndex,
+		/<span data-token="function" data-token-modifiers="declaration">main<\/span>/,
+	);
+
+	const repeated = runSync(siteRoot, wystRoot);
+	assert.equal(repeated.status, 0, repeated.stderr || repeated.stdout);
+	assert.equal(
+		await readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
+		manifestText,
+	);
+	assert.equal(
+		await readFile(
+			path.join(siteRoot, "vendor", "wyst-homepage-semantic-tokens.json"),
+			"utf8",
+		),
+		homepageTokenText,
+	);
+	assert.equal(await readFile(path.join(siteRoot, "index.html"), "utf8"), homepageIndex);
 });
 
 test("snapshot sync rejects a deleted tracked design chapter", async (t) => {
@@ -185,4 +263,14 @@ test("snapshot sync rejects an untracked top-level design input", async (t) => {
 	assert.notEqual(result.status, 0);
 	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
 	assert.match(result.stderr, /\?\? design\/new-chapter\.md/);
+});
+
+test("snapshot sync rejects compiler changes that could alter homepage tokens", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	await write(wystRoot, "wync/src/main.rs", "fn changed_compiler() {}\n");
+
+	const result = runSync(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
+	assert.match(result.stderr, /wync\/src\/main\.rs/);
 });

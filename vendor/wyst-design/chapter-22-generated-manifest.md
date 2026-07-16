@@ -16,7 +16,7 @@ The generated manifest records build provenance: what source and layout inputs
 were declared, what host/tool facts were observed, and what artifact facts were
 available after the build.
 
-The schema is `wync.generatedManifest.v0` in the `wync.reports.v0` report
+The schema is `wync.generatedManifest.v0` in the `wync.reports.v1` report
 schema bundle. It covers one
 build-configuration artifact: the resolved project build described by
 `wyst.project`. The command is a reporting step, not a build step. It writes only
@@ -31,7 +31,7 @@ The manifest records:
 - provenance and freshness for the generated build-configuration artifact;
 - target fact provenance, including a target-sensitive `buildIdentity`,
   explicit profile/custom project facts, source requirements, selected
-  scheduling modes, permitted analysis defaults, and unverified assumptions;
+  scheduling policies, permitted analysis defaults, and unverified assumptions;
 - cache-purity/freshness status, including `not-used` and `current-run`;
 - observed host/tool facts: `wync` version, host OS, host architecture, host
   family, target profile, and optimization mode;
@@ -46,7 +46,7 @@ generated-manifest runs must produce byte-identical manifests.
 
 The `buildIdentity` value is a deterministic local fingerprint over the
 resolved target display, optimization mode, ordered target facts, and selected
-scheduling modes, including implicit `schedule.default`. It is not a
-cryptographic hash, but changing an explicit target fact or selected schedule
-mode changes this identity so reports cannot hide byte-affecting build
+scheduling policies, including implicit `schedule.standard`. It is not a
+cryptographic hash, but changing an explicit target fact or selected scheduling
+policy changes this identity so reports cannot hide byte-affecting build
 selection changes.

@@ -45,7 +45,7 @@ async function resolveBrandRoot() {
 // These implementation assets belong to the site rather than the brand repository.
 // Carry them through the atomic directory replacement so a brand refresh cannot
 // silently remove site behavior.
-const siteOwnedFiles = ["docs.js", "docs.css", "wyst.css"];
+const siteOwnedFiles = ["docs.js", "home.js", "docs.css", "wyst.css"];
 
 const brandRoot = await resolveBrandRoot();
 const manifest = JSON.parse(

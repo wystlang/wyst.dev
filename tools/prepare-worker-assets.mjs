@@ -17,6 +17,7 @@ import {
 	createBuildManifest,
 	resolveOutputDir,
 } from "./build-manifest.mjs";
+import { verifyHomepageExample } from "./homepage-example.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -82,7 +83,7 @@ async function fingerprintAssets(outputDir) {
 	);
 	const rewrites = [];
 
-	for (const asset of ["wyst.css", "docs.css", "docs.js"]) {
+	for (const asset of ["wyst.css", "docs.css", "docs.js", "home.js"]) {
 		const source = path.join(assetsDir, asset);
 		const contents = await readFile(source);
 		const extension = path.extname(asset);
@@ -168,6 +169,7 @@ async function writeHeaders(outputDir) {
 export async function prepareWorkerAssets({
 	outputDir = resolveOutputDir(),
 } = {}) {
+	await verifyHomepageExample();
 	const output = assertSafeOutputDir(outputDir);
 	await rm(output, { recursive: true, force: true });
 	await mkdir(output, { recursive: true });

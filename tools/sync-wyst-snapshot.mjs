@@ -3,6 +3,7 @@ import {
 	copyFile,
 	mkdir,
 	mkdtemp,
+	readFile,
 	readdir,
 	rename,
 	rm,
@@ -11,12 +12,22 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	captureHomepageSemanticArtifact,
+	updateHomepageIndex,
+} from "./homepage-example.mjs";
 import { createWystSnapshotManifest } from "./wyst-snapshot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDestination = path.join(root, "vendor", "wyst-design");
 const fixtureDestination = path.join(root, "tests", "fixtures", "wyst");
 const snapshotDestination = path.join(root, "vendor", "wyst-snapshot.json");
+const homepageArtifactDestination = path.join(
+	root,
+	"vendor",
+	"wyst-homepage-semantic-tokens.json",
+);
+const homepageIndexDestination = path.join(root, "index.html");
 
 const fixturePaths = [
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
@@ -27,6 +38,11 @@ const fixturePaths = [
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
 	":(top,literal)design/semantic-db.json",
+	":(top,literal)design/syntax-words.tsv",
+	":(top,literal)wync/Cargo.lock",
+	":(top,literal)wync/Cargo.toml",
+	":(top,glob)wync/core/**/*.wyst",
+	":(top,glob)wync/src/**/*.rs",
 	...fixturePaths.map((file) => `:(top,literal)${file}`),
 ];
 
@@ -98,8 +114,9 @@ for (const relativePath of fixturePaths) {
 	}
 }
 
-// A commit marker is useful only when it names the exact copied content. Ignore
-// unrelated compiler work, but reject edits or untracked files in snapshot inputs.
+// A commit marker is useful only when it names the exact copied content and the
+// compiler that produced the homepage token stream. Ignore unrelated work, but
+// reject changes to snapshot inputs or the relevant wync implementation.
 const dirtyInputs = git(wystRoot, [
 	"status",
 	"--short",
@@ -122,6 +139,11 @@ const stagingRoot = await mkdtemp(path.join(root, ".wyst-snapshot-sync-"));
 const stagedDesign = path.join(stagingRoot, "wyst-design");
 const stagedFixtures = path.join(stagingRoot, "fixtures");
 const stagedManifest = path.join(stagingRoot, "wyst-snapshot.json");
+const stagedHomepageArtifact = path.join(
+	stagingRoot,
+	"wyst-homepage-semantic-tokens.json",
+);
+const stagedHomepageIndex = path.join(stagingRoot, "index.html");
 
 try {
 	await mkdir(stagedDesign, { recursive: true });
@@ -138,6 +160,21 @@ try {
 		await mkdir(path.dirname(destination), { recursive: true });
 		await copyFile(path.join(wystRoot, relativePath), destination);
 	}
+	const homepageArtifact = await captureHomepageSemanticArtifact({
+		sourceCommit,
+		wystRoot,
+	});
+	await writeFile(
+		stagedHomepageArtifact,
+		`${JSON.stringify(homepageArtifact, null, 2)}\n`,
+	);
+	await writeFile(
+		stagedHomepageIndex,
+		updateHomepageIndex(
+			await readFile(homepageIndexDestination, "utf8"),
+			homepageArtifact,
+		),
+	);
 	await createWystSnapshotManifest({
 		designDir: stagedDesign,
 		fixtureDir: stagedFixtures,
@@ -152,10 +189,12 @@ try {
 	await rename(stagedDesign, designDestination);
 	await rename(stagedFixtures, fixtureDestination);
 	await rename(stagedManifest, snapshotDestination);
+	await rename(stagedHomepageArtifact, homepageArtifactDestination);
+	await rename(stagedHomepageIndex, homepageIndexDestination);
 } finally {
 	await rm(stagingRoot, { recursive: true, force: true });
 }
 
 console.log(
-	`Synced Wyst design and ${fixturePaths.length} test fixtures from ${sourceCommit}`,
+	`Synced Wyst design, ${fixturePaths.length} test fixtures, and homepage semantic tokens from ${sourceCommit}`,
 );

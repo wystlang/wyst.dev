@@ -82,12 +82,13 @@ A root module loaded by either build input mode is ordinary Wyst source:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module boot
+module boot
 
-#noreturn
-_start :: () {
+import core.arch { cpu }
+
+fn _start() -> never {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
@@ -232,19 +233,32 @@ order supplied by the user.
 
 ## Target Profiles
 
-Project builds select a named target profile. The QEMU `virt` profile is:
+Project builds select a named target profile. The QEMU `virt` baseline profiles
+are:
 
 ```text
+qemu-virt-aarch64-el1
 qemu-virt-aarch64-el2
 ```
 
-It corresponds to the QEMU-oriented AArch64 static ELF baseline:
+They correspond to the QEMU-oriented AArch64 static ELF baseline:
 
 - `arch = arm64-v8a`
 - `cpu = generic`
-- `el = 2`
+- exact `el = 1` or `el = 2`, matching the selected profile
 - static AArch64 ELF output
 - Wyst native ABI with AAPCS64 interop support
+- executable environment `qemu-aarch64-semihost-v1`, offering exactly
+  `a64-semihost-hlt-f000-v1`
+
+The EL1 and EL2 baselines carry identical authenticated QEMU semihost,
+runner-service, ABI, and measurement-counter contracts; only the exact entry
+EL differs.
+
+`qemu-virt-aarch64-el2-lse` carries the same QEMU executable-environment,
+runner-service, ABI, and measurement-counter selections and additionally
+provides the authenticated `lse` feature. Use that profile when a module's
+exact `#target` tuple requires LSE; the baseline profile remains LSE-free.
 
 The Raspberry Pi 4B QEMU profile is:
 
@@ -260,6 +274,7 @@ It corresponds to the Raspberry Pi 4B QEMU smoke path:
 - QEMU `raspi4b` board emulation
 - static AArch64 ELF output converted to a `kernel8.img` handoff artifact
 - PL011 UART0 at `0xfe20_1000` checked through `-serial stdio`
+- executable environment `bare-aarch64-v1`, offering no environment services
 
 Physical Raspberry Pi hardware validation is outside this profile.
 

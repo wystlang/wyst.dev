@@ -1,6 +1,6 @@
 @font-face {
 	font-family: "Commit Mono";
-	src: url("/assets/commit-mono-v143.woff2") format("woff2");
+	src: url("commit-mono-v143.woff2") format("woff2");
 	font-style: normal;
 	font-weight: 200 700;
 	font-display: swap;
@@ -223,49 +223,60 @@ body.docs header.site .wrap {
 	text-decoration-color: var(--accent);
 }
 
-.k {
+.source-comment {
+	color: var(--syn-comment);
+}
+
+[data-token="keyword"] {
 	color: var(--syn-kw);
 	font-weight: 600;
 }
 
-.primitive {
+[data-token="macro"] {
 	color: var(--syn-macro);
 	font-weight: 600;
 }
 
-.t {
+[data-token="namespace"],
+[data-token="type"] {
 	color: var(--syn-type);
 	font-weight: 550;
 }
 
-.n {
+[data-token="number"] {
 	color: var(--syn-num);
 	font-weight: 550;
 }
 
-.const {
+[data-token="enumMember"],
+[data-token="property"] {
 	color: var(--syn-const);
 	font-weight: 600;
 }
 
-.o {
+[data-token="operator"] {
 	color: var(--syn-op);
 }
 
-.f {
+[data-token="function"] {
 	color: var(--syn-fn);
 	font-weight: 550;
 }
 
-.param {
+[data-token="variable"] {
+	color: var(--syn-var);
+}
+
+[data-token="parameter"] {
 	color: var(--syn-param);
 }
 
-.p {
-	color: var(--syn-punct);
+.block-comment-line {
+	display: inline-block;
+	padding-left: 1ch;
 }
 
-.s {
+[data-token="string"] {
 	color: var(--syn-str);
 	font-weight: 550;
 }
@@ -297,7 +308,7 @@ body.docs header.site .wrap {
 	padding-right: var(--pad);
 	grid-template-columns: minmax(300px, 34rem) max-content;
 	gap: clamp(40px, 6vw, 96px);
-	align-items: center;
+	align-items: start;
 	justify-content: center;
 }
 
@@ -354,11 +365,97 @@ body.docs header.site .wrap {
 
 .notebook-section {
 	min-width: 0;
-	padding: clamp(48px, 8vh, 96px) 0;
+	padding: clamp(72px, 11vh, 128px) 0;
 }
 
 .source-artifact {
 	max-width: 32rem;
+}
+
+.source-viewport {
+	--source-scroll-cue-opacity: 1;
+
+	position: relative;
+}
+
+.source-viewport[data-scroll-cue="0"] {
+	--source-scroll-cue-opacity: 0;
+}
+
+.source-viewport[data-scroll-cue="1"] {
+	--source-scroll-cue-opacity: 0.125;
+}
+
+.source-viewport[data-scroll-cue="2"] {
+	--source-scroll-cue-opacity: 0.25;
+}
+
+.source-viewport[data-scroll-cue="3"] {
+	--source-scroll-cue-opacity: 0.375;
+}
+
+.source-viewport[data-scroll-cue="4"] {
+	--source-scroll-cue-opacity: 0.5;
+}
+
+.source-viewport[data-scroll-cue="5"] {
+	--source-scroll-cue-opacity: 0.625;
+}
+
+.source-viewport[data-scroll-cue="6"] {
+	--source-scroll-cue-opacity: 0.75;
+}
+
+.source-viewport[data-scroll-cue="7"] {
+	--source-scroll-cue-opacity: 0.875;
+}
+
+.source-scroll-hint {
+	display: none;
+}
+
+@media (min-width: 961px) {
+	.source-viewport > pre {
+		max-height: min(64svh, 44rem);
+		overflow-y: auto;
+		scrollbar-color: var(--line-2) transparent;
+		scrollbar-gutter: stable;
+		scrollbar-width: thin;
+	}
+
+	.source-viewport::after {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		height: 5rem;
+		background: linear-gradient(to bottom, transparent, var(--bg-code));
+		content: "";
+		opacity: var(--source-scroll-cue-opacity);
+		pointer-events: none;
+	}
+
+	.source-scroll-hint {
+		position: absolute;
+		right: clamp(18px, 2vw, 26px);
+		bottom: var(--space-sm);
+		z-index: 1;
+		display: block;
+		padding: 0.35rem 0.6rem;
+		border-radius: 999px;
+		background: var(--bg-code);
+		color: var(--muted);
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		line-height: 1.4;
+		opacity: var(--source-scroll-cue-opacity);
+		pointer-events: none;
+	}
+
+	.source-viewport:focus-within::after,
+	.source-viewport:focus-within .source-scroll-hint {
+		opacity: 0;
+	}
 }
 
 .notebook-heading {
@@ -387,26 +484,83 @@ body.docs header.site .wrap {
 	line-height: 1.45;
 }
 
-.artifact-bar a {
+.artifact-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+}
+
+.artifact-bar a,
+.artifact-copy {
 	display: inline-flex;
 	align-items: center;
 	min-height: 44px;
 	flex: none;
+}
+
+.artifact-bar a {
 	text-decoration-color: transparent;
 }
 
+.artifact-copy {
+	min-width: 44px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+	justify-content: center;
+	text-decoration: underline;
+	text-decoration-color: transparent;
+	text-underline-offset: 0.2em;
+}
+
 .artifact-bar a:hover,
-.artifact-bar a:focus-visible {
+.artifact-bar a:focus-visible,
+.artifact-copy:hover,
+.artifact-copy:focus-visible {
+	color: var(--text);
 	text-decoration-color: currentColor;
 }
 
-.artifact > pre {
+.artifact-copy:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.artifact-copy[data-copy-state="pending"] {
+	color: var(--muted);
+}
+
+.artifact-copy[data-copy-state="success"] {
+	color: var(--success);
+}
+
+.artifact-copy[data-copy-state="error"] {
+	color: var(--accent);
+}
+
+[data-clipboard-buffer] {
+	position: fixed;
+	top: 0;
+	left: -9999px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.source-viewport > pre {
 	margin: 0;
 	padding: clamp(22px, 3vw, 32px) clamp(18px, 2vw, 26px);
 	color: var(--syn-text);
 	font-size: clamp(14px, 1.6vw, 15px);
 	font-weight: 450;
 	line-height: 1.58;
+}
+
+.source-viewport > pre:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
 }
 
 .artifact-output {

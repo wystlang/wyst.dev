@@ -13,8 +13,9 @@ summary: "First runnable program shape, boot entry assumptions, and early runtim
 > state, implications, the EL2 → EL1 drop with vector install, BSS zero,
 > DTB preservation, and the secondary-CPU PSCI `CPU_ON` example
 > Exception vectors live in
-> [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md); trap intrinsics
-> (`%svc`, `%hvc`, `%eret`) live in [chapter-11-intrinsics.md §1.3.4](chapter-11-intrinsics.md).
+> [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md); qualified
+> exception operations (`exception.svc`, `.hvc`, and `.eret`) live in
+> [chapter-11-intrinsics.md](chapter-11-intrinsics.md).
 
 The UART example is a complete program illustrating the boot-entry shape. The
 EL transitions, exception vectors, and SMP recipe depend on the machine
@@ -28,21 +29,29 @@ The minimal boot-entry shape is a no-return `_start` symbol:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module boot
+module boot
 
-#noreturn
-_start :: () {
+import core.arch { cpu }
+
+fn _start() -> never {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
 
-### Complete UART Example
+### Future-profile UART sketch
+
+This architecture sketch requires a future checked-assembly profile with a
+generated `mov sp` transition proof. The pinned v0.9 compiler parses the stack
+clause but rejects `asm establishes stack` and the inactive `mov` row; the
+example is not a currently buildable v0.9 program.
 
 <!-- wyst-contract: sketch -->
 ```wyst
 #module boot.hello
+
+import core.arch { cpu }
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
@@ -55,7 +64,7 @@ STACK_TOP :: u64 = 0x4010_0000
 uart_write :: (byte : u8) {
 
   while u32@[UARTFR] & TXFF != 0 {
-    %nop()
+    cpu.nop()
   }
 
   u32@[UARTDR] = byte as.widen u32
@@ -76,27 +85,24 @@ uart_print :: (msg : string) {
 #[naked, noreturn]
 pub _start :: (dtb : @u8 #pin(x0)) {
 
-  #asm(sets_sp, effects: none) {
-    inputs {
-      stack = gpr(STACK_TOP)
-    }
-    body {
-      mov sp, {stack}
-    }
+  asm establishes stack (
+    stack: u64 = STACK_TOP,
+  ) {
+    mov sp, stack
   }
 
   uart_print("Hi!\n")
 
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
 
-`sets_sp` is a stack-state verifier contract, not a `#deny` effect category.
-The `effects: none` annotation in the entry stub means the block introduces no
-tracked effect category while the separate `sets_sp` verifier proves that the
-stack pointer is initialized from the aligned `stack` input.
+`establishes stack` is a stack-state verifier contract, not a
+`#[deny_effects(...)]` effect category. The instruction catalog derives the
+block's effects, while the separate stack verifier proves that the stack
+pointer is initialized from the aligned `stack` input.
 
 ---
 
@@ -182,13 +188,28 @@ pub __bss_end   ::= #end(.bss)
 pub __stack_top :: u64 = 0x4010_0000   // 1MB of stack, top-down
 ```
 
-#### Kernel module (`boot`)
+#### Kernel module (`boot`, future-profile stack sketch)
+
+As above, the initial `asm establishes stack` sequence describes the future
+complete-transition contract. The pinned v0.9 compiler rejects it because no
+active checked row proves the transition.
 
 <!-- wyst-contract: sketch -->
 ```wyst
 #module boot
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
+
+import core.arch { barrier, cpu, exception }
+
+system_register SP_EL1: writeonly u64 {}
+system_register VBAR_EL1: writeonly u64 {}
+system_register HCR_EL2: writeonly u64 {}
+system_register CPTR_EL2: writeonly u64 {}
+system_register SCTLR_EL1: writeonly u64 {}
+system_register SPSR_EL2: writeonly u64 {}
+system_register ELR_EL2: writeonly u64 {}
+system_register ESR_EL1: readonly u64 {}
 
 // The compiler is invoked with `--layout boot.layout`.
 // Exported layout symbols such as __stack_top are available by bare name.
@@ -197,38 +218,35 @@ pub __stack_top :: u64 = 0x4010_0000   // 1MB of stack, top-down
 #[naked, noreturn]
 _start :: (dtb : @u8 #pin(x0)) {
   // 1. Set up an initial stack (in EL2's sp_el2, which becomes sp here).
-  #asm(sets_sp, effects: none) {
-    inputs {
-      stack = gpr(__stack_top)
-    }
-    body {
-      mov sp, {stack}
-    }
+  asm establishes stack (
+    stack: u64 = __stack_top,
+  ) {
+    mov sp, stack
   }
-  %msr(SP_EL1, __stack_top) // stack for after the EL2 -> EL1 drop
+  SP_EL1.write(__stack_top) // stack for after the EL2 -> EL1 drop
 
   // 2. Install VBAR_EL1 ahead of the drop.
-  %msr(VBAR_EL1, #addr_of(el1_vectors) as.address u64)
-  %isb()
+  VBAR_EL1.write(address<u64>(#addr_of(el1_vectors)))
+  barrier.isb()
 
   // 3. Configure HCR_EL2: EL1 runs in AArch64.
-  %msr(HCR_EL2, 1 << 31) // RW = 1
+  HCR_EL2.write(1 << 31) // RW = 1
 
   // 4. Configure CPTR_EL2: allow FP/SIMD at EL1 (do not trap).
-  %msr(CPTR_EL2, 0x33ff)
+  CPTR_EL2.write(0x33ff)
 
   // 5. Configure SCTLR_EL1 reset state: MMU off, caches off.
-  %msr(SCTLR_EL1, 0x30c5_0838)
-  %isb()
+  SCTLR_EL1.write(0x30c5_0838)
+  barrier.isb()
 
   // 6. Configure SPSR_EL2: target EL1h, all DAIF masked.
-  %msr(SPSR_EL2, 0x3c5) // M=0101 (EL1h), DAIF=1111
+  SPSR_EL2.write(0x3c5) // M=0101 (EL1h), DAIF=1111
 
   // 7. Set ELR_EL2 to where we want EL1 to start.
-  %msr(ELR_EL2, #addr_of(el1_main) as.address u64)
+  ELR_EL2.write(address<u64>(#addr_of(el1_main)))
 
   // 8. eret: drop to EL1 with x0 (dtb) preserved as the EL1 first argument.
-  %eret()
+  exception.eret()
 }
 
 // EL1 entry — runs after the drop. sp now refers to sp_el1.
@@ -245,7 +263,7 @@ el1_main :: (dtb : @u8 #pin(x0)) {
   kernel_init(dtb)
 
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
@@ -258,87 +276,63 @@ under the `#naked` verifier.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-el1_vectors :: #exception_vector {
-  current_el_sp0_sync : #ventry(label = "el1t_sync") {
-    goto unexpected
-  }
-  current_el_sp0_irq : #ventry(label = "el1t_irq") {
-    goto unexpected
-  }
-  current_el_sp0_fiq : #ventry(label = "el1t_fiq") {
-    goto unexpected
-  }
-  current_el_sp0_serror : #ventry(label = "el1t_serror") {
-    goto unexpected
-  }
+vector_table el1_vectors: aarch64.el1 {
+  current.sp0.sync     -> unexpected
+  current.sp0.irq      -> unexpected
+  current.sp0.fiq      -> unexpected
+  current.sp0.serror   -> unexpected
 
-  current_el_spx_sync : #ventry(label = "el1h_sync") {
-    goto handle_sync
-  }
-  current_el_spx_irq : #ventry(label = "el1h_irq") {
-    goto handle_irq
-  }
-  current_el_spx_fiq : #ventry(label = "el1h_fiq") {
-    goto unexpected
-  }
-  current_el_spx_serror : #ventry(label = "el1h_serror") {
-    goto unexpected
-  }
+  current.spx.sync     -> handle_sync
+  current.spx.irq      -> handle_irq
+  current.spx.fiq      -> unexpected
+  current.spx.serror   -> unexpected
 
-  lower_el_aarch64_sync : #ventry(label = "el0_sync") {
-    goto unexpected
-  }
-  lower_el_aarch64_irq : #ventry(label = "el0_irq") {
-    goto unexpected
-  }
-  lower_el_aarch64_fiq : #ventry(label = "el0_fiq") {
-    goto unexpected
-  }
-  lower_el_aarch64_serror : #ventry(label = "el0_serror") {
-    goto unexpected
-  }
+  lower.aarch64.sync   -> unexpected
+  lower.aarch64.irq    -> unexpected
+  lower.aarch64.fiq    -> unexpected
+  lower.aarch64.serror -> unexpected
 
-  lower_el_aarch32_sync : #ventry(label = "el0_32_sync") {
+  lower.aarch32.sync {
     loop {
-      %wfe()
+      cpu.wfe()
     }
   }
-  lower_el_aarch32_irq : #ventry(label = "el0_32_irq") {
+  lower.aarch32.irq {
     loop {
-      %wfe()
+      cpu.wfe()
     }
   }
-  lower_el_aarch32_fiq : #ventry(label = "el0_32_fiq") {
+  lower.aarch32.fiq {
     loop {
-      %wfe()
+      cpu.wfe()
     }
   }
-  lower_el_aarch32_serror : #ventry(label = "el0_32_serror") {
+  lower.aarch32.serror {
     loop {
-      %wfe()
+      cpu.wfe()
     }
   }
 }
 
 handle_sync :: label #noreturn {
   // Read ESR_EL1 to dispatch on exception class.
-  esr := %mrs(ESR_EL1)
+  esr := ESR_EL1.read().raw
   // ... full dispatch elided ...
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 
 handle_irq :: label #noreturn {
   // GIC EOI dispatch — elided.
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 
 unexpected :: label #noreturn {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
@@ -353,42 +347,22 @@ each online with the PSCI `CPU_ON` SMCCC call. The EL2 SMP example
 uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
 conduit when the DTB says so.
 
+The checked `smc` spelling in the following future-profile sketch is not active
+in the pinned v0.9 pack and is rejected there. Current v0.9 code uses the
+cataloged `exception.smc(imm)` operation and its conservative register
+contract; a later checked profile may activate the exact signature form shown
+here.
+
 <!-- wyst-contract: sketch -->
 ```wyst
 psci_cpu_on :: (mpidr : u64, entry_point : u64, context_id : u64) -> u64 {
-  status : u64 #pin(x0) = 0
-  #asm(effects: trap) {
-    inputs {
-      func_id = gpr(0xC400_0003) // PSCI_CPU_ON (SMC64)
-      target = gpr(mpidr)
-      ep = gpr(entry_point)
-      ctx = gpr(context_id)
-    }
-    outputs {
-      ret = gpr(status) // x0 holds the return code
-    }
-    clobbers {
-      x1
-      x2
-      x3
-      x4
-      x5
-      x6
-      x7
-      x8
-      x16
-      x17
-      x30
-      memory
-      cc
-    }
-    body {
-      mov x0, {func_id}
-      mov x1, {target}
-      mov x2, {ep}
-      mov x3, {ctx}
-      smc #0
-    }
+  const status: u64 = asm (
+    func_id: u64 in x0 = 0xC400_0003, // PSCI_CPU_ON (SMC64)
+    target: u64 in x1 = mpidr,
+    ep: u64 in x2 = entry_point,
+    ctx: u64 in x3 = context_id,
+  ) -> func_id {
+    smc #0
   }
   return status
 }
@@ -487,7 +461,7 @@ provide this as a library; it is too long to inline in every boot sequence.
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Document QEMU `virt` specifically         | It is the canonical target. Generalizing across all ARMv8 platforms would dilute the contract into "depends on your firmware."               |
 | `_start` is `#naked` + `#noreturn`        | `sp` is undefined; using locals before sp-init would clobber whatever happens to be in `[sp]`. `#noreturn` because the EL1 entry takes over. |
-| `%eret` to drop EL, not `bl` or `b`       | Architecturally, EL transitions are exception returns. `bl` from EL2 to an EL1 address simply stays at EL2.                                  |
+| `exception.eret()` to drop EL, not `bl` or `b` | Architecturally, EL transitions are exception returns. `bl` from EL2 to an EL1 address simply stays at EL2.                             |
 | Vector install before enabling interrupts | Establishes a known target for any synchronous fault. Without it, a stray fault becomes an undefined-PC jump.                                |
 | BSS zeroing at EL1, after the drop        | Requires a working stack and EL1 MMU-off mode. Cleaner than embedding the zero loop in the `#naked` `_start`.                                |
 | Cache invalidation library, not inline    | The CLIDR/CCSIDR walk is verbose, error-prone, and the same across every kernel; it belongs in a shared utility.                             |

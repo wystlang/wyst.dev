@@ -1,11 +1,19 @@
 {
   "schema": "wyst.semanticAuthority.v0",
   "versions": {
-    "language": "wyst.language.v0.8",
+    "language": "wyst.language.v0.9",
+    "atomicMatrix": "wyst.atomic-matrix.v1",
     "nativeAbi": "wyst.nativeAbi.v0.8",
     "objectInterface": "wyst.objectInterface.v0",
-    "reportSchemas": "wync.reports.v0",
-    "editorInterfaces": "wync.interfaces.v0"
+    "reportSchemas": "wync.reports.v1",
+    "editorInterfaces": "wync.interfaces.v1",
+    "a64Authority": "wyst.a64-authority-manifest.v1",
+    "a64InstructionCatalog": "wyst.a64-instruction-catalog.v1",
+    "a64CompilerSemantics": "wyst.a64CompilerSemantics.v1",
+    "a64SupportManifest": "wyst.a64-support-manifest.v1",
+    "a64SupportPolicy": "wyst.a64-support-policy.v1",
+    "a64Conformance": "wyst.a64-conformance-manifest.v2",
+    "semanticOperations": "wyst.semantic-operation-catalog.v0.9"
   },
   "authorityOrder": [
     {
@@ -40,7 +48,7 @@
     },
     {
       "name": "experimental",
-      "meaning": "Research or planning material only; not normative, not scheduled, and not a compatibility promise."
+      "meaning": "An available inspection/research surface or planning rule that is not a normative compatibility promise and may change or be removed without migration support."
     },
     {
       "name": "reserved",
@@ -59,13 +67,195 @@
     {
       "id": "language.generics.type-parameter-model",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
-      "owner": "design/chapter-06-types.md"
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md",
+      "catalog": "design/generic-bounds.tsv"
     },
     {
       "id": "language.generics.instantiation-termination",
-      "state": "future-version-normative",
-      "version": "wyst.language.next",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.source-lexical-contract-v0.9",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/appendix-b-grammar.md"
+    },
+    {
+      "id": "language.syntax-word-catalog",
+      "state": "implemented",
+      "version": "wyst.syntaxWords.v0.9",
+      "owner": "design/syntax-words.tsv"
+    },
+    {
+      "id": "language.keyword-led-declarations-bindings",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.named-multi-return-destructuring",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.expected-type-aggregate-literals",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.bitstruct-typed-fields",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md",
+      "catalog": "design/generic-bounds.tsv"
+    },
+    {
+      "id": "language.register-map-mmio-declarations",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-11-intrinsics.md"
+    },
+    {
+      "id": "language.hardware-field-policies",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-11-intrinsics.md"
+    },
+    {
+      "id": "language.system-register-declarations",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-11-intrinsics.md",
+      "catalog": "design/a64-support-manifest.json"
+    },
+    {
+      "id": "language.semantic-operation-catalog",
+      "state": "implemented",
+      "version": "wyst.semantic-operation-catalog.v0.9",
+      "owner": "design/chapter-11-intrinsics.md",
+      "catalog": "design/semantic-operation-catalog.tsv"
+    },
+    {
+      "id": "language.meta-operation-catalog",
+      "state": "implemented",
+      "version": "wyst.metaOperations.v0.9",
+      "owner": "design/meta-operation-catalog.tsv",
+      "catalog": "design/meta-operation-catalog.tsv"
+    },
+    {
+      "id": "language.legacy-hash-directive-dispositions",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/legacy-hash-removal-audit.tsv",
+      "catalog": "design/legacy-hash-removal-audit.tsv"
+    },
+    {
+      "id": "language.maybe-uninit-whole-object-storage",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-11-intrinsics.md",
+      "catalog": "design/semantic-operation-catalog.tsv"
+    },
+    {
+      "id": "language.predecessor-bitfield-syntax",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.labeled-call-arguments",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.callable-storage-contracts",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.checked-assembly-signature-v0.9",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md",
+      "catalog": "design/a64-support-manifest.json"
+    },
+    {
+      "id": "language.enum-match-patterns",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.dynamic-array-core-role",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-10-runtime.md"
+    },
+    {
+      "id": "language.hierarchical-modules-imports-visibility",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
+      "id": "language.sealed-core-imports",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
+      "id": "language.source-visibility-not-linkage",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
+      "id": "language.directional-linker-boundaries",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
+      "id": "language.declaration-attribute-registry",
+      "state": "implemented",
+      "version": "wyst.declarationAttributes.v0.9",
+      "owner": "design/attribute-catalog.tsv"
+    },
+    {
+      "id": "language.predecessor-declaration-attribute-spellings",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/attribute-catalog.tsv"
+    },
+    {
+      "id": "language.punctuation-led-core-declarations",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/appendix-b-grammar.md"
+    },
+    {
+      "id": "language.legacy-dynamic-array-type-spelling",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-10-runtime.md"
+    },
+    {
+      "id": "language.switch-case-partial",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.typed-struct-literal-spelling",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -81,9 +271,21 @@
       "owner": "design/chapter-06-types.md"
     },
     {
-      "id": "language.categorized-explicit-conversions",
+      "id": "language.named-explicit-conversions",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.predecessor-categorized-conversions",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.checked-conversion",
+      "state": "reserved",
+      "version": null,
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -91,6 +293,18 @@
       "state": "implemented",
       "version": "wyst.language.v0.8",
       "owner": "design/chapter-25-compilation-phases.md"
+    },
+    {
+      "id": "tooling.authority-derived-inspection-reports",
+      "state": "experimental",
+      "version": "wync.reports.v1",
+      "owner": "design/chapter-21-explain.md"
+    },
+    {
+      "id": "tooling.canonical-diagnostic-kind-registry",
+      "state": "implemented",
+      "version": "wync.interfaces.v1",
+      "owner": "design/chapter-19-learning-diagnostics.md"
     },
     {
       "id": "language.module-discovery-model",
@@ -106,6 +320,12 @@
     },
     {
       "id": "language.ir-source-semantic-agreement",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/appendix-a-ir.md"
+    },
+    {
+      "id": "language.structural-ssa-and-incoming-abi-transfers",
       "state": "implemented",
       "version": "wyst.language.v0.8",
       "owner": "design/appendix-a-ir.md"
@@ -135,16 +355,34 @@
       "owner": "design/chapter-07-operators.md"
     },
     {
-      "id": "language.default-scheduling-mode",
+      "id": "language.standard-scheduling-policy",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
-      "id": "language.strict-scheduling-mode",
+      "id": "language.source-scheduling-boundaries",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-13-scheduling.md"
+    },
+    {
+      "id": "language.predecessor-scheduling-modes",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-13-scheduling.md"
+    },
+    {
+      "id": "language.integer-range-for-loop",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.repeat-loop-spelling",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.exact-code-contracts",
@@ -155,13 +393,25 @@
     {
       "id": "language.exception-vector-slots",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-14-exception-vectors.md"
+    },
+    {
+      "id": "language.target-checked-trap-frame-dsl",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-14-exception-vectors.md"
+    },
+    {
+      "id": "language.predecessor-vector-trap-directives",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-14-exception-vectors.md"
     },
     {
       "id": "language.function-label-control-flow",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-08-functions.md"
     },
     {
@@ -207,6 +457,20 @@
       "owner": "design/chapter-09-memory-model.md"
     },
     {
+      "id": "language.opaque-atomic-storage-closed-orders",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-09-memory-model.md",
+      "catalog": "design/atomic-matrix.json"
+    },
+    {
+      "id": "language.predecessor-atomic-primitives-and-order-directives",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/legacy-hash-removal-audit.tsv",
+      "catalog": "design/legacy-hash-removal-audit.tsv"
+    },
+    {
       "id": "language.execution-level-control-flow",
       "state": "implemented",
       "version": "wyst.language.v0.8",
@@ -225,9 +489,39 @@
       "owner": "design/chapter-09-memory-model.md"
     },
     {
-      "id": "language.address-arithmetic-model",
+      "id": "language.explicit-address-memory-operations",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.unit-explicit-address-offsets",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.runtime-local-address-materialization",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.slice-range-views",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.predecessor-address-access-syntax",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-06-types.md"
+    },
+    {
+      "id": "language.predecessor-slice-construction-syntax",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -261,6 +555,33 @@
       "owner": "design/chapter-02-targets.md"
     },
     {
+      "id": "targets.a64-compiler-semantic-catalog",
+      "state": "experimental",
+      "version": "wyst.a64CompilerSemantics.v1",
+      "owner": "design/a64-compiler-semantics.md",
+      "catalogs": [
+        "design/a64-instruction-semantics.tsv",
+        "design/a64-state-semantics.tsv",
+        "design/a64-structural-semantics.tsv",
+        "design/a64-support-manifest.json",
+        "design/a64-conformance-manifest.json",
+        "design/a64-conformance-evidence.tsv"
+      ]
+    },
+    {
+      "id": "targets.a64-instruction-catalog",
+      "state": "experimental",
+      "version": "wyst.a64-instruction-catalog.v1",
+      "owner": "design/a64-encoding-catalog.tsv",
+      "catalogs": [
+        "design/a64-encoding-catalog.tsv",
+        "design/a64-support-manifest.json",
+        "design/a64-support-rows.tsv",
+        "design/a64-conformance-manifest.json",
+        "design/a64-conformance-evidence.tsv"
+      ]
+    },
+    {
       "id": "artifacts.layout-placement-solver",
       "state": "implemented",
       "version": "wyst.language.v0.8",
@@ -292,9 +613,9 @@
     },
     {
       "id": "debug.backtrace-attribute",
-      "state": "reserved",
-      "version": null,
-      "owner": "design/chapter-15-abi-spec.md"
+      "state": "removed",
+      "version": "wyst.language.v0.9",
+      "owner": "design/legacy-hash-removal-audit.tsv"
     },
     {
       "id": "debug.dwarf4-bitfield-attribute-fallback",
@@ -734,10 +1055,10 @@
       "id": "phase.report_only_fact_computation",
       "languageVersionIntroduced": "wyst.language.v0.8",
       "scope": "Explain-report, generated-report, benchmark, and inspection facts that are not consumed by semantic, ABI, lowering, object, or diagnostic decisions.",
-      "purpose": "Compute terminal report-only summaries from already-owned facts without changing accepted programs, emitted bytes, diagnostics, or schemas.",
-      "immutableInputs": ["fact.type", "fact.ir_module", "fact.effect_authority_summary", "fact.final_resource_summary", "artifact.relocation_preparation"],
+      "purpose": "Compute typed terminal report-only summaries from already-owned products without changing accepted programs, emitted bytes, or diagnostics.",
+      "immutableInputs": ["fact.target_fact", "fact.source_map", "fact.module_identity", "fact.instantiated_ast", "fact.effect_authority_summary", "fact.callable_abi_obligation", "fact.ir_module", "fact.machine_code", "fact.register_assignment", "fact.final_resource_summary", "fact.artifact_bytes"],
       "authoritativeOutputs": ["fact.report_only_summary"],
-      "permittedDependencies": ["phase.type_checking", "phase.effect_authority_analysis", "phase.final_resource_computation", "phase.ir_construction", "phase.relocation_artifact_preparation"],
+      "permittedDependencies": ["phase.abi_lowering", "phase.build_inputs", "phase.effect_authority_analysis", "phase.final_resource_computation", "phase.generic_instantiation", "phase.ir_construction", "phase.machine_lowering", "phase.register_allocation", "phase.relocation_artifact_preparation", "phase.source_graph"],
       "forbiddenDependencies": ["phase.diagnostic_rendering", "phase.manifest_provenance_generation"],
       "semanticFactOwnership": ["fact.report_only_summary"],
       "cycleOwner": "none",
@@ -746,7 +1067,7 @@
       "mayAffectAcceptedPrograms": false,
       "mayAffectEmittedBytes": false,
       "reportOnly": true,
-      "implementationStatus": "Target contract; terminal reports consume ReportInputProduct builders and do not feed compilation products."
+      "implementationStatus": "Current contract; each report kind has a closed typed constructor, records producer/input-product identities, and does not feed compilation products."
     },
     {
       "id": "phase.semantic_verification",
@@ -787,13 +1108,13 @@
     {
       "id": "phase.source_graph",
       "languageVersionIntroduced": "wyst.language.v0.8",
-      "scope": "Module identities, import graph, root modules, and source-to-module mapping.",
-      "purpose": "Construct the authoritative module graph and stable module identities consumed by declaration collection and provenance reports.",
+      "scope": "Module identities, import graph, root modules, source-to-module mapping, and original-file source-map segments.",
+      "purpose": "Construct the authoritative module graph, stable module identities, and source map consumed by declaration collection, diagnostics, and reports.",
       "immutableInputs": ["build.input_set", "parse.module_ast", "source.fingerprint"],
-      "authoritativeOutputs": ["fact.module_identity", "source.import_graph"],
+      "authoritativeOutputs": ["fact.module_identity", "fact.source_map", "source.import_graph"],
       "permittedDependencies": ["phase.build_inputs", "phase.parsing", "phase.source_acquisition"],
       "forbiddenDependencies": ["phase.diagnostic_rendering", "phase.manifest_provenance_generation", "phase.report_only_fact_computation"],
-      "semanticFactOwnership": ["fact.module_identity"],
+      "semanticFactOwnership": ["fact.module_identity", "fact.source_map"],
       "cycleOwner": "phase.source_graph",
       "deterministicOrderingRule": "Traverse the import closure breadth-first; for each module, enumerate the anchor directory's regular non-hidden `.wyst` part files after removing build-owned ignored paths, then sort by normalized project-relative path.",
       "diagnosticResponsibility": "Report missing modules, ambiguous modules, import cycles, duplicate module declarations, module-name mismatches, and source graph incompatibilities.",
@@ -823,7 +1144,7 @@
     {
       "id": "phase.type_layout",
       "languageVersionIntroduced": "wyst.language.v0.8",
-      "scope": "Concrete scalar, aggregate, enum, bitfield, array, slice, descriptor, and address layouts.",
+      "scope": "Concrete scalar, aggregate, enum, bitstruct, array, slice, descriptor, and address layouts.",
       "purpose": "Finalize the authoritative type-layout facts consumed by placement, ABI classification, IR construction, debug info, and reports.",
       "immutableInputs": ["fact.layout_time_value", "generic.instantiated_declaration_set", "type.checked_declaration"],
       "authoritativeOutputs": ["fact.type_layout"],
@@ -869,6 +1190,11 @@
       "id": "fact.module_identity",
       "ownerPhase": "phase.source_graph",
       "meaning": "Stable module identity and import-graph membership for a frozen source graph."
+    },
+    {
+      "id": "fact.source_map",
+      "ownerPhase": "phase.source_graph",
+      "meaning": "Original-file identity and normalized project-relative mapping for every byte span in the current-build source product."
     },
     {
       "id": "fact.declaration_identity",
@@ -1032,7 +1358,7 @@
     {
       "operation": "misaligned-scalar-access",
       "category": "architectural-fault-or-trap",
-      "summary": "Misaligned scalar access may complete or fault according to the selected architecture, alignment controls, and memory type."
+      "summary": "AArch64 ordinary and volatile 16-, 32-, and 64-bit accesses admit unaligned addresses; MMIO requires natural alignment, rejects provable misalignment, and classifies dynamic misalignment as a possible architectural fault or trap."
     },
     {
       "operation": "misaligned-non-temporal-access",
@@ -1052,7 +1378,7 @@
     {
       "operation": "trusted-function-pointer-cast",
       "category": "trusted-contract-violation",
-      "summary": "A false #trusted_cast address, signature, or ABI assertion is the program's contract violation."
+      "summary": "A false trusted_callable<T>(address) address, signature, or ABI assertion is the program's contract violation."
     },
     {
       "operation": "ordinary-uninitialized-local-read",
@@ -1062,7 +1388,7 @@
     {
       "operation": "explicit-raw-storage-read",
       "category": "indeterminate-bits",
-      "summary": "An explicit %read_uninit observes raw storage as ordinary typed bits with unspecified contents."
+      "summary": "MaybeUninit<T>.read_uninit() observes raw storage as ordinary typed bits with unspecified contents and leaves initialization evidence unchanged."
     },
     {
       "operation": "data-race-access-atomic",
@@ -1137,6 +1463,7 @@
     "cache_maintenance",
     "tlb_maintenance",
     "atomic",
+    "cpu_event",
     "cpu_halt",
     "interrupt_mask",
     "volatile_access",
@@ -1145,6 +1472,489 @@
     "fp_state",
     "perf_counter"
   ],
+  "a64AuthorityCatalog": {
+    "state": "complete-pinned-authority-accounting",
+    "manifestSchema": "wyst.a64-authority-manifest.v1",
+    "manifest": "design/a64-authority.json",
+    "manifestDigest": "sha256:76f07d63b7c15650e270a23ba9e5156b2613cbed3bb11b0fa64c92c2d58de563",
+    "publisher": "Arm Limited",
+    "release": "A64 ISA 2026-03",
+    "sourceDigest": "sha256:bf355d263eed08ef6b3e4e680e6bba3642fa7c3dd0be77ffb4783420041a0860",
+    "normalizedSchema": "wyst.a64-catalog.v2",
+    "normalizedCatalog": "design/a64-catalog.tsv",
+    "normalizedCatalogDigest": "sha256:6ba93894dc2335b80260211a40c0e301fc207e1ac1c66f7dcdec0fb1ee1362c3",
+    "bijectionDigest": "sha256:dd88953da117113da70ea878e164adcbc2329607cd4a3c1fac584b1b01d95aec",
+    "normalizer": "wync-a64-normalizer-v2",
+    "normalizerSource": "wync/tools/a64-authority.mjs",
+    "normalizerSourceDigest": "sha256:e530053e544dede65c49c5729f3cc56e03f88725210c913dde09bc2bd834fadd",
+    "generatorInputsSchema": "wyst.a64-normalizer-inputs.v1",
+    "generatorInputsDigest": "sha256:ef8b71f519be4ffe36124b9b8f29ff18e91d5c33a2b714b587d1a3caca6776fd",
+    "denominatorCounts": {
+      "instructionEncodings": 4331,
+      "instructionAliases": 291,
+      "sourceForms": 4622,
+      "targetStructuralRows": 2,
+      "excludedFutureInstructionForms": 18,
+      "excludedFutureInstructionAliases": 1
+    },
+    "rawSourceForms": {
+      "schema": "wyst.a64-raw-encoding-source-forms.v3",
+      "artifact": "design/a64-raw-encoding-source-forms.jsonl.gz",
+      "artifactDigest": "sha256:19a2834807de954b2da2d5d9a84e16431781a0d743dd5d523ba8a599076f404a",
+      "generator": "wync-a64-raw-forms-v3",
+      "generatorSource": "wync/tools/a64-raw-forms.mjs",
+      "generatorSourceDigest": "sha256:1b9808ce04198903ba9e215366f6949c13170eaaa8eaf40ac2d3322d8b9fd93a",
+      "generatorInputsSchema": "wyst.a64-raw-forms-inputs.v3",
+      "generatorInputsDigest": "sha256:91c15211ae3cf9c768723f6dec48b14b1686ee8e20f3d91d44df27f3e55b2d68"
+    },
+    "recognitionDecoder": {
+      "schema": "wyst.a64-runtime-decode.v2",
+      "identityDigest": "sha256:62511ba9529cc683a2a0bfe76e859e97e22f4cc57c7f161753ef6161dfde2194",
+      "artifact": "wync/src/arm64/authority_decode_generated.rs",
+      "artifactDigest": "sha256:c28c62afa0e17c9359aa2aeeecc9876f228a7399db8bbfe0995313dc098292fd",
+      "encodingRows": 4331,
+      "maskOverlapPairs": 160,
+      "specificityResolvedOverlaps": 140,
+      "predicateProvenOverlaps": 20,
+      "unresolvedPreferredAliases": 0,
+      "wordClassificationOutcomes": ["supported", "known_unsupported", "reserved", "unallocated"],
+      "wordSpaceCardinality": 4294967296,
+      "reservedRegionCount": 1,
+      "reservedRegionWordCount": 134217728,
+      "allocatedReservedOverrideWordCount": 65536,
+      "reservedOutcomeWordCount": 134152192,
+      "targetIndependentAmbiguityWitnessCount": 0
+    },
+    "accountingClaim": true,
+    "roadmapDoneWhenClaim": true,
+    "completionBlockers": []
+  },
+  "a64SupportManifest": {
+    "state": "implemented-exact-release-support-partition",
+    "schema": "wyst.a64-support-manifest.v1",
+    "release": "wyst-v0.9",
+    "manifest": "design/a64-support-manifest.json",
+    "manifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "rows": "design/a64-support-rows.tsv",
+    "rowsDigest": "sha256:fba78098860991462ec93fdab69c92c4a9acce8d14afa0d601215856957206d4",
+    "policySchema": "wyst.a64-support-policy.v1",
+    "policy": "design/a64-support-policy.json",
+    "policyDigest": "sha256:c820307c269fd43e6caf1b9995f5f56c7592494c8bae95d3f6019f9db0742b3f",
+    "generator": "wync-a64-support-manifest-v1",
+    "generatorSource": "wync/tools/a64-support-manifest.mjs",
+    "generatorSourceDigest": "sha256:c553de782a95e06f82461187fcaa6c66858246265b1fcdaea2278da4dc1a138b",
+    "generatorInputsSchema": "wyst.a64-support-manifest-inputs.v1",
+    "generatorInputsDigest": "sha256:964b477f7b1e09bb8dd470c86b7fd815573ea51eef3e746d065d077bd6409fb6",
+    "generatedRuntime": "wync/src/arm64/support_manifest_generated.rs",
+    "generatedRuntimeDigest": "sha256:204ba8517604151838f011105daad1b5d9c4abc19f94d59f518594996987432c",
+    "inputDigests": {
+      "authorityCatalog": "sha256:c5ab3afd9be5dfd59c219515bd0c19fefbd3fcb9e33d90f4a6b77a9e17e1016a",
+      "rawSourceForms": "sha256:4effe10bd47b62f6ef97fc54a8458f2756d867b97c62b6d130104f629aa2f0a8",
+      "instructionCatalog": "sha256:6a14543fa72436044dbc6e0a60a7fd99a67b5a84066b7cdd2c083debe4802c3e",
+      "instructionSemantics": "sha256:347a1649017c9f406b18347a2898580145284097b1faea44c642ae305ee31bda",
+      "stateSemantics": "sha256:a25faa38b78a5cacebda2b6afc8244f663e9e4bcf235719bf3e51bbed6cdd2f1",
+      "structuralSemantics": "sha256:95d4b0f293ef605e4068e9c3f0ede6f0fbb4c3ecaa1e1db73456b47b7beb886e"
+    },
+    "supportPacks": [
+      {
+        "id": "wyst.a64.checked-asm.core.v1",
+        "surfaces": ["checked_asm"],
+        "activeEncodingRows": 12,
+        "activeSourceFormRows": 12
+      },
+      {
+        "id": "wyst.a64.target-structural-asm.aarch64.v1",
+        "surfaces": ["checked_asm"],
+        "activeEncodingRows": 6,
+        "activeSourceFormRows": 7
+      },
+      {
+        "id": "wyst.a64.ordinary-lowering.v1",
+        "surfaces": ["ordinary_lowering"],
+        "activeEncodingRows": 308,
+        "activeSourceFormRows": 0
+      },
+      {
+        "id": "wyst.a64.architecture-operations.v1",
+        "surfaces": ["architecture_operation"],
+        "activeEncodingRows": 308,
+        "activeSourceFormRows": 0
+      },
+      {
+        "id": "wyst.a64.target-structural.aarch64.v1",
+        "surfaces": [],
+        "activeTargetStructuralRows": 2
+      }
+    ],
+    "counts": {
+      "activeTotal": 329,
+      "knownUnsupportedTotal": 8626,
+      "encodingActive": 308,
+      "encodingKnownUnsupported": 4023,
+      "sourceFormActive": 19,
+      "sourceFormKnownUnsupported": 4603,
+      "targetStructuralActive": 2,
+      "targetStructuralKnownUnsupported": 0,
+      "total": 8955,
+      "unexplained": 0,
+      "partiallyActive": 0
+    },
+    "surfaceCounts": {
+      "checked_asm": { "encodingRows": 18, "sourceFormRows": 19 },
+      "ordinary_lowering": { "encodingRows": 308, "sourceFormRows": 0 },
+      "architecture_operation": { "encodingRows": 308, "sourceFormRows": 0 }
+    },
+    "dispositions": ["active", "known_unsupported"],
+    "diagnosticPrecedence": ["unknown", "known_unsupported", "target_unavailable", "active_and_target_available"],
+    "targetAvailabilityChangesCompilerSupport": false,
+    "observableDisposition": {
+      "values": ["active", "known_unsupported", "reserved", "unallocated"],
+      "resolvedValuesFromManifest": ["active", "known_unsupported"],
+      "allocationValuesFromAuthority": ["reserved", "unallocated"],
+      "disassemblyField": "support",
+      "loweringTextField": "support",
+      "loweringJsonField": "supportDisposition",
+      "assertsOriginSurfaceActivation": true,
+      "ordinaryLoweringEncodingsAreActive": true,
+      "reservedAndUnallocatedAreDistinct": true
+    },
+    "artifactIdentity": {
+      "elfSection": ".wyst.a64.catalog",
+      "elfSectionVersion": 7,
+      "supportFields": [
+        "support_manifest_schema",
+        "support_manifest_release",
+        "support_manifest_generator",
+        "support_manifest_generator_source_digest",
+        "support_manifest_generator_inputs_digest",
+        "support_policy_digest",
+        "support_manifest_digest",
+        "support_rows_digest",
+        "support_profile",
+        "authority_manifest_digest"
+      ]
+    },
+    "exactPartitionClaim": true,
+    "supportedProfileClaim": true,
+    "focusedClosureScope": "complete-focused-items-46-50-authority-semantics-generated-encoding-typed-ir-and-conformance",
+    "roadmapDoneWhenClaim": true,
+    "universalConformanceClaim": false,
+    "completionBlockers": [],
+    "laterMilestone": {
+      "roadmapItem": 105,
+      "scope": "complete-universal-a64-checked-assembly-activation",
+      "isCurrentCompletionBlocker": false
+    }
+  },
+  "a64Conformance": {
+    "state": "implemented-exact-focused-release-gate",
+    "schema": "wyst.a64-conformance-manifest.v2",
+    "rowSchema": "wyst.a64-conformance-evidence.v2",
+    "targetSchema": "wyst.a64-conformance-targets.v2",
+    "oracleSchema": "wyst.a64-conformance-static-oracles.v2",
+    "policySchema": "wyst.a64-conformance-policy.v2",
+    "release": "wyst-v0.9",
+    "generator": "wync-a64-conformance-v1",
+    "generatorSource": "wync/tools/a64-conformance.mjs",
+    "manifest": "design/a64-conformance-manifest.json",
+    "evidence": "design/a64-conformance-evidence.tsv",
+    "targets": "design/a64-conformance-targets.tsv",
+    "staticOracles": "design/a64-conformance-oracles.tsv",
+    "policy": "design/a64-conformance-policy.json",
+    "generatedRuntime": "wync/src/arm64/conformance_generated.rs",
+    "generatorSourceDigest": "sha256:89251fb6327f7bf7629b3e0c9accd35c490615b1fcd81d3e71777295b73fb06d",
+    "generatorInputsDigest": "sha256:b0e95dd45cc61fcb447d7970fd807695d2d8b638dba748f38206d25bcd9c9873",
+    "policyDigest": "sha256:ede8ed2d4a96bc1685abe8b0f39d3d87dab498985adcdb4a86b88589bcd3050c",
+    "manifestDigest": "sha256:c1061ffb1a6c9009a49cf7ab73060cb9e2e764edd0da1239a3ffdb78c7efac58",
+    "evidenceDigest": "sha256:361e69242922db65e0d71a3970e24f0401ccabc292ad3933ae5574a6f7423034",
+    "targetsDigest": "sha256:0a7dadce85ff73354054e798f4143bf9efb0e54a2d31fe28b005d877c9019d1e",
+    "staticOraclesDigest": "sha256:605f931217f314c504e3e7709341e58afa96dc35bbeaf25108a27cfd661aaaec",
+    "generatedRuntimeDigest": "sha256:e4635e58397db8edc957d824f11f1cf3cc9374a2d84a41d2a5253defef4f90ea",
+    "verificationCommands": [
+      "./wync/tools/a64-conformance-gate.sh check"
+    ],
+    "coverage": {
+      "totalEvidenceRows": 8955,
+      "activeEvidenceRows": 329,
+      "knownUnsupportedEvidenceRows": 8626,
+      "unexplainedEvidenceRows": 0,
+      "partiallyActiveEvidenceRows": 0,
+      "rowKinds": {
+        "encoding": 4331,
+        "sourceFormOrAlias": 4622,
+        "targetStructural": 2
+      },
+      "activeRows": {
+        "encoding": 308,
+        "sourceFormOrAlias": 19,
+        "targetStructural": 2
+      }
+    },
+    "staticDifferential": {
+      "offlineFixture": true,
+      "normalBuildsAndTestsInvokeHostTools": false,
+      "refreshCommand": "node wync/tools/a64-conformance.mjs refresh-oracles",
+      "activeEncodingRows": 308,
+      "oracles": [
+        {
+          "id": "llvm-mc-aarch64-14.0.6",
+          "implementationFamily": "llvm",
+          "version": "14.0.6",
+          "capabilities": ["decode", "encode-roundtrip"],
+          "coveredRows": 307,
+          "exactEncodingRoundtripRows": 307,
+          "gapRows": 1
+        },
+        {
+          "id": "capstone-arm64-5.0.7",
+          "implementationFamily": "capstone",
+          "version": "5.0.7",
+          "capabilities": ["decode"],
+          "encodingSurface": "unavailable:no-assembler-surface",
+          "coveredRows": 308,
+          "gapRows": 0
+        }
+      ],
+      "adjudication": {
+        "exactCanonicalAgreement": 249,
+        "wystCanonicalSpellingDifference": 30,
+        "canonicalAliasDifference": 22,
+        "toolFullDisassemblyDifference": 6,
+        "oneToolGap": 1
+      }
+    },
+    "functionalExecution": {
+      "categories": [
+        "authenticated_reference",
+        "pinned_independent_oracle",
+        "execution_oracle_unavailable"
+      ],
+      "activeEvidenceRows": {
+        "authenticatedReference": 0,
+        "pinnedIndependentOracle": 329,
+        "executionOracleUnavailable": 0
+      },
+      "instructionSemanticRows": {
+        "authenticatedReference": 0,
+        "pinnedIndependentOracle": 308,
+        "executionOracleUnavailable": 0
+      },
+      "structuralPinnedIndependentOracleRows": 2,
+      "structuralExecutionOracleUnavailableRows": 0,
+      "structuralEvidenceIsCompileTimeOnly": false,
+      "trapFrameRuntimeEvidenceCountsAsExecution": true,
+      "smpSmokeRejectedSourceCountsAsExecution": false,
+      "staticEvidenceCountsAsExecution": false
+    },
+    "syntheticTargets": {
+      "total": 153,
+      "activePositiveAndMissingFeatureProfiles": 4,
+      "knownUnsupportedPrecedenceProfiles": 149,
+      "allProfilesIncludeBase": true,
+      "activeCompilerBindings": ["base", "fp_simd", "lse"],
+      "activeProfileBindings": {
+        "base": ["base"],
+        "fp": ["base", "fp_simd"],
+        "advsimd": ["base", "fp_simd"],
+        "lse": ["base", "lse"]
+      },
+      "activeProfileRevisions": {
+        "base": "v8Ap0",
+        "fp": "v8Ap0",
+        "advsimd": "v8Ap0",
+        "lse": "v8Ap1"
+      },
+      "knownUnsupportedArchitectureRevision": "v9Ap7",
+      "knownUnsupportedProfilesAreConformanceOnly": true,
+      "state": "all-positive-predicate-facts",
+      "selectionKinds": ["compiler-binding", "authenticated-conformance-binding"],
+      "everySelectionHasDigest": true,
+      "conformanceBindingsStillValidateDependenciesRevisionConflictsAndFutureStatus": true,
+      "conformanceBindingBypassesOnlyResidualConstraints": true,
+      "activeEncodingRowsCovered": 308,
+      "knownUnsupportedEncodingRowsCovered": 4023
+    },
+    "allocationEvidence": {
+      "id": "wyst.a64.checked-asm-allocation.item50.v1",
+      "testSource": "wync/src/arm64/backend/tests/checked_asm_evidence.rs",
+      "maximumSatisfiableScratchFamilyMembers": 28,
+      "minimalUnsatisfiableFamilyMembers": 29,
+      "acceptedSingleMemberDeletions": 29,
+      "scratchEntryExitMaterialization": 0,
+      "sameHomeBoundaryTransfers": 0,
+      "tiedResultUsesOneInteriorPhysicalOperand": true,
+      "resultHomeReuseSelectsPreassignedCompatibleHome": true,
+      "pairedCompleteAssignmentsHaveIntroducedByAsmWholeBankReservation": false,
+      "pairedCompleteAssignmentsHaveSharedWholeBankReservation": false,
+      "pairedCompleteAssignmentsHaveUnassignedHomeReservation": false,
+      "pairedCompleteAssignmentsHaveSpillReload": false,
+      "pairedCompleteAssignmentsHaveStackPlacement": false
+    },
+    "fuzzEvidence": {
+      "target": "a64_conformance",
+      "deterministicSeed": "0x6a09e667f3bcc909",
+      "minimumRandomWords": 65536,
+      "releaseGate": "wync/tools/a64-conformance-gate.sh release"
+    },
+    "identityConsumers": [
+      "compiler-build-identity",
+      "release-evidence",
+      "generated-manifest",
+      "editor-catalog",
+      ".wyst.a64.catalog-v7"
+    ],
+    "identityFields": [
+      "conformance_schema",
+      "conformance_release",
+      "conformance_generator",
+      "conformance_generator_source_digest",
+      "conformance_generator_inputs_digest",
+      "conformance_policy_digest",
+      "conformance_manifest_digest",
+      "conformance_evidence_digest",
+      "conformance_targets_digest",
+      "conformance_static_oracles_digest"
+    ],
+    "claim": "complete conformance for the exact focused active support profile; universal A64 conformance is not claimed",
+    "supportedProfileClaim": true,
+    "roadmapDoneWhenClaim": true,
+    "universalConformanceClaim": false,
+    "completionBlockers": [],
+    "laterMilestone": {
+      "roadmapItem": 105,
+      "scope": "complete-universal-a64-checked-assembly-activation-and-rerun-this-gate",
+      "isCurrentCompletionBlocker": false
+    }
+  },
+  "a64CompilerSemanticCatalog": {
+    "version": "wyst.a64CompilerSemantics.v1",
+    "authorityCatalog": "design/a64-catalog.tsv",
+    "instructionSchema": "wyst.a64-instruction-semantics.v2",
+    "instructionCatalog": "design/a64-instruction-semantics.tsv",
+    "stateSchema": "wyst.a64-state-semantics.v3",
+    "stateCatalog": "design/a64-state-semantics.tsv",
+    "structuralSchema": "wyst.a64-structural-semantics.v2",
+    "structuralCatalog": "design/a64-structural-semantics.tsv",
+    "supportManifestSchema": "wyst.a64-support-manifest.v1",
+    "supportManifest": "design/a64-support-manifest.json",
+    "supportManifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "instructionSemanticManifest": "design/a64-instruction-semantics-manifest.json",
+    "instructionSemanticDigest": "sha256:347a1649017c9f406b18347a2898580145284097b1faea44c642ae305ee31bda",
+    "instructionSemanticGeneratorInputsDigest": "sha256:9aff4b772c06d6449b500c98abb6d6de7a0ad6d491b2d71ad323f8fb26374710",
+    "structuralSemanticDigest": "sha256:95d4b0f293ef605e4068e9c3f0ede6f0fbb4c3ecaa1e1db73456b47b7beb886e",
+    "semanticBundleDigest": "sha256:fe8e4688e0d19c5fd998feb3bdd00e940600b8a7d1b0406d9d5c803d43f42e82",
+    "state": "implemented-exact-active-support-profile",
+    "coverage": {
+      "authorityEncodingRows": 4331,
+      "activeInstructionSemanticRows": 308,
+      "knownUnsupportedEncodingRows": 4023,
+      "activeStateContractRows": 31,
+      "activeStructuralSemanticRows": 2,
+      "partiallyActiveRows": 0,
+      "unexplainedRows": 0
+    },
+    "activationRule": "complete-semantic-row-required-exactly-for-each-active-encoding",
+    "knownUnsupportedRule": "recognized-and-rejected-without-placeholder-or-wildcard-semantics",
+    "dynamicFacts": "named-exact-formulas-over-cataloged-operands-and-target-facts",
+    "pureEligibility": "compiler-derived-never-authored",
+    "functionalExecutionCoverage": [
+      "authenticated_reference:evidence-id",
+      "pinned_independent_oracle:evidence-id",
+      "execution_oracle_unavailable:gap-id"
+    ],
+    "functionalExecutionCounts": {
+      "authenticatedReference": 0,
+      "pinnedIndependentOracle": 308,
+      "executionOracleUnavailable": 0,
+      "structuralPinnedIndependentOracle": 2,
+      "structuralExecutionOracleUnavailable": 0
+    },
+    "forbiddenFacts": ["empty", "unknown", "wildcard", "manual_clobber", "manual_effect", "manual_purity"],
+    "supportedProfileClaim": true,
+    "roadmapDoneWhenClaim": true,
+    "universalConformanceClaim": false,
+    "completionBlockers": [],
+    "laterMilestone": {
+      "roadmapItem": 105,
+      "scope": "complete-universal-a64-checked-assembly-activation",
+      "isCurrentCompletionBlocker": false
+    }
+  },
+  "a64InstructionCatalog": {
+    "version": "wyst.a64-instruction-catalog.v1",
+    "implementation": "wync-a64-instruction-catalog-v1",
+    "state": "implemented-exact-active-support-profile",
+    "source": "design/a64-encoding-catalog.tsv",
+    "digest": "sha256:6a14543fa72436044dbc6e0a60a7fd99a67b5a84066b7cdd2c083debe4802c3e",
+    "activeEncodingSource": "design/a64-active-encoding-catalog.tsv",
+    "activeEncodingDigest": "sha256:4db8133277c6299d0268ac0be51b16d62617cf49fe7a5f4d4a866b6d86587997",
+    "generationManifest": "design/a64-instruction-catalog-manifest.json",
+    "generatorInputsDigest": "sha256:613f9adbad0918965201745742d2042febfceefb39b8f0741f69b93022dc25ca",
+    "supportManifestSchema": "wyst.a64-support-manifest.v1",
+    "supportManifest": "design/a64-support-manifest.json",
+    "supportManifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "identities": ["source-form", "canonical-instruction", "encoding", "authority", "semantic"],
+    "coverage": {
+      "activeEncodingRows": 308,
+      "checkedAsmSourceFormRows": 19,
+      "activeOperandDecoderRows": 301,
+      "activeGeneratedFixupRows": 10,
+      "activeTypedFixupRows": 2,
+      "recognitionEncodingRows": 4331,
+      "knownUnsupportedEncodingRows": 4023,
+      "knownUnsupportedSourceFormRows": 4603,
+      "partiallyActiveRows": 0,
+      "unexplainedRows": 0
+    },
+    "activeSurfaces": ["checked_asm", "ordinary_lowering", "architecture_operation"],
+    "recognitionDecoderSchema": "wyst.a64-runtime-decode.v2",
+    "recognitionDecoderIdentityDigest": "sha256:59d8dfd0d2bee77b796df08c6dd7e94a2b3a86c464fe8933c951c65c0f9f50d8",
+    "instructionTableGeneration": "complete-deterministic-generated-active-catalog-from-items-46-47",
+    "checkedAsmIrTransport": "complete-typed-catalog-identities-operands-and-fixups-retained-through-backend",
+    "fullAuthorityWordClassification": "complete-supported-known-unsupported-reserved-unallocated-partition",
+    "supportedProfileClaim": true,
+    "completionClaim": true,
+    "universalConformanceClaim": false,
+    "completionBlockers": [],
+    "laterMilestone": {
+      "roadmapItem": 105,
+      "scope": "complete-universal-a64-checked-assembly-activation",
+      "isCurrentCompletionBlocker": false
+    }
+  },
+  "semanticOperationCatalog": {
+    "schema": "wyst.semantic-operation-catalog.v0.9",
+    "state": "implemented",
+    "source": "design/semantic-operation-catalog.tsv",
+    "digest": "sha256:6c0d283a110926be97b99027471ebfe23a8059ea0cce7a5f4de59d0569f49b60",
+    "legacyRemovalAudit": "design/legacy-percent-removal-audit.tsv",
+    "legacyRemovalCount": 88,
+    "legacyRemovalDigest": "sha256:57be6ba82f91901c18927a1dbf6d801a35ba81f156f1aa89446df932f4d8f5e0",
+    "legacyRemovalManifestDigest": "sha256:0cf2bb0c95b132034c83cf475d0fa69ff919ad97f4d2e70884de1a9002032fbf",
+    "measurementCounterCatalog": "design/measurement-counter-catalog.tsv",
+    "measurementCounterDigest": "sha256:d228fe09cf02f41114b96b252da53381be1d03a76b70ee217023688b64015ce8",
+    "environmentServiceCatalog": "design/environment-service-catalog.tsv",
+    "environmentServiceDigest": "sha256:d2d9671539ac9e0eda3819d0cefa7a99e1dc3cbe2122e6d00b4c45ce3de12d5c",
+    "sealedNamespaces": ["core.arch", "core.environment"],
+    "architectureCategories": ["cpu", "barrier", "cache", "tlb", "exception", "memory"],
+    "environmentServices": ["semihost"],
+    "legacyParserCompatibility": false,
+    "stableIdentityInTypedIrAndReports": true
+  },
+  "metaOperationCatalog": {
+    "schema": "wyst.metaOperations.v0.9",
+    "state": "implemented",
+    "source": "design/meta-operation-catalog.tsv",
+    "digest": "sha256:646b27d5c30023d2da83e49da881a08aac4c5247734f9802e5861f6974efb908",
+    "count": 14,
+    "legacyRemovalAudit": "design/legacy-hash-removal-audit.tsv",
+    "legacyRemovalCount": 53,
+    "legacyRemovalDigest": "sha256:5787c24f6e069e8eefcac2ed04bf1497f279d4f4bf259724dd7ca9a19a07b018",
+    "legacyRemovalManifestDigest": "sha256:48e0cb2b0b994f939a06735257a6339f66f499eec19c24f498f0f2bb07f9b278",
+    "legacyParserCompatibility": false,
+    "legacyDiagnosticCompatibility": false,
+    "editorPublishesLegacyNames": false
+  },
   "abiClassifications": {
     "nativeRegisters": {
       "arguments": ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7"],
@@ -1161,34 +1971,816 @@
   },
   "grammarTables": {
     "source": "design/appendix-b-grammar.md",
-    "keywords": ["as", "bitfield", "break", "case", "continue", "else", "enum", "false", "goto", "if", "is", "label", "loop", "pub", "repeat", "return", "select", "struct", "switch", "true", "while"],
-    "directives": ["#acquire", "#align", "#align_of", "#addr_of", "#asm", "#cache_line_width", "#cold", "#dedent", "#deny", "#else", "#entry", "#end", "#exception_vector", "#exact", "#field_offset", "#frame", "#hidden", "#if", "#inline", "#initcall", "#import", "#len", "#likely", "#module", "#naked", "#noescape", "#noreturn", "#packed", "#partial", "#percpu", "#percpu_offset_of", "#pin", "#region", "#release", "#repr", "#requires", "#schedule", "#section", "#shared", "#size_of", "#start", "#static_assert", "#tag_of", "#target", "#tls", "#tls_offset_of", "#trap_frame", "#trusted_cast", "#unlikely", "#ventry", "#weak"],
-    "intrinsics": ["%abs", "%addr_of", "%atomic_bit_clear", "%atomic_bit_set", "%atomic_load", "%atomic_store", "%brk", "%cas", "%compiler_barrier", "%daif_clr", "%daif_set", "%dc_cvac", "%dc_civac", "%dc_cvau", "%dc_ivac", "%dc_zva", "%dczid_block_size", "%dmb", "%dsb", "%eret", "%fetch_add", "%fetch_and", "%fma", "%fetch_or", "%fetch_sub", "%fetch_xor", "%hlt", "%hvc", "%ic_iallu", "%ic_ialluis", "%ic_ivau", "%isb", "%ldnp", "%load_be", "%load_le", "%mrs", "%mrs_s", "%msr", "%msr_s", "%neg", "%nop", "%prefetch", "%read_cycle_counter", "%read_uninit", "%sev", "%sevl", "%smc", "%sqrt", "%stnp", "%store_be", "%store_le", "%svc", "%tag_of", "%tlbi_alle1", "%tlbi_alle1is", "%tlbi_alle2", "%tlbi_alle2is", "%tlbi_alle3", "%tlbi_alle3is", "%tlbi_aside1", "%tlbi_aside1is", "%tlbi_ipas2e1", "%tlbi_ipas2e1is", "%tlbi_ipas2le1", "%tlbi_ipas2le1is", "%tlbi_vae1", "%tlbi_vae1is", "%tlbi_vae2", "%tlbi_vae2is", "%tlbi_vae3", "%tlbi_vae3is", "%tlbi_vaae1", "%tlbi_vaae1is", "%tlbi_vale1", "%tlbi_vale1is", "%tlbi_vale2", "%tlbi_vale2is", "%tlbi_vale3", "%tlbi_vale3is", "%tlbi_vmalle1", "%tlbi_vmalle1is", "%tlbi_vmalls12e1", "%tlbi_vmalls12e1is", "%wfe", "%wfi", "%write_uninit", "%xchg", "%yield"],
-    "genericBounds": ["integer", "unsigned_integer", "signed_integer", "float", "numeric", "scalar", "address", "bitfield", "payload_word"],
-    "builtinTypes": ["bool", "string", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "f32", "f64"],
+    "syntaxWordCatalog": "design/syntax-words.tsv",
+    "declarationAttributeCatalog": "design/attribute-catalog.tsv",
+    "metaOperationCatalog": "design/meta-operation-catalog.tsv",
+    "intrinsics": [],
+    "semanticOperationCatalog": "design/semantic-operation-catalog.tsv",
+    "compilerOwnedOperations": ["addr_of", "address", "bitcast", "byte_offset", "element_offset", "field_addr", "floatcast", "fma", "numeric", "qualify", "relens", "saturate", "signcast", "truncate", "truncate_bits", "trusted_callable", "uninit", "widen"],
+    "addressMethods": ["load", "store", "slice"],
+    "hardwareMethods": ["read", "write", "modify"],
+    "hardwareSnapshotProjections": ["raw"],
+    "reservedCompilerOwnedOperations": ["checked"],
+    "rangePunctuationLongestMatchOrder": ["..<", "..=", ".."],
+    "identifierPattern": "[A-Za-z_][A-Za-z0-9_]*",
+    "bareDiscard": "_",
+    "genericValueApplicationFollowers": ["(", ".", "[", ")", "]", ",", "}", "end-of-file"],
+    "contextualGenericCloserSplits": [">>", ">>="],
+    "callArgumentForms": ["expression", "name = expression"],
+    "listTrailingCommaPolicy": "one-optional-trailing-comma",
+    "statementTermination": "grammar-production-completion",
+    "semicolonPolicy": "invalid-everywhere-in-v0.9-source-including-checked-assembly-instruction-bodies",
+    "whitespacePolicy": "spaces-tabs-and-newlines-interchangeable-outside-literals-comments-and-checked-assembly-instruction-bodies",
     "reservedTokens": ["$", "?"],
     "reservedGeneratedSymbolMarker": "__wg"
   },
+  "integerRangeForContract": {
+    "surface": "for index in start ..< end { ... }",
+    "rangePunctuation": "..<",
+    "evaluationOrder": ["start", "end"],
+    "boundEvaluationCount": 1,
+    "boundTypeRule": "one-compatible-integer-type",
+    "integerLiteralRule": "literal-adopts-other-bound-type",
+    "indexMutability": "immutable",
+    "step": 1,
+    "zeroIterationCondition": "start >= end",
+    "continueRule": "advance-and-retest",
+    "iteratorProtocol": false,
+    "customStep": false
+  },
+  "namedConversionContract": {
+    "schema": "wyst.namedConversions.v0.9",
+    "owner": "design/chapter-06-types.md",
+    "implicitNumericConversions": false,
+    "operations": [
+      { "name": "widen", "shape": "widen<T>(value)", "legality": "same-signedness-integer-width-increase", "result": "zero-extend-unsigned-or-sign-extend-signed" },
+      { "name": "truncate", "shape": "truncate<T>(value)", "legality": "integer-width-decrease", "result": "retain-low-target-width-bits" },
+      { "name": "signcast", "shape": "signcast<T>(value)", "legality": "same-width-integer-signedness-change", "result": "preserve-complete-bit-pattern" },
+      { "name": "numeric", "shape": "numeric<T>(value)", "legality": "representable-untyped-integer-integer-identity-wider-opposite-signedness-or-explicit-bool-integer-crossing", "result": "extend-wider-crossing-by-source-signedness-then-interpret-as-target-or-apply-bool-zero-nonzero-rule" },
+      { "name": "bitcast", "shape": "bitcast<T>(value)", "legality": "closed-equal-representation-pairs-only-including-bitstruct-and-its-exact-declared-backing", "result": "preserve-complete-bit-pattern-including-unnamed-bitstruct-bits" },
+      { "name": "address", "shape": "address<T>(value)", "legality": "u64-address-or-address-u64-boundary", "result": "preserve-one-target-word-address-bits" },
+      { "name": "relens", "shape": "relens<T>(value)", "legality": "complete-target-address-type-with-pointee-change-and-identical-qualifiers", "result": "preserve-address-bits" },
+      { "name": "qualify", "shape": "qualify<T>(value)", "legality": "complete-target-address-type-with-qualifier-change-and-identical-pointee", "result": "preserve-address-bits" },
+      { "name": "floatcast", "shape": "floatcast<T>(value)", "legality": "any-admitted-conversion-involving-f32-or-f64-except-saturating-integer-narrowing", "result": "target-defined-for-out-of-range-NaN-or-infinity-float-to-integer" },
+      { "name": "saturate", "shape": "saturate<T>(value)", "legality": "same-signedness-integer-width-decrease", "result": "clamp-mathematical-value-to-target-minimum-or-maximum-before-conversion" },
+      { "name": "truncate_bits", "shape": "truncate_bits(value, width)", "legality": "fixed-width-integer-value-and-compile-time-constant-width-in-1-through-source-width", "result": "same-source-integer-type-with-only-low-width-bits-retained-and-all-higher-bits-zero" }
+    ],
+    "evaluationOrder": ["value", "width-if-present"],
+    "evaluationCount": 1,
+    "typeArgumentMeaning": "complete-result-type-never-inferred-or-defaulted",
+    "userOverloadable": false,
+    "removedSurface": ["as.widen", "as.truncate", "as.signedness", "as.numeric", "as.bits", "as.address", "as.lens", "as.qualifier", "as.float"],
+    "reservedSurface": "checked<T>(value)"
+  },
+  "bitstructContract": {
+    "schema": "wyst.bitstruct.v0.9",
+    "owner": "design/chapter-06-types.md",
+    "declarationShape": "bitstruct Name: Backing { FIELD: Carrier at Location ... }",
+    "backingTypes": ["u8", "u16", "u32", "u64"],
+    "locationShapes": ["at N", "at A..=B"],
+    "rangeDirection": "inclusive-low-to-high",
+    "encodedWidth": "single-position-is-1-otherwise-B-minus-A-plus-1",
+    "fieldCarrierKinds": ["bool", "fixed-width-integer", "payloadless-enum"],
+    "boolWidth": 1,
+    "declarationChecks": [
+      "constant-positions",
+      "positive-derived-width",
+      "location-within-backing",
+      "no-overlap",
+      "carrier-representability",
+      "payloadless-enum-exact-encoding-coverage",
+      "zero-reset-encoding-validity"
+    ],
+    "enumCoverage": "exactly-one-variant-for-every-field-width-encoding-with-no-duplicates-or-missing-values",
+    "readResult": "declared-carrier-type",
+    "writeAdmission": [
+      "carrier-representation-fits-field-width",
+      "constant-proved-in-range",
+      "enum-encoding-proved-in-range",
+      "truncate_bits-with-exact-field-width"
+    ],
+    "silentWriteTruncation": false,
+    "aggregateLiteral": {
+      "shape": "expected-type-{ FIELD = value, ... }",
+      "fieldRule": "every-declared-field-exactly-once",
+      "evaluation": "once-in-written-order",
+      "initialBacking": 0,
+      "unnamedBits": "zero"
+    },
+    "mutationOutsideSelectedField": "preserve-every-bit",
+    "rawBoundary": {
+      "operation": "bitcast",
+      "legalPairs": "bitstruct-and-its-exact-declared-backing-only",
+      "preserves": "complete-backing-value-including-unnamed-bits",
+      "validation": false,
+      "normalization": false,
+      "memoryAccess": false,
+      "implicitConversion": false
+    },
+    "normalizedFieldFacts": [
+      "nominal-owner",
+      "backing-type",
+      "field-name",
+      "carrier-type",
+      "low-bit",
+      "encoded-width",
+      "mask",
+      "enum-encoding-coverage"
+    ],
+    "normativeConsumers": [
+      "semantic-analysis",
+      "diagnostics",
+      "formatter",
+      "reports",
+      "lsp",
+      "editor-metadata",
+      "typed-ir",
+      "target-lowering"
+    ],
+    "removedSurface": [
+      "bitfield(T)",
+      "bits(lo, hi)",
+      "width N",
+      "bit location-word",
+      "exclusive-range",
+      "descending-range",
+      "empty-range",
+      "non-contiguous-range",
+      "from_bits",
+      "to_bits"
+    ]
+  },
+  "hardwareRegisterContract": {
+    "schema": "wyst.hardwareRegisters.v0.9",
+    "owners": [
+      "design/chapter-06-types.md",
+      "design/chapter-09-memory-model.md",
+      "design/chapter-11-intrinsics.md",
+      "design/appendix-a-ir.md",
+      "design/appendix-b-grammar.md"
+    ],
+    "syntaxWordCatalog": "design/syntax-words.tsv",
+    "declarations": {
+      "registerMap": "register_map Name { REGISTER: ACCESS Backing at Offset FieldBlock? ... }",
+      "placedMap": "mmio NAME: RegisterMap at Address",
+      "scalarMmio": "mmio NAME: ACCESS T at Address",
+      "catalogSystemRegister": "system_register NAME: ACCESS u64 HardwareFieldBlock",
+      "encodedSystemRegister": "system_register NAME: ACCESS u64 at SystemRegisterEncoding HardwareFieldBlock?"
+    },
+    "accessModes": ["readonly", "writeonly", "readwrite"],
+    "accessModeClassification": "contextual",
+    "declarationWordClassification": {
+      "register_map": "contextual",
+      "mmio": "contextual",
+      "system_register": "contextual",
+      "device": "reserved"
+    },
+    "accessFunctionSyntax": false,
+    "reservedFutureDeclarationWord": "device",
+    "registerMap": {
+      "backingTypes": ["u8", "u16", "u32", "u64"],
+      "offsetUnit": "bytes",
+      "offsetPhase": "compile-time-integer",
+      "placementPhase": "compile-time-integer",
+      "placedAddress": "base-plus-byte-offset-without-wraparound",
+      "alignment": "natural-mmio-alignment-for-backing-width",
+      "placementAccess": false,
+      "snapshotType": "Map.Register.Value",
+      "snapshotNominality": "canonical-per-register-including-fieldless-register",
+      "snapshotKind": "ordinary-captured-value-never-live-proxy",
+      "rawProjection": "read-only-exact-backing-type",
+      "fieldProjection": "readable-field-from-captured-backing-with-no-access",
+      "rawToSnapshotConversion": false,
+      "snapshotToRawImplicitConversion": false
+    },
+    "scalarMmio": {
+      "typeDomain": "selected-target-fixed-width-single-load-store-scalars",
+      "vectors": false,
+      "aggregates": false,
+      "readResult": "declared-T",
+      "writeOperand": "exact-declared-T",
+      "snapshotType": false,
+      "rawProjection": false,
+      "namedWrite": false,
+      "modify": false
+    },
+    "systemRegister": {
+      "architecture": "aarch64",
+      "backingType": "u64",
+      "otherBackingTypes": "rejected",
+      "snapshotType": "Name.Value",
+      "snapshotNominality": "canonical-per-declaration-including-fieldless-register",
+      "rawProjection": "read-only-u64",
+      "fieldTransferWidthBits": 64,
+      "catalogNamedFieldlessBlock": "required-empty-braces",
+      "encodedFieldlessBlock": "omitted",
+      "namedIdentity": "exact-case-sensitive-canonical-generated-catalog-name",
+      "authoritySources": [
+        "design/a64-authority.json",
+        "design/a64-support-manifest.json",
+        "design/a64-instruction-semantics.tsv",
+        "design/a64-state-semantics.tsv",
+        "authenticated-selected-target-extension-catalog"
+      ],
+      "authorityFacts": [
+        "register-identity",
+        "named-and-encoded-form",
+        "access-direction",
+        "instruction-selection",
+        "feature-and-revision-availability",
+        "execution-level-and-security-state",
+        "implicit-state",
+        "effects",
+        "faults",
+        "encoding",
+        "reporting"
+      ],
+      "parallelAuthorityTable": false,
+      "sourceAssemblyLowering": false,
+      "encodedLiteral": {
+        "shape": "S<op0>_<op1>_C<CRn>_C<CRm>_<op2>",
+        "caseSensitive": true,
+        "components": [
+          { "name": "op0", "bits": 2 },
+          { "name": "op1", "bits": 3 },
+          { "name": "CRn", "bits": 4 },
+          { "name": "CRm", "bits": 4 },
+          { "name": "op2", "bits": 3 }
+        ],
+        "numberFormat": "canonical-unsigned-decimal-no-leading-zero-except-zero",
+        "resolution": "exactly-one-active-authenticated-target-extension-row-with-complete-semantics-and-selected-target-availability",
+        "createsArchitectureFact": false,
+        "unknownOrUnnamedTuple": "rejected",
+        "rejectedShapes": [
+          "string",
+          "lowercase-s-or-c",
+          "expression",
+          "omitted-component",
+          "alternate-separator",
+          "noncanonical-alias"
+        ]
+      },
+      "genericEncodedCalls": [],
+      "genericRawCalls": false,
+      "sourceMethods": ["REGISTER.read().raw", "REGISTER.write(value)", "REGISTER.modify(...)"]
+    },
+    "fields": {
+      "normalizedEngine": "bitstructContract.normalizedFieldFacts",
+      "locationShapes": ["at N", "at A..=B"],
+      "accessInheritance": "register-mode",
+      "explicitAccessRule": "non-empty-subset-of-register-mode",
+      "broadening": false,
+      "postfixPolicyOrder": ["reset", "read-policy", "write-policy"],
+      "maximumPerPolicyClass": 1,
+      "reset": {
+        "shape": "reset VALUE",
+        "phase": "constant-representable-field-encoding",
+        "missingMeaning": "unknown-not-zero",
+        "runtimeInitialization": false
+      },
+      "readPolicies": ["read_clears", "read_sets"],
+      "writePolicies": [
+        "write_ignored",
+        "write_one_clears",
+        "write_one_sets",
+        "write_one_toggles",
+        "write_zero_clears",
+        "write_zero_sets",
+        "write_zero_toggles"
+      ],
+      "writeOneInactiveEncoding": 0,
+      "writeZeroInactiveEncoding": 1,
+      "actionArgumentMeaning": "field-action-bit-mask-not-post-write-state",
+      "impossiblePolicyAccessCombination": "rejected",
+      "standaloneBitstructPolicies": false
+    },
+    "reservedBits": {
+      "implicitUnnamedPolicy": "zero-for-named-write",
+      "explicitShapes": ["reserved at Location one", "reserved at Location preserve"],
+      "explicitPurpose": "override-implicit-zero-only",
+      "accessor": false,
+      "namedArgument": false,
+      "oneNamedWriteEncoding": 1,
+      "preserveNamedModify": "copy-captured-bits",
+      "preserveNamedWrite": "rejected-no-implicit-read",
+      "overlap": "rejected"
+    },
+    "operations": {
+      "snapshotRead": {
+        "shape": "REGISTER.read()",
+        "accesses": ["one-full-width-read"],
+        "result": "nominal-snapshot"
+      },
+      "rawWrite": {
+        "shape": "REGISTER.write(raw-backing-value)",
+        "accesses": ["one-full-width-write"],
+        "policy": "bypass-named-field-and-reserved-policy",
+        "snapshotOperand": "requires-explicit-dot-raw"
+      },
+      "namedWrite": {
+        "shape": "REGISTER.write(FIELD = value, ...)",
+        "minimumArguments": 1,
+        "labels": "unique-writable-fields",
+        "base": "zero-plus-field-inactive-encodings-and-reserved-policy",
+        "accesses": ["one-full-width-write"],
+        "result": "void",
+        "implicitRead": false
+      },
+      "modify": {
+        "shape": "REGISTER.modify(FIELD = value, ...)",
+        "minimumArguments": 1,
+        "labels": "unique-writable-fields",
+        "accesses": ["one-full-width-read", "one-full-width-write"],
+        "result": "void",
+        "atomic": false,
+        "availability": "only-when-exact-pair-satisfies-all-read-field-write-and-reserved-policies",
+        "fallback": false
+      },
+      "rawAndNamedMixing": false,
+      "snapshotOverloads": false,
+      "aliases": []
+    },
+    "evaluation": {
+      "receiverAndArguments": "once-left-to-right-in-written-order-before-first-access",
+      "hiddenTruncation": false,
+      "hiddenRetry": false,
+      "hiddenExtraAccess": false
+    },
+    "mmioAccessContract": {
+      "eventPerReadOrWrite": 1,
+      "observable": true,
+      "volatile": true,
+      "intent": "mmio",
+      "effects": ["volatile_access", "mmio"],
+      "compilerOrdering": "full-two-way-memory-boundary",
+      "modifyOrdering": "complete-one-read-then-one-write-unit",
+      "synchronizesWith": false,
+      "happensBefore": false,
+      "implicitArchitectureBarrier": false
+    },
+    "systemRegisterAccessContract": {
+      "compilerOrdering": "full-two-way-memory-boundary",
+      "modifyOrdering": "complete-one-read-then-one-write-unit",
+      "effects": "resolved-generated-catalog-facts",
+      "synchronizesWith": false,
+      "happensBefore": false,
+      "implicitArchitectureBarrier": false,
+      "weakOrderExceptions": false
+    },
+    "hardwareAccessIr": {
+      "kinds": ["ScalarRead", "SnapshotRead", "RawWrite", "NamedWrite", "Modify"],
+      "reportLabels": [
+        "hardware.scalar.read",
+        "hardware.snapshot.read",
+        "hardware.raw.write",
+        "hardware.named.write",
+        "hardware.modify"
+      ],
+      "requiredFacts": [
+        "object-identity-and-nominal-snapshot-identity-or-scalar-none",
+        "ordered-primitive-value-ids",
+        "full_compiler_fence",
+        "emitted_architecture_barrier"
+      ],
+      "fullCompilerFence": true,
+      "emittedArchitectureBarrier": false
+    },
+    "reportDistinctions": [
+      "standalone-scalar-read",
+      "captured-snapshot-read",
+      "raw-full-width-write",
+      "policy-aware-named-write",
+      "read-modify-write",
+      "compiler-ordering",
+      "emitted-architecture-barrier"
+    ],
+    "retainedSurface": ["@mmio T", "REGISTER.read().raw", "REGISTER.write(value)", "REGISTER.modify(...)"],
+    "removedSurface": ["T@[address]", "read_raw", "write_raw", "access(...)"]
+  },
+  "addressOperationContract": {
+    "schema": "wyst.addressOperations.v0.9",
+    "owner": "design/chapter-06-types.md",
+    "atTokenRole": "declarative-placement-only-never-address-expression",
+    "addressTypes": ["@T", "@volatile T", "@mmio T"],
+    "typedAddressArithmeticOperators": [],
+    "offsetOperations": [
+      { "name": "byte_offset", "unit": "bytes", "resultLens": "receiver-lens", "qualifiers": "preserved" },
+      { "name": "element_offset", "unit": "receiver-elements", "resultLens": "receiver-lens", "qualifiers": "preserved" },
+      { "name": "field_addr", "unit": "declared-field-byte-offset", "resultLens": "selected-field-type", "qualifiers": "preserved" }
+    ],
+    "offsetCountTypes": "any-fixed-width-integer-with-no-implicit-conversion",
+    "offsetArithmetic": "mathematical-signed-or-unsigned-count-scaled-in-arbitrary-precision-then-reduced-modulo-2^64",
+    "relocationAddendUnit": "bytes",
+    "ordinaryMethods": ["address.load()", "address.store(value)"],
+    "ordinaryMethodLens": "receiver-pointee-exactly",
+    "endianMethods": ["address.load<T>(endian = .big|.little)", "address.store<T>(value, endian = .big|.little)"],
+    "endianReceiverTypes": ["@u8", "@volatile u8", "@mmio u8"],
+    "endianValueTypes": ["u16", "i16", "u32", "i32", "u64", "i64"],
+    "endianTypeArgument": "explicit-mandatory",
+    "endianLabel": "mandatory-no-default",
+    "endianOperationCount": "one-width-T-memory-access-plus-only-required-target-byte-reversal",
+    "implicitRelensing": false,
+    "bytewiseFallback": false,
+    "runtimeAlignmentCheck": false,
+    "qualifierEffects": {
+      "ordinary": [],
+      "volatile": ["volatile_access"],
+      "mmio": ["volatile_access", "mmio"]
+    },
+    "aarch64AlignmentFacts": {
+      "ordinaryAndVolatileUnalignedWidthsBits": [16, 32, 64],
+      "mmio": "natural-alignment-required",
+      "provableDisallowedMisalignment": "compile-time-diagnostic",
+      "dynamicMmioMisalignment": "architectural_fault_or_trap",
+      "dynamicMisalignmentOptimizerAssumption": false
+    },
+    "semanticReportFields": ["required_alignment", "target_unaligned_access_fact", "possible_architectural_fault"],
+    "runtimeLocalAddress": {
+      "surface": "addr_of(local)",
+      "result": "address-of-exact-local-type",
+      "memoryAccess": false,
+      "mayForceAddressabilityResource": true,
+      "hardRegisterPlacedStorage": "rejected",
+      "escape": "rejected-by-noescape-and-local-address-lifetime-rules",
+      "compileTimeSymbolOperation": "#addr_of(symbol)-is-distinct"
+    },
+    "removedSurface": ["T@[address]", "[T:N]@[address]", "typed-address +", "typed-address -", "typed-address +=", "typed-address -="]
+  },
+  "sliceRangeViewContract": {
+    "schema": "wyst.sliceRangeViews.v0.9",
+    "owner": "design/chapter-06-types.md",
+    "sliceType": "[]T",
+    "projections": ["data: read-only @T", "len: read-only u64"],
+    "subscriptForms": ["source[..]", "source[start ..< end]", "source[..< end]", "source[start ..]"],
+    "subscriptSources": ["fixed-array", "existing-slice"],
+    "rangeValuesFirstClass": false,
+    "evaluationOrder": ["source", "start-if-present", "end-if-present"],
+    "evaluationCount": 1,
+    "runtimeBoundsCheck": false,
+    "compileTimeBoundsRule": "reject-only-provably-invalid-bounds",
+    "allocation": false,
+    "copy": false,
+    "memoryAccess": false,
+    "rawConstructor": "ordinaryAddress.slice(elements = count)",
+    "rawConstructorReceiver": "ordinary-@T-only",
+    "rawConstructorCount": "fixed-width-integer-with-provably-negative-value-rejected",
+    "rawConstructorCountUnit": "T-elements",
+    "rawConstructorLabel": "mandatory",
+    "removedSurface": ["source[start:end]", "[]T{data = address, len = count}", "[]T { data = address, len = count }", "dynamic-array-direct-slicing"]
+  },
+  "callableStorageContract": {
+    "schema": "wyst.callableStorageContract.v0.9",
+    "owner": "design/chapter-08-functions.md",
+    "declarationPrefixOrder": [
+      "attribute-group",
+      "pub",
+      "hard-modifier-or-storage-class",
+      "extern-convention",
+      "declaration-keyword",
+      "name"
+    ],
+    "callableIdentity": [
+      "calling-convention",
+      "ordered-parameter-types",
+      "per-parameter-noescape",
+      "per-parameter-register-placement",
+      "result-type",
+      "result-register-placement",
+      "never-result"
+    ],
+    "excludedFromCallableIdentity": [
+      "declaration-parameter-names",
+      "pub",
+      "naked"
+    ],
+    "indirectCallArguments": "positional-only",
+    "implicitCallableAdaptation": false,
+    "registerPlacement": {
+      "surface": "in register",
+      "legalPositions": [
+        "declaration-parameter-after-type",
+        "callable-type-parameter-after-type",
+        "scalar-result-after-type",
+        "local-var-after-type"
+      ],
+      "illegalPositions": [
+        "module-var",
+        "module-const",
+        "local-const",
+        "inferred-local-without-explicit-type",
+        "field",
+        "type-declaration",
+        "whole-callable",
+        "named-multi-result",
+        "void-result",
+        "never-result"
+      ]
+    },
+    "never": {
+      "kind": "bottom-return-type",
+      "fallthrough": false,
+      "callIsTerminal": true,
+      "registerPlacement": false
+    },
+    "label": {
+      "callable": false,
+      "returning": false,
+      "reachablePathTermination": [
+        "explicit-transfer",
+        "architectural-return",
+        "never-call"
+      ]
+    },
+    "naked": {
+      "subjects": ["body-fn", "label"],
+      "callableIdentityProperty": false,
+      "compilerOwnedPrologue": false,
+      "compilerOwnedEpilogue": false,
+      "compilerOwnedFrameOrSpill": false,
+      "implicitReturn": false,
+      "explicitRegisterPlacementValueClasses": [
+        "gpr",
+        "scalar-fp",
+        "simd"
+      ],
+      "explicitRegisterPlacementNumberLimit": "target-register-file",
+      "parameterCountLimitWhenEveryFinalLocationIsARegister": false,
+      "incomingStackParameter": false
+    },
+    "packed": {
+      "subject": "struct-only",
+      "layout": "declaration-order-no-padding-align-1",
+      "callableIdentityProperty": false
+    },
+    "perCpu": {
+      "surface": "per_cpu var name: T = constant",
+      "subject": "module-var-only",
+      "initializer": "explicit-statically-representable",
+      "templateSection": ".percpu",
+      "templateMutability": "immutable-initialization-template",
+      "debugAddressLocation": false,
+      "functionPointerInitializerRelocation": true,
+      "frozenFacts": [
+        "type-layout",
+        "natural-alignment",
+        "template-bytes",
+        "template-relocations",
+        "canonical-storage-class-and-symbol-identity",
+        "deterministic-final-byte-offset"
+      ],
+      "declarationAlignment": "natural-type-alignment-only-no-explicit-align-attribute",
+      "preItem92MaximumNaturalAlignmentBytes": 16,
+      "supportedDirectStorageShapes": [
+        "scalar",
+        "function-pointer",
+        "fixed-array-element",
+        "struct-field",
+        "named-tuple-field",
+        "bitstruct-field",
+        "statically-representable-string-field",
+        "payloadless-enum"
+      ],
+      "rejectedStorageShapes": [
+        "vector-until-scalar-lane-contract",
+        "slice-descriptor",
+        "dynamic-array-descriptor",
+        "payload-enum"
+      ],
+      "offsetQuery": "#percpu_offset_of(binding)",
+      "offsetQueryResult": "u64-byte-offset-within-linked-template",
+      "ordinaryAccess": "direct-current-core-read-or-write-only",
+      "compoundAssignment": "rejected-use-separate-direct-read-and-write-accesses",
+      "addressMaterialization": false,
+      "wholeValueCopy": false,
+      "rawSymbolAddressExport": false,
+      "accessSequence": [
+        "one-current-core-base-acquisition",
+        "one-linked-byte-offset-addition",
+        "one-source-requested-typed-operation"
+      ],
+      "assignmentSequence": [
+        "explicit-target-expressions",
+        "assigned-value",
+        "fresh-current-core-base-acquisition",
+        "linked-and-subobject-offset",
+        "typed-store"
+      ],
+      "bitstructFieldWrite": "one-logical-operation-with-one-base-and-confined-load-typed-bit-field-insert-store",
+      "baseReuseAcrossSourceAccesses": false,
+      "atomicAccess": "item-52-methods-only",
+      "targetContractFacts": [
+        "availability",
+        "base-mechanism",
+        "required-alignment",
+        "reserved-register-or-system-state",
+        "realization-kind"
+      ],
+      "preItem92TargetSelection": {
+        "surface": "#target(..., per_cpu = single_instance_tpidr_el1)",
+        "availability": "available",
+        "baseMechanism": "MRS TPIDR_EL1",
+        "minimumExceptionLevel": 1,
+        "requiredBaseAlignmentBytes": 16,
+        "reservedSystemState": [
+          "TPIDR_EL1"
+        ],
+        "realizationKind": "single-instance-test-runtime"
+      },
+      "preItem92ReachableAccess": "explicit-single-instance-realization-or-hard-diagnostic",
+      "compilerRuntimeWork": [
+        "no-replication",
+        "no-allocation",
+        "no-base-installation",
+        "no-startup-copy",
+        "no-ordinary-global-collapse"
+      ]
+    },
+    "removedSourceSpellings": [
+      "[aapcs]",
+      "@(args)->result",
+      "@[aapcs](args)->result",
+      "thread_local"
+    ],
+    "tlsStorageClass": false
+  },
+  "schedulingPolicyCatalog": {
+    "implicitPolicy": "schedule.standard",
+    "explicitPolicy": "schedule.source",
+    "blockSurface": "schedule source { ... }",
+    "declarationAttributeSurface": "#[schedule(source)]",
+    "attributeSubjects": ["body-fn", "body-label"],
+    "boundaryKind": "compiler-ordering-boundary",
+    "hardwareBarrier": false,
+    "instructionCountPromise": false,
+    "byteIdentityPromise": false,
+    "preservedThroughMandatoryInlining": true,
+    "removedSourceModes": ["strict", "relaxed", "throughput", "latency"],
+    "removedPolicyNames": ["schedule.default", "schedule.strict", "schedule.relaxed", "schedule.throughput", "schedule.latency"]
+  },
+  "syntaxWordCatalog": {
+    "schema": "wyst.syntaxWords.v0.9",
+    "source": "design/syntax-words.tsv",
+    "requiredFields": ["spelling", "classification", "owner", "legal_positions", "state"],
+    "classifications": ["reserved", "contextual", "unshadowable"],
+    "stateRegistry": "featureStates",
+    "uniqueBy": "spelling",
+    "normativeConsumers": ["lexer", "parser", "semantic-database", "formatter", "diagnostics", "lsp", "editor-grammars", "generated-documentation"]
+  },
+  "declarationAttributeCatalog": {
+    "schema": "wyst.declarationAttributes.v0.9",
+    "source": "design/attribute-catalog.tsv",
+    "requiredFields": ["spelling", "state", "owner", "subjects", "signature", "conflicts", "formatter_order", "tooling_metadata", "behavior"],
+    "activeRowsAtItem41": [],
+    "activeRows": ["align", "section", "inline", "init", "frame", "deny_effects", "cache_isolated", "schedule"],
+    "canonicalFormatterOrder": ["align", "section", "inline", "init", "frame", "deny_effects", "cache_isolated", "schedule"],
+    "declarationPrefixOrder": ["attribute-group", "pub", "hard-modifier-or-storage-class", "extern-abi", "declaration-keyword", "name"],
+    "maximumGroupsPerDeclaration": 1,
+    "groupMustBeNonEmpty": true,
+    "optionalTrailingComma": true,
+    "flagAttributesUseParentheses": false,
+    "argumentOrder": "positional-before-named",
+    "activationRule": "an owning item atomically installs an implemented state, signature, subjects, conflicts, formatter order, tooling metadata, and behavior",
+    "unknownOrInactivePolicy": "reject"
+  },
+  "genericBoundCatalog": {
+    "schema": "wyst.genericBounds.v0.9",
+    "source": "design/generic-bounds.tsv",
+    "requiredFields": ["spelling", "state", "owner", "subject_contract", "capability_contract", "enum_payload_word_compatible"],
+    "uniqueBy": "spelling",
+    "applicationModel": "explicit-type-arguments-only",
+    "extensionRule": "an owning language item adds one complete active subject-and-capability row before the bound is accepted"
+  },
+  "genericInstantiationContract": {
+    "keySchema": "wyst.genericInstantiationKey.v0.9",
+    "traceSchema": "wyst.genericInstantiationTrace.v0.9",
+    "keyFields": ["semanticDeclarationIdentity", "concreteTypeArguments", "concreteValueArguments"],
+    "currentValueArgumentRule": "complete-list-is-empty-because-v0.9-has-no-value-parameters",
+    "typeArgumentEncoding": "complete-ordered-canonical-semantic-type-identities",
+    "cycleRule": "revisiting-the-same-canonical-key-closes-a-valid-cycle",
+    "growthRule": "reject-every-strictly-growing-canonical-instantiation-chain",
+    "traceEntryFields": ["canonicalKey", "demandOrigin"],
+    "traceOrdering": "root-to-demand-in-deterministic-source-and-canonical-declaration-order",
+    "resourceFailureRule": "separate-resource-diagnostic-with-the-same-canonical-trace"
+  },
+  "sealedCoreImportCatalog": {
+    "schema": "wyst.coreImportCatalog.v0.9",
+    "source": "design/sealed-core.tsv",
+    "packageRoot": "core",
+    "projectMayDeclareOrReplaceRoot": false,
+    "namespaces": [
+      {
+        "identity": "core.collections",
+        "wholeImport": true,
+        "selectiveImport": true,
+        "publicImport": true,
+        "selectionAliases": true,
+        "activeMembers": ["DynamicArray"]
+      },
+      {
+        "identity": "core.arch",
+        "wholeImport": false,
+        "selectiveImport": true,
+        "publicImport": false,
+        "leafImport": false,
+        "selectionAliases": true,
+        "qualifiedOnly": true,
+        "directImportRequired": true,
+        "activeMembers": []
+      },
+      {
+        "identity": "core.environment",
+        "wholeImport": false,
+        "selectiveImport": true,
+        "publicImport": false,
+        "leafImport": false,
+        "selectionAliases": true,
+        "qualifiedOnly": true,
+        "directImportRequired": true,
+        "activeMembers": []
+      }
+    ],
+    "authenticatedRoles": [
+      {
+        "identity": "core.collections.DynamicArray",
+        "role": "wyst.dynamicContainerRole.v0.9",
+        "genericArity": 1,
+        "storageContract": "wyst.dynamicArrayDescriptor.v0",
+        "operationContract": "wyst.dynamicArrayOperation.v0",
+        "bundledSource": "wync/core/collections.wyst",
+        "authentication": "sealed-bundled-declaration-role-metadata",
+        "nameBasedRecognition": false,
+        "allocation": "explicit",
+        "importSideEffects": "none",
+        "automaticRetention": false
+      }
+    ]
+  },
+  "reportEpistemicSchema": {
+    "schema": "wync.reportEpistemic.v0",
+    "requiredFields": ["evidence_kind", "analysis_freshness", "evidence_version", "declared_assumptions", "unsupported_factors", "measurement_status"],
+    "evidenceKinds": ["compiler-proved", "target-provided", "static-assumption", "measured", "unknown"],
+    "analysisFreshness": ["current_run", "unknown", "unavailable"],
+    "measurementStatus": ["not_measured", "measured"],
+    "staticAnalysisMeasurementStatus": "not_measured"
+  },
+  "inspectionReportAuthority": {
+    "state": "experimental",
+    "producerPhase": "phase.report_only_fact_computation",
+    "typedProducts": ["LoweringReportProduct", "EffectsReportProduct", "StorageReportProduct"],
+    "projectArtifactWrites": "none",
+    "sourceOriginRequiredFields": ["project_relative_path", "byte_span", "line", "column"],
+    "generatedOriginReasons": ["abi", "frame", "spill", "reload", "expansion", "padding", "support"],
+    "unknownDecode": { "decoded": false, "preserveExactBytes": true, "preserveExactWord": true },
+    "allocationHomeKinds": ["register", "stack", "rematerialized"],
+    "semanticMemoryAccessFactFields": ["required_alignment", "target_unaligned_access_fact", "possible_architectural_fault"],
+    "semanticMemoryAccessTargetEvidence": "target-provided",
+    "hardwareAccessKinds": ["ScalarRead", "SnapshotRead", "RawWrite", "NamedWrite", "Modify"],
+    "hardwareAccessLabels": ["hardware.scalar.read", "hardware.snapshot.read", "hardware.raw.write", "hardware.named.write", "hardware.modify"],
+    "hardwareAccessRequiredFields": ["object_identity", "snapshot_identity", "ordered_primitive_value_ids", "full_compiler_fence", "emitted_architecture_barrier"],
+    "hardwareAccessSnapshotIdentity": "nominal-id-or-none-for-scalar-mmio",
+    "hardwareAccessSystemRegisterIdentity": "authenticated-generated-catalog-row",
+    "internalPseudoHomesPublic": false,
+    "dependencyShape": "typed_ir_dependency_shape",
+    "dependencyShapeAuthority": "verified-typed-ir-structure",
+    "machineTimingModel": "none"
+  },
   "reportSchemas": [
-    { "schema": "wync.explain.lowering.v0", "status": "implemented", "producer": "wync explain lowering --format json" },
-    { "schema": "wync.explain.effects.v0", "status": "implemented", "producer": "wync explain effects --format json" },
-    { "schema": "wync.explain.storage.v0", "status": "implemented", "producer": "wync explain storage --format json" },
+    { "schema": "wync.explain.lowering.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.lowering.v1" },
+    { "schema": "wync.explain.lowering.v1", "status": "experimental", "producer": "wync explain lowering --format json and text header" },
+    { "schema": "wync.explain.effects.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.effects.v1" },
+    { "schema": "wync.explain.effects.v1", "status": "experimental", "producer": "wync explain effects --format json and text header" },
+    { "schema": "wync.explain.storage.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.storage.v1" },
+    { "schema": "wync.explain.storage.v1", "status": "experimental", "producer": "wync explain storage --format json and text header" },
     { "schema": "wync.generatedManifest.v0", "status": "implemented", "producer": "wync generated-manifest" },
     { "schema": "wync.rebuildBenchmark.v0", "status": "implemented", "producer": "deterministic rebuild benchmark JSON" },
     { "schema": "wync.releaseEvidence.v0", "status": "implemented", "producer": "wync release-evidence" },
     { "schema": "wync.releaseHostFacts.v0", "status": "implemented", "producer": "release-evidence host-facts.json" },
     { "schema": "wync.releaseArchiveFacts.v0", "status": "implemented", "producer": "release-evidence release-facts.json" }
   ],
+  "diagnosticKindRegistry": {
+    "schema": "wync.diagnosticKinds.v1",
+    "requiredFields": ["kind", "code", "severity", "subject", "summary", "explanation", "why", "help", "suggestions", "state"],
+    "states": ["active", "reserved"],
+    "emitterReference": "typed-kind"
+  },
   "interfaceSchemas": [
-    { "schema": "wync.diagnostics.v0", "status": "implemented", "producer": "wync check --diagnostic-format json" },
-    { "schema": "wync.diagnostics.lsp.v0", "status": "implemented", "producer": "wync check --diagnostic-format lsp-json" },
+    { "schema": "wync.diagnostics.v0", "status": "removed", "producer": "none", "supersededBy": "wync.diagnostics.v1" },
+    { "schema": "wync.diagnostics.v1", "status": "implemented", "producer": "wync check --diagnostic-format json" },
+    { "schema": "wync.diagnostics.lsp.v0", "status": "removed", "producer": "none", "supersededBy": "wync.diagnostics.lsp.v1" },
+    { "schema": "wync.diagnostics.lsp.v1", "status": "implemented", "producer": "wync check --diagnostic-format lsp-json" },
     { "schema": "wync.editorCatalog.v0", "status": "implemented", "producer": "wync editor-catalog" },
     { "schema": "lsp-3.x-json-rpc-wyst-subset", "status": "implemented", "producer": "wync lsp" },
     { "schema": "zed.extension.schema_version.1", "status": "implemented", "producer": "editors/zed-wyst/extension.toml" }
   ],
   "editorMetadata": {
     "schema": "wync.editorCatalog.v0",
-    "categories": ["keyword", "directive", "intrinsic", "builtin-type", "register"],
+    "categories": ["keyword", "contextual-word", "unshadowable-name", "compiler-operation", "meta-operation", "declaration-attribute", "intrinsic", "builtin-type", "register"],
+    "vocabularySources": {
+      "syntaxWords": "design/syntax-words.tsv",
+      "declarationAttributes": "design/attribute-catalog.tsv",
+      "metaOperations": "design/meta-operation-catalog.tsv"
+    },
+    "legacyHashAuditPublished": false,
     "lspCompletionKinds": {
       "function": 3,
       "variable": 6,

@@ -4,24 +4,12 @@ semihost_exit_status : u64 = 1
 
 #noreturn
 test_exit :: (code : u64) {
-    semihost_exit_status = code
+  semihost_exit_status = code
+  operation : u64 #pin(x0) = 0x18
+  args : u64 #pin(x1) = #addr_of(semihost_exit_reason)
+  %hlt(0xf000)
 
-    #asm(effects: trap) {
-        inputs {
-            args = gpr(#addr_of(semihost_exit_reason))
-        }
-        clobbers {
-            x0
-            x1
-        }
-        body {
-            mov x0, #0x18
-            mov x1, {args}
-            hlt #0xf000
-        }
-    }
-
-    loop {
-        %wfe()
-    }
+  loop {
+    %wfe()
+  }
 }

@@ -22,21 +22,21 @@ linked below.
 > | ------------------------------------------ | ------------------------------------------------------------------ |
 > | Type system, conversions, aggregates       | [chapter-06-types.md](chapter-06-types.md)                         |
 > | Address types (`@T`, `@volatile T`, `@mmio T`) | [chapter-06-types.md §1.4.1](chapter-06-types.md)                  |
-> | Struct, bitfield, enum layout              | [chapter-06-types.md §1.6, §1.6.1, §1.6.2](chapter-06-types.md)    |
+> | Struct, bitstruct, enum layout             | [chapter-06-types.md §1.6, §1.6.1, §1.6.3](chapter-06-types.md)    |
 > | Memory model (ordering, races)             | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
-> | Volatility, `#acquire`/`#release`          | [chapter-09-memory-model.md §1.3.1](chapter-09-memory-model.md)    |
-> | Runtime primitives (`%`-prefixed)          | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)               |
-> | Atomic runtime primitives                  | [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md)        |
+> | Volatility, MMIO intent, atomic acquire/release methods | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
+> | Semantic operations and removed-`%` audit  | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv); [legacy-percent-removal-audit.tsv](legacy-percent-removal-audit.tsv) |
+> | Typed atomic storage, methods, and orders  | [atomic-matrix.json](atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
 > | System register access                     | [chapter-11-intrinsics.md §1.3.3](chapter-11-intrinsics.md)        |
-> | Trap / cache / TLB / hint primitives       | [chapter-11-intrinsics.md §1.3.4–1.3.6](chapter-11-intrinsics.md)  |
+> | Trap / cache / TLB / CPU operations        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                |
 > | Per-CPU / TLS                              | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)        |
 > | Functions, control flow                    | [chapter-08-functions.md](chapter-08-functions.md)                 |
 > | `#pin` register affinity                   | [chapter-08-functions.md §2.3](chapter-08-functions.md)            |
-> | `#asm` inline assembly                     | [chapter-08-functions.md §2.9](chapter-08-functions.md)            |
+> | checked `asm`                              | [chapter-08-functions.md §2.9](chapter-08-functions.md)            |
 > | SIMD / vector syntax                       | [chapter-12-simd.md](chapter-12-simd.md)                           |
-> | `#schedule` semantics, layout constraint   | [chapter-13-scheduling.md](chapter-13-scheduling.md)               |
+> | Scheduling semantics and layout constraint | [chapter-13-scheduling.md](chapter-13-scheduling.md)               |
 > | Modules, imports, layout, `#section`       | [chapter-04-modules.md](chapter-04-modules.md)                     |
-> | Alignment, `#exception_vector`             | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md) |
+> | Alignment, `vector_table`, `trap_frame`    | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md) |
 > | Boot entry contract                        | [chapter-05-boot.md](chapter-05-boot.md)                           |
 > | Debug information (DWARF)                  | [chapter-23-debug-info.md](chapter-23-debug-info.md)               |
 > | Calling convention (Native, AAPCS)         | [chapter-15-abi-spec.md](chapter-15-abi-spec.md)                   |
@@ -52,8 +52,8 @@ linked below.
 > | Store-to-load forwarding hazards           | [chapter-09-memory-model.md §9.10](chapter-09-memory-model.md)     |
 > | Hot/cold section conventions               | [chapter-04-modules.md](chapter-04-modules.md)                     |
 > | `#field_offset(T, field)`, `#repr`         | [chapter-06-types.md](chapter-06-types.md)                         |
-> | Effect system, `#deny`                     | chapter-01-language-design.md (this file)                          |
-> | Effect categories on runtime primitive ops | [appendix-a-ir.md §6.8](appendix-a-ir.md)                          |
+> | Effect system, `#[deny_effects(...)]`      | chapter-01-language-design.md (this file)                          |
+> | Effect categories on semantic operation facts | [appendix-a-ir.md §6.8](appendix-a-ir.md)                       |
 > | TMA vocabulary                             | chapter-01-language-design.md (this file)                          |
 
 ### Core Identity
@@ -148,7 +148,7 @@ avoiding invalid operations in safety-critical paths.
 
 No category grants C-style undefined-behavior optimization power. Any optimizer
 permission must be separately and explicitly specified by a construct such as
-`#asm(pure)`, a checked `#schedule` region, or a documented target descriptor
+a compiler-verified `asm pure` expression, a `schedule source` region, or a documented target descriptor
 fact. In particular, `Indeterminate bits` values never behave like LLVM
 `poison` or `undef`; they are values with unspecified contents, not optimizer
 fuel.
@@ -166,11 +166,12 @@ All trust-boundary constructs share this model:
 
 | Construct | Asserted fact | Compiler assumption | If the assertion is false |
 | --------- | ------------- | ------------------- | ------------------------- |
-| Raw-address assertion, including an explicit `as.address` raw integer to `@T`, `@volatile T`, or `@mmio T` boundary | The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract. | Later typed loads, stores, atomics, and address operations use the asserted address type at that use. | The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout. |
+| Raw-address assertion, including an explicit `address<@T>(raw)`, `address<@volatile T>(raw)`, or `address<@mmio T>(raw)` boundary | The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract. | Later typed loads, stores, and address operations use the asserted address type at that use. | The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout. |
+| `address<@atomic<T>>(raw)` in an executable function body | The raw address denotes exact `atomic<T>` storage with `T`'s natural alignment, atomic-capable Normal memory, and no mixed atomic/plain access. | The authenticated atomic address exposes only the closed atomic method surface. Provable misalignment and overlap with target-declared Device memory are compile-time diagnostics; an otherwise dynamic address is recorded as asserted, never proven. | A false dynamic assertion is a trusted-contract violation confined to operations through that address; no runtime check, alignment repair, ordinary access, or unrelated optimizer assumption is introduced. |
 | `#trusted_cast<@(args) -> ret>(addr)` or `#trusted_cast<@[aapcs] (args) -> ret>(addr)` | The raw address, function signature, return type, and calling convention identify a callable function entry. | The constructed function pointer has the asserted type; calls through it use that signature and ABI. | The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses. |
 | Foreign declarations and object/header facts without a Wyst body | The linked symbol exists and obeys the declared type, calling convention, and externally documented side effects. | Calls and address-taking use the declaration as the boundary contract. | The emitted call or data reference follows the declaration and may miscommunicate with the foreign code or object. |
 | Manually stated foreign effects and library contracts not proven from a body | The named API has the stated effects, allocation behavior, storage identity, error behavior, and protocol constraints. | Diagnostics and explain reports may use the stated contract only for that API boundary. | Code at that API boundary may observe wrong effects or protocol behavior; other calls do not inherit the false fact. |
-| Inline assembly effects, clobbers, operands, stack options, and `#asm(pure)` | The assembly body performs only the declared effects, clobbers only the declared registers/memory state, and satisfies the stack and purity options. | Register allocation, `#deny` propagation, scheduling, and report output use the checked declaration. Recognized contradictions are rejected before emission. | The assembly may corrupt state or perform undeclared effects at that block; only the explicit `#asm` permissions apply. |
+| Checked-assembly signature operands, symbol references, and stack transitions | Each operand and symbol has the stated type and identity, and an explicit stack clause requests the stated complete transition. | The parsed instruction rows derive register, memory, control-flow, and effect facts; allocation and stack verification consume those facts. | An unresolved or incompatible fact is rejected; no manual clobber, effect, constraint, or purity assertion can override the generated model. |
 | ABI overrides such as `[aapcs]` functions and function-pointer types | The boundary obeys the selected ABI's register, stack, parameter, return, and ownership rules. | Calls, prologues, epilogues, and function-pointer signatures are lowered for the asserted ABI. | The call boundary may pass or receive values incorrectly; no unrelated optimizer assumption is created. |
 
 Diagnostics for an operation that needs one of these facts must name the trusted
@@ -220,13 +221,13 @@ lowering instead of silently ignoring them.
 | Function-pointer arithmetic, ordered comparison, memory access, or convention mismatch visible in source types | Defined | The compiler rejects the source before emission. |
 | Function pointer constructed with `#trusted_cast` from a false address, signature, or ABI assertion | Trusted-contract violation | The call is emitted according to the trusted type; a false assertion is the program's contract violation. |
 | Ordinary read of a local before initialization | Defined | The compiler rejects the source before emission; no implicit zeroing and no implicit indeterminate value are manufactured. |
-| Explicit raw read through `%read_uninit`, padding, or inactive payload bytes reached through raw memory | Indeterminate bits | The observed bits are ordinary typed values and never optimizer poison. |
+| Explicit raw read through `MaybeUninit<T>.read_uninit()`, padding, or inactive payload bytes reached through raw memory | Indeterminate bits | The observed bits are ordinary typed values and never optimizer poison. |
 | Access-atomic data race | Target-defined | The load observes a value permitted by the ARM64 memory model for the selected memory type. |
 | Tearing data race on a non-access-atomic operation | Indeterminate bits | The observed bits may combine sub-access results and need not equal any whole value stored by an agent. |
 | Foreign ABI mismatch that is visible in Wyst declarations or function pointer types | Defined | The compiler rejects the mismatch before emission. |
 | False foreign declaration, C header fact, object symbol assertion, or variadic ABI assertion trusted by the program | Trusted-contract violation | The emitted boundary follows the declaration the program supplied. |
-| Unsupported inline assembly mnemonic, operand, branch target, clobber, or effect declaration recognized as contradictory | Defined | The compiler rejects the block before emission. |
-| False inline assembly declaration not provable by the compiler, including missing clobbers or a false `pure` assertion | Trusted-contract violation | The program broke the checked escape-hatch contract; only separately declared optimizer permissions apply. |
+| Unsupported checked-assembly mnemonic, operand, view, placement, branch/call target, stack transition, or `pure` contract | Defined | The compiler rejects the parsed block before emission; no manual declaration can override a generated constraint. |
+| Checked-assembly instruction whose cataloged semantics permit a runtime fault or trap | Architectural fault or trap | The emitted instruction may fault, trap, or complete only as admitted by its active target semantic record. |
 
 ### Contrast with C/C++
 
@@ -297,15 +298,18 @@ program:
 | Platform register      | `ip0` (`x16`), `ip1` (`x17`)                               |
 | Zero register          | `xzr`, `wzr`                                               |
 
-These tokens are legal **only** in two positions:
+These tokens are legal **only** in closed machine-placement positions:
 
 1. Inside the argument list of a `#pin(...)` directive on a declaration
    (e.g. `counter : u64 #pin(x19) = 0`).
-2. Inside the body of an `#asm { ... }` block.
+2. In an `asm` signature's `in FIXED_REGISTER` clause.
+3. For catalog-owned special or implicit registers, in the exact validated
+   operand positions of an `asm` body.
 
 Anywhere else they are a compile error. In particular:
 
-- Writing `x0 = x1 + x2` outside `#asm` is a syntax error.
+- Writing `x0 = x1 + x2` is a syntax error, including inside `asm`; ordinary
+  allocatable registers enter the body through named signature binders.
 - Declaring `x0 : u64 = 0` is a syntax error (cannot bind a reserved token).
 - A parameter list cannot name a parameter `x0`.
 
@@ -315,8 +319,8 @@ Every named binding in Wyst is a variable. The register allocator places
 variables in physical registers as a pure function of source, compiler
 version, and target. The programmer never writes physical registers as
 arithmetic operands; the assembly-like form `x0 = x1 + x2` does not exist
-at the Wyst surface level. It exists only inside `#asm` bodies, where the
-programmer has taken explicit responsibility for register-level scheduling.
+at the Wyst surface level. Checked `asm` instead uses named signature binders
+whose physical homes are selected or fixed at the block boundary.
 
 Compound operations apply to variables:
 
@@ -330,7 +334,7 @@ counter += 1            // lowers to `add xN, xN, #1` for whichever xN the alloc
 
 When a value must live in a specific register because of a hardware or ABI
 contract — firmware delivering a DTB pointer in `x0`, an exception handler
-expecting the syndrome in a particular register, an `#asm` block whose
+expecting the syndrome in a particular register, an `asm` block whose
 encoding is fixed — the programmer expresses this with `#pin` on the
 declaration:
 
@@ -340,9 +344,12 @@ counter : u64 #pin(x19) = 0
 
 _start :: (dtb : @u8 #pin(x0)) #noreturn {
     kernel_init(dtb)
-    loop { %wfe() }
+    loop { cpu.wfe() }
 }
 ```
+
+Here `cpu` is the qualified category binding created by
+`import core.arch { cpu }`; no CPU operation is globally predeclared.
 
 `#pin` is allowed on local variables and function parameters. It is not
 allowed on globals or constants — a pinned global would silently reserve a
@@ -361,24 +368,25 @@ of `#pin(sp)`/`#pin(x29)`.
 
 #### Direct Register Manipulation
 
-Programs that genuinely need to manipulate a physical register without going
-through a Wyst variable (system instructions, register window saves, vector
-table prologues) do so inside an `#asm` block. Inside `#asm`, register
-tokens are first-class operands of the embedded assembler. Outside `#asm`,
-they are tokens with no expression meaning.
+Programs that genuinely need instruction-level register control (system
+instructions, register window saves, vector-table prologues) use a checked
+`asm` block. Allocatable registers are named by signature binders inside the
+body; fixed homes are declared once with `in xN` or `in vN`. Only
+catalog-owned special and implicit register tokens may appear directly in
+their validated instruction positions.
 
 This division gives Wyst two clean modes:
 
 - **Wyst surface code** — variables only; the allocator owns registers.
-- **`#asm` blocks** — explicit register manipulation; the programmer owns
-  registers and declares I/O to the surrounding scope.
+- **checked `asm` blocks** — explicit instruction sequencing with typed
+  inputs, results, scratch resources, and generated machine constraints.
 
-`#pin` is the bridge: a `#pin(xN)` variable can be referenced by name from
-both Wyst code and an `#asm` block, and the allocator guarantees the binding
-lives in `xN` at the `#asm` site.
+An `asm` signature is the bridge: an outer value enters through an explicit
+initializer, and `in xN` on that binder requests the exact physical home at
+the block site without implicit capture.
 
 See the [chapter-08-functions.md §2.3](chapter-08-functions.md), for the full `#pin`
-specification, and section 2.9 for the `#asm` specification.
+specification, and section 2.9 for the checked `asm` specification.
 
 ---
 
@@ -396,17 +404,18 @@ configuration and may also be recorded as target facts.
 Canonical references:
 
 - Address types, arithmetic, conversion rules → [chapter-06-types.md §1.4.1](chapter-06-types.md)
-- Memory interpretation model, `#acquire` / `#release`, barrier runtime primitives
-  (`%dsb`, `%dmb`, `%isb()`, `%compiler_barrier()`) → [chapter-09-memory-model.md §1.3.1](chapter-09-memory-model.md)
+- Memory interpretation model, typed atomic acquire/release methods, and the
+  imported barrier operations (`barrier.dsb`, `barrier.dmb`, `barrier.isb`,
+  `barrier.compiler`) → [chapter-09-memory-model.md](chapter-09-memory-model.md)
 - Execution model, happens-before, races, atomicity -> [chapter-09-memory-model.md](chapter-09-memory-model.md)
 
 ---
 
 ## Structured Control Flow
 
-Wyst favors structured control flow (`if`, `while`, `loop`, `repeat`) with
+Wyst favors structured control flow (`if`, `while`, `loop`, `for`) with
 explicit low-level escape hatches (`label`, `goto`) for hardware-required
-shapes such as `#ventry` slots. Structured syntax improves CFG visibility,
+shapes such as `vector_table` slots. Structured syntax improves CFG visibility,
 dependency analysis, and tooling integration; the escape hatches keep
 hardware code expressible.
 
@@ -417,49 +426,56 @@ Canonical reference: [chapter-08-functions.md §2.4–2.5](chapter-08-functions.
 ## Effect System
 
 Wyst tracks which architectural side effects a function may perform and
-lets the programmer restrict them with `#deny`. This gives kernel code
+lets the programmer restrict them with `#[deny_effects(...)]`. This gives kernel code
 something that even Rust does not have in a first-class way: compile-time
 enforcement of architectural boundaries — "this module must not touch
 system registers," "this interrupt handler must not mask interrupts."
 
-Canonical references: [appendix-a-ir.md §6.8](appendix-a-ir.md) (effect categories on runtime
-primitive IR ops), [appendix-a-ir.md §7](appendix-a-ir.md) invariant 16 (verifier enforcement),
-[appendix-b-grammar.md](appendix-b-grammar.md) (`#deny` production).
+Canonical references: [appendix-a-ir.md §6.8](appendix-a-ir.md) (effect categories on semantic
+operation IR facts), [appendix-a-ir.md §7](appendix-a-ir.md) invariant 16 (verifier enforcement),
+[appendix-b-grammar.md](appendix-b-grammar.md) (`deny_effects` declaration attribute).
 
 ### Design
 
 Effects are **inferred, not declared.** The compiler knows every
-effect-introducing operation because Wyst has a closed runtime primitive set —
-every `%mrs`, `%svc`, `%tlbi_*`, `%atomic_*`, etc. is a known compiler
-primitive. The compiler assigns effect categories at the leaf (the
-runtime primitive call) and propagates them upward through the call graph during
-semantic analysis.
+effect-introducing operation because Wyst has a closed semantic-operation
+catalog: every authenticated system-register access, qualified
+`core.arch`/`core.environment` operation, compiler-owned language operation,
+and generated `atomic<T>` method has one stable identity. The compiler assigns
+effect categories at the leaf and propagates them upward through the call graph
+during semantic analysis.
 
-The programmer does not annotate what a function _does_ — the compiler
-already knows. The programmer annotates what a function **must not do**,
-using `#deny`.
+The closed category vocabulary is generated once by item 47's semantic
+authority. Callable signatures, language operations, checked assembly, effect
+inference, diagnostics, and reports consume that ordered vocabulary directly;
+none of those consumers owns a second effect-name table or switch.
+
+Ordinary body-bearing functions and labels do not annotate what they do — the
+compiler already knows. A declaration may instead state what it **must not
+do** with `deny_effects`, while callable `effects(...)` syntax states an upper
+bound used for compatibility and trusted bodyless contracts.
 
 ### Effects, Authority, And Generated Resources
 
-`#deny` tracks semantic effects and the explicitly modeled authority facts that
+`#[deny_effects(...)]` tracks semantic effects and the explicitly modeled authority facts that
 the compiler can check before lowering. It does not track generated backend
 resources.
 
 | Kind | Examples | Reporting surface |
 | ---- | -------- | ----------------- |
-| Semantic effects | volatile accesses, MMIO-intent loads/stores, system-register access, traps, atomics, barriers, cache/TLB maintenance, CPU halt, interrupt-mask changes, floating-point state access, performance-counter reads | `#deny`, effect diagnostics, `wync explain effects` |
+| Semantic effects | volatile accesses, MMIO-intent loads/stores, system-register access, traps, atomics, barriers, cache/TLB maintenance, CPU events and halt, interrupt-mask changes, floating-point state access, performance-counter reads | `#[deny_effects(...)]`, effect diagnostics, `wync explain effects` |
 | Authority/trust facts | raw address assertion, retagging an address for volatile/MMIO-intent use, raw function-pointer construction or invocation, required privilege level, trusted foreign or assembly contracts, stack-address escape permission, target-provided memory-map facts | trust-boundary diagnostics and asserted facts in explain reports |
-| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#frame(...)` post-lowering constraints, ABI/lowering reports, generated-manifest/object reports |
+| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#[frame(...)]` post-lowering constraints, ABI/lowering reports, generated-manifest/object reports |
 
 Retagging an address as `@volatile T` or `@mmio T` is an authority assertion.
 It is not a memory access and does not create the architectural page-table
 memory type. A later access through `@volatile T` introduces the
 `volatile_access` effect; a later access through `@mmio T` introduces both
 `volatile_access` and `mmio`. Ordinary local storage, tuple destructuring
-storage, and `%addr_of(local)` stack-address materialization are generated
+storage, and `addr_of(local)` stack-address materialization are generated
 resource facts and do not introduce effect categories.
 
-`#frame(max_bytes = N, max_spills = M)` is the function-level constraint for
+`#[frame(max_bytes = N, max_spills = M)]` is the function-level constraint for
 generated frame resources. The compiler checks it after ABI lowering and
 register allocation against the actual frame composition, including fixed frame
 objects, spills and reload slots, outgoing call areas, caller-owned aggregate
@@ -471,22 +487,25 @@ rule that introduced each byte or spill.
 
 | Category            | Introduced by                                                                 |
 | ------------------- | ----------------------------------------------------------------------------- |
-| `sysreg`            | `%mrs`, `%msr`, `%mrs_s`, `%msr_s`, `%daif_set`, `%daif_clr`, `%dczid_block_size` |
-| `trap`              | `%svc`, `%hvc`, `%smc`, `%brk`, `%hlt`                                        |
-| `exception_return`  | `%eret`                                                                       |
-| `cache_maintenance` | `%dc_*`, `%ic_*`                                                              |
-| `tlb_maintenance`   | `%tlbi_*`                                                                     |
-| `atomic`            | `%cas`, `%fetch_*`, `%xchg`, `%atomic_bit_*`, `%atomic_load`, `%atomic_store` |
-| `cpu_halt`          | `%wfi`, `%wfe`                                                                |
-| `interrupt_mask`    | `%daif_set`, `%daif_clr`                                                      |
+| `sysreg`            | authenticated `system_register` operations, `cpu.mask`, `cpu.unmask`, and `cache.data.zero_block_size` |
+| `trap`              | `exception.svc`, `exception.hvc`, `exception.smc`, `exception.brk`, `exception.hlt`, and `semihost.call` |
+| `exception_return`  | `exception.eret`                                                             |
+| `cache_maintenance` | the `cache.data` maintenance members (not `zero_block_size`), and `cache.instruction.*` |
+| `tlb_maintenance`   | every `tlb.*` maintenance operation                                          |
+| `atomic`            | every matrix-generated `atomic<T>` / `@atomic<T>` method                      |
+| `cpu_event`         | `cpu.sev`, `cpu.sevl`, `cpu.wfe`                                             |
+| `cpu_halt`          | `cpu.wfi`, `cpu.wfe`                                                         |
+| `interrupt_mask`    | `cpu.mask`, `cpu.unmask`                                                     |
 | `volatile_access`   | any load/store through `@volatile T` or `@mmio T`                             |
 | `mmio`              | any load/store through `@mmio T`                                              |
-| `barrier`           | `%compiler_barrier`, `%dsb`, `%dmb`, `%isb`                                   |
-| `fp_state`          | runtime floating-point arithmetic, comparison, conversion, and FP/SIMD primitives |
-| `perf_counter`      | `%read_cycle_counter`                                                         |
+| `barrier`           | `barrier.compiler`, `barrier.dsb`, `barrier.dmb`, `barrier.isb`              |
+| `fp_state`          | runtime floating-point arithmetic, comparison, conversion, `fma`, and FP/SIMD methods |
+| `perf_counter`      | `cpu.read_counter`                                                           |
 
-Some runtime primitives introduce multiple categories: `%daif_set` introduces
-both `sysreg` and `interrupt_mask`.
+Some semantic operations introduce multiple categories: `cpu.mask` introduces
+both `sysreg` and `interrupt_mask`, and `cpu.wfe` introduces both `cpu_event`
+and `cpu_halt`. `cache.prefetch` is a reorderable preserved hint and introduces
+no cache-maintenance effect.
 
 The categories are deliberately coarse. They represent architectural
 boundaries (privilege level, memory type, synchronization domain), not
@@ -494,55 +513,50 @@ individual instruction distinctions. TLB maintenance is separated from
 cache maintenance because address-translation invalidation is a distinct
 kernel boundary from cache-line cleaning, invalidation, or instruction-cache
 coherency. Finer-grained categories can be added in future versions without
-breaking existing `#deny` declarations.
+breaking existing `deny_effects` declarations.
 
 ### Inference
 
 Effect inference is a whole-program pass during semantic analysis. It
 runs after name resolution and type checking, before IR construction.
 
-1. **Leaf assignment.** Every runtime primitive call and every volatile or
+1. **Leaf assignment.** Every cataloged semantic-operation call and every volatile or
    MMIO-intent load/store is tagged with its effect categories from the table
    above. A cast to `@volatile T` or `@mmio T` records an address-authority
    assertion but does not introduce an access effect until the resulting
    address is read or written. Target-provided Device-memory ranges are mapping
-   facts, not effects. Ordinary local and tuple bindings and `%addr_of(local)`
+   facts, not effects. Ordinary local and tuple bindings and `addr_of(local)`
    are backend resource facts, not semantic effects. Runtime floating-point
    operations introduce
    `fp_state`; floating-point literals and pure moves do not by themselves
    introduce `fp_state`.
 
-2. **`#asm` blocks.** An `#asm` block that does not carry an explicit
-   `effects` annotation is conservatively assigned all effect categories.
-   The programmer may narrow this with `#asm(effects: none)` or
-   `#asm(effects: atomic, sysreg)` to declare which effects the assembly
-   actually performs. The `effects: none` form is verified against the compiler's
-   recognized ARM64 inline-assembly instruction table and is rejected if the
-   body contains a recognized effectful instruction. Other explicit effect lists
-   are the programmer's declaration for `#deny` propagation.
+2. **Checked `asm` blocks.** The compiler unions the exact effect records of
+   the parsed instruction rows, including memory, system-state, trap, call,
+   and terminal behavior. Users cannot supply manual effect or clobber facts.
+   A block accepted as `asm pure` is mechanically proven eligible and
+   contributes `effects(none)`.
 
 3. **Call graph propagation.** For every function, the compiler computes
    the union of effect categories from:
-   - direct runtime primitive usage within the function body
-   - `#asm` blocks within the function body
+   - direct semantic-operation usage within the function body
+   - checked `asm` blocks within the function body
    - the inferred effect sets of all functions called from the body
 
    This produces a per-function effect set.
 
 4. **Function-pointer calls.** An indirect call contributes the conservative
-   effect upper bound of the function-pointer value. `#addr_of(f)`
-   contributes `f`'s inferred effect set; assignments, phis, fields,
+   `effects(...)` upper bound of the function-pointer value. A known function
+   value contributes that function's inferred effect set; assignments, phis, fields,
    arrays, returns, and parameters combine bounds by union. A pointer produced
    from `#trusted_cast<@(args) -> ret>(addr)`, an imported ABI table, external
    declaration without inspectable body, or otherwise unknown source is treated
-   as all effect categories for `#deny` checking. Raw integer-to-function-pointer
-   `as.address` conversions are rejected; the explicit `#trusted_cast` spelling records the
-   programmer's ABI trust decision without claiming a narrower effect bound.
-   This preserves the "single inferred effect set per function" model without
-   adding user-written effect declarations to function-pointer types.
+   as `effects(all)` unless it carries a narrower visible trusted contract.
+   `effects(none)` is the empty upper bound. Assigning a known target to a
+   callable value checks its inferred effects against the destination bound.
 
-5. **`#deny` checking.** For every function (or module) with a
-   `#deny(effect, ...)` attribute, the compiler intersects the inferred
+5. **`deny_effects` checking.** For every function, label, or module with a
+   `#[deny_effects(effect, ...)]` attribute, the compiler intersects the inferred
    effect set with the denied set. A non-empty intersection is a
    compile-time error.
 
@@ -550,54 +564,52 @@ Because Wyst does whole-program single-pass compilation, the entire call
 graph is visible. There are no separately-compiled modules that could
 hide effects.
 
-### `#deny` — Restricting Effects
+### `#[deny_effects(...)]` — Restricting Effects
 
-`#deny` is a directive on a function or module declaration. It takes a
+`deny_effects` is a declaration attribute on a body-bearing Wyst function,
+label, or module declaration. It takes a
 comma-separated list of effect categories:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#deny(sysreg, trap)
-
-format_string :: (buf : @u8, len : u64) -> u64 {
+#[deny_effects(sysreg, trap)]
+fn format_string(buf: @u8, len: u64) -> u64 {
   // compile error if anything reachable from here
-  // touches %mrs, %msr, %svc, %hvc, etc.
+  // reads/writes a system_register or calls exception.svc/hvc/etc.
 }
 ```
 
-#### Function-level `#deny`
+#### Function-level `deny_effects`
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#deny(interrupt_mask)
-
-allocator_alloc :: (size : u64) -> @u8 {
+#[deny_effects(interrupt_mask)]
+fn allocator_alloc(size: u64) -> @u8 {
   // uses atomics — that's fine, `atomic` is not denied
-  lock : u64 = #acquire u64@[lock_addr]
+  const lock: u64 = lock_storage.load(.acquire)
   // ...
-  // but if someone adds %daif_clr here, compile error
+  // but if someone adds cpu.unmask(.irq) here, compile error
 }
 ```
 
-#### Module-level `#deny`
+#### Module-level `deny_effects`
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module userspace_lib
-
-#deny(sysreg, trap, interrupt_mask, exception_return, cache_maintenance, tlb_maintenance)
+#[deny_effects(sysreg, trap, interrupt_mask, exception_return, cache_maintenance, tlb_maintenance)]
+module userspace_lib
 // everything in this module is guaranteed to be
 // EL0-safe — no privileged operations anywhere
 ```
 
-A module-level `#deny` applies to every function in the module. A
-function-level `#deny` within such a module is additive — it can deny
+A module-level denial applies to every function and label in the module. A
+declaration-level `deny_effects` within such a module is additive — it can deny
 additional categories but cannot un-deny a module-level restriction.
 
 #### Error Diagnostics
 
-When a `#deny` violation is detected, the compiler traces the full call
-chain from the denied function to the leaf runtime primitive:
+When a `deny_effects` violation is detected, the compiler traces the full call
+chain from the denied function to the leaf semantic operation:
 
 ```text
 error: effect `sysreg` denied on `format_string`
@@ -605,83 +617,75 @@ error: effect `sysreg` denied on `format_string`
    | result = helper(buf, len)
    |          ^^^^^^ calls `helper`
   --> util.wyst:22:9
-   |     el = %mrs(CurrentEL)
-   |          ^^^ introduces `sysreg` effect
+   |     el = CurrentEL.read().raw
+   |          ^^^^^^^^^^^^^^^^ introduces `sysreg` effect
    |
 note: denied at:
   --> fmt.wyst:1:1
-   | #deny(sysreg, trap)
+   | #[deny_effects(sysreg, trap)]
 ```
 
 The trace includes every intermediate call site so the programmer can
 see exactly how the forbidden effect leaked in.
 
-#### Interaction with `#asm`
+#### Interaction with checked `asm`
 
-An unannotated `#asm` block is conservatively treated as introducing all
-effect categories. This means any `#deny` restriction on a function
-containing an unannotated `#asm` block will fire. The programmer
-resolves this by annotating the `#asm` block:
+Checked assembly has no user-written effect list. Each parsed instruction
+contributes the effect categories in the generated A64 semantic catalog, and a
+function's `deny_effects` restrictions are checked against their union. A block marked
+`pure` is accepted only when the generated facts and local CFG prove a total,
+normally returning, deterministic computation with no memory, system-state,
+trap, fault, or other effect:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#deny(sysreg)
-fast_memcpy :: (dst : @u8, src : @u8, len : u64) {
-    #asm(effects: none) {
-        // pure register-to-register computation
-        // no system register access
-        body { ... }
-    }
+#[deny_effects(sysreg)]
+fn preserve_bits(input: u64) -> u64 {
+  return asm pure (
+    value: u64 = input,
+  ) -> value {
+    nop
+  }
 }
 ```
 
-The available `#asm` effect annotations are:
+For each source form activated on the checked-assembly surface, an `mrs`, `msr`,
+exception/trap instruction, cache or TLB maintenance instruction, barrier,
+memory operation, floating-point state operation, or CPU wait instruction
+contributes its cataloged effects automatically. Marking an effectful active row
+`pure` is a compile-time error; omitting `pure` preserves the exact derived
+effects and makes the block a full two-way compiler fence. Mentioning a
+recognized row that is not active in the pinned v0.9 pack is a support error,
+not a way to obtain its effects.
 
-| Form                           | Meaning                                  |
-| ------------------------------ | ---------------------------------------- |
-| `#asm(effects: none)`          | no recognized `#deny` effect categories (checked against the inline-asm instruction table) |
-| `#asm(effects: atomic)`        | only atomic operations                   |
-| `#asm(effects: sysreg, trap)`  | only system register access and traps    |
-| `#asm { ... }` (no annotation) | conservatively: all effects              |
+Stack-pointer state is verified separately from the `deny_effects` effect system. The
+grammar reserves `preserves`, `establishes`, and `restores stack`, but a clause
+is accepted only when active generated rows prove its complete transition. The
+pinned v0.9 pack has no stack-access or establish/restore transition row:
+`establishes` and `restores` are therefore rejected even in their owning naked
+contexts, and `preserves` cannot authorize temporary stack access. These
+stack-state contracts do not introduce a separate effect category; a future
+profile may activate a verifier-approved transition without creating one.
 
-`effects: none` is distinct from `#asm(pure)`. The `pure` annotation
-controls the memory fence and clobber model (see
-[chapter-08-functions.md §2.9](chapter-08-functions.md)); the `effects` annotation controls
-which effect categories the block introduces for `#deny` checking. They
-are orthogonal and may be combined: `#asm(pure, effects: none)`.
+### What `deny_effects` Does Not Do
 
-For `effects: none`, the compiler rejects recognized effectful ARM64
-instructions such as `mrs`/`msr`, exception/trap instructions, cache
-maintenance, TLB maintenance, barriers, exclusive or atomic memory operations,
-ordinary loads/stores, floating-point/SIMD instructions, and CPU-wait
-instructions. Use an explicit non-`none` effect list, or omit the effect
-annotation and accept the conservative all-effects default, when the body does
-perform architectural effects.
-
-Stack-pointer state is verified separately from the `#deny` effect system.
-`#asm(sets_sp, effects: none)` may establish `sp` in a `#naked` function when
-the `sets_sp` verifier contract is satisfied. A
-`#asm(preserves_sp, effects: none)` block may inspect `sp` when the
-`preserves_sp` verifier contract proves the stack pointer is unchanged. These
-stack-state contracts do not introduce a separate effect category, and denying
-every effect category does not by itself reject a verifier-approved stack-state
-block.
-
-### What `#deny` Does Not Do
-
-- **No runtime checks.** `#deny` is pure compile-time analysis. It
+- **No runtime checks.** `deny_effects` is pure compile-time analysis. It
   adds zero instructions to the output.
-- **No effect declarations on functions.** The programmer never writes
-  "this function has effect X." The compiler infers that automatically.
-  `#deny` is the only programmer-facing surface.
+- **No replacement for inference.** Ordinary Wyst bodies infer their effect
+  sets. A callable `effects(...)` clause is an upper bound, not a list of
+  effects the body is forced to perform; on bodyless foreign declarations it
+  is a visible trusted contract. Effect-authority facts keep a foreign
+  declaration's direct performed-effect set empty and carry that trusted—or,
+  when omitted, conservative `all`—contract only as its transitive callable
+  bound with explicit provenance.
 - **No effect polymorphism.** A function has a single inferred effect
   set. There are no effect-generic functions or effect parameters. This
   keeps the system simple and avoids the complexity of effect algebras.
-- **No transitive un-deny.** A function cannot remove a `#deny`
+- **No transitive un-deny.** A function or label cannot remove a `deny_effects`
   restriction inherited from its module. The restriction is monotonic —
   it can only grow, never shrink.
-- **No backend resource budget.** `#deny` does not reject compiler-generated
-  stack use. Use `#frame(max_bytes = ..., max_spills = ...)` when a function
+- **No backend resource budget.** `deny_effects` does not reject compiler-generated
+  stack use. Use `#[frame(max_bytes = ..., max_spills = ...)]` when a function
   must prove a post-lowering frame budget.
 
 ### Design Rationale
@@ -689,11 +693,11 @@ block.
 | Choice                                              | Reason                                                                                                                                                                                                 |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Inferred effects, not declared                      | Wyst has a closed runtime primitive set and whole-program compilation — the compiler already knows what every function does. Declarations would be redundant noise.                                     |
-| `#deny` (restrictions) not `#effect` (declarations) | The interesting question is never "what does main do" — it's "does this utility function accidentally use a privileged primitive?" Restrictions are the useful direction.                              |
+| `deny_effects` restrictions plus inferred bodies | The interesting question is never "what does main do" — it's "does this utility function accidentally use a privileged primitive?" Restrictions are the useful direction; callable bounds cover compatibility and foreign trust. |
 | Coarse categories                                   | Kernel code cares about architectural boundaries (EL0 vs EL1, Normal vs Device memory, atomic vs non-atomic), not individual instruction distinctions. The closed category set covers useful semantic restrictions without treating backend resources as operations. |
-| Module-level `#deny`                                | Enforcing "this entire subsystem is EL0-safe" as a single declaration is the highest-value use case. Without module-level `#deny`, every function would need its own annotation.                       |
-| Conservative `#asm` default                         | `#asm` is opaque to the compiler. Assuming all effects is the safe default; the programmer narrows it when needed.                                                                                     |
-| No entry-point accumulation                         | Effects propagate upward but `main` (or `_start`) never needs an annotation because restrictions flow downward via `#deny`, not upward via declarations.                                               |
+| Module-level `deny_effects`                         | Enforcing "this entire subsystem is EL0-safe" as a single declaration is the highest-value use case. Without a module-level denial, every function and label would need its own annotation.            |
+| Generated checked-`asm` effects                     | Parsed instruction rows already carry complete effects and constraints. Deriving their union is both safer and more precise than any user-written clobber or effect declaration.                      |
+| No entry-point accumulation                         | Effects propagate upward but `main` (or `_start`) never needs an annotation because restrictions are checked where `deny_effects` is declared.                                                         |
 
 ---
 
@@ -710,19 +714,20 @@ Canonical reference: [chapter-14-exception-vectors.md §10.1](chapter-14-excepti
 ## Exception Vectors
 
 ARM64 exception vectors have strict hardware requirements (2 KB table
-alignment, exactly 16 slots, 128 bytes per slot) that Wyst encodes
-directly via the `#exception_vector` / `#ventry` construct. Slot
-position determines architectural meaning; slot names are free-form.
+alignment, exactly 16 slots, 128 bytes per slot) that Wyst encodes through a
+target-selected `vector_table` declaration. The selected profile owns the
+section, alignment, exact slot extent, canonical dotted names, and fixed
+order; source supplies every terminal arrow or block body explicitly.
 
 Canonical reference: [chapter-14-exception-vectors.md §10.2](chapter-14-exception-vectors.md).
 Worked boot example using these vectors: [chapter-05-boot.md](chapter-05-boot.md).
 
 ---
 
-## Bitfields
+## Bitstructs
 
-`bitfield(T)` declarations name bit ranges within a `u8`/`u16`/`u32`/`u64`
-backing integer. Field reads lower to `ubfx`, writes to `bfi`. They are
+`bitstruct Name: Backing` declarations name typed bit locations within a `u8`/`u16`/`u32`/`u64`
+backing integer. Eligible field reads lower to `ubfx`, writes to `bfi`. They are
 the primary tool for ARM64 system registers and hardware control words.
 Field writes are register-level RMW and are **not** atomic on memory; use
 [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) atomics for shared state.
@@ -744,10 +749,10 @@ Canonical reference: [chapter-06-types.md §1.15](chapter-06-types.md).
 
 ## Scheduling Semantics
 
-`#schedule(strict | relaxed)` are enforceable ordering constraints
-(reproducible). `#schedule(throughput | latency)` are optimization hints
-(deterministic within one compiler binary but not stable across compiler
-versions; never use in `#ventry` bodies).
+Ordinary code uses the deterministic `schedule.standard` policy.
+`schedule source { ... }` and `#[schedule(source)]` introduce explicit
+source-order compiler boundaries. They do not select a build optimization mode,
+emit a hardware barrier, or promise exact instruction bytes.
 
 Canonical reference: [chapter-13-scheduling.md](chapter-13-scheduling.md).
 
@@ -801,11 +806,11 @@ The goal is:
 Wyst guarantees **reproducible lowering**: given the same source, the same
 compiler version, the same build optimization mode, the same canonical
 `#target(...)` configuration, the same source input manifest, and the same
-selected scheduling modes including implicit `schedule.default`, the compiler
+selected scheduling policies including implicit `schedule.standard`, the compiler
 always produces identical output.
 Reproducibility is scoped to these inputs; it is not guaranteed across compiler
 versions, build optimization modes, target configurations, source manifests, or
-different `#schedule` modes.
+different selected scheduling policies.
 
 The `#target` input is the entire canonical `#target(...)` argument list, not
 only `arch` and `cpu`. Fields such as `features`, `el`, and `cache_line`
@@ -828,14 +833,8 @@ Requirements for reproducibility:
     [chapter-03-project-builds.md](chapter-03-project-builds.md)
 - same canonical target configuration, including the full `#target(...)`
   argument list and defaults
-- same selected scheduling modes, including implicit `schedule.default`
-
-**Optimization hint modes are same-binary deterministic but cross-version
-unstable.** `#schedule(throughput)` and `#schedule(latency)` must produce the
-same output for the same source input manifest, compiler binary, build
-optimization mode, and target across invocations. They may produce different
-output across compiler versions or microarchitecture targets. Use them only in
-paths where cross-version instruction-order stability is not required.
+- same selected scheduling policies, including implicit `schedule.standard`
+  and any explicit `schedule.source` boundary
 
 Register allocation is a pure function of the source, compiler version, and
 target. The same inputs always produce the same allocation.
@@ -926,8 +925,8 @@ or alias/UB-backed load-store rewrites.
 
 Non-default build optimization modes must be explicit in the command or build
 profile, and each mode must document whether it is byte-for-byte reproducible
-under the Reproducibility Model's input catalog. Source-level `#schedule`
-directives are a separate scheduling input, not build optimization modes.
+under the Reproducibility Model's input catalog. Source-level scheduling
+boundaries are a separate input, not build optimization modes.
 Aggressive optimization passes need an explain/pass-trace story before they can
 become candidates for any default profile.
 
@@ -961,8 +960,9 @@ Object File
 ### Stage Detail
 
 **Parse → AST.** Source becomes a typed AST. Function bodies, control flow,
-memory accesses, compile-time forms (`#addr_of`, `#len`), and runtime primitives
-(`%atomic_load`, `%mrs`, etc.) are recognisable but not yet lowered.
+memory accesses, compile-time forms (`#addr_of`, `#len`), typed atomic methods,
+declared system-register methods, and qualified semantic operations are
+recognisable but not yet lowered.
 
 **Constant Folding.** Compile-time expressions are evaluated. `#start()` /
 `#end()` symbols are recorded as pending; resolved in the placement stage.
@@ -979,22 +979,20 @@ and tie-breaks in [appendix-a-ir.md §11](appendix-a-ir.md).
 
 **Instruction Selection.** Semantic operations become ARM64 instructions.
 
-**Scheduling.** Constrained scheduling per the `#schedule` directive in
-scope: `strict` preserves source order exactly; `relaxed` reorders only
-independent instructions; `throughput` and `latency` are optimization hints
-whose output is deterministic within one compiler binary but may vary across
-compiler versions or microarchitecture targets.
+**Scheduling.** Ordinary code uses `schedule.standard`; explicit
+`schedule source` regions preserve source semantic-operation order across a
+compiler-only boundary.
 
 **Symbol Placement and Relocation.** The integrated linker assigns final
 addresses to all symbols, satisfying `#region`, `#section`, and `#entry`
 constraints from the layout module. Pending `#addr_of` references and
-cross-module symbols are resolved. Slot size enforcement for `#ventry`
+cross-module symbols are resolved. Slot size enforcement for `vector_table`
 bodies is verified after placement.
 
 **Binary Emission.** Machine code emitted. Output is reproducible under the
 Reproducibility Model above: the same source input manifest, compiler version,
-build optimization mode, canonical `#target(...)` configuration, and
-`#schedule` modes produce identical output.
+build optimization mode, canonical `#target(...)` configuration, and selected
+scheduling policies produce identical output.
 
 ---
 
@@ -1003,8 +1001,8 @@ build optimization mode, canonical `#target(...)` configuration, and
 Wyst targets the **ARMv8-A baseline** instruction set. Three
 modern ARM64 features are explicitly out of scope for this version of the
 language: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
-specific instructions in these families can be exposed through the checked
-`#asm` subset as encoder support is added.
+specific instructions in these families can be exposed through checked `asm`
+as complete encoder and semantic-catalog support is activated.
 
 ### SVE / SVE2 (Scalable Vector Extension)
 
@@ -1029,7 +1027,8 @@ or `autiasp` in prologues/epilogues by default.
 
 Full PAC support would require: prologue/epilogue generation controlled
 by a `#pac` function attribute; an address type carrying PAC tag state
-(e.g. `@signed(T)`); explicit `%sign` / `%auth` / `%strip` runtime primitives.
+(e.g. `@signed(T)`); explicit named `sign`, `authenticate`, and `strip`
+operations if a future version catalogs them.
 
 **Extension point:** a `#pac` function-level directive that enables
 `paciasp` / `autiasp` emission, plus `@signed(@T)` for authenticated
@@ -1050,12 +1049,13 @@ managed by the language, with runtime primitives for tag allocation and the
 
 All three remain inline-assembly territory rather than language-level
 features. Code that requires SVE vector operations, PAC signing, or MTE tag
-manipulation should use `#asm` once the required mnemonic has checked encoder
-support in the compiler. By default, `#asm` blocks are full two-way compiler
-memory fences (see [chapter-08-functions.md §2.9](chapter-08-functions.md)); operations within
-them are invisible to alias analysis and reordering. `#asm(pure)` opts out
-for register-only computations but is unsafe for code that touches memory or
-system state.
+manipulation should use `asm` once the required mnemonic has complete checked
+encoder and semantic support in the compiler. Non-pure `asm` blocks are full
+two-way compiler memory fences (see
+[chapter-08-functions.md §2.9](chapter-08-functions.md)). `asm pure` is accepted
+only for computations that the generated instruction facts and local CFG prove
+total, deterministic, normally returning, and free of memory or system-state
+effects.
 
 ---
 
@@ -1221,8 +1221,8 @@ wync explain performance memcpy.wyst:12-18
     - loop-exit misprediction     — Bad Speculation
 
   Suggestions:
-    - %prefetch for sequential access pattern (see chapter-11-intrinsics.md §1.3.8)
-    - consider %ldnp/%stnp for streaming stores
+    - cache.prefetch for sequential access (import `core.arch.cache`)
+    - consider memory.load_pair_non_temporal / memory.store_pair_non_temporal
     - select() for branchless loop-exit if condition is unpredictable
 ```
 

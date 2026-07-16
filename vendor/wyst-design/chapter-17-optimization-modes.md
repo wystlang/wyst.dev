@@ -42,11 +42,11 @@ The selected build optimization mode is part of the reproducibility input
 manifest described in
 [chapter-01-language-design.md](chapter-01-language-design.md).
 
-Build optimization modes are distinct from the source-level `#schedule`
-directive described in [chapter-13-scheduling.md](chapter-13-scheduling.md).
-`#schedule(strict | relaxed | throughput | latency)` controls instruction
-scheduling permissions inside source regions; it does not select a build
-optimization mode.
+Build optimization modes are distinct from the source-level scheduling policy
+described in [chapter-13-scheduling.md](chapter-13-scheduling.md).
+Ordinary code uses `schedule.standard`; `schedule source { ... }` and
+`#[schedule(source)]` introduce compiler-ordering boundaries. Neither surface
+selects a build optimization mode.
 
 ## Semantic Boundary
 
@@ -64,19 +64,19 @@ command-line `--optimization` value overrides that manifest setting for the
 build. Non-default modes branch from that explicit boundary instead of changing
 the default path in place.
 
-## Relationship to `#schedule`
+## Relationship to Source Scheduling
 
-`--optimization` and `#schedule` are independent inputs at different levels:
+`--optimization` and source scheduling are independent inputs at different levels:
 
 - `--optimization` is a build-level lowering policy chosen by the command line
   or project manifest.
-- `#schedule` is a source-level directive that constrains or hints instruction
-  ordering inside a source region.
+- `schedule source` is a source-level boundary that preserves source
+  semantic-operation order inside one region.
 
-A build optimization mode must respect every applicable `#schedule` region.
+A build optimization mode must respect every applicable source boundary.
 For example, `--optimization switch-dispatch` may change enum-switch lowering,
-but it must not move instructions across a `#schedule(strict)` boundary or
-reinterpret `#schedule(throughput)` as a build-wide optimization request.
+but it must not move instructions across a `schedule source` boundary or
+reinterpret `schedule.standard` as permission to change source meaning.
 
 ## `switch-dispatch`
 

@@ -33,6 +33,113 @@ traceability index. It records the positive, negative, execution, IR, lowering,
 artifact, explain-report, and reproducibility evidence for each semantic
 database feature row, and it names untested evidence explicitly.
 
+[syntax-words.tsv](syntax-words.tsv) is the normative v0.9 source-word
+catalog. [attribute-catalog.tsv](attribute-catalog.tsv) is the closed final-v0.9
+declaration-attribute registry; its rows remain inactive until their semantic
+owner changes the row state atomically with the implementation and evidence.
+[meta-operation-catalog.tsv](meta-operation-catalog.tsv) is the closed active
+14-form compiler/meta-operation surface. The complete 53-name predecessor
+mapping is isolated in the non-parser
+[legacy-hash-removal-audit.tsv](legacy-hash-removal-audit.tsv); it creates no
+diagnostic, alias, rewrite, completion, hover, or highlighting path.
+[generic-bounds.tsv](generic-bounds.tsv) is the closed active capability-bound
+registry consumed by parsing, instantiation, diagnostics, and tooling.
+[sealed-core.tsv](sealed-core.tsv) authenticates compiler-bundled core
+namespaces and declaration roles, including the source-backed dynamic
+container declaration.
+[a64-compiler-semantics.md](a64-compiler-semantics.md) defines the experimental
+pinned A64 compiler-semantic contract for the completed focused Roadmap
+items 46-50 profile. [a64-support-policy.json](a64-support-policy.json) is the
+checked-in activation policy; `wync/tools/a64-support-manifest.mjs`
+deterministically generates [a64-support-manifest.json](a64-support-manifest.json)
+and the exact row ledger [a64-support-rows.tsv](a64-support-rows.tsv). The ledger
+partitions all 8,955 support-bearing subjects into 308 active and 4,023
+`known_unsupported` encodings, 19 active and 4,603 `known_unsupported` source
+forms or official aliases, and two active target-structural profiles, with no
+unexplained or partially active row. The focused bundle contains 308 complete
+instruction-semantic rows, 31 authenticated state contracts, and two structural
+contracts.
+
+[a64-conformance-manifest.json](a64-conformance-manifest.json) is the terminal
+focused-profile release gate. It authenticates
+[a64-conformance-evidence.tsv](a64-conformance-evidence.tsv), with exactly
+8,955 evidence rows partitioned as 329 active and 8,626
+`known_unsupported`; [a64-conformance-targets.tsv](a64-conformance-targets.tsv),
+whose 153 profiles all include `base`, with `v8Ap0` (v8.0) `base` and
+`base|fp_simd` base/FP/AdvSIMD profiles, a `v8Ap1` (v8.1) `base|lse` LSE
+profile, and 149 conformance-only `v9Ap7` (v9.7) unsupported-precedence
+profiles; and the offline
+[a64-conformance-oracles.tsv](a64-conformance-oracles.tsv)
+fixture. The fixture covers all 308 active encodings with pinned LLVM 14.0.6
+and Capstone 5.0.7 outcomes: LLVM has one recorded gap, Capstone has none, and
+every full operand-text difference is adjudicated. LLVM also reassembles every
+one of its 307 decoded witnesses to the exact original word; Capstone is
+explicitly decode-only. Functional execution is reported separately from those
+static oracles. All 329 active evidence rows are covered by pinned QEMU 11.0.0
+independent-oracle evidence, with zero unavailable-oracle gaps and zero
+authenticated-reference rows. The 308 instruction rows divide into 302
+expected-value paths, five state paths, and one trap structural path; the 12
+active source-form rows project the corresponding instruction evidence. The
+trap-frame runtime fixture also pins both active target-structural rows by
+observing the selected vector slot and the complete
+entry-save/restore-ERET round trip. The gate also binds the checked-assembly
+allocation proof identity and the deterministic
+`a64_conformance` fuzz target, whose release floor is 65,536 random words.
+
+Normal generation and verification remain offline:
+
+```sh
+./wync/tools/a64-conformance-gate.sh check
+```
+
+The 308 encodings are active for ordinary lowering and architecture operations;
+the deliberately narrower `wyst.a64.checked-asm.core.v1` pack admits 12 exact
+general-purpose source forms and their encodings. The separate
+`wyst.a64.target-structural-asm.aarch64.v1` pack admits seven source forms only
+after an exact target-owned sequence is authenticated.
+[a64-encoding-catalog.tsv](a64-encoding-catalog.tsv) owns all 19 checked-source
+grammars and canonical identities. The generated
+[a64-active-encoding-catalog.tsv](a64-active-encoding-catalog.tsv) is the shared
+machine authority for all 308 active encodings and contains 301 generated
+operand decoders and 10 generated typed fixup programs. Ordinary lowering and
+architecture operations select these identities through
+`instruction_catalog::encode_active_fields`; generated SYS/PSTATE finite-domain
+contracts replace parallel operation tables. Checked assembly crosses the IR
+boundary as `AsmBodyIr::Catalog` items carrying parsed instruction identities,
+typed operands, labels, and fixups, so the backend does not reconstruct them
+from source text. Final emission and placement patch boundaries authenticate
+the selected active word.
+
+The full-authority decoder derives Arm's reserved encoding region from the
+authenticated pinned `Instructions.json` record and classifies every 32-bit
+word as active, known unsupported, reserved, or unallocated. Disassembly and
+lowering reports expose the same four-way result. The support and conformance
+mechanisms satisfy the focused items 46-50 completion contract; there are no
+remaining focused completion blockers. They do not claim universal A64
+support: the 4,023 inactive encodings and 4,603 inactive source forms remain
+explicit work for Roadmap item 105. Functional-execution evidence is also a
+separate per-row coverage axis; generated static consistency and encode/decode
+round trips are not described as independent execution validation.
+[a64-raw-encoding-source-forms.jsonl.gz](a64-raw-encoding-source-forms.jsonl.gz)
+is a deterministic source-adequacy audit generated by
+`wync/tools/a64-raw-forms.mjs`. It reconciles all 4,331 current instruction
+forms and 291 official aliases, preserves their reachable raw grammar,
+predicates, mask/value layouts, and decoder-mask overlaps, and authenticates
+the generator plus every input it reads. The generated
+`arm64::authority_decode` recognition table derives its versioned runtime
+schema and identity from this artifact; both identities are carried in build
+evidence and version 7 `.wyst.a64.catalog` ELF metadata as the decoder schema,
+runtime-identity digest, and raw source-form artifact digest. This remains a
+recognition and canonical-identity layer, not a complete typed parser or
+encoder: the pinned open-source authority supplies no assembly or disassembly
+transforms, relocation records, or typed fixups, and the artifact records
+those zero-coverage axes explicitly rather than inventing them. The current
+full-authority recognition decoder proves the ordered 32-bit partition over
+allocated rows, the authenticated reserved region, and the unallocated
+complement. The allocated UDF encoding overrides the reserved region by exact
+mask specificity, so unsupported operand semantics are never inferred from the
+region classification.
+
 ## Table of Contents
 
 | Chapter | File                                                                             | Purpose                                                                                                                            |
@@ -42,14 +149,14 @@ database feature row, and it names untested evidence explicitly.
 | 3       | [chapter-03-project-builds.md](chapter-03-project-builds.md)                     | Project layout, manifests, source discovery, target selection, and build modes.                                                    |
 | 4       | [chapter-04-modules.md](chapter-04-modules.md)                                   | Modules, imports, visibility, source references, and layout/module boundaries.                                                     |
 | 5       | [chapter-05-boot.md](chapter-05-boot.md)                                         | First runnable program shape, boot entry assumptions, and early runtime setup.                                                     |
-| 6       | [chapter-06-types.md](chapter-06-types.md)                                       | Scalar values, constants, conversions, addresses, arrays, slices, structs, bitfields, and enums.                                   |
+| 6       | [chapter-06-types.md](chapter-06-types.md)                                       | Scalar values, constants, conversions, addresses, arrays, slices, structs, bitstructs, and enums.                                  |
 | 7       | [chapter-07-operators.md](chapter-07-operators.md)                               | Expression syntax, arithmetic, comparison, casts, precedence, and branchless selection.                                            |
 | 8       | [chapter-08-functions.md](chapter-08-functions.md)                               | Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches. |
 | 9       | [chapter-09-memory-model.md](chapter-09-memory-model.md)                         | Normal memory, volatile memory, atomics, barriers, ordering, agents, and happens-before.                                           |
 | 10      | [chapter-10-runtime.md](chapter-10-runtime.md)                                   | Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries.                |
 | 11      | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                             | Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks.                      |
 | 12      | [chapter-12-simd.md](chapter-12-simd.md)                                         | Explicit vector types, lane operations, vector loads/stores, and non-autovectorization policy.                                     |
-| 13      | [chapter-13-scheduling.md](chapter-13-scheduling.md)                             | Scheduling regions, deterministic reordering boundaries, and target-aware scheduling modes.                                        |
+| 13      | [chapter-13-scheduling.md](chapter-13-scheduling.md)                             | The standard scheduling policy and explicit source-order compiler boundaries.                                                       |
 | 14      | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md)               | Alignment, exception vectors, vector slots, and checked trap-frame ABI basics.                                                     |
 | 15      | [chapter-15-abi-spec.md](chapter-15-abi-spec.md)                                 | Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership.                               |
 | 16      | [chapter-16-object-format.md](chapter-16-object-format.md)                       | Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries.                         |

@@ -40,12 +40,14 @@ an ISA baseline, ISA feature, minimum exception level, or ABI capability.
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module source_requirement_demo
+module source_requirement_demo
+
+import core.arch { cpu }
 
 #requires(arch = arm64-v8a, el = 1, abi = ( aapcs64 ))
 
-spin_once :: () {
-  %nop()
+fn spin_once() {
+  cpu.nop()
 }
 ```
 
@@ -118,17 +120,44 @@ explicit profile/custom project facts, source requirements, permitted analysis
 defaults, or unverified assumptions. Current project artifact reports must have
 no unverified target assumptions.
 
-The QEMU `virt` profile is:
+The QEMU `virt` baseline profiles are:
 
 ```text
+qemu-virt-aarch64-el1
 qemu-virt-aarch64-el2
 ```
 
-It names the QEMU-oriented static ELF baseline: `arm64-v8a`, generic
-CPU, EL2 entry, Wyst native ABI, static AArch64 ELF output, and existing
-AAPCS64 interop support. Module-level `#requires(...)` declarations must be
-satisfied, and module-level `#target(...)` declarations must be compatible with
-the selected project profile when one is present.
+They name the QEMU-oriented static ELF baseline at exact EL1 and EL2 entry
+levels: `arm64-v8a`, generic CPU, Wyst native ABI, static AArch64 ELF output,
+and existing AAPCS64 interop support. Module-level `#requires(...)`
+declarations must be satisfied, and module-level `#target(...)` declarations
+must be compatible with the selected project profile when one is present.
+
+Both profiles select executable environment `qemu-aarch64-semihost-v1`. Its
+closed offer set contains exactly `a64-semihost-hlt-f000-v1`, so importing
+`core.environment.semihost` records that descriptor as an artifact
+requirement. A runner must advertise the same environment identity and satisfy
+that required descriptor before launching the artifact. The runner environment
+is an independent authenticated profile selection, not a value inferred from
+the artifact target; static artifact preparation fails closed when a
+service-bearing build omits it, selects a different identity, or omits any
+required descriptor.
+
+It also selects exactly one measurement-counter descriptor,
+`a64-generic-virtual-counter-v1`, for `cpu.read_counter()`. This selection is a
+separate authenticated artifact-target fact; `arm64-v8a`, `generic`, and a
+`pmu` feature do not imply or replace it.
+
+The corresponding QEMU profile for artifacts that require LSE atomics is:
+
+```text
+qemu-virt-aarch64-el2-lse
+```
+
+It has the same CPU, EL, executable-environment, runner-service, ABI, and
+measurement-counter contracts as `qemu-virt-aarch64-el2`, and additionally
+selects the authenticated `lse` target feature. The baseline profile does not
+silently acquire LSE merely because the compiler can encode it.
 
 The board-emulation profile is:
 
@@ -140,6 +169,15 @@ It names QEMU's `raspi4b` machine with `arm64-v8a`, `cortex-a72`, EL2 entry,
 static AArch64 ELF lowering, and a runner-owned flat `kernel8.img`-style
 handoff artifact. The profile is intentionally scoped to QEMU board
 emulation; it does not claim physical Raspberry Pi 4B hardware bring-up.
+It selects executable environment `bare-aarch64-v1`, whose service offer set
+is empty. In particular, architecture support for `hlt` does not make the
+sealed semihost service available.
+
+The `raspi4b` artifact profile independently selects the same exact
+`a64-generic-virtual-counter-v1` measurement-counter descriptor. A custom or
+otherwise bare target with no explicit counter selection does not inherit that
+choice and must reject `cpu.read_counter()`. Empty, unknown, duplicate, or
+multiple counter descriptor selections are invalid target facts.
 
 The full layered descriptor schema is outside the project-manifest surface.
 See [chapter-03-project-builds.md](chapter-03-project-builds.md) for the project

@@ -31,6 +31,22 @@ test("prose code wraps without changing scrollable code and table behavior", () 
 	);
 });
 
+test("table alignment uses CSP-compatible metadata", () => {
+	const rendered = makeMd().render(
+		"| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |\n",
+	);
+
+	assert.doesNotMatch(rendered, /\sstyle=/);
+	assert.match(rendered, /<th data-align="left">Left<\/th>/);
+	assert.match(rendered, /<th data-align="center">Center<\/th>/);
+	assert.match(rendered, /<th data-align="right">Right<\/th>/);
+	assert.match(rendered, /<td data-align="right">c<\/td>/);
+	assert.match(
+		docsCss,
+		/\.doc-body th\[data-align="right"\],\s*\.doc-body td\[data-align="right"\]\s*\{[^}]*text-align:\s*right;/s,
+	);
+});
+
 test("heading permalinks are focusable, named controls", () => {
 	const rendered = makeMd().render("## Memory `Layout`\n");
 	assert.match(
@@ -49,6 +65,26 @@ test("generated heading fragments match GitHub-style source links", () => {
 		rendered,
 		/<h4 id="b63-calling-variadic-c-functions-printf-via-va_list"/,
 	);
+});
+
+test("design catalog links stay pinned to the imported Wyst commit", () => {
+	const commit = "a".repeat(40);
+	const rendered = makeMd({ wystSourceCommit: commit }).render(
+		"[syntax words](syntax-words.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz) [semantic database](semantic-db.json)\n",
+	);
+	assert.match(
+		rendered,
+		new RegExp(
+			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/syntax-words\\.tsv" rel="noopener"`,
+		),
+	);
+	assert.match(
+		rendered,
+		new RegExp(
+			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/a64-raw-encoding-source-forms\\.jsonl\\.gz" rel="noopener"`,
+		),
+	);
+	assert.match(rendered, /href="\/docs\/semantic-db\.json"/);
 });
 
 test("documentation markdown permits only the intentional safe HTML subset", () => {

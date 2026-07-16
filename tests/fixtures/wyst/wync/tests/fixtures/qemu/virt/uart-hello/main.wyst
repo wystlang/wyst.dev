@@ -1,55 +1,77 @@
-#module boot.hello
+module hello
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
-UART0_BASE :: u64 = 0x0900_0000
-UARTDR :: @volatile u32 = UART0_BASE + 0x00
-UARTFR :: @volatile u32 = UART0_BASE + 0x18
-TXFF :: u32 = 0x20
+import core.arch { cpu }
 
-Pl011Prefix :: struct {
-    dr : u32
-    rsrecr : u32
-    reserved0 : [4]u32
-    fr : u32
+import core.environment { semihost }
+
+// homepage-example:start
+/*
+* QEMU `virt` is a generic virtual Arm board.
+* Its PL011 UART provides serial text output.
+*
+* UART registers are memory-mapped I/O (MMIO):
+* reads and writes at these addresses reach a
+* device rather than ordinary RAM.
+*
+* A register address is UART0's base plus its
+* PL011 byte offset. QEMU maps UART0's base at
+* 0x0900_0000.
+*/
+register_map Pl011 {
+  // DR is the data register.
+  // DATA is its eight-bit transmit payload.
+  DR: writeonly u32 at 0x00 {
+    DATA: u8 at 0..=7
+  }
+
+  // FR is the flag register.
+  // TXFF means the transmit FIFO is full.
+  FR: readonly u32 at 0x18 {
+    TXFF: bool at 5
+  }
 }
 
-#static_assert(#size_of(Pl011Prefix) == 28, "PL011 prefix size")
-#static_assert(#field_offset(Pl011Prefix, fr) == 0x18, "PL011 FR offset")
+mmio UART0: Pl011 at 0x0900_0000
 
-uart_write :: (byte : u8) {
-    while (u32@[UARTFR] & TXFF) != 0 {
-        %nop()
-    }
+fn uart_write(byte: u8) {
+  // Poll for space in the transmit FIFO.
+  while UART0.FR.read().TXFF {
+    cpu.nop()
+  }
 
-    u32@[UARTDR] = byte as.widen u32
+  UART0.DR.write(DATA = byte)
 }
 
-uart_hello :: () {
-    uart_write('h')
-    uart_write('e')
-    uart_write('l')
-    uart_write('l')
-    uart_write('o')
-    uart_write('\n')
+fn uart_hello() {
+  // UART output is byte-oriented.
+  const msg: [6]u8 = ['h', 'e', 'l', 'l', 'o', '\n']
+
+  // #len is compile-time metadata;
+  // the array has no runtime length field.
+  for i in 0 ..< #len(msg) {
+    uart_write(msg[i])
+  }
 }
 
-#noreturn
-kernel_main :: (dtb : @u8) {
-    uart_hello()
-    test_exit(0)
+// homepage-example:end
+fn kernel_main() -> never {
+  uart_hello()
+  test_exit(0)
 }
 
-#[naked, noreturn]
-pub _start :: (dtb : @u8 #pin(x0)) {
-    #asm(sets_sp, effects: none) {
-        inputs {
-            stack = gpr(__stack_top)
-        }
-        body {
-            mov sp, {stack}
-        }
-    }
-
-    kernel_main(dtb)
+naked fn _start() -> never {
+  asm (
+    stack: u64 = __stack_top,
+    target: u64 = address<u64>(#addr_of(kernel_main)),
+    mode: u64 = numeric<u64>(0x3c8),
+  ) -> never {
+    msr SP_EL0, stack
+    msr ELR_EL2, target
+    msr SPSR_EL2, mode
+    eret
+  }
 }
+
+export _start

@@ -36,6 +36,7 @@ registerWyst(Prism);
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 const SITE = "https://wyst.dev";
+const WYST_SOURCE_URL = "https://github.com/wystlang/wyst";
 
 function resolveDocsDir() {
 	const candidate = process.env.WYST_DOCS_DIR
@@ -116,6 +117,39 @@ function githubSlugify(value) {
 
 // ---- markdown-it setup -----------------------------------------------------
 const fileToUrl = new Map(); // "chapter-07-operators.md" -> "/docs/chapter-07-operators/"
+const fileToFragments = new Map();
+
+function fragmentIdsFor(markdown) {
+	const parser = new MarkdownIt({ html: false, linkify: false, typographer: false });
+	parser.use(anchor, {
+		level: [2, 3, 4],
+		slugify: githubSlugify,
+	});
+	return new Set(
+		parser
+			.parse(markdown, {})
+			.filter((token) => token.type === "heading_open")
+			.map((token) => token.attrGet("id"))
+			.filter(Boolean),
+	);
+}
+
+function resolvedFragment(file, fragment) {
+	if (!fragment) return "";
+	const slug = fragment.replace(/^#/, "");
+	const fragments = fileToFragments.get(file);
+	if (!fragments || fragments.has(slug)) return `#${slug}`;
+
+	// Numbered design headings sometimes gain a more precise title while an
+	// older cross-link retains that section number. Resolve only an unambiguous
+	// same-section match; the public-reference audit catches everything else.
+	const section = slug.split("-", 1)[0];
+	if (!/^(?:[a-z]+)?\d+$/i.test(section)) return `#${slug}`;
+	const matches = [...fragments].filter((candidate) =>
+		candidate.startsWith(`${section}-`),
+	);
+	return matches.length === 1 ? `#${matches[0]}` : `#${slug}`;
+}
 
 function headingPermalink(slug, _options, state, tokenIndex) {
 	const inline = state.tokens[tokenIndex + 1];
@@ -140,7 +174,13 @@ function headingPermalink(slug, _options, state, tokenIndex) {
 	inline.children.unshift(linkOpen, symbol, linkClose, space);
 }
 
-export function makeMd() {
+export function makeMd({ wystSourceCommit } = {}) {
+	if (
+		wystSourceCommit !== undefined &&
+		!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(wystSourceCommit)
+	) {
+		throw new Error("Wyst documentation source commit must be a full Git object ID");
+	}
 	const md = new MarkdownIt({
 		html: true,
 		// linkify off: the reference mentions bare filenames (e.g. "foo.md:321")
@@ -192,11 +232,44 @@ export function makeMd() {
 			const m = href.match(/^(?:\.\/)?([\w.-]+\.md)(#[^)\s]*)?$/);
 			if (m) {
 				const target = fileToUrl.get(m[1]);
-				if (target) tok.attrs[hi][1] = target + (m[2] || "");
+				if (target) {
+					tok.attrs[hi][1] = target + resolvedFragment(m[1], m[2]);
+				}
+			} else if (/^#[\w-]+$/.test(href) && env?.sourceFile) {
+				tok.attrs[hi][1] = resolvedFragment(env.sourceFile, href);
+			} else {
+				const artifact = href.match(
+					/^(?:\.\/)?([\w.-]+\.(?:json|tsv|jsonl\.gz))$/,
+				);
+				if (artifact && wystSourceCommit) {
+					tok.attrs[hi][1] =
+						`${WYST_SOURCE_URL}/blob/${wystSourceCommit.toLowerCase()}/design/` +
+						artifact[1];
+					tok.attrSet("rel", "noopener");
+				}
 			}
 		}
 		return defaultLinkOpen(tokens, i, opts, env, self);
 	};
+
+	// markdown-it represents table-column alignment with inline styles. Keep
+	// the authored alignment as inert metadata styled by the external stylesheet
+	// so it remains compatible with the site's strict Content Security Policy.
+	for (const rule of ["th_open", "td_open"]) {
+		md.renderer.rules[rule] = (tokens, i, opts, _env, self) => {
+			const token = tokens[i];
+			const styleIndex = token.attrIndex("style");
+			if (styleIndex >= 0) {
+				const style = token.attrs[styleIndex][1];
+				const alignment = style.match(/^text-align:(left|center|right)$/)?.[1];
+				if (alignment) {
+					token.attrs.splice(styleIndex, 1);
+					token.attrSet("data-align", alignment);
+				}
+			}
+			return self.renderToken(tokens, i, opts);
+		};
+	}
 
 	return md;
 }
@@ -263,6 +336,13 @@ export function generateDocs({
 	const OUTPUT = path.resolve(outputDir);
 	console.log("docs source:", DOCS);
 	fileToUrl.clear();
+	fileToFragments.clear();
+	const wystSourceCommit = fs
+		.readFileSync(path.join(DOCS, ".source-commit"), "utf8")
+		.trim();
+	if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(wystSourceCommit)) {
+		throw new Error("Wyst documentation snapshot has an invalid source commit");
+	}
 
 	const mdFiles = fs
 		.readdirSync(DOCS)
@@ -278,6 +358,7 @@ export function generateDocs({
 		const isIndex = file === "README.md";
 		const url = isIndex ? "/docs/" : `/docs/${stem}/`;
 		fileToUrl.set(file, url);
+		fileToFragments.set(file, fragmentIdsFor(body));
 		const title = data.title || stem;
 		pages.push({
 			file,
@@ -299,7 +380,7 @@ export function generateDocs({
 	pages.sort((a, b) => a.order - b.order);
 	const navModel = pages.filter((p) => !p.isIndex);
 
-	const md = makeMd();
+	const md = makeMd({ wystSourceCommit });
 	const outDir = path.join(OUTPUT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
@@ -335,7 +416,7 @@ export function generateDocs({
 			continue;
 		}
 
-		const env = {};
+		const env = { sourceFile: page.file };
 		const tokens = md.parse(body, env);
 		const articleHtml = md.renderer.render(tokens, md.options, env);
 		const tocHtml = buildToc(tokens);

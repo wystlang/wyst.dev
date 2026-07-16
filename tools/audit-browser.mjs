@@ -219,7 +219,7 @@ const PAGE_AUDIT = String.raw`(() => {
 			};
 		});
 	const smallTargets = [...document.querySelectorAll(
-		"header.site a, .doc-sidebar-toggle, .artifact-bar a, footer.site a",
+		"header.site a, .doc-sidebar-toggle, .artifact-bar :is(a, button), footer.site a",
 	)]
 		.filter(visible)
 		.map((element) => {
@@ -668,7 +668,7 @@ try {
 				}
 			}
 			const invalidScripts = audit.scripts.filter(
-				(src) => !/^\/assets\/docs(?:\.[a-f0-9]{8})?\.js$/.test(src),
+				(src) => !/^\/?assets\/(?:docs|home)(?:\.[a-f0-9]{8})?\.js$/.test(src),
 			);
 			if (invalidScripts.length) {
 				failures.push(

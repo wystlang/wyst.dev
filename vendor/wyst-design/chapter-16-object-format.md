@@ -14,6 +14,93 @@ summary: "Emitted artifacts, ELF sections, symbols, relocations, deterministic o
 Object format describes emitted artifacts, not source syntax. It builds on
 modules, layout declarations, boot entry, and ABI classification.
 
+> **Source-version boundary.** Object and relocation behavior is current.
+> Any retained `T@[address]`, `%addr_of`, colon-slice, typed-address arithmetic,
+> raw descriptor, or `as.<category>` example outside a section explicitly
+> marked current v0.9 is released-v0.8 source background. Chapter 6 owns and
+> supersedes those source spellings.
+
+## v0.9 `per_cpu` Object Contract (Current)
+
+Chapter 8 owns item-42 source semantics. In the current whole-program
+`ET_EXEC` mode, every accepted `per_cpu var` contributes exactly one entry to
+the `.percpu` initialization template. Its source type fixes the entry's size
+and natural alignment; its statically representable initializer fixes the
+entry bytes and internal relocation records. Entries are placed
+deterministically from the resolved import closure, and final placement fixes
+the byte offset returned by `#percpu_offset_of`.
+
+The canonical ELF symbol for a `per_cpu` entry is a non-address-bearing local
+`STT_OBJECT`: `st_shndx` names `.percpu`, `st_value` is the entry's byte offset
+within that template, and `st_size` is its natural-layout size. `pub` does not
+change that binding because it is Wyst source visibility, not linkage. No
+source operation may materialize the symbol as an ELF/process address.
+Debug information may retain the declaration's name and type, but its variable
+DIE has no `DW_OP_addr` location: serializing the template-relative offset as
+an address would invent a false process address and bypass this identity rule.
+An internal function used as a callable initializer contributes a real address
+relocation. An ordinary mutable callable global is therefore initialized data,
+never zero-filled `.bss`; a `per_cpu` callable stores the same resolved code
+address in its template entry while retaining the callable's exact typed-IR
+identity for every source access and indirect call.
+
+The `.percpu` bytes are an immutable initialization template even when the
+current static-image transport marks the containing load segment writable for
+a later runtime copier. The template is never the live current-core instance.
+The compiler emits no copied instances, allocation metadata, base setup,
+startup copy, or ordinary-global alias. No `.tls` section, `PT_TLS`, TLS symbol,
+TLS relocation, or TLS size export is emitted for v0.9 source.
+
+## v0.9 Placement and Initialization Attributes (Current)
+
+The active placement surface is `#[align(N)]`, `#[section("NAME")]`,
+`#[init(order = N)]`, and `#[cache_isolated]`. These are hard compiler
+contracts carried from typed IR through final ELF construction; they are never
+discardable metadata.
+
+`#[align(N)]` raises an emitted subject's required final-address alignment.
+The ELF writer combines natural, declaration, section-start, target, and cache
+isolation requirements by maximum and inserts deterministic preceding padding.
+The attribute neither increases the symbol's `st_size` nor retains an otherwise
+dead declaration. Field and `per_cpu` layout consequences are specified in
+Chapters 14 and 8 respectively.
+
+`#[section("NAME")]` accepts one literal matching `\.[A-Za-z0-9_.]+`. The
+selected artifact layout must declare that exact non-reserved name whenever a
+contribution is emitted, and that layout declaration must state the compatible
+`code`, `rodata`, `data`, or `bss` kind. In the current flat layout surface this
+is written, for example, as
+`#section .state : kind = data, align = 64, in = ram`; item 58 changes the
+layout syntax without weakening the declared-kind contract. Functions require
+`code`, constants require `rodata`, initialized mutable objects require `data`,
+and zero-filled mutable objects require `bss`, which emits writable
+`SHT_NOBITS` storage. A missing or incompatible kind and any attempt to mix
+incompatible contributions are hard errors. Per-contribution padding and
+alignment are deterministic; applying the attribute retains the produced
+contribution without exporting or renaming its symbol. A zero-sized
+contribution still emits its declared section and symbol with zero size; it is
+not erased merely because it has no payload bytes. A sectioned `#[inline]`
+function retains exactly one out-of-line copy while all direct calls still
+expand.
+
+`#[init(order = N)]` emits one retained 16-byte `.initcalls` record: the first
+word is the constant `u64` order and the second carries one absolute function-
+address relocation. Final records sort by `(order, canonical semantic
+declaration identity)`. The table therefore does not change when module
+spelling, import aliases, `pub`, or export aliases change. The body may have a
+custom section, but its metadata record remains in `.initcalls`; the attribute
+does not call the function or synthesize startup control flow. A nonempty table
+requires an explicit `.initcalls` layout section declared as `rodata` and
+aligned to at least 8 bytes.
+
+`#[cache_isolated]` requires an explicit selected cache-line width `L`, aligns
+the object to at least `L`, and reserves
+`round_up(max(#size_of(T), 1), L)` bytes of placement. The final artifact must
+prove that the whole padded range is writable cacheable Normal memory and
+shares no cache line with another live object. Padding is not part of the
+source type or symbol size, creates no retention root, and implies no atomicity,
+ordering, volatility, synchronization, or visibility semantics.
+
 Wyst's integrated compiler reads a set of source modules and emits a single
 binary image in the current implemented artifact mode. There is no separate
 assembler, no separate linker, and no intermediate object files written to disk
@@ -120,9 +207,8 @@ canonical names.
 | `.initcalls`          | Kernel initcall metadata entries                     | `ALLOC`       |
 | `.data`               | Initialized mutable globals                          | `ALLOC        | WRITE`     |
 | `.bss`                | Zero-initialized mutable globals                     | `ALLOC        | WRITE      | NOBITS` |
-| `.percpu`             | `#percpu` master images (template per CPU)           | `ALLOC        | WRITE`     |
-| `.tls`                | `#tls` master images (template per thread)           | `ALLOC        | WRITE      | TLS`    |
-| `.wyst.vectors.<name>` | One section per `#exception_vector` declaration      | `ALLOC        | EXECINSTR` |
+| `.percpu`             | Immutable `per_cpu var` initialization template      | `ALLOC        | WRITE`     |
+| `.wyst.vectors.<name>` | One target-owned section per `vector_table` declaration | `ALLOC        | EXECINSTR` |
 | `.debug_info`         | DWARF 5 compilation unit DIE tree                    | (non-`ALLOC`) |
 | `.debug_abbrev`       | DWARF 5 abbreviation tables for `.debug_info`        | (non-`ALLOC`) |
 | `.debug_line`         | DWARF 5 line number program                          | (non-`ALLOC`) |
@@ -134,14 +220,17 @@ canonical names.
 | `.strtab`             | Symbol name strings                                  | (non-`ALLOC`) |
 | `.shstrtab`           | Section header name strings                          | (non-`ALLOC`) |
 
-`.wyst.vectors.<name>` is named after the declaration: an
-`#exception_vector` declared `el1_vectors :: #exception_vector { ... }`
-emits to `.wyst.vectors.el1_vectors`. Each such section carries the 2KB
-alignment dictated by §10.2.
+`.wyst.vectors.<name>` is named after its declaration. For example,
+`vector_table el1_vectors: aarch64.el1 { ... }` emits to
+`.wyst.vectors.el1_vectors`. Each such section carries the target profile's
+2 KB alignment, exact 2 KB extent, and 16 fixed 128-byte slots described by
+Chapter 14 §10.2. Source section and alignment attributes cannot rename or
+weaken it.
 
-`.percpu` and `.tls` master images are the bytes the runtime allocator copies
-per CPU / per thread at bring-up. They are placed once in the image; the
-runtime is responsible for replication. See §7 for the access lowering.
+`.percpu` is placed once in the image. A later runtime may copy its frozen bytes
+to live instances, but the compiler performs no replication and the template
+is not itself live storage. `.tls` is not a v0.9 section; any occurrence in a
+released v0.8 artifact is historical compatibility material. See §7.
 
 ---
 
@@ -149,8 +238,12 @@ runtime is responsible for replication. See §7 for the access lowering.
 
 The `.symtab` includes one entry per:
 
-- public top-level declaration (function, label, constant, mutable
-  global, type — types emit no payload but contribute symbols for tooling).
+- emitted address-bearing top-level declaration (function, label, constant,
+  or ordinary mutable global) as a local semantic/debug identity, independently
+  of source `pub`. `per_cpu` entries are the local offset symbols defined by the
+  current v0.9 contract above.
+- each explicit `export` mapping as a distinct external alias of its local
+  target, with the requested strong or weak binding.
 - Layout module export (`__text_start`, `__bss_end`, etc.).
 - Compiler-created initcall metadata symbols named as specified in §4.3.
 - Section start symbol (synthesized: `_section.text_start`, etc., for
@@ -162,9 +255,9 @@ The `.symtab` includes one entry per:
 
 | Binding      | When emitted                                                 |
 | ------------ | ------------------------------------------------------------ |
-| `STB_LOCAL`  | Private declarations (no `pub`), synthesized symbols     |
-| `STB_GLOBAL` | public declarations, compiler-created initcall metadata |
-| `STB_WEAK`   | **Not used.** `#weak` is outside the symbol model.           |
+| `STB_LOCAL`  | Internal semantic/debug declarations, every `per_cpu` offset symbol, synthesized symbols |
+| `STB_GLOBAL` | Strong explicit `export` aliases and compiler-created initcall metadata |
+| `STB_WEAK`   | Explicit `export weak` aliases                               |
 
 ### 4.2 Type
 
@@ -183,23 +276,31 @@ size covers the emitted label body. Tools must not infer function-call
 prologue, epilogue, or return semantics from a label symbol; source-level
 `goto` legality comes from the Wyst symbol kind, not from ELF `STT_FUNC`.
 
-`STT_TLS` is **not** used. `#tls` and `#percpu` symbols are emitted as
-ordinary `STT_OBJECT` whose value is the offset within `.tls` / `.percpu`;
-access goes through the intrinsic-generated `mrs` + `add` sequence, not
-through ELF TLS relocations.
+`STT_TLS` is **not** used. A `per_cpu` entry is a local `STT_OBJECT` whose
+value is its byte offset within `.percpu`; it is an offset identity rather than
+a process address. The selected target access sequence consumes that offset.
+Wyst v0.9 emits no TLS symbol.
 
-### 4.3 Mangling
+### 4.3 Internal And External Names
 
-Wyst does not mangle ordinary monomorphic declarations. The symbol name
-written to `.symtab` is exactly the declaration name from the source. Module
-names do **not** appear in the ordinary declaration symbol: a function `init`
-exported by module `runtime.uart` is the symbol `init`. Cross-module collisions
-on public names are a compile error at import resolution (see
-[chapter-04-modules.md](chapter-04-modules.md)), so the ordinary declaration
-symbol table can afford to be flat.
+An explicit `export` alias is written to `.symtab` with exactly the decoded
+`as symbol "..."` bytes; an export without an alias uses the source declaration
+name. `pub`, source imports, and source aliases do not participate in this
+choice. Distinct explicit exports of one declaration produce distinct symbol
+table entries with the same value and independently selected `STB_GLOBAL` or
+`STB_WEAK` binding.
+
+The current whole-program emitter gives every internal declaration a stable
+module-qualified semantic identity for debugging and relocation resolution,
+independent of `pub`, source imports, and export aliases. A separate
+source-facing lookup/display spelling may remain local inside the compiler; it
+is never an external claim and cannot replace the semantic identity in ELF.
+Item 61 freezes the canonical object-unit encoding for these identities before
+relocatable objects are exposed; that later encoding cannot change the external
+spelling selected here.
 
 Compiler-created initcall metadata symbols are an explicit exception. Every
-`#initcall(order)` function emits one 16-byte `.initcalls` entry and one
+`#[init(order = N)]` function emits one 16-byte `.initcalls` entry and one
 metadata symbol whose value is the address of that entry and whose size is 16:
 
 ```text
@@ -212,8 +313,9 @@ QualifiedFunction = PathComponent ("__" PathComponent)* "__" FunctionComponent
 function name. Each component is encoded as ASCII alphanumeric bytes unchanged,
 `_` as `_u`, and any other byte as `_x` plus two lowercase hexadecimal digits.
 The module separator `.` is structural and becomes the `__` component separator,
-not an encoded byte. For example, `early_console_init :: () #initcall(10)` in
-module `drivers.uart` emits:
+not an encoded byte. For example, the current declaration
+`#[init(order = 10)] fn early_console_init() {}` in module `drivers.uart`
+emits:
 
 ```text
 __initcall_000000000000000a_drivers__uart__early_uconsole_uinit
@@ -254,7 +356,7 @@ Type components use this canonical ASCII encoding:
 | Pointer `@T`                        | `ptr_` plus `T`'s component                       |
 | Volatile pointer `@volatile T`      | `vptr_` plus `T`'s component                      |
 | Slice `[]T`                         | `slice_` plus `T`'s component                     |
-| Dynamic array `[dynamic]T`          | `dyn_` plus `T`'s component                       |
+| Dynamic array `DynamicArray<T>`     | `dyn_` plus `T`'s component                       |
 | Fixed array `[N]T`                  | `array_` plus escaped `N`, `_`, then `T`          |
 | Vector `[T:N]`                      | `vec_` plus escaped `N`, `_`, then `T`            |
 | Tuple `(name: T, ...)`              | `tuple` plus arity, then escaped field/type pairs |
@@ -315,8 +417,7 @@ enumerated here so that:
 
 - `R_AARCH64_GOT_*` family — no GOT in static linking.
 - `R_AARCH64_TLSGD_*`, `R_AARCH64_TLSDESC_*` — no dynamic TLS.
-- `R_AARCH64_TLSLE_*` — `#tls` uses direct `TPIDR_EL0` + offset, computed
-  by the compiler from `#start(.tls)`; see §7.
+- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in v0.9.
 - `R_AARCH64_TLSIE_*` — initial-exec model not used.
 - `R_AARCH64_COPY`, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT` — dynamic linker only.
 
@@ -337,6 +438,9 @@ after final placement. Each far direct symbol branch gets one veneer after the
 source text chunk; the original branch targets that near veneer, and the veneer
 materializes the final target address through the existing `ADR_PG_HI21` +
 `ADD_LO12` relocation path before `br x16`.
+This general rule excludes `.wyst.vectors.*`: a target-owned ARM64 vector table
+has an exact `0x800`-byte extent with no veneer area, so an out-of-range slot
+transfer is rejected instead of relaxed.
 Out-of-range local backend `B26`, `CBNZ19`, and future `CONDBR19` forms still
 emit hard errors until their own veneer policies are designed.
 
@@ -361,46 +465,48 @@ kind visible until the writer patches the emitted bytes.
 | Origin | Produced by | Internal patch/relocation behavior |
 | --- | --- | --- |
 | Direct calls | IR `call` with a symbol callee | Emits a direct `CALL26` branch when in range; otherwise emits a deterministic veneer that materializes the target address with `ADR_PG_HI21` + `ADD_LO12`. |
-| Direct symbol branches | IR `goto` / tail control transfer to a label or function symbol | Emits a direct `JUMP26` branch when in range; otherwise emits a deterministic veneer that materializes the target address with `ADR_PG_HI21` + `ADD_LO12`. |
+| Direct symbol branches | IR `goto` / tail control transfer to a label or function symbol | Emits a direct `JUMP26` branch when in range; otherwise emits a deterministic veneer that materializes the target address with `ADR_PG_HI21` + `ADD_LO12`, except that fixed `.wyst.vectors.*` slots reject an out-of-range transfer. |
 | Symbol materialization | IR `addr_of`, string-address materialization, and symbol-base materialization for constant-address `gep` | Emits `ADR_PG_HI21` + `ADD_LO12` page-pair patches in text, with byte addends folded only for constant offsets. |
-| Object references | Global `ConstIr::Address`, slice/string descriptors, per-CPU/TLS current-instance references, and per-instance offset values | Emits `ABS64` data patches or compiler-owned per-instance offset patches; the static image still avoids dynamic ELF TLS relocations. |
+| Object references | Global `ConstIr::Address`, slice/string descriptors, `per_cpu` direct-access patches, and `#percpu_offset_of` constants | Emits `ABS64` data patches for ordinary address constants or compiler-owned `.percpu` offset patches; `per_cpu` never becomes an address relocation. |
 | Jump tables | Future explicit jump-table lowering records | Table entries are relocation origins. Current `switch-dispatch` mode does not emit jump tables or serialized jump-table relocations. |
 | Address-bearing instructions | Checked inline assembly memory/address operands and future load/store address forms that carry a symbol target | Use the same address-materialization or low-12 load/store relocation records as ordinary compiler-generated instructions. |
 
 `#addr_of(symbol)` (§7.1 of [chapter-05-boot.md](chapter-05-boot.md)) is the
 only language-level address expression that introduces a symbol-sourced address
 value. That narrower rule does not make `#addr_of` the only
-relocation-producing origin in the compiler. `%addr_of(local)` materializes a
+relocation-producing origin in the compiler. `addr_of(local)` materializes a
 stack-frame address at runtime and therefore does not participate in relocation
-emission. Every other address expression in Wyst is either a literal
-(`0x0900_0000`) or computed at runtime from values whose provenance the
-compiler cannot trace.
+emission. Every other address expression in Wyst is either produced explicitly
+from literal bits with `address<T>` or computed at runtime from values whose
+provenance the compiler cannot trace.
 
 The integrated linker uses the address-expression distinction directly:
 
 | Expression form                                                    | Relocation behavior                                                                                                                         |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `#addr_of(sym)` in an expression                                   | Codegen emits `adrp` + `add` against `sym`. Linker resolves at final placement.                                                             |
-| `(#addr_of(sym) as.address @T) + N` (constant element count `N`)    | One page-pair relocation against `sym`; the byte addend is `N * #size_of(T)` folded into the `ADD_LO12` immediate (or into the `ABS64` slot when stored to data). |
-| `((#addr_of(sym) as.address @u8) + B) as.lens @T` (constant byte count `B`) | One page-pair relocation against `sym`; the byte addend is exactly `B`.                                                                      |
-| `(#addr_of(sym) as.address @T) + i` (runtime element count `i`)     | Page-pair relocation for `sym`'s base only; runtime code scales `i` by `#size_of(T)` before the plain `add`, with no relocation on that add. |
+| `element_offset(base, N)` for a symbol-sourced `base: @T` and constant element count `N` | One page-pair relocation against the symbol; the byte addend is `N * #size_of(T)` folded into the `ADD_LO12` immediate (or into the `ABS64` slot when stored to data). |
+| `relens<@T>(byte_offset(relens<@u8>(base), B))` for constant byte count `B` | One page-pair relocation against the symbol; the byte addend is exactly `B`. |
+| `element_offset(base, i)` for a runtime element count `i`          | Page-pair relocation for the symbol base only; runtime code scales `i` by `#size_of(T)` before the plain `add`, with no relocation on that add. |
 | `#addr_of(sym)` in a constant initializer for a global             | Codegen emits an `ABS64` slot in `.data` / `.rodata`. Linker writes the resolved `sym + addend` into that slot.                             |
-| `[]T{data = #addr_of(sym), len = N}` in a global initializer       | Codegen emits a 16-byte slice pair: an `ABS64` relocation in the `data` slot and a constant `u64` length.                                   |
-| `%addr_of(local)`                                                  | No relocation. Codegen emits ordinary stack-relative address materialization.                                                               |
-| Integer literal conversion `0x40000000 as.address @T`              | No relocation. The address is the literal.                                                                                                  |
-| Computed `@T` (`base + i`, `ptr as.lens @u32`, `%mrs(TPIDR_EL1) as.address @T`) | No relocation. The address is a runtime value.                                                                                              |
+| `base.slice(elements = N)` in a global initializer                 | Codegen emits a 16-byte slice pair: an `ABS64` relocation in the `data` slot and a constant `u64` length.                                   |
+| `addr_of(local)`                                                   | No relocation. Codegen emits ordinary stack-relative address materialization.                                                               |
+| Integer literal conversion `address<@T>(0x40000000)`               | No relocation. The address is the literal.                                                                                                  |
+| Computed `@T` (`element_offset(base, i)`, `relens<@u32>(ptr)`, `address<@T>(TPIDR_EL1.read().raw)`) | No relocation. The address is a runtime value.                                                                                              |
 
 Global enum initializers are persisted using the representation in
-[chapter-06-types.md §1.6.2](chapter-06-types.md). A payload-less enum writes
+[chapter-06-types.md §1.6.3](chapter-06-types.md). A payload-less enum writes
 only the discriminator type's bytes. A payload enum writes 16 bytes: the tag
 word at offset 0 and the payload word at offset 8. If the active variant has no
 payload, the payload word is non-semantic inactive storage; the current writer
 zero-fills it as part of ordinary deterministic data emission, but programs
 must not rely on those bytes as a source-level value.
 
-Plain `+` in source has exactly one meaning for typed addresses: element
-offsets. Do not multiply `N` or `i` by `#size_of(T)` before adding to `@T`;
-that creates a relocation addend or runtime offset scaled twice, and the
+Typed addresses do not support plain `+` or `-`. `element_offset` counts and
+scales elements exactly once, while `byte_offset` consumes an already byte-
+measured count. Do not multiply `N` or `i` by `#size_of(T)` before passing it
+to `element_offset`; that creates a relocation addend or runtime offset scaled
+twice, and the
 checker rejects the obvious `p + i * #size_of(T)` form. Relocation addends are
 always measured in bytes. Byte addends must be spelled with an `@u8` lens or
 with explicit `u64` arithmetic before casting back to the desired address type.
@@ -425,39 +531,58 @@ Types).
 
 ---
 
-## 7. Per-CPU and Thread-Local Lowering
+## 7. `per_cpu` Template, Offset, and Access Patches
 
-The intrinsics in [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md) are lowered without using
-ELF TLS relocations. The mechanism:
+For each entry, the integrated linker records and resolves:
 
-1. The compiler computes `#percpu_offset_of(var)` and
-   `#tls_offset_of(var)` at compile time, as integers in the
-   `.percpu` / `.tls` section.
-   These integers are final image layout facts: deterministic for one
-   complete build input, but not stable across source, import-order,
-   alignment, or layout-policy changes. The compiler emits warning
-   `W0203` when source asks for one explicitly.
-2. Access lowers to `mrs xT, TPIDR_EL1` (or `TPIDR_EL0`) + `add xN, xT,
-#offset` — the immediate offset is filled in by codegen, not by an ELF
-   relocation.
-3. Section sizes are exported as ordinary symbols (`__percpu_size`,
-   `__tls_size`) for the runtime allocator to size per-CPU / per-thread
-   blocks.
-4. The runtime is responsible for setting `TPIDR_EL1` / `TPIDR_EL0` to the
-   base of each CPU's / thread's instance before any access.
+1. the canonical source declaration and compiler symbol identity;
+2. natural size and alignment from the source type;
+3. deterministic padding and start offset within `.percpu`;
+4. the exact initializer bytes and each symbol/section relocation contained in
+   those bytes; and
+5. every code or constant patch that consumes the final byte offset.
 
-This decision keeps the static-only contract intact and avoids dragging in
-the ELF TLS model (`PT_TLS`, `R_AARCH64_TLSLE_*`, `__tls_get_addr`) which
-exists for dynamic loaders Wyst doesn't have. If a future Wyst version adds
-dynamic linking, an opt-in ELF TLS lowering can be added per
-`#target(... features = (elf-tls))`.
+Relocations inside the template use the same internal relocation vocabulary as
+other static initializer data and are fully resolved before `ET_EXEC` bytes are
+written. No `.rela.*` section is serialized. A
+`#percpu_offset_of(binding)` constant is patched to the binding's final start
+offset, not to `.percpu`'s virtual address plus that offset.
+
+A direct access patch names the entry and its source operation until final
+placement. After the selected target/runtime contract has been validated, code
+generation emits one fresh current-core base acquisition, adds or folds the
+final byte offset plus a checked field/element offset, and emits exactly the
+requested typed operation. The patch may choose an immediate or a deterministic
+constant-materialization sequence, but may not become an ELF TLS relocation,
+ordinary symbol address, cached-base frame slot, or address-valued export.
+
+Template layout is deterministic for one complete build input. Offsets may
+change when declarations, import closure, type layout, alignment, initializer
+relocations, or layout policy change and therefore are not a stable cross-build
+source ABI. Reproducibility evidence compares the complete template bytes,
+symbols, relocations-before-resolution, final offsets, and consuming patches.
+
+The object pipeline does not manufacture runtime behavior. It emits no
+`__percpu_size` runtime allocator API, copied instance, startup routine, or base
+installation unless a later owning item defines such an interface. Before item
+92, a code patch for reachable access is legal only with
+`#target(..., per_cpu = single_instance_tpidr_el1)`: available,
+`MRS TPIDR_EL1`, EL1+, 16-byte live-base alignment, reserved system state
+`TPIDR_EL1`, realization `single-instance-test-runtime`. Otherwise compilation
+fails. Declarations and offset constants alone do not select or imply that
+realization.
+
+Released v0.8 `.tls`, `#tls_offset_of`, `__tls_size`, TPIDR_EL0, and
+address-materialization rules are historical and produce no v0.9 artifact.
 
 ---
 
 ## 8. Sections from User Declarations
 
 User code places a declaration in a custom section with the
-`#section(.name)` attribute:
+`#[section(".name")]` attribute. The attribute itself is a retention root for
+each concrete contribution it produces, but it neither exports nor renames the
+declaration.
 
 This source-level section request is checked against the layout. Under the
 default documentation layout, `.modinfo` is intentionally absent, so this
@@ -465,16 +590,19 @@ contract fails until a layout declares the section:
 
 <!-- wyst-contract: check-fail -->
 ```wyst
-#module object_demo
+module object_demo
 
-#section(.modinfo)
-modinfo :: [4]u8 = "abcd"
+#[section(".modinfo")]
+const MODINFO: u64 = 0x77697374
 ```
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#section(.init.text) bring_up_uart :: () { ... }
-#section(.modinfo)   uart_modinfo :: [16]u8 = "uart_pl011_v1"
+#[section(".init.text")]
+fn bring_up_uart() { ... }
+
+#[section(".modinfo")]
+const UART_MODINFO: [16]u8 = "uart_pl011_v1"
 ```
 
 The full semantics — legal placements, section-name constraints,
@@ -483,15 +611,17 @@ specified in [chapter-04-modules.md](chapter-04-modules.md) under "Custom Sectio
 Declarations". The rules relevant to the object format are:
 
 - **Reserved names:** all section names listed in §3 (`.text`,
-  `.rodata`, `.data`, `.bss`, `.percpu`, `.tls`, the `.debug_*` family,
+  `.rodata`, `.data`, `.bss`, `.initcalls`, `.percpu`, `.tls`, the `.debug_*` family,
   `.symtab`, `.strtab`, `.shstrtab`) and any name starting with `.wyst.`
-  are reserved. User code cannot target them with `#section(...)` —
-  canonical sections are written by _omitting_ the attribute.
+  are reserved. User code cannot target them with `#[section(...)]`;
+  canonical sections are written by omitting the attribute. `.tls` remains
+  reserved so removed v0.8 TLS syntax cannot be recreated as a misleading
+  custom section, and it is not emitted by v0.9.
 - **Flags are derived** from the declaration kind (function → `ALLOC |
-EXECINSTR`; constant → `ALLOC`; mutable initialized → `ALLOC | WRITE`;
-  mutable uninitialized → `ALLOC | WRITE | NOBITS`). The ELF section
-  header's `sh_flags` is computed from this derivation, not from a
-  user-supplied flag list.
+  EXECINSTR`; constant → `ALLOC`; mutable initialized → `ALLOC | WRITE`;
+  zero-filled mutable storage → `ALLOC | WRITE` with `SHT_NOBITS`). The ELF
+  header is computed from this derivation, not from a user-supplied flag list,
+  and incompatible contribution kinds may not share one custom section.
 - **Bookend symbols** `__<section>_start` / `__<section>_end` are
   auto-synthesized with `STB_LOCAL` for every used custom section.
   Dots in the section name become underscores; the leading dot is
@@ -514,10 +644,10 @@ documented path if needed.
 | Dynamic linking (`ld.so`, `PT_INTERP`)          | Outside base image model | Requires GOT/PLT relocations, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT`, dynamic symbol table        |
 | Position-independent executables (`ET_DYN`)     | Outside base image model | Base output lowers against absolute addresses                                                          |
 | Shared objects (`.so`)                          | Outside base image model | Same dependency on dynamic linking                                                                     |
-| COMDAT / section groups                         | Outside base image model | `#inline` is the only deduplication mechanism; multiply-defined exports are a hard error               |
-| `#weak` symbols, `#hidden` visibility           | Outside symbol model     | Could add `STB_WEAK` and `STV_HIDDEN` once language semantics are defined                              |
+| COMDAT / section groups                         | Outside base image model | `#[inline]` is the only deduplication mechanism; multiply-defined exports are a hard error             |
+| `#weak` directives and `#hidden` visibility     | Outside symbol model     | Use `export weak` for weak external definitions; hidden shared-object visibility remains undefined     |
 | `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the layout module's `#entry` is the only entry point          |
-| Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `#exception_vector` is hardware-level only                |
+| Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `vector_table` models hardware exception entry only      |
 | ar archives, static libraries                   | Outside base image model | The compiler reads source modules directly                                                             |
 | Mach-O, PE, COFF output                         | Outside base image model | See §11.                                                                                               |
 
@@ -527,8 +657,8 @@ documented path if needed.
 
 Object format output is **bit-for-bit reproducible** under the
 reproducibility contract (`chapter-01-language-design.md`, Reproducibility Model):
-same compiler version, same build optimization mode, same target, same
-`#schedule` modes, and the same source input manifest produce byte-identical
+same compiler version, same build optimization mode, same target, the same
+selected scheduling policies, and the same source input manifest produce byte-identical
 ELF output.
 
 Specific determinism requirements:
@@ -536,15 +666,24 @@ Specific determinism requirements:
 - Section order is determined by the layout module (`in` / `after`
   constraints), then by declaration order within a section. There is no
   topological-sort tie-break dependent on hashtable iteration.
-- Symbol table order is: layout exports, then user `pub` symbols in
-  module-then-declaration order, then private functions in
-  module-then-declaration order. Module order is the compiler source input
-  order: explicit multi-file builds use command-line source order, while
-  project and explicit-root import-closure builds use the canonical traversal
-  from [chapter-03-project-builds.md](chapter-03-project-builds.md).
-  Declaration order is source-text order.
-- The `.shstrtab` and `.strtab` are emitted in symbol-table order (no
-  string-pool deduplication that depends on hash order). String
+- Symbol table entry zero is the null symbol. Every remaining `STB_LOCAL`
+  entry precedes every `STB_GLOBAL` or `STB_WEAK` entry, and `.symtab`
+  `sh_info` is the index of the first non-local entry. Within the local
+  partition, internal declarations retain module-then-declaration order and
+  synthesized section symbols retain deterministic layout-section order.
+  Within the non-local partition, layout exports and compiler metadata retain
+  their defined deterministic order, followed by explicit `export` aliases in
+  module-then-declaration order; strong and weak aliases are not regrouped.
+  Module order is the compiler source input order: explicit multi-file builds
+  use command-line source order, while project and explicit-root import-closure
+  builds use the canonical traversal from
+  [chapter-03-project-builds.md](chapter-03-project-builds.md). Declaration
+  order is source-text order.
+- The `.shstrtab` and `.strtab` are built in deterministic producer order,
+  never by hash-table traversal. `.shstrtab` follows section-layout order;
+  `.strtab` records internal declarations, explicit aliases, and synthesized
+  section symbols in their deterministic producer order before symbol binding
+  partitions are assembled. String
   deduplication is allowed only when it's an exact prefix-suffix sharing
   computed deterministically.
 - No timestamps. The ELF header's `e_ident[EI_VERSION]` is the only field
@@ -581,7 +720,7 @@ that would prevent a future port.
 | Module model and import resolution                | [chapter-04-modules.md](chapter-04-modules.md)                           |
 | Layout module syntax                              | [chapter-04-modules.md](chapter-04-modules.md) ("Layout")                |
 | Exception vector sections (alignment, slot rules) | [chapter-14-exception-vectors.md §10.2](chapter-14-exception-vectors.md) |
-| `#percpu` / `#tls` access lowering                | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)              |
+| `per_cpu` target/access lowering                  | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)              |
 | `#addr_of` semantics                              | [chapter-06-types.md §1.4.1](chapter-06-types.md); this document §6      |
 | ABI (calling convention, register usage)          | `chapter-15-abi-spec.md`                                                 |
 | Reproducibility contract                          | `chapter-01-language-design.md`, "Reproducibility Model"                 |

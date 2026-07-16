@@ -3,415 +3,391 @@ title: "Chapter 14: Wyst Alignment and Exception Vectors"
 group: chapter
 chapter: 14
 order: 14
-summary: "Alignment, exception vectors, vector slots, and checked trap-frame ABI basics."
+summary: "Alignment, target-defined vector tables, and target-checked trap-frame ABIs."
 ---
 
 # Chapter 14: Wyst Alignment and Exception Vectors
 
-This chapter specifies `#align`, the exception-vector table shape, and
-trap-frame layout. The trap-frame ABI depends on `#naked`, `%eret`, and
-register ownership.
+This chapter specifies the v0.9 alignment contract and the target-defined
+`vector_table` and `trap_frame` declarations. A target profile, rather than
+source annotations, owns the architectural section, alignment, slot or field
+shape, state transitions, and legal execution levels of these declarations.
 
-> **Canonical scope.** The `#align(n)` directive (§10.1) and the
-> `#exception_vector` / `#ventry` construct (§10.2): the 16-slot
-> architectural layout, 128-byte per-slot budget, 2 KB table alignment,
-> and the `__ventry_<vector>_<slot>_size` static-assertion contract.
-> Trap intrinsics (`%svc`, `%hvc`, `%eret`) live in
-> [chapter-11-intrinsics.md §1.3.4](chapter-11-intrinsics.md); the worked boot-entry example
-> using these vectors lives in [chapter-05-boot.md](chapter-05-boot.md).
-
----
-
-### Alignment and Exception Vectors
+> **Canonical scope.** Section 10.1 owns ordinary source-requested alignment.
+> Section 10.2 owns vector-table source shape and target-profile validation.
+> Section 10.3 owns nominal trap-frame types and entry/restore label contracts.
+> Qualified exception operations such as `exception.svc`, `exception.hvc`, and
+> `exception.eret` live in
+> [chapter-11-intrinsics.md](chapter-11-intrinsics.md). Checked assembly lives
+> in Chapter 8 and Appendix B; this chapter adds no second instruction parser,
+> encoder, register table, state table, or effect table.
 
 ---
 
-## 10.1 The `#align` Directive
+## 10.1 The `#[align(N)]` Attribute
 
-`#align(n)` constrains the assembler to place the annotated symbol at an
-address that is a multiple of `n` bytes. `n` must be a power of two and a
-compile-time constant.
+`#[align(N)]` requires the final address of an emitted declaration to be a
+multiple of `N`. `N` is one positive, target-supported, power-of-two `u64`
+constant. Natural alignment, selected-section alignment, target requirements,
+and `#[cache_isolated]` combine with it by taking the maximum. Preceding
+padding may satisfy the requirement; the attribute does not enlarge the
+subject and does not retain a declaration that would otherwise be removed.
 
-`#align` applies to:
-
-- labels
-- functions
-- constants placed in `.rodata`
-- section declarations (via the layout module — see [chapter-04-modules.md](chapter-04-modules.md))
+The generated declaration-attribute matrix admits `align` on body functions,
+body labels, module variables, `per_cpu var` declarations, module constants
+that also carry `section`, and fields of ordinary non-packed structs. It is
+rejected on bodyless or foreign declarations, locals, whole types, packed
+fields, target-owned or fixed placements, and `#[inline]` functions.
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module align_demo
+module align_demo
 
-#align(16)
-entry :: () {
-  return
-}
+#[align(16)]
+fn entry() { }
 ```
 
 <!-- wyst-contract: sketch -->
 ```wyst
-// align a label to a 64-byte cacheline boundary
-hot_path :: label #align(64) {
-    ...
-}
+#[align(64)]
+var shared_state: u64 = 0
 
-// align a function to a 16-byte instruction boundary
-process :: (data : @u8, len : u64) #align(16) {
-    ...
-}
+#[section(".tables"), align(32)]
+const TABLE: [8]u64 = [0, 1, 4, 9, 16, 25, 36, 49]
 
-// align a constant table to a 32-byte boundary
-TABLE :: #align(32) { 0, 1, 4, 9, 16, 25, 36, 49 }
-```
-
-`#align` is a placement constraint only. It does not pad the symbol itself —
-it only guarantees the start address satisfies the alignment requirement.
-The assembler emits `nop` padding before the symbol as needed to satisfy it.
-
----
-
-## 10.2 Exception Vectors
-
-ARM64 exception vectors have strict hardware requirements:
-
-- the entire table must be aligned to a 2KB (`0x800`) boundary
-- the table contains exactly 16 slots, in a fixed architectural order
-- each slot is exactly 128 bytes (32 instructions)
-- slots that run short are padded; slots that run over are a hardware error
-
-Wyst provides a `#exception_vector` block that encodes this contract directly.
-
----
-
-### Syntax
-
-<!-- wyst-contract: sketch -->
-```wyst
-name :: #exception_vector #align(0x800) {
-  current_el_sp0_sync : #ventry(label = "project-specific description") {
-    body
-  }
-  current_el_sp0_irq : #ventry {
-    body
-  }
-  // ... exactly 16 entries
+struct Packet {
+  tag: u8
+  #[align(16)]
+  payload: u8
 }
 ```
 
-Each `#ventry` slot:
+On an ordinary struct field, `align` instead raises the field's required
+alignment and therefore participates in field offsets, aggregate alignment,
+ABI identity, and serialized layout facts. On `per_cpu var`, both the linked
+template offset and every selected live-instance realization must satisfy the
+combined requirement. See Chapter 8 for that realization contract.
 
-- has a canonical architectural identifier before `: #ventry`
-- may carry an optional non-semantic project label with
-  `#ventry(label = "...")`
-- is exactly 128 bytes in the output
-- is padded with `nop` if the body compiles to fewer than 32 instructions
-- is a **compile error** if the body exceeds 32 instructions
-- is a bare code region — no prologue, no epilogue, no return
-
-The `#exception_vector` block itself:
-
-- must contain exactly 16 `#ventry` slots — compile error if more or fewer
-- the slots must be declared once each in the canonical ARM64 order below
-- the whole block is aligned to `0x800` (may be specified explicitly or
-  defaults to `0x800` when `#exception_vector` is used)
+`vector_table` placement and `trap_frame` representation are target-owned. In
+particular, `#[align(...)]` and `#[section(...)]` cannot override either
+selected profile.
 
 ---
 
-### The 16 ARM64 Vector Slots
+## 10.2 Target-Defined Vector Tables
 
-ARM64 defines the 16 slots in a fixed order across four groups of four.
-Wyst uses that order as the source and emission contract. The source identifier
-for each slot must be exactly the canonical identifier in the table; descriptive
-project labels live only in the optional `#ventry(label = "...")` metadata and
-do not affect ordering, symbol names, or code generation.
-
-| Index | Canonical identifier       | Group              | Slot             |
-| ----- | -------------------------- | ------------------ | ---------------- |
-| 0     | `current_el_sp0_sync`      | Current EL, SP_EL0 | Synchronous      |
-| 1     | `current_el_sp0_irq`       | Current EL, SP_EL0 | IRQ / vIRQ       |
-| 2     | `current_el_sp0_fiq`       | Current EL, SP_EL0 | FIQ / vFIQ       |
-| 3     | `current_el_sp0_serror`    | Current EL, SP_EL0 | SError / vSError |
-| 4     | `current_el_spx_sync`      | Current EL, SP_ELx | Synchronous      |
-| 5     | `current_el_spx_irq`       | Current EL, SP_ELx | IRQ / vIRQ       |
-| 6     | `current_el_spx_fiq`       | Current EL, SP_ELx | FIQ / vFIQ       |
-| 7     | `current_el_spx_serror`    | Current EL, SP_ELx | SError / vSError |
-| 8     | `lower_el_aarch64_sync`    | Lower EL, AArch64  | Synchronous      |
-| 9     | `lower_el_aarch64_irq`     | Lower EL, AArch64  | IRQ / vIRQ       |
-| 10    | `lower_el_aarch64_fiq`     | Lower EL, AArch64  | FIQ / vFIQ       |
-| 11    | `lower_el_aarch64_serror`  | Lower EL, AArch64  | SError / vSError |
-| 12    | `lower_el_aarch32_sync`    | Lower EL, AArch32  | Synchronous      |
-| 13    | `lower_el_aarch32_irq`     | Lower EL, AArch32  | IRQ / vIRQ       |
-| 14    | `lower_el_aarch32_fiq`     | Lower EL, AArch32  | FIQ / vFIQ       |
-| 15    | `lower_el_aarch32_serror`  | Lower EL, AArch32  | SError / vSError |
-
-Using an unknown identifier such as `sp0_sync`, declaring a canonical
-identifier twice, omitting any canonical identifier, or declaring a canonical
-identifier at the wrong source index is a compile error. There is no implicit
-unused-slot fill. An unused architectural role still declares its canonical
-slot and supplies an explicit body, usually a branch to a shared unexpected
-handler or a spin loop.
-
----
-
-### Complete Example
-
-A minimal EL1 exception vector table for a QEMU `virt` kernel. Most slots
-branch immediately to a handler; unhandled slots spin.
+A vector table is a named code declaration with one explicit target selector:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-el1_vectors :: #exception_vector {
+vector_table el1_vectors: aarch64.el1 {
+  current.sp0.sync     -> unexpected
+  current.sp0.irq      -> unexpected
+  current.sp0.fiq      -> unexpected
+  current.sp0.serror   -> unexpected
 
-  // Current EL, SP_EL0 (unexpected in normal kernel operation)
-  current_el_sp0_sync : #ventry(label = "sp0_sync") {
-    goto unexpected
+  current.spx.sync     -> handle_sync
+  current.spx.irq      -> handle_irq
+  current.spx.fiq      -> unexpected
+  current.spx.serror   -> handle_serror
+
+  lower.aarch64.sync {
+    goto handle_user_sync
   }
-  current_el_sp0_irq : #ventry(label = "sp0_irq") {
-    goto unexpected
-  }
-  current_el_sp0_fiq : #ventry(label = "sp0_fiq") {
-    goto unexpected
-  }
-  current_el_sp0_serror : #ventry(label = "sp0_serror") {
-    goto unexpected
+  lower.aarch64.irq    -> handle_user_irq
+  lower.aarch64.fiq    -> unexpected
+  lower.aarch64.serror -> unexpected
+
+  lower.aarch32.sync   -> unexpected
+  lower.aarch32.irq    -> unexpected
+  lower.aarch32.fiq    -> unexpected
+  lower.aarch32.serror -> unexpected
+}
+```
+
+The current selectors are exactly `aarch64.el1`, `aarch64.el2`, and
+`aarch64.el3`. The selected target must authenticate the selector and admit
+its architecture, AArch64 execution state, and exception level. A selector is
+part of source and build identity; it is not inferred from the declaration
+name or from the label targets.
+
+The current AArch64 target profile owns these facts:
+
+| Fact | Required value |
+| --- | --- |
+| Output section | `.wyst.vectors.<declaration>` |
+| Table alignment | `0x800` bytes |
+| Table size | `0x800` bytes |
+| Slot count | 16 |
+| Slot size | `0x80` bytes |
+| Execution state | AArch64 |
+| Legal selectors | `aarch64.el1`, `aarch64.el2`, `aarch64.el3` |
+
+Source cannot replace the target-owned section or alignment. The layout
+solver may place the target-owned section only while preserving its section
+identity, table alignment, exact extent, and every slot offset.
+
+### Canonical slot names and order
+
+Each required slot is written exactly once in target order. Dots are part of
+the canonical source name; underscore aliases are not accepted.
+
+| Index | Source name | Offset |
+| ---: | --- | ---: |
+| 0 | `current.sp0.sync` | `0x000` |
+| 1 | `current.sp0.irq` | `0x080` |
+| 2 | `current.sp0.fiq` | `0x100` |
+| 3 | `current.sp0.serror` | `0x180` |
+| 4 | `current.spx.sync` | `0x200` |
+| 5 | `current.spx.irq` | `0x280` |
+| 6 | `current.spx.fiq` | `0x300` |
+| 7 | `current.spx.serror` | `0x380` |
+| 8 | `lower.aarch64.sync` | `0x400` |
+| 9 | `lower.aarch64.irq` | `0x480` |
+| 10 | `lower.aarch64.fiq` | `0x500` |
+| 11 | `lower.aarch64.serror` | `0x580` |
+| 12 | `lower.aarch32.sync` | `0x600` |
+| 13 | `lower.aarch32.irq` | `0x680` |
+| 14 | `lower.aarch32.fiq` | `0x700` |
+| 15 | `lower.aarch32.serror` | `0x780` |
+
+An unknown name, underscore alias, duplicate, omission, or order mismatch is a
+compile error. The compiler never inserts an omitted role or changes source
+order to repair a table. An unused architectural role still has an explicit
+source entry, normally a transfer to a shared unexpected-exception label.
+
+For each slot, the compiler retains the declaration and slot source spans,
+canonical target identity, selected profile, source index, required offset,
+unpadded body size, final extent, instruction identities, terminal edge, and
+padding ranges. Emitted catalog records retain the target-owned section and
+exact byte offset, which map each record back to one generated slot identity.
+A structural diagnostic names the table and slot, reports the expected and
+observed fact, and points to both the source contribution and the owning
+target-profile fact when both exist.
+
+### Slot bodies and terminal control flow
+
+An arrow entry is shorthand for one terminal transfer to the named label. Its
+target must resolve as an ordinary label, the edge must be legal at the slot's
+profile-defined execution level, and the emitted transfer has the same
+control-flow and provenance requirements as an explicit `goto`.
+
+A block entry is an ordinary checked source block. Every reachable path must
+terminate within the slot by a `goto`, a nonreturning call, an infinite loop,
+or a checked target operation whose control-flow contract is `never`. A block
+that falls through, returns, or relies on an implicit transfer is rejected.
+The block form exists for checked setup before the terminal edge; it does not
+create a vector-specific assembly language.
+
+Every instruction in a slot—including direct transfers, veneers when the
+target permits them, target state transitions, and padding—must have an active
+authenticated instruction identity. Every edge must satisfy the normal
+execution-level, state, effect, branch-range, and checked-assembly rules. The
+vector-table declaration supplies only structural position and slot identity.
+
+The active `aarch64.el1`--`aarch64.el3` profiles permit no vector-slot veneer
+or relaxation. Their section is exactly `0x800` bytes and every byte already
+belongs to one fixed `0x80` slot, so an out-of-range arrow or block terminal
+transfer is a hard structural diagnostic. The compiler never appends a veneer
+to `.wyst.vectors.*`, places one after a slot, or consumes authenticated NOP
+padding as an implicit veneer pool.
+
+### Exact slot extents and padding
+
+The compiler lowers and expands a supplied slot before applying its target
+budget:
+
+| Lowered slot body | Result |
+| --- | --- |
+| Less than `0x80` bytes | Pad with the profile's canonical active `nop` instruction to exactly `0x80` bytes. |
+| Exactly `0x80` bytes | Emit the body unchanged. |
+| More than `0x80` bytes | Reject the declaration with the overflowing slot name, body size, and budget. |
+
+Padding carries compiler-generated catalog provenance for the authenticated
+`nop` identity. Its target-owned section and exact byte range, together with
+the retained table profile and generated slot map, identify the table and
+canonical slot without decoding the instruction bytes. The compiler cannot
+use zero fill, an unauthenticated word, or a different instruction merely
+because it has no intended source effect. Each supplied instruction and
+terminal edge retains its ordinary source and catalog provenance as well.
+
+The emitted table is valid only if all 16 slots end at their target-owned
+offsets and the final extent is exactly `0x800` bytes. Fixed slot size is an
+artifact contract, not permission for an overflowing body to overwrite the
+next entry.
+
+---
+
+## 10.3 Target-Checked Trap Frames
+
+`trap_frame` declares a specialized nominal type whose complete machine shape
+is selected explicitly:
+
+<!-- wyst-contract: sketch -->
+```wyst
+trap_frame TrapFrame: aarch64 {
+  x: [31]u64
+  elr: u64
+  spsr: u64
+  interrupted_sp: u64
+}
+```
+
+The current selector is exactly `aarch64`. The selected target must admit the
+profile at EL1, EL2, or EL3 in AArch64 execution state. `TrapFrame` is a new
+nominal type, not an attribute applied to an ordinary struct. It is
+non-generic, cannot be packed, and cannot carry an annotation that changes its
+profile-owned representation.
+
+The source field list is deliberately visible and must match the authenticated
+profile exactly. For `aarch64`, the target owns this shape:
+
+| Field | Type | Offset | Meaning |
+| --- | --- | ---: | --- |
+| `x` | `[31]u64` | `0x000` | Saved `x0` through `x30`, in register order. |
+| `elr` | `u64` | `0x0f8` | The selected EL's `ELR_ELx` value. |
+| `spsr` | `u64` | `0x100` | The selected EL's `SPSR_ELx` value. |
+| `interrupted_sp` | `u64` | `0x108` | Stack pointer immediately before frame establishment. |
+
+The frame extent is exactly `0x110` bytes and its stack base must be 16-byte
+aligned. A missing, extra, reordered, renamed, or differently typed field; a
+different offset or total extent; or an incompatible target is a compile
+error. The compiler neither hides required fields nor silently adds target
+state absent from source.
+
+A target profile that includes SVE, SME, predicate, matrix/tile, or any other
+extended architectural state must name and validate the entire required state
+shape. An incomplete declaration is rejected; extended state is never treated
+as an opaque clobber. A different frame layout or save policy requires a
+separately authenticated profile name.
+
+### Typed entry and restore labels
+
+The frame type is attached to control flow through hard label clauses:
+
+<!-- wyst-contract: sketch -->
+```wyst
+naked label trap_entry establishes TrapFrame {
+  asm establishes stack {
+    sub sp, sp, #0x110
+    stp x0, x1, [sp, #0x000]
+    stp x2, x3, [sp, #0x010]
+    stp x4, x5, [sp, #0x020]
+    stp x6, x7, [sp, #0x030]
+    stp x8, x9, [sp, #0x040]
+    stp x10, x11, [sp, #0x050]
+    stp x12, x13, [sp, #0x060]
+    stp x14, x15, [sp, #0x070]
+    stp x16, x17, [sp, #0x080]
+    stp x18, x19, [sp, #0x090]
+    stp x20, x21, [sp, #0x0a0]
+    stp x22, x23, [sp, #0x0b0]
+    stp x24, x25, [sp, #0x0c0]
+    stp x26, x27, [sp, #0x0d0]
+    stp x28, x29, [sp, #0x0e0]
+    str x30, [sp, #0x0f0]
+    mrs x16, ELR_EL1
+    str x16, [sp, #0x0f8]
+    mrs x16, SPSR_EL1
+    str x16, [sp, #0x100]
+    add x16, sp, #0x110
+    str x16, [sp, #0x108]
   }
 
-  // Current EL, SP_EL1 (normal kernel exception entry)
-  current_el_spx_sync : #ventry(label = "kernel_sync") {
-    goto handle_sync
-  }
-  current_el_spx_irq : #ventry(label = "kernel_irq") {
-    goto handle_irq
-  }
-  current_el_spx_fiq : #ventry(label = "kernel_fiq") {
-    goto unexpected
-  }
-  current_el_spx_serror : #ventry(label = "kernel_serror") {
-    goto handle_serror
-  }
+  trap_halt()
+}
 
-  // Lower EL, AArch64 (exceptions from EL0 userspace)
-  lower_el_aarch64_sync : #ventry(label = "el0_sync") {
-    goto handle_el0_sync
-  }
-  lower_el_aarch64_irq : #ventry(label = "el0_irq") {
-    goto handle_el0_irq
-  }
-  lower_el_aarch64_fiq : #ventry(label = "el0_fiq") {
-    goto unexpected
-  }
-  lower_el_aarch64_serror : #ventry(label = "el0_serror") {
-    goto unexpected
-  }
-
-  // Lower EL, AArch32 (not used — spin)
-  lower_el_aarch32_sync : #ventry(label = "el0_32_sync") {
-    loop {
-      %wfe()
-    }
-  }
-  lower_el_aarch32_irq : #ventry(label = "el0_32_irq") {
-    loop {
-      %wfe()
-    }
-  }
-  lower_el_aarch32_fiq : #ventry(label = "el0_32_fiq") {
-    loop {
-      %wfe()
-    }
-  }
-  lower_el_aarch32_serror : #ventry(label = "el0_32_serror") {
-    loop {
-      %wfe()
-    }
+naked label trap_restore restores TrapFrame {
+  asm restores stack -> never {
+    ldr x16, [sp, #0x0f8]
+    msr ELR_EL1, x16
+    ldr x16, [sp, #0x100]
+    msr SPSR_EL1, x16
+    ldp x0, x1, [sp, #0x000]
+    ldp x2, x3, [sp, #0x010]
+    ldp x4, x5, [sp, #0x020]
+    ldp x6, x7, [sp, #0x030]
+    ldp x8, x9, [sp, #0x040]
+    ldp x10, x11, [sp, #0x050]
+    ldp x12, x13, [sp, #0x060]
+    ldp x14, x15, [sp, #0x070]
+    ldp x16, x17, [sp, #0x080]
+    ldp x18, x19, [sp, #0x090]
+    ldp x20, x21, [sp, #0x0a0]
+    ldp x22, x23, [sp, #0x0b0]
+    ldp x24, x25, [sp, #0x0c0]
+    ldp x26, x27, [sp, #0x0d0]
+    ldp x28, x29, [sp, #0x0e0]
+    ldr x30, [sp, #0x0f0]
+    add sp, sp, #0x110
+    eret
   }
 }
 ```
 
-Installing the table into `VBAR_EL1`:
+The example shows the complete EL1 sequence. The `aarch64` profile selects
+the matching canonical `ELR_ELx` and `SPSR_ELx` spellings for EL2 or EL3 from
+the label's checked callable-entry execution-level fact, not merely the
+module's initial entry level. It does not permit arbitrary substitution of a
+semantically similar sequence.
 
-<!-- wyst-contract: sketch -->
-```wyst
-install_vectors :: () {
-  %msr(VBAR_EL1, #addr_of(el1_vectors) as.address u64)
-  %isb()
-}
-```
+`establishes T` and `restores T` are valid only after the name of a
+`naked label`. `T` must resolve to one nominal `trap_frame` type admitted by
+the selected target. Labels are inherently terminal entries, so these clauses
+do not add or accept a redundant return-type marker.
 
-`#addr_of(symbol)` materializes the runtime address of a symbol. The
-integrated linker resolves the address at final placement and the compiler
-emits the correct `adrp xN, sym` + `add xN, xN, :lo12:sym` sequence. The
-programmer does not write relocation annotations directly.
+The first statement of an establishing label must be a non-empty
+`asm establishes stack` block. Its catalog-parsed instructions must be the
+profile's complete canonical save sequence. After that transition, the stack
+contains one live `T` at the established base and subsequent source must end
+without falling through.
 
----
+The first statement of a restoring label must be a non-empty
+`asm restores stack -> never` block. Its catalog-parsed instructions must be
+the complete canonical restore sequence, ending in the target's architectural
+exception return. The block has no normal exit and no source statement may
+stand in for the required terminal return.
 
-### Slot Size Enforcement
+An empty or comment-only assembly block is not a transition. A generic checked
+assembly block, a later rather than first stack transition, the wrong
+`establishes`/`restores` direction, an ordinary label, or a sequence with a
+missing, extra, reordered, or substituted instruction is rejected.
 
-| Situation                              | Result                                      |
-| -------------------------------------- | ------------------------------------------- |
-| slot body < 128 bytes                  | padded with `nop` to exactly 128 bytes      |
-| slot body == 128 bytes                 | emitted as-is                               |
-| slot body > 128 bytes                  | **compile error** — slot overflow           |
-| fewer than 16 `#ventry` slots declared | **compile error** — incomplete vector table |
-| more than 16 `#ventry` slots declared  | **compile error** — too many entries        |
-| unknown slot identifier                | **compile error** — noncanonical role name  |
-| duplicate canonical slot identifier    | **compile error** — duplicated vector role  |
-| canonical slot omitted                 | **compile error** — missing vector role     |
-| canonical slot at wrong source index   | **compile error** — wrong architectural position |
-| `#exception_vector` block not aligned  | assembler pads to nearest `0x800` boundary  |
+Shape diagnostics identify the selected profile, field or instruction index,
+canonical expected fact, observed source fact, and relevant source span. A
+sequence diagnostic reports the first mismatch and the target-profile row
+that supplied the expected instruction.
 
-Overflow is always a hard error. A slot that exceeds 128 bytes would silently
-overwrite the next slot's handler — this is never a recoverable situation.
+The label clause owns the typed trap-frame ABI; the assembly stack clause owns
+the local stack-state transition. The compiler cross-checks both against the
+same authenticated target profile and records both in typed IR. It does not
+infer one contract from the other or accept a hand-written assertion in its
+place. Every instruction, system-register access, stack-state fact, effect,
+fault, and terminal edge comes from the ordinary generated target catalogs.
 
-The backend records each slot's canonical role in IR and verifies that the
-slot is emitted at `index * 128` bytes from the table base. The emitted symbol
-`__ventry_<vector>_<slot>_size` records the unpadded body size; the slot's
-artifact extent remains exactly 128 bytes after padding.
+### Nested interrupts and DAIF policy
 
----
+The `aarch64` profile keeps nested interrupts disabled while a frame is being
+established or restored. Architectural exception entry supplies the initial
+PSTATE/DAIF state in `SPSR_ELx`; the entry sequence preserves it but does not
+clear DAIF or unmask IRQ, FIQ, SError, or debug exceptions while the frame is
+live.
 
-### Relationship to `#exact`
-
-`#ventry` slots are already exact-code regions in the architectural sense:
-their table position and final size are fixed by ARM64, and their body size is
-checked against the 128-byte slot budget after lowering and inline expansion.
-Wyst therefore does not accept `#exact` metadata on `#ventry`. Use `#exact` on
-ordinary functions or labels when a non-vector code item needs a post-lowering
-artifact contract. Inside an exception vector, a helper reached by a slot may
-still have its own ordinary `#exact` contract if it is an emitted callable; an
-inlined helper contributes to the slot's 128-byte budget.
-
----
-
-### Relationship to `#align`
-
-`#exception_vector` uses `#align` internally. The default alignment is
-`0x800`. An explicit `#align` on an `#exception_vector` block overrides the
-default:
-
-<!-- wyst-contract: sketch -->
-```wyst
-// explicit — same as default
-el1_vectors :: #exception_vector #align(0x800) { ... }
-
-// default — #align(0x800) is implied
-el1_vectors :: #exception_vector { ... }
-```
-
-Specifying an alignment smaller than `0x800` on an `#exception_vector` block
-is a compile error — the hardware requirement cannot be relaxed.
+Any future nested-interrupt profile must allocate a distinct frame per nesting
+level, define ownership of the interrupted stack, and state the exact DAIF
+transition and barrier sequence before unmasking. The base `aarch64` profile
+cannot be weakened locally to opt into nesting.
 
 ---
 
-### Design Rationale
+## 10.4 Historical v0.8 Removal Boundary
 
-| Choice                              | Reason                                                                 |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `#exception_vector` over bare label | encodes the 16-slot ARM64 contract; enables size enforcement           |
-| auto-pad short slots with `nop`     | normal — most slots are one branch; manual padding is busy-work        |
-| hard error on slot overflow         | overflow silently corrupts the next handler — never acceptable         |
-| hard error on wrong slot count      | a partial vector table is always a hardware bug                        |
-| canonical slot identifiers          | binds each source body to one architectural role and byte offset       |
-| optional `#ventry(label = "...")`   | keeps project-specific names available without changing architecture   |
-| `#ventry` for slots                 | distinguishes vector entries from ordinary labels; enables enforcement |
-| `#align` is the primitive           | `#exception_vector` builds on it; `#align` remains general-purpose     |
-
----
-
-## 10.3 Trap Frame ABI
-
-An exception vector slot should tail-transfer to a `#naked #noreturn` label
-when it needs a full handler frame. The entry label performs the save before
-ordinary Wyst code runs; the compiler does not synthesize hidden handler
-prologues or register spills for this ABI.
-
-The trap frame is 16-byte aligned and exactly `0x110` bytes:
-
-| Offset            | Contents                                                                    |
-| ----------------- | --------------------------------------------------------------------------- |
-| `0x000` - `0x0ef` | `x0` through `x29`, in register order, two 64-bit registers per 16-byte row |
-| `0x0f0`           | `x30` / link register                                                       |
-| `0x0f8`           | `ELR_ELx` captured at exception entry                                       |
-| `0x100`           | `SPSR_ELx` captured at exception entry                                      |
-| `0x108`           | interrupted `sp` value, equal to trap-frame base + `0x110`                  |
-
-Wyst exposes this ABI through `#trap_frame`, not through an unchecked comment
-convention. The canonical ARM64 frame type is:
-
-<!-- wyst-contract: sketch -->
-```wyst
-TrapFrame :: #trap_frame(arm64) struct {
-  x : [31]u64 // saved x0 through x30
-  elr : u64 // offset 0x0f8
-  spsr : u64 // offset 0x100
-  interrupted_sp : u64 // offset 0x108
-}
-```
-
-`#trap_frame(arm64)` is valid only on a non-generic, non-`#packed` struct with
-exactly those four fields in that order. The compiler verifies that the type is
-`0x110` bytes and that `elr`, `spsr`, and `interrupted_sp` have the offsets
-shown above. The type's natural Wyst alignment is still the maximum alignment
-of its fields; the 16-byte trap-frame base alignment is enforced by the
-entry/restore stack sequence.
-
-Entry and restore labels opt in explicitly:
-
-<!-- wyst-contract: sketch -->
-```wyst
-trap_entry :: label #naked #noreturn #trap_frame(entry, TrapFrame) { ... }
-trap_restore :: label #naked #noreturn #trap_frame(restore, TrapFrame) { ... }
-```
-
-The label marker is valid only on `#naked #noreturn` labels. It is a
-compile-time verifier contract and adds no runtime checks. The named type must
-be a `#trap_frame(arm64)` struct, and the module target must run at EL1, EL2,
-or EL3 so the matching `ELR_ELx` and `SPSR_ELx` registers exist.
-
-For `#trap_frame(entry, T)`, the first statement in the label must be a
-checked `#asm` block containing exactly the canonical save sequence:
-
-- subtract `0x110` from `sp`;
-- store `x0`-`x29` as ordered pairs at offsets `0x000` through `0x0e0`;
-- store `x30` at `0x0f0`;
-- after `x16`/`x17` have been saved, use `x16` or `x17` to store the
-  target-EL `ELR_ELx`, target-EL `SPSR_ELx`, and interrupted `sp` slots.
-
-For `#trap_frame(restore, T)`, the first statement in the label must be a
-checked `#asm` block containing exactly the canonical restore sequence:
-
-- reload `ELR_ELx` and `SPSR_ELx` for the module target EL;
-- restore `x0`-`x29` as ordered pairs and `x30` from `0x0f0`;
-- add `0x110` back to `sp`;
-- execute `eret`.
-
-The verifier intentionally recognizes this canonical source shape rather than
-proving arbitrary equivalent assembly. If a kernel needs a different frame
-shape, nested-frame discipline, SIMD extension frame, or lazy-save policy, it
-must use a future named `#trap_frame` profile instead of weakening
-`#trap_frame(arm64)`.
-
-The halt path is also explicit: once the frame is complete, the entry label may
-switch to a known handler stack and call a `#noreturn` panic or exit routine.
-That direct call is a terminal source statement and does not need a defensive
-fallback loop in the caller. The path does not claim to resume the interrupted
-context. Restore labels that end in checked `eret` assembly may still call an
-imported `#[inline, noreturn]` idle helper after the assembly block if the
-assembly unexpectedly returns control to source.
-
-### Nested Interrupt And DAIF Policy
-
-The checked ARM64 trap-frame profile keeps nested interrupts disabled while a
-trap frame is being populated or restored. Hardware exception entry supplies
-the initial PSTATE/DAIF state in `SPSR_ELx`; the entry code preserves it but
-does not clear DAIF or unmask IRQ, FIQ, SError, or debug exceptions while the
-frame is live.
-
-Any nested-interrupt policy must allocate a distinct frame per nesting
-level, define ownership of the interrupted stack, and state the exact `DAIF`
-transition and barrier sequence before unmasking. Until that exists, Wyst
-examples treat nested interrupts as disabled by convention, even on halt-only
-handlers.
+The released-v0.8 `#exception_vector`, `#ventry`, and `#trap_frame` spellings
+are historical syntax only. Appendix B preserves them solely inside its
+explicitly versioned v0.8 grammar snapshot, and
+[`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) records their
+v0.9 disposition. They are not aliases, migration forms, contextual tokens,
+or inputs to current parser, formatter, diagnostic, editor, or code-generation
+tables.
 
 ---

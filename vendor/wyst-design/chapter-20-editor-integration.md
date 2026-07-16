@@ -84,21 +84,23 @@ editor-distributed binaries.
   edit to the active buffer.
 - `textDocument/publishDiagnostics`: publishes diagnostics using the same
   `Diagnostic` values and LSP-compatible renderer as `wync check`. When a
-  diagnostic has learning fields, compact `why`, `help`, `fix`, and
+  diagnostic has explanation fields, compact `why`, `help`, `suggestion`, and
   source-insight lines are included in the standard LSP message, while the same
-  structured fields remain available under `Diagnostic.data`.
+  structured fields remain available under `Diagnostic.data`. Exact edits stay
+  in checked code-action data rather than prose message lines.
 - `textDocument/formatting`: formats the whole document through the canonical
   formatter and returns a full-document edit matching `wync fmt`.
 - `textDocument/completion`: returns compiler-owned editor catalog entries plus
   names visible to the open document, including parameters, locals, top-level
-  declarations from related sources, project module names, and struct/bitfield
+  declarations from related sources, project module names, and struct/bitstruct
   fields after typed field-access prefixes.
 - `textDocument/hover`: resolves the token under the cursor and returns
   compiler-owned hover markdown for editor-catalog items, top-level declarations
-  (function signatures, constants, globals, and `struct`/`enum`/`bitfield`
+  (function signatures, constants, globals, and `struct`/`enum`/`bitstruct`
   types), function parameters, and in-scope local variables, plus context-aware
-  `#asm` mini-language facts for options, sections, operands, constraints,
-  registers, and assembly body text. Top-level declarations are discovered
+  signature-style `asm` facts for ordered modifiers, typed input/immediate/
+  symbol/scratch parameters, results, fixed placements, stack contracts,
+  semantic body binders, labels, and assembly instruction text. Top-level declarations are discovered
   through the same project/module facts used by go-to-definition; parameters and
   locals are resolved from the enclosing function's scope. Function hovers render
   the signature, while other declarations, parameters, and locals render their
@@ -108,11 +110,13 @@ editor-distributed binaries.
   literals, operators, enum variants, payload bindings, struct members, memory
   accesses, and target/profile arguments have focused hover payloads when the
   compiler has stable facts for them.
-- `textDocument/codeAction`: returns compact quick fixes for high-confidence
+- `textDocument/codeAction`: returns applicability-checked code actions for
   cases, including numeric literal base conversion, close-match unknown-name
   replacement, duplicate `#module` line removal, and diagnostic-backed explicit
   cast insertion for narrow type-mismatch spans. Diagnostic-backed actions carry
-  diagnostic IDs, structured help, and source spans in action data.
+  diagnostic IDs, the source document version, exact ranges, expected source
+  text, exact replacements, and applicability in action data. If any of those
+  facts is stale or ambiguous, no edit is returned.
 - `textDocument/semanticTokens/full`: returns lexer-backed semantic tokens that
   layer on top of Tree-sitter highlighting.
 - `textDocument/inlayHint` and `textDocument/signatureHelp`: use parsed function
@@ -172,12 +176,13 @@ locals, and enum-pattern bindings are renamed by symbol identity, so shadowed
 bindings in nested scopes are not edited. Ambiguous identities and conservative
 name collisions fail closed with protocol errors rather than speculative edits.
 
-Diagnostic-backed quick fixes expose structured action data. A narrow
-type-aware quick fix handles a narrow `E0213` type-mismatch case by inserting
+Diagnostic-backed code actions expose structured action data. A narrow
+type-aware code action handles a narrow `E0213` type-mismatch case by inserting
 an explicit conversion where the compiler-visible expected type comes from a typed
 local/global/constant initializer or function return. The action data includes
-the diagnostic ID, help text, and source span so editors can present the fix
-without scraping diagnostic messages.
+the diagnostic ID, document version, exact range, expected text, exact
+replacement, and applicability so editors can apply it without scraping
+diagnostic messages. Generic suggestions never enter this edit path.
 
 ## Language Server Capabilities
 
@@ -199,7 +204,7 @@ The language-server surface includes:
 - `textDocument/semanticTokens/full`, `textDocument/inlayHint`,
   `textDocument/signatureHelp`, `textDocument/foldingRange`,
   `textDocument/selectionRange`, `textDocument/documentLink`, and focused
-  `textDocument/codeAction` quick fixes.
+  `textDocument/codeAction` checked edits.
 
 The language server must treat project membership the same way as project
 builds and checks: `wyst.project` manifests and explicit root-file mode are
