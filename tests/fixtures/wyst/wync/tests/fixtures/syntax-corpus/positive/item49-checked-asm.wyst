@@ -1,0 +1,52 @@
+module syntax.item49
+
+const ASM_ALIGNMENT: u64 = 16
+
+fn helper() {}
+
+fn reverse(value: u64) -> u64 {
+  const reversed: u64 = asm pure(input:u64=value,)->result:u64{
+rev result, input
+  }
+  return reversed
+}
+
+fn inspect(location_address: @u64, expected: u64, desired: u64) -> u64 {
+  const (observed, exchanged_raw) = asm align ASM_ALIGNMENT preserves stack (
+    location: @u64 in x0 = location_address,
+    old_value = expected,
+    new_value = desired,
+    retry_limit: imm = 4,
+    helper_symbol: symbol = syntax.item49.helper,
+    scratch status: u32 in w9,
+  ) -> (
+    observed: u64,
+    exchanged_raw: u32,
+  ) {
+    mov status, #retry_limit
+    retry:
+      ldaxr observed, [location]
+      cmp observed, old_value
+      b.ne done
+      stlxr status, new_value, [location]
+      cbnz status, retry
+    done:
+  }
+  return observed
+}
+
+naked fn establish_stack(stack_top: @u8) {
+  asm establishes stack (
+    stack: @u8 in x0 = stack_top,
+  ) {
+    mov sp, stack
+  }
+}
+
+naked fn restore_and_exit(frame: @u8) -> never {
+  asm restores stack (
+    saved: @u8 = frame,
+  ) -> never {
+    br saved
+  }
+}

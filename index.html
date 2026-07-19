@@ -171,6 +171,16 @@
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">mmio</span> <span data-token="variable" data-token-modifiers="declaration readonly">UART0</span>: <span data-token="type">Pl011</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x0900_0000</span>
 
+#[align(<span data-token="number">16</span>)]
+<span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> in x0) -&gt; never {
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
+    <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
+  ) {
+    mov sp, stack
+  }
+  <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)
+}
+
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
   <span class="source-comment">// Poll for space in the transmit FIFO.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> {

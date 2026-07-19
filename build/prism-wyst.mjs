@@ -1,12 +1,134 @@
-// Prism grammar for the Wyst language.
-//
-// Token vocabulary is taken directly from the formal grammar
-// (appendix-b-grammar.md §1.1–§1.5): line/block comments, lexer keywords,
-// `#` directives, `%` runtime primitives, `@` address qualifiers, built-in
-// type names, and the numeric/string literal forms.
-//
-// Usage:  import { registerWyst } from "./prism-wyst.mjs"; registerWyst(Prism);
+import { readFileSync } from "node:fs";
 
+// Prism is used only by the Node documentation build. Its vocabulary comes
+// from the same checked-in syntax-word catalog as the compiler and editor
+// grammar; this module deliberately owns no second list of Wyst words.
+const SYNTAX_WORD_CATALOG = new URL(
+	"../vendor/wyst-design/syntax-words.tsv",
+	import.meta.url,
+);
+const ACTIVE_STATES = new Set(["implemented", "implemented-normative"]);
+
+function parseSyntaxWords(text) {
+	return text
+		.split("\n")
+		.filter((line) => line !== "" && !line.startsWith("//"))
+		.map((line) => {
+			const fields = line.split("\t");
+			if (fields.length !== 5) {
+				throw new Error(`invalid Wyst syntax-word catalog row: ${line}`);
+			}
+			const [spelling, classification, owner, legalPositions, state] = fields;
+			if (!spelling || !classification || !owner || !legalPositions || !state) {
+				throw new Error(`invalid Wyst syntax-word catalog row: ${line}`);
+			}
+			return {
+				classification,
+				legalPositions: legalPositions.split("|"),
+				owner: owner.split("|"),
+				spelling,
+				state,
+			};
+		});
+}
+
+export const wystSyntaxWords = Object.freeze(
+	parseSyntaxWords(readFileSync(SYNTAX_WORD_CATALOG, "utf8")).map(Object.freeze),
+);
+
+const activeWords = wystSyntaxWords.filter((word) =>
+	ACTIVE_STATES.has(word.state),
+);
+
+function spellings(predicate) {
+	return activeWords.filter(predicate).map((word) => word.spelling);
+}
+
+function escapeRegex(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function alternatives(values) {
+	const unique = [...new Set(values)].sort(
+		(left, right) => right.length - left.length || left.localeCompare(right),
+	);
+	if (unique.length === 0) {
+		throw new Error("Wyst syntax-word catalog produced an empty Prism token class");
+	}
+	return unique.map(escapeRegex).join("|");
+}
+
+function activeAlternatives(values, role) {
+	for (const value of values) {
+		if (!activeWords.some((word) => word.spelling === value)) {
+			throw new Error(
+				`Wyst Prism ${role} spelling is not active in the catalog: ${value}`,
+			);
+		}
+	}
+	return alternatives(values);
+}
+
+const HASH_OPERATIONS = alternatives(
+	spellings(
+		(word) =>
+			word.classification === "unshadowable" && word.spelling.startsWith("#"),
+	),
+);
+const RESERVED_WORDS = spellings(
+	(word) =>
+		word.classification === "reserved" &&
+		word.spelling !== "false" &&
+		word.spelling !== "true",
+);
+const RESERVED_EXCEPT_AS = alternatives(
+	RESERVED_WORDS.filter((word) => word !== "as"),
+);
+const BUILTIN_TYPES = alternatives(
+	spellings(
+		(word) =>
+			word.classification === "unshadowable" &&
+			word.legalPositions.some((position) =>
+				["return-type", "type", "type-constructor"].includes(position),
+			),
+	),
+);
+const TYPE_DECLARATION_WORDS = activeAlternatives(
+	["bitstruct", "enum", "register_map", "struct", "trap_frame"],
+	"type declaration",
+);
+const VARIABLE_DECLARATION_WORDS = activeAlternatives(
+	["mmio", "system_register", "var"],
+	"variable declaration",
+);
+const POINTER_QUALIFIERS = activeAlternatives(
+	["volatile", "mmio"],
+	"address qualifier",
+);
+for (const structuralWord of ["const", "fn"]) {
+	activeAlternatives([structuralWord], "declaration");
+}
+
+const DIRECTIVE_PATTERN = new RegExp(`(?:${HASH_OPERATIONS})\\b`);
+// A hash-prefixed invalid form must not be split into punctuation plus an
+// apparently active keyword. The canonical import/linkage `as` word is also
+// unavailable as the head of a dotted expression.
+const KEYWORD_PATTERN = new RegExp(
+	`(?<![#.%])\\b(?:(?:${RESERVED_EXCEPT_AS})|as(?!\\s*\\.))\\b`,
+);
+const BUILTIN_TYPE_PATTERN = new RegExp(
+	`(?<![#.%])\\b(?:${BUILTIN_TYPES})\\b`,
+);
+const TYPE_DECLARATION_PATTERN = new RegExp(
+	`(\\b(?:${TYPE_DECLARATION_WORDS})\\s+)[A-Za-z_][A-Za-z0-9_]*`,
+);
+const VARIABLE_DECLARATION_PATTERN = new RegExp(
+	`(\\b(?:${VARIABLE_DECLARATION_WORDS})\\s+)[A-Za-z_][A-Za-z0-9_]*`,
+);
+const POINTER_QUALIFIER_PATTERN = new RegExp(`@(?:${POINTER_QUALIFIERS})\\b`);
+
+// Prism is a safe lexical projection, not a parser. Context-sensitive forms
+// are highlighted only where their surrounding spelling is unambiguous.
 export function registerWyst(Prism) {
 	Prism.languages.wyst = {
 		comment: [
@@ -14,7 +136,6 @@ export function registerWyst(Prism) {
 			{ pattern: /\/\*[\s\S]*?\*\//, greedy: true },
 		],
 		string: {
-			// triple-quoted multiline first, then simple strings with escapes
 			pattern: /"""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"/,
 			greedy: true,
 		},
@@ -24,57 +145,58 @@ export function registerWyst(Prism) {
 			greedy: true,
 		},
 		"class-name": {
-			// Type declarations, including one level of nested generic arguments.
-			pattern:
-				/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?::\s*(?:(?:#[a-zA-Z_]\w*)(?:\([^\n)]*\))?\s*)*(?:bitfield|enum|struct)\b)/,
+			pattern: TYPE_DECLARATION_PATTERN,
+			lookbehind: true,
 			alias: "type",
 		},
-		// #module, #align, #release, #exception_vector, ... (compile/layout directives)
-		directive: {
-			pattern: /#[a-zA-Z_]\w*/,
-			alias: "macro",
-		},
-		// %nop(), %mrs(...), %wfe() — runtime-lowered primitives
-		primitive: {
-			pattern: /%[a-zA-Z_]\w*/,
-			alias: "macro",
-		},
-		// @volatile, @u32 — address qualifiers / address types
-		"address-qualifier": {
-			pattern: /@[a-zA-Z_]\w*/,
-			alias: "type",
-		},
-		keyword:
-			/\b(?:as|bitfield|break|case|continue|else|enum|goto|if|is|label|loop|pub|repeat|return|select|struct|switch|while)\b/,
 		function: [
-			// declarations, with optional generic parameters and calling convention
-			/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?::\s*(?:\[[a-zA-Z_]\w*\]\s*)?\()/,
-			// ordinary and generic call sites
-			/\b[a-zA-Z_]\w*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?\()/,
+			{
+				pattern: /(\bfn\s+)[A-Za-z_][A-Za-z0-9_]*/,
+				lookbehind: true,
+			},
+			// Canonical calls and method calls exclude sigil-prefixed names and a
+			// dotted expression whose head is the reserved alias word.
+			/(?<![#%])(?<!as\.)\b[A-Za-z_][A-Za-z0-9_]*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?\()/,
 		],
+		directive: {
+			pattern: DIRECTIVE_PATTERN,
+			alias: "macro",
+		},
+		"address-qualifier": {
+			pattern: POINTER_QUALIFIER_PATTERN,
+			alias: "type",
+		},
 		boolean: /\b(?:false|true)\b/,
-		// built-in types resolve in type context (not lexer keywords)
+		constant: [
+			{
+				pattern: /(\bconst\s+)[A-Za-z_][A-Za-z0-9_]*/,
+				lookbehind: true,
+			},
+			// Single-letter names stay unclassified because they commonly name a
+			// generic type parameter.
+			/\b[A-Z][A-Z0-9_]{1,}\b/,
+		],
+		variable: {
+			pattern: VARIABLE_DECLARATION_PATTERN,
+			lookbehind: true,
+		},
+		keyword: KEYWORD_PATTERN,
 		builtin: {
-			pattern: /\b(?:[iu](?:8|16|32|64)|f(?:32|64)|usize|isize|bool|string|char|void)\b/,
+			pattern: BUILTIN_TYPE_PATTERN,
 			alias: "type",
 		},
 		number: {
 			pattern:
-				/\b(?:0x[0-9a-fA-F](?:_?[0-9a-fA-F])*|0b[01](?:_?[01])*|0o[0-7](?:_?[0-7])*|\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?)\b/,
+				/\b(?:0[xX][0-9A-Fa-f](?:_?[0-9A-Fa-f])*|0[bB][01](?:_?[01])*|0[oO][0-7](?:_?[0-7])*|[0-9](?:_?[0-9])*(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?)\b/,
 		},
-		// Binding names can be recognized at declarations. References require
-		// semantic information and remain ordinary identifiers.
-		parameter: /\b[a-zA-Z_]\w*(?=\s*:\s*(?![:=]))/,
-		variable: /\b[a-zA-Z_]\w*(?=\s*:=)/,
-		// Common all-caps constants are the useful lexical subset. Single-letter
-		// names stay unclassified because they are commonly generic type parameters.
-		constant: /\b[A-Z][A-Z0-9_]{1,}\b/,
-		// Longest spellings first so compound operators remain one token.
+		parameter: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*:\s*(?!:|=))/,
+		// Longest spellings first. Only the final v0.9 separator, postfix, and
+		// statement-boundary vocabulary is present.
+		punctuation: /\.\.<|\.\.=|\.\.|[{}[\](),.]/,
 		operator:
-			/::=|%%=|<<=|>>=|&&=|\|\|=|&\^=|::|:=|->|==|!=|<=|>=|<<|>>|&&|\|\||&\^|%%|\.\.|[-+*/%&|^~!<>=]=?|[@?:]/,
-		punctuation: /[{}[\]();,.]/,
+			/&&=|\|\|=|%%=|&\^=|<<=|>>=|->|==|!=|<=|>=|<<|>>|&&|\|\||&\^|%%|\+=|-=|\*=|\/=|%=|&=|\|=|\^=|[-+*/%&|^~!<>=]|[@?:]/,
 	};
 
-	// alias so ```text / ```peg fences fall back to a no-op grammar (plain, escaped)
+	// `text` and `peg` fences intentionally fall back to escaped plain text.
 	if (!Prism.languages.text) Prism.languages.text = {};
 }

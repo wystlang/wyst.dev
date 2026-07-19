@@ -1,0 +1,5 @@
+module legacy_raw_slice
+
+fn bad(base: @u8) -> []u8 {
+    return []u8{data = base, len = 4}
+}

@@ -1,0 +1,3 @@
+module corpus.item57_bad
+
+import weak symbol "optional_hook" as optional_hook: extern "C" fn()

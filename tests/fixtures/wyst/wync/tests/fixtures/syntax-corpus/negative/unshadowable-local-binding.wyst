@@ -1,0 +1,2 @@
+module demo
+fn main() { var widen: u64 = 0 }

@@ -87,7 +87,7 @@ declaration order:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-Pair { b: f(), a: g() } // evaluates f() before g()
+const pair: Pair = { b = f(), a = g() } // evaluates f() before g()
 ```
 
 Struct layout and storage still follow the struct declaration. Source-order
@@ -102,16 +102,16 @@ compute the operator result, and store or rebind the result. Logical compound
 assignments keep their short-circuit behavior after the target/current value is
 established.
 
-An item-42 `per_cpu` assignment preserves that source order for every explicit
-target expression: a written base or index is evaluated before the assigned
-value. Its current-core base acquisition is hidden target support, not a
+An assignment governed by `language.callable-storage-contracts` preserves that
+source order for every explicit `per_cpu` target expression: a written base or
+index is evaluated before the assigned value. Its current-core base acquisition is hidden target support, not a
 source-visible address expression. Lowering performs that one fresh acquisition
 only after the target expressions and assigned value have completed, immediately
 before the final offset calculation and store. Therefore no call or other
 effectful RHS can leave a stale current-core base live across the effect, and a
 terminal target or RHS produces neither an acquisition nor a store.
 
-Runtime `if`, `while`, integer-range `for`, `switch`, and expression-valued `if`
+Runtime `if`, `while`, integer-range `for`, `match`, and expression-valued `if`
 constructs evaluate their condition or selector before any branch body or arm
 body is entered. Branch bodies are not eagerly evaluated: only the selected
 runtime path evaluates its expressions. Expression-valued `if` follows the same
@@ -172,23 +172,23 @@ For a signed integer `x`, the result is always `-(x + 1)`.
 These operators are available in runtime expressions after type checking.
 Compile-time constant folding currently covers integer arithmetic and boolean
 logic. Floating-point literal binding is supported, but floating-point
-arithmetic inside `::`, `::=`, `#static_assert`, layout expressions, and other
+arithmetic inside constant declarations, `#static_assert`, layout expressions, and other
 compile-time constant contexts is a future surface:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module ops
+module ops
 
-compute :: () -> u64 {
-  x : u64 = 40
-  y : u64 = 2
+fn compute() -> u64 {
+  const x: u64 = 40
+  const y: u64 = 2
   return x + y
 }
 ```
 
 <!-- wyst-contract: future -->
 ```wyst
-SCALE ::= 1.5 * 2.0
+const SCALE = 1.5 * 2.0
 ```
 
 ### Bitwise
@@ -228,11 +228,11 @@ Address comparisons are defined for the same address lens: `@T == @T`,
 `@T != @T`, `@T < @T`, `@T <= @T`, `@T > @T`, and `@T >= @T` are valid and
 use unsigned numeric address ordering. Slice, dynamic-array, enum, and
 function-pointer comparisons are equality-only. `[]T == []T`,
-`DynamicArray<T> == DynamicArray<T>`, `@(u64) -> u64 == @(u64) -> u64`, and
+`DynamicArray<T> == DynamicArray<T>`, `fn(u64) -> u64 == fn(u64) -> u64`, and
 their `!=`
 forms are valid, but ordered checks require explicit field comparisons or
 explicit comparisons such as `s.len < t.len`, `arr.capacity < other.capacity`,
-or `(callback as.address u64) < (other as.address u64)`.
+or `address<u64>(callback) < address<u64>(other)`.
 Enum equality is tag equality for payload-less enums and tag-plus-active-payload
 equality for payload enums; inactive payload bytes and padding bytes are not
 compared.
@@ -276,9 +276,9 @@ maps to a single ARM64 SIMD instruction. No loops, no unrolling.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-a : [f32:4] = {1.0, 2.0, 3.0, 4.0}
-b : [f32:4] = {5.0, 6.0, 7.0, 8.0}
-c := a + b    // [6.0, 8.0, 10.0, 12.0]  — fadd v0.4s, v1.4s, v2.4s
+const a: [f32: 4] = [1.0, 2.0, 3.0, 4.0]
+const b: [f32: 4] = [5.0, 6.0, 7.0, 8.0]
+const c = a + b    // [6.0, 8.0, 10.0, 12.0] — one vector add
 ```
 
 Element-wise operators by operand kind:
@@ -306,16 +306,16 @@ Valid element-wise vector types:
 
 | Type      | Bytes | ARM64 arrangement | Signed variant |
 | --------- | ----- | ----------------- | -------------- |
-| `[u8:16]` | 16    | `.16b`            | `[i8:16]`      |
-| `[u16:8]` | 16    | `.8h`             | `[i16:8]`      |
-| `[u32:4]` | 16    | `.4s`             | `[i32:4]`      |
-| `[u64:2]` | 16    | `.2d`             | `[i64:2]`      |
-| `[f32:4]` | 16    | `.4s`             | —              |
-| `[f64:2]` | 16    | `.2d`             | —              |
-| `[u8:8]`  | 8     | `.8b`             | `[i8:8]`       |
-| `[u16:4]` | 8     | `.4h`             | `[i16:4]`      |
-| `[u32:2]` | 8     | `.2s`             | `[i32:2]`      |
-| `[f32:2]` | 8     | `.2s`             | —              |
+| `[u8:16]` | 16    | sixteen byte lanes | `[i8:16]`     |
+| `[u16:8]` | 16    | eight halfword lanes | `[i16:8]`   |
+| `[u32:4]` | 16    | four word lanes    | `[i32:4]`      |
+| `[u64:2]` | 16    | two doubleword lanes | `[i64:2]`   |
+| `[f32:4]` | 16    | four single-precision lanes | —       |
+| `[f64:2]` | 16    | two double-precision lanes | —        |
+| `[u8:8]`  | 8     | eight byte lanes   | `[i8:8]`       |
+| `[u16:4]` | 8     | four halfword lanes | `[i16:4]`     |
+| `[u32:2]` | 8     | two word lanes     | `[i32:2]`      |
+| `[f32:2]` | 8     | two single-precision lanes | —        |
 
 Signed variants affect `>>` (arithmetic shift rather than logical) and
 comparison operators. Addition, subtraction, multiplication, and bitwise
@@ -364,7 +364,7 @@ Parentheses override precedence in the standard way.
 <!-- wyst-contract: sketch -->
 ```wyst
 // UART flag check — & binds before !=
-volatile.u32@[UARTFR] & TXFF != 0   // same as (volatile.u32@[UARTFR] & TXFF) != 0
+UARTFR.load() & TXFF != 0   // same as (UARTFR.load() & TXFF) != 0
 
 // Bit manipulation
 x &^ mask                           // clear bits in mask
@@ -495,7 +495,7 @@ discarded. Programs may rely on wrap-around behavior:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-x : u8 = 255
+var x: u8 = 255
 x += 1   // x == 0, defined wrap
 ```
 
@@ -558,7 +558,7 @@ Examples for `u64`:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-x : u64 = 1
+const x: u64 = 1
 x << 63   // 0x8000_0000_0000_0000
 x << 64   // same as x << 0  →  1        (64 mod 64 == 0)
 x << 65   // same as x << 1  →  2        (65 mod 64 == 1)
@@ -569,7 +569,7 @@ Examples for narrow scalar integers:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-b : u8 = 1
+const b: u8 = 1
 b << 8    // 0: 8 mod 32 == 8, then the u8 result keeps the low 8 bits
 b << 32   // 1: 32 mod 32 == 0
 ```
@@ -624,7 +624,7 @@ detect these conditions should check the result explicitly:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-result : f64 = a / b
+const result: f64 = a / b
 
 if result == result {   // NaN check: NaN != NaN by IEEE 754
     // result is a valid finite or infinite value
@@ -688,7 +688,7 @@ after `&` in any valid expression.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-result := select(cond, a, b)
+const result = select(cond, a, b)
 ```
 
 `select(cond, a, b)` follows the general call-like evaluation order: it
@@ -724,13 +724,13 @@ masking.
 <!-- wyst-contract: sketch -->
 ```wyst
 // Branchless min
-min := select(a < b, a, b)
+const min = select(a < b, a, b)
 
 // Branchless absolute value (signed)
-abs := select(x < 0, -x, x)
+const abs = select(x < 0, -x, x)
 
 // Branchless clamp
-clamped := select(v < lo, lo, select(v > hi, hi, v))
+const clamped = select(v < lo, lo, select(v > hi, hi, v))
 ```
 
 **When to use `select` vs `if`:**
@@ -771,17 +771,17 @@ conflicts with existing operators and is grep-friendly.
 
 Vector element-wise lowering (examples; arrangement suffix determined by type):
 
-| Wyst expression    | ARM64 instruction             | Notes |
-| ----------------- | ----------------------------- | ----- |
-| `[f32:4]: a + b`  | `fadd vD.4s, vA.4s, vB.4s`    |       |
-| `[f32:4]: a - b`  | `fsub vD.4s, vA.4s, vB.4s`    |       |
-| `[f32:4]: a * b`  | `fmul vD.4s, vA.4s, vB.4s`    |       |
-| `[f32:4]: a / b`  | `fdiv vD.4s, vA.4s, vB.4s`    |       |
-| `[f64:2]: a + b`  | `fadd vD.2d, vA.2d, vB.2d`    |       |
-| `[i32:4]: a + b`  | `add  vD.4s, vA.4s, vB.4s`    |       |
-| `[i32:4]: a * b`  | `mul  vD.4s, vA.4s, vB.4s`    |       |
-| `[u8:16]: a + b`  | `add  vD.16b, vA.16b, vB.16b` |       |
-| `[u8:16]: a & b`  | `and  vD.16b, vA.16b, vB.16b` |       |
-| `[u8:16]: a \| b` | `orr  vD.16b, vA.16b, vB.16b` |       |
-| `[u8:16]: a ^ b`  | `eor  vD.16b, vA.16b, vB.16b` |       |
-| `[u8:16]: a &^ b` | `bic  vD.16b, vA.16b, vB.16b` |       |
+| Wyst expression    | ARM64 mnemonic | Lane arrangement                 |
+| ------------------ | -------------- | -------------------------------- |
+| `[f32:4]: a + b`   | `fadd`         | four single-precision lanes      |
+| `[f32:4]: a - b`   | `fsub`         | four single-precision lanes      |
+| `[f32:4]: a * b`   | `fmul`         | four single-precision lanes      |
+| `[f32:4]: a / b`   | `fdiv`         | four single-precision lanes      |
+| `[f64:2]: a + b`   | `fadd`         | two double-precision lanes       |
+| `[i32:4]: a + b`   | `add`          | four word lanes                  |
+| `[i32:4]: a * b`   | `mul`          | four word lanes                  |
+| `[u8:16]: a + b`   | `add`          | sixteen byte lanes               |
+| `[u8:16]: a & b`   | `and`          | sixteen byte lanes               |
+| `[u8:16]: a \| b` | `orr`          | sixteen byte lanes               |
+| `[u8:16]: a ^ b`   | `eor`          | sixteen byte lanes               |
+| `[u8:16]: a &^ b`  | `bic`          | sixteen byte lanes               |

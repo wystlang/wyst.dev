@@ -125,16 +125,16 @@ does not appear in this table is a compiler bug.
 | DWARF tag                   | Wyst source construct                                                              |
 | --------------------------- | --------------------------------------------------------------------------------- |
 | `DW_TAG_compile_unit`       | Per-source-file root; one per imported module                                     |
-| `DW_TAG_subprogram`         | Function declaration (`name :: () {...}`) and `label` declarations              |
-| `DW_TAG_inlined_subroutine` | One per `#inline` expansion site (see §11.7)                                      |
+| `DW_TAG_subprogram`         | Function declaration (`fn name() {...}`) and `label` declarations                |
+| `DW_TAG_inlined_subroutine` | One per `#[inline]` expansion site (see §11.7)                                    |
 | `DW_TAG_lexical_block`      | `{ ... }` block introducing new bindings                                          |
 | `DW_TAG_variable`           | Local or global named variable                                                    |
 | `DW_TAG_formal_parameter`   | Function parameter                                                                |
 | `DW_TAG_base_type`          | Scalars: `u8`/`u16`/`u32`/`u64`, `i8`/…/`i64`, `bool`, `f32`, `f64`               |
 | `DW_TAG_pointer_type`       | `@T` (address type)                                                               |
-| `DW_TAG_const_type`         | Immutable binding (`name :: T = ...`, `name ::= ...`)                             |
+| `DW_TAG_const_type`         | Immutable binding (`const name: T = ...`)                                         |
 | `DW_TAG_volatile_type`      | `@volatile T` and the volatile access contract inside `@mmio T`                   |
-| `DW_TAG_typedef`            | `type Name :: T` aliases                                                          |
+| `DW_TAG_typedef`            | `type Name = T` aliases                                                           |
 | `DW_TAG_structure_type`     | `struct { ... }`                                                                  |
 | `DW_TAG_member`             | Struct field and bitstruct bit-field member                                       |
 | `DW_TAG_array_type`         | `[N]T`, `[T:N]`, `[]T` slice (slice modeled as struct of `data`+`len` — see §11.5) |
@@ -143,7 +143,7 @@ does not appear in this table is a compiler bug.
 | `DW_TAG_enumerator`         | C-style enum variant                                                              |
 | `DW_TAG_variant_part`       | Tagged-union `enum` discriminator                                                 |
 | `DW_TAG_variant`            | Tagged-union `enum` payload variant                                               |
-| `DW_TAG_subroutine_type`    | Function pointer type (`(args) -> ret`, `[aapcs] (args) -> ret`)                  |
+| `DW_TAG_subroutine_type`    | Function pointer type (`fn(args) -> ret`, `extern "C" fn(args) -> ret`)          |
 
 No other tags. Specifically: no `DW_TAG_namespace` (Wyst has no nested
 namespaces), no `DW_TAG_class_type`, no `DW_TAG_template_*`, no
@@ -186,12 +186,12 @@ does not imply a DWARF address class or architectural Device-memory proof; MMIO
 intent remains a Wyst source/report fact.
 
 **Function-pointer calling convention.** `DW_TAG_subroutine_type`
-carries `DW_AT_calling_convention = DW_CC_normal` for `[wyst]` (the
-default) and `DW_AT_calling_convention = 0x50` for `[aapcs]`. Wyst reserves
+carries `DW_AT_calling_convention = DW_CC_normal` for the default Wyst
+convention and `DW_AT_calling_convention = 0x50` for `extern "C"`. Wyst reserves
 `0x50` from the DWARF user extension range as `DW_CC_WYST_AAPCS64`.
 The emitter also records an exact fallback/interoperability string in
 `DW_AT_description`: `"wyst"` for the default convention and `"aapcs64"` for
-`[aapcs]`. This is the one place Wyst diverges from strict standard DWARF;
+the external C convention. This is the one place Wyst diverges from strict standard DWARF;
 the divergence is bounded to one attribute on one tag.
 
 **`#addr_of` location.** A variable declared at module scope has its
@@ -230,7 +230,7 @@ inline in `.debug_line`.
 
 ## 11.7 Inline Expansion
 
-`#inline` expansions emit `DW_TAG_inlined_subroutine` DIEs. Each carries:
+`#[inline]` expansions emit `DW_TAG_inlined_subroutine` DIEs. Each carries:
 
 - `DW_AT_abstract_origin` → the `DW_TAG_subprogram` DIE of the inlined
   function (which is also emitted, as a "concrete out-of-line" copy if
@@ -242,7 +242,7 @@ inline in `.debug_line`.
 
 This lets debuggers display "inlined from `foo()` at `bar.wyst:42`" in
 backtraces and step through inlined code as if it were called. The cost
-is one DIE per inline site. Since `#inline` is explicit in Wyst (see
+is one DIE per inline site. Since `#[inline]` is explicit in Wyst (see
 [§2.7.1](#)), the user knows where these appear and the count is
 bounded by the source.
 
@@ -257,7 +257,7 @@ Variables whose storage location does not change across their lifetime
 get a single `DW_AT_location` with one operation:
 
 - Register-only: `DW_OP_reg<N>` for an unspilled SSA value, or for a
-  `#pin(xN) var` that the allocator successfully pinned (see
+  variable whose `in xN` placement the allocator successfully honored (see
   [appendix-a-ir.md §11](appendix-a-ir.md)).
 - Stack-only: `DW_OP_fbreg <offset>` for a value that lives on the stack
   from entry to exit.

@@ -1,0 +1,7 @@
+module syntax.removed_typed_struct_literal
+
+struct Value { raw: u64 }
+
+fn rejected() {
+  const value: Value = Value { raw: 1 }
+}

@@ -1,0 +1,7 @@
+module syntax.classifier_numeric_context
+
+fn probe() -> u64 {
+    const grouped: u64 = 0x51a5_cafe_1234_5678
+    const scientific: f64 = 1e10
+    return grouped + truncate<u64>(scientific)
+}

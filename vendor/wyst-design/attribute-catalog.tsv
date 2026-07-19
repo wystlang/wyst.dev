@@ -1,0 +1,10 @@
+// wyst.declarationAttributes.v0.9
+// spelling	state	owner	subjects	signature	conflicts	formatter_order	tooling_metadata	behavior
+align	implemented	item54.placement	body-fn|body-label|module-var|per-cpu-var|sectioned-module-const|nonpacked-struct-field	positional(N:positive-target-supported-power-of-two-u64)	bodyless|local|whole-type|packed-field|target-owned|fixed-placement|inline	100	declaration.attribute.align	minimum-emitted-address-or-field-layout-alignment
+section	implemented	item54.placement	body-fn|body-label|ordinary-module-var|module-const	positional(NAME:literal-custom-section-name)	local|field|type|per-cpu|bodyless|target-owned|fixed-placement|reserved-section|canonical-section|wyst-reserved-section	200	declaration.attribute.section	retained-custom-section-contribution-per-demanded-concrete-declaration
+inline	implemented	item54.inline	body-fn	flag	bodyless|foreign|import-only|label|init|align|frame|naked|recursive-component	300	declaration.attribute.inline	mandatory-static-direct-call-expansion
+init	implemented	item54.initialization	nongeneric-module-native-zero-parameter-zero-result-body-fn	named(order:constant-u64)	inline|naked|foreign|import-only|generic|parameters|result|never	400	declaration.attribute.init	retained-ordered-initialization-metadata-record
+frame	implemented	item56.resources	body-fn|body-label	named-at-least-one(max_bytes:nonnegative-u64|max_spills:nonnegative-u64)	bodyless|inline	500	declaration.attribute.frame	post-lowering-frame-resource-assertion
+deny_effects	implemented	item56.effects	module|body-fn|body-label	positional-one-or-more(unique-closed-effect-signature-atom)	foreign|import-only	600	declaration.attribute.deny_effects	monotonic-transitive-effect-denial
+cache_isolated	implemented	item54.placement	ordinary-module-var|per-cpu-var	flag	const|local|field|type|code|mmio|fixed-placement	700	declaration.attribute.cache_isolated	cache-line-placement-and-footprint-contract
+schedule	implemented	item43.scheduling	body-fn|body-label	positional(source:signature-atom)	bodyless|non-code	800	declaration.attribute.schedule	source-order-scheduling-boundary

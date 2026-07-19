@@ -1,0 +1,3 @@
+module boot
+#[exact(instructions = 2)]
+fn work() { cpu.nop() }

@@ -1,0 +1,29 @@
+module syntax_system
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+struct Box<T: scalar> {
+  value: T
+}
+
+enum Event<T: payload_word>: u8 {
+  empty
+  data(T)
+}
+
+var STATE: atomic<u64> = atomic<u64>(0)
+const UARTDR: @mmio u32 = address<@mmio u32>(0x0900_0000)
+const SELECTED: u64 = 1
+
+fn identity<T: scalar>(value: T) -> T {
+  return value
+}
+
+fn touch(value: u64) -> u64 {
+  var before: u64 = STATE.load(.acquire)
+  STATE.store(value, .release)
+  var loaded: u64 = STATE.load(.acquire)
+  var result = STATE.compare_exchange(before, loaded, .acq_rel)
+  var old: u64 = STATE.fetch_add(1, .seq_cst)
+  UARTDR.store(truncate<u32>(value))
+  return identity<u64>(old + result.observed)
+}

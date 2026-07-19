@@ -37,6 +37,12 @@ registerWyst(Prism);
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 const SITE = "https://wyst.dev";
 const WYST_SOURCE_URL = "https://github.com/wystlang/wyst";
+const LOCAL_DESIGN_ARTIFACTS = new Set([
+	"attribute-catalog.tsv",
+	"meta-operation-catalog.tsv",
+	"semantic-db.json",
+	"syntax-words.tsv",
+]);
 
 function resolveDocsDir() {
 	const candidate = process.env.WYST_DOCS_DIR
@@ -225,8 +231,8 @@ export function makeMd({ wystSourceCommit } = {}) {
 		const hi = tok.attrIndex("href");
 		if (hi >= 0) {
 			const href = tok.attrs[hi][1];
-			if (href === "semantic-db.json") {
-				tok.attrs[hi][1] = "/docs/semantic-db.json";
+			if (LOCAL_DESIGN_ARTIFACTS.has(href)) {
+				tok.attrs[hi][1] = `/docs/${href}`;
 				return defaultLinkOpen(tokens, i, opts, env, self);
 			}
 			const m = href.match(/^(?:\.\/)?([\w.-]+\.md)(#[^)\s]*)?$/);
@@ -384,10 +390,9 @@ export function generateDocs({
 	const outDir = path.join(OUTPUT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
-	fs.copyFileSync(
-		path.join(DOCS, "semantic-db.json"),
-		path.join(outDir, "semantic-db.json"),
-	);
+	for (const artifact of LOCAL_DESIGN_ARTIFACTS) {
+		fs.copyFileSync(path.join(DOCS, artifact), path.join(outDir, artifact));
+	}
 
 	let count = 0;
 	for (const page of pages) {

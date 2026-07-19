@@ -1,0 +1,5 @@
+module syntax.legacy_dynamic_array
+
+fn rejected() {
+  var values: [dynamic]u8 = 0
+}

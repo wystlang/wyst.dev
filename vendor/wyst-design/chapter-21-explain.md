@@ -115,7 +115,8 @@ For a v0.9 function, the report's `callableIdentity` block exposes the calling
 convention; each positional parameter's type, explicit register placement, and
 `noescape` bit; and the result type, explicit result register, and `never`
 state. Declaration parameter names are deliberately absent from that identity
-block. The selected-target block also exposes item 42's `perCpu` availability,
+block. The selected-target block also exposes the `perCpu` availability defined
+by `language.callable-storage-contracts`, together with the
 base mechanism, required alignment, reserved state, and realization kind; an
 unselected contract remains explicitly unavailable rather than inferred.
 
@@ -133,8 +134,28 @@ or another placeholder as a decoded instruction.
 
 Allocation facts expose public meanings rather than backend sentinels. A value
 that can be recreated reports `home_kind = rematerialized`, `register = none`,
-and a reason. Internal pseudo-homes such as `Gpr(31)` are never rendered as
+and a reason. Internal general-purpose pseudo-home 31 is never rendered as
 architectural allocation facts. Missing allocation facts are `unavailable`.
+
+Every `strand_suspension_boundary` has one lowering row even though it emits no
+machine instruction. The row names the source call or
+`core.execution.suspension_point`, exact or conservative callable-bound
+provenance, ordered adjacent transfer, selected target and provider identity
+when applicable, plus `machine_code_contribution = none` and
+`synchronization = none`. The zero-contribution contract covers instructions,
+calls, symbols, relocations, stack maps, runtime hooks, and runtime
+dependencies. Current-context/`per_cpu` invalidations and subsequent
+reacquisitions remain visible as typed boundary and current-instance rows; the
+context section names each boundary's origin, trigger, and live-value
+disposition. A report must not render the boundary as an architectural barrier,
+safepoint, or scheduling event.
+
+Values with compiler-visible context provenance expose their closed
+`context_stability`, origin, conservative join path, storage/escape
+eligibility, and boundary-liveness disposition. Spills, reloads, inlining, and
+separate-interface origins retain the same classification rather than replacing
+it with `unknown`. A raw-address trust boundary is reported without claiming
+that it sanitized or upgraded the value.
 
 ### Hardware Access Operations
 
@@ -196,6 +217,21 @@ or IR and does not own a mnemonic-to-effect switch. The product distinguishes:
 - checked assembly bounds and explicitly conservative assembly bounds; and
 - proven facts, programmer assertions, target-provided facts, and unavailable
   facts.
+
+`execution_suspension` appears as the same closed effect for direct, indirect,
+imported Wyst, foreign, marker, and `effects(all)` sites. Each site identifies
+whether its bound is exact or conservative and links to the corresponding
+typed boundary. A provider marker additionally records its owning provider,
+authenticated leaf semantic declaration, ordered adjacent transfer identity,
+selected target, zero-instruction lowering, and provenance. A rejected marker
+or missing-provider transfer produces a diagnostic and no misleading lowered
+row.
+
+Target fact sections expose the normalized executable-environment class, exact
+environment product identity/version/digest, migration/preemption/current-core
+policies, and ordered execution/completion provider descriptors. An empty
+provider list remains explicit; a report never infers a provider from the
+environment class, target name, or presence of `execution_suspension`.
 
 Each declared MMIO read or write reports both `volatile_access` and `mmio` at
 its exact operation site. A complete modify reports its ordered read and write

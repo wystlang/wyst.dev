@@ -1,0 +1,15 @@
+module syntax.item49_legacy
+
+fn legacy(value: u64) {
+  #asm(effects: none) {
+    inputs {
+      input = gpr(value)
+    }
+    clobbers {
+      memory
+    }
+    body {
+      mov x0, {input}
+    }
+  }
+}

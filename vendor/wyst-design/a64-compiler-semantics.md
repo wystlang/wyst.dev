@@ -69,14 +69,14 @@ The generated support ledger has exactly 8,955 rows:
 | Row kind | Active | `known_unsupported` | Total |
 | -------- | -----: | ------------------: | ----: |
 | Encoding | 308 | 4,023 | 4,331 |
-| Source form or official alias | 19 | 4,603 | 4,622 |
+| Source form or official alias | 20 | 4,602 | 4,622 |
 | Target structural profile | 2 | 0 | 2 |
-| **Total** | **329** | **8,626** | **8,955** |
+| **Total** | **330** | **8,625** | **8,955** |
 
 There are zero unexplained and zero partially active rows. All 308 active
 encoding rows are assigned to both `wyst.a64.ordinary-lowering.v1` and
 `wyst.a64.architecture-operations.v1`. The deliberately narrower
-`wyst.a64.checked-asm.core.v1` pack assigns the 12 general-purpose checked
+`wyst.a64.checked-asm.core.v1` pack assigns the 13 general-purpose checked
 source forms and their exact encodings. The
 `wyst.a64.target-structural-asm.aarch64.v1` pack assigns seven additional
 source forms only to authenticated target-owned sequences. The vector-table and trap-frame
@@ -119,7 +119,7 @@ to the narrower checked-assembly pack.
 
 The `wync-a64-conformance-v1` generator makes the release claim mechanically
 checkable. Its `wyst.a64-conformance-evidence.v2` ledger has exactly 8,955
-rows, one for each support row: 329 active and 8,626 `known_unsupported`, with
+rows, one for each support row: 330 active and 8,625 `known_unsupported`, with
 zero unexplained, multiply classified, or partially active rows. The row-kind
 denominators remain 4,331 encodings, 4,622 source forms or official aliases,
 and two target-structural profiles. Active rows bind their complete positive,
@@ -143,12 +143,12 @@ explicit maintenance operation that invokes the pinned tools and checks their
 versions.
 
 Functional execution remains independent from static differential evidence.
-At conformance-ledger level, all 329 active rows are covered by pinned
+At conformance-ledger level, all 330 active rows are covered by pinned
 independent QEMU 11.0.0 evidence; none carries an unavailable-oracle gap or
 claims an authenticated reference vector. The 308 instruction rows divide
 into 302 expected-value paths in `item50-execution`, five state paths in
-`item50-stateful`, and the `SVC` trap structural path in `trap-frame`. The 12
-active source-form rows project their corresponding instruction evidence. The
+`item50-stateful`, and the `SVC` trap structural path in `trap-frame`. The 13
+active general-purpose source-form rows project their corresponding instruction evidence. The
 same `trap-frame` fixture pins both active structural rows by observing the
 selected `current_el_spx_sync` vector slot and the complete canonical
 entry-save/restore-ERET round trip.
@@ -220,7 +220,7 @@ architecture-operation encodings now use this active semantic set and the
 generated encoding authority.
 
 The focused semantic catalog contains 308 exact rows. Its general-purpose
-checked-assembly view contains 12 source forms: NOP, YIELD, WFE, WFI, SEV,
+checked-assembly view contains 13 source forms: ADRP, NOP, YIELD, WFE, WFI, SEV,
 SEVL, RET, B, BL, ERET,
 MRS, and MSR, against exactly 4,331 current A64 instruction forms (4,349 raw
 forms minus 18 authenticated future-only exclusions). Generic HINT with its
@@ -307,7 +307,8 @@ gates rather than inheriting them from source placement.
 The support manifest is the sole support-disposition authority. The generated
 active catalog is the shared machine authority for the 308 ordinary-lowering
 and architecture-operation encodings; its current index contains 301 generated
-operand decoders and 10 generated typed fixup programs. Production encoders use
+operand decoders and 10 generated fixup programs, three transported as typed
+checked-assembly fixups. Production encoders use
 `instruction_catalog::encode_active_fields`, final emission and placement
 patches authenticate the selected active word, and generated SYS/PSTATE tables
 own their finite semantic domains. The proof
@@ -339,9 +340,10 @@ vocabulary. Authenticated generated target-supplement metadata owns vector-slot
 and trap-frame field shape, order, offsets, and extents in production validation
 and lowering.
 
-There are no remaining focused Roadmap items 46-50 completion blockers. This is
-not a universal support claim: 4,023 encodings and 4,603 source forms remain
-explicitly `known_unsupported` until Roadmap item 105 supplies complete
+There are no remaining focused A64 authority, semantic, grammar, checked-
+assembly, or conformance completion blockers. This is
+not a universal support claim: 4,023 encodings and 4,602 source forms remain
+explicitly `known_unsupported` until the universal A64 checked-assembly conformance milestone supplies complete
 semantics and activation artifacts and reruns this gate over the official
 denominator. Functional-execution coverage remains independent; static
 generation, validation, and

@@ -3,15 +3,16 @@ title: "Chapter 13: Wyst Scheduling Semantics"
 group: chapter
 chapter: 13
 order: 13
-summary: "The standard scheduling policy and explicit source-order scheduling boundaries."
+summary: "Execution strands, effect-driven suspension boundaries, and source scheduling policy."
 ---
 
 # Chapter 13: Wyst Scheduling Semantics
 
 > **Canonical scope.** The implicit `schedule.standard` policy, the explicit
 > `schedule source { ... }` boundary, the `#[schedule(source)]` declaration
-> attribute, and their reproducibility scope. IR-level region representation
-> lives in [appendix-a-ir.md §4.3](appendix-a-ir.md).
+> attribute, the execution-strand model, the `execution_suspension` effect and
+> its typed boundary, and their reproducibility scope. IR-level representation
+> lives in [appendix-a-ir.md](appendix-a-ir.md).
 
 ### Semantic Boundary
 
@@ -20,6 +21,178 @@ source meaning. Optimization and IR rules build on the source evaluation order,
 effects, memory ordering, and dependency rules established here. Scheduling may
 move pure work only when the move is observationally equivalent under those
 rules.
+
+## Execution Strands And Suspension
+
+An **execution agent** is the memory-model umbrella that owns one ordered
+execution history. An **execution strand** is one sequential Wyst control-flow
+instance inside that agent. A software task or host thread may retain one
+strand while it is voluntarily parked, timer-preempted, resumed, or migrated
+where the selected target permits migration. Strand identity is compiler-only:
+it has no source value and creates no task, host-thread, scheduler, executor,
+TLS, stack, entry syntax, runtime, or operating-system dependency.
+
+Every trap or interrupt invocation starts a fresh strand in the same execution
+agent as the interrupted strand. Architectural entry orders the handler after
+the exact interrupted-strand prefix; nested traps recursively nest this order.
+Ordinary architectural exception return ends the handler strand and resumes
+the interrupted strand, ordering its resumed suffix after the completed
+handler. A scheduler transfer saves or stops the current handler strand and
+resumes the selected task's distinct saved strand, or it is nonreturning. It
+never relabels the current dynamic continuation as another task.
+
+These are control-order edges for one agent. They do not synchronize with a
+different agent, publish unrelated memory, or replace atomic, volatile,
+interrupt-exclusion, or provider rules. Selecting another task likewise
+creates no source-level synchronizes-with or happens-before edge. A provider
+that hands saved-context, run-queue, or current-task metadata to another owner
+must perform its own explicit release/acquire publication.
+
+### The `execution_suspension` effect
+
+`execution_suspension` is a closed, target-neutral language effect. It says
+that an operation or call may synchronously enter or request an environment or
+provider scheduling transfer that ceases the current strand and may later
+return it. Exogenous timer, interrupt, or host preemption does not add the
+effect to the interrupted operation. The effect does not describe a dormant
+caller-owned resumable frame; that later facility has a distinct effect and
+boundary.
+
+Every direct, indirect, imported Wyst, or foreign call whose exact or
+conservative callable bound contains `execution_suspension` has exactly one
+typed `strand_suspension_boundary`. `effects(all)` contains the effect. The
+boundary is placed after the callee expression for an indirect call and after
+all arguments have been evaluated left-to-right, immediately before transfer
+to the callee. Devirtualization, mandatory or optional inlining, tail-call
+formation, semantic-interface serialization, objects, archives, and final
+linking preserve the same boundary; none may infer its absence from an
+unavailable body. Consequently,
+`#[deny_effects(execution_suspension)]` proves a strand-nonsuspending call graph
+only when every reachable exact or conservative bound excludes it.
+
+The active `wyst.callable-context-summary.v2` sidecar authenticates the exact
+or conservative bound and its authority under the same digest as callable
+context provenance. Known-target indirect calls join those authenticated
+bounds and must reproduce their typed call-site bound. Chapter 16 owns the
+wire format for the not-yet-active public semantic-interface/archive producer.
+
+If a suspending call returns, it returns to the same logical software task or
+host thread and the same retained strand. The provider may run other tasks and
+may migrate that dormant task at this boundary, but it preserves the address
+and object identity of every live native activation, SP-relative local,
+outgoing area, and nonescaping local pointer. It may not rebind, clone, enter
+twice, relocate, stack-copy, nonlocally enter or exit, or asynchronously cancel
+that continuation. Each such facility requires a different compiler-visible
+effect, boundary, and lifetime model.
+
+For a target that admits current-core state or `per_cpu`, a retained strand may
+migrate only at a preserved `strand_suspension_boundary`. Asynchronous
+preemption resumes it on the same core. A target that cannot guarantee those
+rules makes `per_cpu` unavailable; it may not rely on convention, silently
+disable the boundary, or claim arbitrary-point migration without a separate
+compiler-visible invalidation proof.
+
+### Context stability
+
+Every compiler-owned current-context operation and every authenticated
+provider interface classifies its result with one closed `context_stability`
+value:
+
+| Classification | Boundary rule |
+| -------------- | ------------- |
+| `active_context_affine` | Bound to one active context or current core; it cannot cross a strand or frame-suspension boundary. |
+| `task_stable` | May cross a strand boundary because a returning suspension resumes the owning task. |
+| `cross_strand_stable` | May cross, subject to the value's exact instance, generation, detach, escape, and lifetime contract. |
+
+The conservative order is `active_context_affine < task_stable <
+cross_strand_stable`; a whole aggregate, possible enum variant, or control-flow
+join uses the most restrictive reachable live classification. Field projection
+retains the selected field's classification. The classification is non-erasable
+semantic type/provenance, not a runtime tag or optional lint. Assignment, local
+storage, arguments and results, aliases, projections, aggregates, enum
+payloads, generic substitution, joins, spills and reloads, inlining, semantic
+interfaces, objects, and archives preserve it exactly. Unknown or incompatible
+provenance cannot cross a boundary, and no source cast, adapter, or summary may
+invent or upgrade it.
+
+There is no source spelling that authors a `context_stability` classification.
+The current callable declaration surface therefore produces ordinary parameter
+and result summary facts; compiler-owned current-instance operations remain the
+only active classified source of values. A classified callable summary is
+admitted only from a compiler-owned or authenticated provider producer. The
+portable provider accessor surface that creates such results is not yet active;
+substituting summary bytes before that producer exists is incompatible
+transport, not a way to opt in early.
+
+The later caller-owned resumable-frame facility rejects both affine and merely
+task-stable values in frame state and accepts only an authenticated
+cross-strand-stable value under its exact lifetime contract. It does not change
+this vocabulary or weaken the ordinary strand-boundary rules.
+
+An `active_context_affine` or `task_stable` value may use only compiler-proven
+nonescaping activation- or task-local storage. It cannot escape into module or
+static storage, unclassified addressed memory, foreign storage, or a resumable
+frame. Address-taking is rejected unless every alias is proved dead or eligible
+at the applicable boundary. Raw-address circumvention remains the reported
+Chapter 1 trust boundary and never sanitizes context stability.
+
+Exogenous preemption may leave an affine value dormant only in the exact saved
+activation; a handler or other strand cannot access it. Ordinary return
+revalidates it only by restoring that exact context, with same-core restoration
+additionally required for core-derived provenance or for a target that admits
+current-core or `per_cpu` state.
+
+### Boundary ordering
+
+The boundary is a two-way compiler ordering dependency for observable memory,
+volatile/MMIO/atomic operations, other effects, calls, and current-context or
+current-`per_cpu` base acquisition. It invalidates cached current-context and
+`per_cpu` facts. A live current-core base handle, a live affine context handle,
+or an address derived from either is rejected across it; invalidating a cache
+cannot repair a source-visible stale address after migration. An ordinary
+non-address value already copied from `per_cpu`, an authenticated
+`task_stable` value, and an authenticated `cross_strand_stable` value may
+remain live under their own lifetime contracts. After the boundary, any
+current-context or `per_cpu` fact is reacquired.
+
+Independent pure computation may still move when normal dependencies and the
+selected deterministic scheduling profile allow it. The boundary is not
+`schedule source`, a compiler memory barrier, an architectural barrier, an
+atomic order, synchronization, a happens-before edge, a safepoint, a stack
+map, a resumable frame, a continuation, a cancellation point, or evidence that
+the callee actually parked.
+
+### Authenticated provider marker
+
+`core.execution.suspension_point` has internal identity
+`execution_suspension_point`. Its canonical source form is:
+
+<!-- wyst-contract: sketch -->
+```wyst
+import core.execution
+execution.suspension_point()
+```
+
+The sealed private direct whole-module import exposes the final qualifier;
+`import core.execution as NAME` is the only alternative access shape. The
+compiler rejects selective, bare, public, re-exported, leaf, shadowed, and
+spoofed access. Calling the operation contributes `execution_suspension` and
+one `strand_suspension_boundary`, returns immediately, and emits zero
+instructions, calls, symbols, relocations, stack maps, runtime hooks, or
+runtime dependencies. The marker itself never parks, yields, switches context,
+or calls an operating system.
+
+The marker is legal only in the smallest authenticated Wyst-native provider
+leaf, immediately before the first authenticated non-call environment transfer
+or compiler-recognized canonical checked context switch, with no intervening
+observable operation. Authentication binds the selected target, provider,
+provider-leaf semantic declaration, and adjacent transfer-operation identity;
+textual adjacency or an instruction pattern cannot authenticate it. The
+compiler rejects standalone, missing, duplicate, post-transfer, observably
+separated, and unauthenticated markers. It also rejects a marker before a Wyst
+or foreign call whose callable bound already supplies the ordinary boundary.
+An authenticated provider transfer must carry the effect itself or have exactly
+one preceding marker; it may not have neither or both.
 
 ---
 
@@ -165,21 +338,14 @@ build identity whenever it can affect generated bytes.
 
 ---
 
-## Exact Code Contracts (Released v0.8 Snapshot)
+## Final-Code Verification (Manifest-Owned)
 
-The `#exact(...)` declaration suffix and prefix-`%` example in this section are
-released-v0.8 syntax retained for the historical post-lowering contract. They
-are not active v0.9 source spellings; future artifact verification owns the
-successor contract.
+The released-v0.8 exact-code declaration suffix is removed from v0.9 source.
+The parser recognizes that removal-manifest row only far enough to issue the migration diagnostic; it
+must never reach IR or machine lowering. This historical spelling therefore
+remains a negative source contract:
 
-Exception vectors, counted sequences, timing-sensitive operations, and byte
-identity boundaries use `#exact(...)` on a function or label when source
-scheduling is not strong enough. `#exact` is a post-lowering artifact contract,
-not a source-level scheduling policy. It does not authorize reordering and it
-does not change source meaning; it constrains what the backend is allowed to
-emit for that code item.
-
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module exact_code_demo
 
@@ -188,32 +354,43 @@ tick :: () #exact(instructions = 2, families = "hint,branch", bytes = "1f2003d5 
 }
 ```
 
-The supported exact-code fields are:
+Final-code requirements belong to the selected named artifact's `verify` block
+and use a canonical semantic declaration selector:
+
+```text
+verify {
+  code arch.timer.tick {
+    instructions 2
+    families [.hint, .branch]
+    bytes [0x1f, 0x20, 0x03, 0xd5, 0xc0, 0x03, 0x5f, 0xd6]
+    prologue .absent
+    spill_slots 0
+    veneers 0
+  }
+}
+```
+
+The supported manifest-owned final-code fields are:
 
 | Field | Contract |
 | ----- | -------- |
-| `instructions = N` | the emitted body has exactly `N` AArch64 instructions |
-| `families = "a,b"` | every emitted instruction belongs to one of the listed families: `arithmetic`, `branch`, `compare`, `hint`, `load-store`, `logical`, `move`, `system`, `adr`, or `other` |
-| `bytes = "hex"` | the emitted body bytes exactly match the hexadecimal byte string, ignoring spaces and underscores in the source string |
-| `registers = "name:xN,other:vM"` | named parameters or locals are assigned exactly to the listed registers after allocation |
-| `prologue = "present"` / `"absent"` | the function or label either has or does not have compiler-generated frame setup |
-| `spills = N` | register allocation produces exactly `N` spill slots |
-| `veneers = N` | veneer planning inserts exactly `N` veneers for the text chunk containing the code item |
-| `section = ".name"` | the code item is emitted into exactly that executable section |
-| `align = N` | the emitted file and address offsets are aligned to `N` bytes |
+| `instructions N` | the final linked body has exactly `N` AArch64 instructions |
+| `families [.a, .b]` | every emitted instruction belongs to one permitted authenticated catalog family |
+| `bytes [...]` | the final post-relocation function bytes exactly match the hexadecimal byte list |
+| `prologue .present` / `.absent` | compiler-generated frame setup is present or absent |
+| `spill_slots N` | final register allocation produced exactly `N` spill slots |
+| `veneers N` | final placement attributed exactly `N` veneers to the selected code item |
 
-The compiler verifies `#exact` after ABI lowering, register allocation, frame
-layout, target instruction selection, veneer planning, and text emission. If a
-contract cannot be satisfied, the build is rejected with a diagnostic that
-names the failed requirement and the extra instruction, byte, register, spill,
-veneer, prologue, or placement resource that would be required. The compiler
-must not silently insert support code to make an exact-code region work; the
-programmer must relax the contract or change the source.
+Source attributes continue to own section and alignment, and callable syntax
+continues to own register placement; those are not manifest verification
+fields. Verification runs after ABI lowering, register allocation, frame
+layout, target instruction selection, relocation, veneer planning, and final
+text emission. Failure names the canonical manifest subject and required extra
+resource. Verification never rewrites code to satisfy a check.
 
-Use `schedule source` for ordinary source-operation ordering. Use `#exact` only
-when the post-lowering artifact itself is the contract. Keeping the two
-facilities separate prevents source scheduling from becoming a byte-freezing
-mode for ordinary code.
+Use `schedule source` for source-operation ordering and artifact `verify code`
+only when the final emitted code itself is the contract. Keeping the facilities
+separate prevents source scheduling from becoming a byte-freezing mode.
 
 ---
 
@@ -229,7 +406,7 @@ a source boundary may:
 
 **Rationale.** Code layout — block ordering, section placement, and fall-through
 direction — is determined by source structure and explicit layout controls such
-as `#likely`, `#unlikely`, and section placement, never by scheduling policy.
+as branch facts and section placement, never by scheduling policy.
 Separating layout from scheduling preserves two properties:
 
 1. **Reproducibility scope.** Layout decisions are deterministic under the
@@ -237,21 +414,15 @@ Separating layout from scheduling preserves two properties:
    compiler version, build optimization mode, target, and selected scheduling
    policies → same layout).
 
-2. **Composability.** A programmer can pin layout with `#likely`/`#unlikely`
+2. **Composability.** A programmer can pin layout with explicit branch facts
    while independently selecting source-order boundaries. See
    [chapter-08-functions.md §2.7.2](chapter-08-functions.md) for branch hints
    and [chapter-04-modules.md](chapter-04-modules.md) for section conventions.
 
 ## Removed Scheduling Forms
 
-The predecessor directive and modes are removed source syntax:
-
-```text
-#schedule(strict)
-#schedule(relaxed)
-#schedule(throughput)
-#schedule(latency)
-```
+The predecessor scheduling directive and its four policy arguments are removed
+source syntax. Their exact dispositions are frozen in the hash-removal audit.
 
 There is no compatibility spelling, mode alias, warning-only acceptance, or
 automatic rewrite. The compiler reports these as invalid syntax. The former

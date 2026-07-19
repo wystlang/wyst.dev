@@ -1,0 +1,11 @@
+module syntax.legacy_qualified_enum_match_pattern
+
+enum Message: u8 {
+    Write
+}
+
+fn rejected(message: Message) -> u64 {
+    match message {
+        Message.Write { return 1 }
+    }
+}

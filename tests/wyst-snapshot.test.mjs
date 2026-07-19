@@ -24,13 +24,42 @@ const fixtureDir = path.join(root, "tests", "fixtures", "wyst");
 const syncScript = path.join(root, "tools", "sync-wyst-snapshot.mjs");
 const snapshotScript = path.join(root, "tools", "wyst-snapshot.mjs");
 const homepageExampleScript = path.join(root, "tools", "homepage-example.mjs");
+const vocabularyCatalogs = [
+	"attribute-catalog.tsv",
+	"meta-operation-catalog.tsv",
+	"syntax-words.tsv",
+];
 
-const expectedFixtures = [
+const coreFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
 ];
+const syntaxCorpusManifest =
+	"wync/tests/fixtures/syntax-corpus/manifest.tsv";
+const fakeSyntaxCorpusFixtures = [
+	syntaxCorpusManifest,
+	"wync/tests/fixtures/syntax-corpus/negative/removed.wyst",
+	"wync/tests/fixtures/syntax-corpus/positive/canonical.wyst",
+];
+
+async function syntaxCorpusFixtures(rootDirectory = fixtureDir) {
+	const manifest = await readFile(path.join(rootDirectory, syntaxCorpusManifest), "utf8");
+	const files = manifest
+		.split("\n")
+		.filter((line) => line && !line.startsWith("#"))
+		.map((line) => line.split("\t"))
+		.map((fields) => {
+			assert.equal(fields.length, 6, `invalid syntax-corpus manifest row: ${fields}`);
+			return path.posix.join("wync/tests/fixtures/syntax-corpus", fields[4]);
+		});
+	return [syntaxCorpusManifest, ...files].sort();
+}
+
+async function expectedFixtures(rootDirectory = fixtureDir) {
+	return [...coreFixtures, ...(await syntaxCorpusFixtures(rootDirectory))].sort();
+}
 
 async function listFiles(dir, relative = "") {
 	const files = [];
@@ -94,16 +123,39 @@ for (const response of responses) {
 		["design/README.md", "# Wyst design\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
 		["design/semantic-db.json", "{}\n"],
+		[
+			"design/syntax-words.tsv",
+			"// wyst.syntaxWords.v0.9\nfn\treserved\tcore.declarations\tdeclaration\timplemented\n",
+		],
+		[
+			"design/attribute-catalog.tsv",
+			"name\tstate\nalign\tactive\n",
+		],
+		[
+			"design/meta-operation-catalog.tsv",
+			"spelling\tstate\n#len\timplemented\n",
+		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
 		["wync/src/main.rs", "fn compiler() {}\n"],
-		[expectedFixtures[0], "# semihost runtime\n"],
-		[expectedFixtures[1], "hello\n"],
-		[expectedFixtures[2], "layout fixture\n"],
+		[coreFixtures[0], "# semihost runtime\n"],
+		[coreFixtures[1], "hello\n"],
+		[coreFixtures[2], "layout fixture\n"],
 		[
-			expectedFixtures[3],
+			coreFixtures[3],
 			"// homepage-example:start\nfn main() {}\n// homepage-example:end\n",
 		],
+		...fakeSyntaxCorpusFixtures.map((file) => [
+			file,
+			file.endsWith("manifest.tsv")
+				? [
+						"# kind\tstage\tname\ttags\tfile\texpect",
+						"positive\tparse\tcanonical\tversion-gating\tpositive/canonical.wyst\t-",
+						"negative\tparse\tremoved\tversion-gating\tnegative/removed.wyst\texpected error",
+						"",
+					].join("\n")
+				: "module syntax.fixture\n",
+		]),
 		["wync/fake-wync.mjs", fakeWync],
 	];
 	await Promise.all(inputs.map(([file, contents]) => write(wystRoot, file, contents)));
@@ -155,22 +207,25 @@ function runSync(siteRoot, wystRoot) {
 }
 
 test("the versioned Wyst publication snapshot has provenance and build inputs", async () => {
-	const [sourceCommit, readme, semanticDb, files] = await Promise.all([
+	const [sourceCommit, readme, semanticDb, catalogs, files] = await Promise.all([
 		readFile(path.join(designDir, ".source-commit"), "utf8"),
 		stat(path.join(designDir, "README.md")),
 		stat(path.join(designDir, "semantic-db.json")),
+		Promise.all(vocabularyCatalogs.map((file) => stat(path.join(designDir, file)))),
 		listFiles(designDir),
 	]);
 
 	assert.match(sourceCommit, /^[0-9a-f]{40,64}\n$/i);
 	assert.ok(readme.isFile());
 	assert.ok(semanticDb.isFile());
+	assert.ok(catalogs.every((catalog) => catalog.isFile()));
 	assert.ok(
 		files.every(
 			(file) =>
 				!file.includes("/") &&
 				(file === ".source-commit" ||
 					file === "semantic-db.json" ||
+					vocabularyCatalogs.includes(file) ||
 					file.endsWith(".md")),
 		),
 		"the design snapshot should contain only top-level publication inputs",
@@ -178,7 +233,7 @@ test("the versioned Wyst publication snapshot has provenance and build inputs", 
 });
 
 test("the versioned Wyst fixture snapshot contains only site test inputs", async () => {
-	assert.deepEqual(await listFiles(fixtureDir), expectedFixtures);
+	assert.deepEqual(await listFiles(fixtureDir), await expectedFixtures());
 });
 
 test("the committed snapshot manifest binds every imported byte", async () => {
@@ -207,9 +262,16 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	assert.equal(manifest.schema, 1);
 	assert.equal(manifest.sourceCommit, git(wystRoot, ["rev-parse", "HEAD"]).stdout.trim());
 	assert.match(manifest.snapshotSha256, /^[0-9a-f]{64}$/);
-	assert.equal(Object.keys(manifest.files).length, 8);
+	assert.equal(
+		Object.keys(manifest.files).length,
+		(await listFiles(path.join(siteRoot, "vendor", "wyst-design"))).length +
+			(await listFiles(path.join(siteRoot, "tests", "fixtures", "wyst"))).length,
+	);
 	assert.ok(manifest.files["vendor/wyst-design/.source-commit"]);
-	for (const fixture of expectedFixtures) {
+	for (const catalog of vocabularyCatalogs) {
+		assert.ok(manifest.files[`vendor/wyst-design/${catalog}`]);
+	}
+	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
 	}
 	assert.equal(homepageTokens.source.gitCommit, manifest.sourceCommit);
@@ -273,4 +335,21 @@ test("snapshot sync rejects compiler changes that could alter homepage tokens", 
 	assert.notEqual(result.status, 0);
 	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
 	assert.match(result.stderr, /wync\/src\/main\.rs/);
+});
+
+test("snapshot sync rejects syntax-corpus changes outside the committed source identity", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	await write(
+		wystRoot,
+		"wync/tests/fixtures/syntax-corpus/positive/canonical.wyst",
+		"module syntax.changed\n",
+	);
+
+	const result = runSync(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
+	assert.match(
+		result.stderr,
+		/wync\/tests\/fixtures\/syntax-corpus\/positive\/canonical\.wyst/,
+	);
 });

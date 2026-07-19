@@ -28,10 +28,10 @@ Its address and access dependencies are linked above.
 > **Source-version boundary.** Sections explicitly headed as current v0.9
 > contracts use the active language surface. Other examples in this chapter
 > retain the released v0.8 memory-model exposition for compatibility context.
-> In those older sections, `T@[address]`, typed-address `+`/`-`, colon slices,
-> `%addr_of`, endian `%load_*`/`%store_*`, `as.<category>`, the old atomic
-> `%` primitives, and `#acquire`/`#release` are historical
-> spellings, not v0.9 alternatives. Chapter 6's named address methods,
+> In those older sections, predecessor typed-memory, address-arithmetic,
+> colon-range, runtime address-of, endian-access, categorized-conversion,
+> atomic-primitive, and per-access-ordering forms are historical spellings,
+> not v0.9 alternatives. Chapter 6's named address methods,
 > unit-explicit offsets, `addr_of`, slice ranges, and named conversions
 > supersede those spellings without changing the ordering model.
 
@@ -56,11 +56,11 @@ convert to `@atomic<T>`. The exact element/method/order matrix,
 compare-exchange failure orders, ARM64 mapping, and removal table are generated
 from [`atomic-matrix.json`](atomic-matrix.json). That matrix is the sole
 authority for atomic storage types, methods, orders, result shapes, and the
-disposition of the removed `#acquire`/`#release` directives. It does not own
-prefix-`%` mappings: the sole audit authority for those retired spellings is
+disposition of the removed per-access ordering directives. It does not own
+prefix-primitive mappings: the sole audit authority for those retired spellings is
 the non-parser
 [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv).
-Later occurrences of old atomic `%` primitives or `#acquire`/`#release` in
+Later occurrences of old atomic primitives or per-access ordering directives in
 historical exposition are not current syntax.
 
 ### Construction, lifetime, and modification order
@@ -87,10 +87,12 @@ dynamically constructed atomic address therefore carries an explicit audited
 Normal-memory and alignment assertion; it is never inferred from an ordinary,
 volatile, or MMIO address.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: fmt -->
 ```wyst
+module memory.contract
+
 fn mapped_counter(raw: u64) -> @atomic<u64> {
-    return address<@atomic<u64>>(raw)
+  return address<@atomic<u64>>(raw)
 }
 ```
 
@@ -129,8 +131,9 @@ class explicitly.
 
 ## v0.9 Register and `per_cpu` Memory Contract (Current)
 
-Chapter 8 is the sole owner of item-42 source semantics. In v0.9, explicit
-register placement is written `in register`; `#pin` is removed. Parameter and
+Chapter 8 is the sole source-semantic owner for
+`language.callable-storage-contracts`. In v0.9, explicit register placement is
+written `in register`; the predecessor register-placement directive is removed. Parameter and
 result placement is part of callable identity, while `var name: T in register`
 is a hard local-storage requirement.
 
@@ -144,15 +147,16 @@ uses its normal confined backing-word read-modify-write sequence: one load,
 `BitfieldInsert`, and one store, all through the same freshly acquired base.
 Those operations have the same volatility, ordering, race, and alias rules as
 their ordinary non-`per_cpu` counterparts. Atomic `per_cpu` storage is accessed
-only through item-52 atomic methods; the storage class itself adds no atomicity
-or ordering.
+only through `wyst.atomic-matrix.v1` methods; the storage class itself adds no
+atomicity or ordering.
 
 There is no source-visible address, template address, or whole-aggregate copy
 event for `per_cpu` storage. `#percpu_offset_of` is a compile-time final-template
 byte-offset query and performs no current-core acquisition or memory access.
 The target availability and single-instance gate are defined by Chapter 8 and
-projected into target lowering by Chapter 11. Before item 92, reachable access
-requires `#target(..., per_cpu = single_instance_tpidr_el1)` and its EL1+,
+projected into target lowering by Chapter 11. Before the production multicore
+realization milestone, reachable access requires
+`#target(..., per_cpu = single_instance_tpidr_el1)` and its EL1+,
 16-byte-aligned `TPIDR_EL1` live-base contract.
 
 ---
@@ -166,7 +170,8 @@ requires `#target(..., per_cpu = single_instance_tpidr_el1)` and its EL1+,
 ARM64 is fundamentally register-oriented. Wyst surfaces this register file
 as a set of **reserved tokens** rather than as a set of variables. The
 register allocator owns variable-to-register mapping; the programmer
-expresses exact register placement only via the item-42 `in register` clauses
+expresses exact register placement only via the `in register` clauses in
+`language.callable-storage-contracts`
 and manipulates machine operands directly only inside checked `asm` bodies
 (section 2.9).
 
@@ -197,7 +202,8 @@ These tokens are reserved by the lexer. Using one as a variable, parameter,
 constant, function, struct field, or label name is a syntax error. They may
 appear only:
 
-1. In a legal item-42 `in register` placement position.
+1. In a legal `in register` placement position defined by
+   `language.callable-storage-contracts`.
 2. In a catalog-authorized position inside the body of an `asm { ... }` block.
 
 A Wyst statement like:
@@ -209,7 +215,7 @@ x0 = x1 + x2
 
 is rejected. Add is expressed by writing variables:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 a : u64 = 1
 b : u64 = 2
@@ -262,7 +268,7 @@ str x0, [x1]
 
 Wyst preserves this explicitly.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module memory_demo
 
@@ -310,7 +316,7 @@ type[address]
 
 Examples:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 mem : @u64 = 0x4000
 
@@ -322,12 +328,13 @@ u64@[mem] = x     // store: write x to u64 at address in mem
 
 The type of `x` is inferred from the load. Explicit annotation is also valid:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x : u64 = u64@[mem]
 ```
 
-These are equivalent. The `:=` shorthand is simply `:` and `=` without whitespace.
+These historical forms are equivalent; the inferred-binding punctuation joined
+the type separator and initializer marker without whitespace.
 
 ### Volatile and MMIO-Intent Access
 
@@ -345,7 +352,7 @@ Device memory. Normal-vs-Device memory type is established by page tables,
 firmware, or platform configuration; target descriptions may record known
 mapping facts, but a type conversion cannot create them.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UARTFR : @mmio u32 = 0x0900_0018
 UARTDR : @mmio u32 = 0x0900_0000
@@ -435,14 +442,13 @@ Addresses are typed as `@T` — an address into elements of type `T`. This appli
 
 The "stride N" annotation describes what one _element_ occupies, and source
 address arithmetic scales by that stride. `(p : @u32) + 1` is `p` advanced by
-one `u32` element, or four bytes. To step in raw bytes, convert to `@u8` with
-`as.lens` or use explicit numeric `u64` arithmetic. The formal arithmetic rules are in
+one `u32` element, or four bytes. Current source advances in raw bytes with
+`byte_offset`; the predecessor lens-conversion form is historical. The formal arithmetic rules are in
 [chapter-06-types.md §1.4.1](chapter-06-types.md) (Address Types subsection).
 Do not write `p + i * #size_of(T)` for element `i`; that double-scales the
-offset. The three distinct operations are `element_offset(p, i)` (`p + i`),
-`byte_offset(p, bytes)` (`(p as.lens @u8) + bytes` or explicit `u64` arithmetic),
-and `field_addr(p, T.field)` (`(p as.lens @u8) + #field_offset(T, field)` before an
-explicit `as.lens` conversion to the field address lens).
+offset. The three distinct current operations are `element_offset(p, i)`,
+`byte_offset(p, bytes)`, and `field_addr(p, T.field)`; each records its unit
+directly and needs no categorized conversion.
 
 #### Volatile and MMIO-Intent Addresses
 
@@ -453,7 +459,7 @@ or store through either qualified address is a compiler barrier (see section
 1.3.1). Only access through `@mmio T` introduces the `mmio` effect. Qualifiers
 propagate through address arithmetic:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 GIC_BASE_BYTES : @mmio u8 = 0x0800_0000
 GICD_CTLR      : @mmio u32 = (GIC_BASE_BYTES + 0) as.lens @mmio u32
@@ -465,8 +471,8 @@ mask = u32@[GICD_TYPER]           // volatile MMIO-intent load at byte offset 4
 
 There is no implicit conversion among `@T`, `@volatile T`, and `@mmio T` in any
 direction. Stripping volatility or MMIO intent requires an explicit
-`as.qualifier` conversion and emits a warning; adding either qualifier also
-requires an explicit `as.qualifier` conversion.
+`qualify<T>(address)` conversion and emits a warning; adding either qualifier
+also requires that named conversion.
 These are visible source events and do not perform memory access by themselves.
 
 Volatility is determined only by the static address type at the memory-access
@@ -488,7 +494,7 @@ including when one address was produced by casting the other.
 
 Float loads and stores use the same `type[address]` syntax:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 addr : @f32 = 0x5000
 
@@ -508,7 +514,7 @@ f32@[addr] = val           // store f32
 
 Struct stride is the total size of the struct (sum of field sizes including padding). Addressing structs lets you treat contiguous struct data as an array:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 msgs : @string = 0x6000
 
@@ -521,7 +527,7 @@ second_len := u64@[second_len_addr]
 
 #### Vector Addresses
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 @[f32:4]  // address into [f32:4] vectors (stride 16)
 @[u8:16]  // address into [u8:16] vectors (stride 16)
@@ -533,7 +539,7 @@ Vector addresses follow the same model — stride equals the total vector size.
 The element type records the intended access type. Array and slice indexing
 syntax is a separate operation; `@T` address arithmetic uses element offsets:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 base : @u64 = 0x4000
 
@@ -542,7 +548,7 @@ total += u64@[base + i]
 
 ### MMIO Example
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UARTFR : @mmio u32 = 0x0900_0018
 UARTDR : @mmio u32 = 0x0900_0000
@@ -594,9 +600,9 @@ Wyst intentionally favors semantic clarity over optimizer complexity.
 ## 1.3.1 Volatility, Historical Per-Access Directives, and Current Barriers
 
 The `@volatile T` and `@mmio T` qualifier discussion remains applicable to
-v0.9. The `#acquire` and `#release` subsections and examples are a released
-v0.8 snapshot only; v0.9 uses the typed atomic methods in the current section
-above. The qualified barrier subsection is an active v0.9 contract.
+v0.9. The predecessor per-access acquire/release subsections and examples are a
+released-v0.8 snapshot only; v0.9 uses the typed atomic methods in the current
+section above. The qualified barrier subsection is an active v0.9 contract.
 
 Wyst distinguishes five orthogonal mechanisms for controlling memory
 operations:
@@ -605,7 +611,7 @@ operations:
 | ------------------------ | -------------------------------- | ------------------------------------------ |
 | Volatile access contract | `@volatile T` or `@mmio T` type  | every access through the typed address     |
 | MMIO intent              | `@mmio T` type                   | every access through the typed address     |
-| Released-v0.8 synchronization ordering | `#acquire`/`#release` per access | one load or one store             |
+| Released-v0.8 synchronization ordering | predecessor per-access ordering directives | one load or one store             |
 | CPU memory ordering      | `barrier.dsb(...)`/`barrier.dmb(...)`/`barrier.isb()` | hardware and compiler fence at one point |
 | Compiler-only ordering   | `barrier.compiler()`              | compiler fence at one point; emits nothing |
 
@@ -630,7 +636,7 @@ is a **compiler barrier**:
 Two volatile accesses are never reordered relative to each other. A plain
 access may not be moved across a volatile access in either direction.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 READY_FLAG : @volatile u32 = 0x8000_1000
 
@@ -652,7 +658,7 @@ Volatility propagates through address arithmetic. If `p : @volatile u32`, then
 when a byte view is needed. Any access through the derived address is a
 compiler barrier:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 STATUS_WORDS  : @volatile u32 = 0x8000_1000
 
@@ -666,11 +672,11 @@ same_mask = u32@[type_addr]         // same address, byte offset spelled explici
 
 Volatility and MMIO intent are properties of the static result type of the
 arithmetic expression. If an integer operand was produced from an address with
-`as.address u64`, the source address's qualifiers must match the result address
+the named `address<u64>(source)` conversion, the source address's qualifiers must match the result address
 qualifiers. Mixed-qualifier address arithmetic is rejected unless the source
 first casts one address to the intended qualifier:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 device : @mmio u32 = 0x0900_0000
 plain : @u32          = 0x8000_0000
@@ -680,13 +686,13 @@ good := device + ((plain as.qualifier @mmio u32) as.address u64) // result is @m
 ```
 
 There is no implicit conversion among `@T`, `@volatile T`, and `@mmio T` in any
-direction. To strip volatility or MMIO intent use an explicit `as.qualifier`
+direction. To strip volatility or MMIO intent use an explicit `qualify<T>`
 conversion, which emits a warning. To treat a plain address as volatile or
-MMIO-intent, use an explicit `as.qualifier` conversion as well. These
+MMIO-intent, use that named conversion as well. These
 conversions do not perform an access and do not introduce
 `volatile_access` or `mmio` effects until a later load or store:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 device : @mmio u32 = 0x0900_0018
 plain := device as.qualifier @u32             // qualifiers dropped; loads through `plain` are not barriers
@@ -700,7 +706,7 @@ device_view := ram as.qualifier @mmio u32
 The static address type at the access site decides whether the access is
 plain, volatile, or MMIO-intent, but it is not an alias boundary. If `plain`
 and `device` hold the same numeric address, the compiler must assume
-`u32@[plain]` and `u32@[device]` may touch the same bytes even though one
+`plain.load()` and `device.load()` may touch the same bytes even though one
 access is plain and the other is volatile with MMIO intent.
 
 ### MMIO Intent via `@mmio T`
@@ -735,39 +741,39 @@ responsible for configuring MMIO regions with Device memory attributes
 
 ---
 
-### `#acquire`
+### Released v0.8 Acquire Ordering
 
-`#acquire` is a load-acquire. It guarantees that all subsequent memory
+The predecessor acquire directive denotes a load-acquire. It guarantees that all subsequent memory
 accesses in program order are observed after this load. Use it to safely
 read a lock or flag that another agent (another core, an interrupt handler)
 may have written.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 val = #acquire u64@[lock_addr]     // load-acquire
 ```
 
-Lowers to `ldar xD, [xN]` on ARM64. `#acquire` is only valid on loads —
+Lowers to `ldar xD, [xN]` on ARM64. The directive is only valid on loads —
 applying it to a store is a compile error.
 
-`#acquire` is independent of volatility and MMIO intent: it is valid on `@T`,
+That released ordering form is independent of volatility and MMIO intent: it is valid on `@T`,
 `@volatile T`, and `@mmio T` addresses, though acquire-on-MMIO is rare and
 indicates synchronization through a device register.
 
 ---
 
-### `#release`
+### Released v0.8 Release Ordering
 
-`#release` is a store-release. It guarantees that all preceding memory
+The predecessor release directive denotes a store-release. It guarantees that all preceding memory
 accesses in program order are observed before this store. Use it to safely
 write a lock or flag that another agent will subsequently read.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #release u64@[lock_addr] = 0       // store-release
 ```
 
-Lowers to `stlr xD, [xN]` on ARM64. `#release` is only valid on stores —
+Lowers to `stlr xD, [xN]` on ARM64. The directive is only valid on stores —
 applying it to a load is a compile error.
 
 ---
@@ -779,15 +785,15 @@ applying it to a load is a compile error.
 | load/store via `@T`                          | valid         | plain access                    |
 | load/store via `@volatile T`                 | valid         | volatile (compiler barrier)     |
 | load/store via `@mmio T`                     | valid         | volatile plus MMIO intent       |
-| `#acquire` on `@T` load                      | valid         | acquire-release synchronization |
-| `#release` on `@T` store                     | valid         | acquire-release synchronization |
-| `#acquire` on `@volatile T` load             | valid (rare)  | acquire-via-volatile           |
-| `#release` on `@volatile T` store            | valid (rare)  | release-via-volatile           |
-| `#acquire` on `@mmio T` load                 | valid (rare)  | acquire-via-MMIO-intent         |
-| `#release` on `@mmio T` store                | valid (rare)  | release-via-MMIO-intent         |
-| `#acquire` on store                          | compile error | acquire is load-only            |
-| `#release` on load                           | compile error | release is store-only           |
-| Both `#acquire` and `#release` on one access | compile error | mutually exclusive              |
+| Released acquire ordering on `@T` load       | valid         | acquire-release synchronization |
+| Released release ordering on `@T` store      | valid         | acquire-release synchronization |
+| Released acquire ordering on `@volatile T` load | valid (rare) | acquire-via-volatile         |
+| Released release ordering on `@volatile T` store | valid (rare) | release-via-volatile         |
+| Released acquire ordering on `@mmio T` load  | valid (rare)  | acquire-via-MMIO-intent         |
+| Released release ordering on `@mmio T` store | valid (rare)  | release-via-MMIO-intent         |
+| Released acquire ordering on store           | compile error | acquire is load-only            |
+| Released release ordering on load            | compile error | release is store-only           |
+| Both released ordering forms on one access   | compile error | mutually exclusive              |
 
 ---
 
@@ -883,7 +889,7 @@ sequences. On ARM64, the CPU store buffer may reorder stores to different addres
 device that requires its configuration registers to be written in a specific
 order requires explicit barriers between those writes.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UART_CR : @mmio u32 = 0x0900_0030
 UART_IBRD : @mmio u32 = 0x0900_0024
@@ -892,7 +898,7 @@ UART_FBRD : @mmio u32 = 0x0900_0028
 
 **Incorrect** (CPU may reorder stores even though every access is volatile):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 u32@[UART_CR]   = 0x0       // disable UART
 u32@[UART_IBRD] = 1         // set baud divisor integer
@@ -902,7 +908,7 @@ u32@[UART_CR]   = 0x301     // re-enable UART
 
 **Correct** (barriers enforce hardware observation order):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 u32@[UART_CR] = 0x0         // disable UART
 barrier.dsb(.sy)            // wait until disable is observed
@@ -922,9 +928,9 @@ between the writes themselves does not.
 
 ### Spinlock Migration Example
 
-The released-v0.8 spelling used `%cas` for compare-and-swap and `#release`
-for the unlock store. The current v0.9 spelling uses the typed methods on
-opaque atomic storage:
+The released-v0.8 spelling used predecessor compare-and-swap and release-order
+forms. The current v0.9 spelling uses the typed methods on opaque atomic
+storage:
 
 The example assumes `import core.arch { cpu }`; the category name is not
 ambient.
@@ -951,9 +957,8 @@ fn spin_unlock() {
 
 This is the canonical v0.9 spelling. The pinned v0.9 checked-assembly pack does
 not activate open-coded `ldaxr`/`stlxr`, so production code uses the typed
-atomic methods. The retired `%cas`, `%fetch_*`, `%xchg`, `%atomic_bit_*`,
-`%atomic_load`, and `%atomic_store` spellings survive only in item 53's
-non-parser [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv)
+atomic methods. The retired atomic-primitive spellings survive only in the non-parser
+[`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv)
 and the labeled released-v0.8 historical snapshot in
 [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md).
 
@@ -966,7 +971,7 @@ accesses — the compiler will not reorder them relative to each
 other. This is a **compiler scheduling** constraint only. It does not prevent
 CPU reordering at the hardware level; use `barrier.dsb` or `barrier.dmb` for that.
 
-The released-v0.8 `#acquire` and `#release` forms established ordering at the
+The released-v0.8 per-access ordering forms established ordering at the
 hardware level via `ldar`/`stlr`; they did not constrain assembler scheduling
 of non-memory operations. Current v0.9 expresses those same orderings through
 `.load(.acquire)` and `.store(value, .release)` on atomic storage.
@@ -987,7 +992,7 @@ Modelling them in the type makes the rule check-able:
 - A function `peek(p : @u32) -> u32` cannot be called with an
   `@volatile u32` argument without an explicit categorized conversion.
 - A function `read_mmio(p : @mmio u32) -> u32` cannot be called with a plain or
-  volatile-only address without an explicit `as.qualifier @mmio u32` conversion.
+  volatile-only address without an explicit `qualify<@mmio u32>(address)` conversion.
 - A struct field declared `@volatile u32` or `@mmio u32` cannot be accessed as
   if it were a plain `u32`.
 - Refactoring an MMIO access into a helper preserves MMIO intent through the
@@ -1030,19 +1035,27 @@ carries the ARM64 Architecture Reference Manual meaning.
 
 ### Agents
 
-An **execution agent** is any unit of sequential execution that shares memory
-with others:
+An **execution agent** is the memory-model umbrella for an ordered execution
+history that can share memory with other agents:
 
 - a hardware CPU core;
-- an interrupt handler executing on a CPU core;
 - a DMA controller or other bus master that can read or write system memory;
 - an external device that owns or updates MMIO-visible state.
 
-Each agent has a **source event order**: the order induced by Wyst evaluation
-rules in [chapter-07-operators.md](chapter-07-operators.md), statement order,
-and control flow. For an assignment, the address/storage-target side precedes
-the assigned value. For a call, argument effects are ordered left-to-right
-before the call effect.
+An **execution strand** is one sequential Wyst control-flow instance inside an
+agent. Ordinary code, each trap/interrupt invocation, and each saved task
+continuation are distinct strands as specified in Chapter 13. A trap handler is
+therefore not a new memory-model agent: it is a fresh strand in the interrupted
+agent. External agents without Wyst control flow have the corresponding
+target-defined sequential history.
+
+Each agent's **source event order** combines its strand orders with the
+target-defined entry and ordinary-return control edges between them. Within a
+strand, it is induced by Wyst evaluation rules in
+[chapter-07-operators.md](chapter-07-operators.md), statement order, and
+control flow. For an assignment, the address/storage-target side precedes the
+assigned value. For a call, the callee expression and argument effects are
+ordered left-to-right before the call effect and any suspension boundary.
 
 ### Memory Locations and Access Ranges
 
@@ -1064,12 +1077,12 @@ The model recognizes these source memory events:
 
 | Event kind | Wyst surface | Writes? | Synchronizing? |
 | --- | --- | --- | --- |
-| Plain load | `T@[addr]` where `addr : @T` | no | no |
-| Plain store | `T@[addr] = val` where `addr : @T` | yes | no |
-| Volatile load | `T@[addr]` where `addr : @volatile T` | no | compiler-only fence |
-| Volatile store | `T@[addr] = val` where `addr : @volatile T` | yes | compiler-only fence |
-| MMIO-intent load | `T@[addr]` where `addr : @mmio T` | no | compiler-only fence plus `mmio` effect |
-| MMIO-intent store | `T@[addr] = val` where `addr : @mmio T` | yes | compiler-only fence plus `mmio` effect |
+| Plain load | `addr.load()` where `addr: @T` | no | no |
+| Plain store | `addr.store(val)` where `addr: @T` | yes | no |
+| Volatile load | `addr.load()` where `addr: @volatile T` | no | compiler-only fence |
+| Volatile store | `addr.store(val)` where `addr: @volatile T` | yes | compiler-only fence |
+| MMIO-intent load | `addr.load()` where `addr: @mmio T` | no | compiler-only fence plus `mmio` effect |
+| MMIO-intent store | `addr.store(val)` where `addr: @mmio T` | yes | compiler-only fence plus `mmio` effect |
 | Acquire atomic load | `atomic_addr.load(.acquire)` | no | acquire |
 | Release atomic store | `atomic_addr.store(val, .release)` | yes | release |
 | Relaxed atomic load/store | `.load(.relaxed)` / `.store(val, .relaxed)` | load: no, store: yes | no |
@@ -1288,7 +1301,7 @@ write happens-before the final data read.
 
 Barrier-mediated synchronization is valid but less composable:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Agent 1
 u64@[buf] = data
@@ -1378,7 +1391,7 @@ proofs:
 4. **Explicit future uniqueness guarantees.** A later language version may add
    a source feature that states uniqueness or no-aliasing. Such a feature is an
    alias proof only after it has its own semantic-db row, chapter rule, and
-   conformance evidence. Current `#noescape` is not a uniqueness guarantee.
+   conformance evidence. Current `noescape` is not a uniqueness guarantee.
 
 If none of these proofs applies, the compiler must assume the ranges may alias.
 This includes two `@T` parameters, a `@T` access and an `@volatile T` access,
@@ -1567,8 +1580,8 @@ that is _not_ access-atomic. Three lowerings trigger this in Wyst programs:
    instructions. `ldp` is observed by other agents as two independent 8-byte
    loads; `stp` as two independent 8-byte stores. A racing agent may observe
    the high half from before the race and the low half from after it.
-2. **128-bit vector loads/stores (`ldr q`/`str q`).** Full-vector accesses via the
-   `[u8:16]@[addr]` form (§1.5.1) or other 16-byte SIMD lowerings are observed as two
+2. **128-bit vector loads/stores (`ldr q`/`str q`).** Full-vector address-method
+   accesses or other 16-byte SIMD lowerings are observed as two
    8-byte halves on ARMv8-A.
 3. **Compiler-synthesized aggregate copies.** A struct, fixed-array,
    dynamic-array descriptor, slice/string descriptor, payload enum, or tuple copy
@@ -1605,7 +1618,7 @@ multi-chunk aggregate copies when they race.
 
 #### Worked example: 16-byte struct copy
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 Point :: struct {
     x : u64,
@@ -1687,29 +1700,35 @@ in [chapter-06-types.md §1.6.1](chapter-06-types.md) (Bitfield Types).
 
 ## 9.7 Interrupt Handler Ordering
 
-### Preemption Establishes Program Order
+### Preemption Establishes One-Agent Control Order
 
-An interrupt handler begins executing after the interrupted code is suspended. All memory
-operations that completed (were globally observed) before the suspension point are visible
-to the handler. No additional synchronization primitive is required to observe values that
-were stably written before the interrupt.
+An interrupt handler begins a fresh strand after the exact interrupted-strand
+prefix at architectural entry. Nested handlers recursively nest that order.
+Ordinary exception return completes the handler strand and resumes the
+interrupted strand, placing its suffix after the completed handler. Those are
+source/control-order edges for the same execution agent, not a flush of a store
+buffer, cross-agent synchronization, or an architectural memory barrier.
 
-Operations that were in-flight (in the CPU store buffer, not yet globally observed) at
-suspension are not guaranteed visible to the handler.
+A scheduler transfer saves that ordering with the interrupted agent and then
+resumes a distinct saved strand for the selected task, or does not return. Task
+selection does not relabel the handler continuation, publish unrelated memory,
+or create a synchronizes-with/happens-before edge. Provider-owned saved-context,
+run-queue, or current-task metadata handed to another owner requires explicit
+provider release/acquire publication.
 
 ### Sharing Data With an Interrupt Handler (Single Core)
 
 To share mutable data between foreground code and an interrupt handler on the same core:
 
-1. Shared locations must be declared as `@volatile T` so that every access through them
-   is a compiler barrier; the compiler cannot cache the value in a register across an
-   interrupt point.
+1. Shared locations must be declared as `@volatile T` when every access must
+   remain observable to the handler; volatility is a compiler-ordering
+   contract, not cross-agent synchronization.
 2. For writes that must complete before the handler reads them, issue `barrier.dsb(.sy)` after the
    write and before the signaling store.
 3. For multi-word data that must be read or written consistently, disable interrupts during
    the critical section.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 result_buf   : @u64          = 0x4000
 result_ready : @volatile u64 = 0x4008      // volatility lives in the type
@@ -1896,7 +1915,7 @@ Exact-width, exact-address accesses are a commonly compatible shape:
 - The load address is identical to the store address.
 - The store is the most recent write to that address in program order.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Commonly forwarding-compatible: matching width and alignment
 u64@[@buf] = value
@@ -1909,12 +1928,12 @@ The following shapes can prevent or complicate forwarding on some cores:
 
 | Pattern                                     | Example                                           | Structural concern                               |
 | ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
-| Width mismatch (narrow store, wider load)   | `u8@[p8] = x` then `u32@[p8 as.lens @u32]`        | The load spans bytes outside the narrow store    |
-| Width mismatch (wider store, narrower load) | `u64@[p64] = x` then `u32@[p64 as.lens @u32]`     | Forwarding rules vary by implementation          |
-| Partial overlap                             | Store to `p8`, load from `p8 + 2` where `p8 : @u8` | The accesses overlap without identical coverage |
-| Multiple stores                             | `u32@[p32] = a` then `u32@[p32 + 1] = b` then `u64@[p32 as.lens @u64]` | The load spans multiple source stores          |
+| Width mismatch (narrow store, wider load)   | `p8.store(x)` then `relens<@u32>(p8).load()`      | The load spans bytes outside the narrow store    |
+| Width mismatch (wider store, narrower load) | `p64.store(x)` then `relens<@u32>(p64).load()`    | Forwarding rules vary by implementation          |
+| Partial overlap                             | Store to `p8`, load from `element_offset(p8, 2)`  | The accesses overlap without identical coverage  |
+| Multiple stores                             | Two adjacent `p32` stores followed by `relens<@u64>(p32).load()` | The load spans multiple source stores |
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Potentially forwarding-resistant: narrow store followed by wider load
 buf : @u8 = 0x4000
@@ -2012,56 +2031,58 @@ MESI coherence protocol forces the line to bounce between caches — even if the
 cores never access the same variable. This is **false sharing**, and it can
 degrade throughput by 10–50×.
 
-> **Released v0.8 placement snapshot.** The `#shared`/`#percpu` declaration
-> forms and false-sharing diagnostic described below are historical v0.8
-> material. They are not v0.9 alternatives and do not modify item 42's
-> `per_cpu var` layout or access contract. `#shared` is removed in v0.9;
+> **Released v0.8 placement snapshot.** The predecessor cache-isolation and
+> per-CPU declaration forms and false-sharing diagnostic described below are historical v0.8
+> material. They are not v0.9 alternatives and do not modify
+> the `per_cpu var` layout or access rules in
+> `language.callable-storage-contracts`. The predecessor cache-isolation
+> attribute is removed in v0.9;
 > cache-isolated storage requires its later owning item. The independent
 > `#cache_line_width()` target query remains governed by its own current
 > semantic-authority row.
 
 ---
 
-### Released v0.8 `#shared` Cache-Line Isolation (Historical)
+### Released v0.8 Cache-Line Isolation (Historical)
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : #shared u64 = 0
 flags : #shared u64 = 0
 ```
 
-`#shared` is a placement attribute on mutable global variables and `#percpu`
-declarations. It guarantees:
+The predecessor cache-isolation attribute applies to mutable globals and the
+released per-CPU declaration form. It guarantees:
 
 1. The variable is aligned to cache line width (`#cache_line_width()`).
 2. The variable is padded to fill a full cache line.
-3. Two `#shared` variables are guaranteed to occupy different cache lines.
+3. Two attributed variables are guaranteed to occupy different cache lines.
 
-**Legal positions:** `#shared` may appear on:
+**Legal positions:** the predecessor attribute may appear on:
 
 | Declaration kind   | Example                                 |
 | ------------------ | --------------------------------------- |
-| Mutable global     | `counter : #shared u64 = 0`             |
-| `#percpu` variable | `#percpu local_count : #shared u64 = 0` |
+| Mutable global     | released mutable-global declaration      |
+| Per-CPU variable   | released per-CPU declaration              |
 
 **Illegal positions (compile error):**
 
 | Position         | Reason                                             |
 | ---------------- | -------------------------------------------------- |
 | Local variables  | Stack layout is not shared between cores           |
-| Constants (`::`) | Immutable data has no write-side coherence traffic |
-| Struct fields    | Use explicit `#align` and padding instead          |
+| Constants         | Immutable data has no write-side coherence traffic |
+| Struct fields     | Use explicit `#[align(...)]` and padding instead   |
 
 **Semantics:**
 
-- `#shared` implies `#align(#cache_line_width())`.
+- The predecessor attribute implies cache-line alignment.
 - The total space consumed is `max(#size_of(T), #cache_line_width())`.
-- `#shared` is a placement attribute, not a type modifier — `@T` still
+- It is a placement attribute, not a type modifier — `@T` still
   points to the variable's natural type, not to a padded wrapper.
-- `#shared` does not add any memory ordering. For concurrent access, use typed
+- It does not add any memory ordering. For concurrent access, use typed
   atomic acquire/release methods or barrier runtime primitives as needed.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Two per-CPU counters that will never false-share
 #percpu
@@ -2074,7 +2095,7 @@ error_count : #shared u64 = 0
 
 ### `#cache_line_width()` — Compile-Time Query
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 stride :: #cache_line_width()       // 64 on most ARM64; 128 on Apple M-series
 buf : #align(#cache_line_width()) [1024]u8
@@ -2094,7 +2115,7 @@ DCache line size is 128 bytes.
 
 | Context                            | Example                                     |
 | ---------------------------------- | ------------------------------------------- |
-| `#align` argument                  | `#align(#cache_line_width())`               |
+| `#[align(...)]` argument           | `#[align(#cache_line_width())]`             |
 | `#static_assert`                   | `#static_assert(#cache_line_width() >= 64)` |
 | Array size                         | `buf : [#cache_line_width()]u8`             |
 | Constant declaration               | `CL :: #cache_line_width()`                 |
@@ -2107,18 +2128,18 @@ See [chapter-06-types.md §1.15](chapter-06-types.md) for the full compile-time 
 ### False-Sharing Diagnostic
 
 The compiler emits a warning when two mutable globals (at least one of which
-is public or `#percpu`) land on the same cache line and neither is marked
-`#shared`:
+is public or per-CPU) land on the same cache line and neither uses the current
+`#[cache_isolated]` attribute:
 
 ```text
 warning: 'counter_a' and 'counter_b' may share a cache line
-         both are mutable globals; consider #shared if accessed from multiple cores
+         both are mutable globals; consider #[cache_isolated] if accessed from multiple cores
          counter_a at offset 0x1000, counter_b at offset 0x1008 (same 64-byte line)
 ```
 
 The diagnostic is informational — false sharing is a performance issue, not a
-correctness issue. Suppress it by adding `#shared` to the relevant
-declarations, or by placing them in explicit `#section` blocks with sufficient
+correctness issue. Suppress it by adding `#[cache_isolated]` to the relevant
+declarations, or by placing them in explicit `#[section(...)]` blocks with sufficient
 spacing.
 
 ---

@@ -1,0 +1,5 @@
+module removed_machine_integer_types
+
+fn bad(value: usize) -> isize {
+    return value
+}

@@ -19,8 +19,9 @@ contracts it depends on are linked above.
 
 ## v0.9 Callable and `per_cpu` IR Contract (Current)
 
-Chapter 8 owns item-42 source semantics. Typed IR must preserve, without
-reconstruction, a callable's convention, ordered parameter and result types,
+Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
+Typed IR must preserve, without reconstruction, a callable's convention,
+ordered parameter and result types,
 each parameter's `noescape` bit and optional register placement, the optional
 scalar result placement, and whether its result is `never`. Declaration
 parameter names may remain diagnostic metadata but are excluded from the
@@ -45,8 +46,9 @@ key. Its final `.percpu` byte offset is a placement result. A
 `#percpu_offset_of` constant retains the global identity until placement and
 then becomes that final `u64` byte offset; it never becomes an address.
 
-A direct `per_cpu` read, write, field access, element access, or item-52 atomic
-method remains a non-addressable access record through scheduling. The record
+A direct `per_cpu` read, write, field access, element access, or method from
+`wyst.atomic-matrix.v1` remains a non-addressable access record through
+scheduling. The record
 contains the global identity, checked subobject byte offset, requested typed
 operation, source origin, and selected target/runtime realization facts. An
 implementation may temporarily express its address calculation as internal
@@ -63,8 +65,9 @@ common-subexpression record may carry a current-core base from one source
 access to another. Declaration or offset-query IR creates no base acquisition.
 
 Before access-bearing IR is admitted, the selected target must explicitly
-provide the Chapter 11 realization contract. The pre-item-92 implemented
-selection is `#target(..., per_cpu = single_instance_tpidr_el1)`, whose facts
+provide the Chapter 11 realization contract. The currently implemented
+single-instance selection is
+`#target(..., per_cpu = single_instance_tpidr_el1)`, whose facts
 are: available; `MRS TPIDR_EL1`; EL1 or higher; 16-byte live-base alignment;
 reserved system state `TPIDR_EL1`; and realization
 `single-instance-test-runtime`. Without that exact selection, reachable access
@@ -72,11 +75,71 @@ is a source/target diagnostic rather than malformed IR.
 
 Typed IR for v0.9 admits no TLS storage kind, offset constant, current-instance
 operation, symbol, or relocation. Internal names inherited from the released
-v0.8 implementation do not authorize v0.8 `#percpu`/TLS source behavior.
+v0.8 implementation do not authorize predecessor per-CPU or TLS source
+behavior.
+
+## v0.9 Strand Suspension And Context-Stability IR Contract (Current)
+
+The target-neutral effect enum contains `execution_suspension` in addition to
+the machine-effect vocabulary. It is present in `effects(all)`, callable
+signatures, imported semantic interfaces, function-pointer bounds, inferred
+effect summaries, deny sets, diagnostics, and report products. It is not an
+A64 instruction-semantic row. An unavailable imported body retains the exact
+authenticated bound from its interface, or the conservative `all` bound; it
+never becomes effect-free because no local `FunctionIr` exists.
+
+Every effect-bearing call has one `strand_suspension_boundary` value after all
+callee/argument operands and immediately before transfer. The boundary record
+and its verifier-required adjacent call or authenticated marker fact retain the
+source call or marker identity, exact or conservative effect-bound provenance,
+and adjacent transfer identity. An inlined call retains the record
+immediately before the first expanded callee operation, and a tail call retains
+it immediately before its terminator. Objects, archives, devirtualization, and
+linking consume or reproduce the same typed record from the serialized bound;
+they may not lower it to optional metadata.
+
+`context_stability` is a required provenance component for every value
+originating in a compiler-owned current-context operation or authenticated
+provider interface. Its closed values are `active_context_affine`,
+`task_stable`, and `cross_strand_stable`, ordered from most to least
+restrictive. SSA copies, arguments/results, phi nodes, fields, aggregate and
+enum construction/extraction, generic substitutions, spills/reloads, and
+interface/object/archive serialization carry the exact component. Projection
+selects the field component; aggregate and possible-variant joins take the
+most restrictive live component. A raw address conversion records a trust
+boundary and cannot clear or upgrade this provenance.
+
+The current module builder emits ordinary callable parameter/result summaries
+because the execution-strand contract adds no source qualifier and
+authenticated provider accessors are not yet active. The verifier authenticates
+that ordinary product and rejects unsourced classified replacement bytes. This
+does not create a second schema: compiler-owned or authenticated provider
+producers use the same `wyst.callable-context-summary.v2` transport, and its
+consumer preserves and joins those classified facts without erasure when such a
+producer is active.
+
+That v2 sidecar authenticates the callable signature's exact effect list or
+conservative top, the exact `SuspensionEffectAuthority`, ordered parameter
+provenance, and result provenance under one digest. A known-target indirect
+call joins the decoded target bounds in closed catalog order and requires that
+join to equal its typed call-site bound before boundary analysis consumes it.
+Missing or extra sidecars, a bound/authority disagreement with the canonical
+signature and module authority map, or any noncanonical effect ordering is
+invalid IR.
+
+Liveness at each suspension boundary rejects an affine handle, current-core or
+`per_cpu` base, or an address derived from one. It permits an ordinary scalar
+already loaded from `per_cpu` and authenticated task-stable or cross-strand-
+stable values. The boundary kills every cached current-context/current-instance
+base fact, so the next access creates a fresh acquisition. Its dependency edges
+also prevent observable memory, volatile/MMIO/atomic operations, effects,
+calls, and base acquisitions from crossing in either direction, while leaving
+independent pure operations eligible for deterministic scheduling.
 
 ## v0.9 Address, Slice, and Conversion IR Contract (Current)
 
-Chapter 6 owns item-44 source semantics. IR construction must erase the old
+Chapter 6 owns the source semantics represented by
+`language.ir-source-semantic-agreement`. IR construction must erase the old
 source spellings while preserving each explicit semantic choice:
 
 - `address.load()` and `address.store(value)` become one typed `load` or
@@ -116,9 +179,9 @@ IR construction; a dynamic MMIO address carries
 `possible_architectural_fault=true`. No verifier or optimizer may turn that
 fact into an impossible-state assumption.
 
-The v0.9 parser rejects `T@[address]`, `as.<category>`, colon slices, raw
-descriptors, `%addr_of`, and endian runtime primitives before semantic or IR
-construction. The verifier then validates the canonical structural result: it
+The v0.9 parser rejects the predecessor typed-memory, categorized-conversion,
+colon-range, raw-descriptor, runtime address-of, and endian-primitive spelling
+classes before semantic or IR construction. The verifier then validates the canonical structural result: it
 rejects typed-address add/sub, a second scale on a canonical byte offset, a
 non-byte endian receiver, non-ordinary raw-slice data, an inexact stack-address
 lens, and a conversion kind outside its closed endpoint row. Shape-equivalent
@@ -128,8 +191,9 @@ as GEP unit/origin verification.
 
 ## v0.9 Atomic IR Contract (Current)
 
-Item 52 preserves atomic opacity in typed IR. `atomic<T>` is a storage type and
-`@atomic<T>` is the only address form that can name it. Both have the exact
+`language.opaque-atomic-storage-closed-orders` preserves atomic opacity in typed
+IR. `atomic<T>` is a storage type and `@atomic<T>` is the only address form that
+can name it. Both have the exact
 size and natural alignment of `T`; neither erases to an ordinary `T` or `@T`
 before atomic verification. An aggregate containing atomic storage is
 non-copyable, and IR has no whole-value atomic copy, move, assignment,
@@ -237,10 +301,10 @@ selects exactly one authenticated `mrs` or `msr` per access. No lowering may
 introduce a retry, truncation, additional access, raw-encoding escape, or
 architectural barrier.
 
-> Later `#pin`, `#naked`, `#noreturn`, `#percpu`, and `#tls` wording in this
-> appendix belongs to the released v0.8 IR exposition unless explicitly
-> updated. Read non-conflicting allocation details through the current
-> `in register`, `naked`, `never`, and `per_cpu` contract above.
+> Later predecessor register-placement, callable-modifier, per-CPU, and TLS
+> wording in this appendix belongs to the released v0.8 IR exposition unless
+> explicitly updated. Read non-conflicting allocation details through the
+> current `in register`, `naked`, `never`, and `per_cpu` contract above.
 
 The Wyst IR is the compiler-internal source of truth between the semantic analyzer and
 the ARM64 backend. Every optimization, scheduling decision, and lowering rule
@@ -334,9 +398,9 @@ pass may infer or apply another scale.
 | --------------------------------------- | --------------------------------------------------------------- |
 | `struct { f0: T0, f1: T1, ... }`        | Type-erasure pass                                               |
 | `bitstruct Name: Backing { ... }`       | Type-erasure pass; lowered to the backing integer plus typed bit-field extract/insert ops |
-| `enum T { Variant0, Variant1(P), ... }` | Type-erasure pass; payload-less enums lower as their tag, and payload enums use the fixed two-word representation `{tag_word, payload_word}` |
+| `enum T` with payload variant `P`      | Type-erasure pass; payload-less enums lower as their tag, and payload enums use the fixed two-word representation `{tag_word, payload_word}` |
 | `[N]T`                                  | Type-erasure pass; indexed access stays as `gep`                |
-| `[]T`                                   | Type-erasure pass; lowered to `struct {data: @T, len: u64}`      |
+| `[]T`                                   | Type-erasure pass; lowered to an address-and-length descriptor    |
 | `[T:N]`                                 | Survives end-to-end; mapped to NEON registers in regalloc       |
 | `fn(T0 [noescape] [in reg], ...) -> R [in reg] [@cc]` | Survives end-to-end with convention, per-parameter `noescape`/placement, result placement, and `never` in exact identity |
 
@@ -377,7 +441,7 @@ After the type-erasure pass:
   `bool`, integer scalars, pointers, function pointers, and bitstructs. Structs,
   slices, floating-point values, and nested enum values must not appear as enum
   payload IR.
-- All `[]T` slices are dissolved into `{data, len}` pairs.
+- All `[]T` slices are dissolved into address-and-length pairs.
 - `[N]T` arrays remain inline aggregate storage until their indexed accesses,
   copies, or address projections are decomposed into `gep`, load/store, and
   chunk-copy operations. They are not descriptor values and do not become
@@ -394,28 +458,46 @@ the erased types.
 ## 3. Module IR
 
 A compilation unit's IR is a list of typed top-level declarations. The
-following textual sketch preserves the released v0.8 renderer grammar; it is
-not current source syntax:
+following textual sketch states the current structural renderer grammar; it is
+not source syntax:
 
 ```text
-module := decl*
+module = declaration*
 
-decl := function | global | layout-symbol | type-declaration
+declaration = function | global | layout-symbol | type-declaration
 
-function := visibility attribute* name "::" signature "=" function-body
-global   := visibility attribute* name (":" | "::") type "=" const-expr
-layout-symbol := "pub" name "::" "u64" "=" "#start" "(" section-name ")"
-type-declaration := visibility name "::" type-form
+function = visibility attribute* name signature function-body
+global = visibility attribute* name type const-expression
+layout-symbol = "pub" name "u64" layout-query
+type-declaration = visibility name type-form
 ```
 
 `visibility` is `pub` or absent (private; see [chapter-04-modules.md](chapter-04-modules.md)).
 In current v0.9 typed IR, hard facts are separate fields: definition lowering
 records `naked`; callable signatures record convention, placements,
 `noescape`, and `never`; globals record `GlobalStorage::PerCpu`; declaration
-attributes retain only activated catalog entries. The v0.8 renderer tokens
-`#naked`, `#pin(reg)`, `#noreturn`, `#percpu`, `#tls`, `[aapcs]`, and `[wyst]`
-are not source spellings or a current open attribute set. No TLS fact is legal
-in v0.9 IR.
+attributes retain only activated catalog entries. The predecessor renderer's
+callable modifiers, register placement, storage classes, and ABI markers are
+not source spellings or a current open attribute set. No TLS fact is legal in
+v0.9 IR.
+
+The current v0.9 layout authority is likewise structural rather than a textual
+directive replay. Module IR preserves the selected layout declaration's exact
+name and dialect; declaration-ordered region records with origin, size,
+`readonly`/`readwrite` access, and operand spans; declaration-ordered section
+records with exact ELF name, `code`/`rodata`/`data`/`bss` kind, normalized
+region/alignment/`after` constraints, and their operand spans; the semantic
+entry identity with its optional fixed-address claim; and declaration-ordered
+typed layout symbols. A layout-symbol initializer is an AST-independent typed
+placement expression over absolute constants, `start`/`end` address values,
+`size` values, explicit address conversion, and the typed operations admitted
+by the layout `ConstExpr` grammar. Each operation retains the result integer
+type needed to reproduce ordinary `ConstExpr` width wrapping and modulo shift
+counts after placement; placement does not create a checked-arithmetic dialect.
+No legal named layout symbol disappears from IR merely because its initializer
+is not affine. Final artifact preparation
+consumes or validates against these typed facts; reparsing the layout syntax is
+not an independent semantic authority.
 
 The IR preserves source-file boundaries only for diagnostic / DWARF purposes;
 semantic analysis flattens the module-and-import graph into a single global
@@ -765,7 +847,29 @@ old forms.
 - **Operand production order:** indirect calls produce the callee expression
   first, then call arguments left-to-right. Direct calls produce arguments
   left-to-right before the call op.
+- **Suspension:** when the exact or conservative callable bound contains
+  `execution_suspension`, exactly one `strand_suspension_boundary` follows the
+  final argument and immediately precedes this op.
 - **Effects:** AAPCS or Wyst-native register clobber per `cc`; full compiler memory fence unless attribute `pure : bool = true` (rare; only for pure-function intrinsics).
+
+#### `strand_suspension_boundary`
+
+- **Signature:** `() -> void`.
+- **Associated authority:** the boundary origin identifies its call shape or
+  provider marker. The immediately adjacent call signature or authenticated
+  module marker fact supplies source/transfer identity, callable-bound
+  provenance, and provider identity; verification rejects a boundary that
+  cannot join to that exact authority.
+- **Ordering:** a two-way dependency for observable memory, volatile/MMIO/
+  atomic operations, effects, calls, and current-context/current-instance base
+  acquisitions. It invalidates cached current-context and `per_cpu` bases but
+  is not a compiler-memory or architecture barrier.
+- **Liveness:** rejects live current-core or affine handles and addresses
+  derived from them; ordinary copied values plus authenticated task-stable and
+  cross-strand-stable values are legal.
+- **Lowering:** zero instructions, calls, symbols, relocations, stack maps, or
+  runtime hooks. It remains a typed scheduling and verification operation until
+  all ordering and liveness consumers have run.
 
 #### `tail`
 
@@ -787,9 +891,12 @@ old forms.
 #### `addr_of`
 
 - **Signature:** `() -> @T`.
-- **Operand:** addressable symbol reference (function name, label name,
-  ordinary global name, or `#start(.section)`). A `per_cpu` declaration is not
-  addressable and is rejected here.
+- **Operand:** addressable symbol reference (function name, label name, or
+  ordinary global name). A `per_cpu` declaration is not addressable and is
+  rejected here. Layout-only `start("NAME")` and `end("NAME")` queries resolve
+  into their owning typed layout-symbol values rather than being accepted as
+  ordinary `addr_of` operands; source consumes a published `@u8` layout symbol
+  as that address value directly.
 - **Semantics:** materializes the address of a relocatable symbol as a typed
   address value. It is one relocation-producing origin; it is not the only one
   in the compiler. Direct calls, symbol branches, constant address
@@ -850,7 +957,7 @@ future jump-table entry.
 - **Signature:** `(S) -> T`.
 - **Attribute:** `kind : { widen, truncate, signcast, numeric, bitcast,
   address, relens, qualify, floatcast, saturate }`, plus the authenticated
-  trust bit used by `#trusted_cast` callable construction and by the exact
+  trust bit used by `trusted_callable<T>(address)` construction and by the exact
   `address<@atomic<T>>(raw)` raw atomic-address assertion. For the latter, the
   bit authenticates the source trust boundary; the verifier additionally
   requires `u64 -> @atomic<T>`, rejects provable misalignment and known Device
@@ -973,21 +1080,26 @@ generated machine authority.
 | System register | declared `system_register` `.read()`, `.write(...)`, and `.modify(...)`; `cpu.mask`/`cpu.unmask` |
 | Trap/return | imported `exception.svc/hvc/smc/brk/hlt/eret` |
 | Cache/TLB | imported `cache.*` and `tlb.*` categories |
-| CPU | imported `cpu.*` category, including the fixed counter descriptor |
+| CPU | imported `cpu.*` category, including the fixed counter-source descriptor |
 | Barrier | imported `barrier.*` category |
 | Environment | imported executable-environment services such as `semihost.call` |
+| Execution | authenticated provider-only `core.execution.suspension_point` |
 | Language | `fma`, vector operations, enum `.tag`, address methods, and `MaybeUninit<T>` operations |
 
 Each semantic operation carries catalog identity and a generated target-fact
 set. The latter preserves every selected encoding, authority and semantic ID,
 features, execution state, privilege, register and memory contract, effects,
 and faults. Counter reads additionally preserve the selected artifact-target
-profile, exact descriptor identity and compatibility profile, source, read
-plan, width, frequency, minimum EL, enablement, failure, report identity, and
-origin. The module owns the artifact-target selection independently of the
-operation record. IR verification and backend admission rederive the record
-from that module selection, so an absent, moved, unknown, duplicate, multiple,
-or stale descriptor/profile binding fails closed.
+profile, exact source-descriptor identity and compatibility profile, source,
+read plan, width, frequency-acquisition classification, minimum EL, enablement,
+failure, source-report identity, and origin. These are generic read-operation
+facts only; typed IR does not invent a per-run counter domain/configuration
+epoch, realized frequency, endpoint comparability/offset, serialization,
+platform-state progress, mutable-control exclusion, or maximum interval span.
+The module owns the artifact-target selection independently of the operation
+record. IR verification and backend admission rederive the record from that
+module selection, so an absent, moved, unknown, duplicate, multiple, or stale
+descriptor/profile binding fails closed.
 
 | Attribute  | Values                                                  |
 | ---------- | ------------------------------------------------------- |
@@ -1019,6 +1131,7 @@ System) to enforce architectural boundaries at compile time:
 | `barrier`           | `barrier.compiler`, `barrier.dsb`, `barrier.dmb`, `barrier.isb`              |
 | `fp_state`          | FP arithmetic/comparison/conversion ops and FP/SIMD primitives                |
 | `perf_counter`      | `cpu.read_counter`                                                           |
+| `execution_suspension` | `core.execution.suspension_point` and exact or conservative callable bounds that may cease and later resume the calling strand |
 
 Some semantic operations introduce multiple effects: `cpu.mask` introduces
 both `sysreg` and `interrupt_mask`. The categories are deliberately coarse —
@@ -1126,8 +1239,9 @@ lowering may consume the function.
     frame/profile and exact canonical target sequence; a forged direction,
     execution level, system register, instruction identity, state transition,
     or terminal edge is a verifier error.
-15. **Placement–calling-convention consistency**: every item-42 `in register`
-    requirement must name a register legal for its value class and width and
+15. **Placement–calling-convention consistency**: every
+    `in register` requirement from `language.callable-storage-contracts` must
+    name a register legal for its value class and width and
     not reserved by the calling convention or target. Exact parameter/result
     maps remain in callable identity; local maps remain allocation constraints.
     `naked` does not relax target-reserved state.
@@ -1217,6 +1331,36 @@ lowering may consume the function.
     state. A free encoded tuple, unknown extension identity, incomplete facts,
     non-`u64` transfer, direction mismatch, or constructed assembly text is
     invalid IR.
+33. **Suspension-boundary exactness**: every direct, indirect, imported Wyst,
+    or foreign call whose exact or conservative bound contains
+    `execution_suspension` has exactly one `strand_suspension_boundary` after
+    its last evaluated operand and immediately before transfer. A call whose
+    bound excludes the effect has none. Inlining, devirtualization, tail-call
+    formation, interface/object/archive round trips, and final linking may not
+    drop, duplicate, separate, or move the boundary after its transfer. The v2
+    callable sidecar's bound and authority must exactly match the canonical
+    signature and module authority map; known indirect targets must join to the
+    retained call-site bound before this invariant is evaluated.
+34. **Suspension ordering and base invalidation**: no observable memory,
+    volatile/MMIO/atomic operation, effect, call, or current-context/current-
+    instance base acquisition crosses a boundary in either direction. Every
+    cached current-context and `per_cpu` fact is dead at the boundary and a
+    later access reacquires it. A live current-core/affine handle or derived
+    address is invalid; an ordinary copied non-address value is not.
+35. **Context-stability closure**: compiler-owned and authenticated interface
+    origins carry exactly one closed stability value. Every assignment,
+    argument/result, alias, projection, aggregate/enum payload, generic
+    substitution, phi, spill/reload, inline expansion, and serialized summary
+    preserves or conservatively joins it. The same v2 sidecar digest covers
+    these facts, the callable effect bound, and its authority atomically. No
+    cast or adapter upgrades it, and affine/task-stable values do not escape
+    compiler-proven eligible storage.
+36. **Provider marker authentication**: `execution_suspension_point` names the
+    sealed semantic identity `core.execution.suspension_point`, one selected
+    target/provider/leaf declaration, and one immediately following
+    authenticated non-call transfer. Standalone, missing, duplicate,
+    post-transfer, separated, spoofed, or redundant-before-effect-bearing-call
+    marker facts are invalid and never reach machine lowering.
 
 A failed verifier check is a hard failure and the malformed function never
 reaches ABI lowering, register allocation, scheduling, or instruction
@@ -1291,7 +1435,8 @@ note: every normal exit from `asm preserves stack` must have zero net delta
 ```
 
 `asm establishes stack` and `asm restores stack` are restricted to their owning
-item-42 naked entry and restore contexts and require a complete target
+naked entry and restore contexts under `language.callable-storage-contracts`
+and require a complete target
 transition contract, not just a numeric `sp` delta. The pinned v0.9 pack has no
 active row proving either transition and therefore rejects both clauses; it also
 has no stack-access row with which `preserves` could perform temporary stack
@@ -1300,8 +1445,9 @@ just like an ordinary block.
 
 The whole-function allocation witness combines this state trace with final
 spill slots, callee-saved and indirect-result storage, alignment, and all other
-frame resources. Item-42 `per_cpu` access never contributes a hidden
-current-instance cache slot. Wyst rejects local `in x29`; no fixed local may
+frame resources. A `per_cpu` access under
+`language.callable-storage-contracts` never contributes a hidden current-instance
+cache slot. Wyst rejects local `in x29`; no fixed local may
 masquerade as an alternate compiler frame base.
 
 ---
@@ -1320,23 +1466,23 @@ It is a stable dump format within a single compiler version.
 ### 8.1 Grammar Sketch
 
 ```text
-ir-file       := module-line decl*
-module-line   := "module" name newline
-decl          := function | global | type-decl
+ir-file       = module-line decl*
+module-line   = "module" name newline
+decl          = function | global | type-decl
 
-function      := visibility attribute* "func" name signature "{" function-body "}"
-function-body := region* block*
+function      = visibility attribute* "func" name signature "{" function-body "}"
+function-body = region* block*
 
-region        := "region" region-kind region-name "{" region-body "}"
-region-body   := block-name+
+region        = "region" region-kind region-name "{" region-body "}"
+region-body   = block-name+
 
-block         := block-name ":" instr* terminator
+block         = block-name ":" instr* terminator
 
-instr         := value-binding? op type? operands attribute-block? newline
-terminator    := op operands attribute-block? newline
+instr         = value-binding? op type? operands attribute-block? newline
+terminator    = op operands attribute-block? newline
 
-value-binding := "%" identifier "="
-attribute-block := "[" attribute-list "]"
+value-binding = "%" identifier "="
+attribute-block = "[" attribute-list "]"
 ```
 
 ### 8.2 Worked Example
@@ -1353,7 +1499,7 @@ fn uart_write(byte: u8) {
 }
 ```
 
-Lowers (post-IR-construction, pre-type-erasure) to:
+The post-IR-construction, pre-type-erasure lowering is:
 
 ```text
 module boot.hello
@@ -1543,7 +1689,8 @@ loops avoid avoidable moves and callee-saved frame traffic.
 For functions with direct calls but no checked `asm` and no indirect calls, scalar GPR
 values proven not live across a call prefer `{ x0..x7, x9..x15 }` before the
 callee-saved pool. Values live across a call use only callee-saved automatic
-homes unless they are explicitly placed and legal under the item-42 rules.
+homes unless they are explicitly placed and legal under
+`language.callable-storage-contracts`.
 
 For reused same-block absolute address bases that feed multiple direct memory
 operations before any call or checked `asm`, the preferred list moves `x10` to the
@@ -1551,7 +1698,7 @@ front when `x10` is otherwise available. This matches the backend load/store
 base convention and keeps repeated global or symbol-address accesses from
 rematerializing the same address in the same block.
 
-`xzr` / `wzr` may appear in allocation reports as `Register(Gpr(31))` for a
+`xzr` / `wzr` may appear in allocation reports as rematerialized pseudo-home 31 for a
 pseudo-home. That marker means "rematerialize this constant, string/slice
 descriptor, or absolute symbol address at the use site"; it is not an
 allocatable live register and does not create an `xzr` value home.
@@ -1585,7 +1732,7 @@ Tie-breaks are part of the algorithm:
 The placement pre-pass processes exact placements in source declaration order.
 Source-level placements
 that request the same register in the same function scope are rejected before
-allocation, matching the current item-42 rules in
+allocation, matching the current `language.callable-storage-contracts` rules in
 [chapter-08-functions.md](chapter-08-functions.md). If malformed or
 transformed IR reaches allocation with two fixed homes for the same physical
 register and the SSA interference graph contains an edge between their values,
@@ -1669,7 +1816,7 @@ not an allocator heuristic. It normalizes architectural aliases, preserves
 repeated sources, breaks cycles deterministically, and protects the
 indirect-result state before any input register is reused. Chapter 15 defines
 the canonical ordering, scratch selection, temporary-frame fallback, and
-reporting rules. `Register(Gpr(31))` and other rematerialization markers are
+reporting rules. Pseudo-home 31 and other rematerialization markers are
 not physical locations and are never planner scratch registers.
 
 ### 11.10 Out of Scope
@@ -1683,7 +1830,7 @@ not physical locations and are never planner scratch registers.
   rematerialize effect-dependent values, or use rematerialization as a substitute
   for live-range splitting.
 - **Cross-function allocation.** Each function is allocated independently.
-  Whole-program allocation across `#inline` boundaries is implicit (inlined
+  Whole-program allocation across `#[inline]` boundaries is implicit (inlined
   bodies are part of the caller's interval set), but no allocation flows
   across non-inlined calls — the AAPCS or Wyst-native ABI handles that.
 
@@ -1694,14 +1841,14 @@ not physical locations and are never planner scratch registers.
 These remain outside this IR model:
 
 - **Profile-guided scheduling**: the `br` op now carries an optional `hint`
-  attribute (`likely_true`, `likely_false`, `none`) from `#likely`/`#unlikely`
-  directives. A future version may add numeric `weights` for PGO data.
+  attribute (`likely_true`, `likely_false`, `none`) from compiler-owned branch
+  facts. A future version may add numeric `weights` for PGO data.
 - **Loop dependency annotations**: vectorization-specific loop policy is
   outside the scheduling model and has no reserved source spelling.
 - **DWARF emission lowering**: spec locked at
   [chapter-23-debug-info.md](chapter-23-debug-info.md); IR carries the source-location attributes
   consumed by DWARF emission.
-- **Cross-module inlining of `#inline` functions**: public inline helpers
+- **Cross-module inlining of `#[inline]` functions**: public inline helpers
   are available to importing modules during IR construction, before SSA.
   The compiler keeps their checked AST bodies available for expansion, but
   does not lower them into standalone `FunctionIr` bodies or exported ABI
@@ -1727,7 +1874,7 @@ These remain outside this IR model:
 | Operator semantics and precedence                    | [chapter-07-operators.md](chapter-07-operators.md)                              |
 | Typed-IR dependency shape                            | §6.9 of this document                                                           |
 | Future performance evidence boundary                 | §14 of this document                                                            |
-| Branch hints (`#likely`/`#unlikely`)                 | [chapter-08-functions.md §2.7.2](chapter-08-functions.md)                       |
+| Branch hints and placement                           | [chapter-08-functions.md §2.7.2](chapter-08-functions.md)                       |
 | `select` op surface syntax                           | [chapter-07-operators.md](chapter-07-operators.md)                              |
 | Effect system, `deny_effects`                        | [chapter-01-language-design.md](chapter-01-language-design.md), "Effect System" |
 | Effect categories on intrinsics                      | §6.8 of this document                                                           |
@@ -1756,3 +1903,54 @@ expansions, dependencies, target resources, and explicit branch and memory
 assumptions. Unknown factors remain unknown. Until that facility is implemented,
 the compiler inspection reports expose only the unweighted typed-IR structure
 defined in §6.9.
+
+Two verified `cpu.read_counter` records likewise establish only two raw source
+reads. Width-aware subtraction yields a modular tick delta; it is not by itself
+elapsed-time or latency evidence. The selected target's static platform-counter-
+instance provider `a64-generic-virtual-counter-instance-provider-v1` version 1,
+under `wyst.platform-counter-instance-provider.v1`, is an authenticated target-
+profile extension bound to the exact source descriptor. It names
+`wyst.platform-counter-instance-record.v1`; a validated record has a normalized
+`wyst.platform-counter-instance-identity.v1` identity, and the static product
+also names field `universe_evidence_schema` with value
+`wyst.platform-counter-universe-evidence.v1`. Its five-field product digest is
+`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`.
+These static facts belong to target compatibility and compilation identity, not
+to either `cpu.read_counter` operation record.
+
+An optional immutable per-run instance record is a launch/measurement product,
+not typed IR and not a reusable compilation-cache input. It separately carries
+the runtime domain and configuration epoch, realized frequency, comparison and
+serialization modes/overhead, complete platform-state applicability/progress
+evidence, mutable controls/exclusions/epoch transitions, evidence identities,
+an authenticated universe-authority contract identity and content digest, and
+normalized record content digest. The authority uses
+`wyst.platform-counter-universe-evidence.v1`; an independently selected
+platform-environment contract under
+`wyst.platform-counter-universe-evidence-contract.v1` pins its exact digest.
+Self-consistent resealing cannot establish completeness. The authority binds
+provider/source, exact counter domain and configuration epoch, both universe
+evidence references, exact sorted states, and exact sorted controls with sorted
+effects. Scope enters its digest, preventing authority replay across domains or
+epochs; the record binds both the selected trust anchor identity and that digest
+and must match all authority facts. Runtime authority and record content remain
+outside typed IR and reusable compilation identity. No-record/no-authority
+consumption leaves the two raw
+reads legal and every numeric result explicitly unsupported. Records with the
+closed disposition `unknown`, `malformed`, `incomplete`, `stale`, `mismatched`,
+or `ambiguous` fail before exposing any trusted record field. An unrecognized
+provider identity is `unknown`; source or another recognized-fact disagreement
+and an invalid epoch transition are `mismatched`. Missing authority-declared
+rows or missing authority for a present record are `incomplete`; extras and
+effect, scope, trust-anchor, reference, or digest differences are `mismatched`;
+multiple authorities are `ambiguous`.
+
+A measured interval from the future performance/resource-report and benchmark-
+comparison contract must bind the same source descriptor, static
+provider/schema, and immutable instance-record identity/content digest at both
+endpoints and prove one domain/configuration epoch, comparability and offset,
+explicit endpoint serialization and overhead, realized frequency, the possible
+platform-state set and progress evidence, mutable source/frequency/offset/reset/
+rebase/comparability-control exclusion, and a maximum span below the modulus
+before publishing a numeric elapsed claim. These runtime contracts do not add
+fields to the current counter-source IR record.

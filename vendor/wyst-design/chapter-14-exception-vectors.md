@@ -382,12 +382,12 @@ cannot be weakened locally to opt into nesting.
 
 ## 10.4 Historical v0.8 Removal Boundary
 
-The released-v0.8 `#exception_vector`, `#ventry`, and `#trap_frame` spellings
-are historical syntax only. Appendix B preserves them solely inside its
-explicitly versioned v0.8 grammar snapshot, and
-[`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) records their
-v0.9 disposition. They are not aliases, migration forms, contextual tokens,
-or inputs to current parser, formatter, diagnostic, editor, or code-generation
+The released-v0.8 vector, vector-entry, and trap-frame directive spellings are
+historical syntax only. Appendix B preserves them solely inside its explicitly
+versioned v0.8 grammar snapshot, and the corresponding rows in
+[`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) record their
+v0.9 disposition. They are not aliases, migration forms, contextual tokens, or
+inputs to current parser, formatter, diagnostic, editor, or code-generation
 tables.
 
 ---

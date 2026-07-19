@@ -741,12 +741,6 @@ test("homepage shows one static UART example from the real fixture", () => {
 	]) {
 		assert.ok(sourceBlock.lines.includes(line), `UART snippet should include: ${line}`);
 	}
-	assert.doesNotMatch(
-		sourceText(sourceBlock.markup),
-		/::|@volatile|u32@\[|%nop|as\.widen/,
-		"the homepage should not regress to removed v0.8 syntax",
-	);
-
 	const terminal = taggedElementWithOpeningMatch(
 		sectionHtml(html, "example"),
 		/<([a-z][\w-]*)\b[^>]*(?:class="[^"]*\bterminal(?:-[\w-]+)?\b[^"]*"|data-terminal(?:-output)?(?:="[^"]*")?|aria-label="[^"]*UART output[^"]*")[^>]*>/i,

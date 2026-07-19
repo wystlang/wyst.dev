@@ -1,0 +1,3 @@
+module demo
+enum State { payload(u64) }
+fn main(state: State) { match state { .payload(widen) {} } }

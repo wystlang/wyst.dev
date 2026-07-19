@@ -1,0 +1,38 @@
+module syntax.item42
+import core.arch { cpu }
+
+#[schedule(source)]
+pub naked extern "C" fn boot_entry(arg: noescape @u8 in x0) -> never {
+  loop {
+    cpu.wfe()
+  }
+}
+
+extern "C" fn c_handler(value: noescape @u8 in x0, count: u64 in x1) -> i32 in x0 {
+  return 0
+}
+
+fn halt(arg: @u8 in x0) -> never {
+  loop {
+    cpu.wfe()
+  }
+}
+
+var callback: extern "C" fn(noescape @u8 in x0, u64 in x1) -> i32 in x0 = c_handler
+var terminator: fn(@u8 in x0) -> never = halt
+pub per_cpu var cpu_id: u64 = 0
+
+pub packed struct Header {
+  kind: u32
+  length: u32
+}
+
+fn worker(callback: extern "C" fn(noescape @u8 in x0) -> i32 in x0) {
+  var state: u64 in x19 = 0
+}
+
+naked label restore {
+  loop {
+    cpu.wfe()
+  }
+}

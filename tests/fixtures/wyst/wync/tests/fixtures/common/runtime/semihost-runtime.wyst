@@ -1,15 +1,14 @@
-SEMIHOST_APPLICATION_EXIT :: u64 = 0x20026
-semihost_exit_reason : u64 = SEMIHOST_APPLICATION_EXIT
-semihost_exit_status : u64 = 1
+const SEMIHOST_APPLICATION_EXIT: u64 = 0x20026
+var semihost_exit_reason: u64 = SEMIHOST_APPLICATION_EXIT
+var semihost_exit_status: u64 = 1
 
-#noreturn
-test_exit :: (code : u64) {
+fn test_exit(code: u64) -> never {
   semihost_exit_status = code
-  operation : u64 #pin(x0) = 0x18
-  args : u64 #pin(x1) = #addr_of(semihost_exit_reason)
-  %hlt(0xf000)
+  var operation: u64 in x0 = 0x18
+  var args: u64 in x1 = #addr_of(semihost_exit_reason)
+  semihost.call(operation, args)
 
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }

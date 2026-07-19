@@ -55,7 +55,8 @@ stored binding still has an explicit initializer, and allocation, capacity,
 growth, failure, movement, and storage identity remain visible in the selected
 storage API.
 
-`[dynamic]T` is removed syntax in v0.9; it is neither an alias nor a second
+The predecessor dynamic-array type marker is removed syntax in v0.9; it is
+neither an alias nor a second
 accepted spelling. There is no transition mode in which both forms denote the
 same type.
 
@@ -319,9 +320,11 @@ The function must have signature `()`, must use the native calling convention,
 must not be `#inline`, `#naked`, or `#noreturn`, and must return so the next
 table entry can run.
 
-The runtime invocation path is ordinary Wyst code. A layout file publishes
-`__initcalls_start ::= #start(.initcalls)` and
-`__initcalls_end ::= #end(.initcalls)`. Boot code walks the table with
+The runtime invocation path is ordinary Wyst code. The selected named layout
+explicitly declares `.initcalls` as `rodata` with alignment at least 8 and may
+publish
+`pub symbol __initcalls_start: @u8 = start(".initcalls")` and
+`pub symbol __initcalls_end: @u8 = end(".initcalls")`. Boot code walks the table with
 explicit loads, constructs a `@()` function pointer with
 `#trusted_cast<@()>(addr)`, and calls it. There is no hidden constructor pass, no
 link-time rewrite, and no implicit allocation.

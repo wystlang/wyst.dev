@@ -29,13 +29,13 @@ linked below.
 > | Typed atomic storage, methods, and orders  | [atomic-matrix.json](atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
 > | System register access                     | [chapter-11-intrinsics.md §1.3.3](chapter-11-intrinsics.md)        |
 > | Trap / cache / TLB / CPU operations        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                |
-> | Per-CPU / TLS                              | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)        |
+> | Per-CPU storage; no TLS surface            | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)        |
 > | Functions, control flow                    | [chapter-08-functions.md](chapter-08-functions.md)                 |
-> | `#pin` register affinity                   | [chapter-08-functions.md §2.3](chapter-08-functions.md)            |
+> | `in register` affinity                     | [chapter-08-functions.md §2.3](chapter-08-functions.md)            |
 > | checked `asm`                              | [chapter-08-functions.md §2.9](chapter-08-functions.md)            |
 > | SIMD / vector syntax                       | [chapter-12-simd.md](chapter-12-simd.md)                           |
 > | Scheduling semantics and layout constraint | [chapter-13-scheduling.md](chapter-13-scheduling.md)               |
-> | Modules, imports, layout, `#section`       | [chapter-04-modules.md](chapter-04-modules.md)                     |
+> | Modules, imports, named layout, `#[section]` | [chapter-04-modules.md](chapter-04-modules.md)                   |
 > | Alignment, `vector_table`, `trap_frame`    | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md) |
 > | Boot entry contract                        | [chapter-05-boot.md](chapter-05-boot.md)                           |
 > | Debug information (DWARF)                  | [chapter-23-debug-info.md](chapter-23-debug-info.md)               |
@@ -45,13 +45,13 @@ linked below.
 > | Object file format, relocations            | [chapter-16-object-format.md](chapter-16-object-format.md)         |
 > | Compiler IR (SSA, regions, ops)            | [appendix-a-ir.md](appendix-a-ir.md)                               |
 > | Target descriptor, dependency chains       | [appendix-a-ir.md §6.9, §14](appendix-a-ir.md)                     |
-> | `#likely`, `#unlikely`, `#cold`            | [chapter-08-functions.md §2.7.2](chapter-08-functions.md)          |
+> | Branch hints and hot/cold placement        | [chapter-08-functions.md §2.7.2](chapter-08-functions.md)          |
 > | `select(cond, a, b)`                       | [chapter-07-operators.md](chapter-07-operators.md)                 |
-> | `#shared`, `#cache_line_width()`           | [chapter-09-memory-model.md §9.12](chapter-09-memory-model.md)     |
+> | Cache isolation and `#cache_line_width()`  | [chapter-09-memory-model.md §9.12](chapter-09-memory-model.md)     |
 > | Prefetch, non-temporal, cycle counter      | [chapter-11-intrinsics.md §1.3.8](chapter-11-intrinsics.md)        |
 > | Store-to-load forwarding hazards           | [chapter-09-memory-model.md §9.10](chapter-09-memory-model.md)     |
 > | Hot/cold section conventions               | [chapter-04-modules.md](chapter-04-modules.md)                     |
-> | `#field_offset(T, field)`, `#repr`         | [chapter-06-types.md](chapter-06-types.md)                         |
+> | `#field_offset(T, field)` and ABI layout checks | [chapter-06-types.md](chapter-06-types.md)                    |
 > | Effect system, `#[deny_effects(...)]`      | chapter-01-language-design.md (this file)                          |
 > | Effect categories on semantic operation facts | [appendix-a-ir.md §6.8](appendix-a-ir.md)                       |
 > | TMA vocabulary                             | chapter-01-language-design.md (this file)                          |
@@ -168,16 +168,16 @@ All trust-boundary constructs share this model:
 | --------- | ------------- | ------------------- | ------------------------- |
 | Raw-address assertion, including an explicit `address<@T>(raw)`, `address<@volatile T>(raw)`, or `address<@mmio T>(raw)` boundary | The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract. | Later typed loads, stores, and address operations use the asserted address type at that use. | The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout. |
 | `address<@atomic<T>>(raw)` in an executable function body | The raw address denotes exact `atomic<T>` storage with `T`'s natural alignment, atomic-capable Normal memory, and no mixed atomic/plain access. | The authenticated atomic address exposes only the closed atomic method surface. Provable misalignment and overlap with target-declared Device memory are compile-time diagnostics; an otherwise dynamic address is recorded as asserted, never proven. | A false dynamic assertion is a trusted-contract violation confined to operations through that address; no runtime check, alignment repair, ordinary access, or unrelated optimizer assumption is introduced. |
-| `#trusted_cast<@(args) -> ret>(addr)` or `#trusted_cast<@[aapcs] (args) -> ret>(addr)` | The raw address, function signature, return type, and calling convention identify a callable function entry. | The constructed function pointer has the asserted type; calls through it use that signature and ABI. | The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses. |
+| `trusted_callable<fn(args) -> ret>(addr)` or `trusted_callable<extern "C" fn(args) -> ret>(addr)` | The raw address, function signature, return type, and calling convention identify a callable function entry. | The constructed function pointer has the asserted type; calls through it use that signature and ABI. | The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses. |
 | Foreign declarations and object/header facts without a Wyst body | The linked symbol exists and obeys the declared type, calling convention, and externally documented side effects. | Calls and address-taking use the declaration as the boundary contract. | The emitted call or data reference follows the declaration and may miscommunicate with the foreign code or object. |
 | Manually stated foreign effects and library contracts not proven from a body | The named API has the stated effects, allocation behavior, storage identity, error behavior, and protocol constraints. | Diagnostics and explain reports may use the stated contract only for that API boundary. | Code at that API boundary may observe wrong effects or protocol behavior; other calls do not inherit the false fact. |
 | Checked-assembly signature operands, symbol references, and stack transitions | Each operand and symbol has the stated type and identity, and an explicit stack clause requests the stated complete transition. | The parsed instruction rows derive register, memory, control-flow, and effect facts; allocation and stack verification consume those facts. | An unresolved or incompatible fact is rejected; no manual clobber, effect, constraint, or purity assertion can override the generated model. |
-| ABI overrides such as `[aapcs]` functions and function-pointer types | The boundary obeys the selected ABI's register, stack, parameter, return, and ownership rules. | Calls, prologues, epilogues, and function-pointer signatures are lowered for the asserted ABI. | The call boundary may pass or receive values incorrectly; no unrelated optimizer assumption is created. |
+| ABI overrides such as `extern "C"` functions and function-pointer types | The boundary obeys the selected ABI's register, stack, parameter, return, and ownership rules. | Calls, prologues, epilogues, and function-pointer signatures are lowered for the asserted ABI. | The call boundary may pass or receive values incorrectly; no unrelated optimizer assumption is created. |
 
 Diagnostics for an operation that needs one of these facts must name the trusted
 fact required to accept the operation. For example, a raw integer-to-function
-pointer `as.address` conversion is rejected until the program writes `#trusted_cast`, and the
-diagnostic identifies the required function-pointer address, signature, and ABI
+pointer conversion is rejected until the program writes `trusted_callable<T>(address)`, and
+the diagnostic identifies the required function-pointer address, signature, and ABI
 assertion.
 
 Explain reports label every reported fact as `proven` or `asserted`. Proven
@@ -214,12 +214,12 @@ lowering instead of silently ignoring them.
 | Shift count outside the nominal element width | Defined | Count is reduced modulo `max(32, width(T))`; signed counts are rejected. |
 | Floating-point arithmetic exceptions | Defined | IEEE 754 result for the selected operation. |
 | Float-to-integer conversion of out-of-range, `NaN`, or infinity | Target-defined | The selected architecture's conversion instruction defines the result. |
-| Access through an unmapped, stale, null, non-canonical, or otherwise invalid data address | Architectural fault or trap | The emitted load/store may fault or complete according to the active translation and memory attributes. |
+| Access through an unmapped, stale, zero-valued, non-canonical, or otherwise invalid data address | Architectural fault or trap | The emitted load/store may fault or complete according to the active translation and memory attributes. |
 | Misaligned ordinary scalar access | Architectural fault or trap | The emitted access may complete or fault according to the selected architecture, alignment controls, and memory type. |
 | Misaligned non-temporal pair, vector, exclusive, or other alignment-restricted access | Architectural fault or trap | The emitted instruction may fault according to the architecture. |
 | Source `goto` that crosses an invalid boundary, enters a prologue, abandons a live frame, or targets a malformed label | Defined | The compiler rejects the source before emission. |
 | Function-pointer arithmetic, ordered comparison, memory access, or convention mismatch visible in source types | Defined | The compiler rejects the source before emission. |
-| Function pointer constructed with `#trusted_cast` from a false address, signature, or ABI assertion | Trusted-contract violation | The call is emitted according to the trusted type; a false assertion is the program's contract violation. |
+| Function pointer constructed with `trusted_callable<T>(address)` from a false address, signature, or ABI assertion | Trusted-contract violation | The call is emitted according to the trusted type; a false assertion is the program's contract violation. |
 | Ordinary read of a local before initialization | Defined | The compiler rejects the source before emission; no implicit zeroing and no implicit indeterminate value are manufactured. |
 | Explicit raw read through `MaybeUninit<T>.read_uninit()`, padding, or inactive payload bytes reached through raw memory | Indeterminate bits | The observed bits are ordinary typed values and never optimizer poison. |
 | Access-atomic data race | Target-defined | The load observes a value permitted by the ARM64 memory model for the selected memory type. |
@@ -240,7 +240,7 @@ vulnerabilities.
 Wyst removes the compiler's license to exploit unspecified states:
 
 - The compiler never assumes overflow cannot occur
-- The compiler never assumes pointers are non-null unless the programmer proves it
+- The compiler never assumes pointers are valid unless the programmer proves it
 - The compiler never assumes memory accesses are in-bounds
 - The compiler never transforms code based on "this is UB, so it can't happen"
 
@@ -278,7 +278,7 @@ cannot happen.
 Wyst programs are written in terms of **named variables**, not registers.
 The register allocator owns the mapping from variables to physical registers.
 The programmer expresses register affinity only when the hardware contract
-requires a specific register, and only via the `#pin` directive.
+requires a specific register, and only via an `in register` placement.
 
 #### Register Names Are Reserved Tokens
 
@@ -300,8 +300,8 @@ program:
 
 These tokens are legal **only** in closed machine-placement positions:
 
-1. Inside the argument list of a `#pin(...)` directive on a declaration
-   (e.g. `counter : u64 #pin(x19) = 0`).
+1. In an `in FIXED_REGISTER` placement on a declaration
+   (for example, `var counter: u64 in x19 = 0`).
 2. In an `asm` signature's `in FIXED_REGISTER` clause.
 3. For catalog-owned special or implicit registers, in the exact validated
    operand positions of an `asm` body.
@@ -326,45 +326,45 @@ Compound operations apply to variables:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-counter : u64 = 0
+var counter: u64 = 0
 counter += 1            // lowers to `add xN, xN, #1` for whichever xN the allocator picked
 ```
 
-#### Register Affinity via `#pin`
+#### Explicit Register Placement via `in register`
 
 When a value must live in a specific register because of a hardware or ABI
 contract — firmware delivering a DTB pointer in `x0`, an exception handler
 expecting the syndrome in a particular register, an `asm` block whose
-encoding is fixed — the programmer expresses this with `#pin` on the
-declaration:
+encoding is fixed — the programmer expresses this with the declaration's
+v0.9 `in register` clause:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-counter : u64 #pin(x19) = 0
+var counter: u64 in x19 = 0
 
-_start :: (dtb : @u8 #pin(x0)) #noreturn {
-    kernel_init(dtb)
-    loop { cpu.wfe() }
+fn _start(dtb: @u8 in x0) -> never {
+  kernel_init(dtb)
+  loop { cpu.wfe() }
 }
 ```
 
 Here `cpu` is the qualified category binding created by
 `import core.arch { cpu }`; no CPU operation is globally predeclared.
 
-`#pin` is allowed on local variables and function parameters. It is not
-allowed on globals or constants — a pinned global would silently reserve a
+Explicit register placement is allowed on local variables and function
+parameters. It is not allowed on globals or constants — a placed global would silently reserve a
 register program-wide, which is a hidden side effect Wyst does not permit.
 
-`#pin` appears only at the declaration site. There is no statement-level
-pin form. A variable's register affinity is fixed when it is introduced.
+`in register` appears only at the declaration site. There is no statement-level
+placement form. A variable's register affinity is fixed when it is introduced.
 
-If a pin cannot be satisfied, the compiler emits a hard error. Pins are
+If a placement cannot be satisfied, the compiler emits a hard error. Placements are
 never silently moved to a different register, silently spilled around a
 call, or silently saved by an injected prologue. The full conflict catalog
 is in [chapter-08-functions.md §2.3](chapter-08-functions.md), and includes:
-register unavailable, two pins requesting the same register, caller-saved
-pin live across a call, callee-saved local pin inside `#naked`, and rejection
-of `#pin(sp)`/`#pin(x29)`.
+register unavailable, two placements requesting the same register, caller-saved
+placement live across a call, callee-saved local placement inside `naked`, and rejection
+of `in sp`/`in x29`.
 
 #### Direct Register Manipulation
 
@@ -385,7 +385,7 @@ An `asm` signature is the bridge: an outer value enters through an explicit
 initializer, and `in xN` on that binder requests the exact physical home at
 the block site without implicit capture.
 
-See the [chapter-08-functions.md §2.3](chapter-08-functions.md), for the full `#pin`
+See the [chapter-08-functions.md §2.3](chapter-08-functions.md), for the full placement
 specification, and section 2.9 for the checked `asm` specification.
 
 ---
@@ -445,10 +445,13 @@ and generated `atomic<T>` method has one stable identity. The compiler assigns
 effect categories at the leaf and propagates them upward through the call graph
 during semantic analysis.
 
-The closed category vocabulary is generated once by item 47's semantic
+The closed category vocabulary combines target-neutral language effects with
+the machine effects generated once by the pinned A64 compiler-semantic
 authority. Callable signatures, language operations, checked assembly, effect
 inference, diagnostics, and reports consume that ordered vocabulary directly;
-none of those consumers owns a second effect-name table or switch.
+none of those consumers owns a second effect-name table or switch. In
+particular, `execution_suspension` is target-neutral and does not become an A64
+instruction effect merely because it shares the callable-effect vocabulary.
 
 Ordinary body-bearing functions and labels do not annotate what they do — the
 compiler already knows. A declaration may instead state what it **must not
@@ -501,6 +504,7 @@ rule that introduced each byte or spill.
 | `barrier`           | `barrier.compiler`, `barrier.dsb`, `barrier.dmb`, `barrier.isb`              |
 | `fp_state`          | runtime floating-point arithmetic, comparison, conversion, `fma`, and FP/SIMD methods |
 | `perf_counter`      | `cpu.read_counter`                                                           |
+| `execution_suspension` | an authenticated suspension marker or a direct, indirect, imported Wyst, or foreign callable bound that may synchronously cease and later resume the calling strand |
 
 Some semantic operations introduce multiple categories: `cpu.mask` introduces
 both `sysreg` and `interrupt_mask`, and `cpu.wfe` introduces both `cpu_event`
@@ -543,16 +547,20 @@ runs after name resolution and type checking, before IR construction.
    - checked `asm` blocks within the function body
    - the inferred effect sets of all functions called from the body
 
-   This produces a per-function effect set.
+   This produces a per-function effect set. A separately supplied semantic
+   interface contributes its authenticated callable bound even when its body
+   is unavailable; imported Wyst and foreign targets are never treated as
+   `effects(none)` merely because the local AST has no body.
 
 4. **Function-pointer calls.** An indirect call contributes the conservative
    `effects(...)` upper bound of the function-pointer value. A known function
    value contributes that function's inferred effect set; assignments, phis, fields,
    arrays, returns, and parameters combine bounds by union. A pointer produced
-   from `#trusted_cast<@(args) -> ret>(addr)`, an imported ABI table, external
+   from `trusted_callable<fn(args) -> ret>(addr)`, an imported ABI table, external
    declaration without inspectable body, or otherwise unknown source is treated
    as `effects(all)` unless it carries a narrower visible trusted contract.
-   `effects(none)` is the empty upper bound. Assigning a known target to a
+   `effects(all)` includes `execution_suspension`; `effects(none)` is the empty
+   upper bound. Assigning a known target to a
    callable value checks its inferred effects against the destination bound.
 
 5. **`deny_effects` checking.** For every function, label, or module with a
@@ -560,9 +568,11 @@ runs after name resolution and type checking, before IR construction.
    effect set with the denied set. A non-empty intersection is a
    compile-time error.
 
-Because Wyst does whole-program single-pass compilation, the entire call
-graph is visible. There are no separately-compiled modules that could
-hide effects.
+Current executable emission analyzes the complete resolved call graph in one
+build. When a body comes from a semantic interface, object, archive, foreign
+declaration, or another separately supplied unit, its authenticated exact or
+conservative callable bound participates in that graph. An unavailable body
+therefore cannot hide an effect or become implicitly `effects(none)`.
 
 ### `#[deny_effects(...)]` — Restricting Effects
 
@@ -687,6 +697,11 @@ profile may activate a verifier-approved transition without creating one.
 - **No backend resource budget.** `deny_effects` does not reject compiler-generated
   stack use. Use `#[frame(max_bytes = ..., max_spills = ...)]` when a function
   must prove a post-lowering frame budget.
+- **No scheduling implementation.** `execution_suspension` and its
+  `strand_suspension_boundary` constrain compilation and classify a callable;
+  they do not yield, link a scheduler, synchronize unrelated memory, or grant
+  permission to relocate a live native activation. Chapter 13 owns the complete
+  strand and boundary contract.
 
 ### Design Rationale
 
@@ -703,7 +718,7 @@ profile may activate a verifier-approved transition without creating one.
 
 ## Alignment
 
-`#align(n)` constrains the assembler to place a label, function, or
+`#[align(n)]` constrains the assembler to place a label, function, or
 `.rodata` constant at an address that is a multiple of `n` bytes (power
 of two, compile-time constant).
 
@@ -805,9 +820,9 @@ The goal is:
 
 Wyst guarantees **reproducible lowering**: given the same source, the same
 compiler version, the same build optimization mode, the same canonical
-`#target(...)` configuration, the same source input manifest, and the same
-selected scheduling policies including implicit `schedule.standard`, the compiler
-always produces identical output.
+`#target(...)` configuration or authenticated target-profile contract, the same
+source input manifest, and the same selected scheduling policies including
+implicit `schedule.standard`, the compiler always produces identical output.
 Reproducibility is scoped to these inputs; it is not guaranteed across compiler
 versions, build optimization modes, target configurations, source manifests, or
 different selected scheduling policies.
@@ -828,11 +843,14 @@ Requirements for reproducibility:
     file contents;
   - explicit root-file mode with `--source-root`: the same root file, source
     roots, and import closure discovered by the project traversal rules;
-  - project mode: the same `wyst.project`, ordered `source_roots`, root module,
-    layout path and contents, and import-closure traversal described in
+  - project mode: the same `wyst.project`, selected artifact kind, ordered
+    `source_roots`, root module, normalized layout owner and choice, conditional
+    source-layout path and contents for `.artifact`, output/companion identities,
+    and import-closure traversal described in
     [chapter-03-project-builds.md](chapter-03-project-builds.md)
 - same canonical target configuration, including the full `#target(...)`
-  argument list and defaults
+  argument list and defaults or the complete authenticated target-profile
+  policy tuple plus contract and extension-set schemas, identities, and digests
 - same selected scheduling policies, including implicit `schedule.standard`
   and any explicit `schedule.source` boundary
 
@@ -844,7 +862,7 @@ target. The same inputs always produce the same allocation.
 ## ABI Strategy
 
 Wyst has two calling conventions: the **Native Wyst ABI** (default,
-Wyst-to-Wyst) and **AAPCS64** (opt-in via `[aapcs]`, used for C interop
+Wyst-to-Wyst) and **AAPCS64** (opt-in via `extern "C"`, used for C interop
 and OS boundaries). Native diverges from AAPCS64 in two main areas for
 performance: `v8`–`v15` are fully caller-saved, and up to four integer
 return values use `x0`–`x3`. Large by-value aggregate arguments in both
@@ -854,7 +872,7 @@ Variadic Wyst functions do not exist; use explicit count-and-pointer
 parameters.
 
 Canonical reference: [chapter-15-abi-spec.md](chapter-15-abi-spec.md). Function-pointer type
-discipline (`@(args) -> ret` vs `@[aapcs] (args) -> ret`):
+discipline (`fn(args) -> ret` vs `extern "C" fn(args) -> ret`):
 [chapter-08-functions.md §2.6](chapter-08-functions.md) and [chapter-15-abi-spec.md §B.5](chapter-15-abi-spec.md).
 
 ---
@@ -964,11 +982,13 @@ memory accesses, compile-time forms (`#addr_of`, `#len`), typed atomic methods,
 declared system-register methods, and qualified semantic operations are
 recognisable but not yet lowered.
 
-**Constant Folding.** Compile-time expressions are evaluated. `#start()` /
-`#end()` symbols are recorded as pending; resolved in the placement stage.
+**Constant Folding.** Ordinary compile-time expressions are evaluated. Typed
+named-layout `start("NAME")`, `end("NAME")`, and `size("NAME")` symbol
+initializers remain explicit placement-owned values and resolve only after the
+placement stage has fixed the referenced section.
 
-**Register Allocation.** Variables are assigned to ARM64 registers. `#pin`
-constraints apply first; remaining variables are allocated by the compiler.
+**Register Allocation.** Variables are assigned to ARM64 registers. Explicit
+`in register` constraints apply first; remaining variables are allocated by the compiler.
 Register allocation is a pure function of source, compiler version, and
 target triple. Tie-breaking must not use hash-based ordering, pointer-
 derived ordering, or any input that varies across invocations — the same
@@ -984,8 +1004,9 @@ and tie-breaks in [appendix-a-ir.md §11](appendix-a-ir.md).
 compiler-only boundary.
 
 **Symbol Placement and Relocation.** The integrated linker assigns final
-addresses to all symbols, satisfying `#region`, `#section`, and `#entry`
-constraints from the layout module. Pending `#addr_of` references and
+addresses to all symbols, satisfying the selected named layout's region,
+section, `in`/`after`/`align`, and optional entry `at` constraints. Typed
+layout symbols, pending `#addr_of` references, and
 cross-module symbols are resolved. Slot size enforcement for `vector_table`
 bodies is verified after placement.
 
@@ -1111,7 +1132,7 @@ The performance model should remain:
 ### TMA Vocabulary
 
 Future `wync explain` performance reports use the **Top-down Microarchitecture
-Analysis (TMA)** vocabulary. TMA classifies every cycle into one of four
+Analysis** vocabulary, abbreviated TMA. TMA classifies every cycle into one of four
 top-level buckets:
 
 | Bucket                    | Meaning                                                                                                   |

@@ -1,0 +1,2 @@
+module demo
+fn main() { for widen in 0 ..< 1 {} }

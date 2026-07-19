@@ -1,0 +1,5 @@
+module removed_release_directive
+
+fn store(addr: @atomic<u64>) {
+  #release addr.store(1, .relaxed)
+}

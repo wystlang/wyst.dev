@@ -1,0 +1,4 @@
+module removed_link_name_attribute
+
+#[link_name("removed")]
+fn entry() {}

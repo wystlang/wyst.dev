@@ -16,7 +16,8 @@ summary: "Native ABI, AAPCS64 interop, argument/return classification, stack pro
 
 The ABI contract specifies register ownership, argument and return
 classification, and stack behavior. Its rules depend on functions, address
-types, item-42 `in register` placement, `naked`, and exception-vector context.
+types, the `in register` placement in `language.callable-storage-contracts`,
+`naked`, and exception-vector context.
 
 ---
 
@@ -43,10 +44,11 @@ and `extern "C"` identities.
 
 ## v0.9 Callable Boundary Identity and Explicit Placement (Current)
 
-Chapter 8 is the sole owner of item-42 source meaning. This section fixes its
-ABI projection. A callable identity contains the convention, ordered parameter
-types, each parameter's `noescape` bit and optional register placement, the
-result type (including `never`), and an optional register placement for one
+Chapter 8 is the sole source-semantic owner for
+`language.callable-storage-contracts`. This section fixes its ABI projection. A
+callable identity contains the convention, ordered parameter types, each
+parameter's `noescape` bit and optional register placement, the result type
+(including `never`), and an optional register placement for one
 scalar result. Declaration parameter names are direct-call source labels only
 and are excluded. `pub`, declaration identity, and `naked` are also excluded.
 
@@ -65,6 +67,14 @@ it does not insert a hidden adapter or silently use the convention's default
 location. Local `var name: T in register` placement is a storage constraint and
 does not become part of the enclosing callable identity.
 
+Source placement may not name target-owned architectural state. In the
+current AArch64 ABI, `x18`, `x29`, `x30`/`lr`, `sp`, and `xzr` are reserved and
+produce a compile error in parameter, result, or local `in register`
+placement. In particular, `lr` is not a source alias for an ordinary local and
+`x18` is not an opt-in platform-register home. The compiler owns those states;
+there is no compatibility path that silently converts either spelling into a
+special-register binding.
+
 `noescape` is valid only on an address parameter. Its bit participates in exact
 identity even when two signatures otherwise marshal identically. Direct calls
 may use declaration parameter labels, but calls through callable values are
@@ -82,8 +92,18 @@ accepted, including a parameter list longer than eight when every final
 location is a register. Classification rejects the declaration if even one
 parameter's final ABI location is stack-based.
 
-`pub` remains Wyst source visibility and re-export only. Item 42 does not turn
-a public function or `per_cpu` declaration into a raw linker-address export.
+`pub` remains Wyst source visibility and re-export only. That source contract
+does not turn a public function or `per_cpu` declaration into a raw
+linker-address export.
+
+<!-- wyst-contract: fmt -->
+```wyst
+module abi.contract
+
+extern "C" fn foreign(value: u64 in x0) -> u64 in x0
+```
+
+## Released v0.8 ABI Syntax Snapshot
 
 > **Released v0.8 ABI syntax below.** The remainder of this chapter preserves
 > the released native/AAPCS64 classification tables and frame rules. Its
@@ -175,7 +195,7 @@ If more than eight floating-point or vector arguments are present, the remaining
 
 A struct whose total size is at most 8 bytes is packed into a single integer argument register. Field bytes are packed in memory layout order, occupying the low bytes of the register:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 point :: struct {
   x : u32 // offset 0
@@ -191,7 +211,7 @@ The register holds the struct's memory image — the same bytes that a `u64@[add
 
 A struct whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), the second holds the remaining bytes (zero-padded to 8 bytes if the struct is not a multiple of 8 bytes in size):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 string :: struct {
   data : @u8 // offset 0, 8 bytes
@@ -207,7 +227,7 @@ If only one integer argument register remains when a medium struct is to be pass
 
 A struct larger than 16 bytes is not passed in registers. The caller allocates storage for the struct on its stack, copies the argument value there, and passes the address of that storage in the next available integer argument register:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 big :: struct {
   a : u64
@@ -259,7 +279,7 @@ Multiple return values are distributed across registers up to the limits below. 
 
 Example:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 divmod :: (a : u64, b : u64) -> (q: u64, r: u64) {
   return (a / b, a % b)
@@ -430,7 +450,7 @@ The Wyst Native ABI does not define a variadic calling convention. C-style `va_l
 
 Functions that accept a variable number of arguments use explicit count-and-pointer parameters:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // idiomatic Wyst variadic-style function
 print_all :: (args : @u64, count : u64) { ... }
@@ -547,7 +567,7 @@ alias, ordering, cycle, or temporary-selection rules.
 
 ### B.1 Annotation
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 [aapcs]
 my_function :: (x : u32, y : u32) -> u64 { ... }
@@ -595,7 +615,7 @@ The most significant differences are: (1) Wyst native returns up to 4 integers i
 
 Foreign C functions called from Wyst must be declared with `[aapcs]`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 [aapcs]
 memcpy :: (dst : @u8, src : @u8, n : u64) -> @u8
@@ -643,7 +663,7 @@ ordinary result locations and do not encode argument pins.
 
 There is no implicit conversion between `@(...)` and `@[aapcs] (...)` in either direction. Wyst rejects:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 [aapcs]
 puts :: (s : @u8) -> i32
@@ -667,7 +687,7 @@ A function pointer of either convention converts to `u64` via `as.address`.
 Constructing a function pointer of either convention from a raw integer address
 requires the explicit trusted form:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 addr := aapcs_fp as.address u64
 fp   := #trusted_cast<@[aapcs] (@u8) -> i32>(addr)
@@ -713,7 +733,7 @@ via `va_list`.
 
 The simplest FFI case — pointer and integer arguments, pointer return.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module runtime.libc
 
@@ -733,7 +753,7 @@ and checks these signatures, but rejects calls to or addresses of unresolved
 external symbols until that build mode exists. Usage in an object/link-capable
 mode:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import runtime.libc
 
@@ -784,7 +804,7 @@ int clock_diff(struct timespec a, struct timespec b);   // by value
 
 Wyst side:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module runtime.posix_time
 
@@ -824,7 +844,7 @@ Wyst does **not** support declaring variadic Wyst functions (per [§A.8](#a8-var
 
 Declare `printf` once per call shape used:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 [aapcs]
 pub printf_1s :: (fmt : @u8, s : @u8) -> i32
@@ -854,7 +874,7 @@ struct __va_list {
 
 Wyst declares this layout directly:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module runtime.va_list
 
@@ -873,7 +893,7 @@ The static assert is the load-bearing check: any miscompile of layout against AA
 
 **Declaring `vprintf`:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import runtime.va_list
 
@@ -1114,7 +1134,7 @@ The cost is one-time per header; the result is auditable Wyst source that partic
 
 #### Eight integer arguments — all in registers
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 f :: (a : u64, b : u64, c : u64, d : u64, e : u64, f : u64, g : u64, h : u64) -> u64
 ```
@@ -1126,7 +1146,7 @@ e → x4   f → x5   g → x6   h → x7
 
 #### Nine integer arguments — ninth on stack
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 g :: (a u64, b : u64, c : u64, d : u64,
       e : u64, f : u64, g : u64, h : u64,
@@ -1141,7 +1161,7 @@ i → [sp + 0]                          // first stack argument at sp[0] in call
 
 #### Mixed integer and float arguments
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 h :: (a : u64, x : f32, b : u64, y : f64) -> u64
 ```
@@ -1154,7 +1174,7 @@ x → s0   y → d1          // floats fill v0, v1 in order
 
 #### Medium struct argument
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 bounds :: struct {
   lo : u64 // 16 bytes
@@ -1171,7 +1191,7 @@ val      → x2
 
 #### Large struct argument
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 transform :: struct {
   a : u64 // 24 bytes — too large

@@ -74,12 +74,29 @@ The current compatible profile selects executable environment
 a hard target-compatibility error. Artifact preparation rechecks the required
 set, and a runner must match the selected environment and satisfy every
 required descriptor before launch. Target and runner environments are selected
-independently; static artifact preparation invokes the runner preflight and
-rejects an absent runner selection, a mismatched environment identity, or an
-incomplete runner service set before producing the service-bearing artifact.
+independently: static artifact preparation authenticates only the target
+contract and writes the exact requirement facts into `.wyst.artifact`.
+Immediately before launch, `wync runner-preflight <artifact.elf> --runner
+<catalog-id>` authenticates that metadata and the separately selected runner,
+then rejects an unknown runner, mismatched environment identity, or incomplete
+runner service set before any guest instruction executes. Runner choice is not
+an artifact or cache identity input.
 On A64, `semihost.call` places its two `u64` arguments in `x0` and `x1`, emits
 `hlt #0xf000`, and returns `x0`. It remains distinct from
 `exception.hlt(0xf000)`, which has no semihost ABI meaning.
+
+The provider-facing sealed `core.execution` namespace instead uses one private
+direct whole-module import and exposes only
+`execution.suspension_point()`. Its stable semantic identity is
+`core.execution.suspension_point`; its internal identity is
+`execution_suspension_point`. It introduces the target-neutral
+`execution_suspension` effect and typed `strand_suspension_boundary`, then
+returns immediately with zero machine or runtime artifact. It is not an
+environment service or a general user-callable yield. Chapter 13 owns the
+selected-target/provider/leaf/adjacent-transfer authentication and rejects
+standalone, missing, duplicate, separated, post-transfer, and redundant marker
+placements. Imported Wyst or foreign calls whose callable bound already
+contains the effect use their ordinary pre-transfer boundary and no marker.
 
 Compiler-owned operations that naturally belong to a language type use that
 type's authenticated method or property surface: atomic methods come from the
@@ -224,7 +241,7 @@ Atomic operations are defined on naturally aligned `u8`, `u16`, `u32`,
 `@mmio T`).
 The address argument has element type matching the value type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : u64 = 0
 %fetch_add(#addr_of(counter), 1, order = relaxed)
@@ -246,7 +263,7 @@ memory contracts before checked `asm` can expose them.
 
 ### Atomic Load and Store
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %atomic_load(addr : @T, order : { relaxed, seq_cst }) -> T
 %atomic_store(addr : @T, val : T, order : { relaxed, seq_cst })
@@ -258,7 +275,7 @@ need any inter-access ordering. Sequentially-consistent forms exist for
 algorithms that require the global total-order guarantee that
 acquire/release alone cannot provide.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Relaxed read of a shared counter. Atomic at the word level; no ordering
 // relative to surrounding code.
@@ -273,7 +290,7 @@ n := %atomic_load(counter_addr, order = relaxed)
 
 ### Compare-and-Swap
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %cas(addr : @T, expected : T, new : T, order : Order) -> (prev : T, ok : bool)
 ```
@@ -289,7 +306,7 @@ path. Wyst therefore takes a single `order = ...` argument rather than the
 C++/Rust pair. `acqrel` and `seq_cst` `%cas` are RMW orderings; `acquire`
 applies to both the read and the write, `release` likewise.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 LOCK : @u64 = 0x8000
 
@@ -321,7 +338,7 @@ negated operand on LSE targets). Returning the prior value is
 universal — the new value is always recomputable from `(prev, delta)`,
 but the prior value is not recomputable from the new value alone.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %fetch_add(addr : @T, delta : T, order : Order) -> T   // returns old
 %fetch_sub(addr : @T, delta : T, order : Order) -> T
@@ -331,7 +348,7 @@ but the prior value is not recomputable from the new value alone.
 %xchg(addr : @T,      val   : T, order : Order) -> T
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Reference counting:
 prev := %fetch_add(refcount_addr, 1, order = relaxed)
@@ -352,7 +369,7 @@ their own intrinsics — `%fetch_or(addr, 1 << n, ...)` works but obscures
 intent and forces the compiler through a fetch_or-shaped lowering when LSE
 provides `ldset`/`ldclr` directly.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %atomic_bit_set(addr : @T,   bit : u32, order : Order) -> bool   // returns prior bit
 %atomic_bit_clear(addr : @T, bit : u32, order : Order) -> bool   // returns prior bit
@@ -362,7 +379,7 @@ provides `ldset`/`ldclr` directly.
 value of that bit _before_ the operation. `bit` must be a compile-time
 constant less than `8 * #size_of(T)`; out-of-range is a compile error.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Test-and-set the lock bit:
 was_locked := %atomic_bit_set(status_addr, 0, order = acquire)
@@ -675,9 +692,9 @@ components, alternate separators, and noncanonical aliases are rejected.
 The exact tuple must resolve to one active authenticated target-extension row
 with complete compiler semantics and selected-target availability. The literal
 selects that known row and never creates a register or instruction fact.
-Unknown or unnamed tuples are rejected. Generic encoded read/write operations,
-including `%mrs_s` and `%msr_s`, are unavailable in v0.9; there is no raw
-encoding escape.
+Unknown or unnamed tuples are rejected. The predecessor generic encoded
+read/write primitive rows are unavailable in v0.9; there is no raw encoding
+escape.
 
 Each system-register read, write, and complete modify is a full two-way
 compiler-memory fence. No operation implies or emits `dmb`, `dsb`, or `isb`;
@@ -706,7 +723,7 @@ kernel reads and writes them constantly. Wyst provides direct intrinsics for
 system-register access, eliminating repetitive checked-assembly `mrs`/`msr`
 blocks that would otherwise dominate early-boot and trap-handling code.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %mrs(reg) -> u64                  // read system register
 %msr(reg, val : u64)              // write system register
@@ -731,7 +748,7 @@ This means a register name may collide with a same-named bitstruct type
 bitstruct type declaration) without ambiguity — the syntactic positions
 are disjoint:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 bitstruct TCR_EL1: u64 { ... }      // TCR_EL1 is a type here
 
@@ -771,7 +788,7 @@ statically when the target declares EL1 as its execution level.
 architecture defines it. The caller converts to a bitstruct via the
 exact-backing `bitcast` conversion (see [chapter-06-types.md §1.6.1](chapter-06-types.md)):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Read TCR_EL1, modify a field, write it back:
 const raw: u64 = %mrs(TCR_EL1)
@@ -815,7 +832,7 @@ synchronization sequence the architecture documents for that register.
 bitmask of `D`/`A`/`I`/`F` interrupt categories) rather than a register
 value. They get their own intrinsics:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %daif_set(mask : u4)              // mask interrupts
 %daif_clr(mask : u4)              // unmask interrupts
@@ -831,7 +848,7 @@ positions follow ARM ARM convention:
 | 2   | A      | SError (abort) |
 | 3   | D      | Debug          |
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %daif_set(0b0010)    // mask IRQs
 // ... critical section ...
@@ -859,7 +876,7 @@ creates authority for an instruction.
 
 #### Read-modify-write of a configuration register
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 configure_tcr :: () {
   raw := %mrs(TCR_EL1)
@@ -875,7 +892,7 @@ configure_tcr :: () {
 
 #### VBAR install
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 install_vectors :: () {
   %msr(VBAR_EL1, #addr_of(el1_vectors) as.address u64)
@@ -885,7 +902,7 @@ install_vectors :: () {
 
 #### SCTLR cache enable
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 enable_caches :: () {
   raw := %mrs(SCTLR_EL1)
@@ -900,7 +917,7 @@ enable_caches :: () {
 
 #### Critical section with DAIF masking
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 update_shared :: () {
   %daif_set(0b0010) // mask IRQ
@@ -963,7 +980,7 @@ every monitor call, every brk-trap debugger interaction lowers to one of
 the six ARM64 trap instructions. Wyst provides direct intrinsics for each
 so trap-call sites are not stuck in checked `asm`.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %svc(imm : u16)                  // supervisor call — to EL1
 %hvc(imm : u16)                  // hypervisor call — to EL2
@@ -984,7 +1001,7 @@ Each trap intrinsic is the architectural primitive only — no syscall ABI
 is baked in. The caller is responsible for marshaling arguments into and
 results out of registers using `#pin` (see [chapter-08-functions.md §2.3](chapter-08-functions.md)):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 linux_write :: (fd : u64 #pin(x0), buf : @u8 #pin(x1), len : u64 #pin(x2)) -> u64 #pin(x0) {
   nr : u64 #pin(x8) = 64 // Linux __NR_write
@@ -1039,7 +1056,7 @@ all intrinsics that are legal at EL1.
 with status `SPSR_ELx`, where `x` is the current EL. The compiler treats
 the enclosing function as `#noreturn`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #noreturn
 return_to_el0 :: (target_pc : u64, target_sp : u64, spsr : u64) {
@@ -1070,7 +1087,7 @@ compiler-owned epilogue.
 
 #### Linux syscall shim
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 linux_syscall :: (nr : u64 #pin(x8), a0 : u64 #pin(x0), a1 : u64 #pin(x1), a2 : u64 #pin(x2)) -> u64 #pin(x0) {
   %svc(0)
@@ -1080,7 +1097,7 @@ linux_syscall :: (nr : u64 #pin(x8), a0 : u64 #pin(x0), a1 : u64 #pin(x1), a2 : 
 
 #### Software breakpoint with code
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 debug_trap :: () {
   %brk(0xDEAD) // attach a debugger to inspect
@@ -1089,7 +1106,7 @@ debug_trap :: () {
 
 #### PSCI CPU_OFF call (EL1 → EL3 via HVC if virtualized, SMC if firmware)
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #noreturn
 psci_cpu_off :: () {
@@ -1103,7 +1120,7 @@ psci_cpu_off :: () {
 
 #### Exception return to userspace
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #noreturn
 return_to_user :: (pc : u64, user_sp : u64) {
@@ -1155,7 +1172,7 @@ maintenance on ARM64. Wyst provides one intrinsic per architectural
 maintenance instruction; the canonical synchronization sequences are
 documented as worked examples rather than hidden inside the intrinsics.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Data cache by virtual address (to Point of Coherency unless noted):
 %dc_cvac(addr  : u64)            // clean
@@ -1244,7 +1261,7 @@ maintenance operations.
 
 #### Invalidate a TLB entry after a page-table update
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 invalidate_va :: (va : u64) {
   %dsb(ishst) // wait for prior page-table store to be observable
@@ -1256,7 +1273,7 @@ invalidate_va :: (va : u64) {
 
 #### Flush a single cache line back to memory (for DMA-out)
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 flush_for_dma :: (addr : u64) {
   %dc_cvac(addr)
@@ -1266,7 +1283,7 @@ flush_for_dma :: (addr : u64) {
 
 #### Invalidate before a DMA-in read
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 prepare_dma_in :: (addr : u64) {
   %dc_civac(addr) // ensure no stale cached value shadows the DMA write
@@ -1284,7 +1301,7 @@ ordering, not the electrical behavior of a physical DMA controller.
 
 The recipe keeps each buffer in one explicitly aligned cache line:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #align(0x40)
 dma_tx_line : [8]u64 = 0
@@ -1314,7 +1331,7 @@ volatile accesses.
 
 #### Synchronize newly written instructions (self-modifying code)
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 sync_icache :: (addr : u64) {
   %dc_cvau(addr) // clean D-cache line to PoU
@@ -1327,7 +1344,7 @@ sync_icache :: (addr : u64) {
 
 #### Initial MMU bring-up: invalidate all TLBs
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 flush_tlb_all :: () {
   %dsb(ishst)
@@ -1353,7 +1370,7 @@ It has the `sysreg` effect category and is a full two-way compiler memory
 fence. It emits no cache maintenance and no architectural barrier; callers
 still write `%dc_zva` loops and synchronization explicitly.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 zero_page :: (page_base : u64) {
   n : u64 = 4096
@@ -1410,7 +1427,7 @@ The ARM64 hint instructions communicate scheduling information to the CPU
 action. They appear throughout boot code, idle loops, spinlocks, and
 exception handlers; they are first-class intrinsics in Wyst.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %wfi()        // wait for interrupt — CPU enters low-power state until an interrupt
 %wfe()        // wait for event — CPU enters low-power state until an event
@@ -1459,7 +1476,7 @@ layer.
 
 ### `%compiler_barrier` — Compiler Memory Fence
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %compiler_barrier()
 ```
@@ -1506,7 +1523,7 @@ only when the selected target explicitly declares its exception-level
 availability, base alignment, reservation/clobber rules, and realization kind.
 No generic ARM64 default silently grants that contract.
 
-The sole pre-item-92 access-enabling surface is
+The sole initial single-instance access-enabling surface is
 `#target(..., per_cpu = single_instance_tpidr_el1)`. It installs this closed
 fact set in the target product:
 
@@ -1533,8 +1550,9 @@ multi-instruction memory projection: one confined backing-word load,
 verification accepts only that exact read-modify-write dataflow. The compiler
 may fold an encodable constant offset into the operation, but it may not reuse
 the base from an earlier access, create a compiler-owned cache slot, hoist the
-acquisition, or materialize a general address. An item-52 atomic method uses
-the same one-base and offset rule around its one requested atomic operation.
+acquisition, or materialize a general address. A method from
+`wyst.atomic-matrix.v1` uses the same one-base and offset rule around its one
+requested atomic operation.
 The compile-time `#percpu_offset_of(binding)` query emits only the final
 template byte offset and does not acquire a base.
 
@@ -1542,7 +1560,8 @@ Compound assignment is not one such operation: v0.9 rejects it for `per_cpu`
 storage and requires separate direct read and write expressions, each with its
 own fresh base acquisition.
 
-Before item 92, reachable access requires that exact selection. Its
+Before the production multicore realization milestone, reachable access
+requires that exact selection. Its
 `single-instance-test-runtime` realization supplies live
 storage and the declared base contract; it may not make the `.percpu` template
 itself live storage. In its absence, declaration and offset layout may still be
@@ -1558,11 +1577,11 @@ initialization template and access instruction sequence only: it performs no
 replication, allocation, base installation, startup copy, or ordinary-global
 collapse.
 
-Wyst v0.9 has no TLS storage class or TLS base mechanism. `#tls`,
-`#tls_offset_of`, `thread_local`, `.tls` template generation, `PT_TLS`, and ELF
-TLS relocations are outside the v0.9 language and target contract.
+Wyst v0.9 has no TLS storage class or TLS base mechanism. The predecessor TLS
+declaration and offset-query rows, `.tls` template generation, `PT_TLS`, and
+ELF TLS relocations are outside the v0.9 language and target contract.
 
-### Released v0.8 `#percpu` and TLS Model (Historical)
+### Released v0.8 Per-CPU and TLS Model (Historical)
 
 > Everything from this heading through the historical design-rationale table
 > immediately before §1.3.8 is a released v0.8 snapshot. Its address
@@ -1578,7 +1597,7 @@ provides two dedicated thread/CPU pointer registers — `TPIDR_EL1` for
 EL1 kernel use and `TPIDR_EL0` for EL0 user use — and Wyst lifts both
 into the language as declaration attributes.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #percpu
 my_counter : u64 = 0 // one u64 per logical CPU, EL1
@@ -1595,7 +1614,7 @@ name reads or writes the current instance.
 
 #### Historical Declaration
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Per-CPU (EL1 kernel data; one instance per logical CPU):
 current_task : #percpu @task = 0
@@ -1636,7 +1655,7 @@ sections.
 
 #### Historical Access
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Read the current CPU's instance:
 n := my_counter
@@ -1661,7 +1680,7 @@ base is materialized exactly once per function unless escaped via a call
 that may clobber `TPIDR_EL1`). Programs that need explicit control can
 `#pin` a local to `TPIDR_EL1`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 update_stats :: () {
   base : u64 #pin(TPIDR_EL1) = %mrs(TPIDR_EL1)
@@ -1698,7 +1717,7 @@ numeric value as a cross-build protocol value.
 
 A cross-CPU access:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 peek_remote_counter :: (cpu : u32) -> u64 {
   base : @u8 = percpu_base_for_cpu(cpu) as.address @u8
@@ -1716,7 +1735,7 @@ peek_remote_counter :: (cpu : u32) -> u64 {
 The layout module must declare the `.percpu` and `.tls` sections (see
 [chapter-04-modules.md](chapter-04-modules.md)) for the symbols to have a home. Common practice:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section .text : align = 16, in = rom
 #section .rodata : align = 16, after = .text
@@ -1728,7 +1747,7 @@ The layout module must declare the `.percpu` and `.tls` sections (see
 
 The compiler additionally exports the section size for runtime use:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 pub __percpu_size ::= #size_of(.percpu)
 pub __tls_size    ::= #size_of(.tls)
@@ -1789,7 +1808,7 @@ fences unless stated otherwise.
 
 ### `%prefetch` — Cache Prefetch Hint
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %prefetch(addr : @T, access : { read, write }, locality : { streaming, low, medium, high })
 ```
@@ -1829,7 +1848,7 @@ modifies memory.
 
 **Example:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Prefetch the next cache line while processing the current element.
 // The prefetch overlaps with the computation below.
@@ -1841,7 +1860,7 @@ sum += u64@[ptr]
 
 ### `%ldnp` / `%stnp` — Non-Temporal Load/Store Pair
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 %ldnp(addr : @T) -> (T, T)
 %stnp(addr : @T, val1 : T, val2 : T)
@@ -1881,7 +1900,7 @@ guaranteed visible to other agents. See
 
 **Example:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Streaming copy: data is read once and written once with no reuse.
 (a, b) := %ldnp(src)
@@ -1890,7 +1909,7 @@ guaranteed visible to other agents. See
 
 ---
 
-### `cpu.read_counter` — Target-Selected Measurement Counter
+### `cpu.read_counter` — Target-Selected Measurement Counter Source
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -1902,14 +1921,21 @@ fn sample() -> u64 {
 }
 ```
 
-`cpu.read_counter() -> u64` reads the one measurement-counter descriptor
-selected by the artifact target. The current QEMU `virt` and `raspi4b`
-artifact targets each explicitly select
+`cpu.read_counter() -> u64` reads the one generic measurement-counter **source
+descriptor** selected by the artifact target. The current QEMU `virt` and
+`raspi4b` artifact targets each explicitly select
 `a64-generic-virtual-counter-v1`. That descriptor authenticates one
 `CNTVCT_EL0` read, a 64-bit result, modulo-`2^64` wrapping,
-`runtime_register(CNTFRQ_EL0)` frequency, minimum EL0, the
+`runtime_register(CNTFRQ_EL0)` frequency acquisition, minimum EL0, the
 `CNTKCTL_EL1.EL0VCTEN_when_EL0` enablement condition, and
 `architectural_fault_or_trap` failure behavior.
+
+This generic descriptor owns only source-operation facts: read identity and
+lowering, width, frequency **acquisition**, minimum execution level,
+enablement, failure, and source-report identity. In particular,
+`runtime_register(CNTFRQ_EL0)` identifies how a future measurement producer
+may acquire a realized frequency; `cpu.read_counter()` itself does not read
+that register or authenticate a frequency value.
 
 The v0.9 descriptor result-width contract is the closed range `1..=64`. The
 declared width may be narrower than the generated system-register carrier, but
@@ -1941,7 +1967,9 @@ fallback is synthesized.
 **Effects:** Full two-way compiler memory fence. The compiler must not
 reorder loads or stores across a `cpu.read_counter()` call. It is also a source
 scheduling boundary. This prevents
-the compiler from moving measured work outside the timing window.
+the compiler from moving source work outside the sampled region. It does not
+serialize execution at either hardware endpoint and does not itself establish
+a valid timing interval.
 
 **Effect category:** `perf_counter`.
 
@@ -1954,23 +1982,110 @@ architectural barrier, or fallback. The backend authenticates the descriptor
 ID, selected artifact-target identity, generated system-register accessor,
 encoding ID, and semantic-operation IR record before emitting the read word.
 
-Effects, lowering, and performance reports record the selected artifact target,
-descriptor identity, source, width, frequency class, minimum EL, enablement,
-failure, wrapping behavior, report identity, and catalog/authority origin.
+Effects and lowering reports record the selected artifact target, source-
+descriptor identity, source, width, frequency-acquisition class, minimum EL,
+enablement, failure, wrapping behavior, source-report identity, and catalog/
+authority origin.
 
 **Example:**
 
 <!-- wyst-contract: sketch -->
 ```wyst
-start := cpu.read_counter()
+const start: u64 = cpu.read_counter()
 compute(data)
-end := cpu.read_counter()
-elapsed := end - start
+const end: u64 = cpu.read_counter()
 ```
 
-The v0.8 compatibility spelling `%read_cycle_counter()` remains a legacy
-language-version operation only. It is not accepted in v0.9 and does not define
-the semantics of `cpu.read_counter()`.
+These are two raw samples. Width-aware subtraction can produce only
+`(end - start) mod 2^width`, a modular tick delta. The source descriptor alone
+does not make that delta elapsed time, latency, or a value in seconds.
+
+Every current built-in target that admits this source descriptor atomically
+selects static provider `a64-generic-virtual-counter-instance-provider-v1`
+version 1 under product schema `wyst.platform-counter-instance-provider.v1` as
+a target-profile extension. That static product is bound to
+`a64-generic-virtual-counter-v1`, names record schema
+`wyst.platform-counter-instance-record.v1` and universe-evidence schema
+`wyst.platform-counter-universe-evidence.v1`, and participates in compilation
+identities. Its five-field product digest is
+`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`;
+it does not represent a runtime domain, epoch, or measurement observation. A
+valid record receives its normalized per-run identity under
+`wyst.platform-counter-instance-identity.v1`.
+
+At launch or measurement time a consumer may accept one immutable per-run
+instance record under the selected schema. The record authenticates its runtime
+counter domain and configuration epoch; exactly one `fixed_hz`, `variable`, or
+`unknown` realized-frequency mode with acquisition and evidence identities;
+exactly one `same_core_only` or
+`shared_monotonic(max_offset_ticks = N)` comparison mode with evidence identity;
+and exactly one `none_with_authority` serialization value with reason,
+authority, and evidence identities or `source_explicit` value with nonempty
+ordered `before`/`after` operations, `read = core.arch.cpu.read_counter`,
+measured overhead, and evidence identity. Each before/after step must be an
+active zero-operand void architecture barrier operation. It also authenticates
+the complete applicable/inapplicable platform-state universe and progress
+evidence, every mutable source/frequency/offset/reset/rebase/comparability
+control and its applicability/exclusion/epoch transition, all evidence
+identities, and a digest over its complete normalized content. Runtime record
+identity/content never enters a reusable compilation-cache key.
+
+Those record rows are complete only when they exactly match one independently
+authenticated combined universe authority. The selected platform-environment
+adapter supplies a contract under
+`wyst.platform-counter-universe-evidence-contract.v1` that pins the exact
+content digest of an authority under
+`wyst.platform-counter-universe-evidence.v1`; recomputing a self-consistent
+digest over producer-chosen rows is insufficient. The authority binds the
+provider/source, exact counter domain and configuration epoch, both universe
+evidence references, exact sorted state identities, and exact sorted control
+identities with sorted effects. Domain and epoch enter its digest, preventing
+authority replay across runtime scopes. The record carries both
+`universe_evidence_contract_identity` and
+`universe_evidence_content_digest`; both enter record content, evidence,
+identity, and lifecycle binding and must match that authority along with every
+row, effect, and reference. Runtime authority content remains outside
+compilation and reusable-cache identities. Current conformance uses only the
+compiler-owned baseline synthetic authority digest
+`sha256:c656328d5dde4c49e71ea298af58ac8daa27a8bb9205219d59c061bea3a3ebb1`.
+
+The closed lifecycle begins at launch as exactly `RawReadsOnly` or `Bound` and
+advances only `Launch -> Measurement -> Report`. A record may first appear at
+measurement only from the preserved raw-only launch state. Once bound it cannot
+disappear or be substituted, and it cannot first appear at report. A changed
+source, domain, universe trust anchor, authority digest, or recognized provider
+fact is `mismatched`; an unrecognized provider identity is `unknown`; a changed
+epoch, record identity, or content
+digest is `stale`; and disappearance or report-first appearance is `incomplete`.
+This state token prevents a later consumer from dropping its
+predecessor evidence or substituting an older or different otherwise-valid
+record.
+
+No runtime record is required merely to execute `cpu.read_counter()`. Without
+one, the operation remains an authenticated raw source read and every numeric
+verification or report result is explicitly unsupported. A record with the
+closed disposition `unknown`, `malformed`, `incomplete`, `stale`, `mismatched`,
+or `ambiguous` fails closed rather than lending selected fields to a numeric
+claim. Missing authority-declared rows or a present record without authority
+are `incomplete`. Extra rows; changed effects, scope, trust anchor, references,
+or digest; a source or other recognized-fact disagreement; and invalid
+epoch-transition relationships are `mismatched`. Multiple authorities are
+`ambiguous`. No record with no
+authority remains raw-only. The future
+performance/resource-report and benchmark-comparison contract may authorize a
+numeric elapsed claim only when its interval evidence binds the same source-
+descriptor, provider/schema, and immutable record identity/content digest at
+both endpoints and proves one unchanged runtime domain/configuration epoch,
+endpoint comparability and any maximum offset, explicit serialization and
+charged overhead, a realized frequency for the claimed unit, all possible
+platform states and their progress evidence, exclusion of every mutable
+control, and a maximum span strictly below the source modulus. None of those
+runtime facts is implied by `a64-generic-virtual-counter-v1`, target selection,
+the static provider/schema, the two compiler fences, or the two raw reads.
+
+The predecessor cycle-counter primitive survives only as a frozen removal-audit
+row. No current parser recognizes it, and it does not define the semantics of
+`cpu.read_counter()`.
 
 ---
 
@@ -1978,8 +2093,8 @@ the semantics of `cpu.read_counter()`.
 
 | Choice                                          | Reason                                                                                                                                     |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `%prefetch` exposed directly, not auto-inserted | Auto-prefetching is a compiler transformation Wyst does not perform. Explicit prefetch lets the programmer control the distance and policy. |
+| `cache.prefetch` exposed directly, not auto-inserted | Auto-prefetching is a compiler transformation Wyst does not perform. Explicit prefetch lets the programmer control the distance and policy. |
 | Full ARM64 `PRFM` coverage                      | ARM64 distinguishes load/store × three cache levels × keep/stream. Abstracting to fewer options would hide machine semantics.              |
-| `%ldnp`/`%stnp` as pairs                        | ARM64 `LDNP`/`STNP` are pair instructions — exposing single-element non-temporal ops would require synthetic pair construction.            |
-| `cpu.read_counter` is a full fence               | Without the fence, the compiler could move loads/stores into or out of the timed region, producing misleading measurements.                |
-| Artifact target selects one descriptor           | Counter source, availability, privilege, frequency, and failure stay explicit; feature inference and fallback cannot change emitted code. |
+| Non-temporal load/store operations use pairs    | ARM64 `LDNP`/`STNP` are pair instructions — exposing single-element non-temporal ops would require synthetic pair construction.            |
+| `cpu.read_counter` is a full fence               | The fence keeps source loads/stores inside the sampled region. It neither serializes hardware endpoints nor upgrades raw ticks into elapsed-time evidence. |
+| Artifact target selects one source descriptor    | Counter source, availability, privilege, frequency acquisition, and failure stay explicit; feature inference and fallback cannot change emitted code. |
