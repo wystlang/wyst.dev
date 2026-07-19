@@ -422,7 +422,7 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	const manifestBytes = Buffer.from(await response.arrayBuffer());
 	const manifestSha256 = sha256(manifestBytes);
 	let expectedIdentityMatches = true;
-	let promotedCommitObserved = true;
+	let intendedCommitObserved = true;
 	if (
 		expectedManifestSha256 &&
 		manifestSha256 !== expectedManifestSha256
@@ -447,7 +447,7 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	}
 	if (expectedCommit && manifest.siteCommit.toLowerCase() !== expectedCommit) {
 		expectedIdentityMatches = false;
-		promotedCommitObserved = false;
+		intendedCommitObserved = false;
 		failures.push(
 			`deployed site commit is ${manifest.siteCommit}; expected ${expectedCommit}`,
 		);
@@ -466,10 +466,10 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	}
 	if (verifiesExpectedIdentity && !expectedIdentityMatches) {
 		// A valid manifest for another commit means the ordinary hostname has not
-		// converged yet. Do not crawl that older tree. If the promoted commit is
+		// converged yet. Do not crawl that older tree. If the intended commit is
 		// already visible but another identity field differs, return immediately so
 		// the release driver can treat it as corruption and roll back.
-		return promotedCommitObserved;
+		return intendedCommitObserved;
 	}
 
 	for (const [publicUrl, entry] of Object.entries(manifest.files)) {
@@ -511,27 +511,32 @@ async function auditManifest(failures, { auditPolicy = true } = {}) {
 	const expected404 = manifest.files["/404.html"];
 	if (!expected404) failures.push("build manifest is missing /404.html");
 	await auditNotFound(expected404, failures, { auditPolicy });
-	return true;
+	return false;
 }
 
 async function auditOnce() {
 	const failures = [];
-	let promotedCommitObserved = false;
+	let manifestIdentityCorruptionObserved = false;
 	if (contentOnly) {
-		promotedCommitObserved = await auditManifest(failures, {
+		manifestIdentityCorruptionObserved = await auditManifest(failures, {
 			auditPolicy: false,
 		});
 	} else {
 		await auditRedirects(failures);
 		if (policyOnly) await auditPolicyOnly(failures);
-		else promotedCommitObserved = await auditManifest(failures);
+		else manifestIdentityCorruptionObserved = await auditManifest(failures);
 	}
 	if (failures.length) {
 		const error = new Error(failures.join("\n"));
-		// Once the audited origin exposes the intended commit, any remaining identity,
-		// policy, or file mismatch is corruption rather than deployment convergence.
-		// Return immediately so the release driver can restore the known-good version.
-		if ((contentOnly || versionId) && verifiesExpectedIdentity && promotedCommitObserved) {
+		// A manifest that names the intended commit but carries another build identity
+		// is corruption, so restore the known-good version immediately. Individual
+		// assets can lag a correct manifest while Workers Assets converges globally;
+		// those mismatches retain the bounded retry window before rollback.
+		if (
+			(contentOnly || versionId) &&
+			verifiesExpectedIdentity &&
+			manifestIdentityCorruptionObserved
+		) {
 			error.retryable = false;
 		}
 		throw error;

@@ -149,7 +149,7 @@ test("release audits allow bounded deployment convergence", () => {
 	);
 });
 
-test("identity-bound audits retry only until the intended commit is visible", async (t) => {
+test("identity-bound audits retry stale assets but stop on manifest corruption", async (t) => {
 	const manifestBytes = await readFile(
 		path.join(root, "dist", ".well-known", "build.json"),
 	);
@@ -215,18 +215,18 @@ test("identity-bound audits retry only until the intended commit is visible", as
 		...exactIdentity,
 		WYST_CONTENT_ONLY: "0",
 		WYST_VERSION_ID: "candidate-version",
-		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_ATTEMPTS: "3",
 		WYST_AUDIT_RETRY_MS: "1",
 	});
 	assert.notEqual(corruptAsset.status, 0);
 	assert.match(
 		corruptAsset.stderr,
-		/live-site audit failed after 1 attempt\(s\)/,
+		/live-site audit failed after 3 attempt\(s\)/,
 	);
 	assert.equal(
 		corruptAsset.stderr.match(/WYST_TEST_FETCH \/\.well-known\/build\.json/g)
 			?.length,
-		1,
+		3,
 	);
 	assert.match(
 		corruptAsset.stderr,
