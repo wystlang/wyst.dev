@@ -4,7 +4,14 @@
     "language": "wyst.language.v0.9",
     "atomicMatrix": "wyst.atomic-matrix.v1",
     "nativeAbi": "wyst.nativeAbi.v0.8",
-    "objectInterface": "wyst.objectInterface.v0",
+    "objectInterface": "wyst.objectInterface.v2",
+    "semanticInterface": "wyst.semantic-interface.v2",
+    "semanticObject": "wyst.semantic-object.v2",
+    "objectMemberIdentity": "wyst.object-member-identity.v1",
+    "objectCompatibilityKey": "wyst.object-compatibility-key.v1",
+    "declarationIdentity": "wyst.declaration-identity.v1",
+    "symbolIdentity": "wyst.symbol-identity.v1",
+    "symbolMangling": "wyst.symbol-mangling.v1",
     "targetEntrySchema": "wyst.target-entry-schema.v1",
     "reportSchemas": "wync.reports.v1",
     "rebuildBenchmark": "wync.rebuildBenchmark.v1",
@@ -34,7 +41,228 @@
     "executionEnvironment": "wyst.execution-environment-contract.v1",
     "executionProviderDescriptor": "wyst.execution-provider-descriptor.v1",
     "completionProviderDescriptor": "wyst.completion-provider-descriptor.v1",
-    "callableContextSummary": "wyst.callable-context-summary.v2"
+    "callableContextSummary": "wyst.callable-context-summary.v2",
+    "genericInstantiationKey": "wyst.genericInstantiationKey.v0.9",
+    "genericOwnership": "wyst.generic-ownership.v1",
+    "genericBody": "wyst.generic-body.v1",
+    "genericDependencyClosure": "wyst.generic-dependency-closure.v1",
+    "genericTransport": "wyst.generic-transport.v1",
+    "genericDefinition": "wyst.generic-definition.v1",
+    "genericPlacement": "wyst.generic-placement.v1",
+    "genericSemanticRoot": "wyst.generic-semantic-root.v1",
+    "genericProvenanceMerge": "wyst.generic-provenance-merge.v1",
+    "genericDemandWorklist": "wyst.generic-demand-worklist.v1",
+    "genericArchiveIndex": "wyst.generic-archive-index.v1",
+    "declarationRoleSlot": "wyst.declaration-role-slot.reserved.v1",
+    "effectAuthoritySummarySlot": "wyst.effect-authority-summary-slot.reserved.v1"
+  },
+  "semanticObjectIdentityContract": {
+    "bundleSchema": "wyst.objectInterface.v2",
+    "semanticInterfaceSchema": "wyst.semantic-interface.v2",
+    "objectSchema": "wyst.semantic-object.v2",
+    "memberIdentitySchema": "wyst.object-member-identity.v1",
+    "compatibilityKeySchema": "wyst.object-compatibility-key.v1",
+    "declarationIdentitySchema": "wyst.declaration-identity.v1",
+    "symbolIdentitySchema": "wyst.symbol-identity.v1",
+    "symbolManglingSchema": "wyst.symbol-mangling.v1",
+    "inactiveSafetyTrustHardeningIdentity": "wyst.safety-trust-hardening.inactive.v1",
+    "semanticInterfaceTuple": [
+      "semantic-module",
+      "interface-content-digest",
+      "language-schema",
+      "interface-schema",
+      "target-semantic-catalog",
+      "support-manifest",
+      "native-abi",
+      "executable-environment-identity",
+      "layout-root-abi-admission-identity",
+      "safety-profile",
+      "trust-policy",
+      "proof-schema",
+      "hardening-policy",
+      "generic-body-dependency-slot",
+      "declaration-role-slot",
+      "effect-authority-summary-slot"
+    ],
+    "objectMemberTuple": [
+      "semantic-interface-identity",
+      "object-schema",
+      "profile",
+      "safety-profile",
+      "trust-policy",
+      "proof-schema",
+      "hardening-policy",
+      "debug-policy",
+      "unwind-policy",
+      "frame-policy",
+      "backend-identity",
+      "generated-inputs-identity"
+    ],
+    "compatibilityTuple": [
+      "language-schema",
+      "interface-schema",
+      "object-schema",
+      "target-semantic-catalog",
+      "support-manifest",
+      "native-abi",
+      "environment-provider-tuple",
+      "profile",
+      "safety-profile",
+      "trust-policy",
+      "proof-schema",
+      "hardening-policy",
+      "debug-policy",
+      "unwind-policy",
+      "frame-policy",
+      "backend-identity"
+    ],
+    "compatibilityTupleExcludes": [
+      "semantic-module",
+      "interface-content-digest",
+      "object-member-identity"
+    ],
+    "declarationIdentityTuple": [
+      "semantic-module",
+      "canonical-declaration-name",
+      "namespace",
+      "declaration-kind"
+    ],
+    "symbolIdentityTuple": [
+      "declaration-identity",
+      "namespace",
+      "declaration-kind",
+      "native-abi",
+      "calling-convention",
+      "complete-concrete-generic-arguments",
+      "linkage-mode",
+      "external-spelling-when-present",
+      "external-binding-when-present"
+    ],
+    "internalMangling": "module-qualified-semantic-declaration-plus-canonical-generic-suffix",
+    "sourceVisibilityParticipation": "none",
+    "externalAliases": "separate-strong-or-weak-symbol-identities-with-exact-spellings",
+    "foreignSpellings": "exact-import-symbol-spelling",
+    "multiFileModuleRule": "all-parts-with-one-semantic-module-produce-one-variant",
+    "duplicateModuleVariantRule": "reject-in-one-archive-or-final-artifact",
+    "compatibilityRule": "every-member-in-one-archive-or-final-artifact-has-one-exact-key",
+    "perCpu": {
+      "linkerIdentity": "one-local-per_cpu-template-symbol",
+      "runtimeInstances": "derived-storage-with-no-symbol-or-alias"
+    },
+    "serializedIn": "authenticated-wyst.artifact-record-set-before-public-object-output",
+    "futureTransportRule": "semantic-interface-object-and-archive-writers-preserve-identities-byte-for-byte"
+  },
+  "genericInstantiationOwnershipContract": {
+    "schema": "wyst.generic-ownership.v1",
+    "consumesCanonicalKey": "wyst.genericInstantiationKey.v0.9",
+    "forbidsSecondaryKeys": true,
+    "semanticHome": "canonical-owning-semantic-module-of-declaration-identity",
+    "permittedPhysicalEmitters": [
+      "semantic-home-with-an-authenticated-demand",
+      "object-compatible-consumer-with-the-exact-authenticated-transport-and-demand"
+    ],
+    "linkage": "canonical-hidden-link-once",
+    "visibilityRule": "source-public-controls-interface-discovery-only-and-never-changes-hidden-definition-identity",
+    "abiParticipation": "explicit-alias-symbol-identity-includes-native-abi-calling-convention-and-complete-concrete-arguments",
+    "finalSurvivor": "lowest-object-member-identity-among-complete-identical-definition-contracts",
+    "identicalDefinitionFields": [
+      "canonical-instantiation-identity",
+      "semantic-home",
+      "object-compatibility-key",
+      "transport-digest",
+      "body-digest",
+      "dependency-closure-digest",
+      "declaration-role-identity",
+      "effect-authority-identity",
+      "native-abi-and-calling-convention",
+      "placement-and-semantic-root-policy",
+      "generated-definition-digest"
+    ],
+    "duplicateRule": "merge-provenance-only-after-complete-identical-definition-verification-otherwise-hard-diagnostic",
+    "provenanceSchema": "wyst.generic-provenance-merge.v1",
+    "provenanceOrdering": "canonical-demand-then-object-member-identity-order",
+    "bodyTransport": {
+      "bodySchema": "wyst.generic-body.v1",
+      "dependencyClosureSchema": "wyst.generic-dependency-closure.v1",
+      "transportSchema": "wyst.generic-transport.v1",
+      "bodyRepresentation": "canonical-type-checked-semantic-body-not-source-text-ir-dump-or-machine-code",
+      "transportFields": [
+        "declaration-identity",
+        "semantic-home",
+        "source-or-interface-private-visibility",
+        "body-digest",
+        "ordered-dependency-closure-digest",
+        "placement-policy-digest",
+        "declaration-role-slot",
+        "effect-authority-summary-slot"
+      ],
+      "privateGenericDependency": "transport-body-and-closure-with-interface-private-hidden-link-once-identity",
+      "privateNonGenericFunction": "home-owned-canonical-hidden-symbol-with-no-cloneable-body",
+      "privateNonGenericStorage": "home-owned-canonical-hidden-symbol-with-no-cloneable-storage-or-initializer",
+      "sourceLookupRule": "interface-private-closure-members-never-acquire-importable-source-names",
+      "unavailableHomeRule": "hard-diagnostic-never-clone-identity-bearing-code-or-storage"
+    },
+    "semanticInterfaceSlots": {
+      "genericBodyDependency": "wyst.generic-transport.v1",
+      "declarationRole": "wyst.declaration-role-slot.reserved.v1",
+      "effectAuthoritySummary": "wyst.effect-authority-summary-slot.reserved.v1"
+    },
+    "callableTypeArgumentRule": "complete-canonical-function-type-includes-fixed-effect-upper-bound-through-identity-inference-transport-and-deduplication",
+    "worklist": {
+      "schema": "wyst.generic-demand-worklist.v1",
+      "order": "canonical-wyst.genericInstantiationKey.v0.9-identity-digest",
+      "demandReasons": ["typed-reachability", "artifact_verify", "transitive-authenticated-generic-body"],
+      "mergeRule": "exact-key-and-transport-merge-provenance",
+      "terminationRule": "reuse-canonical-instantiation-exact-cycle-and-strict-growth-contract-with-no-second-cutoff",
+      "cacheInvalidationFields": [
+        "canonical-instantiation-identity",
+        "transport-body-and-closure-digests",
+        "role-and-effect-authority-identities",
+        "placement-policy",
+        "object-compatibility-key",
+        "backend-identity",
+        "generated-inputs-identity"
+      ]
+    },
+    "archive": {
+      "schema": "wyst.generic-archive-index.v1",
+      "indexKey": "canonical-wyst.genericInstantiationKey.v0.9-identity",
+      "entry": "canonically-sorted-member-and-transport-identities",
+      "extractionRule": "only-an-existing-demand-triggers-member-extraction",
+      "archiveOrderParticipation": "none"
+    },
+    "linkerRole": [
+      "authenticate-identities-and-complete-definition-contracts",
+      "merge-provenance",
+      "select-one-identical-survivor",
+      "resolve-and-deduplicate"
+    ],
+    "linkerForbiddenRoles": [
+      "source-name-resolution",
+      "type-checking",
+      "generic-substitution",
+      "monomorphization",
+      "semantic-code-generation",
+      "placement-policy-repair"
+    ],
+    "placement": {
+      "schema": "wyst.generic-placement.v1",
+      "semanticRootSchema": "wyst.generic-semantic-root.v1",
+      "sectionCreatesDemand": false,
+      "demandedCodeRule": "exactly-one-aligned-section-contribution-and-semantic-root",
+      "sectionedInlineRule": "retain-exactly-one-out-of-line-copy",
+      "deduplicationRule": "preserve-custom-section-alignment-root-identity-and-merged-provenance",
+      "mismatchRule": "hard-diagnostic-never-select-another-emitter-to-repair"
+    },
+    "diagnostics": [
+      "unavailable-body-or-home-definition",
+      "stale-body-closure-policy-or-cache",
+      "unknown-or-incompatible-schema",
+      "duplicate-member-definition",
+      "incompatible-body-role-effect-abi-placement-or-object-copy"
+    ],
+    "currentTransport": "wyst.genericInstantiationKey.v0.9-identity-is-carried-through-instantiated-ast-typed-ir-and-authenticated-final-artifact-records",
+    "futureImplementationBoundary": "separate-interface-object-archive-and-link-milestones-serialize-and-execute-this-contract-without-placeholder-semantics"
   },
   "authorityOrder": [
     {
@@ -676,6 +904,20 @@
       "state": "implemented",
       "version": "wyst.language.v0.7",
       "owner": "design/chapter-16-object-format.md"
+    },
+    {
+      "id": "artifacts.semantic-object-identities",
+      "state": "implemented",
+      "version": "wyst.objectInterface.v2",
+      "owner": "design/chapter-16-object-format.md",
+      "contract": "semanticObjectIdentityContract"
+    },
+    {
+      "id": "artifacts.generic-instantiation-ownership",
+      "state": "implemented",
+      "version": "wyst.objectInterface.v2",
+      "owner": "design/chapter-16-object-format.md",
+      "contract": "genericInstantiationOwnershipContract"
     },
     {
       "id": "artifacts.relocatable-object-files",

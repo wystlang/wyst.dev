@@ -4078,6 +4078,16 @@ considered in source order, and ties are broken by canonical key order. Reports
 and diagnostics must never depend on hash-map order, pointer addresses,
 filesystem traversal order, thread scheduling, or the backend symbol encoder.
 
+The canonical concrete type identity of a function pointer includes its fixed
+effect upper bound after catalog normalization. Omitted `effects(...)`,
+`effects(all)`, and an explicit complete catalog denote the same conservative
+upper bound; named subsets use catalog order and remove duplicates. A different
+fixed subset is a different concrete type argument and therefore a different
+`CanonicalInstantiationKey`. The generic-instantiation ownership and transport
+contract carries this exact canonical key through inference, semantic bodies, demand
+worklists, caches, emitted definitions, and deduplication. No later phase may
+drop the bound or reconstruct the key from a mangled symbol.
+
 The generic design must satisfy the following constraints:
 
 | Constraint                                                                 | Reason                                                                                                                                                                                         |

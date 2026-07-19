@@ -20,6 +20,197 @@ modules, layout declarations, boot entry, and ABI classification.
 > those spelling classes with address methods, named conversions, and
 > `address.slice(elements = count)`.
 
+## v0.9 Semantic Object Units And Canonical Symbol Identities (Current)
+
+`wyst.objectInterface.v2` freezes the identity and generic-ownership contract used by the current
+final-image compiler and by every later semantic interface, relocatable object,
+archive, or linker. The current `ET_EXEC` writer does not expose public object
+output, but every build constructs this product before artifact identity and
+serializes it in the authenticated `.wyst.artifact` record set. A later object
+writer must transport the same identities; it may not reconstruct a smaller
+key from source names or ELF fields.
+
+Each semantic module has exactly one `wyst.semantic-interface.v2` variant for
+the selected language and interface schemas, authenticated target semantic
+catalog and support manifest, Native ABI, executable-environment identity,
+layout/root ABI and admission identity, and safety/trust/proof/hardening tuple.
+The pre-safety-profile state writes
+`wyst.safety-trust-hardening.inactive.v1` into all four reserved slots. Absence
+is invalid and a consumer cannot supply a default. Execution-environment and
+provider/service records participate atomically, so an imported module cannot
+lose an `execution_suspension` provider requirement or other authenticated
+environment dependency.
+
+The module-specific `wyst.object-member-identity.v1` digest contains the
+semantic-interface identity plus the object schema, code-generation profile,
+the four safety/trust/proof/hardening slots, debug/unwind/frame policies,
+backend identity, and generated-input identity. The separate homogeneous
+`wyst.object-compatibility-key.v1` contains language/interface/object schemas,
+target semantic catalog, support manifest, Native ABI, environment/provider
+tuple, profile, safety/trust/proof/hardening tuple, debug/unwind/frame policies,
+and backend identity. It deliberately excludes semantic-module, interface-
+content, and member digests. Thus unrelated modules built under one exact
+context share a compatibility key but retain distinct member identities.
+Mixing compatibility keys, or including two variants of one semantic module,
+is a hard error for one archive or final artifact.
+
+Multi-file source parts declaring the same module contribute to one semantic
+module variant. File names, discovery order, source `pub`, import aliases, and
+re-export paths are not declaration identities. A declaration identity under
+`wyst.declaration-identity.v1` is the length-delimited tuple of semantic module,
+canonical declaration name, namespace, and declaration kind. Concrete generic
+arguments do not change that declaration's home identity; their complete
+canonical tuple participates in its symbol identity.
+
+Every linkable declaration or alias has one `wyst.symbol-identity.v1` digest
+over declaration identity, namespace and kind, Native ABI version, calling
+convention (`wyst-native`, `aapcs64`, or `none` for data), complete concrete
+generic arguments, and linkage mode. The `wyst.symbol-mangling.v1` internal ELF
+spelling is the unambiguous module-qualified semantic declaration spelling plus
+the canonical `__wgN__...` suffix for a concrete generic instantiation. The
+digest, rather than the display spelling, authenticates kind, ABI, convention,
+and linkage; object consumers compare it before ELF resolution. Internal
+definitions are local/hidden. `export` adds a separate exact strong or weak
+external alias identity, and `import symbol` retains its exact foreign
+spelling. Neither `pub` nor any external alias changes the internal identity.
+Two unrelated modules therefore have distinct internal identities and
+spellings; they collide only by explicitly choosing the same external spelling,
+which the whole-program verifier rejects deterministically.
+
+A `per_cpu var` has one `per_cpu-template` declaration kind, storage-class
+identity, and canonical local template symbol. Its `st_value` remains the
+template-relative offset described below. Runtime core instances are derived
+storage selected through the target execution environment. They have no linker
+symbol, export alias, or independent semantic declaration identity.
+
+## v0.9 Generic Instantiation Ownership And Transport (Current Contract)
+
+`wyst.generic-ownership.v1` freezes generic ownership before public semantic
+interfaces, relocatable objects, and archives are implemented. It consumes
+`wyst.genericInstantiationKey.v0.9` from Chapter 6 unchanged. The key is the
+canonical semantic declaration identity plus the complete ordered concrete
+type-argument list and complete ordered value-argument list; the latter is
+empty in v0.9. No interface, object writer, archive index, linker, cache, or
+backend may select a generic from source spelling, parse `__wg` mangling back
+into semantics, omit an argument, or define a second key. A function-pointer
+type argument includes its calling convention, parameter/result contract, and
+canonical fixed effect upper bound. Thus omitted and explicit
+`effects(all)` share one type identity, reordered equivalent named bounds
+canonicalize together, and genuinely different fixed bounds remain different
+instantiation identities through inference, transport, emission, and
+deduplication.
+
+Every generic declaration has one **semantic home**: the module owning its
+canonical declaration identity. A demanded concrete identity may be physically
+emitted by the home or by any consumer that possesses the exact authenticated
+`wyst.generic-transport.v1` payload and shares the object's complete
+compatibility key. Such definitions use canonical hidden link-once linkage;
+source `pub`, an import alias, archive position, and demand origin do not alter
+the identity or grant external visibility. An explicit external alias, where a
+later artifact surface permits one for a concrete instantiation, remains the
+separate explicit-alias ABI/linkage identity and does not replace this hidden
+definition.
+
+The deterministic survivor is the lexicographically lowest object-member
+identity among definitions whose complete definition contracts are identical.
+The complete comparison includes instantiation and semantic-home identities,
+object compatibility, body and dependency-closure digests, role and
+effect/authority identities, ABI/calling convention, generated-definition
+digest, and placement/root policy. Provenance from every identical copy and
+every demand is unioned in canonical order onto that one survivor. A duplicate
+from the same member, or any mismatch in that tuple, is a hard diagnostic;
+archive order, command-line order, and first-wins behavior cannot select around
+it. Machine-code identity alone is insufficient.
+
+### Semantic body and private dependency closure
+
+A source-public or otherwise interface-visible generic carries a canonical
+type-checked body under `wyst.generic-body.v1` and its complete authenticated
+`wyst.generic-dependency-closure.v1`. Their atomic envelope is
+`wyst.generic-transport.v1`. This is a semantic representation, not raw source
+text, a backend IR dump, or machine code. The envelope binds the declaration
+identity and semantic home, source/interface-private visibility, body digest,
+ordered dependency-closure digest, `wyst.generic-placement.v1` policy, and the versioned
+declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2`
+reserves all three slots now:
+
+- generic body/dependency slot: `wyst.generic-transport.v1`;
+- declaration-role slot: `wyst.declaration-role-slot.reserved.v1`, activated by
+  the versioned declaration-role contract without changing generic identity;
+- effect/authority-summary slot:
+  `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
+  effect/authority contract without weakening a callable type argument's fixed bound.
+
+Private generic declarations needed transitively travel as
+`interface-private-dependency` bodies and acquire canonical hidden link-once
+identities when concretely demanded. Presence in the closure never makes their
+source spelling importable. A referenced private nongeneric function or storage
+declaration instead carries only its canonical hidden home symbol and home
+member identities. Its definition remains home-owned: an importing consumer
+must link the exact home and may not clone the function, storage, initializer,
+address identity, or provenance. Missing home code or storage is a hard
+unavailable-definition error, not authorization to synthesize a replacement.
+
+Authentication covers the entire envelope. Missing bodies, unknown schema
+versions, noncanonical dependency order, duplicate dependency identities,
+digest corruption, cache records built from another body/closure/policy, or a
+consumer requiring another transport identity are unavailable, stale, or
+incompatible-body diagnostics. Consumers fail before code generation. A cache
+key contains the canonical instantiation identity, transport/body/closure,
+role/effect identities, placement policy, compatibility key, backend and
+generated inputs; changing any component invalidates the entry rather than
+relabeling it.
+
+### Demand worklist, archives, and linker role
+
+Only ordinary typed reachability, a transitive request in an authenticated
+body/closure, or an explicit `artifact_verify` root creates a concrete demand.
+The `wyst.generic-demand-worklist.v1` map is keyed and popped by the
+`wyst.genericInstantiationKey.v0.9` identity digest. Repeated exact demands
+merge their canonical provenance; the canonical-instantiation exact-cycle and
+strictly-growing-chain rules from Chapter 6 continue to govern expansion. A
+different transport/cache tuple for the same key is a stale/incompatible
+diagnostic, never a competing worklist entry.
+
+`wyst.generic-archive-index.v1` maps a
+`wyst.genericInstantiationKey.v0.9` identity to canonically sorted member and
+transport identities. Merely containing or indexing a generic body,
+definition, custom section, or semantic root never creates a demand. A real
+demand may extract the indexed interface/home member and any already-emitted
+definition candidates in canonical member order. Newly authenticated body
+dependencies return to the compiler worklist. The final linker only checks
+identities and identical-definition contracts, merges provenance, selects the
+survivor, resolves relocations, and deduplicates. It performs no name
+resolution, type checking, generic substitution, monomorphization, lowering,
+or other semantic code generation.
+
+### Placement and semantic roots
+
+`#[align]`, `#[section]`, and the out-of-line consequence of
+`#[inline, section(...)]` are part of the authenticated generic transport under
+`wyst.generic-placement.v1`. `section` is passive and never creates a demand.
+Once a code identity is demanded, every permitted emitter must produce the
+same section contribution with the declared or natural alignment and one
+`wyst.generic-semantic-root.v1` record. A custom section name remains exact. A
+sectioned inline declaration retains one out-of-line copy even when all direct
+calls expand. Final selection keeps exactly one contribution and one root while
+preserving their placement digest and merged provenance. It may not move the
+copy to `.text`, retain multiple roots, or repair a body/policy/layout mismatch
+by preferring another emitter. Type-only struct and enum instantiations carry
+no code contribution or semantic root.
+
+The current whole-program compiler transports the
+`wyst.genericInstantiationKey.v0.9` identity from
+monomorphization through typed IR and records each concrete identity, semantic
+home, physical member, hidden-link-once mode, complete argument lists, and
+placement policy in the authenticated final artifact. The executable model in
+`wync/src/generic_ownership.rs` fixes body authentication, closure visibility,
+demand order, archive lookup, duplicate validation, provenance merge, and
+survivor selection. The separate interface, object, archive, and link
+milestones serialize and execute this already-versioned contract; they may not
+invent a body format field, placeholder body semantics, fallback key,
+archive-order rule, or linker-side instantiator.
+
 ## v0.9 `per_cpu` Object Contract (Current)
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
