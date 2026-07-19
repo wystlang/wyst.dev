@@ -725,6 +725,14 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"* A register address is UART0's base plus its",
 		"* PL011 byte offset. QEMU maps UART0's base at",
 		"* 0x0900_0000.",
+		"* There is no process runtime to call `main`. The",
+		"* layout file, similar to a linker script, names",
+		"* `_start` as the entry point. QEMU jumps here after",
+		"* QEMU passes a device-tree blob (DTB) address in Arm",
+		"* register `x0`; it describes the virtual hardware.",
+		"* `naked` omits the usual function prologue because",
+		"* no valid stack exists yet. `never` records that",
+		"* there is no caller to return to.",
 		"// DR is the data register.",
 		"// DATA is its eight-bit transmit payload.",
 		"// FR is the flag register.",
@@ -733,14 +741,29 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"// UART output is byte-oriented.",
 		"// #len is compile-time metadata;",
 		"// the array has no runtime length field.",
+		"// Put the entry address on a 16-byte boundary.",
+		"// __stack_top is a linker-style symbol from the layout.",
+		"// Set the CPU stack pointer to that reserved RAM.",
+		"// The stack is ready, so ordinary function calls are safe.",
+		"// Production code would parse the DTB.",
+		"// This fixture only checks that the handoff supplied it.",
+		"// Bare metal has no caller to return to. `test_exit`",
+		"// plays the role of process exit for this QEMU test:",
+		"// report status 0, then stop the virtual machine.",
 		"register_map Pl011 {",
 		"mmio UART0: Pl011 at 0x0900_0000",
+		"fn kernel_main(dtb: @u8) -> never {",
 		"const msg: [6]u8 = ['h', 'e', 'l', 'l', 'o', '\\n']",
 		"for i in 0 ..< #len(msg) {",
 		"uart_write(msg[i])",
 	]) {
 		assert.ok(sourceBlock.lines.includes(line), `UART snippet should include: ${line}`);
 	}
+	assert.ok(
+		sourceBlock.lines.indexOf("kernel_main(dtb)") <
+			sourceBlock.lines.indexOf("fn kernel_main(dtb: @u8) -> never {"),
+		"the homepage should show the ordinary-code function reached from _start",
+	);
 	const terminal = taggedElementWithOpeningMatch(
 		sectionHtml(html, "example"),
 		/<([a-z][\w-]*)\b[^>]*(?:class="[^"]*\bterminal(?:-[\w-]+)?\b[^"]*"|data-terminal(?:-output)?(?:="[^"]*")?|aria-label="[^"]*UART output[^"]*")[^>]*>/i,
