@@ -11,6 +11,10 @@ const docsScript = await readFile(new URL("../assets/docs.js", import.meta.url),
 test("prose code wraps without changing scrollable code and table behavior", () => {
 	assert.match(
 		docsCss,
+		/\.doc-body p,\s*\.doc-body ul,\s*\.doc-body ol\s*\{[^}]*overflow-wrap:\s*anywhere;/s,
+	);
+	assert.match(
+		docsCss,
 		/\.doc-body :not\(pre\) > code\s*\{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s,
 	);
 	assert.match(

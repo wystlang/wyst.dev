@@ -178,6 +178,7 @@ body.docs footer.site .wrap {
 .doc-body ul,
 .doc-body ol {
 	margin: 0 0 var(--space-md);
+	overflow-wrap: anywhere;
 }
 
 .doc-body ul,
