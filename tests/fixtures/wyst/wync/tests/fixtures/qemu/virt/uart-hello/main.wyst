@@ -34,13 +34,30 @@ register_map Pl011 {
 
 mmio UART0: Pl011 at 0x0900_0000
 
+/*
+* There is no process runtime to call `main`. The
+* layout file, similar to a linker script, names
+* `_start` as the entry point. QEMU jumps here after
+* loading the kernel image.
+*
+* QEMU passes a device-tree blob (DTB) address in Arm
+* register `x0`; it describes the virtual hardware.
+* `naked` omits the usual function prologue because
+* no valid stack exists yet. `never` records that
+* there is no caller to return to.
+*/
+// Put the entry address on a 16-byte boundary.
 #[align(16)]
 pub naked fn _start(dtb: @u8 in x0) -> never {
+  // __stack_top is a linker-style symbol from the layout.
+  // Set the CPU stack pointer to that reserved RAM.
   asm establishes stack (
     stack: u64 in x1 = __stack_top,
   ) {
     mov sp, stack
   }
+
+  // The stack is ready, so ordinary function calls are safe.
   kernel_main(dtb)
 }
 
@@ -64,11 +81,17 @@ fn uart_hello() {
   }
 }
 
-// homepage-example:end
 fn kernel_main(dtb: @u8) -> never {
+  // Production code would parse the DTB.
+  // This fixture only checks that the handoff supplied it.
   if dtb == address<@u8>(0) {
     test_exit(0x63)
   }
   uart_hello()
+
+  // Bare metal has no caller to return to. `test_exit`
+  // plays the role of process exit for this QEMU test:
+  // report status 0, then stop the virtual machine.
   test_exit(0)
 }
+// homepage-example:end

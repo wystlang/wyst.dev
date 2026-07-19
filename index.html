@@ -171,13 +171,30 @@
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">mmio</span> <span data-token="variable" data-token-modifiers="declaration readonly">UART0</span>: <span data-token="type">Pl011</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x0900_0000</span>
 
+<span class="source-comment">/*</span>
+<span class="source-comment block-comment-line">* There is no process runtime to call `main`. The</span>
+<span class="source-comment block-comment-line">* layout file, similar to a linker script, names</span>
+<span class="source-comment block-comment-line">* `_start` as the entry point. QEMU jumps here after</span>
+<span class="source-comment block-comment-line">* loading the kernel image.</span>
+<span class="source-comment block-comment-line">*</span>
+<span class="source-comment block-comment-line">* QEMU passes a device-tree blob (DTB) address in Arm</span>
+<span class="source-comment block-comment-line">* register `x0`; it describes the virtual hardware.</span>
+<span class="source-comment block-comment-line">* `naked` omits the usual function prologue because</span>
+<span class="source-comment block-comment-line">* no valid stack exists yet. `never` records that</span>
+<span class="source-comment block-comment-line">* there is no caller to return to.</span>
+<span class="source-comment block-comment-line">*/</span>
+<span class="source-comment">// Put the entry address on a 16-byte boundary.</span>
 #[align(<span data-token="number">16</span>)]
 <span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> in x0) -&gt; never {
+  <span class="source-comment">// __stack_top is a linker-style symbol from the layout.</span>
+  <span class="source-comment">// Set the CPU stack pointer to that reserved RAM.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
     <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
   ) {
     mov sp, stack
   }
+
+  <span class="source-comment">// The stack is ready, so ordinary function calls are safe.</span>
   <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)
 }
 
@@ -199,6 +216,20 @@
   <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">i</span> in <span data-token="number">0</span> ..&lt; <span data-token="macro" data-token-modifiers="defaultLibrary">#len</span>(<span data-token="variable">msg</span>) {
     <span data-token="function">uart_write</span>(<span data-token="variable">msg</span>[<span data-token="variable">i</span>])
   }
+}
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) -&gt; never {
+  <span class="source-comment">// Production code would parse the DTB.</span>
+  <span class="source-comment">// This fixture only checks that the handoff supplied it.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@<span data-token="type" data-token-modifiers="defaultLibrary">u8</span><span data-token="operator">&gt;</span>(<span data-token="number">0</span>) {
+    test_exit(<span data-token="number">0x63</span>)
+  }
+  <span data-token="function">uart_hello</span>()
+
+  <span class="source-comment">// Bare metal has no caller to return to. `test_exit`</span>
+  <span class="source-comment">// plays the role of process exit for this QEMU test:</span>
+  <span class="source-comment">// report status 0, then stop the virtual machine.</span>
+  test_exit(<span data-token="number">0</span>)
 }</code></pre>
 						<!-- homepage-semantic-example:end -->
 						<span id="uart-scroll-hint" class="source-scroll-hint"

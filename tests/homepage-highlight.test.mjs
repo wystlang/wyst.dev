@@ -59,6 +59,8 @@ test("homepage keeps the compiler's semantic distinctions", () => {
 		["variable", "msg"],
 		["variable", "i"],
 		["parameter", "byte"],
+		["function", "_start"],
+		["function", "kernel_main"],
 		["function", "uart_write"],
 		["macro", "#len"],
 	]) {
