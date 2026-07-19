@@ -1,0 +1,5 @@
+module syntax.unreserved_identifiers
+
+fn probe(case: u64, switch: u64, thread_local: u64) -> u64 {
+  return case + switch + thread_local
+}

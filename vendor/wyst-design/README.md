@@ -48,13 +48,13 @@ registry consumed by parsing, instantiation, diagnostics, and tooling.
 namespaces and declaration roles, including the source-backed dynamic
 container declaration.
 [a64-compiler-semantics.md](a64-compiler-semantics.md) defines the experimental
-pinned A64 compiler-semantic contract for the completed focused Roadmap
-items 46-50 profile. [a64-support-policy.json](a64-support-policy.json) is the
+pinned A64 compiler-semantic contract for the completed focused A64 authority-
+through-conformance profile. [a64-support-policy.json](a64-support-policy.json) is the
 checked-in activation policy; `wync/tools/a64-support-manifest.mjs`
 deterministically generates [a64-support-manifest.json](a64-support-manifest.json)
 and the exact row ledger [a64-support-rows.tsv](a64-support-rows.tsv). The ledger
 partitions all 8,955 support-bearing subjects into 308 active and 4,023
-`known_unsupported` encodings, 19 active and 4,603 `known_unsupported` source
+`known_unsupported` encodings, 20 active and 4,602 `known_unsupported` source
 forms or official aliases, and two active target-structural profiles, with no
 unexplained or partially active row. The focused bundle contains 308 complete
 instruction-semantic rows, 31 authenticated state contracts, and two structural
@@ -63,7 +63,7 @@ contracts.
 [a64-conformance-manifest.json](a64-conformance-manifest.json) is the terminal
 focused-profile release gate. It authenticates
 [a64-conformance-evidence.tsv](a64-conformance-evidence.tsv), with exactly
-8,955 evidence rows partitioned as 329 active and 8,626
+8,955 evidence rows partitioned as 330 active and 8,625
 `known_unsupported`; [a64-conformance-targets.tsv](a64-conformance-targets.tsv),
 whose 153 profiles all include `base`, with `v8Ap0` (v8.0) `base` and
 `base|fp_simd` base/FP/AdvSIMD profiles, a `v8Ap1` (v8.1) `base|lse` LSE
@@ -75,11 +75,11 @@ and Capstone 5.0.7 outcomes: LLVM has one recorded gap, Capstone has none, and
 every full operand-text difference is adjudicated. LLVM also reassembles every
 one of its 307 decoded witnesses to the exact original word; Capstone is
 explicitly decode-only. Functional execution is reported separately from those
-static oracles. All 329 active evidence rows are covered by pinned QEMU 11.0.0
+static oracles. All 330 active evidence rows are covered by pinned QEMU 11.0.0
 independent-oracle evidence, with zero unavailable-oracle gaps and zero
 authenticated-reference rows. The 308 instruction rows divide into 302
-expected-value paths, five state paths, and one trap structural path; the 12
-active source-form rows project the corresponding instruction evidence. The
+expected-value paths, five state paths, and one trap structural path; the 13
+active general-purpose source-form rows project the corresponding instruction evidence. The
 trap-frame runtime fixture also pins both active target-structural rows by
 observing the selected vector slot and the complete
 entry-save/restore-ERET round trip. The gate also binds the checked-assembly
@@ -93,15 +93,16 @@ Normal generation and verification remain offline:
 ```
 
 The 308 encodings are active for ordinary lowering and architecture operations;
-the deliberately narrower `wyst.a64.checked-asm.core.v1` pack admits 12 exact
+the deliberately narrower `wyst.a64.checked-asm.core.v1` pack admits 13 exact
 general-purpose source forms and their encodings. The separate
 `wyst.a64.target-structural-asm.aarch64.v1` pack admits seven source forms only
 after an exact target-owned sequence is authenticated.
-[a64-encoding-catalog.tsv](a64-encoding-catalog.tsv) owns all 19 checked-source
+[a64-encoding-catalog.tsv](a64-encoding-catalog.tsv) owns all 20 checked-source
 grammars and canonical identities. The generated
 [a64-active-encoding-catalog.tsv](a64-active-encoding-catalog.tsv) is the shared
 machine authority for all 308 active encodings and contains 301 generated
-operand decoders and 10 generated typed fixup programs. Ordinary lowering and
+operand decoders and 10 generated fixup programs, three transported as typed
+checked-assembly fixups. Ordinary lowering and
 architecture operations select these identities through
 `instruction_catalog::encode_active_fields`; generated SYS/PSTATE finite-domain
 contracts replace parallel operation tables. Checked assembly crosses the IR
@@ -114,10 +115,11 @@ The full-authority decoder derives Arm's reserved encoding region from the
 authenticated pinned `Instructions.json` record and classifies every 32-bit
 word as active, known unsupported, reserved, or unallocated. Disassembly and
 lowering reports expose the same four-way result. The support and conformance
-mechanisms satisfy the focused items 46-50 completion contract; there are no
+mechanisms satisfy the focused A64 authority-through-conformance contract; there are no
 remaining focused completion blockers. They do not claim universal A64
-support: the 4,023 inactive encodings and 4,603 inactive source forms remain
-explicit work for Roadmap item 105. Functional-execution evidence is also a
+support: the 4,023 inactive encodings and 4,602 inactive source forms remain
+explicit work for the universal A64 checked-assembly conformance milestone.
+Functional-execution evidence is also a
 separate per-row coverage axis; generated static consistency and encode/decode
 round trips are not described as independent execution validation.
 [a64-raw-encoding-source-forms.jsonl.gz](a64-raw-encoding-source-forms.jsonl.gz)

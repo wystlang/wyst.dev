@@ -6,6 +6,7 @@
   "description": "wyst.dev project homepage and generated documentation site",
   "scripts": {
     "build": "node tools/prepare-worker-assets.mjs",
+    "build:worker-assets": "node tools/prepare-worker-assets.mjs",
     "test": "npm run build && npm run test:unit",
     "test:unit": "node --test tests/*.test.mjs",
     "test:fast": "node --test tests/cloudflare-assets.test.mjs tests/docs-accessibility.test.mjs tests/homepage-highlight.test.mjs tests/prism-wyst.test.mjs tests/wyst-snapshot.test.mjs",

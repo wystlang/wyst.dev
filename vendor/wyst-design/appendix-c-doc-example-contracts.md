@@ -30,7 +30,12 @@ Use these contract modes:
   syntax that is not expected to compile yet. The feature must also have a row
   in [source-of-truth.md](source-of-truth.md).
 - `<!-- wyst-contract: sketch -->`: the block is a syntax sketch rather than a normative
-  example.
+  example. A sketch may be incomplete, but every source spelling in it must be
+  part of the current v0.9 grammar.
+- `<!-- wyst-contract: historical-v0.8 -->`: the block is a read-only archival
+  snapshot of source that used the v0.8 grammar. The harness requires at least
+  one recognized predecessor spelling and never treats the block as accepted
+  source. This mode is not a substitute for migrating a current example.
 
 When a language feature changes syntax, examples in the same chapter change
 with it. Plain `wyst` fences without a preceding contract comment are not
@@ -39,9 +44,12 @@ allowed in design docs.
 Each design chapter that contains Wyst source fences must keep at least one
 checked contract (`fmt`, `check-pass`, or `check-fail`) for current compiler
 behavior. Use `sketch` only for fragments, pseudocode, or examples that rely
-on features outside the current checker. Use `future` only for syntax that is
+on features outside the current checker. Sketches still use current source
+spellings. Use `future` only for syntax that is
 future-version normative in [source-of-truth.md](source-of-truth.md) and is
-expected not to compile yet.
+expected not to compile yet. Use `historical-v0.8` only when the surrounding
+text explicitly discusses an archival v0.8 design snapshot; current guidance
+and examples are always migrated to v0.9.
 
 ## Checked Examples
 
@@ -81,10 +89,10 @@ This source is expected to fail semantic checking:
 
 <!-- wyst-contract: check-fail -->
 ```wyst
-#module boot
+module boot
 
-_start :: () {
-  value : u64 = true
+fn _start() {
+  const value: u64 = true
 }
 ```
 
@@ -92,9 +100,23 @@ This is a syntax sketch:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#module sketch.generics
+module sketch.generics
 
-identity<T> :: (value : T) -> T {
+fn identity<T>(value: T) -> T {
   return value
+}
+```
+
+This read-only block records the predecessor spelling discussed by an archival
+v0.8 note; it is not accepted by the current compiler:
+
+<!-- wyst-contract: historical-v0.8 -->
+```wyst
+#module archive.boot
+
+halt :: () #noreturn {
+  loop {
+    %wfe()
+  }
 }
 ```

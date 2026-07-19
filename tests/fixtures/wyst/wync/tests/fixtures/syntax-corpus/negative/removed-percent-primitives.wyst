@@ -1,0 +1,13 @@
+module removed_percent_primitives
+
+fn read_encoded_register() -> u64 {
+  return %mrs_s(3, 4, 15, 2, 0)
+}
+
+fn write_encoded_register(value: u64) {
+  %msr_s(3, 4, 15, 2, 0, value)
+}
+
+fn load_atomic(addr: @u64) -> u64 {
+  return %atomic_load(addr, order: acquire)
+}

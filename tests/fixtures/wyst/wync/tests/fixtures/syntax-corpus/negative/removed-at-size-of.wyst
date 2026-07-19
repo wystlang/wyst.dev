@@ -1,0 +1,7 @@
+module removed_at_size_of
+
+struct Header {
+    magic: u32
+}
+
+const BAD: u64 = @size_of(Header)

@@ -335,8 +335,7 @@ body.docs footer.site .wrap {
 }
 
 .wyst-code .token.macro,
-.wyst-code .token.directive,
-.wyst-code .token.primitive {
+.wyst-code .token.directive {
 	color: var(--syn-macro);
 	font-weight: 600;
 }

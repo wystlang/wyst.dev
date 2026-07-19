@@ -9,7 +9,7 @@ summary: "Explicit vector types, lane operations, vector loads/stores, and non-a
 # Chapter 12: Wyst SIMD and Vector Syntax
 
 > **Canonical scope.** Vector types (`[T:N]`), element-wise vector
-> arithmetic, full-vector loads (`[T:N]@[addr]`) and stores, and vector
+> arithmetic, full-vector address-method loads and stores, and vector
 > intrinsics. Element-wise operator semantics live in
 > [chapter-07-operators.md](chapter-07-operators.md); type-system rules for vectors live in
 > [chapter-06-types.md](chapter-06-types.md).
@@ -28,12 +28,12 @@ through visible vector types, operations, and primitives.
 
 ## 3.1 Vector Types
 
-| Wyst     | ARM64 |
-| ------- | ----- |
-| [f32:4] | .4s   |
-| [f64:2] | .2d   |
-| [u8:16] | .16b  |
-| [u16:8] | .8h   |
+| Wyst     | ARM64 lane view                 |
+| -------- | ------------------------------- |
+| [f32:4]  | four single-precision lanes     |
+| [f64:2]  | two double-precision lanes      |
+| [u8:16]  | sixteen byte lanes              |
+| [u16:8]  | eight halfword lanes            |
 
 ---
 
@@ -41,15 +41,15 @@ through visible vector types, operations, and primitives.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-a : [f32: 4] = {1.0, 2.0, 3.0, 4.0}
-b : [f32: 4] = {0.5, 0.5, 0.5, 0.5}
-c : [f32: 4] = a + b
+const a: [f32: 4] = [1.0, 2.0, 3.0, 4.0]
+const b: [f32: 4] = [0.5, 0.5, 0.5, 0.5]
+const c: [f32: 4] = a + b
 ```
 
 Lowering:
 
 ```asm
-fadd v0.4s, v1.4s, v2.4s
+fadd <vector-destination>, <vector-left>, <vector-right>
 ```
 
 Vector operations on floating-point lanes introduce the `fp_state` effect
@@ -60,9 +60,9 @@ The same operation as a complete checked source contract:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module simd_demo
+module simd_demo
 
-add_vec :: (a : [u32: 4], b : [u32: 4]) -> [u32: 4] {
+fn add_vec(a: [u32: 4], b: [u32: 4]) -> [u32: 4] {
   return a + b
 }
 ```
@@ -71,15 +71,15 @@ add_vec :: (a : [u32: 4], b : [u32: 4]) -> [u32: 4] {
 
 ## 3.3 Vector Loads
 
-Vector loads use the same `type@[addr]` model as scalar loads. The
-vector type `[T:N]` serves as the load type prefix:
+Vector loads use the same address-method model as scalar loads. The
+address pointee type fixes the loaded vector type:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-base : @[f32:4] = 0x4000
+const base: @[f32: 4] = address<@[f32: 4]>(0x4000)
 
-v : [f32: 4] = [f32: 4]@[base]     // load 4 f32s from base
-w : [f32: 4] = [f32: 4]@[base + 1] // element offset 1; byte address +16
+const v: [f32: 4] = base.load()
+const w: [f32: 4] = element_offset(base, 1).load()
 ```
 
 Lowering:
@@ -89,22 +89,21 @@ ldr q0, [x0]
 ldr q1, [x0, #16]
 ```
 
-The colon in `[T:N]` prevents ambiguity: `u64@[addr]` is a scalar load,
-`[f32:4]@[addr]` is a vector load. The parser distinguishes them by
-whether the bracket content contains a colon.
+The colon in `[T:N]` distinguishes a vector pointee type from a fixed array.
+The ordinary `.load()` method then returns that exact pointee type.
 
 ---
 
 ## 3.4 Vector Stores
 
-Same model — vector type prefix on the store target:
+Stores use the same address receiver and exact pointee type:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-base : @[f32:4] = 0x4000
+const base: @[f32: 4] = address<@[f32: 4]>(0x4000)
 
-[f32:4]@[base] = result
-[f32:4]@[base + 1] = result2
+base.store(result)
+element_offset(base, 1).store(result2)
 ```
 
 Lowering:

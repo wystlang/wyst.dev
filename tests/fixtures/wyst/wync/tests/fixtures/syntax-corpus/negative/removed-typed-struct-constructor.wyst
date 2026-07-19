@@ -1,0 +1,7 @@
+module removed_typed_struct_constructor
+
+struct Value { raw: u64 }
+
+fn bad() {
+    const value: Value = Value(raw = 1)
+}

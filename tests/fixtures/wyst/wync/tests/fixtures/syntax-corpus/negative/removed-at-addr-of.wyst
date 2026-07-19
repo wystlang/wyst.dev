@@ -1,0 +1,4 @@
+module removed_at_addr_of
+
+var word: u64 = 0
+const BAD: @u64 = @addr_of(word)

@@ -1,0 +1,5 @@
+module legacy_vector_typed_memory
+
+fn bad(address: @[u32:4]) -> [u32:4] {
+    return [u32:4]@[address]
+}

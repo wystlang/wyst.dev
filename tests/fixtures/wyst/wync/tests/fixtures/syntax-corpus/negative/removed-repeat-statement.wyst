@@ -1,0 +1,5 @@
+module removed_repeat_statement
+
+fn bad() {
+    repeat 3 {}
+}

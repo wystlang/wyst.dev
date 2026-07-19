@@ -1,0 +1,12 @@
+module corpus.item57
+
+import symbol "memcpy" as c_memcpy: extern "C" fn(@u8, @u8, u64) -> @u8
+import symbol "errno" as c_errno: @i32
+
+fn checksum() -> u64 { return 0 }
+fn default_idle() {}
+fn _start() {}
+
+export checksum as symbol "wyst_checksum"
+export weak default_idle as symbol "platform_idle"
+export _start

@@ -1,0 +1,6 @@
+#module legacy_layout
+#region ram : origin = 0x4008_0000, size = 0x0008_0000, attrs = (readwrite)
+#entry _start at 0x4008_0000
+__text_start :: u64 = #start(.text)
+__text_end :: u64 = #end(.text)
+#section .text : align = 16

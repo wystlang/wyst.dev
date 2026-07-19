@@ -81,7 +81,7 @@ reinterpret `schedule.standard` as permission to change source meaning.
 ## `switch-dispatch`
 
 `switch-dispatch` is an opt-in, deterministic mode for enum switch dispatch. It
-replaces the default equality-value chain with an IR `switch`
+replaces the default equality-value chain with an IR dispatch terminator
 terminator that the ARM64 backend lowers as a linear compare/conditional-branch
 sequence. It preserves source-order case testing, grouped-case targets,
 exhaustive invalid defaults, and partial-switch fallthrough behavior.
@@ -94,7 +94,7 @@ trees, or target-tuned heuristics are part of this mode.
 
 ## Reproducible Switch Dispatch Baseline
 
-In `reproducible`, enum `switch` still lowers through the direct deterministic
+In `reproducible`, enum dispatch still lowers through the direct deterministic
 chain used before build optimization modes were named:
 
 - the selector, or the payload enum tag field, is evaluated once before

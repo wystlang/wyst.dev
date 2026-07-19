@@ -29,21 +29,28 @@ const homepageArtifactDestination = path.join(
 );
 const homepageIndexDestination = path.join(root, "index.html");
 
-const fixturePaths = [
+const coreFixturePaths = [
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
 ];
+const syntaxCorpusRoot = "wync/tests/fixtures/syntax-corpus";
+const vocabularyCatalogs = [
+	"attribute-catalog.tsv",
+	"meta-operation-catalog.tsv",
+	"syntax-words.tsv",
+];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
 	":(top,literal)design/semantic-db.json",
-	":(top,literal)design/syntax-words.tsv",
+	...vocabularyCatalogs.map((file) => `:(top,literal)design/${file}`),
 	":(top,literal)wync/Cargo.lock",
 	":(top,literal)wync/Cargo.toml",
 	":(top,glob)wync/core/**/*.wyst",
 	":(top,glob)wync/src/**/*.rs",
-	...fixturePaths.map((file) => `:(top,literal)${file}`),
+	...coreFixturePaths.map((file) => `:(top,literal)${file}`),
+	`:(top,glob)${syntaxCorpusRoot}/**`,
 ];
 
 const candidates = [
@@ -65,6 +72,25 @@ async function isWystRoot(dir) {
 		(await isFile(path.join(dir, "design", "semantic-db.json"))) &&
 		(await isFile(path.join(dir, "wync", "Cargo.toml")))
 	);
+}
+
+async function walkFiles(directory, relativeDirectory = "") {
+	const entries = await readdir(path.join(directory, relativeDirectory), {
+		withFileTypes: true,
+	});
+	entries.sort((left, right) =>
+		left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+	);
+	const files = [];
+	for (const entry of entries) {
+		const relative = relativeDirectory
+			? path.posix.join(relativeDirectory, entry.name)
+			: entry.name;
+		if (entry.isDirectory()) files.push(...(await walkFiles(directory, relative)));
+		else if (entry.isFile()) files.push(relative);
+		else throw new Error(`unsupported Wyst syntax-corpus entry: ${relative}`);
+	}
+	return files;
 }
 
 async function resolveWystRoot() {
@@ -97,16 +123,31 @@ const designFileNames = (await readdir(path.join(wystRoot, "design"), {
 	.filter(
 		(entry) =>
 			entry.isFile() &&
-			(entry.name.endsWith(".md") || entry.name === "semantic-db.json"),
+			(entry.name.endsWith(".md") ||
+				entry.name === "semantic-db.json" ||
+				vocabularyCatalogs.includes(entry.name)),
 	)
 	.map((entry) => entry.name)
 	.sort();
 
-for (const requiredDesignFile of ["README.md", "semantic-db.json"]) {
+for (const requiredDesignFile of [
+	"README.md",
+	"semantic-db.json",
+	...vocabularyCatalogs,
+]) {
 	if (!designFileNames.includes(requiredDesignFile)) {
 		throw new Error(`Missing Wyst design input: design/${requiredDesignFile}`);
 	}
 }
+
+const syntaxCorpusFiles = await walkFiles(path.join(wystRoot, syntaxCorpusRoot));
+if (!syntaxCorpusFiles.includes("manifest.tsv")) {
+	throw new Error(`Missing Wyst syntax corpus: ${syntaxCorpusRoot}/manifest.tsv`);
+}
+const fixturePaths = [
+	...coreFixturePaths,
+	...syntaxCorpusFiles.map((file) => path.posix.join(syntaxCorpusRoot, file)),
+].sort();
 
 for (const relativePath of fixturePaths) {
 	if (!(await isFile(path.join(wystRoot, relativePath)))) {

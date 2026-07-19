@@ -1,0 +1,7 @@
+module syntax_bad_atomic_order
+
+var word: atomic<u64> = atomic<u64>(0)
+
+fn main() -> u64 {
+  return word.load(.acqrel)
+}

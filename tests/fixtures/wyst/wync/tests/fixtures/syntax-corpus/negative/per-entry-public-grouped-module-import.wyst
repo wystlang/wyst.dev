@@ -1,0 +1,5 @@
+module corpus.invalid_group
+
+import (
+  pub runtime.clock,
+)

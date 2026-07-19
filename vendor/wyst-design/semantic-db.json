@@ -5,7 +5,13 @@
     "atomicMatrix": "wyst.atomic-matrix.v1",
     "nativeAbi": "wyst.nativeAbi.v0.8",
     "objectInterface": "wyst.objectInterface.v0",
+    "targetEntrySchema": "wyst.target-entry-schema.v1",
     "reportSchemas": "wync.reports.v1",
+    "rebuildBenchmark": "wync.rebuildBenchmark.v1",
+    "localBench": "wync.localBench.v1",
+    "timingTrace": "wync.timingTrace.v1",
+    "compilerEfficiencyPolicy": "wync.compilerEfficiencyPolicy.v1",
+    "compilerEfficiencyEvidence": "wync.compilerEfficiencyEvidence.v1",
     "editorInterfaces": "wync.interfaces.v1",
     "a64Authority": "wyst.a64-authority-manifest.v1",
     "a64InstructionCatalog": "wyst.a64-instruction-catalog.v1",
@@ -13,7 +19,22 @@
     "a64SupportManifest": "wyst.a64-support-manifest.v1",
     "a64SupportPolicy": "wyst.a64-support-policy.v1",
     "a64Conformance": "wyst.a64-conformance-manifest.v2",
-    "semanticOperations": "wyst.semantic-operation-catalog.v0.9"
+    "semanticOperations": "wyst.semantic-operation-catalog.v0.9",
+    "namedLayout": "wyst.namedLayout.v0.9",
+    "targetProfileContract": "wyst.target-profile-contract.v1",
+    "targetProfileBase": "wyst.target-profile-base.v1",
+    "targetProfileExtensionSet": "wyst.target-profile-extension-set.v1",
+    "platformCounterInstanceProvider": "wyst.platform-counter-instance-provider.v1",
+    "platformCounterInstanceRecord": "wyst.platform-counter-instance-record.v1",
+    "platformCounterInstanceIdentity": "wyst.platform-counter-instance-identity.v1",
+    "platformCounterUniverseEvidence": "wyst.platform-counter-universe-evidence.v1",
+    "platformCounterUniverseEvidenceContract": "wyst.platform-counter-universe-evidence-contract.v1",
+    "executionStrands": "wyst.execution-strands.v1",
+    "contextStability": "wyst.context-stability.v1",
+    "executionEnvironment": "wyst.execution-environment-contract.v1",
+    "executionProviderDescriptor": "wyst.execution-provider-descriptor.v1",
+    "completionProviderDescriptor": "wyst.completion-provider-descriptor.v1",
+    "callableContextSummary": "wyst.callable-context-summary.v2"
   },
   "authorityOrder": [
     {
@@ -205,6 +226,12 @@
       "owner": "design/chapter-04-modules.md"
     },
     {
+      "id": "language.grouped-module-imports",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
       "id": "language.sealed-core-imports",
       "state": "implemented",
       "version": "wyst.language.v0.9",
@@ -218,6 +245,12 @@
     },
     {
       "id": "language.directional-linker-boundaries",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-04-modules.md"
+    },
+    {
+      "id": "language.named-layout-dsl",
       "state": "implemented",
       "version": "wyst.language.v0.9",
       "owner": "design/chapter-04-modules.md"
@@ -307,10 +340,42 @@
       "owner": "design/chapter-19-learning-diagnostics.md"
     },
     {
+      "id": "tooling.compiler-efficiency-release-gate",
+      "state": "implemented",
+      "version": "wync.reports.v1",
+      "owner": "design/chapter-24-scale.md",
+      "contract": "compilerEfficiencyContract"
+    },
+    {
       "id": "language.module-discovery-model",
       "state": "implemented",
       "version": "wyst.language.v0.8",
       "owner": "design/chapter-03-project-builds.md"
+    },
+    {
+      "id": "build.hosted-distributable-artifacts",
+      "state": "implemented",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-03-project-builds.md"
+    },
+    {
+      "id": "build.authenticated-target-entry-schema",
+      "state": "implemented",
+      "version": "wyst.target-entry-schema.v1",
+      "owner": "design/chapter-02-targets.md",
+      "contract": "targetEntrySchema"
+    },
+    {
+      "id": "targets.platform-counter-instances",
+      "state": "implemented",
+      "version": "wyst.platform-counter-instance-provider.v1",
+      "owner": "design/chapter-02-targets.md"
+    },
+    {
+      "id": "targets.execution-environment-provider-contracts",
+      "state": "implemented",
+      "version": "wyst.execution-environment-contract.v1",
+      "owner": "design/chapter-02-targets.md"
     },
     {
       "id": "language.qualified-imports-default",
@@ -367,6 +432,18 @@
       "owner": "design/chapter-13-scheduling.md"
     },
     {
+      "id": "language.execution-strands-suspension-boundaries",
+      "state": "implemented",
+      "version": "wyst.execution-strands.v1",
+      "owner": "design/chapter-13-scheduling.md"
+    },
+    {
+      "id": "language.context-stability-provenance",
+      "state": "implemented",
+      "version": "wyst.context-stability.v1",
+      "owner": "design/chapter-13-scheduling.md"
+    },
+    {
       "id": "language.predecessor-scheduling-modes",
       "state": "removed",
       "version": "wyst.language.v0.9",
@@ -387,7 +464,7 @@
     {
       "id": "language.exact-code-contracts",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
@@ -417,7 +494,13 @@
     {
       "id": "language.register-pinning",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "version": "wyst.language.v0.9",
+      "owner": "design/chapter-08-functions.md"
+    },
+    {
+      "id": "language.special-register-local-aliases",
+      "state": "removed",
+      "version": "wyst.language.v0.9",
       "owner": "design/chapter-08-functions.md"
     },
     {
@@ -585,7 +668,8 @@
       "id": "artifacts.layout-placement-solver",
       "state": "implemented",
       "version": "wyst.language.v0.8",
-      "owner": "design/chapter-04-modules.md"
+      "owner": "design/chapter-04-modules.md",
+      "contract": "namedLayoutContract"
     },
     {
       "id": "artifacts.static-et-exec-image",
@@ -658,8 +742,8 @@
     {
       "id": "phase.build_inputs",
       "languageVersionIntroduced": "wyst.language.v0.8",
-      "scope": "CLI invocation, project manifest, explicit root-file mode, layout file selection, target selection, and host/tool facts that are declared build inputs.",
-      "purpose": "Freeze the input set for a compilation so later phases never discover source, target, or layout inputs implicitly.",
+      "scope": "CLI invocation, project manifest, explicit root-file mode, normalized artifact-owned or environment-owned layout choice, authenticated target-profile contract and extension set, and host/tool facts that are declared build inputs.",
+      "purpose": "Freeze the input set for a compilation so later phases never discover source, target, layout, profile-policy, or extension inputs implicitly.",
       "immutableInputs": [],
       "authoritativeOutputs": ["build.input_set", "build.target_selection", "build.layout_selection", "fact.target_fact"],
       "permittedDependencies": [],
@@ -667,7 +751,7 @@
       "semanticFactOwnership": ["fact.target_fact"],
       "cycleOwner": "none",
       "deterministicOrderingRule": "Normalize input paths and manifest entries before any source text is read.",
-      "diagnosticResponsibility": "Report invalid invocation shape, missing manifest fields, missing layout selection, and incompatible target selection.",
+      "diagnosticResponsibility": "Report invalid invocation shape, missing or forbidden kind-specific manifest fields, layout-owner mismatch, unavailable artifact production, and unknown, absent, stale, partial, or incompatible target-profile products.",
       "mayAffectAcceptedPrograms": true,
       "mayAffectEmittedBytes": true,
       "reportOnly": false,
@@ -1056,9 +1140,9 @@
       "languageVersionIntroduced": "wyst.language.v0.8",
       "scope": "Explain-report, generated-report, benchmark, and inspection facts that are not consumed by semantic, ABI, lowering, object, or diagnostic decisions.",
       "purpose": "Compute typed terminal report-only summaries from already-owned products without changing accepted programs, emitted bytes, or diagnostics.",
-      "immutableInputs": ["fact.target_fact", "fact.source_map", "fact.module_identity", "fact.instantiated_ast", "fact.effect_authority_summary", "fact.callable_abi_obligation", "fact.ir_module", "fact.machine_code", "fact.register_assignment", "fact.final_resource_summary", "fact.artifact_bytes"],
+      "immutableInputs": ["fact.target_fact", "fact.source_map", "fact.module_identity", "fact.instantiated_ast", "fact.type", "fact.effect_authority_summary", "fact.callable_abi_obligation", "fact.ir_module", "fact.machine_code", "fact.register_assignment", "fact.final_resource_summary", "fact.artifact_bytes"],
       "authoritativeOutputs": ["fact.report_only_summary"],
-      "permittedDependencies": ["phase.abi_lowering", "phase.build_inputs", "phase.effect_authority_analysis", "phase.final_resource_computation", "phase.generic_instantiation", "phase.ir_construction", "phase.machine_lowering", "phase.register_allocation", "phase.relocation_artifact_preparation", "phase.source_graph"],
+      "permittedDependencies": ["phase.abi_lowering", "phase.build_inputs", "phase.effect_authority_analysis", "phase.final_resource_computation", "phase.generic_instantiation", "phase.ir_construction", "phase.machine_lowering", "phase.register_allocation", "phase.relocation_artifact_preparation", "phase.source_graph", "phase.type_checking"],
       "forbiddenDependencies": ["phase.diagnostic_rendering", "phase.manifest_provenance_generation"],
       "semanticFactOwnership": ["fact.report_only_summary"],
       "cycleOwner": "none",
@@ -1169,7 +1253,7 @@
     {
       "id": "fact.target_fact",
       "ownerPhase": "phase.build_inputs",
-      "meaning": "Target, layout, profile, and declared build facts frozen before source acquisition."
+      "meaning": "Target, normalized layout owner/choice, complete profile-policy tuple, authenticated contract/extension schemas and digests, and declared build facts frozen before source acquisition."
     },
     {
       "id": "fact.syntax_tree",
@@ -1470,25 +1554,52 @@
     "mmio",
     "barrier",
     "fp_state",
-    "perf_counter"
+    "perf_counter",
+    "execution_suspension"
   ],
+  "effectVocabularyContract": {
+    "schema": "wyst.effect-vocabulary.v0.9",
+    "closed": true,
+    "machineEffects": [
+      "sysreg",
+      "trap",
+      "exception_return",
+      "cache_maintenance",
+      "tlb_maintenance",
+      "atomic",
+      "cpu_event",
+      "cpu_halt",
+      "interrupt_mask",
+      "volatile_access",
+      "mmio",
+      "barrier",
+      "fp_state",
+      "perf_counter"
+    ],
+    "targetNeutralEffects": ["execution_suspension"],
+    "allIncludesEveryClosedEffect": true,
+    "targetNeutralEffectsIncludedByAll": ["execution_suspension"],
+    "none": [],
+    "importedBodylessCallableRule": "authenticated-exact-bound-or-conservative-effects-all-never-implicit-none",
+    "denyProofRule": "every-reachable-exact-or-conservative-bound-must-exclude-the-denied-effect"
+  },
   "a64AuthorityCatalog": {
     "state": "complete-pinned-authority-accounting",
     "manifestSchema": "wyst.a64-authority-manifest.v1",
     "manifest": "design/a64-authority.json",
-    "manifestDigest": "sha256:76f07d63b7c15650e270a23ba9e5156b2613cbed3bb11b0fa64c92c2d58de563",
+    "manifestDigest": "sha256:816b59c178e0f5f945c9992cc493e52104621ba6b8011c325a97de84f052b213",
     "publisher": "Arm Limited",
     "release": "A64 ISA 2026-03",
     "sourceDigest": "sha256:bf355d263eed08ef6b3e4e680e6bba3642fa7c3dd0be77ffb4783420041a0860",
     "normalizedSchema": "wyst.a64-catalog.v2",
     "normalizedCatalog": "design/a64-catalog.tsv",
-    "normalizedCatalogDigest": "sha256:6ba93894dc2335b80260211a40c0e301fc207e1ac1c66f7dcdec0fb1ee1362c3",
-    "bijectionDigest": "sha256:dd88953da117113da70ea878e164adcbc2329607cd4a3c1fac584b1b01d95aec",
+    "normalizedCatalogDigest": "sha256:c5ab3afd9be5dfd59c219515bd0c19fefbd3fcb9e33d90f4a6b77a9e17e1016a",
+    "bijectionDigest": "sha256:4379a6945ea6079399d42d68c9c76fa108752bf0f5d3a8ab45319174efa2185e",
     "normalizer": "wync-a64-normalizer-v2",
     "normalizerSource": "wync/tools/a64-authority.mjs",
-    "normalizerSourceDigest": "sha256:e530053e544dede65c49c5729f3cc56e03f88725210c913dde09bc2bd834fadd",
+    "normalizerSourceDigest": "sha256:ad17d4de8dac5f12c63f8802308ae41230f27750b23bd62305ce657cd2190c63",
     "generatorInputsSchema": "wyst.a64-normalizer-inputs.v1",
-    "generatorInputsDigest": "sha256:ef8b71f519be4ffe36124b9b8f29ff18e91d5c33a2b714b587d1a3caca6776fd",
+    "generatorInputsDigest": "sha256:f5e7b833aa75bdec6e32f7bb515126eb00b2a76066afbacd14d47388f3f915d9",
     "denominatorCounts": {
       "instructionEncodings": 4331,
       "instructionAliases": 291,
@@ -1500,18 +1611,18 @@
     "rawSourceForms": {
       "schema": "wyst.a64-raw-encoding-source-forms.v3",
       "artifact": "design/a64-raw-encoding-source-forms.jsonl.gz",
-      "artifactDigest": "sha256:19a2834807de954b2da2d5d9a84e16431781a0d743dd5d523ba8a599076f404a",
+      "artifactDigest": "sha256:bb9d6653b845837cd4a9ce19d4a22286e8f4d4c67cb09acf1579a6a0702d1be3",
       "generator": "wync-a64-raw-forms-v3",
       "generatorSource": "wync/tools/a64-raw-forms.mjs",
       "generatorSourceDigest": "sha256:1b9808ce04198903ba9e215366f6949c13170eaaa8eaf40ac2d3322d8b9fd93a",
       "generatorInputsSchema": "wyst.a64-raw-forms-inputs.v3",
-      "generatorInputsDigest": "sha256:91c15211ae3cf9c768723f6dec48b14b1686ee8e20f3d91d44df27f3e55b2d68"
+      "generatorInputsDigest": "sha256:96b1b8b52ecdf93289ca133e25271bfa3ec32a3a0a80a5e2696652731ce4ec0b"
     },
     "recognitionDecoder": {
       "schema": "wyst.a64-runtime-decode.v2",
-      "identityDigest": "sha256:62511ba9529cc683a2a0bfe76e859e97e22f4cc57c7f161753ef6161dfde2194",
+      "identityDigest": "sha256:b0b14b386bb24fa5d6414381a05cc5cd25d40a67a6795933e4bf8a65c19f3b33",
       "artifact": "wync/src/arm64/authority_decode_generated.rs",
-      "artifactDigest": "sha256:c28c62afa0e17c9359aa2aeeecc9876f228a7399db8bbfe0995313dc098292fd",
+      "artifactDigest": "sha256:91393708fb813d8a404e91e91dc75d0ea3da7905935d49ff0e4d4743e7ecc789",
       "encodingRows": 4331,
       "maskOverlapPairs": 160,
       "specificityResolvedOverlaps": 140,
@@ -1526,7 +1637,6 @@
       "targetIndependentAmbiguityWitnessCount": 0
     },
     "accountingClaim": true,
-    "roadmapDoneWhenClaim": true,
     "completionBlockers": []
   },
   "a64SupportManifest": {
@@ -1534,24 +1644,24 @@
     "schema": "wyst.a64-support-manifest.v1",
     "release": "wyst-v0.9",
     "manifest": "design/a64-support-manifest.json",
-    "manifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "manifestDigest": "sha256:100951a00c3635cbc585dd20f4bd0341b5c2ac879bae1c7446c3d0efc282ef29",
     "rows": "design/a64-support-rows.tsv",
-    "rowsDigest": "sha256:fba78098860991462ec93fdab69c92c4a9acce8d14afa0d601215856957206d4",
+    "rowsDigest": "sha256:55997a50c6f4e41952f9ecfb7bd48429205244fa52dc3f7a1916203405724e9a",
     "policySchema": "wyst.a64-support-policy.v1",
     "policy": "design/a64-support-policy.json",
-    "policyDigest": "sha256:c820307c269fd43e6caf1b9995f5f56c7592494c8bae95d3f6019f9db0742b3f",
+    "policyDigest": "sha256:594c1bd5b033121d3931624459226c54456e2be88df98c51b0ded4a1ba1f0b40",
     "generator": "wync-a64-support-manifest-v1",
     "generatorSource": "wync/tools/a64-support-manifest.mjs",
     "generatorSourceDigest": "sha256:c553de782a95e06f82461187fcaa6c66858246265b1fcdaea2278da4dc1a138b",
     "generatorInputsSchema": "wyst.a64-support-manifest-inputs.v1",
-    "generatorInputsDigest": "sha256:964b477f7b1e09bb8dd470c86b7fd815573ea51eef3e746d065d077bd6409fb6",
+    "generatorInputsDigest": "sha256:d1fa3b3ec98695c9bb0c78e87853f73432192dc17bbb1918f9e490b3efdfee25",
     "generatedRuntime": "wync/src/arm64/support_manifest_generated.rs",
-    "generatedRuntimeDigest": "sha256:204ba8517604151838f011105daad1b5d9c4abc19f94d59f518594996987432c",
+    "generatedRuntimeDigest": "sha256:9f69fdfd24af75876493a2e5b3ae60aea2719c4ea6892c8971b0d76a0bac049e",
     "inputDigests": {
       "authorityCatalog": "sha256:c5ab3afd9be5dfd59c219515bd0c19fefbd3fcb9e33d90f4a6b77a9e17e1016a",
-      "rawSourceForms": "sha256:4effe10bd47b62f6ef97fc54a8458f2756d867b97c62b6d130104f629aa2f0a8",
-      "instructionCatalog": "sha256:6a14543fa72436044dbc6e0a60a7fd99a67b5a84066b7cdd2c083debe4802c3e",
-      "instructionSemantics": "sha256:347a1649017c9f406b18347a2898580145284097b1faea44c642ae305ee31bda",
+      "rawSourceForms": "sha256:bb9d6653b845837cd4a9ce19d4a22286e8f4d4c67cb09acf1579a6a0702d1be3",
+      "instructionCatalog": "sha256:5b700a22d09ebe101827849a256cbd363a2a0de8efa029cd9158e2ab09c502af",
+      "instructionSemantics": "sha256:c57f70ea07a89c663b75a29d3abf0b3f3b3020c3ec1f7f98d136e76fcaf06cf6",
       "stateSemantics": "sha256:a25faa38b78a5cacebda2b6afc8244f663e9e4bcf235719bf3e51bbed6cdd2f1",
       "structuralSemantics": "sha256:95d4b0f293ef605e4068e9c3f0ede6f0fbb4c3ecaa1e1db73456b47b7beb886e"
     },
@@ -1559,8 +1669,8 @@
       {
         "id": "wyst.a64.checked-asm.core.v1",
         "surfaces": ["checked_asm"],
-        "activeEncodingRows": 12,
-        "activeSourceFormRows": 12
+        "activeEncodingRows": 13,
+        "activeSourceFormRows": 13
       },
       {
         "id": "wyst.a64.target-structural-asm.aarch64.v1",
@@ -1587,12 +1697,12 @@
       }
     ],
     "counts": {
-      "activeTotal": 329,
-      "knownUnsupportedTotal": 8626,
+      "activeTotal": 330,
+      "knownUnsupportedTotal": 8625,
       "encodingActive": 308,
       "encodingKnownUnsupported": 4023,
-      "sourceFormActive": 19,
-      "sourceFormKnownUnsupported": 4603,
+      "sourceFormActive": 20,
+      "sourceFormKnownUnsupported": 4602,
       "targetStructuralActive": 2,
       "targetStructuralKnownUnsupported": 0,
       "total": 8955,
@@ -1600,7 +1710,7 @@
       "partiallyActive": 0
     },
     "surfaceCounts": {
-      "checked_asm": { "encodingRows": 18, "sourceFormRows": 19 },
+      "checked_asm": { "encodingRows": 19, "sourceFormRows": 20 },
       "ordinary_lowering": { "encodingRows": 308, "sourceFormRows": 0 },
       "architecture_operation": { "encodingRows": 308, "sourceFormRows": 0 }
     },
@@ -1636,12 +1746,10 @@
     },
     "exactPartitionClaim": true,
     "supportedProfileClaim": true,
-    "focusedClosureScope": "complete-focused-items-46-50-authority-semantics-generated-encoding-typed-ir-and-conformance",
-    "roadmapDoneWhenClaim": true,
+    "activeSupportClosureScope": "complete-focused-a64-authority-semantics-generated-encoding-typed-ir-and-conformance",
     "universalConformanceClaim": false,
     "completionBlockers": [],
-    "laterMilestone": {
-      "roadmapItem": 105,
+    "deferredUniversalConformance": {
       "scope": "complete-universal-a64-checked-assembly-activation",
       "isCurrentCompletionBlocker": false
     }
@@ -1662,21 +1770,21 @@
     "staticOracles": "design/a64-conformance-oracles.tsv",
     "policy": "design/a64-conformance-policy.json",
     "generatedRuntime": "wync/src/arm64/conformance_generated.rs",
-    "generatorSourceDigest": "sha256:89251fb6327f7bf7629b3e0c9accd35c490615b1fcd81d3e71777295b73fb06d",
-    "generatorInputsDigest": "sha256:b0e95dd45cc61fcb447d7970fd807695d2d8b638dba748f38206d25bcd9c9873",
+    "generatorSourceDigest": "sha256:22e8d65e48eccaf9bfa80462bbaf297e982d09c8addc7ad2a34e644158a4e108",
+    "generatorInputsDigest": "sha256:3c404294a4288e98debc502a6f5d920ba8d1624854a3376e117f6fe85172f548",
     "policyDigest": "sha256:ede8ed2d4a96bc1685abe8b0f39d3d87dab498985adcdb4a86b88589bcd3050c",
-    "manifestDigest": "sha256:c1061ffb1a6c9009a49cf7ab73060cb9e2e764edd0da1239a3ffdb78c7efac58",
-    "evidenceDigest": "sha256:361e69242922db65e0d71a3970e24f0401ccabc292ad3933ae5574a6f7423034",
+    "manifestDigest": "sha256:19df0d1408faebd1533ecdc8d7bd8f43593f3852a11ce4c01c6ddfa30a211ecb",
+    "evidenceDigest": "sha256:6859dce21d78423fa4ae8fb651ab1e04cf1325265eb2361a2412b306ddc0d709",
     "targetsDigest": "sha256:0a7dadce85ff73354054e798f4143bf9efb0e54a2d31fe28b005d877c9019d1e",
     "staticOraclesDigest": "sha256:605f931217f314c504e3e7709341e58afa96dc35bbeaf25108a27cfd661aaaec",
-    "generatedRuntimeDigest": "sha256:e4635e58397db8edc957d824f11f1cf3cc9374a2d84a41d2a5253defef4f90ea",
+    "generatedRuntimeDigest": "sha256:f11536b65da93bdc040959777ed51248b9b9da35d27dd11c5ab88bdc7cb02190",
     "verificationCommands": [
       "./wync/tools/a64-conformance-gate.sh check"
     ],
     "coverage": {
       "totalEvidenceRows": 8955,
-      "activeEvidenceRows": 329,
-      "knownUnsupportedEvidenceRows": 8626,
+      "activeEvidenceRows": 330,
+      "knownUnsupportedEvidenceRows": 8625,
       "unexplainedEvidenceRows": 0,
       "partiallyActiveEvidenceRows": 0,
       "rowKinds": {
@@ -1686,7 +1794,7 @@
       },
       "activeRows": {
         "encoding": 308,
-        "sourceFormOrAlias": 19,
+        "sourceFormOrAlias": 20,
         "targetStructural": 2
       }
     },
@@ -1731,7 +1839,7 @@
       ],
       "activeEvidenceRows": {
         "authenticatedReference": 0,
-        "pinnedIndependentOracle": 329,
+        "pinnedIndependentOracle": 330,
         "executionOracleUnavailable": 0
       },
       "instructionSemanticRows": {
@@ -1817,11 +1925,9 @@
     ],
     "claim": "complete conformance for the exact focused active support profile; universal A64 conformance is not claimed",
     "supportedProfileClaim": true,
-    "roadmapDoneWhenClaim": true,
     "universalConformanceClaim": false,
     "completionBlockers": [],
-    "laterMilestone": {
-      "roadmapItem": 105,
+    "deferredUniversalConformance": {
       "scope": "complete-universal-a64-checked-assembly-activation-and-rerun-this-gate",
       "isCurrentCompletionBlocker": false
     }
@@ -1837,12 +1943,12 @@
     "structuralCatalog": "design/a64-structural-semantics.tsv",
     "supportManifestSchema": "wyst.a64-support-manifest.v1",
     "supportManifest": "design/a64-support-manifest.json",
-    "supportManifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "supportManifestDigest": "sha256:100951a00c3635cbc585dd20f4bd0341b5c2ac879bae1c7446c3d0efc282ef29",
     "instructionSemanticManifest": "design/a64-instruction-semantics-manifest.json",
-    "instructionSemanticDigest": "sha256:347a1649017c9f406b18347a2898580145284097b1faea44c642ae305ee31bda",
-    "instructionSemanticGeneratorInputsDigest": "sha256:9aff4b772c06d6449b500c98abb6d6de7a0ad6d491b2d71ad323f8fb26374710",
+    "instructionSemanticDigest": "sha256:c57f70ea07a89c663b75a29d3abf0b3f3b3020c3ec1f7f98d136e76fcaf06cf6",
+    "instructionSemanticGeneratorInputsDigest": "sha256:bb63f3b966732c2b786097d72fdab2cdc5e6f12289023bebc2681574d9084d06",
     "structuralSemanticDigest": "sha256:95d4b0f293ef605e4068e9c3f0ede6f0fbb4c3ecaa1e1db73456b47b7beb886e",
-    "semanticBundleDigest": "sha256:fe8e4688e0d19c5fd998feb3bdd00e940600b8a7d1b0406d9d5c803d43f42e82",
+    "semanticBundleDigest": "sha256:3d6dd90223fae32da6ab168b12d208c54fae0dd2ae3c870458864322df5193b8",
     "state": "implemented-exact-active-support-profile",
     "coverage": {
       "authorityEncodingRows": 4331,
@@ -1871,11 +1977,9 @@
     },
     "forbiddenFacts": ["empty", "unknown", "wildcard", "manual_clobber", "manual_effect", "manual_purity"],
     "supportedProfileClaim": true,
-    "roadmapDoneWhenClaim": true,
     "universalConformanceClaim": false,
     "completionBlockers": [],
-    "laterMilestone": {
-      "roadmapItem": 105,
+    "deferredUniversalConformance": {
       "scope": "complete-universal-a64-checked-assembly-activation",
       "isCurrentCompletionBlocker": false
     }
@@ -1885,39 +1989,38 @@
     "implementation": "wync-a64-instruction-catalog-v1",
     "state": "implemented-exact-active-support-profile",
     "source": "design/a64-encoding-catalog.tsv",
-    "digest": "sha256:6a14543fa72436044dbc6e0a60a7fd99a67b5a84066b7cdd2c083debe4802c3e",
+    "digest": "sha256:5b700a22d09ebe101827849a256cbd363a2a0de8efa029cd9158e2ab09c502af",
     "activeEncodingSource": "design/a64-active-encoding-catalog.tsv",
-    "activeEncodingDigest": "sha256:4db8133277c6299d0268ac0be51b16d62617cf49fe7a5f4d4a866b6d86587997",
+    "activeEncodingDigest": "sha256:b177535476f956566a5cc1aaa403c1432bd9e538933bf75c697ede4c0754185b",
     "generationManifest": "design/a64-instruction-catalog-manifest.json",
-    "generatorInputsDigest": "sha256:613f9adbad0918965201745742d2042febfceefb39b8f0741f69b93022dc25ca",
+    "generatorInputsDigest": "sha256:358128cd9fef6f1ee48ba7bb0f9bf3dd4e5c8c200d066d68d17beea4b822b332",
     "supportManifestSchema": "wyst.a64-support-manifest.v1",
     "supportManifest": "design/a64-support-manifest.json",
-    "supportManifestDigest": "sha256:78ae4217512202f2f642acbffdc7997795e6538c26b1537a9e5a0ce7972ceb60",
+    "supportManifestDigest": "sha256:100951a00c3635cbc585dd20f4bd0341b5c2ac879bae1c7446c3d0efc282ef29",
     "identities": ["source-form", "canonical-instruction", "encoding", "authority", "semantic"],
     "coverage": {
       "activeEncodingRows": 308,
-      "checkedAsmSourceFormRows": 19,
+      "checkedAsmSourceFormRows": 20,
       "activeOperandDecoderRows": 301,
       "activeGeneratedFixupRows": 10,
-      "activeTypedFixupRows": 2,
+      "activeTypedFixupRows": 3,
       "recognitionEncodingRows": 4331,
       "knownUnsupportedEncodingRows": 4023,
-      "knownUnsupportedSourceFormRows": 4603,
+      "knownUnsupportedSourceFormRows": 4602,
       "partiallyActiveRows": 0,
       "unexplainedRows": 0
     },
     "activeSurfaces": ["checked_asm", "ordinary_lowering", "architecture_operation"],
     "recognitionDecoderSchema": "wyst.a64-runtime-decode.v2",
-    "recognitionDecoderIdentityDigest": "sha256:59d8dfd0d2bee77b796df08c6dd7e94a2b3a86c464fe8933c951c65c0f9f50d8",
-    "instructionTableGeneration": "complete-deterministic-generated-active-catalog-from-items-46-47",
+    "recognitionDecoderIdentityDigest": "sha256:b0b14b386bb24fa5d6414381a05cc5cd25d40a67a6795933e4bf8a65c19f3b33",
+    "instructionTableGeneration": "complete-deterministic-generated-active-catalog-from-a64-authority-and-compiler-semantics",
     "checkedAsmIrTransport": "complete-typed-catalog-identities-operands-and-fixups-retained-through-backend",
     "fullAuthorityWordClassification": "complete-supported-known-unsupported-reserved-unallocated-partition",
     "supportedProfileClaim": true,
     "completionClaim": true,
     "universalConformanceClaim": false,
     "completionBlockers": [],
-    "laterMilestone": {
-      "roadmapItem": 105,
+    "deferredUniversalConformance": {
       "scope": "complete-universal-a64-checked-assembly-activation",
       "isCurrentCompletionBlocker": false
     }
@@ -1926,7 +2029,7 @@
     "schema": "wyst.semantic-operation-catalog.v0.9",
     "state": "implemented",
     "source": "design/semantic-operation-catalog.tsv",
-    "digest": "sha256:6c0d283a110926be97b99027471ebfe23a8059ea0cce7a5f4de59d0569f49b60",
+    "digest": "sha256:e2dea16ccdbd4d07a82202fc3cd0cebf550e178cb6e71c269e126638ff0a5a4c",
     "legacyRemovalAudit": "design/legacy-percent-removal-audit.tsv",
     "legacyRemovalCount": 88,
     "legacyRemovalDigest": "sha256:57be6ba82f91901c18927a1dbf6d801a35ba81f156f1aa89446df932f4d8f5e0",
@@ -1935,9 +2038,15 @@
     "measurementCounterDigest": "sha256:d228fe09cf02f41114b96b252da53381be1d03a76b70ee217023688b64015ce8",
     "environmentServiceCatalog": "design/environment-service-catalog.tsv",
     "environmentServiceDigest": "sha256:d2d9671539ac9e0eda3819d0cefa7a99e1dc3cbe2122e6d00b4c45ce3de12d5c",
-    "sealedNamespaces": ["core.arch", "core.environment"],
+    "sealedNamespaces": ["core.arch", "core.environment", "core.execution"],
+    "reservedSealedNamespaces": [],
     "architectureCategories": ["cpu", "barrier", "cache", "tlb", "exception", "memory"],
     "environmentServices": ["semihost"],
+    "executionProviderOperations": ["core.execution.suspension_point"],
+    "executionProviderDescriptors": ["wyst.execution-provider-descriptor.v1"],
+    "completionProviderDescriptors": ["wyst.completion-provider-descriptor.v1"],
+    "providerSemanticsActive": true,
+    "providerSemanticsScope": "authenticated-provider-leaf-marker-and-selected-execution-environment-descriptors",
     "legacyParserCompatibility": false,
     "stableIdentityInTypedIrAndReports": true
   },
@@ -1994,6 +2103,151 @@
     "reservedTokens": ["$", "?"],
     "reservedGeneratedSymbolMarker": "__wg"
   },
+  "namedLayoutContract": {
+    "schema": "wyst.namedLayout.v0.9",
+    "introducerClassification": "contextual-top-level-layout-declaration",
+    "layoutAllowedAsModulePathComponent": true,
+    "selectionWithoutManifestNamedChoice": {
+      "selectedFileLayoutCount": 1,
+      "entryCountPerLayout": 1,
+      "layoutNameSelectsProfile": false,
+      "allowedSiblingItems": ["module", "target-policy", "requirement-policy", "deny-policy"]
+    },
+    "typedIrAuthority": {
+      "preservedLayoutIdentity": ["module-qualified-layout-declaration", "layout-name", "layout-dialect"],
+      "declarationOrderedMembers": ["regions", "sections", "typed-symbols"],
+      "preservedRegionFacts": ["name", "origin", "size", "access", "operand-spans"],
+      "preservedSectionFacts": ["exact-elf-name", "kind", "normalized-in", "normalized-after", "normalized-align", "operand-spans"],
+      "preservedEntryFacts": ["semantic-declaration-identity", "optional-fixed-address", "constraint-span"],
+      "layoutSymbolExpressionAuthority": "typed-ast-independent-recursive-placement-expression",
+      "legalNonAffineSymbolsMayBeDropped": false,
+      "finalWriterPolicy": "consume-typed-facts-or-reject-any-syntax-adapter-mismatch"
+    },
+    "dialectDispatch": {
+      "independentFromSourceDialect": true,
+      "selectedLayoutDialectControls": [
+        "implicit-canonical-section-edges",
+        "named-section-kind-contracts",
+        "named-minimum-region-image-base"
+      ],
+      "mixedSourceAndLayoutVersionsUseSelectedLayoutRules": true
+    },
+    "memberKinds": ["entry", "region", "section", "symbol"],
+    "entry": {
+      "identity": "exact-module-qualified-semantic-wyst-declaration",
+      "optionalAddressConstraintType": "u64",
+      "selectsImageEntry": true,
+      "createsReachabilityRoot": true,
+      "exports": false,
+      "renames": false,
+      "currentTargetCallableContract": {
+        "callingConvention": "wyst-native",
+        "parameterCount": 0,
+        "parameterRegisterPlacements": [],
+        "resultRegisterPlacements": [],
+        "result": "never-or-inherently-terminal-label"
+      },
+      "futureIncomingRegistersRequireAuthenticatedTargetEntrySchema": true,
+      "requiredValidation": [
+        "body-bearing-target-admissible-declaration",
+        "calling-convention-and-abi",
+        "explicit-parameter-and-result-registers",
+        "selected-target-initial-execution-level",
+        "terminal-never-behavior"
+      ]
+    },
+    "regions": {
+      "accessKinds": ["readonly", "readwrite"],
+      "addressArithmetic": "checked-u64",
+      "sizeRequirement": "nonzero-u64",
+      "interval": "half-open-origin-plus-size",
+      "namedLayoutImageBase": "minimum-region-origin-or-target-default"
+    },
+    "sections": {
+      "kinds": ["code", "rodata", "data", "bss"],
+      "namePattern": "\\.[A-Za-z0-9_.]+",
+      "constraintKinds": ["in", "after", "align"],
+      "multipleAfterEdges": true,
+      "identicalConstraintNormalization": true,
+      "conflictingInOrAlignRejected": true,
+      "omittedAlignmentUsesClassDefault": true,
+      "compilerOwnedNonLayoutNames": [".debug_*", ".symtab", ".strtab", ".shstrtab"],
+      "compilerOwnedNonLayoutPrefixes": [".wyst."],
+      "removedV09SectionNames": [
+        ".tls"
+      ]
+    },
+    "typedSymbols": {
+      "explicitTypeRequired": true,
+      "allowedTypes": ["@u8", "u64"],
+      "queryFactOwner": "phase.placement_solving",
+      "publishedValueAvailableAfter": "fact.placement_address",
+      "operations": {
+        "start": { "scope": "layout-symbol-initializer-only", "unshadowable": true, "result": "@u8" },
+        "end": { "scope": "layout-symbol-initializer-only", "unshadowable": true, "result": "@u8" },
+        "size": { "scope": "layout-symbol-initializer-only", "unshadowable": false, "result": "u64" }
+      },
+      "numericAddressConversion": "address<u64>",
+      "implicitAddressIntegerConversion": false,
+      "deferredPlacementLeaves": ["start", "end", "size"],
+      "forbiddenPlacementLeaves": ["ordinary-symbol-address", "per-instance-offset"],
+      "layoutSymbolReferences": "forbidden-including-self-forward-and-prior-references",
+      "deferredIntegerOperationSemantics": "ordinary-typed-ConstExpr-width-wrapping-and-modulo-shift-counts",
+      "floatingPointIntermediates": "forbidden",
+      "publicMeansSourceVisibilityOnly": true,
+      "publishedIdentity": "module-qualified-declaration-identity",
+      "publishedSourceLookup": "selected-layout-public-symbols-have-unique-unshadowable-bare-spellings",
+      "publishedNameCollisionPolicy": "reject-ordinary-declaration-import-semantic-and-bare-name-collisions",
+      "elfBinding": "STB_LOCAL",
+      "deterministicElfOrder": "layout-member-declaration-order"
+    },
+    "solver": {
+      "ownerPhases": ["phase.placement_constraints", "phase.placement_solving"],
+      "requiredCases": [
+        "dependency-cycles",
+        "multiple-after",
+        "fixed-address-conflicts",
+        "inherited-regions",
+        "per-region-cursor",
+        "overlap",
+        "alignment",
+        "overflow",
+        "empty-sections",
+        "equal-priority",
+        "declaration-order",
+        "deterministic-tie-breaking",
+        "kind-specific-fill-and-padding"
+      ],
+      "diagnosticConstraintPathRequired": true,
+      "fixedAddressNormalization": {
+        "identicalClaimsCollapse": true,
+        "differentValuesConflict": true,
+        "retainedProvenance": ["source-span", "authority-origin", "u64-operand"]
+      },
+      "diagnosticPathOrigins": ["image-base", "region-origin", "fixed-address"]
+    },
+    "initcalls": {
+      "requiredWhenNonempty": true,
+      "section": ".initcalls",
+      "kind": "rodata",
+      "minimumAlignment": 8,
+      "defaultPlacement": false,
+      "userSectionAttributeMayTarget": false
+    },
+    "checkedAssembly": {
+      "preservesFirstInstructionAlignment": true,
+      "preservesFixedPlacement": true,
+      "preservesTypedFixups": true,
+      "allowedInternalSynthesis": "cataloged-reported-nop-padding-authorized-by-asm-align-only",
+      "outOfRangeCall26": "hard-error-preserving-source-bl-without-relaxation-or-veneer",
+      "forbiddenInternalSynthesis": ["literal-pool", "relaxation", "veneer", "thunk"]
+    },
+    "predecessorRemoval": {
+      "auditOnly": true,
+      "productionParserCompatibility": false,
+      "productionDiagnosticCompatibility": false
+    }
+  },
   "integerRangeForContract": {
     "surface": "for index in start ..< end { ... }",
     "rangePunctuation": "..<",
@@ -2029,7 +2283,7 @@
     "evaluationCount": 1,
     "typeArgumentMeaning": "complete-result-type-never-inferred-or-defaulted",
     "userOverloadable": false,
-    "removedSurface": ["as.widen", "as.truncate", "as.signedness", "as.numeric", "as.bits", "as.address", "as.lens", "as.qualifier", "as.float"],
+    "removedSurfaceClasses": ["language.predecessor-categorized-conversions"],
     "reservedSurface": "checked<T>(value)"
   },
   "bitstructContract": {
@@ -2097,18 +2351,7 @@
       "typed-ir",
       "target-lowering"
     ],
-    "removedSurface": [
-      "bitfield(T)",
-      "bits(lo, hi)",
-      "width N",
-      "bit location-word",
-      "exclusive-range",
-      "descending-range",
-      "empty-range",
-      "non-contiguous-range",
-      "from_bits",
-      "to_bits"
-    ]
+    "removedSurfaceClasses": ["language.predecessor-bitfield-syntax"]
   },
   "hardwareRegisterContract": {
     "schema": "wyst.hardwareRegisters.v0.9",
@@ -2355,7 +2598,7 @@
       "emitted-architecture-barrier"
     ],
     "retainedSurface": ["@mmio T", "REGISTER.read().raw", "REGISTER.write(value)", "REGISTER.modify(...)"],
-    "removedSurface": ["T@[address]", "read_raw", "write_raw", "access(...)"]
+    "removedSurfaceClasses": ["language.predecessor-address-access-syntax"]
   },
   "addressOperationContract": {
     "schema": "wyst.addressOperations.v0.9",
@@ -2404,7 +2647,7 @@
       "escape": "rejected-by-noescape-and-local-address-lifetime-rules",
       "compileTimeSymbolOperation": "#addr_of(symbol)-is-distinct"
     },
-    "removedSurface": ["T@[address]", "[T:N]@[address]", "typed-address +", "typed-address -", "typed-address +=", "typed-address -="]
+    "removedSurfaceClasses": ["language.predecessor-address-access-syntax"]
   },
   "sliceRangeViewContract": {
     "schema": "wyst.sliceRangeViews.v0.9",
@@ -2426,7 +2669,7 @@
     "rawConstructorCount": "fixed-width-integer-with-provably-negative-value-rejected",
     "rawConstructorCountUnit": "T-elements",
     "rawConstructorLabel": "mandatory",
-    "removedSurface": ["source[start:end]", "[]T{data = address, len = count}", "[]T { data = address, len = count }", "dynamic-array-direct-slicing"]
+    "removedSurfaceClasses": ["language.predecessor-slice-construction-syntax"]
   },
   "callableStorageContract": {
     "schema": "wyst.callableStorageContract.v0.9",
@@ -2529,7 +2772,7 @@
         "deterministic-final-byte-offset"
       ],
       "declarationAlignment": "natural-type-alignment-only-no-explicit-align-attribute",
-      "preItem92MaximumNaturalAlignmentBytes": 16,
+      "singleInstanceRealizationMaximumNaturalAlignmentBytes": 16,
       "supportedDirectStorageShapes": [
         "scalar",
         "function-pointer",
@@ -2567,7 +2810,7 @@
       ],
       "bitstructFieldWrite": "one-logical-operation-with-one-base-and-confined-load-typed-bit-field-insert-store",
       "baseReuseAcrossSourceAccesses": false,
-      "atomicAccess": "item-52-methods-only",
+      "atomicAccess": "wyst.atomic-matrix.v1-methods-only",
       "targetContractFacts": [
         "availability",
         "base-mechanism",
@@ -2575,7 +2818,7 @@
         "reserved-register-or-system-state",
         "realization-kind"
       ],
-      "preItem92TargetSelection": {
+      "singleInstanceTargetSelection": {
         "surface": "#target(..., per_cpu = single_instance_tpidr_el1)",
         "availability": "available",
         "baseMechanism": "MRS TPIDR_EL1",
@@ -2586,7 +2829,7 @@
         ],
         "realizationKind": "single-instance-test-runtime"
       },
-      "preItem92ReachableAccess": "explicit-single-instance-realization-or-hard-diagnostic",
+      "singleInstanceReachableAccessPolicy": "explicit-single-instance-realization-or-hard-diagnostic",
       "compilerRuntimeWork": [
         "no-replication",
         "no-allocation",
@@ -2595,12 +2838,6 @@
         "no-ordinary-global-collapse"
       ]
     },
-    "removedSourceSpellings": [
-      "[aapcs]",
-      "@(args)->result",
-      "@[aapcs](args)->result",
-      "thread_local"
-    ],
     "tlsStorageClass": false
   },
   "schedulingPolicyCatalog": {
@@ -2613,15 +2850,15 @@
     "hardwareBarrier": false,
     "instructionCountPromise": false,
     "byteIdentityPromise": false,
-    "preservedThroughMandatoryInlining": true,
-    "removedSourceModes": ["strict", "relaxed", "throughput", "latency"],
-    "removedPolicyNames": ["schedule.default", "schedule.strict", "schedule.relaxed", "schedule.throughput", "schedule.latency"]
+    "preservedThroughMandatoryInlining": true
   },
   "syntaxWordCatalog": {
     "schema": "wyst.syntaxWords.v0.9",
     "source": "design/syntax-words.tsv",
     "requiredFields": ["spelling", "classification", "owner", "legal_positions", "state"],
     "classifications": ["reserved", "contextual", "unshadowable"],
+    "allowedStates": ["implemented", "reserved"],
+    "removedRowsPermitted": false,
     "stateRegistry": "featureStates",
     "uniqueBy": "spelling",
     "normativeConsumers": ["lexer", "parser", "semantic-database", "formatter", "diagnostics", "lsp", "editor-grammars", "generated-documentation"]
@@ -2630,7 +2867,6 @@
     "schema": "wyst.declarationAttributes.v0.9",
     "source": "design/attribute-catalog.tsv",
     "requiredFields": ["spelling", "state", "owner", "subjects", "signature", "conflicts", "formatter_order", "tooling_metadata", "behavior"],
-    "activeRowsAtItem41": [],
     "activeRows": ["align", "section", "inline", "init", "frame", "deny_effects", "cache_isolated", "schedule"],
     "canonicalFormatterOrder": ["align", "section", "inline", "init", "frame", "deny_effects", "cache_isolated", "schedule"],
     "declarationPrefixOrder": ["attribute-group", "pub", "hard-modifier-or-storage-class", "extern-abi", "declaration-keyword", "name"],
@@ -2639,7 +2875,7 @@
     "optionalTrailingComma": true,
     "flagAttributesUseParentheses": false,
     "argumentOrder": "positional-before-named",
-    "activationRule": "an owning item atomically installs an implemented state, signature, subjects, conflicts, formatter order, tooling metadata, and behavior",
+    "activationRule": "an owning semantic contract atomically installs an implemented state, signature, subjects, conflicts, formatter order, tooling metadata, and behavior",
     "unknownOrInactivePolicy": "reject"
   },
   "genericBoundCatalog": {
@@ -2648,7 +2884,7 @@
     "requiredFields": ["spelling", "state", "owner", "subject_contract", "capability_contract", "enum_payload_word_compatible"],
     "uniqueBy": "spelling",
     "applicationModel": "explicit-type-arguments-only",
-    "extensionRule": "an owning language item adds one complete active subject-and-capability row before the bound is accepted"
+    "extensionRule": "an owning language semantic contract adds one complete active subject-and-capability row before the bound is accepted"
   },
   "genericInstantiationContract": {
     "keySchema": "wyst.genericInstantiationKey.v0.9",
@@ -2661,6 +2897,1064 @@
     "traceEntryFields": ["canonicalKey", "demandOrigin"],
     "traceOrdering": "root-to-demand-in-deterministic-source-and-canonical-declaration-order",
     "resourceFailureRule": "separate-resource-diagnostic-with-the-same-canonical-trace"
+  },
+  "executionStrandContract": {
+    "schema": "wyst.execution-strands.v1",
+    "owner": "design/chapter-13-scheduling.md",
+    "agentDefinition": "memory-model-umbrella-owning-one-ordered-execution-history",
+    "strandDefinition": "one-sequential-wyst-control-flow-instance-within-one-agent",
+    "strandIdentitySourceObservable": false,
+    "trapInterruptEntry": "fresh-strand-same-agent-after-exact-interrupted-prefix",
+    "nestedTrapOrder": "recursive",
+    "ordinaryExceptionReturn": "resume-exact-interrupted-strand-suffix-after-completed-handler",
+    "schedulerTransfer": "save-or-stop-current-handler-strand-and-resume-distinct-selected-task-strand-or-never-return",
+    "taskSelectionSynchronizesWith": false,
+    "taskSelectionHappensBeforeUnrelatedMemory": false,
+    "crossOwnerProviderMetadataHandoff": "explicit-release-acquire-publication-required",
+    "effect": "execution_suspension",
+    "effectMeaning": "call-may-synchronously-cease-and-later-resume-the-calling-strand",
+    "exogenousPreemptionAddsEffect": false,
+    "effectsAllIncludesEffect": true,
+    "boundaryOperation": "strand_suspension_boundary",
+    "boundaryPlacement": "after-callee-expression-and-left-to-right-arguments-immediately-before-transfer",
+    "boundaryCallKinds": [
+      "direct",
+      "indirect",
+      "imported_wyst",
+      "foreign",
+      "unresolved_effects_all"
+    ],
+    "preservationSurfaces": [
+      "semantic-interface",
+      "object",
+      "archive",
+      "inlining",
+      "devirtualization",
+      "tail-call-formation",
+      "final-linking"
+    ],
+    "orderingDependency": [
+      "observable-memory",
+      "volatile",
+      "mmio",
+      "atomic",
+      "other-effects",
+      "calls",
+      "current-context-acquisition",
+      "current-per-cpu-base-acquisition"
+    ],
+    "invalidates": ["cached-current-context", "cached-per-cpu-base"],
+    "rejectedLiveAcrossBoundary": [
+      "current-core-base-handle",
+      "active-context-affine-handle",
+      "address-derived-from-either"
+    ],
+    "permittedLiveAcrossBoundary": [
+      "ordinary-non-address-value-copied-from-per-cpu",
+      "authenticated-task-stable-value",
+      "authenticated-cross-strand-stable-value"
+    ],
+    "pureMotion": "permitted-by-ordinary-dependencies-and-selected-deterministic-profile",
+    "notSynchronization": true,
+    "notCompilerMemoryBarrier": true,
+    "notArchitecturalBarrier": true,
+    "notSafepointOrStackMap": true,
+    "returningSuspensionPreserves": [
+      "logical-task-or-host-thread",
+      "retained-calling-strand",
+      "native-activation-addresses",
+      "sp-relative-local-addresses",
+      "outgoing-area-addresses",
+      "nonescaping-local-pointer-object-identities"
+    ],
+    "forbiddenContinuationChanges": [
+      "task-rebinding",
+      "clone",
+      "return-twice",
+      "activation-relocation",
+      "stack-copying",
+      "nonlocal-entry",
+      "nonlocal-exit",
+      "asynchronous-cancellation"
+    ],
+    "currentCoreMigrationRule": "retained-strand-migration-only-at-preserved-boundary",
+    "asynchronousPreemptionRule": "same-core-resume",
+    "marker": {
+      "semanticIdentity": "core.execution.suspension_point",
+      "internalIdentity": "execution_suspension_point",
+      "sourceImport": "import core.execution",
+      "sourceCall": "execution.suspension_point()",
+      "aliasAllowed": true,
+      "importShape": "private-direct-whole-module-only",
+      "providerPlacement": "exactly-one-immediately-before-authenticated-non-call-transfer-with-no-observable-intervening-operation",
+      "authenticationBinds": [
+        "selected-target",
+        "provider-identity",
+        "provider-leaf-semantic-declaration-identity",
+        "adjacent-transfer-operation-identity"
+      ],
+      "rejectedShapes": [
+        "selective-import",
+        "bare-access",
+        "public-import",
+        "re-export",
+        "leaf-import",
+        "shadowed-access",
+        "spoofed-access",
+        "standalone-use",
+        "missing-marker",
+        "duplicate-marker",
+        "post-transfer-marker",
+        "observably-separated-marker",
+        "marker-before-effect-bearing-call"
+      ],
+      "machineContribution": {
+        "instructions": 0,
+        "calls": 0,
+        "symbols": 0,
+        "relocations": 0,
+        "stackMaps": 0,
+        "runtimeHooks": 0,
+        "runtimeDependencies": 0
+      },
+      "runtimeAction": "none-returns-immediately-never-yields-parks-blocks-or-switches"
+    },
+    "requiredReportFields": [
+      "marker-or-call-identity",
+      "owning-provider-identity",
+      "ordered-adjacent-transfer",
+      "effect",
+      "boundary",
+      "lowering",
+      "provenance"
+    ]
+  },
+  "contextStabilityContract": {
+    "schema": "wyst.context-stability.v1",
+    "owner": "design/chapter-13-scheduling.md",
+    "closedVocabulary": [
+      "active_context_affine",
+      "task_stable",
+      "cross_strand_stable"
+    ],
+    "restrictivenessOrder": [
+      "active_context_affine",
+      "task_stable",
+      "cross_strand_stable"
+    ],
+    "originAuthority": [
+      "compiler-owned-operation",
+      "authenticated-target-provider-interface"
+    ],
+    "runtimeTag": false,
+    "erasable": false,
+    "upgradeBySourceCastAdapterOrSummary": false,
+    "sourceQualifierSyntax": false,
+    "currentClassifiedOriginProducers": [
+      "compiler-current-instance"
+    ],
+    "currentOrdinaryCallableSummaryRule": "ordinary-parameter-and-result-facts",
+    "classifiedCallableSummaryAdmission": "compiler-owned-or-authenticated-provider-producer-only",
+    "portableProviderAccessorOwner": "targets.portable-execution-and-completion-provider-contracts",
+    "preservationSurfaces": [
+      "assignment",
+      "local-storage",
+      "arguments",
+      "results",
+      "aliases",
+      "field-projection",
+      "aggregates",
+      "enum-payloads",
+      "generic-substitution",
+      "control-flow-joins",
+      "spills-reloads",
+      "inlining",
+      "semantic-interfaces",
+      "objects",
+      "archives"
+    ],
+    "projectionRule": "selected-field-classification",
+    "aggregateVariantJoinRule": "most-restrictive-reachable-live-classification",
+    "unknownOrIncompatibleBoundaryRule": "reject",
+    "eligibleStorage": {
+      "active_context_affine": "compiler-proven-nonescaping-activation-local",
+      "task_stable": "compiler-proven-nonescaping-activation-or-task-local",
+      "cross_strand_stable": "exact-instance-generation-detach-escape-and-lifetime-contract"
+    },
+    "rejectedEscapeDestinations": [
+      "module-or-static-storage",
+      "unclassified-addressed-memory",
+      "foreign-storage",
+      "resumable-frame"
+    ],
+    "addressTakingRule": "all-aliases-proved-dead-or-eligible-at-applicable-boundary",
+    "rawAddressRule": "reported-trust-boundary-never-sanitizes-classification",
+    "affineDormancyRule": "only-inside-exact-inaccessible-saved-activation",
+    "affineRevalidationRule": "ordinary-return-restores-exact-context",
+    "coreDerivedRevalidationRule": "ordinary-return-restores-exact-context-and-same-core",
+    "serializationRule": "exact-closed-provenance-and-conservative-joins-fail-closed-on-unknown-missing-or-upgrade",
+    "callableSummary": {
+      "schema": "wyst.callable-context-summary.v2",
+      "magic": "WYSTCTX\\0",
+      "schemaVersion": 2,
+      "integerByteOrder": "little-endian",
+      "countWidthBits": 32,
+      "digestBytes": 71,
+      "limits": {
+        "summaryBytes": 1048576,
+        "itemsPerCount": 4096,
+        "parametersOrEffectsPerCount": 4096,
+        "stringBytes": 16384
+      },
+      "wireTags": {
+        "callableEffectBound": {
+          "conservative_top_none": 0,
+          "exact_catalog_ordered_list": 1
+        },
+        "suspensionEffectAuthority": {
+          "internal_proved": 0,
+          "internal_declared": 1,
+          "external_conservative": 2,
+          "external_asserted": 3,
+          "indirect_known_targets_proved": 4,
+          "indirect_known_targets_declared": 5,
+          "indirect_conservative": 6
+        },
+        "provenanceState": {
+          "exact": 0,
+          "unknown": 1,
+          "incompatible": 2
+        },
+        "contextStability": {
+          "active_context_affine": 0,
+          "task_stable": 1,
+          "cross_strand_stable": 2
+        },
+        "origin": {
+          "current_core_base": 0,
+          "current_context": 1,
+          "authenticated_provider_accessor": 2
+        },
+        "authorityKind": {
+          "compiler_current_instance": 0,
+          "authenticated_target_provider": 1
+        },
+        "detachContract": {
+          "forbidden": 0,
+          "provider_authenticated": 1
+        },
+        "escapeContract": {
+          "nonescaping_activation": 0,
+          "nonescaping_task": 1,
+          "authenticated_cross_strand": 2
+        },
+        "lifetimeContract": {
+          "native_activation": 0,
+          "owning_task": 1,
+          "authenticated_provider_instance": 2
+        },
+        "pathSegment": {
+          "field_then_string": 0,
+          "index_then_u64": 1,
+          "enum_tag": 2,
+          "enum_payload": 3,
+          "slice_data": 4,
+          "slice_length": 5
+        },
+        "boolean": {
+          "false": 0,
+          "true": 1
+        }
+      },
+      "bodyFieldOrder": [
+        "magic-8-bytes",
+        "schema-version-u16",
+        "length-prefixed-callable-identity",
+        "effect-bound-tag-and-optional-counted-canonical-effect-name-strings",
+        "suspension-effect-authority-u8",
+        "parameter-count-and-provenance-entries",
+        "result-provenance"
+      ],
+      "fields": [
+        "callable-identity",
+        "exact-or-conservative-effect-bound",
+        "suspension-effect-authority",
+        "ordered-parameter-provenance",
+        "result-provenance",
+        "sha256-identity"
+      ],
+      "provenanceLeafFields": [
+        "context-path",
+        "stability",
+        "origin",
+        "authority-kind",
+        "target-identity",
+        "provider-identity",
+        "accessor-identity",
+        "authority-digest",
+        "instance-identity",
+        "generation-identity",
+        "detach-contract",
+        "escape-contract",
+        "lifetime-contract",
+        "core-derived",
+        "address-derived"
+      ],
+      "digest": "trailing-71-ascii-bytes-lowercase-sha256-identity-of-all-preceding-body-bytes",
+      "effectBoundRule": "tag-0-is-conservative-top-including-execution-suspension;tag-1-is-u32-counted-exact-list-in-closed-effect-catalog-order;tag-1-count-0-is-effects-none",
+      "atomicAuthentication": "effect-bound-authority-and-context-provenance-share-one-trailing-digest",
+      "canonicalOrdering": "effect-names-in-closed-catalog-order-and-paths-and-reachable-alternatives-sorted-with-no-duplicates",
+      "decodeAgainst": "exact-canonical-signature-effect-bound-plus-authority-map-plus-parameter-result-provenance",
+      "failClosed": [
+        "bad-magic",
+        "unsupported-schema",
+        "unknown-tag",
+        "truncated",
+        "trailing-bytes",
+        "digest-mismatch",
+        "duplicate-path",
+        "duplicate-alternative",
+        "noncanonical-order",
+        "invalid-provenance",
+        "limit-exceeded",
+        "noncanonical-effect-order",
+        "effect-bound-mismatch",
+        "effect-authority-mismatch",
+        "missing-summary",
+        "extra-summary",
+        "stability-upgrade",
+        "erased-provenance",
+        "incompatible-transport"
+      ]
+    }
+  },
+  "targetProfileContract": {
+    "schema": "wyst.target-profile-contract.v1",
+    "baseSchema": "wyst.target-profile-base.v1",
+    "requiredPolicyFields": [
+      "layout_owner",
+      "root_abi",
+      "entry_abi",
+      "root_return_policy",
+      "privilege_policy",
+      "admission_policy",
+      "dynamic_import_policy",
+      "tls_policy",
+      "unwind_policy",
+      "panic_policy",
+      "exit_policy"
+    ],
+    "layoutOwners": ["artifact", "environment"],
+    "manifestLayoutForms": {
+      "artifact": "layout NAME from \"PATH\"",
+      "environment": "layout .environment"
+    },
+    "linkedArtifactLayoutRule": "exactly-one-form-matching-authenticated-owner",
+    "staticLibraryLayoutRule": "no-entry-and-no-layout",
+    "identityInputs": [
+      "schema",
+      "base_profile_digest",
+      "complete_policy_tuple",
+      "complete_target_entry_schema_or_authenticated_absence",
+      "target_entry_schema_digest_or_authenticated_absence",
+      "extension_set_schema",
+      "extension_set_digest",
+      "normalized_layout_owner",
+      "normalized_layout_choice"
+    ],
+    "identitySurfaces": [
+      "target-compatibility",
+      "artifact-identity",
+      "semantic-interface",
+      "cache-key",
+      "diagnostic",
+      "report",
+      "runner-preflight"
+    ],
+    "currentBuiltinLayoutOwner": "artifact"
+  },
+  "targetEntrySchema": {
+    "schema": "wyst.target-entry-schema.v1",
+    "authenticatedVariants": [
+      {
+        "entryAbi": "wyst-native-dtb-x0-v1",
+        "authenticatedProfiles": [
+          {
+            "profile": "qemu-virt-aarch64-el2",
+            "identity": "qemu-virt-aarch64-el2-dtb-x0-v1"
+          },
+          {
+            "profile": "qemu-virt-aarch64-el2-lse",
+            "identity": "qemu-virt-aarch64-el2-lse-dtb-x0-v1"
+          }
+        ],
+        "callingConvention": "wyst-native",
+        "initialExecutionLevel": 2,
+        "returnBehavior": "never",
+        "parameters": [
+          {
+            "index": 0,
+            "name": "dtb",
+            "type": "@u8",
+            "register": "x0"
+          }
+        ],
+        "parameterCardinality": "exactly-one",
+        "initialStackState": "uninitialized",
+        "stackTransition": {
+          "identity": "checked-asm-establishes-stack-mov-sp-x1-v1",
+          "sourceShape": "asm establishes stack (stack: u64 in x1 = VALUE) { mov sp, stack }",
+          "inputName": "stack",
+          "inputType": "u64",
+          "inputRegister": "x1",
+          "sourceFormId": "a64:source_form:mov:2ff230e63232119f",
+          "instructionOperands": ["sp", "stack"],
+          "cardinality": "exactly-one",
+          "firmwareX0Disposition": "preserved"
+        },
+        "selectedRootShape": "pub naked fn _start(dtb: @u8 in x0) -> never"
+      },
+      {
+        "entryAbi": "wyst-native-noargs-v1",
+        "authenticatedProfiles": [
+          {
+            "profile": "qemu-virt-aarch64-el3",
+            "identity": "qemu-virt-aarch64-el3-noargs-v1"
+          }
+        ],
+        "callingConvention": "wyst-native",
+        "initialExecutionLevel": 3,
+        "returnBehavior": "never",
+        "parameters": [],
+        "parameterCardinality": "exactly-zero",
+        "initialStackState": "uninitialized",
+        "stackTransition": {
+          "identity": "checked-asm-establishes-stack-mov-sp-x1-v1",
+          "sourceShape": "asm establishes stack (stack: u64 in x1 = VALUE) { mov sp, stack }",
+          "inputName": "stack",
+          "inputType": "u64",
+          "inputRegister": "x1",
+          "sourceFormId": "a64:source_form:mov:2ff230e63232119f",
+          "instructionOperands": ["sp", "stack"],
+          "cardinality": "exactly-one",
+          "firmwareX0Disposition": "not-an-entry-parameter"
+        },
+        "selectedRootShape": "pub naked fn _start() -> never"
+      }
+    ],
+    "authorityConstruction": "closed-compiler-owned-target-profile-catalog-only",
+    "sourceClaimsCreateAuthority": false,
+    "digestRule": "sha256-identity-over-sorted-length-prefixed-complete-normalized-schema-records",
+    "identitySurfaces": [
+      "target-profile-base-digest",
+      "target-profile-contract-digest",
+      "target-compatibility",
+      "semantic-interface",
+      "typed-ir",
+      "artifact-identity",
+      "reusable-compilation-cache-key",
+      "diagnostic",
+      "generated-manifest",
+      "report",
+      "runner-preflight"
+    ],
+    "stableRejectionDispositions": [
+      "unknown",
+      "absent",
+      "stale",
+      "partial",
+      "wrong-profile-identity",
+      "wrong-parameter-arity",
+      "wrong-parameter-name",
+      "wrong-parameter-type",
+      "wrong-parameter-register",
+      "wrong-calling-convention",
+      "wrong-initial-execution-level",
+      "wrong-return-behavior",
+      "non-public-root",
+      "non-naked-root",
+      "missing-stack-transition",
+      "extra-stack-transition",
+      "wrong-stack-input",
+      "wrong-stack-source-form",
+      "source-only-claim"
+    ],
+    "failureBoundary": "before-artifact-output-and-before-runner-launch"
+  },
+  "targetProfileExtensionSet": {
+    "schema": "wyst.target-profile-extension-set.v1",
+    "authenticationInputs": [
+      "identity",
+      "active_version",
+      "product_schema",
+      "complete_normalized_fields",
+      "compiler_owned_expected_content_digest",
+      "authenticated_base_profile_digest",
+      "compatible_profiles",
+      "compatible_layout_owners"
+    ],
+    "acceptanceRule": "authenticate-the-complete-selected-set-before-exposing-any-product-or-fact",
+    "stableRejectionDispositions": [
+      "unknown",
+      "absent",
+      "stale",
+      "partial",
+      "incompatible"
+    ],
+    "partialVisibility": false,
+    "unknownProductsMayBeIgnored": false,
+    "identitySurfaces": [
+      "target-compatibility",
+      "artifact-identity",
+      "semantic-interface",
+      "cache-key",
+      "diagnostic",
+      "report"
+    ],
+    "currentAuthenticatedExtensions": [
+      {
+        "identity": "a64-generic-virtual-counter-instance-provider-v1",
+        "version": 1,
+        "productSchema": "wyst.platform-counter-instance-provider.v1",
+        "productDigest": "sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1",
+        "fields": {
+          "instance_identity_schema": "wyst.platform-counter-instance-identity.v1",
+          "instance_record_schema": "wyst.platform-counter-instance-record.v1",
+          "role": "platform_counter_instance_provider",
+          "source_descriptor": "a64-generic-virtual-counter-v1",
+          "universe_evidence_schema": "wyst.platform-counter-universe-evidence.v1"
+        },
+        "requiredByBuiltinProfiles": [
+          "qemu-virt-aarch64-el1",
+          "qemu-virt-aarch64-el2",
+          "qemu-virt-aarch64-el2-lse",
+          "qemu-virt-aarch64-el3",
+          "qemu-raspi4b-aarch64-el2"
+        ]
+      },
+      {
+        "identity": "wyst-execution-environment-freestanding-privileged-v1",
+        "version": 1,
+        "productSchema": "wyst.execution-environment-contract.v1",
+        "productDigest": "sha256:8879282db08925796d3dc275fbf6249d73ee861dffe83985d5ab5bd1de4cf662",
+        "fields": {
+          "asynchronous_preemption_resume_policy": "same_core",
+          "completion_provider_descriptors": "()",
+          "current_core_policy": "invalidate_and_reacquire_after_boundary",
+          "environment_class": "freestanding_privileged",
+          "execution_provider_descriptors": "()",
+          "per_cpu_policy": "invalidate_and_reacquire_after_boundary",
+          "retained_strand_migration_policy": "forbidden",
+          "role": "execution_environment_contract"
+        },
+        "requiredByBuiltinProfiles": [
+          "qemu-virt-aarch64-el1",
+          "qemu-virt-aarch64-el2",
+          "qemu-virt-aarch64-el2-lse",
+          "qemu-virt-aarch64-el3",
+          "qemu-raspi4b-aarch64-el2"
+        ]
+      }
+    ],
+    "platformCounterInstanceSchemaActive": true,
+    "executionEnvironmentSchemaActive": true,
+    "executionProviderDescriptors": ["wyst-synthetic-execution-provider-v1@1"],
+    "completionProviderDescriptors": ["wyst-synthetic-completion-provider-v1@1"],
+    "providerSemanticsActive": true,
+    "providerSemanticsScope": "authenticated-selected-environment-products-and-provider-on-demand-source-imports"
+  },
+  "executionEnvironmentContract": {
+    "schema": "wyst.execution-environment-contract.v1",
+    "version": 1,
+    "classes": [
+      "freestanding_privileged",
+      "freestanding_unprivileged",
+      "hosted_systems",
+      "hosted_restricted"
+    ],
+    "manifestSelectionRule": "single-target-selection-only-no-environment-provider-privilege-kernel-hosted-or-concurrency-booleans",
+    "baseBinding": "exact-authenticated-target-profile-base-digest",
+    "boundBaseTargetPolicies": [
+      "layout_owner",
+      "root_abi",
+      "entry_abi",
+      "root_return_policy",
+      "privilege_policy",
+      "admission_policy",
+      "dynamic_import_policy",
+      "tls_policy",
+      "unwind_policy",
+      "panic_policy",
+      "exit_policy"
+    ],
+    "productFields": [
+      "asynchronous_preemption_resume_policy",
+      "completion_provider_descriptors",
+      "current_core_policy",
+      "environment_class",
+      "execution_provider_descriptors",
+      "per_cpu_policy",
+      "retained_strand_migration_policy",
+      "role"
+    ],
+    "retainedStrandMigrationPolicies": [
+      "forbidden",
+      "execution_suspension_boundary_only"
+    ],
+    "asynchronousPreemptionResumePolicies": ["same_core"],
+    "currentCorePerCpuPolicies": [
+      "unavailable",
+      "invalidate_and_reacquire_after_boundary"
+    ],
+    "environmentProducts": [
+      {
+        "identity": "wyst-execution-environment-freestanding-privileged-v1",
+        "class": "freestanding_privileged",
+        "digest": "sha256:8879282db08925796d3dc275fbf6249d73ee861dffe83985d5ab5bd1de4cf662"
+      },
+      {
+        "identity": "wyst-execution-environment-freestanding-unprivileged-v1",
+        "class": "freestanding_unprivileged",
+        "digest": "sha256:791f9e2254b2401a46250d98265d655e64cc08f72ef94b7b645e67abf4d5e83e"
+      },
+      {
+        "identity": "wyst-execution-environment-hosted-systems-v1",
+        "class": "hosted_systems",
+        "digest": "sha256:ee801e16ffe33c324bc3b0711543133dbd3d0b9cc7128fe0676f9e4e1e990ddf"
+      },
+      {
+        "identity": "wyst-execution-environment-hosted-restricted-v1",
+        "class": "hosted_restricted",
+        "digest": "sha256:b6c9dd9cdc924570774c09889789db3e6fa3a72f9d5c732c4ff6a34c62f2ae01"
+      },
+      {
+        "identity": "wyst-synthetic-execution-environment-with-providers-v1",
+        "class": "hosted_restricted",
+        "digest": "sha256:d851805300a691fc31f63f7485c654a6ef94a560751d222e51b13c268cc6630d",
+        "conformanceOnly": true
+      }
+    ],
+    "executionProviderDescriptorSchema": "wyst.execution-provider-descriptor.v1",
+    "completionProviderDescriptorSchema": "wyst.completion-provider-descriptor.v1",
+    "syntheticExecutionProvider": {
+      "identity": "wyst-synthetic-execution-provider-v1",
+      "version": 1,
+      "digest": "sha256:3a698ddcfbc34f0d6f556b71d672e114dd550cf58fe4ca862544dddd566d716a",
+      "providerLeafSemanticDeclarationIdentity": "synthetic.execution.provider_leaf",
+      "adjacentTransferOperationIdentity": "synthetic.checked_context_switch",
+      "retainedStrandMigrationPolicy": "execution_suspension_boundary_only",
+      "asynchronousPreemptionResumePolicy": "same_core",
+      "currentCorePolicy": "invalidate_and_reacquire_after_boundary",
+      "perCpuPolicy": "invalidate_and_reacquire_after_boundary",
+      "returningTaskIdentity": "same_logical_task",
+      "returnCount": "exactly_once",
+      "activationAddressIdentity": "preserved",
+      "nativeObjectIdentity": "preserved",
+      "continuationRebind": "forbidden",
+      "continuationClone": "forbidden",
+      "nativeActivationRelocation": "forbidden",
+      "nonlocalEntryExit": "forbidden",
+      "asynchronousCancellation": "forbidden",
+      "authenticatedProductFields": {
+        "architectural_return_control_order": "after_completed_handler_with_recursive_nesting",
+        "architectural_return_strand_identity": "exact_interrupted_strand",
+        "current_continuation_rebranding": "forbidden",
+        "provider_metadata_handoff_publication": "release_acquire",
+        "provider_owned_metadata": "saved_context_run_queue_current_task",
+        "scheduler_transfer_agent_order": "saved_with_interrupted_agent",
+        "selected_task_transfer": "resume_distinct_saved_strand_or_nonreturning",
+        "task_selection_unrelated_program_memory_happens_before": "none",
+        "trap_entry_control_order": "after_exact_interrupted_strand_prefix",
+        "trap_entry_strand_identity": "fresh_same_execution_agent_strand"
+      },
+      "conformanceOnly": true
+    },
+    "syntheticCompletionProvider": {
+      "identity": "wyst-synthetic-completion-provider-v1",
+      "version": 1,
+      "digest": "sha256:99cfc5c0961f0f66137631dc5031f2bbe4220944a4fde578bc8d7d443bea1354",
+      "strandSuspensionImplication": "none",
+      "conformanceOnly": true
+    },
+    "builtinSelection": {
+      "environmentIdentity": "wyst-execution-environment-freestanding-privileged-v1",
+      "environmentClass": "freestanding_privileged",
+      "executionProviders": [],
+      "completionProviders": [],
+      "retainedStrandMigrationPolicy": "forbidden",
+      "asynchronousPreemptionResumePolicy": "same_core",
+      "currentCorePolicy": "invalidate_and_reacquire_after_boundary",
+      "perCpuPolicy": "invalidate_and_reacquire_after_boundary"
+    },
+    "providerRequiredRule": "only-when-imported-source-requires-exact-descriptor",
+    "effectAloneLinksProvider": false,
+    "resumableDefinitionAloneLinksProvider": false,
+    "perCpuSourceCompatibilityRule": "production-ir-direct-build-and-project-build-require-authenticated-environment-for-single_instance_tpidr_el1;all-current-freestanding-privileged-builtins-admit-it-with-invalidate_and_reacquire_after_boundary-and-forbid-migration;absent-or-unavailable-environments-are-hard-incompatibilities",
+    "restrictedClassMemorySecurityBoundary": false,
+    "identitySurfaces": [
+      "target-compatibility",
+      "provenance",
+      "semantic-interface",
+      "artifact-identity",
+      "cache-key",
+      "diagnostic",
+      "report"
+    ],
+    "stableRejectionDispositions": [
+      "unknown",
+      "absent",
+      "stale",
+      "partial",
+      "incompatible"
+    ]
+  },
+  "platformCounterInstanceContract": {
+    "providerIdentity": "a64-generic-virtual-counter-instance-provider-v1",
+    "providerVersion": 1,
+    "providerProductSchema": "wyst.platform-counter-instance-provider.v1",
+    "providerProductDigest": "sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1",
+    "providerProductRole": "platform_counter_instance_provider",
+    "sourceDescriptor": "a64-generic-virtual-counter-v1",
+    "recordSchema": "wyst.platform-counter-instance-record.v1",
+    "identitySchema": "wyst.platform-counter-instance-identity.v1",
+    "universeEvidenceSchema": "wyst.platform-counter-universe-evidence.v1",
+    "universeEvidenceContractSchema": "wyst.platform-counter-universe-evidence-contract.v1",
+    "staticProviderFields": [
+      "instance_identity_schema",
+      "instance_record_schema",
+      "role",
+      "source_descriptor",
+      "universe_evidence_schema"
+    ],
+    "staticProviderFieldValues": {
+      "instance_identity_schema": "wyst.platform-counter-instance-identity.v1",
+      "instance_record_schema": "wyst.platform-counter-instance-record.v1",
+      "role": "platform_counter_instance_provider",
+      "source_descriptor": "a64-generic-virtual-counter-v1",
+      "universe_evidence_schema": "wyst.platform-counter-universe-evidence.v1"
+    },
+    "providerProductDigestRule": "sha256-lowercase-identity-over-length-prefixed-provider-identity-u32le-version-length-prefixed-product-schema-u64le-sorted-field-count-and-length-prefixed-sorted-field-name-value-pairs",
+    "staticIdentitySurfaces": [
+      "target-compatibility",
+      "reusable-compilation-cache-key",
+      "semantic-interface",
+      "artifact-identity",
+      "diagnostic",
+      "generated-manifest",
+      "report"
+    ],
+    "staticSelectionRule": "every-target-with-a-semantic-operation-counter-source-descriptor-selects-exactly-one-source-matched-provider-through-the-atomic-target-profile-extension-set",
+    "staticSelectionCardinality": {
+      "noCounterSource": 0,
+      "oneCounterSource": 1,
+      "otherwise": "reject"
+    },
+    "buildTimeRuntimeClaim": "none",
+    "universeEvidenceAuthority": {
+      "schema": "wyst.platform-counter-universe-evidence.v1",
+      "version": 1,
+      "contractSchema": "wyst.platform-counter-universe-evidence-contract.v1",
+      "selectionOwner": "independently-selected-platform-environment-adapter",
+      "contractFields": [
+        "identity",
+        "schema",
+        "version",
+        "expected_content_digest"
+      ],
+      "authorityFields": [
+        "schema",
+        "version",
+        "provider_identity",
+        "provider_version",
+        "provider_schema",
+        "provider_product_digest",
+        "source_descriptor",
+        "counter_domain_id",
+        "configuration_epoch",
+        "state_universe_evidence_identity",
+        "exact_sorted_state_identities",
+        "control_universe_evidence_identity",
+        "exact_sorted_control_identities_and_sorted_effects",
+        "claimed_content_digest"
+      ],
+      "contentDigestRule": "sha256-lowercase-identity-over-length-prefixed-universe-evidence-schema-u32le-evidence-version-length-prefixed-provider-identity-provider-schema-provider-product-digest-source-descriptor-counter-domain-id-configuration-epoch-u32le-provider-version-state-universe-evidence-identity-u64le-sorted-state-count-and-length-prefixed-sorted-state-identities-control-universe-evidence-identity-u64le-sorted-control-count-and-each-length-prefixed-control-identity-u64le-sorted-effect-count-and-length-prefixed-sorted-effects; claimed_content_digest-is-excluded-and-must-equal-recomputation",
+      "authenticationRule": "recompute-the-normalized-scope-bound-authority-content-digest-and-require-the-independently-selected-contract-to-pin-that-exact-digest; self-consistent-resealing-is-insufficient-and-an-authority-for-another-counter-domain-or-configuration-epoch-cannot-be-replayed",
+      "recordMatchRule": "one-present-record-must-exactly-match-one-authenticated-authority-for-provider-source-counter-domain-configuration-epoch-universe-evidence-contract-identity-both-universe-evidence-references-exact-state-identities-exact-control-identities-sorted-effects-and-universe-evidence-content-digest",
+      "failureClassification": {
+        "present-record-without-authority": "incomplete",
+        "missing-authority-declared-state-or-control-row": "incomplete",
+        "extra-state-or-control-row": "mismatched",
+        "changed-control-effect-universe-evidence-reference-authority-contract-identity-authority-scope-or-authority-content-digest": "mismatched",
+        "multiple-authorities": "ambiguous",
+        "no-record-and-no-authority": "raw-counter-reads-only"
+      },
+      "runtimeAuthorityContentEntersCompilationIdentity": false,
+      "concreteRuntimeAuthorities": [],
+      "currentConformanceAuthority": "compiler-owned-synthetic-only",
+      "syntheticContractIdentityPattern": "synthetic.platform-counter-universe-contract.v1/{counter_domain_id}/{configuration_epoch}",
+      "syntheticContractIdentity": "synthetic.platform-counter-universe-contract.v1/counter-domain:boot-0001/configuration-epoch:0001",
+      "syntheticContentDigest": "sha256:c656328d5dde4c49e71ea298af58ac8daa27a8bb9205219d59c061bea3a3ebb1"
+    },
+    "recordLifecycle": {
+      "productionTime": "launch-or-measurement",
+      "maximumSelectedRecords": 1,
+      "immutability": "complete-normalized-record-is-immutable-after-authentication",
+      "bindingStages": ["launch", "measurement", "report"],
+      "beginStage": "Launch",
+      "terminalStage": "Report",
+      "advanceRequiresClosedPredecessorState": true,
+      "lifecycleStateFields": ["stage", "evidence"],
+      "closedEvidenceStates": ["RawReadsOnly", "Bound"],
+      "rawReadsOnlyFields": ["reason"],
+      "bindingFields": [
+        "stage",
+        "identity_schema",
+        "record_identity",
+        "content_digest",
+        "provider_identity",
+        "provider_product_digest",
+        "source_descriptor",
+        "counter_domain_id",
+        "configuration_epoch",
+        "universe_evidence_contract_identity",
+        "universe_evidence_content_digest"
+      ],
+      "orderedCarry": [
+        "begin-at-launch-records-RawReadsOnly-or-Bound",
+        "advance-consumes-the-preserved-predecessor-state",
+        "advance-exactly-Launch-to-Measurement-to-Report",
+        "Report-is-terminal"
+      ],
+      "allowedTransitions": [
+        "Launch.RawReadsOnly->Measurement.RawReadsOnly.preserve-reason",
+        "Launch.RawReadsOnly->Measurement.Bound",
+        "Launch.Bound->Measurement.Bound.exact-record",
+        "Measurement.RawReadsOnly->Report.RawReadsOnly.preserve-reason",
+        "Measurement.Bound->Report.Bound.exact-record"
+      ],
+      "forbiddenTransitions": [
+        "Bound->RawReadsOnly",
+        "Measurement.RawReadsOnly->Report.Bound",
+        "Bound->Bound.substituted-record",
+        "out-of-order-stage",
+        "advance-after-Report"
+      ],
+      "carryFailureDispositions": {
+        "bound-record-disappears-or-first-appears-at-report": "incomplete",
+        "out-of-order-stage-advance-after-report-or-changed-epoch-record-identity-or-content-digest": "stale",
+        "changed-identity-schema-provider-product-source-counter-domain-universe-evidence-contract-identity-or-universe-evidence-content-digest": "mismatched"
+      },
+      "excludedIdentitySurfaces": [
+        "reusable-compilation-cache-key",
+        "build-identity",
+        "semantic-interface"
+      ],
+      "concreteRuntimeProducers": [],
+      "currentConformanceProducer": "compiler-owned-synthetic-only"
+    },
+    "recordVersion": 1,
+    "configurationEpochIdentity": {
+      "producerUniquenessScope": "unique-within-counter_domain_id",
+      "compilerValidation": [
+        "canonical-identity",
+        "pairwise-change-on-authenticated-mutable-control-transition",
+        "exact-carry-through-one-record-lifecycle"
+      ],
+      "compilerMaintainsGlobalRuntimeLedger": false
+    },
+    "requiredProducerRecordFields": [
+      "record_schema",
+      "record_version",
+      "provider_identity",
+      "provider_version",
+      "provider_schema",
+      "provider_product_digest",
+      "source_descriptor",
+      "counter_domain_id",
+      "configuration_epoch",
+      "frequency",
+      "comparability",
+      "serialization",
+      "universe_evidence_contract_identity",
+      "universe_evidence_content_digest",
+      "state_universe_evidence_identity",
+      "states",
+      "control_universe_evidence_identity",
+      "mutable_controls",
+      "claimed_content_digest"
+    ],
+    "authenticatedRecordFields": [
+      "provider",
+      "counter_domain_id",
+      "configuration_epoch",
+      "frequency",
+      "comparability",
+      "serialization",
+      "universe_evidence_contract_identity",
+      "universe_evidence_content_digest",
+      "state_universe_evidence_identity",
+      "states",
+      "control_universe_evidence_identity",
+      "mutable_controls",
+      "evidence_identities",
+      "content_digest",
+      "identity"
+    ],
+    "frequencyModes": {
+      "fixed_hz": [
+        "ticks_per_second",
+        "acquisition_identity",
+        "evidence_identity"
+      ],
+      "variable": [
+        "configuration_identity",
+        "acquisition_identity",
+        "evidence_identity"
+      ],
+      "unknown": ["reason", "acquisition_identity", "evidence_identity"]
+    },
+    "fixedFrequencyConstraint": "ticks_per_second-greater-than-zero",
+    "identityNormalization": "nonempty-at-most-4096-bytes-ascii-alphanumeric-dot-underscore-hyphen-colon-or-slash; custom-core-idle-and-power-payload-identities-are-validated-separately",
+    "reasonNormalization": "nonempty-trimmed-at-most-4096-bytes-printable-text-with-no-control-characters",
+    "comparabilityModes": {
+      "same_core_only": ["evidence_identity"],
+      "shared_monotonic": ["max_offset_ticks", "evidence_identity"]
+    },
+    "serializationModes": {
+      "none_with_authority": [
+        "reason",
+        "authority_identity",
+        "evidence_identity"
+      ],
+      "source_explicit": [
+        "before",
+        "read",
+        "after",
+        "measured_overhead_ticks",
+        "evidence_identity"
+      ]
+    },
+    "sourceExplicitReadIdentity": "core.arch.cpu.read_counter",
+    "sourceExplicitBeforeAfterMustBeNonempty": true,
+    "sourceExplicitStepContract": {
+      "catalogMembership": "active-semantic-operation",
+      "namespace": "core.arch",
+      "category": "barrier",
+      "class": "architecture",
+      "parameters": "none",
+      "result": "void"
+    },
+    "stateUniverse": {
+      "universeEvidenceField": "state_universe_evidence_identity",
+      "requiredStates": ["active", "wfe", "wfi", "system_suspend"],
+      "additionalStateIdentityForms": ["core_idle:IDENTITY", "power:IDENTITY"],
+      "applicabilityModes": {
+        "inapplicable": ["evidence_identity"],
+        "applicable": ["progress", "evidence_identity"]
+      },
+      "applicableProgressModes": [
+        "continuous_monotonic",
+        "stops",
+        "may_reset_or_rebase",
+        "unknown"
+      ],
+      "duplicateRows": "ambiguous",
+      "missingRequiredRows": "incomplete"
+    },
+    "mutableControlUniverse": {
+      "universeEvidenceField": "control_universe_evidence_identity",
+      "recordFields": ["identity", "effects", "applicability"],
+      "applicabilityModes": {
+        "inapplicable": ["evidence_identity"],
+        "applicable": [
+          "owner",
+          "required_exclusion",
+          "begins_new_epoch_operation",
+          "evidence_identity"
+        ]
+      },
+      "effects": [
+        "source",
+        "frequency",
+        "offset",
+        "reset_or_rebase",
+        "comparability"
+      ],
+      "minimumEffectsPerControl": 1,
+      "duplicateEffects": "ambiguous",
+      "requiredApplicabilityRows": ["CNTVOFF_EL2", "CNTFRQ_EL0"],
+      "requiredEffects": {
+        "CNTVOFF_EL2": ["offset"],
+        "CNTFRQ_EL0": ["frequency"]
+      }
+    },
+    "normalization": {
+      "states": "sort-by-encoded-state-identity",
+      "mutableControls": "sort-by-control-identity",
+      "controlEffects": "sort-by-closed-effect-order",
+      "evidenceIdentities": "deduplicate-and-sort"
+    },
+    "evidenceIdentityAggregateIncludes": [
+      "universe_evidence_contract_identity",
+      "universe_evidence_content_digest",
+      "state_universe_evidence_identity",
+      "control_universe_evidence_identity",
+      "frequency.evidence_identity",
+      "comparability.evidence_identity",
+      "serialization.evidence_identity",
+      "each_state.evidence_identity",
+      "each_mutable_control.evidence_identity"
+    ],
+    "recordIdentityInputs": [
+      "identity_schema",
+      "record_schema",
+      "provider_identity",
+      "provider_product_schema",
+      "provider_product_digest",
+      "source_descriptor",
+      "content_digest",
+      "provider_version"
+    ],
+    "contentDigestRule": "sha256-lowercase-identity-over-length-prefixed-active-record-schema-u32le-record-version-length-prefixed-provider-identity-provider-product-schema-provider-product-digest-source-descriptor-counter-domain-id-and-configuration-epoch-u32le-provider-version-closed-frequency-comparability-and-serialization-encodings-universe-evidence-contract-identity-universe-evidence-content-digest-state-universe-evidence-and-state-identity-sorted-rows-control-universe-evidence-and-control-identity-sorted-rows-with-sorted-effects; strings-and-counts-are-u64le-length-prefixed-and-tick-values-are-u128le; claimed_content_digest-is-excluded-and-must-equal-recomputation",
+    "recordIdentityRule": "sha256-lowercase-identity-over-length-prefixed-identity-schema-record-schema-provider-identity-provider-product-schema-provider-product-digest-source-descriptor-and-content-digest-followed-by-u32le-provider-version",
+    "syntheticGoldenRecordContentDigest": "sha256:526ce2de0e6bd21d5d56f40fe583fcf678bb8569e072e74767167b03688a2053",
+    "syntheticGoldenRecordIdentity": "sha256:d07e3346411f2f70c6b9b080469b09b10bca90a08154ff0684f3ca28a2d1af7b",
+    "configurationEpochTransition": {
+      "requiredFields": [
+        "control_identity",
+        "operation_identity",
+        "previous_epoch",
+        "next_epoch",
+        "next_record_identity"
+      ],
+      "requirements": [
+        "provider-and-counter-domain-unchanged",
+        "configuration-epoch-changed",
+        "control-present-and-applicable-in-previous-record",
+        "operation-matches-begins_new_epoch_operation",
+        "next-record-authenticated"
+      ]
+    },
+    "failClosedDispositions": [
+      "unknown",
+      "malformed",
+      "incomplete",
+      "stale",
+      "mismatched",
+      "ambiguous"
+    ],
+    "failClosedClassification": {
+      "unrecognized-provider-identity": "unknown",
+      "source-or-other-recognized-fact-disagreement": "mismatched",
+      "epoch-transition-disagreement": "mismatched",
+      "recognized-provider-version-schema-or-product-digest-disagreement": "stale"
+    },
+    "partialTrustedRecordVisibility": false,
+    "noRecordReason": "no_runtime_instance_record",
+    "noRecordDisposition": "raw-counter-reads-only; every-numeric-verification-and-report-result-explicitly-unsupported",
+    "architecturalGuaranteeSubstitution": false,
+    "numericIntervalOwner": "future-performance-resource-report-and-benchmark-comparison-contract",
+    "platformCounterContractActivatesExecutionCompletionProviderSemantics": false
   },
   "sealedCoreImportCatalog": {
     "schema": "wyst.coreImportCatalog.v0.9",
@@ -2697,6 +3991,22 @@
         "qualifiedOnly": true,
         "directImportRequired": true,
         "activeMembers": []
+      },
+      {
+        "identity": "core.execution",
+        "state": "implemented",
+        "wholeImport": true,
+        "selectiveImport": false,
+        "publicImport": false,
+        "leafImport": false,
+        "selectionAliases": true,
+        "qualifiedOnly": true,
+        "directImportRequired": true,
+        "activeMembers": ["suspension_point"],
+        "providerSemanticsActive": true,
+        "requiredProviderDescriptor": "wyst.execution-provider-descriptor.v1",
+        "providerLeafPlacementRequired": true,
+        "unauthenticatedImportOrUseDisposition": "feature-unavailable-or-provider-authentication-error"
       }
     ],
     "authenticatedRoles": [
@@ -2734,6 +4044,38 @@
     "allocationHomeKinds": ["register", "stack", "rematerialized"],
     "semanticMemoryAccessFactFields": ["required_alignment", "target_unaligned_access_fact", "possible_architectural_fault"],
     "semanticMemoryAccessTargetEvidence": "target-provided",
+    "strandSuspensionBoundaryRequiredFields": [
+      "marker-or-call-identity",
+      "exact-or-conservative-bound-provenance",
+      "ordered-adjacent-transfer",
+      "selected-target",
+      "provider-identity-or-none",
+      "effect",
+      "typed-boundary",
+      "zero-machine-contribution",
+      "context-and-per-cpu-invalidations"
+    ],
+    "contextStabilityRequiredFields": [
+      "closed-classification",
+      "authority-origin",
+      "instance",
+      "generation",
+      "detach",
+      "escape",
+      "lifetime",
+      "join-path",
+      "boundary-liveness-disposition"
+    ],
+    "executionEnvironmentRequiredFields": [
+      "environment-class",
+      "environment-product-identity-version-digest",
+      "migration-policy",
+      "preemption-policy",
+      "current-core-policy",
+      "per-cpu-policy",
+      "execution-provider-descriptors",
+      "completion-provider-descriptors"
+    ],
     "hardwareAccessKinds": ["ScalarRead", "SnapshotRead", "RawWrite", "NamedWrite", "Modify"],
     "hardwareAccessLabels": ["hardware.scalar.read", "hardware.snapshot.read", "hardware.raw.write", "hardware.named.write", "hardware.modify"],
     "hardwareAccessRequiredFields": ["object_identity", "snapshot_identity", "ordered_primitive_value_ids", "full_compiler_fence", "emitted_architecture_barrier"],
@@ -2744,6 +4086,307 @@
     "dependencyShapeAuthority": "verified-typed-ir-structure",
     "machineTimingModel": "none"
   },
+  "compilerEfficiencyContract": {
+    "scope": "host-compiler-process-latency-and-resource-release-gate-only",
+    "singleMeasurementPath": {
+      "command": "wync rebuild-benchmark",
+      "harness": "wync/tools/bench/",
+      "policy": "wync/tools/bench/policy/compiler-efficiency-policy-v1.json"
+    },
+    "schemas": {
+      "rebuildBenchmark": "wync.rebuildBenchmark.v1",
+      "localBenchEnvelope": "wync.localBench.v1",
+      "timingTrace": "wync.timingTrace.v1",
+      "policy": "wync.compilerEfficiencyPolicy.v1",
+      "evidence": "wync.compilerEfficiencyEvidence.v1",
+      "preservationRecord": "wync.compilerEfficiencyPreservationRecord.v1",
+      "policyTransition": "wync.compilerEfficiencyPolicyTransition.v1",
+      "terminalEvidenceRegistry": "wync.compilerEfficiencyTerminalEvidenceRegistry.v1"
+    },
+    "v0Dispositions": [
+      {
+        "schema": "wync.rebuildBenchmark.v0",
+        "disposition": "superseded",
+        "retention": "read-only-historical-contract",
+        "supersededBy": "wync.rebuildBenchmark.v1",
+        "currentProducer": "none",
+        "fieldReinterpretation": "forbidden"
+      },
+      {
+        "schema": "wync.localBench.v0",
+        "disposition": "superseded",
+        "retention": "read-only-historical-contract",
+        "supersededBy": "wync.localBench.v1",
+        "currentProducer": "none",
+        "fieldReinterpretation": "forbidden"
+      },
+      {
+        "schema": "wync.timingTrace.v0",
+        "disposition": "superseded",
+        "retention": "read-only-historical-contract",
+        "supersededBy": "wync.timingTrace.v1",
+        "currentProducer": "none",
+        "fieldReinterpretation": "forbidden"
+      }
+    ],
+    "ownership": {
+      "policy": [
+        "workloads",
+        "measurement-protocol",
+        "runner-eligibility",
+        "aggregation-rules",
+        "pinned-baseline-identity",
+        "reviewed-baseline-change-record",
+        "evidence-preservation-store-and-record-contract",
+        "absolute-budgets",
+        "permitted-baseline-regressions"
+      ],
+      "evidence": [
+        "raw-samples",
+        "aggregates",
+        "dispersion",
+        "sample-set-status",
+        "comparison-status",
+        "attribution-completeness",
+        "absolute-budget-verdict",
+        "regression-verdict"
+      ],
+      "localBenchEnvelope": "embed-or-reference-exact-policy-and-evidence-and-render-their-aggregates-with-no-independent-baseline-aggregation-budget-or-verdict",
+      "timingTrace": "host-only-attribution-with-no-semantic-fact-ownership",
+      "rebuildBenchmark": "one-deterministic-whole-project-rebuild-invocation-and-its-canonical-input-iteration-compiler-profile-and-output-identities"
+    },
+    "policyBindingRequiredFields": [
+      "policy-schema",
+      "policy-version",
+      "policy-identity",
+      "policy-content-digest"
+    ],
+    "policyContentDigestCovers": [
+      "workloads",
+      "measurement-protocol",
+      "runner-eligibility",
+      "budgets",
+      "pinned-baseline-identity",
+      "reviewed-baseline-change-record",
+      "evidence-preservation-store-and-record-contract",
+      "aggregation-rules"
+    ],
+    "invalidPolicyBindingOutcome": "reject-evidence-and-produce-no-verdict",
+    "dataClasses": {
+      "policy": "checked-in-host-release-gate-input",
+      "samplesAggregatesVerdicts": "terminal-host-release-evidence",
+      "failureScope": ["compiler-efficiency-gate", "v0.9-release-gate"]
+    },
+    "forbiddenCompilationInfluence": [
+      "wync-check-input",
+      "wync-build-input",
+      "source-acceptance",
+      "diagnostic-kind-or-precedence",
+      "compiler-phase-selection-dependencies-or-scheduling",
+      "reusable-compilation-cache-keys",
+      "interface-object-archive-link-or-final-artifact-identities",
+      "emitted-bytes"
+    ],
+    "telemetrySources": ["host-clocks", "host-process-telemetry"],
+    "platformCounterInstanceConsumption": "forbidden",
+    "requiredWorkloads": [
+      "checked-in-tiny-no-checked-assembly",
+      "checked-in-tiny-first-checked-assembly-a64-catalog-activation",
+      "kernel-named-artifact",
+      "kernel-benchmark-named-artifact",
+      "deterministic-module-scale-projects",
+      "deterministic-function-scale-projects"
+    ],
+    "canonicalComparisonInputs": [
+      "source-bytes",
+      "manifest",
+      "selected-artifact",
+      "target-facts",
+      "layout",
+      "profile",
+      "debug-policy",
+      "unwind-policy",
+      "frame-policy",
+      "compiler-build-profile",
+      "workload-content",
+      "owning-repository-clean-revision-and-committed-tree"
+    ],
+    "runnerEligibilityFields": [
+      "hardware-or-vm-identity",
+      "cpu",
+      "memory",
+      "firmware",
+      "os-and-kernel",
+      "rust-toolchain",
+      "clock-source-and-resolution",
+      "power-and-thermal-policy",
+      "affinity-isolation-and-priority",
+      "bounded-background-load",
+      "filesystem-cache-state"
+    ],
+    "executionOrder": "pinned-baseline-and-candidate-on-one-named-gate-runner-instance-interleaved-by-frozen-policy",
+    "privacyPreservingPhysicalInstance": "domain-separated-sha256-only-raw-machine-uuid-never-serialized",
+    "runSessionIdentity": "one-urn-uuid-shared-by-runner-and-all-comparable-sample-sets",
+    "perSampleSetControls": ["firmware", "power-and-thermal", "affinity-isolation-and-priority", "bounded-background-load", "no-competing-build-or-benchmark", "filesystem-cache-procedure"],
+    "repositoryBindings": ["wyst-clean-revision-and-tree-before-after", "kernel-clean-revision-and-tree-before-after"],
+    "sampleSetStatuses": ["eligible", "ineligible", "incomplete", "protocol_mismatch"],
+    "comparisonStatuses": ["comparable", "not_comparable", "not_attempted"],
+    "comparisonRules": [
+      "either-sample-set-not-eligible-implies-not-attempted",
+      "two-eligible-sets-are-comparable-only-with-required-identical-runner-configuration-and-canonical-workload-inputs",
+      "two-eligible-sets-require-identical-physical-instance-run-session-and-repository-state",
+      "only-comparable-may-produce-regression-verdict",
+      "different-physical-runners-require-separately-versioned-calibration-and-host-class-contract",
+      "host-class-metadata-alone-is-not-comparability-evidence",
+      "different-source-or-artifact-contracts-are-product-evolution-context-only-and-not-comparable"
+    ],
+    "measurementKinds": {
+      "fresh_process": ["externally-observed-end-to-end-latency", "process_tree_peak_rss"],
+      "first_in_process": ["whole-build-latency", "separately-named-resettable-memory-metric-only"],
+      "repeat_in_process": ["whole-build-latency", "separately-named-resettable-memory-metric-only"],
+      "resolution": ["project", "artifact", "target"]
+    },
+    "cacheTemperatureLabels": "cold-and-warm-forbidden-unless-every-relevant-filesystem-os-and-compiler-cache-state-is-controlled-and-recorded",
+    "processTreePeakRssScope": "darwin-sandbox-denies-process-fork-plus-two-millisecond-observation-os-root-process-high-water-after-close-never-an-in-process-iteration-local-peak",
+    "protocolFreezes": [
+      "fixed-warmup-count",
+      "fixed-measured-sample-count",
+      "baseline-candidate-order-and-interleaving",
+      "timeout-handling",
+      "incomplete-run-handling",
+      "median-algorithm",
+      "p95-algorithm",
+      "rounding",
+      "outlier-handling-with-no-silent-discard",
+      "two-millisecond-descendant-observation-and-single-root-high-water-memory"
+    ],
+    "nonEligibleEvidenceRule": "preserve-raw-evidence-status-and-reason-and-produce-neither-aggregate-budget-nor-regression-verdict",
+    "trace": {
+      "hardVerdictSamples": "timing-trace-disabled",
+      "attributionSamples": "separate-paired-samples-with-wync.timingTrace.v1-enabled",
+      "overhead": "externally-measured-recorded-and-never-subtracted-from-hard-verdict",
+      "intervalMapping": "policy-requiredHostIntervalMappings-binds-each-versioned-host-only-interval-to-its-exact-kind-and-ordered-observed-canonical-phase-ids-or-compiler-initialization-or-teardown",
+      "intervalValidation": "reject-global-set-equivalence-when-any-host-kind-or-per-host-canonical-phase-mapping-clock-or-interval-relationship-differs-and-require-exact-reconciled-sum",
+      "requiredDistinctions": [
+        "project-artifact-target-resolution",
+        "source-discovery-and-read",
+        "every-exercised-canonical-phase",
+        "every-first-use-a64-bundle-component"
+      ],
+      "reconciliationComponents": [
+        "exclusive-canonical-phase-intervals",
+        "host-only-initialization",
+        "host-only-teardown",
+        "named-trace-bookkeeping",
+        "residual"
+      ],
+      "reconciliationTarget": "instrumented-root-interval-within-policy-frozen-tolerance",
+      "incompleteWhen": ["unexplained-residual-above-tolerance", "missing-required-phase", "missing-required-mapping"],
+      "a64CompilerIdentityAuthentication": "exact-ordered-91-field-name-value-derived-sha256-equals-compiler-fixed-release-seal",
+      "semanticFactOwnership": "none"
+    },
+    "evidenceRequiredIdentityClasses": [
+      "every-raw-sample",
+      "aggregation-and-dispersion",
+      "compiler-revision",
+      "compiler-binary-digest",
+      "compiler-build-profile",
+      "rust-toolchain",
+      "eligible-runner-configuration-identity",
+      "workload-and-content-digests",
+      "canonical-verified-ir-content-digest",
+      "a64-authority-support-conformance-identities",
+      "complete-artifact-policy-tuple"
+    ],
+    "compilerProfiles": {
+      "profiles": ["debug", "optimized-release"],
+      "performanceComparison": "never-compare-performance-across-profiles",
+      "releaseVerdictProfile": "optimized-release",
+      "debugRole": "separately-budgeted-developer-throughput-product",
+      "equivalence": ["source-acceptance", "diagnostic-kind-and-precedence", "canonical-verified-ir-content-digest", "emitted-bytes", "traced-phase-mapping-and-order", "traced-uninstrumented-cache-semantics"]
+    },
+    "budgetPolicy": {
+      "metrics": ["latency", "process-tree-peak-rss"],
+      "requiredBounds": ["reviewed-absolute-ceiling", "permitted-regression-from-pinned-baseline"],
+      "aggregates": ["policy-defined-median", "policy-defined-p95", "policy-defined-dispersion"],
+      "humanApproval": "required-over-exact-budget-content-digest-with-reviewer-time-and-reason",
+      "absoluteAssessment": "independent-of-baseline-comparability",
+      "gateFailureConditions": [
+        "required-attribution-incomplete",
+        "eligible-candidate-aggregate-exceeds-absolute-ceiling",
+        "comparable-regression-exceeds-permitted-bound"
+      ],
+      "automaticBaselineUpdate": "forbidden",
+      "pendingBootstrapReview": "explicit-bootstrap-review-mode-null-verdict-only-after-all-non-baseline-prerequisites-pass",
+      "pinnedBaselineReviewRequiredFields": [
+        "review-status-reviewed",
+        "previous-baseline-identity-revision-and-binary-object-reference-object-digest-and-content-digest-or-null-for-initial-bootstrap",
+        "new-baseline-identity-revision-and-binary-object-reference-object-digest-and-content-digest",
+        "one-or-more-verbatim-raw-evidence-object-references-object-digests-and-content-digests",
+        "deterministic-complete-run-archive-object-reference-object-digest-and-content-digest-for-each-raw-evidence-object",
+        "checked-in-preservation-record-reference-identity-and-digest",
+        "exact-p0-policy-binding-and-preserved-policy-object",
+        "eligible-runner-configuration-identity",
+        "human-review-reason",
+        "accepted-regressing-metrics"
+      ],
+      "pinnedBaselineReviewOuterIdentityRule": "new-baseline-identity-revision-and-binary-digest-exactly-match-the-enclosing-pinned-baseline",
+      "automaticReviewSynthesis": "forbidden",
+      "checkedInPreservationRecordRoot": "wync/tools/bench/evidence/v1/records",
+      "checkedInPreservationObjectRoot": "wync/tools/bench/evidence/v1/objects/sha256",
+      "checkedInPreservationRequiredObjects": [
+        "old-compiler-binary-when-present",
+        "new-compiler-binary",
+        "verbatim-evidence-json-with-every-raw-sample",
+        "deterministic-complete-run-directory-archive",
+        "verbatim-p0-or-p1-policy-json"
+      ],
+      "preservationObjectReferenceRule": "repo-relative-content-addressed-path-equal-to-compressed-object-sha256-with-separate-uncompressed-content-sha256",
+      "preservationObjectCompression": "deterministic-gzip-rfc1952-v1",
+      "preservationRunArchive": "deterministic-ustar-v1",
+      "preservationArchiveCorrespondence": "archived-evidence-json-bytes-equal-reviewed-verbatim-object-local-report-binds-that-evidence-and-every-raw-sample-string-equals-its-archived-command-file",
+      "preservationExtraArtifactRule": "reject-object-descriptors-not-covered-by-the-reviewed-old-new-compiler-and-evidence-run-set",
+      "preservationSemanticRoles": ["baseline-debug-compiler", "candidate-debug-compiler", "baseline-optimized-release-compiler", "candidate-optimized-release-compiler", "policy", "evidence", "complete-run"],
+      "preservationSemanticVerification": ["exact-suite-coverage", "eligible-status-reproduction", "compiler-role-digest-ownership", "physical-instance-and-run-session", "repository-stability", "absolute-budget-pass", "profile-and-telemetry-equivalence", "bootstrap-null-or-final-pass-outcome"],
+      "terminalRegistry": "exactly-one-reviewed-p0-bootstrap-and-one-canonical-p1-passing-verdict-bound-by-a-distinct-policy-transition",
+      "externalPreservationMirrors": "optional-non-authoritative-and-never-an-eligibility-input",
+      "reviewedBaselineChangePreserves": [
+        "old-and-new-compiler-binaries",
+        "all-raw-samples",
+        "runner-configuration",
+        "reason",
+        "every-accepted-regressing-metric"
+      ],
+      "reportRendering": ["every-produced-aggregate-count-median-p95-mad-minimum-maximum", "every-independent-absolute-budget-check", "every-produced-baseline-regression-check", "no-second-verdict"]
+    },
+    "acceleration": {
+      "preconditions": ["semantic-equivalence", "diagnostic-kind-and-precedence-equivalence", "artifact-byte-equivalence"],
+      "permittedForms": ["generated-sorted-index", "direct-map", "compact-authenticated-product", "process-global-cache"],
+      "inputRule": "immutable-compiler-owned-product-keyed-by-complete-versioned-identity",
+      "authorityRule": "mechanically-derived-non-authoritative-view-with-no-independent-semantic-field",
+      "a64IndexRule": "declare-exact-authenticated-authority-source-domain-and-prove-complete-unique-correspondence-with-no-omitted-duplicated-or-invented-key-while-rerunning-a64-conformance-unchanged",
+      "attributionState": ["cache-empty-or-populated-when-distinguishing", "hit-count", "miss-count"],
+      "freshProcessRule": "process-global-caching-alone-does-not-satisfy-fresh-process-gate",
+      "persistentCache": "forbidden-until-the-incremental-build-cache-contract",
+      "ordinaryStartup": "authenticate-sealed-embedded-identities-without-replaying-exhaustive-a64-conformance-witness-reconciliation",
+      "runtimeReplaceableProducts": "recompute-content-identity-before-use",
+      "forbidden": [
+        "weakened-rejection-or-diagnostic-precedence",
+        "reduced-a64-conformance-coverage",
+        "self-claimed-digest-as-sole-trust-anchor",
+        "parallel-authority-support-semantic-instruction-or-conformance-catalog"
+      ]
+    },
+    "nonGoals": [
+      "target-runtime-performance",
+      "emitted-code-canonicalization-selection-allocation-or-size",
+      "static-modeled-or-target-measured-performance-reports",
+      "optimization-profile-or-reproducible-transformation-change",
+      "persistent-semantic-object-or-incremental-build-cache",
+      "cross-machine-verdict-without-versioned-calibration",
+      "freshness-taxonomy"
+    ]
+  },
   "reportSchemas": [
     { "schema": "wync.explain.lowering.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.lowering.v1" },
     { "schema": "wync.explain.lowering.v1", "status": "experimental", "producer": "wync explain lowering --format json and text header" },
@@ -2752,7 +4395,17 @@
     { "schema": "wync.explain.storage.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.storage.v1" },
     { "schema": "wync.explain.storage.v1", "status": "experimental", "producer": "wync explain storage --format json and text header" },
     { "schema": "wync.generatedManifest.v0", "status": "implemented", "producer": "wync generated-manifest" },
-    { "schema": "wync.rebuildBenchmark.v0", "status": "implemented", "producer": "deterministic rebuild benchmark JSON" },
+    { "schema": "wync.rebuildBenchmark.v0", "status": "superseded", "disposition": "retained-read-only-historical", "producer": "none", "supersededBy": "wync.rebuildBenchmark.v1", "fieldReinterpretation": false },
+    { "schema": "wync.rebuildBenchmark.v1", "status": "implemented", "producer": "wync rebuild-benchmark" },
+    { "schema": "wync.localBench.v0", "status": "superseded", "disposition": "retained-read-only-historical", "producer": "none", "supersededBy": "wync.localBench.v1", "fieldReinterpretation": false },
+    { "schema": "wync.localBench.v1", "status": "implemented", "producer": "wync/tools/bench/bench.mjs envelope only" },
+    { "schema": "wync.timingTrace.v0", "status": "superseded", "disposition": "retained-read-only-historical", "producer": "none", "supersededBy": "wync.timingTrace.v1", "fieldReinterpretation": false },
+    { "schema": "wync.timingTrace.v1", "status": "implemented", "producer": "CliTimingSink" },
+    { "schema": "wync.compilerEfficiencyPolicy.v1", "status": "implemented", "producer": "checked-in wync/tools/bench/policy/compiler-efficiency-policy-v1.json" },
+    { "schema": "wync.compilerEfficiencyEvidence.v1", "status": "implemented", "producer": "wync/tools/bench/bench.mjs" },
+    { "schema": "wync.compilerEfficiencyPreservationRecord.v1", "status": "implemented", "producer": "reviewed wync/tools/bench/evidence/v1/records ledger" },
+    { "schema": "wync.compilerEfficiencyPolicyTransition.v1", "status": "implemented", "producer": "reviewed P0-to-P1 release transition" },
+    { "schema": "wync.compilerEfficiencyTerminalEvidenceRegistry.v1", "status": "pending-required-inputs", "producer": "wync/tools/bench/evidence/v1/terminal-evidence-registry.json" },
     { "schema": "wync.releaseEvidence.v0", "status": "implemented", "producer": "wync release-evidence" },
     { "schema": "wync.releaseHostFacts.v0", "status": "implemented", "producer": "release-evidence host-facts.json" },
     { "schema": "wync.releaseArchiveFacts.v0", "status": "implemented", "producer": "release-evidence release-facts.json" }

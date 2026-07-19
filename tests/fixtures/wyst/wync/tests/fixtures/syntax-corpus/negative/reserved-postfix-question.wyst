@@ -1,0 +1,3 @@
+module syntax_bad_reserved
+
+const VALUE = flag?

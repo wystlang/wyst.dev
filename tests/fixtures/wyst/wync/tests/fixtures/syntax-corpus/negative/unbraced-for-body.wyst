@@ -1,0 +1,2 @@
+module demo
+fn main() { for index in 0 ..< 1 return }

@@ -65,6 +65,8 @@ exact 14 active `#` forms and their phase/type/target/relocation contracts. The
 versioned [declaration-attribute catalog](attribute-catalog.tsv) likewise owns
 attribute activation and signatures. The historical productions later in this
 appendix do not reactivate a name absent from those current catalogs.
+Project manifests use the Chapter 13 artifact `verify code` grammar; that
+manifest-only clause is not a source declaration.
 
 ### Lexical and statement boundary contract
 
@@ -109,10 +111,12 @@ CompilationUnit <- ModuleDecl ModuleItem*
 ModuleDecl       <- 'module' ModulePath
 ModulePath       <- UserIdentifier ('.' UserIdentifier)*
 
-ModuleItem <- SymbolImportDecl / SymbolExportDecl / ImportDecl
+ModuleItem <- LayoutDecl / SymbolImportDecl / SymbolExportDecl / ImportDecl
             / TopLevelDecl / ActivatedSystemOrMetaItem
 
-ImportDecl <- 'pub'? 'import' ModulePath ImportSuffix?
+ImportDecl <- 'pub'? 'import' (ImportGroup / ImportItem)
+ImportGroup <- '(' ImportItem (',' ImportItem)* ','? ')'
+ImportItem <- ModulePath ImportSuffix?
 ImportSuffix <- 'as' UserIdentifier / ImportSelectionList
 ImportSelectionList <- '{' ImportSelection (',' ImportSelection)* ','? '}'
 ImportSelection <- UserIdentifier ('as' UserIdentifier)?
@@ -159,6 +163,28 @@ TypeAnnotation <- ':' Type
 LabelDecl <- ItemPrefix 'naked'? 'label' UserIdentifier
              TrapFrameLabelClause? Block
 TrapFrameLabelClause <- ('establishes' / 'restores') UserIdentifier
+
+LayoutDecl <- 'layout' UserIdentifier '{' LayoutMember* '}'
+LayoutMember <- LayoutEntry / LayoutRegion / LayoutSection / LayoutSymbol
+LayoutEntry <- 'entry' SemanticDeclarationPath ('at' ConstExpr)?
+SemanticDeclarationPath <- UserIdentifier '.'
+                           (UserIdentifier '.')* LayoutDeclarationName
+LayoutDeclarationName <- RawIdentifier
+LayoutRegion <- 'region' UserIdentifier ':' LayoutRegionAccess
+                'at' ConstExpr 'size' ConstExpr
+LayoutRegionAccess <- 'readonly' / 'readwrite'
+LayoutSection <- 'section' LayoutSectionName ':' LayoutSectionKind
+                 LayoutSectionClause*
+LayoutSectionName <- StringLiteral
+LayoutSectionKind <- 'code' / 'rodata' / 'data' / 'bss'
+LayoutSectionClause <- 'in' UserIdentifier
+                     / 'after' LayoutSectionName
+                     / 'align' ConstExpr
+LayoutSymbol <- 'pub'? 'symbol' LayoutSymbolName ':' Type '=' LayoutSymbolExpr
+LayoutSymbolName <- RawIdentifier
+LayoutSymbolExpr <- ConstExpr
+LayoutSectionQuery <- ('start' / 'end' / 'size')
+                      '(' LayoutSectionName ','? ')'
 
 StructDecl <- ItemPrefix 'packed'? 'struct' UserIdentifier GenericParams?
               '{' (StructField ','?)* '}'
@@ -228,7 +254,7 @@ CallableResult <- 'never' / ScalarResult
 CallableEffects <- 'effects' '(' ('none' / 'all' / EffectList) ')'
 RegisterPlacement <- 'in' RegisterName
 
-Item42TargetArgument <- 'per_cpu' '=' 'single_instance_tpidr_el1'
+PerCpuTargetArgument <- 'per_cpu' '=' 'single_instance_tpidr_el1'
 ```
 
 `symbol` is contextual only after `import` and after an export alias's `as`;
@@ -244,6 +270,43 @@ declaration is an independent mapping, so one Wyst declaration may have
 multiple strong or weak external aliases. `pub` and `pub import` affect only
 Wyst source visibility and never add, remove, rename, or weaken an external
 symbol.
+
+`LayoutDecl` is valid only in the selected layout module. Until the named
+artifact manifest grammar can select one block explicitly, that selected file
+contains exactly one layout declaration, and that declaration contains
+exactly one `LayoutEntry`. `pub` and declaration attributes cannot prefix the
+layout itself or its entry, region, or section members; only `LayoutSymbol`
+admits `pub`. The selected v0.9 layout input otherwise admits only its module
+declaration and applicable target, requirement, or deny policy; ordinary
+source declarations cannot be siblings of the layout block. The word `layout`
+is contextual only when it begins this
+top-level production; it remains an ordinary module-path component, so the
+canonical `module boot.layout` declaration is valid. A
+`SemanticDeclarationPath` is a module-qualified declaration
+identity with its final component resolved as the declaration name, never an
+import alias or linker symbol. `LayoutDeclarationName` and `LayoutSymbolName`
+admit conventional leading-underscore spellings such as `_start` and
+`__text_start`; bare `_` remains a discard and every reserved or unshadowable
+catalog name remains unavailable for rebinding. The optional `at` expression
+is one hard `u64` placement constraint.
+
+A `LayoutSectionName` must decode to valid UTF-8 matching
+`\.[A-Za-z0-9_.]+`; it is never an identifier or dotted-name token.
+Region/section declarations and clause operands are resolved within the same
+layout block. A section has exactly one kind. It may carry zero or more
+placement/alignment clauses; identical repeated clauses normalize, distinct
+`after` clauses all remain dependency edges, and conflicting `in` or `align`
+clauses are semantic errors. Omitted alignment uses the section-kind default.
+
+`LayoutSectionQuery` is recognized only while parsing a `LayoutSymbolExpr`.
+The unshadowable `start` and `end` forms return `@u8`; contextual `size`
+returns `u64`. Every query names a section declared in the same layout block.
+Outside that initializer context these spellings do not create layout-query
+AST. The symbol's explicit type must match its initializer. Numeric address
+bits from `start` or `end` require the ordinary explicit
+`address<u64>(...)` conversion; there is no implicit pointer/integer coercion.
+Layout-symbol values depend on final placement and therefore cannot enter
+ordinary constant evaluation or compile-time selection.
 
 `CallableType` is a `Type` alternative. Its parameters have no names. The fixed
 declaration-prefix order is one attribute group, `pub`, the compatible hard
@@ -282,7 +345,7 @@ parameter type, one scalar result type, or the explicit type of a local mutable
 named multi-results, or `never`. `never` is a complete return type only and is
 not a general named type or binding name.
 
-`Item42TargetArgument` is optional and unique within the existing `#target(...)`
+`PerCpuTargetArgument` is optional and unique within the existing `#target(...)`
 named-argument list. Before the general per-CPU model is activated, it is the
 only selection that enables reachable `per_cpu` access; its semantic facts and
 EL1+ constraint are defined in Chapters 8 and 11. Recognition of `per_cpu` as
@@ -327,20 +390,26 @@ MetaOperation <- '#addr_of' / '#align_of' / '#cache_line_width' / '#dedent'
                / '#static_assert' / '#tag_of' / '#target'
 ```
 
-No other `#`-prefixed name is an accepted v0.9 operation, and no predecessor
-spelling appears in the current syntax-word catalog. The released-v0.8
-compatibility grammar may consume the raw `#identifier` token shape only for a
-source selected by its historical `#module` header; it is not derived from the
-v0.9 catalog or the legacy hash-removal audit. In v0.9 every other `#` name is
-ordinary invalid syntax before semantic analysis. The 53-name predecessor
-audit is a release/conformance manifest only and cannot create token
-recognition, a migration diagnostic, an alias, or a rewriting path.
+No other `#`-prefixed name is an accepted operation, and no predecessor
+spelling appears in the current syntax-word catalog. Every source file uses
+this grammar; there is no header-selected historical parser. Every other `#`
+name is ordinary invalid syntax before semantic analysis. The 53-name
+predecessor audit is a release/conformance manifest only and cannot create
+token recognition, a specialized diagnostic, an alias, or a rewriting path.
 
 An import without `as` or selections binds its final path component as the
 qualifier. Selective imports bind only selected public names. Wildcards are not
-grammar. `pub import` affects Wyst re-export visibility only. The sealed `core`
-package adds semantic restrictions described in Chapter 4; recognizing an
-import production does not authenticate or activate a sealed member.
+grammar. An import group is a non-empty comma-separated list of module import
+items with one optional trailing comma. It preserves entry order and desugars
+to the same imports as standalone declarations; it creates no scope,
+namespace, or source-graph boundary. The optional leading `pub` belongs to the
+whole declaration: on `pub import (...)` it applies public re-export visibility
+uniformly to every entry. `pub` is not part of `ImportItem`, so a group cannot
+mix visibilities and per-entry `pub` is invalid; use separate groups or
+standalone declarations. Linker symbol imports cannot appear as entries. The
+sealed `core` package adds semantic restrictions described in Chapter 4;
+recognizing an import production does not authenticate or activate a sealed
+member.
 
 ### Bindings, returns, calls, and enum matching
 
@@ -436,13 +505,13 @@ AsmPhysicalLine <- AsmIgnoredLine / AsmLabelLine / AsmInstructionLine
 AsmIgnoredLine <- HorizontalSpace* LineEnd
 AsmLabelLine <- HorizontalSpace* UserIdentifier ':'
                 HorizontalSpace* LineEnd
-AsmInstructionLine <- HorizontalSpace* Item48SupportedInstruction
+AsmInstructionLine <- HorizontalSpace* ActiveA64Instruction
                       HorizontalSpace* LineEnd
 HorizontalSpace <- (' ' / '\t')*
 LineEnd <- '\r\n' / '\n' / '\r'
 
-Item48SupportedInstruction
-    <- target-profile production generated from active item-48 catalog rows
+ActiveA64Instruction
+    <- target-profile production generated from active A64 source-form catalog rows
 ```
 
 Modifiers have the exact order shown. A present parameter list is non-empty.
@@ -452,8 +521,8 @@ Parenthesized results contain at least two values. Statement-only `asm` omits a
 result. `CheckedAsmPrimary` is a current-v0.9 primary-expression alternative
 and requires a value result or `-> never`.
 
-The instruction body is the parsed item-48 target sublanguage, not an opaque
-text token. Ordinary comments are removed under the lexical rules while their
+The instruction body is the parsed generated A64 target sublanguage, not an
+opaque text token. Ordinary comments are removed under the lexical rules while their
 physical line endings remain available to this production. Its final label or
 instruction line ends with a newline before `}`; labels occupy their own line,
 and every other non-comment line must match exactly one active generated
@@ -462,23 +531,23 @@ block-local labels, or catalog-owned target tokens; symbol dependencies use
 `: symbol = path`. The body uses binder names directly. There are no v0.8 named
 sections, constraint calls, manual clobber/effect lists, physical-register
 operands, directional labels, or `{operand}` interpolation. Those predecessor
-forms are retained only by the versioned v0.8 compatibility grammar in §4.6
-and are rejected in v0.9.
+forms are recorded only in the historical v0.8 snapshot in §4.6 and are not
+production grammar alternatives.
 
 `match` accepts enums only and evaluates the scrutinee once. Arms require brace
 bodies. A payload variant binds one name or explicitly discards it; alternatives
 in one arm bind the same names and types. `MatchElse`, when present, is final.
-Without it, arms are exhaustive. There are no `case`, colon, arrow, guard,
+Without it, arms are exhaustive. There are no predecessor arm keywords, colon, arrow, guard,
 nested-pattern, wildcard-arm, fallthrough, or match-expression forms.
 
 ### Aggregate literals and explicit type-only generics
 
 ```peg
-ExpectedStructLiteral <- '{' (FieldInit (',' FieldInit)* ','?)? '}'
-FieldInit <- UserIdentifier '=' Expr
-ArrayOrVectorLiteral <- '[' Expr (',' Expr)* ','? ']'
-MultiResultExpr <- '(' Expr ',' Expr (',' Expr)* ','? ')'
-ExpectedPayloadFreeVariant <- '.' UserIdentifier
+expected-struct-literal <- '{' (field-init (',' field-init)* ','?)? '}'
+field-init <- UserIdentifier '=' Expr
+array-or-vector-literal <- '[' Expr (',' Expr)* ','? ']'
+multi-result-expr <- '(' Expr ',' Expr (',' Expr)* ','? ')'
+expected-payload-free-variant <- '.' UserIdentifier
 
 GenericParams <- '<' GenericParam (',' GenericParam)* ','? '>'
 GenericParam <- UserIdentifier (':' CatalogedBound)?
@@ -487,13 +556,13 @@ GenericNamedType <- QualifiedTypeName GenericArgs?
 GenericValueApplication <- ValuePath GenericArgs
 ```
 
-`ExpectedStructLiteral` is valid only when a complete aggregate type comes
+`expected-struct-literal` is valid only when a complete aggregate type comes
 from an annotation, assignment target, direct-call parameter, or return type.
 Fields use `=`, appear exactly once, and evaluate in written order. A nominal
 type prefix, colon-valued fields, shorthand fields, unknown/duplicate/missing
-fields, brace array literals, and `Type(...)` struct construction are invalid.
+fields, brace array literals, and type-prefixed construction are invalid.
 Arrays and vectors use brackets; named multi-results use parentheses.
-`ExpectedPayloadFreeVariant` likewise requires an expected enum type; a payload
+`expected-payload-free-variant` likewise requires an expected enum type; a payload
 variant uses its enum constructor.
 
 Generic parameter lists occur only on `fn`, `struct`, and `enum`. Parameter and
@@ -610,6 +679,8 @@ value argument. `truncate_bits` deliberately has no type argument and requires
 its width expression in the second positional slot. `checked<T>(value)` is a
 reserved, rejected lookalike and does not enter `NamedConversion`.
 
+`AtomicOrder` uses dot-prefixed `acq_rel`; the old `acqrel` order is likewise removed.
+
 `AddressMethod` is shown recursively for compactness; an implementation parses
 it through the ordinary left-associative postfix chain, then authenticates the
 compiler-owned member name and exact call shape. The ordinary `load` and
@@ -654,32 +725,30 @@ The contextual word `at` occurs only in an owning declarative placement
 production. It is not a prefix, infix, postfix, conversion, address, or memory
 access expression operator.
 
-The predecessor `as.<category>`, `T@[address]`, `[T:N]@[address]`,
-`source[start:end]`, and `[]T{data = ..., len = ...}` source forms are removed.
-Every prefix-`%` form is also removed, including `%addr_of`, `%load_be`,
-`%load_le`, `%store_be`, and `%store_le`. A v0.9 parser must reject known and
-unknown prefix-`%` names uniformly, must not consult the legacy-disposition
-manifest during parsing, and must not construct current AST nodes for them.
+The predecessor categorized-conversion, typed-memory, colon-range, and raw
+descriptor-constructor source forms are removed. Every prefix-primitive form is
+also removed, including the runtime address-of and endian-access rows. A v0.9
+parser must reject known and unknown names in that prefix class uniformly, must
+not consult the legacy-disposition manifest during parsing, and must not
+construct current AST nodes for them.
 
-The old atomic `%` primitives, `#acquire`, `#release`, inferred
-`atomic(value)`, and the old `acqrel` order are likewise removed and do not
-enter the current grammar. Migration requires an explicit `atomic<T>` binding
+The predecessor atomic primitives, per-access ordering directives, inferred
+atomic constructor, and combined order name are likewise removed and do not
+enter the current grammar. Current source uses an explicit `atomic<T>` binding
 or `@atomic<T>` address and a dot-prefixed order from the matrix.
 
 `per_cpu var` has no address-taking or whole-copy grammar extension; direct
 name/field/element use is constrained semantically by Chapter 8, and
-`#percpu_offset_of(binding)` remains the sole offset query. The spellings
-`#noreturn`, `#naked`, `#noescape`, `#pin`, `#percpu`, `#tls`,
-`#tls_offset_of`, `thread_local`, `[aapcs]`, and legacy `@(...)` /
-`@[aapcs] (...)` callable types are removed and receive compatibility
-diagnostics rather than entering these productions. No TLS declaration or
+`#percpu_offset_of(binding)` remains the sole offset query. Predecessor callable
+modifiers, register placement, storage classes, ABI markers, and callable types
+are ordinary invalid syntax rather than productions. No TLS declaration or
 callable/storage type exists in v0.9.
 
 ## Released v0.8 Formal Grammar Snapshot
 
-> Sections 1 through 8 below preserve the released v0.8 formal grammar and
-> remain useful where their lexical, expression, systems-DSL, and semantic
-> forms do not conflict with the current v0.9 section. Punctuation-led
+> Sections 1 through 8 below preserve the released v0.8 formal grammar as a
+> non-normative historical record. They are not consumed by the production
+> lexer, parser, formatter, diagnostics, or editor tooling. Punctuation-led
 > declarations, `#module`, `#import`, `[dynamic]T`, `switch`/`case`/`#partial`,
 > typed `Type { ... }` literals, brace array literals, `#pin`/`#noreturn` /
 > `#naked`/`#noescape`, `#percpu`, and every TLS form in that snapshot are
@@ -689,7 +758,8 @@ callable/storage type exists in v0.9.
 > Every other prefix-`%` production, example, and present-tense runtime-
 > primitive explanation below is likewise v0.8 history only. None is part of
 > the active v0.9 lexer, parser, AST, semantic database, or tooling vocabulary.
-> The current v0.9 grammar above is authoritative for every conflict.
+> There is no version-dispatched compatibility parser. The current v0.9 grammar
+> above is authoritative for every source file.
 
 ## 1. Lexical Structure
 
@@ -959,7 +1029,7 @@ functions or function pointer types are a future surface:
 
 <!-- wyst-contract: future -->
 ```wyst
-accept_pair :: (pair : (x: u64, y: u64)) { }
+fn accept_pair(pair: (x: u64, y: u64)) { }
 ```
 
 Wyst generics use angle-bracket type parameter and type argument lists.
@@ -1119,7 +1189,7 @@ CallArg     <- Identifier '=' Expr                     // labeled (load-bearing 
              / OrderArg                                // intrinsic-only trailing marker
              / Expr
 OrderArg    <- 'order' ':' MemoryOrder                 // atomic intrinsics only — see §11
-MemoryOrder <- 'relaxed' / 'acquire' / 'release' / 'acqrel' / 'seq_cst'
+MemoryOrder <- 'relaxed' / 'acquire' / 'release' / 'acq_rel' / 'seq_cst'
 SliceOrIndex
     <- Expr ':' Expr?                                  // a[lo:hi]  or  a[lo:]
      / ':' Expr?                                       // a[:hi]    or  a[:]
@@ -1536,12 +1606,11 @@ per-access volatility was removed, so declare volatility at the
 address-type level with `@volatile T` or MMIO intent with `@mmio T` (see
 chapter-09 §1.3).
 
-### 4.6 v0.8 Compatibility Inline Assembly (Removed in v0.9)
+### 4.6 Historical v0.8 Inline Assembly (Removed in v0.9)
 
-The following production is retained only so `wyst.language.v0.8` sources and
-migration diagnostics have an explicit versioned grammar. It is not an active
-v0.9 alternative. V0.9 rejects `#asm` at the introducer and uses the
-signature-style `CheckedAsm` production above.
+The following production records the released v0.8 grammar. It is not a
+production alternative. Current source rejects `#asm` at the introducer and
+uses the signature-style `CheckedAsm` production above.
 
 ```peg
 AsmBlock
@@ -1664,6 +1733,7 @@ EffectList <- EffectName (',' EffectName)* ','?
 EffectName <- 'sysreg' / 'trap' / 'exception_return' / 'cache_maintenance'
             / 'tlb_maintenance' / 'atomic' / 'cpu_event' / 'cpu_halt' / 'interrupt_mask'
             / 'volatile_access' / 'mmio' / 'barrier' / 'fp_state' / 'perf_counter'
+            / 'execution_suspension'
 
 FrameConstraintList <- FrameConstraint (',' FrameConstraint)* ','?
 FrameConstraint <- 'max_bytes' '=' ConstExpr / 'max_spills' '=' ConstExpr
@@ -1816,8 +1886,9 @@ trap-frame shape in chapter 14.
 
 ### 5.6 Layout Module Declarations
 
-These appear in modules tagged as layout modules (per
-[chapter-04-modules.md](chapter-04-modules.md)):
+These frozen directive declarations are a historical record and are not
+accepted by the production parser. Released v0.8 used them in modules tagged
+as layout modules (per [chapter-04-modules.md](chapter-04-modules.md)):
 
 ```peg
 RegionDecl
@@ -1871,7 +1942,7 @@ case the prose specification flagged as needing clarification.
 | `x = f(y)`              | statement                | `AssignStmt` with `Expr` RHS  | `=` proves expression position                                                              |
 | `goto name`             | statement (bare context) | `GotoStmt`                    | scope-checked post-parse                                                                    |
 | `asm (...) -> r: T { ... }` | statement or expression | `CheckedAsm`                | reserved `asm` introducer; result presence determines expression versus statement use      |
-| `#asm { ... }`          | v0.8 compatibility only  | legacy `AsmBlock`             | rejected in v0.9 with a migration diagnostic                                                |
+| `#asm { ... }`          | historical v0.8 only     | historical `AsmBlock`         | ordinary invalid syntax in current source                                                    |
 | `#dedent """..."""`     | expression               | directive-prefixed literal    | parsed as `#dedent` applied to literal                                                      |
 | `select(a, b, c)`       | expression               | `SelectCall`                  | `select` is a keyword; tried before `BareName`                                              |
 
@@ -1916,6 +1987,21 @@ source-only compiler diagnostic checks
 (`wync/tests/syntax_corpus.rs::compiler_check_corpus_negative_cases_emit_expected_diagnostics`),
 and editor/syntax-tooling drift checks
 (`wync/tests/syntax_corpus.rs::editor_and_syntax_tooling_cover_shared_syntax_corpus_tokens`).
+The release-input clean-break audit is driven by
+`design/removed-source-spelling-allowlist.tsv`. Only the two frozen non-parser
+removal manifests and explicit invalid-syntax `.wyst` fixtures may receive
+whole-file allowances. Genuine released-history prose uses
+`archived-historical` with exact Markdown section boundaries, and every scope
+must contain a recognized predecessor spelling. `ROADMAP.md` is a non-normative
+planning document excluded as one exact file rather
+than allowlisted. The roadmap cannot feed parser, editor, tooling, manifest, or
+release catalogs.
+`wync/tests/syntax_corpus.rs::removed_source_spelling_allowlist_closes_active_release_inputs`
+scans active compiler, tooling, fixture, documentation, manifest, and release
+inputs and rejects an unlisted predecessor spelling.
+The sole workspace-level release invocation for this closure is
+`wync/tools/item63-workspace-release-gate.sh`. It requires the Wyst, kernel,
+and website repositories and runs the closure test with workspace enforcement.
 The corpus must cover precedence, malformed directives, version gating, atomic
 orders, generics, `is`, compile-time `#if`, MMIO constructs, and recovery
 behavior; adding or changing any of those syntax surfaces requires updating the

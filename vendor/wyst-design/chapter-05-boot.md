@@ -10,8 +10,9 @@ summary: "First runnable program shape, boot entry assumptions, and early runtim
 
 > **Canonical scope.** A complete UART hello-world example end-to-end
 > followed by the boot entry contract for QEMU `virt`: reset
-> state, implications, the EL2 → EL1 drop with vector install, BSS zero,
-> DTB preservation, and the secondary-CPU PSCI `CPU_ON` example
+> state, the secure EL3 direct-ELF handoff, implications, the EL2 → EL1 drop
+> with vector install, BSS zero, DTB preservation, and the secondary-CPU PSCI
+> `CPU_ON` example.
 > Exception vectors live in
 > [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md); qualified
 > exception operations (`exception.svc`, `.hvc`, and `.eret`) live in
@@ -40,59 +41,50 @@ fn _start() -> never {
 }
 ```
 
-### Future-profile UART sketch
+### QEMU EL2 UART sketch
 
-This architecture sketch requires a future checked-assembly profile with a
-generated `mov sp` transition proof. The pinned v0.9 compiler parses the stack
-clause but rejects `asm establishes stack` and the inactive `mov` row; the
-example is not a currently buildable v0.9 program.
+The `qemu-virt-aarch64-el2` and `qemu-virt-aarch64-el2-lse` profiles
+authenticate the firmware DTB in `x0` and the checked `mov sp` initialization
+transition. Their selected layout entry must use this shape; the compiler
+rejects any partial or source-invented variant before emitting an artifact.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#module boot.hello
+module boot.hello
 
 import core.arch { cpu }
 
-#target(arch = arm64-v8a, cpu = generic, el = 2)
+target(arch = arm64-v8a, cpu = generic, el = 2)
 
-UART0_BASE :: u64 = 0x09_00_00_00
-UARTDR :: @volatile u32 = UART0_BASE + 0x00
-UARTFR :: @volatile u32 = UART0_BASE + 0x18
-TXFF :: u32 = 1 << 5
-STACK_TOP :: u64 = 0x4010_0000
+const UART0_BASE: u64 = 0x09_00_00_00
+const UARTDR: @volatile u32 = UART0_BASE + 0x00
+const UARTFR: @volatile u32 = UART0_BASE + 0x18
+const TXFF: u32 = 1 << 5
+const STACK_TOP: u64 = 0x4010_0000
 
-uart_write :: (byte : u8) {
-
-  while u32@[UARTFR] & TXFF != 0 {
+fn uart_write(byte: u8) {
+  while UARTFR.load() & TXFF != 0 {
     cpu.nop()
   }
-
-  u32@[UARTDR] = byte as.widen u32
+  UARTDR.store(widen<u32>(byte))
 }
 
-uart_print :: (msg : string) {
-
-  base := msg.data
-
-  i : u64 = 0
-
+fn uart_print(msg: string) {
+  const base: @u8 = msg.data
+  var i: u64 = 0
   while i < msg.len {
-    uart_write(u8@[base + i])
+    uart_write(byte_offset(base, i).load())
     i += 1
   }
 }
 
-#[naked, noreturn]
-pub _start :: (dtb : @u8 #pin(x0)) {
-
+pub naked fn _start(dtb: @u8 in x0) -> never {
   asm establishes stack (
-    stack: u64 = STACK_TOP,
+    stack: u64 in x1 = STACK_TOP,
   ) {
     mov sp, stack
   }
-
   uart_print("Hi!\n")
-
   loop {
     cpu.wfe()
   }
@@ -102,7 +94,39 @@ pub _start :: (dtb : @u8 #pin(x0)) {
 `establishes stack` is a stack-state verifier contract, not a
 `#[deny_effects(...)]` effect category. The instruction catalog derives the
 block's effects, while the separate stack verifier proves that the stack
-pointer is initialized from the aligned `stack` input.
+pointer is initialized from the aligned `stack` input in `x1`. That exact
+instruction has no `x0` write, so the original `dtb` value remains available
+for the direct call after stack initialization.
+
+### QEMU secure EL3 direct-ELF sketch
+
+`qemu-virt-aarch64-el3` is a separate secure direct-ELF profile, not an EL2
+DTB-entry alias. It authenticates schema identity
+`qemu-virt-aarch64-el3-noargs-v1`, entry ABI `wyst-native-noargs-v1`, secure
+initial EL3, and exactly this zero-parameter root shape:
+
+<!-- wyst-contract: sketch -->
+```wyst
+pub naked fn _start() -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+  firmware_main()
+}
+```
+
+The checked block is the root's one admitted transition from an uninitialized
+stack. This canonical fixture calls `firmware_main()` directly after it; the
+callee name is runtime evidence and is not hardcoded by the compiler's entry
+schema. The profile gives `x0` no entry-parameter meaning and authenticates no
+DTB; adding a parameter or substituting either EL2 schema is a pre-artifact
+error. The direct ELF still selects executable environment
+`qemu-aarch64-semihost-v1`, whose closed offer is
+`a64-semihost-hlt-f000-v1`. Source that imports
+`core.environment.semihost` therefore records that exact service requirement,
+which runner preflight must satisfy before launch.
 
 ---
 
@@ -119,9 +143,11 @@ is similar, but specific register values differ.
 
 ---
 
-### QEMU `virt` Reset State
+### QEMU `virt` EL2 Reset State
 
-On entry to the kernel image loaded via `qemu-system-aarch64 -machine virt`:
+The following table belongs to the EL2 DTB handoff and is not inherited by the
+secure EL3 direct-ELF profile. On EL2 entry to the kernel image loaded via
+`qemu-system-aarch64 -machine virt`:
 
 | Item              | State at entry                                                                    |
 | ----------------- | --------------------------------------------------------------------------------- |
@@ -144,7 +170,7 @@ Implications:
 
 1. **No stack until set.** Function calls, local variables, and anything
    that touches `sp` is forbidden until `sp` is initialized. The first
-   instructions of `_start` must run in a `#naked` context (see [chapter-08-functions.md §2.7](chapter-08-functions.md))
+   instructions of `_start` must run in a `naked` context (see [chapter-08-functions.md §2.7](chapter-08-functions.md))
    or be tiny enough to live entirely in registers.
 
 2. **D-cache must be invalidated.** With the MMU off, the CPU bypasses
@@ -170,35 +196,41 @@ primitives covered in earlier parts.
 
 #### Layout module (`boot.layout`)
 
+The block below uses the current named-layout grammar. Selecting either QEMU
+EL2 profile authenticates the incoming `x0` DTB schema and the checked stack
+transition together. Choosing a zero-parameter profile for this layout, or
+changing either half of the entry contract, is a pre-artifact error.
+
 <!-- wyst-contract: sketch -->
 ```wyst
-#module boot.layout
+module boot.layout
 
-#region ram   : origin = 0x4000_0000, size = 128M, attrs = (readwrite)
+layout qemu_virt {
+  entry boot._start at 0x4008_0000 // QEMU virt loads kernel here
+  region ram: readwrite at 0x4000_0000 size 0x0800_0000
 
-#section .text   : align = 16, in = ram
-#section .rodata : align = 16, after = .text
-#section .data   : align = 8,  after = .rodata
-#section .bss    : align = 16, after = .data
+  section ".text": code in ram align 16
+  section ".rodata": rodata after ".text" align 16
+  section ".data": data after ".rodata" align 8
+  section ".bss": bss after ".data" align 16
 
-#entry _start at 0x4008_0000           // QEMU virt loads kernel here
-
-pub __bss_start ::= #start(.bss)
-pub __bss_end   ::= #end(.bss)
-pub __stack_top :: u64 = 0x4010_0000   // 1MB of stack, top-down
+  pub symbol __bss_start: @u8 = start(".bss")
+  pub symbol __bss_end: @u8 = end(".bss")
+  pub symbol __stack_top: u64 = 0x4010_0000 // one mebibyte of stack, top-down
+}
 ```
 
-#### Kernel module (`boot`, future-profile stack sketch)
+#### Kernel module (`boot`, QEMU EL2 entry sketch)
 
-As above, the initial `asm establishes stack` sequence describes the future
-complete-transition contract. The pinned v0.9 compiler rejects it because no
-active checked row proves the transition.
+The initial `asm establishes stack` sequence is the active QEMU EL2 transition
+contract. Its one input is fixed to `x1`, while firmware `x0` remains bound to
+`dtb` and is forwarded unchanged after the stack becomes usable.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-#module boot
+module boot
 
-#target(arch = arm64-v8a, cpu = generic, el = 2)
+target(arch = arm64-v8a, cpu = generic, el = 2)
 
 import core.arch { barrier, cpu, exception }
 
@@ -212,14 +244,13 @@ system_register ELR_EL2: writeonly u64 {}
 system_register ESR_EL1: readonly u64 {}
 
 // The compiler is invoked with `--layout boot.layout`.
-// Exported layout symbols such as __stack_top are available by bare name.
+// Published typed layout symbols such as __stack_top are available by bare name.
 // Entry point — invoked at EL2 by QEMU with DTB pointer in x0.
-// Must be #naked: sp is undefined; we cannot use stack until we set it.
-#[naked, noreturn]
-_start :: (dtb : @u8 #pin(x0)) {
+// Must be naked: sp is undefined; we cannot use stack until we set it.
+pub naked fn _start(dtb: @u8 in x0) -> never {
   // 1. Set up an initial stack (in EL2's sp_el2, which becomes sp here).
   asm establishes stack (
-    stack: u64 = __stack_top,
+    stack: u64 in x1 = __stack_top,
   ) {
     mov sp, stack
   }
@@ -250,13 +281,12 @@ _start :: (dtb : @u8 #pin(x0)) {
 }
 
 // EL1 entry — runs after the drop. sp now refers to sp_el1.
-#noreturn
-el1_main :: (dtb : @u8 #pin(x0)) {
+fn el1_main(dtb: @u8 in x0) -> never {
   // 10. Zero BSS now that we are at EL1 with a usable stack.
-  addr := __bss_start
-  while addr < __bss_end {
-    u64@[addr] = 0
-    addr += 8
+  var addr: @u8 = __bss_start
+  while address<u64>(addr) < address<u64>(__bss_end) {
+    relens<@u64>(addr).store(0)
+    addr = byte_offset(addr, 8)
   }
 
   // 11. Hand off to high-level kernel init.
@@ -270,7 +300,7 @@ el1_main :: (dtb : @u8 #pin(x0)) {
 
 The stack-setting assembly is inline in `_start` rather than a helper call:
 before that block executes, `sp` is undefined, and ordinary calls are illegal
-under the `#naked` verifier.
+under the `naked` verifier.
 
 #### Vector declarations (same program module)
 
@@ -314,23 +344,23 @@ vector_table el1_vectors: aarch64.el1 {
   }
 }
 
-handle_sync :: label #noreturn {
+label handle_sync {
   // Read ESR_EL1 to dispatch on exception class.
-  esr := ESR_EL1.read().raw
+  const esr: u64 = ESR_EL1.read().raw
   // ... full dispatch elided ...
   loop {
     cpu.wfe()
   }
 }
 
-handle_irq :: label #noreturn {
+label handle_irq {
   // GIC EOI dispatch — elided.
   loop {
     cpu.wfe()
   }
 }
 
-unexpected :: label #noreturn {
+label unexpected {
   loop {
     cpu.wfe()
   }
@@ -355,7 +385,7 @@ here.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-psci_cpu_on :: (mpidr : u64, entry_point : u64, context_id : u64) -> u64 {
+fn psci_cpu_on(mpidr: u64, entry_point: u64, context_id: u64) -> u64 {
   const status: u64 = asm (
     func_id: u64 in x0 = 0xC400_0003, // PSCI_CPU_ON (SMC64)
     target: u64 in x1 = mpidr,
@@ -369,7 +399,7 @@ psci_cpu_on :: (mpidr : u64, entry_point : u64, context_id : u64) -> u64 {
 ```
 
 The entry point for secondary CPUs is a separate Wyst function with the
-same `#naked` discipline as `_start`. Each secondary sets up its own
+same `naked` discipline as `_start`. Each secondary sets up its own
 stack (typically from a per-CPU stack array indexed by MPIDR or by an
 atomically-incremented online counter), installs `VBAR_EL1`, and joins
 the kernel scheduler.
@@ -381,9 +411,18 @@ This SMP bring-up recipe is intentionally narrow: QEMU `virt`, EL2 entry, PSCI v
 not a scheduler, per-CPU-storage implementation, or generic topology
 probe.
 
-The smoke run uses this command shape:
+The smoke run derives a deterministic AArch64 Linux `Image` envelope from the
+compiler ELF, verifies that the envelope still binds to the exact ELF bytes and
+entry address, and authenticates the original ELF against the runner profile
+immediately before launch:
 
 ```sh
+node wync/tools/a64-linux-image.mjs create \
+  <18-smp-smoke.elf> <18-smp-smoke.Image>
+node wync/tools/a64-linux-image.mjs verify \
+  <18-smp-smoke.elf> <18-smp-smoke.Image>
+wync runner-preflight <18-smp-smoke.elf> \
+  --runner qemu-system-aarch64-semihost-v1
 qemu-system-aarch64 \
   -machine virt,virtualization=on \
   -cpu cortex-a53 \
@@ -392,8 +431,18 @@ qemu-system-aarch64 \
   -monitor none \
   -serial file:<uart-log> \
   -semihosting-config enable=on,target=native \
-  -kernel <18-smp-smoke.elf>
+  -kernel <18-smp-smoke.Image>
 ```
+
+The runner profile authenticates only the executable environment and exact
+required-service offer. It does not authenticate the QEMU binary, version,
+machine, CPU, or argv. The smoke script separately pins the accepted QEMU
+version and owns the closed argv shown above; both checks fail before launch.
+
+The envelope supplies QEMU's standard 64-byte Linux Image header and branches
+to the unchanged ELF entry while preserving x0, so the EL2 DTB handoff remains
+the authenticated input to `_start`. The secure EL3 profile described above is
+deliberately different and continues to launch its ELF directly.
 
 The example assumes QEMU's second CPU has MPIDR value `0x1`; production
 boot code must discover MPIDRs from the DTB before issuing `CPU_ON`.
@@ -405,7 +454,7 @@ The handoff protocol is visible in the source:
 2. The primary calls PSCI `CPU_ON` with x0=`0xC400_0003`,
    x1=`secondary MPIDR`, x2=`secondary_start`, x3=`context`.
 3. The primary stores the start command, runs `dsb ish`, and sends `sev`.
-4. The secondary starts at a `#naked` entry, installs its own stack, reads
+4. The secondary starts at a `naked` entry, installs its own stack, reads
    `MPIDR_EL1` for inspection, and waits with `wfe` until the command word
    changes.
 5. The secondary runs `dsb ish`, writes the checked value, runs `dsb ish`,
@@ -448,10 +497,10 @@ provide this as a library; it is too long to inline in every boot sequence.
   CCI / CMN snoop-filter configuration) that the boot ROM normally
   handles. Wyst code typically picks up from a known-good state after
   this is done.
-- **Secure-world entry (EL3 / TrustZone)** — Wyst supports EL3 system
-  registers and traps via `#target(... el = 3)`, but the EL3 reset
-  contract is highly platform-specific (TF-A's `bl1`/`bl2` boot
-  sequence). Not covered here.
+- **Other secure-world handoffs (EL3 / TrustZone)** — the authenticated
+  `qemu-virt-aarch64-el3` direct-ELF profile above is covered. TF-A
+  `bl1`/`bl2`, monitor payloads, and real-platform EL3 reset contracts remain
+  platform-specific and are not inferred from that QEMU profile.
 
 ---
 
@@ -460,10 +509,10 @@ provide this as a library; it is too long to inline in every boot sequence.
 | Choice                                    | Reason                                                                                                                                       |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Document QEMU `virt` specifically         | It is the canonical target. Generalizing across all ARMv8 platforms would dilute the contract into "depends on your firmware."               |
-| `_start` is `#naked` + `#noreturn`        | `sp` is undefined; using locals before sp-init would clobber whatever happens to be in `[sp]`. `#noreturn` because the EL1 entry takes over. |
+| `_start` is `naked` and returns `never`   | `sp` is undefined; using locals before sp-init would clobber whatever happens to be in `[sp]`. `never` records that the EL1 entry takes over. |
 | `exception.eret()` to drop EL, not `bl` or `b` | Architecturally, EL transitions are exception returns. `bl` from EL2 to an EL1 address simply stays at EL2.                             |
 | Vector install before enabling interrupts | Establishes a known target for any synchronous fault. Without it, a stray fault becomes an undefined-PC jump.                                |
-| BSS zeroing at EL1, after the drop        | Requires a working stack and EL1 MMU-off mode. Cleaner than embedding the zero loop in the `#naked` `_start`.                                |
+| BSS zeroing at EL1, after the drop        | Requires a working stack and EL1 MMU-off mode. Cleaner than embedding the zero loop in the `naked` `_start`.                                 |
 | Cache invalidation library, not inline    | The CLIDR/CCSIDR walk is verbose, error-prone, and the same across every kernel; it belongs in a shared utility.                             |
 
 ---

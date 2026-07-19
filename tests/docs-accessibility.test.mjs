@@ -67,24 +67,25 @@ test("generated heading fragments match GitHub-style source links", () => {
 	);
 });
 
-test("design catalog links stay pinned to the imported Wyst commit", () => {
+test("design catalog links use authenticated local or pinned upstream artifacts", () => {
 	const commit = "a".repeat(40);
 	const rendered = makeMd({ wystSourceCommit: commit }).render(
-		"[syntax words](syntax-words.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz) [semantic database](semantic-db.json)\n",
+		"[syntax words](syntax-words.tsv) [attributes](attribute-catalog.tsv) [meta operations](meta-operation-catalog.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz) [semantic database](semantic-db.json)\n",
 	);
-	assert.match(
-		rendered,
-		new RegExp(
-			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/syntax-words\\.tsv" rel="noopener"`,
-		),
-	);
+	for (const artifact of [
+		"attribute-catalog.tsv",
+		"meta-operation-catalog.tsv",
+		"semantic-db.json",
+		"syntax-words.tsv",
+	]) {
+		assert.match(rendered, new RegExp(`href="/docs/${artifact.replace(".", "\\.")}"`));
+	}
 	assert.match(
 		rendered,
 		new RegExp(
 			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/a64-raw-encoding-source-forms\\.jsonl\\.gz" rel="noopener"`,
 		),
 	);
-	assert.match(rendered, /href="\/docs\/semantic-db\.json"/);
 });
 
 test("documentation markdown permits only the intentional safe HTML subset", () => {

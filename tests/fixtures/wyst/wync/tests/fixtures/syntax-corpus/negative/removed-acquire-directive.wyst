@@ -1,0 +1,5 @@
+module removed_acquire_directive
+
+fn load(addr: @atomic<u64>) -> u64 {
+  return #acquire addr.load(.relaxed)
+}

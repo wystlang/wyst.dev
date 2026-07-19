@@ -1,0 +1,18 @@
+module syntax_discard_bindings
+
+enum State {
+  empty
+  payload(u64)
+}
+
+fn pair() -> (left: u64, right: u64) {
+  return (1, 2)
+}
+
+fn inspect(state: State) {
+  var (_, value) = pair()
+  match state {
+    .payload(_) {}
+    .empty {}
+  }
+}

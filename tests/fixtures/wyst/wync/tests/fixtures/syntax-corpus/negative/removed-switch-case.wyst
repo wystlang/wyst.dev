@@ -1,0 +1,7 @@
+module syntax.removed_switch_case
+
+enum Event { idle }
+
+fn rejected(event: Event) {
+  switch event { case idle: {} }
+}

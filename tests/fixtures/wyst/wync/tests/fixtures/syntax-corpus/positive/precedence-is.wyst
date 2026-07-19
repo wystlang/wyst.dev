@@ -1,0 +1,16 @@
+module syntax_precedence
+
+enum Event: u8 {
+  Empty
+  Timer
+  Uart(u64)
+}
+
+fn mix(event: Event, ready: bool, a: u64, b: u64, c: u64) -> u64 {
+  const grouped: u64 = (a | b) + (c << 1)
+  const plain: u64 = a + b * c << 1 & 0xff ^ 7 | 8
+  if ready && !(event is .Empty) && (event is .Uart(_) || event is .Timer) {
+    return grouped + plain
+  }
+  return plain
+}

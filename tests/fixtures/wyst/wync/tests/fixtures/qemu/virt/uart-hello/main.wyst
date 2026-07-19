@@ -2,8 +2,7 @@ module hello
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
-import core.arch { cpu }
-
+import core.arch { cpu, exception }
 import core.environment { semihost }
 
 // homepage-example:start
@@ -35,6 +34,16 @@ register_map Pl011 {
 
 mmio UART0: Pl011 at 0x0900_0000
 
+#[align(16)]
+pub naked fn _start(dtb: @u8 in x0) -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+  kernel_main(dtb)
+}
+
 fn uart_write(byte: u8) {
   // Poll for space in the transmit FIFO.
   while UART0.FR.read().TXFF {
@@ -56,22 +65,10 @@ fn uart_hello() {
 }
 
 // homepage-example:end
-fn kernel_main() -> never {
+fn kernel_main(dtb: @u8) -> never {
+  if dtb == address<@u8>(0) {
+    test_exit(0x63)
+  }
   uart_hello()
   test_exit(0)
 }
-
-naked fn _start() -> never {
-  asm (
-    stack: u64 = __stack_top,
-    target: u64 = address<u64>(#addr_of(kernel_main)),
-    mode: u64 = numeric<u64>(0x3c8),
-  ) -> never {
-    msr SP_EL0, stack
-    msr ELR_EL2, target
-    msr SPSR_EL2, mode
-    eret
-  }
-}
-
-export _start

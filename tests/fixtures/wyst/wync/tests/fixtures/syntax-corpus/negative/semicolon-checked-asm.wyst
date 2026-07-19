@@ -1,0 +1,7 @@
+module semicolon_checked_asm
+
+fn invalid() {
+    asm {
+        nop;
+    }
+}

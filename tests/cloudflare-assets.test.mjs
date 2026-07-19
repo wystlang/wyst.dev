@@ -12,10 +12,21 @@ import {
 	validateHtml,
 } from "../tools/validate-cloudflare-assets.mjs";
 
+const packageJson = JSON.parse(
+	await readFile(new URL("../package.json", import.meta.url), "utf8"),
+);
+
 const HTML = `<!doctype html>
 <html lang="en"><head><title>Fixture</title></head>
 <body><main id="main"><h1>Fixture</h1><img src="pixel.png" alt=""></main></body></html>
 `;
+
+test("canonical Worker-assets build command uses the deterministic builder", () => {
+	assert.equal(
+		packageJson.scripts["build:worker-assets"],
+		"node tools/prepare-worker-assets.mjs",
+	);
+});
 
 async function makeFixture(t) {
 	const fixture = await mkdtemp(path.join(os.tmpdir(), "wyst-cloudflare-assets-"));

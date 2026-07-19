@@ -24,11 +24,15 @@ activation policy. The authenticated generated
 support-bearing encoding, source-form/alias, and target-structural subjects as
 active or `known_unsupported`. They record a focused ordinary-lowering,
 architecture-operation, checked-assembly, and structural support profile, not
-universal A64 compiler support.
+universal A64 compiler support. The manifest digest-owns the generated
+[`a64-support-source-domains.json`](a64-support-source-domains.json) projection:
+the exact 13 general-purpose and seven target-structural-only active source
+forms, their operand grammars and aliases, and their register view/list
+domains. That projection is cross-tool input, not an independent authority.
 [`a64-conformance-manifest.json`](a64-conformance-manifest.json) is the
 generated terminal release gate for that profile. Its exact
 [`a64-conformance-evidence.tsv`](a64-conformance-evidence.tsv) ledger accounts
-for the same 8,955 rows as 329 active and 8,626 `known_unsupported`, with zero
+for the same 8,955 rows as 330 active and 8,625 `known_unsupported`, with zero
 unexplained or partially active rows. The digested
 [`a64-conformance-policy.json`](a64-conformance-policy.json), checked-in
 two-tool [`a64-conformance-oracles.tsv`](a64-conformance-oracles.tsv) fixture,
@@ -51,18 +55,21 @@ diagnostic. Support schema, release, generator and input identities, policy,
 manifest and row digests, and the selected pack identity participate in build
 identity/evidence and authenticated ELF catalog metadata; editor metadata
 publishes the support identity, counts, and per-row disposition. The completed
-focused Roadmap items 46-50 model activates 308 encodings for ordinary lowering
+focused A64 authority-through-conformance model activates 308 encodings for
+ordinary lowering
 and architecture operations, keeps general-purpose checked assembly
-intentionally at 12 exact source forms, adds seven target-structural-only
+intentionally at 13 exact source forms, adds seven target-structural-only
 source forms, and supplies 308 instruction-semantic rows, 31 state contracts,
 and two structural contracts. The deterministic active catalog contains 301
-generated operand decoders and 10 generated typed fixups. Ordinary and
+generated operand decoders and 10 generated fixup programs, three transported
+as typed checked-assembly fixups. Ordinary and
 architecture encoders select its rows, while checked-assembly IR transports
 parsed identities, typed operands, labels, and fixups without backend text
 reconstruction. The full-authority decoder proves the complete active/known-
 unsupported/reserved/unallocated word partition. There are no remaining focused
-completion blockers. Universal A64 checked-assembly activation belongs to later
-Roadmap item 105; the 4,023 inactive encodings and 4,603 inactive source forms
+completion blockers. Universal A64 checked-assembly activation belongs to the
+later universal A64 checked-assembly conformance milestone; the 4,023 inactive
+encodings and 4,602 inactive source forms
 remain explicit rather than being hidden behind target availability.
 Disassembly exposes every emitted word's support classification as `active`,
 `known_unsupported`, `reserved`, or `unallocated`; lowering text reports publish
@@ -88,11 +95,94 @@ sealed category membership, stable semantic identity, parameters, ordering,
 target plan, report identity, and delegation to earlier language owners. The
 [`measurement-counter-catalog.tsv`](measurement-counter-catalog.tsv) and
 [`environment-service-catalog.tsv`](environment-service-catalog.tsv) select
-the fixed counter and semihost ABI contracts. The exact 88-name predecessor
-inventory lives only in
+the fixed generic counter-source and semihost ABI contracts. The counter
+catalog owns only source identity/lowering, width, frequency acquisition,
+minimum EL/enablement, failure, and source-report identity. It does not own or
+imply a runtime domain/configuration epoch, endpoint comparability,
+serialization, a realized frequency, platform-state progress, mutable-control
+exclusion, maximum interval span, or numeric elapsed-time semantics. The static
+provider `a64-generic-virtual-counter-instance-provider-v1` version 1 is an
+atomic target-profile extension under
+`wyst.platform-counter-instance-provider.v1`, bound to that exact source
+descriptor, record schema `wyst.platform-counter-instance-record.v1`, and
+universe-evidence schema `wyst.platform-counter-universe-evidence.v1`. Its
+compiler-owned synthetic consumer validates optional immutable per-run records
+and derives `wyst.platform-counter-instance-identity.v1` identities only after
+the record exactly matches one authority whose digest is pinned by an
+independently selected
+`wyst.platform-counter-universe-evidence-contract.v1` platform-environment
+contract. Self-consistent authority resealing is insufficient; no current
+concrete environment is claimed as a producer. The performance/
+resource-report and benchmark-comparison milestone must bind the source-
+descriptor, provider/schema, and record identities/content digest at both
+endpoints to interval evidence. Runtime record facts are not fields of the
+counter-source catalog and never enter reusable compilation-cache keys.
+The exact 88-name predecessor inventory lives only in
 [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv); it is a
 release-audit input and is deliberately absent from active parser and editor
 vocabulary.
+
+Host compiler-efficiency authority is versioned by
+`wync.compilerEfficiencyPolicy.v1` and
+`wync.compilerEfficiencyEvidence.v1`, with `wync rebuild-benchmark` and
+`wync/tools/bench/` as the single measurement path. Chapter 24 owns the exact
+workloads, eligible-runner and interleaved baseline/candidate protocol,
+aggregation, budgets, evidence-preservation contract, status axes, and timing-
+trace reconciliation. The policy is a checked-in host release-gate input;
+samples, aggregates, and verdicts are terminal host release evidence. Neither
+class is a compilation input or may
+affect source acceptance, diagnostics, phase scheduling, reusable compilation-
+cache keys, artifact identities, or emitted bytes. These host schemas neither
+consume platform counter-instance records nor define the static, modeled, or
+target-measured performance schemas reserved for the later performance/resource
+milestone.
+
+`wync.localBench.v1` is an envelope over the exact policy and
+`wync.compilerEfficiencyEvidence.v1`; it owns no independent baseline,
+aggregation, budget, or verdict. Evidence with a missing or mismatched policy
+schema/version/identity/content digest produces no verdict. Only two eligible
+sample sets with identical canonical workload inputs and the required same
+runner-configuration identity are `comparable`; cross-machine evidence cannot
+drive a verdict without a separately versioned calibration contract. The same
+domain-separated physical-instance digest, one run-session UUID, and clean
+before/after Wyst or kernel revision/tree identity are also required. A pending
+bootstrap has no baseline review and cannot produce a verdict; explicit
+bootstrap-review mode can produce only reviewed null-verdict P0 evidence after
+all non-baseline facts pass. Every pinned
+baseline is invalid unless its policy record preserves the reviewed previous
+and new binary identities/object references, verbatim raw evidence and its
+complete run archive, exact P0 policy, runner/physical/run-session identities,
+reason, and accepted regressions under Chapter 24's exact contract.
+Deterministically compressed, content-addressed compiler binaries, policy,
+verbatim evidence, and complete deterministic run archives
+are checked in under `wync/tools/bench/evidence/v1/objects/sha256/`; both
+compressed-object and uncompressed-content SHA-256 digests are covered by a
+reviewed ledger under `wync/tools/bench/evidence/v1/records/`. Scratch paths and
+mutable job artifacts are not durable evidence. External release assets are
+optional mirrors only and cannot affect local eligibility.
+The terminal registry, not a self-referential policy field, accepts the exact
+reviewed P0→P1 transition plus exactly one bootstrap and one final passing
+record. Preservation verification replays semantic suite, compiler-role,
+absolute-budget, equivalence, repository, and verdict checks; byte presence
+alone is insufficient. Numeric budgets are inactive until their exact content
+digest has explicit human reviewer/time/reason approval.
+The policy freezes each timing host ID's exact kind and ordered canonical-phase
+mapping. Evidence aggregation revalidates sample membership, interleaved
+execution ordinals, compiler identities, and rebuild-report fields; preservation
+revalidates byte identity between verbatim evidence, its local-report envelope,
+and every archived raw command output while rejecting unreviewed objects.
+
+Execution-strand authority is versioned by
+`wyst.execution-strands.v1` and `wyst.context-stability.v1`. Chapter 13 owns
+the agent/strand control order, target-neutral `execution_suspension` effect,
+mandatory `strand_suspension_boundary`, zero-code authenticated
+`core.execution.suspension_point` marker, and the closed stability order
+`active_context_affine < task_stable < cross_strand_stable`. Chapter 2 owns
+`wyst.execution-environment-contract.v1` plus the versioned execution- and
+completion-provider descriptor schemas. These are compiler compatibility and
+provenance facts: they do not define a scheduler, operating-system API,
+safepoint, memory barrier, task-selection synchronization edge, or relocatable
+native stack.
 
 The closed v0.9 `#` surface is the 14-row
 [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv), which owns each
@@ -100,11 +190,18 @@ operation's legal positions, parameters, phase, result, target facts,
 relocation behavior, and diagnostics contract. The complete frozen 53-name
 predecessor **disposition mapping** lives only in
 [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv). No predecessor
-row remains in the current syntax-word catalog. The released-v0.8 compatibility
-grammar consumes its raw historical `#identifier` shape independently; neither
-that grammar nor current tooling derives a name from the audit. The audit is a
-release/conformance input, never a token, parser, diagnostic, alias, rewrite,
-completion, hover, or highlight input.
+row remains in the current syntax-word catalog. No production lexer, parser,
+formatter, diagnostic, or editor path consumes the historical spellings. The
+audit is a release/conformance input only, never a token, parser, diagnostic,
+alias, rewrite, completion, hover, or highlight input.
+[`removed-source-spelling-allowlist.tsv`](removed-source-spelling-allowlist.tsv)
+closes the checked-in release-input boundary. Only the two non-parser manifests
+and named negative `.wyst` fixtures receive whole-file allowances. Genuine
+released-history prose uses `archived-historical` allowances with exact Markdown
+section boundaries; every such scope must contain a recognized predecessor
+spelling. `ROADMAP.md` is a non-normative planning document excluded as one
+exact file rather than allowlisted; it cannot feed parser, editor, tooling,
+manifest, or release catalogs.
 
 Clause-to-test traceability is tracked in
 [`design/conformance-index.md`](conformance-index.md). A semantic clause is not
@@ -115,15 +212,15 @@ Current manual snapshot:
 
 | Surface | Version | Status | Notes |
 | ------- | ------- | ------ | ----- |
-| Language | `wyst.language.v0.9` | development normative snapshot | Covers the keyword-led v0.9 core syntax, closed meta-operation and attribute surfaces, hard modifiers, legacy-directive dispositions, and target-defined vector-table and trap-frame DSLs. |
+| Language | `wyst.language.v0.9` | released normative snapshot | Covers the keyword-led v0.9 core syntax, closed meta-operation and attribute surfaces, hard modifiers, non-parser predecessor-removal audits, and target-defined vector-table and trap-frame DSLs. |
 | Native ABI | `wyst.nativeAbi.v0.8` | released normative snapshot | Chapter 15 owns the detailed Native and AAPCS64 rules. |
 | Object/interface schema bundle | `wyst.objectInterface.v0` | implemented plus future-version rows | Chapter 16 and the semantic database own object artifact, relocation, symbol, and emitted-interface classifications. |
 | Report schema bundle | `wync.reports.v1` | implemented and experimental rows | Groups the report schemas listed below. Individual report payloads still carry their own `schema` and status fields. |
 | Editor/diagnostic interface schema bundle | `wync.interfaces.v1` | implemented | Groups CLI/editor/LSP adapter payloads listed below. |
 
-Released `wync` package version `0.8.0` implements the `v0.8` release line. The
-current development compiler and manual snapshot target `wyst.language.v0.9`;
-rows marked implemented below are active on this development line unless they
+Released `wync` package version `0.9.0` implements the `v0.9` release line. The
+current compiler and manual snapshot target `wyst.language.v0.9`;
+rows marked implemented below are active on this release line unless they
 explicitly name an earlier released version.
 
 ## Authority Order
@@ -185,42 +282,42 @@ or update a row in this registry.
 | Structural SSA construction from immutable predecessor environments, exact typed phi edges, dominance verification, and deterministic simultaneous incoming ABI transfers (`language.structural-ssa-and-incoming-abi-transfers`) | Implemented | `wyst.language.v0.8` | [appendix-a-ir.md](appendix-a-ir.md); Chapter 15 |
 | Trust-boundary model for `trusted_callable<T>(address)`, raw-address assertions, raw function-pointer construction, foreign declarations, manually stated foreign effects, inline-assembly effects and clobbers, ABI overrides, and unproven library contracts | Implemented | `wyst.language.v0.9` | Chapter 1; Chapter 21 |
 | Ordinary local reads require initialization on every incoming control-flow path; deliberate indeterminate-bit observation uses the explicit `MaybeUninit<T>.read_uninit()` contract | Implemented | `wyst.language.v0.9` | Chapters 9 and 11; `semantic-db.json` behavior classifications |
-| Whole-object deliberate raw storage uses the non-copyable `MaybeUninit<T>` API: `uninit<T>()`, `.write`, proved `.read`, audited `.read_uninit`, `.assume_init`, and `addr_of`, with CFG-joined initialization evidence and distinct typed IR/report facts (`language.maybe-uninit-whole-object-storage`) | Implemented | `wyst.language.v0.9` | Roadmap item 53; Chapter 9; Chapter 11; Appendix A |
-| Qualified semantic operations under sealed `core.arch`/`core.environment` categories, stable typed-IR/report identity, target plans, fixed counter/service descriptors, and the exact non-parser 88-name `%` removal audit (`language.semantic-operation-catalog`) | Implemented | `wyst.semantic-operation-catalog.v0.9` | [`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv); [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv); Roadmap item 53 |
-| Closed 14-form compile-time, target, and layout-query `#` surface with phase, type, target-fact, and relocation contracts (`language.meta-operation-catalog`) | Implemented | `wyst.metaOperations.v0.9` | [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv); Roadmap item 54 |
-| Every frozen predecessor `#` name outside the retained 14-form surface (`language.legacy-hash-directive-dispositions`) | Removed | `wyst.language.v0.9` | [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) is a non-parser release audit with no compatibility path. |
+| Whole-object deliberate raw storage uses the non-copyable `MaybeUninit<T>` API: `uninit<T>()`, `.write`, proved `.read`, audited `.read_uninit`, `.assume_init`, and `addr_of`, with CFG-joined initialization evidence and distinct typed IR/report facts (`language.maybe-uninit-whole-object-storage`) | Implemented | `wyst.language.v0.9` | the qualified semantic-operation catalog milestone; Chapter 9; Chapter 11; Appendix A |
+| Qualified semantic operations under sealed `core.arch`/`core.environment` categories and the authenticated whole-module `core.execution` provider marker, stable typed-IR/report identity, target plans, fixed counter-source/service/provider descriptors, and the exact non-parser 88-name `%` removal audit (`language.semantic-operation-catalog`) | Implemented | `wyst.semantic-operation-catalog.v0.9` | [`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv); [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv); the qualified semantic-operation catalog milestone |
+| Closed 14-form compile-time, target, and layout-query `#` surface with phase, type, target-fact, and relocation contracts (`language.meta-operation-catalog`) | Implemented | `wyst.metaOperations.v0.9` | [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv); the meta-operation and declaration-policy closure milestone |
+| Every frozen predecessor `#` name outside the retained 14-form surface (`language.legacy-hash-directive-dispositions`) | Removed | `wyst.language.v0.9` | [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) is a non-parser v0.9 release audit. Production source has one grammar and no compatibility path for these spellings. |
 | UTF-8 source, ASCII identifiers, comments, string literals, byte character literals with ASCII direct characters and explicit byte escapes, numeric literal separators (`language.lexical-literal-surface`) | Implemented | `wyst.language.v0.8` | Appendix B, Chapter 6 |
 | Semicolon-free, whitespace-insensitive source; grammar-complete statement boundaries; maximal expression continuation; brace-only control-flow bodies; bare `_` discard; and longest-match `..<`, `..=`, `..` punctuation (`language.source-lexical-contract-v0.9`) | Implemented | `wyst.language.v0.9` | Appendix B |
 | One versioned syntax-word catalog with unique reserved, contextual, and unshadowable rows shared by all source tools (`language.syntax-word-catalog`) | Implemented | `wyst.syntaxWords.v0.9` | [`syntax-words.tsv`](syntax-words.tsv) |
 | Keyword-led `module`, `import`, `fn`, `const`, `var`, `label`, `struct`, `enum`, and `bitstruct` declarations, with `pub` only in its canonical prefix slot and phase-correct mandatory binding initializers (`language.keyword-led-declarations-bindings`) | Implemented | `wyst.language.v0.9` | Chapters 4, 6, and 8; Appendix B |
-| Punctuation-led core declarations using `#module`, `#import`, `::`, `:=`, `::=`, or an unkeyworded binding (`language.punctuation-led-core-declarations`) | Removed | `wyst.language.v0.9` | Appendix B; use the keyword-led forms. |
+| Predecessor punctuation-led core declarations and unkeyworded bindings (`language.punctuation-led-core-declarations`) | Removed | `wyst.language.v0.9` | Appendix B; use the keyword-led forms. |
 | Direct non-ASCII character literals truncated to `u8` (`language.truncating-non-ascii-character-literals`) | Removed | `wyst.language.v0.8` | Appendix B; use string literals for UTF-8 text or explicit `\xNN` byte escapes. |
 | Scalar primitives, `bool`, fixed-width integers, `f32`/`f64`, `string`, untyped integer constants | Implemented | `wyst.language.v0.7` | Chapter 6 |
 | Unshadowable named conversions `widen`, `truncate`, `signcast`, `numeric`, `bitcast`, `address`, `relens`, `qualify`, `floatcast`, `saturate`, and `truncate_bits`, with no implicit numeric conversion (`language.named-explicit-conversions`) | Implemented | `wyst.language.v0.9` | Chapter 6; Appendices A and B |
-| Categorized postfix `as.<category>` conversions (`language.predecessor-categorized-conversions`) | Removed | `wyst.language.v0.9` | Use the corresponding named conversion operation. |
+| Predecessor categorized postfix conversions (`language.predecessor-categorized-conversions`) | Removed | `wyst.language.v0.9` | Use the corresponding named conversion operation. |
 | `checked<T>(value)` conversion (`language.checked-conversion`) | Reserved | none | Rejected until the selected failure model is implemented. |
 | Floating-point arithmetic in compile-time constants | Future-version normative | `wyst.language.next` | Chapters 6, 7, and 8 mark the accepted future surface; current compiler rejects it. |
 | Declarative-placement-only `at`; `@T`, `@volatile T`, and `@mmio T` address types with visible `.load()` and `.store(value)` operations, byte-address endian methods, and exact qualifier effects (`language.explicit-address-memory-operations`) | Implemented | `wyst.language.v0.9` | Chapter 6; Chapter 9; Appendices A and B |
 | Unit-explicit `byte_offset`, `element_offset`, and `field_addr`, with no typed-address `+`, `-`, `+=`, or `-=` and byte-measured relocation addends (`language.unit-explicit-address-offsets`) | Implemented | `wyst.language.v0.9` | Chapter 6; Chapter 16; Appendix A |
 | Runtime `addr_of(local)` with exact local lens, addressability resource reporting, hard-register rejection, and non-escape lifetime (`language.runtime-local-address-materialization`) | Implemented | `wyst.language.v0.9` | Chapter 6; Chapter 11; Appendix A |
-| `T@[address]`, `[T:N]@[address]`, `%addr_of(local)`, `%load_be`, `%load_le`, `%store_be`, `%store_le`, and typed-address arithmetic operators (`language.predecessor-address-access-syntax`) | Removed | `wyst.language.v0.9` | Use address methods and the unit-explicit named operations. |
+| Predecessor typed-memory, runtime address-of, endian primitive, and typed-address arithmetic spellings (`language.predecessor-address-access-syntax`) | Removed | `wyst.language.v0.9` | Use address methods and the unit-explicit named operations. |
 | Effects, authority/trust facts, and generated backend resources are separate; `#[deny_effects(...)]` and effect diagnostics cover semantic effects, while `#[frame(...)]` and frame/spill/register/code-size/veneer/caller-copy facts are post-lowering resources | Implemented | `wyst.language.v0.9` | Chapter 1; Chapter 21 |
 | Volatile access semantics, MMIO intent, and architectural memory type are separate; `@volatile T` records compiler-visible access ordering, `@mmio T` records programmer MMIO intent, and Device/Normal memory type comes from target/runtime mapping facts | Implemented | `wyst.language.v0.8` | Chapters 6 and 9; Appendix A |
 | Arrays `[N]T`, read-only non-owning slices `[]T`, end-exclusive `[..]`/`[..<]` slice ranges, and ordinary-address `.slice(elements = count)` raw views (`language.slice-range-views`) | Implemented | `wyst.language.v0.9` | Chapter 6; Appendix B |
-| Colon slices, raw `[]T{data = ..., len = ...}` descriptors, and slicing `DynamicArray<T>` directly (`language.predecessor-slice-construction-syntax`) | Removed | `wyst.language.v0.9` | Use range slices on fixed arrays/existing slices or `@T.slice(elements = count)`. |
+| Predecessor colon-range views, raw descriptor constructors, and direct dynamic-array slicing (`language.predecessor-slice-construction-syntax`) | Removed | `wyst.language.v0.9` | Use range slices on fixed arrays/existing slices or `@T.slice(elements = count)`. |
 | Explicitly imported `core.collections.DynamicArray<T>`, `#len`, and its operation-owned view surface | Implemented | `wyst.language.v0.9` | Chapters 6 and 10 |
 | Authenticated sealed-core dynamic-container role for `core.collections.DynamicArray<T>`, with no prelude, name-based recognition, or implicit retention (`language.dynamic-array-core-role`) | Implemented | `wyst.language.v0.9` | Chapter 10; `semantic-db.json` `sealedCoreImportCatalog` |
-| Legacy dynamic-array type spelling `[dynamic]T` (`language.legacy-dynamic-array-type-spelling`) | Removed | `wyst.language.v0.9` | Use an explicit import of `core.collections.DynamicArray<T>`. |
+| Legacy dynamic-array type spelling (`language.legacy-dynamic-array-type-spelling`) | Removed | `wyst.language.v0.9` | Use an explicit import of `core.collections.DynamicArray<T>`. |
 | By-value fixed-array parameters | Reserved | none | Chapter 6 |
 | Ordinary structs, `#field_offset`, and deterministic declaration-defined layout | Implemented | `wyst.language.v0.9` | Chapter 6 |
 | Expected-type `{ field = value, ... }` struct and bitstruct literals, with written-order single evaluation and complete field validation (`language.expected-type-aggregate-literals`) | Implemented | `wyst.language.v0.9` | Chapter 6 |
-| Type-prefixed struct literal spellings `Type { ... }` and `Type(...)` (`language.typed-struct-literal-spelling`) | Removed | `wyst.language.v0.9` | Use an expected type and `{ field = value, ... }`. |
-| `#repr(C)` and alternate struct layout modes | Reserved | none | Chapter 6; use explicit layout checks at ABI boundaries. |
+| Type-prefixed struct literal spellings (`language.typed-struct-literal-spelling`) | Removed | `wyst.language.v0.9` | Use an expected type and `{ field = value, ... }`. |
+| Predecessor representation directive and alternate struct layout modes | Reserved | none | Chapter 6; use explicit layout checks at ABI boundaries. |
 | Nominal `bitstruct Name: Backing` declarations with typed boolean/integer/enum fields, single-position or inclusive contiguous locations, complete aggregate construction, exact-backing `bitcast`, range-checked writes, and shared typed-field lowering (`language.bitstruct-typed-fields`) | Implemented | `wyst.language.v0.9` | Chapter 6; Appendices A and B |
 | Reusable `register_map` declarations, placed-map and standalone scalar `mmio`, nominal captured map-register snapshots, exact raw/named/modify boundaries, and one-access volatile MMIO lowering (`language.register-map-mmio-declarations`) | Implemented | `wyst.language.v0.9` | Chapters 6, 9, and 11; Appendices A and B; `semantic-db.json` `hardwareRegisterContract` |
 | Shared hardware-field access narrowing, reset/read/write policy vocabulary, implicit reserved-zero and explicit reserved-one/preserve regions, and fail-closed named-write/modify availability (`language.hardware-field-policies`) | Implemented | `wyst.language.v0.9` | Chapters 6 and 11; Appendices A and B; `semantic-db.json` `hardwareRegisterContract` |
 | ARM64 `system_register` declarations with nominal `u64` snapshots, exact compiler ordering, catalog-named identity, authenticated encoded target-extension selection, and no raw encoded call (`language.system-register-declarations`) | Implemented | `wyst.language.v0.9` | Chapter 11; `a64-compiler-semantics.md`; Appendices A and B; `semantic-db.json` `hardwareRegisterContract` |
-| Standalone `bitfield(T)` declarations, `bits(lo, hi)`, untyped inferred field carriers, `width N`, `bit` location words, exclusive or alternate ranges, and non-contiguous field locations (`language.predecessor-bitfield-syntax`) | Removed | `wyst.language.v0.9` | Use `bitstruct`, an explicit field carrier, and `at N` or `at A..=B`. |
+| Predecessor standalone bit-range declarations, inferred field carriers, alternate location words/ranges, and non-contiguous field locations (`language.predecessor-bitfield-syntax`) | Removed | `wyst.language.v0.9` | Use `bitstruct`, an explicit field carrier, and `at N` or `at A..=B`. |
 | Enum representation: payload-less enums are transparent tags; payload enums are fixed two-word values with tag at offset 0 and payload at offset 8 | Implemented | `wyst.language.v0.8` | Chapter 6; Chapter 15; Chapter 23; Appendix A |
 | `is` enum pattern tests for implemented enum variants | Implemented | `wyst.language.v0.8` | Chapter 8; nested patterns and compound/negated payload bindings remain reserved below. |
 | Multi-field enum payload variants, tuple payload patterns, nested patterns, payload bindings in compound or negated `is` patterns | Reserved | none | Chapters 6 and 8; current compiler rejects these forms. |
@@ -232,57 +329,66 @@ or update a row in this registry.
 | Conventional arithmetic, shift, bitwise, comparison, and logical operator precedence, with non-associative comparison operators (`language.operator-precedence-and-comparison-associativity`) | Implemented | `wyst.language.v0.8` | Chapter 7; Appendix B |
 | Implicit `schedule.standard` policy for ordinary code, with dependency-safe pure reordering, source-order effect and memory preservation, deterministic tie-breaking, report/build-identity recording, and no unstated implementation scheduling policy (`language.standard-scheduling-policy`) | Implemented | `wyst.language.v0.9` | Chapter 13; Chapter 22 |
 | `schedule source { ... }` and `#[schedule(source)]` source-order compiler boundaries, including whole-body subject checks and preservation through mandatory inline expansion (`language.source-scheduling-boundaries`) | Implemented | `wyst.language.v0.9` | Chapter 13; Chapter 7; [`attribute-catalog.tsv`](attribute-catalog.tsv) |
-| `#schedule(strict|relaxed|throughput|latency)` and predecessor `schedule.default`, `schedule.strict`, `schedule.relaxed`, `schedule.throughput`, and `schedule.latency` policy names (`language.predecessor-scheduling-modes`) | Removed | `wyst.language.v0.9` | Chapter 13; use `schedule.standard` and `schedule source`. |
-| `#exact(...)` exact-code contracts for emitted instruction count, permitted instruction families, exact bytes, register assignments, prologue presence, spills, veneers, section placement, and alignment, verified after lowering against the emitted artifact and rejected when unsatisfied | Implemented | `wyst.language.v0.8` | Chapter 13 |
+| Execution agents and sequential strands; trap/interrupt entry/return control order without cross-agent synchronization; target-neutral `execution_suspension`; one preserved post-argument/pre-transfer `strand_suspension_boundary` on every exact or conservative capable call; retained-task/native-activation identity; and the authenticated zero-code provider marker (`language.execution-strands-suspension-boundaries`) | Implemented | `wyst.execution-strands.v1` | Chapter 13; Chapters 1 and 9; Appendix A; Chapter 16; `semantic-db.json` `executionStrandContract` |
+| Closed non-erasable `context_stability` provenance, conservative join order, eligible storage/escape rules, affine liveness rejection, task/cross-strand preservation, exact-context return revalidation, and serialization closure (`language.context-stability-provenance`) | Implemented | `wyst.context-stability.v1` | Chapter 13; Appendix A; Chapter 16; `semantic-db.json` `contextStabilityContract` |
+| Predecessor scheduling directive and policy names (`language.predecessor-scheduling-modes`) | Removed | `wyst.language.v0.9` | Chapter 13; use `schedule.standard` and `schedule source`. |
+| Manifest-owned artifact `verify code` contracts for final instruction count, authenticated families, post-relocation bytes, prologue presence, spill slots, and veneers; the predecessor exact-code source attribute is ordinary invalid syntax | Implemented | `wyst.language.v0.9` | Chapter 13; `wyst.project` named-artifact contract |
 | Runtime `if`, if expressions, integer-range `for`, `while`, `loop`, `break`, `continue`, `goto`, statement calls, expression calls, and terminal calls for functions and labels (`language.function-label-control-flow`) | Implemented | `wyst.language.v0.9` | Chapter 8 |
 | Built-in end-exclusive `for i in start ..< end` with once-only left-to-right bound evaluation, compatible integer typing, immutable index, unit step, and structural transfers (`language.integer-range-for-loop`) | Implemented | `wyst.language.v0.9` | Chapter 8; Appendix B |
-| `repeat count { ... }`, `repeat count, i { ... }`, and `repeat lo..hi` predecessor forms (`language.repeat-loop-spelling`) | Removed | `wyst.language.v0.9` | Chapter 8; use integer-range `for`. |
+| Predecessor counted-loop forms (`language.repeat-loop-spelling`) | Removed | `wyst.language.v0.9` | Chapter 8; use integer-range `for`. |
 | Keyword-led function declarations and labels, named tuple returns, function pointers, and `#addr_of` function values | Implemented | `wyst.language.v0.9` | Chapter 8 |
 | Keyworded `const`/`var` named multi-return destructuring and simultaneous tuple assignment with one right-side evaluation (`language.named-multi-return-destructuring`) | Implemented | `wyst.language.v0.9` | Chapter 8 |
 | Shared positional-or-labeled argument grammar, declaration-parameter label resolution for direct calls, written-order evaluation, and positional-only indirect calls (`language.labeled-call-arguments`) | Implemented | `wyst.language.v0.9` | Chapter 8 |
 | Exhaustive enum-only `match`, shallow dot-variant alternatives, scoped payload bindings, optional final `else`, and matching `if value is .variant(binding)` patterns (`language.enum-match-patterns`) | Implemented | `wyst.language.v0.9` | Chapter 8 |
-| `switch`, `case`, and `#partial` enum dispatch (`language.switch-case-partial`) | Removed | `wyst.language.v0.9` | Use `match`. |
+| Predecessor enum-dispatch statement, arm, and partial-mode spellings (`language.switch-case-partial`) | Removed | `wyst.language.v0.9` | Use `match`. |
 | Anonymous tuple return fields, nested tuple returns, tuple parameters beyond the documented boundary | Reserved | none | Chapter 8 |
-| Complete callable identity (convention, ordered parameter/result types, positional register placement, and per-parameter `noescape`, but never declaration parameter names), no implicit callable adaptation, `never`, inherently terminal `label` entries, `naked` lowering, `packed struct`, local `var name: T in register`, and the immutable-template/direct-access `per_cpu var` contract; before item 92 reachable access requires `#target(..., per_cpu = single_instance_tpidr_el1)` with the frozen EL1+/TPIDR_EL1/16-byte-aligned single-instance facts (`language.callable-storage-contracts`) | Implemented | `wyst.language.v0.9` | Chapter 8, “v0.9 Callable Identity, Terminal Entries, and Storage Classes,” is the sole source-semantic owner; Chapters 9, 11, 15, and 16 and Appendices A and B define aligned memory, target, ABI, object, IR, and grammar projections; `semantic-db.json`; `syntax-words.tsv` |
-| `#noreturn`, `#naked`, `#noescape`, `#pin`, `#percpu`, `[aapcs]`, legacy `@(...)` / `@[aapcs] (...)` callable types, `#tls`, `#tls_offset_of`, and `thread_local` predecessor spellings | Removed | `wyst.language.v0.9` | Use `-> never`, declaration-prefix modifiers, callable parameter contracts, `in register`, `per_cpu var`, `fn(...)` / `extern "C" fn(...)`, and `#percpu_offset_of`. Wyst v0.9 has no TLS storage class. |
+| Complete callable identity (convention, ordered parameter/result types, positional register placement, and per-parameter `noescape`, but never declaration parameter names), no implicit callable adaptation, `never`, inherently terminal `label` entries, `naked` lowering, `packed struct`, local `var name: T in register`, and the immutable-template/direct-access `per_cpu var` contract; before the production multicore realization milestone reachable access requires `#target(..., per_cpu = single_instance_tpidr_el1)` with the frozen EL1+/TPIDR_EL1/16-byte-aligned single-instance facts (`language.callable-storage-contracts`) | Implemented | `wyst.language.v0.9` | Chapter 8, “v0.9 Callable Identity, Terminal Entries, and Storage Classes,” is the sole source-semantic owner; Chapters 9, 11, 15, and 16 and Appendices A and B define aligned memory, target, ABI, object, IR, and grammar projections; `semantic-db.json`; `syntax-words.tsv` |
+| Initializer-free or read-only local aliases for reserved architectural registers such as `lr`/`x30` and `x18` (`language.special-register-local-aliases`) | Removed | `wyst.language.v0.9` | Chapter 8; every local `var` has an initializer and ordinary `in register` placement rejects target-reserved registers. Use an authenticated checked-assembly, trap-frame, hardware, or system-register contract for architectural state. |
+| Predecessor callable-modifier, register-placement, per-CPU/TLS, ABI-marker, and callable-type spellings | Removed | `wyst.language.v0.9` | Use `-> never`, declaration-prefix modifiers, callable parameter contracts, `in register`, `per_cpu var`, `fn(...)` / `extern "C" fn(...)`, and `#percpu_offset_of`. Wyst v0.9 has no TLS storage class. |
 | The final v0.9 declaration-attribute registry and atomic owner activation checks (`language.declaration-attribute-registry`) | Implemented | `wyst.declarationAttributes.v0.9` | [`attribute-catalog.tsv`](attribute-catalog.tsv); `align`, `section`, `inline`, `init`, `frame`, `deny_effects`, `cache_isolated`, and `schedule` are active; emitted custom sections require a matching layout-declared `code`/`rodata`/`data`/`bss` kind. |
 | Predecessor standalone/directive declaration-attribute spellings, multiple declaration attribute groups, and accepted-but-ignored attributes (`language.predecessor-declaration-attribute-spellings`) | Removed | `wyst.language.v0.9` | Use the single `#[...]` registry grammar after an owning item activates a row. |
-| Signature-style `asm` statements/expressions with ordered `pure`/alignment/stack modifiers, typed input/immediate/symbol/scratch parameters, scalar or named multi-results, `-> never`, semantic body binders, local labels, and catalog-derived effects/allocation constraints (`language.checked-assembly-signature-v0.9`) | Implemented | `wyst.language.v0.9` | Chapter 8; Appendices A and B; Roadmap item 49 |
-| `#asm`, `inputs`/`outputs`/`clobbers`/`options`/`body` sections, constraint calls, manual effects/clobbers, directional labels, raw allocatable registers, and `{operand}` interpolation | Removed | `wyst.language.v0.9` | Retained only by the explicitly versioned v0.8 compatibility grammar in Appendix B; use signature-style `asm`. |
-| Old `= { ... }` code-item body separator for functions, labels, exception vectors, and `#ventry` slots | Removed | `wyst.language.v0.8` | Use a direct body block after the declaration header. |
-| `#export` directive | Removed | `wyst.language.v0.8` | Use the directional `export` declaration; `pub` controls only Wyst source visibility and has no linker effect. |
+| Signature-style `asm` statements/expressions with ordered `pure`/alignment/stack modifiers, typed input/immediate/symbol/scratch parameters, scalar or named multi-results, `-> never`, semantic body binders, local labels, and catalog-derived effects/allocation constraints (`language.checked-assembly-signature-v0.9`) | Implemented | `wyst.language.v0.9` | Chapter 8; Appendices A and B; the checked-assembly signature milestone |
+| Predecessor sectioned assembly form, constraint calls, manual effects/clobbers, directional labels, raw allocatable registers, and operand interpolation | Removed | `wyst.language.v0.9` | Recorded only in the historical v0.8 snapshot in Appendix B; use signature-style `asm`. |
+| Old code-item body separator for functions, labels, exception vectors, and vector-entry slots | Removed | `wyst.language.v0.8` | Use a direct body block after the declaration header. |
+| Predecessor export directive | Removed | `wyst.language.v0.8` | Use the directional `export` declaration; `pub` controls only Wyst source visibility and has no linker effect. |
 | `pub` Wyst source visibility and re-export, with no linker export effect (`language.source-visibility-not-linkage`) | Implemented | `wyst.language.v0.9` | Chapter 4 |
-| Directional typed linker boundaries through `import symbol`, `export`, and `export weak`, including independent aliases and deterministic collision rejection (`language.directional-linker-boundaries`) | Implemented | `wyst.language.v0.9` | Chapter 4; Chapter 16; Appendix B; Roadmap item 57 |
+| Directional typed linker boundaries through `import symbol`, `export`, and `export weak`, including independent aliases and deterministic collision rejection (`language.directional-linker-boundaries`) | Implemented | `wyst.language.v0.9` | Chapter 4; Chapter 16; Appendix B; the directional linker-boundary milestone |
+| Contextual named `layout` blocks with exactly one semantic entry before manifest-level selection, typed declaration-ordered `symbol` members, `readonly`/`readwrite` regions, typed section kinds, explicit placement constraints, layout-only `start`/`end`/`size` queries, rejection of compiler-owned non-layout sections, and structural typed-IR retention of the layout identity, member contracts, provenance, and recursive placement expressions (`language.named-layout-dsl`) | Implemented | `wyst.language.v0.9` | Chapter 4; Chapter 16; Appendices A and B; `semantic-db.json` `namedLayoutContract`; `layout` remains legal as a module-path component. |
+| Predecessor layout directives in v0.9 source | Removed | `wyst.language.v0.9` | Use the named layout DSL. Production source does not version-dispatch to the historical grammar. |
 | Qualified imports by default, explicit selective imports and aliases, non-transitive imports, duplicate import rejection, and unsupported wildcard imports (`language.qualified-imports-default`) | Implemented | `wyst.language.v0.8` | Chapter 4 |
 | Hierarchical module paths, whole-module final-component qualifiers, selective-only bare declarations, and collision-free `pub import` re-exports (`language.hierarchical-modules-imports-visibility`) | Implemented | `wyst.language.v0.9` | Chapter 4 |
-| Sealed `core` root, authenticated `core.collections` role metadata, and unavailable-by-default selective-only `core.arch`/`core.environment` category roots (`language.sealed-core-imports`) | Implemented | `wyst.language.v0.9` | Chapter 4; `semantic-db.json` `sealedCoreImportCatalog` |
+| Comma-delimited `import (...)` groups with optional group-wide `pub`, uniform visibility across every entry, no per-entry or mixed visibility, source-order-preserving desugaring to ordinary module imports, and no linker-symbol entries (`language.grouped-module-imports`) | Implemented | `wyst.language.v0.9` | Chapter 4; Appendix B; Chapter 18 |
+| Sealed `core` root, authenticated `core.collections` role metadata, unavailable-by-default selective-only `core.arch`/`core.environment` category roots, and whole-private-direct `core.execution` with only the provider-authenticated `suspension_point` member (`language.sealed-core-imports`) | Implemented | `wyst.language.v0.9` | Chapter 4; Chapter 13; `semantic-db.json` `sealedCoreImportCatalog`; [`sealed-core.tsv`](sealed-core.tsv) |
 | `$` token and postfix `?` operator | Reserved | none | Appendix B |
-| `usize`, `isize`, numeric literal suffixes, `null` literal | Removed | none | Appendix B and Chapter 6 reject these surfaces. |
+| Machine-sized integer type names, typed numeric suffixes, and the predecessor zero-pointer literal | Removed | none | Appendix B and Chapter 6 reject these surfaces. |
 
 ### Targets, Build, Runtime, And Memory
 
 | Feature family | State | Version | Owning detail |
 | -------------- | ----- | ------- | ------------- |
-| Project manifests, project-directory mode, explicit root-file mode, source roots, import closure, layout file, output path | Implemented | `wyst.language.v0.7` | Chapter 3 |
+| Project manifests, project-directory mode, explicit root-file mode, source roots, import closure, conditional source-layout input, environment-owned layout choice, and artifact product paths | Implemented | `wyst.language.v0.7` | Chapter 3 |
 | Directory-anchored module discovery with anchor files, controlled sibling part files, deterministic enumeration, ignored/generated-file rules, duplicate-declaration diagnostics, stable module identity, and generated-manifest/editor parity (`language.module-discovery-model`) | Implemented | `wyst.language.v0.8` | Chapters 3 and 4 |
-| Target declarations and project profiles for `qemu-virt-aarch64-el1`, `qemu-virt-aarch64-el2`, `qemu-virt-aarch64-el2-lse`, and `qemu-raspi4b-aarch64-el2` | Implemented | `wyst.language.v0.7` | Chapters 2, 3, and 4 |
+| One `executable` kind for artifact- and environment-owned layouts; canonical `layout .environment`; reserved `static_library` root/output/companion grammar with no-output refusal; complete profile-policy tuple; fail-closed typed QEMU EL2 DTB and secure EL3 no-argument entry schemas; fail-closed atomic target-profile extensions; and identity/report propagation (`build.hosted-distributable-artifacts`) | Implemented | `wyst.language.v0.9` | Chapters 2, 3, 4, 5, 16, and 22; `semantic-db.json` `targetProfileContract`, `targetEntrySchema`, and `targetProfileExtensionSet` |
+| Source-matched static platform-counter provider/schema selection, independently pinned exact state/control-universe authority, immutable optional per-run record validation, raw-only no-record/no-authority behavior, reusable-cache exclusion, and compiler-owned synthetic producer/consumer conformance (`targets.platform-counter-instances`) | Implemented | `wyst.platform-counter-instance-provider.v1` | Chapters 2, 3, and 11; Appendix A; Chapter 22; `semantic-db.json` `platformCounterInstanceContract` |
+| Four closed executable-environment classes plus authenticated execution/completion-provider descriptors, migration/preemption/current-core policies, provider-on-demand import admission, complete extension-set authentication, and compatibility/provenance/report propagation (`targets.execution-environment-provider-contracts`) | Implemented | `wyst.execution-environment-contract.v1` | Chapter 2; Chapter 13; `semantic-db.json` `executionEnvironmentContract` |
+| Target declarations and complete v1 project profiles for `qemu-virt-aarch64-el1`, `qemu-virt-aarch64-el2`, `qemu-virt-aarch64-el2-lse`, `qemu-virt-aarch64-el3`, and `qemu-raspi4b-aarch64-el2` | Implemented | `wyst.language.v0.7` | Chapters 2, 3, 4, and 5 |
 | Separate source requirements and build selections with `#requires(...)`, project/profile compatibility checks, explicit target facts for project artifact builds, target-fact provenance reports, and reusable modules compiling under multiple compatible target selections | Implemented | `wyst.language.v0.8` | Chapters 2, 3, and 4 |
-| Pinned A64 compiler-semantic register, state, memory, control, privilege, effect, fault, purity, and structural-profile catalog (`targets.a64-compiler-semantic-catalog`) | Experimental | `wyst.a64CompilerSemantics.v1` | [`a64-compiler-semantics.md`](a64-compiler-semantics.md); complete for the focused manifest-active profile: 308 instruction encodings, 31 state contracts, and two structural profiles. Functional execution remains a distinct coverage axis and has pinned QEMU 11.0.0 evidence for every active instruction and structural row; universal breadth remains item 105. |
-| Generated A64 instruction catalog (`targets.a64-instruction-catalog`) | Experimental | `wyst.a64-instruction-catalog.v1` | [`a64-encoding-catalog.tsv`](a64-encoding-catalog.tsv) owns 19 checked source forms: 12 general-purpose forms and seven target-structural-only forms; [`a64-active-encoding-catalog.tsv`](a64-active-encoding-catalog.tsv) owns all 308 active encodings with 301 operand decoders and 10 typed fixups. Ordinary/architecture emission and typed checked-assembly IR consume these generated identities. The complete authority decoder distinguishes active, known unsupported, reserved, and unallocated words. |
-| Exact focused A64 conformance ledger and release gate | Experimental | `wyst.a64-conformance-manifest.v2` | [`a64-conformance-manifest.json`](a64-conformance-manifest.json) authenticates exact evidence for all 8,955 support rows: 329 active rows with pinned QEMU 11.0.0 independent-oracle evidence and 8,626 `known_unsupported` rows. It also binds two pinned offline decode oracles over all 308 active encodings, exact LLVM encode round trips for all 307 LLVM-covered rows, 153 authenticated target profiles, checked-assembly allocation proofs, and the deterministic conformance fuzz gate. The mechanically demonstrated claim is limited to the focused active support profile; Roadmap item 105 owns universal activation. |
-| Layered target descriptor schema beyond current manifest/profile facts | Future-version normative | `wyst.language.v0.8` target 32 | Chapters 2 and 3 |
+| Pinned A64 compiler-semantic register, state, memory, control, privilege, effect, fault, purity, and structural-profile catalog (`targets.a64-compiler-semantic-catalog`) | Experimental | `wyst.a64CompilerSemantics.v1` | [`a64-compiler-semantics.md`](a64-compiler-semantics.md); complete for the focused manifest-active profile: 308 instruction encodings, 31 state contracts, and two structural profiles. Functional execution remains a distinct coverage axis and has pinned QEMU 11.0.0 evidence for every active instruction and structural row; universal breadth remains deferred to the universal A64 checked-assembly conformance milestone. |
+| Generated A64 instruction catalog (`targets.a64-instruction-catalog`) | Experimental | `wyst.a64-instruction-catalog.v1` | [`a64-encoding-catalog.tsv`](a64-encoding-catalog.tsv) owns 20 checked source forms: 13 general-purpose forms and seven target-structural-only forms; [`a64-active-encoding-catalog.tsv`](a64-active-encoding-catalog.tsv) owns all 308 active encodings with 301 operand decoders and 10 generated fixup programs, three transported as typed checked-assembly fixups. Ordinary/architecture emission and typed checked-assembly IR consume these generated identities. The complete authority decoder distinguishes active, known unsupported, reserved, and unallocated words. |
+| Exact focused A64 conformance ledger and release gate | Experimental | `wyst.a64-conformance-manifest.v2` | [`a64-conformance-manifest.json`](a64-conformance-manifest.json) authenticates exact evidence for all 8,955 support rows: 330 active rows with pinned QEMU 11.0.0 independent-oracle evidence and 8,625 `known_unsupported` rows. It also binds two pinned offline decode oracles over all 308 active encodings, exact LLVM encode round trips for all 307 LLVM-covered rows, 153 authenticated target profiles, checked-assembly allocation proofs, and the deterministic conformance fuzz gate. The mechanically demonstrated claim is limited to the focused active support profile; the universal A64 checked-assembly conformance milestone owns universal activation. |
+| Layered target descriptor fields beyond the implemented v1 contract and atomic extension envelope | Future-version normative | `wyst.language.v0.8` target 32 | Chapters 2 and 3 |
 | Physical Raspberry Pi hardware validation | Experimental | none | Chapter 2 |
 | Volatile memory, atomics, barriers, shareability/freshness vocabulary, and no hidden synchronization | Implemented | `wyst.language.v0.7` | Chapter 9 and Chapter 11 |
 | Concurrent memory model: per-location modification order, reads-from, synchronizes-with, happens-before, global `seq_cst` order, release sequences, barrier-mediated synchronization, race behavior, atomic RMW retry-until-complete correctness distinct from progress guarantees, volatile interactions, and closed alias proofs for transformations | Implemented | `wyst.language.v0.8` | Chapter 9 and Chapter 11 |
 | Opaque non-copyable `atomic<T>` storage, direct-destination `atomic<T>(value)` construction, and the closed element, method, and order vocabulary (`language.opaque-atomic-storage-closed-orders`) | Implemented | `wyst.language.v0.9` | Chapter 9; Chapter 11; [`atomic-matrix.json`](atomic-matrix.json) is the sole catalog authority. |
-| `#acquire`, `#release`, `%atomic_load`, `%atomic_store`, `%cas`, `%xchg`, `%fetch_add/sub/and/or/xor`, and `%atomic_bit_set/clear` (`language.predecessor-atomic-primitives-and-order-directives`) | Removed | `wyst.language.v0.9` | Use typed `@atomic<T>` methods; `%` dispositions are frozen only in [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv), while `#acquire`/`#release` dispositions are frozen only in [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv). Neither audit feeds the atomic matrix or source tooling. |
+| Predecessor atomic runtime primitives and per-access ordering directives (`language.predecessor-atomic-primitives-and-order-directives`) | Removed | `wyst.language.v0.9` | Use typed `@atomic<T>` methods; the exact dispositions are frozen only in the two non-parser removal manifests. Neither audit feeds the atomic matrix or source tooling. |
 | Explicit allocation/storage contracts, arenas, dynamic-array descriptors, typed handles, buffer/string API contracts | Implemented | `wyst.language.v0.7` | Chapter 10 and Chapter 21 |
 | Dynamic-array descriptor contract `wyst.dynamicArrayDescriptor.v0`: public seven-field `DynamicArray<T>` descriptor layout, invariants, policy encodings, lifetime rules, ABI/debug/persistence/foreign-inspection consequences, and `wyst.dynamicArrayOperation.v0` report metadata | Implemented | `wyst.dynamicArrayDescriptor.v0` | Chapter 10; Chapter 23; `wync explain storage` |
 | Standard-library expansion beyond the thin allocation-explicit core | Future-version normative | `wyst.language.v0.8+` | Chapter 10; not current language surface. |
 | Hidden allocation, hidden garbage collection, implicit cleanup, hidden locking, hidden parallelization | Removed | none | Chapter 10 |
 | Target-defined `vector_table` declarations with exact authenticated selectors, canonical dotted slot names, fixed source order, target-owned section/alignment/extent, explicit terminal arrow or block bodies, catalog-authenticated padding, and duplicate/missing/reordered/overflow diagnostics (`language.exception-vector-slots`) | Implemented | `wyst.language.v0.9` | Chapter 14; Appendix B |
 | Target-checked nominal `trap_frame` declarations and `naked label ... establishes T` / `restores T` hard clauses, with exact profile-owned fields, offsets, extent, stack alignment, execution levels, complete architectural state, and canonical checked-assembly transitions (`language.target-checked-trap-frame-dsl`) | Implemented | `wyst.language.v0.9` | Chapter 14; Appendix B |
-| Released-v0.8 `#exception_vector`, `#ventry`, and `#trap_frame` directive surfaces (`language.predecessor-vector-trap-directives`) | Removed | `wyst.language.v0.9` | Historical v0.8 grammar snapshot in Appendix B; [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) |
+| Released-v0.8 vector, vector-entry, and trap-frame directive surfaces (`language.predecessor-vector-trap-directives`) | Removed | `wyst.language.v0.9` | Historical v0.8 grammar snapshot in Appendix B; [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) |
 | Per-callable execution-level facts for ARM64 functions, labels, `vector_table` slot entries, callbacks, `exception.eret` transitions, and exception entries | Implemented | `wyst.language.v0.9` | Chapters 5, 11, and 14 |
 | Named ARM64 system-register primitive access uses exact canonical generated-catalog spelling, rejects noncanonical case variants with canonical hints, preserves canonical spelling in formatting and reports, and exposes only canonical names through editor completion (`language.system-register-canonical-spelling`) | Implemented | `wyst.language.v0.8` | Chapter 11; `a64-compiler-semantics.md` |
 | Production SMP runtime beyond current explicit QEMU smoke recipe | Future-version normative | `wyst.language.next` | Chapters 9 and 11 |
@@ -298,18 +404,18 @@ or update a row in this registry.
 | Fixed-arity calls into C variadic entry points and explicit `va_list` idioms | Implemented | `wyst.nativeAbi.v0.7` | Chapter 15 |
 | Direct C header import and broad C importer workflow | Experimental | none | Chapter 15 |
 | Static AArch64 `ET_EXEC` ELF image output, section catalog, symbols, relocations applied by the final writer | Implemented | `wyst.language.v0.7` | Chapter 16 |
-| Deterministic layout placement solver for regions, sections, alignment, `after` dependencies, fixed addresses, inherited regions, overlap, overflow, empty sections, deterministic tie-breaking, padding/fill bytes, and required diagnostics | Implemented | `wyst.language.v0.8` | Chapter 4; Chapter 16 |
+| Deterministic layout placement solver for regions, per-region and image cursors with causal owners, sections, alignment, multiple `after` dependencies, provenance-retaining fixed-address normalization, inherited regions, overlap, overflow, empty sections, deterministic tie-breaking, declaration order, padding/fill bytes, and constraint-path diagnostics (`artifacts.layout-placement-solver`) | Implemented | `wyst.language.v0.8+` | Chapter 4; Chapter 16; consumed by the v0.9 named layout DSL |
 | Relocatable `ET_REL` object output (`wync -c` / `--emit-object`) | Future-version normative | `wyst.language.v0.8` target 32 | Chapter 16 |
 | Explicit strong and weak external aliases | Implemented | `wyst.language.v0.9` | Chapter 4; Chapter 16; use `export` and `export weak`. |
 | Hidden shared-object symbol visibility | Future-version normative | none | Chapter 16; no current source spelling. |
 | Undefined external AAPCS symbols and link-time resolution | Future-version normative | `wyst.language.v0.8` target 34 | Chapter 16 |
 | Deterministic multi-object static linking with cross-object veneers | Future-version normative | `wyst.language.v0.8` target 35 | Chapter 16 |
 | Foreign AArch64 ELF object linkage | Future-version normative | `wyst.language.v0.8` target 36 | Chapter 16 |
-| Static archive distribution plus artifact/link reports | Future-version normative | `wyst.language.v0.8` target 37 | Chapter 16 |
+| Static archive distribution plus authenticated companion and artifact/link reports | Future-version normative | `wyst.language.v0.8` target 37 | Chapter 16; the manifest grammar is reserved now, but selection fails before either product until an archive/companion producer is activated. |
 | Dynamic linking, GOT/PLT, PIE, shared objects, ELF TLS, COMDAT/section groups, PE/COFF, Mach-O artifact modes | Experimental | none | Chapter 16 |
 | DWARF 5 debug-info floor and deterministic debug sections | Implemented | `wyst.language.v0.7` | Chapter 23 |
 | Debug build mode that forces frame records independent of leaf/non-leaf status | Future-version normative | `wyst.nativeAbi.next` | Chapter 15 names the ABI consequence; current CLI has no debug-build mode. |
-| `#backtrace` source attribute for forcing frame records | Removed | `wyst.language.v0.9` | The non-parser [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) records the rejection; it has no replacement or compatibility path. |
+| Predecessor source attribute for forcing frame records | Removed | `wyst.language.v0.9` | The non-parser [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) records the rejection; it has no replacement or compatibility path. |
 | DWARF-4 bitfield attribute fallback (`DW_AT_bit_offset`) | Deprecated | none | Chapter 23 requires DWARF 5 forms. |
 
 ### Tooling, Reports, And Interfaces
@@ -326,9 +432,9 @@ or update a row in this registry.
 | `wync explain effects` experimental compiler inspection report | Experimental | `wync.reports.v1` | Chapter 21 |
 | `wync explain storage` experimental compiler inspection report | Experimental | `wync.reports.v1` | Chapter 21 |
 | `wync generated-manifest` | Implemented | `wync.reports.v1` | Chapter 22 |
-| Deterministic rebuild benchmark report | Implemented | `wync.reports.v1` | Chapter 24 |
+| Deterministic rebuild report and host compiler-efficiency release gate (`tooling.compiler-efficiency-release-gate`) | Implemented | `wync.reports.v1` | Chapter 24; `wync.compilerEfficiencyPolicy.v1`; `wync.compilerEfficiencyEvidence.v1`; `wync rebuild-benchmark`; `wync/tools/bench/` |
 | Release evidence and release archive facts | Implemented | `wync.reports.v1` | `CHANGELOG.md`, tests, and release tooling |
-| Diagnostic suppression policy and performance/resource, modeled-cost, measured benchmark, and PMU/TMA report expansion beyond the current structural inspection schemas | Future-version normative | none | Chapters 1, 21, and 24; Appendix A |
+| Diagnostic suppression policy and static, modeled-cost, emitted-program, target-measured, and PMU/TMA report expansion beyond the host compiler-efficiency schemas | Future-version normative | none | Chapters 1, 21, and 24; Appendix A |
 
 ## Schema Registry
 
@@ -338,25 +444,42 @@ or update a row in this registry.
 | ------ | ------ | --------- |
 | `wyst.syntaxWords.v0.9` | Implemented | [`syntax-words.tsv`](syntax-words.tsv); one unique row per special source spelling. |
 | `wyst.metaOperations.v0.9` | Implemented; exactly 14 active rows | [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv); complete phase, result, target-fact, relocation, behavior, owner, and tooling contracts. |
-| `wyst.declarationAttributes.v0.9` | Implemented registry; six rows active | [`attribute-catalog.tsv`](attribute-catalog.tsv); `align`, `section`, `inline`, `init`, `cache_isolated`, and `schedule` are active; later-owner rows remain inactive. |
+| `wyst.declarationAttributes.v0.9` | Implemented registry; exactly eight rows active | [`attribute-catalog.tsv`](attribute-catalog.tsv); `align`, `section`, `inline`, `init`, `frame`, `deny_effects`, `cache_isolated`, and `schedule` are the complete active set. |
 | `wyst.genericBounds.v0.9` | Implemented | [`generic-bounds.tsv`](generic-bounds.tsv); closed subject and capability contracts with atomic extension rows. |
-| `wyst.atomic-matrix.v1` | Implemented | [`atomic-matrix.json`](atomic-matrix.json); sole Item-52 authority for atomic storage, elements, methods, legal orders, and ARM64 lowering selection. Legacy spelling dispositions are outside this matrix. |
+| `wyst.atomic-matrix.v1` | Implemented | [`atomic-matrix.json`](atomic-matrix.json); sole authority for atomic storage, elements, methods, legal orders, and ARM64 lowering selection. Legacy spelling dispositions are outside this matrix. |
 | `wyst.genericInstantiationKey.v0.9` | Implemented | `semantic-db.json` `genericInstantiationContract`; semantic declaration identity plus complete concrete type and currently empty value-argument lists. |
 | `wyst.genericInstantiationTrace.v0.9` | Implemented | `semantic-db.json` `genericInstantiationContract`; deterministic root-to-demand canonical-key trace. |
+| `wyst.namedLayout.v0.9` | Implemented | `semantic-db.json` `namedLayoutContract`; exact entry identity/validation, typed placement symbols, deterministic solver, initcall section, and checked-assembly preservation. |
+| `wyst.target-profile-contract.v1` | Implemented | `semantic-db.json` `targetProfileContract`; complete layout-owner, ABI/return, privilege/admission, dynamic-import/TLS/unwind/panic/exit tuple and shared identity surfaces. |
+| `wyst.target-profile-base.v1` | Implemented | `semantic-db.json` `targetProfileContract`; authenticated digest over the complete named profile, architecture/ABI, authority, environment/service/counter, and policy base used to bind extensions. |
+| `wyst.target-entry-schema.v1` | Implemented | `semantic-db.json` `targetEntrySchema`; the two QEMU EL2 variants authenticate Wyst Native EL2 entry with exactly `dtb: @u8 in x0`, while `qemu-virt-aarch64-el3-noargs-v1` authenticates secure EL3 direct-ELF entry through `wyst-native-noargs-v1` and exactly `pub naked fn _start() -> never`. Both variants require an initially uninitialized stack and exactly one checked cataloged `mov sp, stack` transition from `stack: u64 in x1`; `x0` is not an EL3 entry parameter. The canonical EL3 fixture's direct `firmware_main()` successor is runtime evidence, not a compiler-schema field. Complete facts and digest bind target/artifact/cache/report/runner identities, and source claims never create or translate authority. |
+| `wyst.target-profile-extension-set.v1` | Implemented | `semantic-db.json` `targetProfileExtensionSet`; indivisible base-profile-bound authentication with stable unknown, absent, stale, partial, and incompatible rejection. The current set combines the source-matched static platform-counter product and one execution-environment product for every built-in target. |
+| `wyst.execution-environment-contract.v1` | Implemented | `semantic-db.json` `executionEnvironmentContract`; one of four closed classes bound to the exact authenticated base-profile policy tuple, plus closed provider lists and migration/preemption/current-core policy. |
+| `wyst.execution-provider-descriptor.v1` | Implemented | `semantic-db.json` `executionEnvironmentContract`; selected-environment-bound provider identity/version/product facts and authenticated provider-leaf/transfer requirements. |
+| `wyst.completion-provider-descriptor.v1` | Implemented | `semantic-db.json` `executionEnvironmentContract`; selected-environment-bound program-completion provider identity/version/product facts, required only by source that imports the descriptor. |
+| `wyst.execution-strands.v1` | Implemented | `semantic-db.json` `executionStrandContract`; memory/control strand order, effect/boundary placement and preservation, zero-code marker, migration limits, and retained activation identity. |
+| `wyst.context-stability.v1` | Implemented | `semantic-db.json` `contextStabilityContract`; closed provenance vocabulary, conservative joins, eligible storage, liveness, serialization, and trust-boundary rules. |
+| `wyst.callable-context-summary.v2` | Implemented | `semantic-db.json` `contextStabilityContract.callableSummary`; one canonical digested transport atomically carries the exact-or-conservative callable effect bound, its authority, and field-sensitive parameter/result provenance, rejecting corruption, mismatch, erasure, upgrades, incompatible identities, missing/extra summaries, unknown tags, and noncanonical encodings. |
+| `wyst.platform-counter-instance-provider.v1` | Implemented | `semantic-db.json` `platformCounterInstanceContract`; static extension product `a64-generic-virtual-counter-instance-provider-v1` version 1, role `platform_counter_instance_provider`, pinned five-field product digest `sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`, bound to `a64-generic-virtual-counter-v1` and `wyst.platform-counter-universe-evidence.v1`. |
+| `wyst.platform-counter-instance-record.v1` | Implemented | `semantic-db.json` `platformCounterInstanceContract`; complete normalized optional per-run domain/epoch, frequency, comparability, serialization/overhead, universe-authority contract identity and content digest, platform-state evidence, mutable-control, and evidence/digest record. |
+| `wyst.platform-counter-instance-identity.v1` | Implemented | `semantic-db.json` `platformCounterInstanceContract`; immutable identity over the record and static provider/source schemas plus the authenticated content digest, which covers normalized runtime content and evidence identities; excluded from reusable compilation-cache keys. |
+| `wyst.platform-counter-universe-evidence.v1` | Implemented | `semantic-db.json` `platformCounterInstanceContract`; combined authority over the provider/source, exact counter domain and configuration epoch, both universe evidence references, exact sorted state identities, and exact sorted control identities/effects. Scope enters the authority digest so evidence cannot be replayed across domains or epochs. Runtime authority content is excluded from compilation identity; baseline compiler-owned synthetic conformance pins digest `sha256:c656328d5dde4c49e71ea298af58ac8daa27a8bb9205219d59c061bea3a3ebb1`. |
+| `wyst.platform-counter-universe-evidence-contract.v1` | Implemented | `semantic-db.json` `platformCounterInstanceContract`; independently selected platform-environment trust anchor that pins one exact scope-bound authority content digest and is itself carried by the record, so a producer cannot establish completeness by self-consistent resealing or silently swap authorities. |
 | `wyst.hardwareRegisters.v0.9` | Implemented | `semantic-db.json` `hardwareRegisterContract`; Chapters 6, 9, and 11; Appendices A and B. |
 | `wyst.coreImportCatalog.v0.9` | Implemented | [`sealed-core.tsv`](sealed-core.tsv) and `semantic-db.json` `sealedCoreImportCatalog`; sealed namespace policy, bundled source identity, and authenticated roles. |
 | `wyst.dynamicContainerRole.v0.9` | Implemented | Authenticated `core.collections.DynamicArray` role metadata, independent of local spelling. |
 | `wyst.a64-instruction-semantics.v2` | Experimental | [`a64-instruction-semantics.tsv`](a64-instruction-semantics.tsv); exactly one complete semantic row for each of the 308 manifest-active encodings. Every row carries pinned QEMU 11.0.0 independent-oracle evidence: 302 expected-value paths, five state paths, and one trap structural path. Inactive encodings have no placeholder semantic row. |
-| `wyst.a64-instruction-catalog.v1` | Experimental | [`a64-encoding-catalog.tsv`](a64-encoding-catalog.tsv) and generated [`a64-active-encoding-catalog.tsv`](a64-active-encoding-catalog.tsv); 19 checked-source grammars (12 general-purpose and seven target-structural-only) plus a shared 308-row active encoder/decoder index with 301 operand decoders, 10 typed fixups, and a complete four-way authority word partition. |
+| `wyst.a64-instruction-catalog.v1` | Experimental | [`a64-encoding-catalog.tsv`](a64-encoding-catalog.tsv) and generated [`a64-active-encoding-catalog.tsv`](a64-active-encoding-catalog.tsv); 20 checked-source grammars (13 general-purpose and seven target-structural-only) plus a shared 308-row active encoder/decoder index with 301 operand decoders, 10 generated fixup programs, three typed checked-assembly fixups, and a complete four-way authority word partition. |
 | `wyst.a64-state-semantics.v3` | Experimental | [`a64-state-semantics.tsv`](a64-state-semantics.tsv); all 31 authority-backed register/state contracts required by the focused active support packs and dynamic semantic references. |
 | `wyst.a64-structural-semantics.v2` | Experimental | [`a64-structural-semantics.tsv`](a64-structural-semantics.tsv); the two manifest-active AArch64 vector-table and trap-frame contracts. Both carry pinned QEMU 11.0.0 `trap-frame` structural-path evidence: selected `current.spx.sync` delivery for the vector table and the canonical entry-save/restore-ERET round trip for the trap frame. Authenticated generated metadata and compile-time tests additionally own shape, order, offsets, extents, selection, and state transitions. |
 | `wyst.a64-support-policy.v1` | Experimental | [`a64-support-policy.json`](a64-support-policy.json); checked-in activation policy naming the `wyst.a64.checked-asm.core.v1`, `wyst.a64.target-structural-asm.aarch64.v1`, `wyst.a64.ordinary-lowering.v1`, `wyst.a64.architecture-operations.v1`, and `wyst.a64.target-structural.aarch64.v1` packs. |
-| `wyst.a64-support-manifest.v1` | Experimental | [`a64-support-manifest.json`](a64-support-manifest.json) and [`a64-support-rows.tsv`](a64-support-rows.tsv); generated, authenticated partition of exactly 8,955 rows: 308 active/4,023 known-unsupported encodings, 19 active/4,603 known-unsupported source forms, and two active structural profiles, with zero unexplained or partially active rows. |
+| `wyst.a64-support-manifest.v1` | Experimental | [`a64-support-manifest.json`](a64-support-manifest.json) and [`a64-support-rows.tsv`](a64-support-rows.tsv); generated, authenticated partition of exactly 8,955 rows: 308 active/4,023 known-unsupported encodings, 20 active/4,602 known-unsupported source forms, and two active structural profiles, with zero unexplained or partially active rows. |
+| `wyst.a64-support-source-domains.v1` | Experimental | [`a64-support-source-domains.json`](a64-support-source-domains.json); generated, support-manifest-digest-owned cross-tool projection of the exact 13 general-purpose and seven target-structural-only active source forms, including operand grammar, alias, and register view/list domains. It is derived from the authenticated raw source-form grammar, active instruction catalog, and support policy rather than defining a parallel authority. |
 | `wyst.a64-conformance-policy.v2` | Experimental | [`a64-conformance-policy.json`](a64-conformance-policy.json); closed suites, pinned static and execution oracles, authenticated target bindings, allocation evidence identity, and fuzz parameters for the focused release gate. |
-| `wyst.a64-conformance-evidence.v2` | Experimental | [`a64-conformance-evidence.tsv`](a64-conformance-evidence.tsv); exactly one complete evidence row for each of the 8,955 support-bearing rows, including row-exact predicate-negative applicability and pinned independent-oracle execution for all 329 active rows. |
+| `wyst.a64-conformance-evidence.v2` | Experimental | [`a64-conformance-evidence.tsv`](a64-conformance-evidence.tsv); exactly one complete evidence row for each of the 8,955 support-bearing rows, including row-exact predicate-negative applicability and pinned independent-oracle execution for all 330 active rows. |
 | `wyst.a64-conformance-targets.v2` | Experimental | [`a64-conformance-targets.tsv`](a64-conformance-targets.tsv); all 153 targets include `base`, positive-state identity, selection kind, and authenticated selection digest: `v8Ap0` `base` and `base|fp_simd` base/FP/AdvSIMD profiles, a `v8Ap1` `base|lse` LSE profile, and 149 conformance-only `v9Ap7` known-unsupported precedence bindings. |
 | `wyst.a64-conformance-static-oracles.v2` | Experimental | [`a64-conformance-oracles.tsv`](a64-conformance-oracles.tsv); offline LLVM 14.0.6 and Capstone 5.0.7 full-disassembly outcomes and adjudications for all 308 active encodings, plus exact LLVM reassembly words and an explicit decode-only Capstone boundary. |
-| `wyst.a64-conformance-manifest.v2` | Experimental | [`a64-conformance-manifest.json`](a64-conformance-manifest.json); generated identity and exact 329-active/8,626-known-unsupported release evidence summary, with all active rows pinned to QEMU 11.0.0 independent-oracle evidence, including runtime provenance, allocation, target, static-oracle, aggregate-gate, and fuzz coverage. |
+| `wyst.a64-conformance-manifest.v2` | Experimental | [`a64-conformance-manifest.json`](a64-conformance-manifest.json); generated identity and exact 330-active/8,625-known-unsupported release evidence summary, with all active rows pinned to QEMU 11.0.0 independent-oracle evidence, including runtime provenance, allocation, target, static-oracle, aggregate-gate, and fuzz coverage. |
 
 ### Report Schemas
 
@@ -370,7 +493,17 @@ or update a row in this registry.
 | `wync.explain.storage.v1` | Experimental | `wync explain storage --format json` and text header |
 | `wync.reportEpistemic.v0` | Experimental common field contract | All experimental compiler inspection reports |
 | `wync.generatedManifest.v0` | Implemented | `wync generated-manifest` |
-| `wync.rebuildBenchmark.v0` | Implemented | Deterministic rebuild benchmark JSON |
+| `wync.rebuildBenchmark.v0` | Superseded; retained unchanged as a read-only historical contract | No current producer; exact schema/example under `wync/tools/bench/schemas/`; superseded by `wync.rebuildBenchmark.v1`; fields are never reinterpreted |
+| `wync.rebuildBenchmark.v1` | Implemented | `wync rebuild-benchmark` |
+| `wync.localBench.v0` | Superseded; retained unchanged as a read-only historical contract | No current producer; superseded by `wync.localBench.v1`; fields are never reinterpreted |
+| `wync.localBench.v1` | Implemented envelope only | `wync/tools/bench/bench.mjs`; embeds or references exact policy/evidence and owns no baseline, aggregation, budget, or verdict |
+| `wync.timingTrace.v0` | Superseded; retained unchanged as a read-only historical contract | No current producer; exact schema/example under `wync/tools/bench/schemas/`; superseded by `wync.timingTrace.v1`; fields are never reinterpreted |
+| `wync.timingTrace.v1` | Implemented host-only attribution | Compiler `CliTimingSink`; canonical phase mappings, root reconciliation, and tracing-overhead evidence |
+| `wync.compilerEfficiencyPolicy.v1` | Implemented checked-in host release-gate input | `wync/tools/bench/policy/compiler-efficiency-policy-v1.json`; sole workload/protocol/eligibility/aggregation/baseline/evidence-preservation/budget authority |
+| `wync.compilerEfficiencyEvidence.v1` | Implemented terminal host release evidence | `wync/tools/bench/bench.mjs`; sole samples/aggregates/status/attribution/verdict authority bound to the exact policy |
+| `wync.compilerEfficiencyPreservationRecord.v1` | Implemented terminal semantic ledger | Exactly seven authenticated roles: four compiler carriers, exact policy, verbatim evidence, and complete run archive |
+| `wync.compilerEfficiencyPolicyTransition.v1` | Implemented review contract | Binds the distinct canonical P0/P1 policy digests, preserved P0 object, bootstrap record, and human review |
+| `wync.compilerEfficiencyTerminalEvidenceRegistry.v1` | Pending required human/release inputs | `wync/tools/bench/evidence/v1/terminal-evidence-registry.json`; acceptance requires exactly one P0 bootstrap and one P1 pass |
 | `wync.releaseEvidence.v0` | Implemented | `wync release-evidence` command stdout |
 | `wync.releaseHostFacts.v0` | Implemented | release-evidence `host-facts.json` |
 | `wync.releaseArchiveFacts.v0` | Implemented | release-evidence `release-facts.json` |

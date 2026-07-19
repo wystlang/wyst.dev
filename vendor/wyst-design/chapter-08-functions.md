@@ -3,7 +3,7 @@ title: "Chapter 8: Wyst Functions, Control Flow, and Inline Assembly"
 group: chapter
 chapter: 8
 order: 8
-summary: "Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches."
+summary: "Declarations, functions, parameters, returns, control flow, labels, inline helpers, explicit register placement, and assembly escape hatches."
 ---
 
 # Chapter 8: Wyst Functions, Control Flow, and Inline Assembly
@@ -41,8 +41,8 @@ activated hard modifier or storage class, an activated external convention,
 and then the declaration keyword. A declaration has at most one non-empty
 `#[...]` group. The versioned attribute catalog owns legal subjects, argument
 forms, conflicts, and formatter order; unknown and inactive attributes are
-errors rather than ignored annotations. `::`, `:=`, `::=`, unkeyworded
-bindings, and `let` are not v0.9 declarations.
+errors rather than ignored annotations. Predecessor punctuation-led and
+unkeyworded bindings, along with `let`, are not v0.9 declarations.
 
 Every `const` and `var`, including a destructuring binding, has an explicit
 initializer. `const` is immutable and `var` is mutable. Either may omit `: T`
@@ -50,6 +50,15 @@ only when its initializer determines one unambiguous type. A local `const` may
 hold a runtime result. Module `const` initializers remain constant-phase;
 module `var` initializers must be statically representable constants or
 relocations. Neither form implies zero initialization or hidden startup code.
+
+<!-- wyst-contract: fmt -->
+```wyst
+module functions.contract
+
+fn identity(value: u64) -> u64 {
+  return value
+}
+```
 
 Functions use named declaration parameters and may return either one type or a
 named tuple of at least two result fields:
@@ -105,8 +114,9 @@ shallow `.variant`, `.variant(name)`, or `.variant(_)` patterns followed
 directly by a required brace body. Alternatives bind the same names and types;
 arms do not fall through, and `break` does not target a `match`. Without a
 final `else`, the variants must be statically exhaustive. A final explicit
-`else {}` deliberately accepts unlisted variants. There are no `case`, colon,
-arrow, wildcard arm, guard, nested pattern, or match-expression forms. The same
+`else {}` deliberately accepts unlisted variants. There are no predecessor arm
+keywords, colon or arrow arms, wildcard arms, guards, nested patterns, or
+match-expression forms. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
 the binding scoped to the successful branch.
 
@@ -165,6 +175,18 @@ register shuffle, convention conversion, or other adaptation between unequal
 callable identities. A direct declaration call may use its parameter labels;
 every call through a callable value is positional.
 
+A callable's `effects(...)` clause is its closed semantic upper bound. It is
+preserved with callable values and imported interfaces independently of ABI
+register identity. `effects(all)` includes the target-neutral
+`execution_suspension` effect; an absent bodyless foreign bound is conservative
+`all`, not `none`. Every direct or indirect call whose exact or conservative
+bound contains that effect creates one typed `strand_suspension_boundary`
+after left-to-right argument evaluation and immediately before transfer. Known
+assignments must fit the destination bound, and arrays, fields, aggregates,
+phis, parameters, results, inlining, and serialized summaries preserve it.
+Chapter 13 owns the boundary ordering, context-stability liveness, migration,
+and retained-task/activation identity rules.
+
 `noescape` precedes an address parameter's type in both declarations and
 callable value types. It is invalid on a non-address parameter and is part of
 identity, not an advisory attribute. The callee may use the address only under
@@ -187,7 +209,8 @@ register must be legal for the value class and width under Chapter 15, must not
 conflict with another simultaneously required location, and must not name
 target-reserved state. If allocation and preservation cannot satisfy the exact
 request, compilation fails; the compiler does not silently choose another
-register. The removed `#pin` form is never an alternative spelling.
+register. The removed register-placement directive is never an alternative
+spelling.
 
 ### `never`, labels, and `naked`
 
@@ -242,7 +265,8 @@ demanded by ordinary reachability or another explicit artifact root.
 ### `per_cpu var`
 
 `per_cpu` is legal only on a module-scope mutable `var` with an explicit
-item-41 statically representable initializer. The declaration freezes one
+statically representable initializer under
+`language.keyword-led-declarations-bindings`. The declaration freezes one
 natural-layout initialization-template entry: source type and layout, natural
 alignment, initializer bytes and relocations, canonical storage-class/symbol
 identity, deterministic template placement, and final byte offset in
@@ -285,8 +309,8 @@ source access lowers independently to exactly:
 3. exactly the one type-appropriate operation requested by source.
 
 Ordinary storage performs its normal typed load or store. Atomic storage is
-accessible only through the item-52 atomic methods once those methods are
-active. A named bitstruct-field write is one logical type-appropriate source
+accessible only through the `wyst.atomic-matrix.v1` methods once those methods
+are active. A named bitstruct-field write is one logical type-appropriate source
 operation: it uses one fresh base and one narrowly confined backing-word
 `Load -> BitfieldInsert -> Store` read-modify-write sequence. The verifier
 admits only that exact dataflow and no address escape or unrelated second use
@@ -301,8 +325,8 @@ independently.
 The selected target/runtime contract must state whether current-core access is
 available, the base mechanism, its required alignment, every reserved register
 or system-state assumption, and the realization kind. Lowering and inspection
-reports expose those facts. Before item 92, the only access-enabling selection
-is:
+reports expose those facts. Before the production multicore realization
+milestone, the only access-enabling selection is:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -322,11 +346,10 @@ This item emits only the immutable template and the requested access sequence.
 It performs no instance replication, allocation, base installation, startup
 copy, or implicit collapse to an ordinary global. Later runtime work may copy
 the frozen template without changing its source, object, or offset semantics.
-Wyst v0.9 has no TLS storage class: `#tls`, `#tls_offset_of`, and
-`thread_local`, as well as `#noreturn`, `#naked`, `#noescape`, `#pin`, and
-`#percpu`, are removed source spellings. `[aapcs]`, `@(...)`, and
-`@[aapcs] (...)` callable forms are likewise replaced by `extern "C" fn(...)`
-and `fn(...)`.
+Wyst v0.9 has no TLS storage class. The predecessor TLS, callable-modifier,
+register-placement, per-CPU, ABI-marker, and callable-type spellings are
+removed source forms. Current callable forms use `extern "C" fn(...)` and
+`fn(...)`.
 
 ## Released v0.8 Syntax Snapshot
 
@@ -371,7 +394,7 @@ name :: type = value    // constant binding (local or top-level by scope)
 
 The type annotation can be omitted. When absent, the compiler infers the type from the right-hand side:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 # Explicit type
 counter  : u64 = 0
@@ -414,7 +437,7 @@ is intended.
 Constant inference uses the same type rules with `::=`, but the right-hand
 side must be a constant expression:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 NAME ::= "wyst" // NAME :: string = "wyst"
 LIMIT ::= 16 // LIMIT :: i64 = 16
@@ -425,7 +448,7 @@ Inside a function body, `::` and `::=` introduce **local constants**. They are
 block scoped, visible only after their declaration, and have no addressable
 stack storage:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 zero_bss :: () {
   stride :: u64 = 8
@@ -451,14 +474,14 @@ The current constant evaluator folds integer arithmetic, boolean logic, and
 the compile-time query forms. Floating-point literals may bind directly, but
 floating-point arithmetic in a constant expression is future work:
 
-<!-- wyst-contract: future -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 HALF_PI ::= 3.141592653589793 / 2.0
 ```
 
 Use annotations or categorized conversions to select a narrower literal type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x : u8 = 123      // annotation gives the literal a target type
 y := 0x4000 as.numeric u64
@@ -467,7 +490,7 @@ z := 3.14 as.float f32
 
 Out-of-range literals are rejected at the bind site:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : u8 = 256 // compile error: 256 not representable in u8
 mask : u8 = 0xFF // OK
@@ -477,7 +500,7 @@ mask : u8 = 0xFF // OK
 
 Loads and stores also drive inference:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 mem : @u64 = 0x4000
 
@@ -490,7 +513,7 @@ x : u64 = u64@[mem]
 
 #### Full Examples
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 # Local variables (mutable)
 counter  : u64          = 0        // explicit
@@ -509,7 +532,7 @@ BASE :: u64 = 0x4000_0000
 
 Functions are declared with `::` binding. No `fn` keyword — the signature itself is the type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 name :: (args) -> ret { body }              // returns a value
 name :: (args) { body }                      // no return value (omit -> entirely)
@@ -518,14 +541,14 @@ name :: () #noreturn { body }                // never returns to caller
 
 Named tuple multi-return syntax:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 name :: (args) -> (a: T1, b: T2) { body }
 ```
 
 Example:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 sum :: (data : @u64, count : u64) -> u64 {
 
@@ -565,7 +588,7 @@ integer loop, not an iterator protocol.
 
 Functions can return multiple values using a **tuple return type**:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 foo :: () -> (x: u8, y: u64) {
   return (5, 100)
@@ -582,7 +605,7 @@ tuple. They exist so the caller can inspect fields by name.
 
 ### Binding Multiple Return Values
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 result : (x: u8, y: u64) = foo()
 x_val = result.x
@@ -595,7 +618,7 @@ Call results bind as tuple values whose fields are read by name. The order of
 field names in the return type determines the ABI return-register order and
 the positional order for tuple destructuring. Use `_` to discard a field:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 _, remainder := divmod(7, 3)
 ```
@@ -604,7 +627,7 @@ _, remainder := divmod(7, 3)
 
 A single return value is just the plain type (no tuple needed):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 get_count :: () -> u64 {
   return 42
@@ -628,7 +651,7 @@ Note: AAPCS64 functions use a separate compatibility surface. `[aapcs]` tuple
 returns are outside the direct multi-return model; the 4-register return is a
 Wyst Native ABI extension.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 # Wyst
 foo :: () -> (x: u8, y: u64) {
@@ -650,7 +673,7 @@ Wider types (f64, vectors) use the appropriate register class (d0-d3 for floats,
 Multi-return signatures are valid function shapes and may appear in a function
 pointer type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 callback : @() -> (x: u8, y: u64) = #addr_of(foo)
 ```
@@ -667,7 +690,7 @@ and in tuple destructuring. They are not parameter types in the current
 compiler contract. Pass the fields as separate parameters or wrap them in a
 named `struct`.
 
-<!-- wyst-contract: future -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 consume_pair :: (pair : (x: u64, y: u64)) { }
 ```
@@ -689,138 +712,123 @@ consume_pair :: (pair : (x: u64, y: u64)) { }
 
 ---
 
-## 2.3 Register Pinning
+## 2.3 Explicit Register Placement
 
-Register pinning constrains the assembler to place a specific variable or
-parameter in a named ARM64 register. It is an explicit override of normal
-register allocation.
+The contextual `in register` clause requires a scalar parameter, scalar result,
+callable-type position, or local mutable `var` to occupy an exact target
+register. It is a hard ABI or storage constraint, not an allocator hint. If the
+constraint cannot be satisfied, compilation fails instead of choosing another
+register or silently spilling the value.
 
-`#pin` is allowed on:
-
-- **local variables** — mutable storage inside function bodies
-- **function parameters** — in the parameter list
-
-`#pin` is not allowed on globals, top-level constants, or local constants. A
-pinned global would silently reserve that register for the entire program,
-conflicting with any calling convention and hiding a program-wide side effect
-from callers. A local constant has no storage slot to pin. If a platform
-requires a globally reserved register (e.g. a dedicated thread-pointer), that
-belongs in the ABI definition, not in a variable declaration.
+Placement is not legal on module variables, constants, fields, types, a whole
+callable, named multi-results, or `never`. Platform-reserved registers belong to
+the target ABI and cannot be claimed by source declarations. The removed
+`#pin` spelling is not an alternate form.
 
 ---
 
 ### Canonical Forms
 
-There are exactly two syntactic forms for `#pin`:
+Placement appears immediately after the placed type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-pass -->
 ```wyst
-name : type #pin(reg)              // declare-without-init
-name : type #pin(reg) = value      // declare-with-init
+module register_placement
+
+fn entry(argument: u64 in x0) -> u64 in x1 {
+  var state: u64 in x19 = argument
+  return state
+}
+
+const callback: fn(u64 in x0) -> u64 in x1 = entry
 ```
 
-The pin appears between the type and any initializer, and it is part of the
-declaration. There is no post-hoc form — `name #pin(reg)` as a standalone
-statement that re-pins an existing binding is **rejected by the grammar**.
-A binding is pinned at the point it is declared, for its entire lifetime,
-or it is not pinned at all.
-
-<!-- wyst-contract: sketch -->
-```wyst
-expected : u64 = 0
-expected #pin(x0)        // compile error: post-hoc pin is not a legal form
-```
-
-The rationale: a single declaration-site form means the register a name
-inhabits is determined entirely by the line that introduces the name. Liveness
-windows for pins line up with binding scopes, which keeps the conflict rules
-(below) decidable from declarations alone.
+A local `var` always has an initializer. There is no post-hoc placement
+statement and no declaration-without-initializer alias form.
 
 ---
 
-### Pinning Local Variables
+### Placing Local Variables
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-pass -->
 ```wyst
-setup :: () {
-  counter : u64 #pin(x19) = 0
+module local_register_placement
 
+fn setup() {
+  var counter: u64 in x19 = 0
   for i in 0 ..< 100 {
     counter += 1
   }
 }
 ```
 
-The assembler must place `counter` in `x19` for the lifetime of the binding.
-If `x19` is unavailable at the pin site, the compiler emits a compile error —
-it will not silently move the pin.
+`counter` occupies `x19` for the binding's lifetime. If `x19` is unavailable,
+the declaration is rejected.
 
 ---
 
-### Pinning Function Parameters
+### Placing Function Parameters and Results
 
-Parameters are pinned at function entry. This is the primary use case for
-`#pin`: receiving values placed in specific registers by firmware, hardware,
-or a foreign calling convention.
+Parameter and result placements are callable identity. They are the canonical
+way to receive firmware or hardware entry values and to define exact direct-call
+boundaries:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-pass -->
 ```wyst
-#noreturn
-_start :: (dtb : @u8 #pin(x0)) {
-  // dtb is guaranteed to be in x0 at entry
-  // as placed there by QEMU/firmware at reset
+module boot
+
+import core.arch { cpu }
+
+fn decode(argument: u64 in x0) -> u64 in x6 {
+  return argument + 1
+}
+
+fn firmware_entry(dtb: @u8 in x0) -> never {
   kernel_init(dtb)
+}
+
+fn kernel_init(dtb: @u8) -> never {
   loop {
-    %wfe()
+    cpu.wfe()
   }
 }
 ```
 
-Multiple parameters can be pinned independently:
-
-<!-- wyst-contract: sketch -->
-```wyst
-el2_entry :: (arg0 : u64 #pin(x0), arg1 : u64 #pin(x1)) #noreturn {
-    ...
-}
-```
-
-Pinned parameters are not required to follow the normal Wyst ABI register
-order. The pin overrides the ABI assignment for that parameter. The caller
-is responsible for placing values in the declared registers before branching
-to the function.
+Callers must satisfy the declared locations. A callable value with different
+parameter or result placements is a different type and is not implicitly
+adapted.
 
 ---
 
 ### Non-Escaping Address Parameters
 
-`#noescape` marks an address parameter as a call-scoped borrow of storage the
-callee must not retain or expose. It allows callers to pass `%addr_of(local)`
-to helper functions without forcing the storage into a global:
+`noescape` precedes an address parameter type and marks a call-scoped borrow
+that the callee must not retain or expose. It allows callers to pass
+`addr_of(local)` without forcing the storage into a global:
 
 <!-- wyst-contract: check-pass -->
 ```wyst
-#module boot
+module boot
 
-fill :: (out : @u64 #noescape) {
-  u64@[out] = 42
+fn fill(out: noescape @u64) {
+  out.store(42)
 }
 
-main :: () -> u64 {
-  value : u64 = 0
-  fill(%addr_of(value))
+fn main() -> u64 {
+  var value: u64 = 0
+  fill(addr_of(value))
   return value
 }
 ```
 
-Inside the callee, `#noescape` is a syntactic rule over the parameter value. A
-`#noescape` parameter may appear only as:
+Inside the callee, `noescape` is a syntactic rule over the parameter value. A
+`noescape` parameter may appear only as:
 
 - the address operand of a direct memory access, including offset arithmetic in
   that address operand, vector loads/stores, endian loads/stores, atomic
   operations, prefetch, and cache-maintenance operations; or
-- an argument to a direct call whose corresponding parameter is also marked
-  `#noescape`.
+- an argument to a call whose corresponding callable parameter is also marked
+  `noescape`.
 
 The parameter may not undergo any categorized conversion, be copied into a local binding,
 tuple, aggregate, or slice value, be assigned to another local, be returned, be
@@ -831,170 +839,168 @@ Violations are compile errors:
 
 <!-- wyst-contract: check-fail -->
 ```wyst
-#module boot
+module boot
 
-bad :: (ptr : @u64 #noescape) -> @u64 {
+fn bad(ptr: noescape @u64) -> @u64 {
   return ptr
 }
 ```
 
-`#noescape` is a parameter contract, not a pointer type and not a provenance
-model. Function pointer types do not carry it, so indirect calls remain
-conservative and reject stack-local address arguments.
+`noescape` is a parameter contract and part of callable identity, not an
+address qualifier or a general provenance model. Indirect calls accept a
+stack-local address only when the callable type's corresponding parameter is
+also `noescape`.
 
 ---
 
-### Pinning Callee-Saved Registers (Prologue Ownership)
+### Callee-Saved Local Placement (Prologue Ownership)
 
-When a non-`#naked` function pins a local variable to a callee-saved register
-(`x19`–`x28`, `x29`), the function's prologue **always** saves that register,
+When a non-`naked` function places a local variable in a callee-saved register
+(`x19`–`x28`), the function's prologue **always** saves that register,
 and the epilogue **always** restores it. The save is unconditional: it does
 not depend on liveness analysis, on whether the function makes calls, or on
-how many paths through the body actually read the pin.
+how many paths through the body actually read the placed binding.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-pass -->
 ```wyst
-setup :: () {
-  counter : u64 #pin(x19) = 0
+module demo
+
+fn setup() {
+  var counter: u64 in x19 = 0
   // prologue emits: stp x19, ..., [sp, #-N]!
   // epilogue emits: ldp x19, ..., [sp], #N
   counter += 1
 }
 ```
 
-The pin is treated as "this function uses x19" for the purpose of frame
+The placement is treated as "this function uses x19" for frame
 construction. The rule is intentionally simple so that prologue shape can be
 predicted by reading declarations only — without a liveness pass over the body.
 
-A consequence: a `#pin(x19)` that is never read still costs the frame slot
-and the save/restore pair. If the pin is not load-bearing, drop it; do not
+A consequence: an `in x19` local that is never read still costs the frame slot
+and the save/restore pair. If the placement is not load-bearing, drop it; do not
 rely on the optimizer to remove the save.
 
-This rule does not apply inside `#naked` functions — see "Interaction with
-`#naked`" below.
+This rule does not apply inside `naked` functions — see "Interaction with
+`naked`" below.
 
 ---
 
-### Pinning Caller-Saved Registers and Call Boundaries
+### Caller-Saved Placement and Call Boundaries
 
-When a local variable is pinned to a caller-saved register (`x0`–`x17`),
-the pin lasts for the binding's lifetime, and the caller-saved register is
+When a local variable is placed in a caller-saved register (`x0`–`x17`),
+the placement lasts for the binding's lifetime, and the caller-saved register is
 clobbered across any `bl`/`blr`/`svc`/`hvc`/`smc`/`brk` call. If the pinned
 binding is live across such a call, the program is rejected at compile time:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: fmt -->
 ```wyst
-work :: (handler : @(u64) -> u64) {
-  state : u64 #pin(x0) = 0xdead // pin to caller-saved x0
-  result := handler(state) // x0 clobbered by call — state live across it
-  // compile error: pinned variable `state` is live across a call that
-  // clobbers its pinned register `x0`
+module demo
+
+fn use(first: u64, second: u64) { }
+
+fn work(handler: fn(u64) -> u64) {
+  var state: u64 in x0 = 0xdead
+  const result: u64 = handler(state)
+  // compile error: `state` remains live across a call that clobbers x0
   use(state, result)
 }
 ```
 
-The compiler **does not** silently spill the pinned variable around the call.
-Doing so would violate the pin's "this name lives in this register" contract —
+The compiler **does not** silently spill the placed variable around the call.
+Doing so would violate the "this name lives in this register" contract —
 between the save and restore, no register holds the value.
 
-To make the program compile, narrow the pin's lifetime so it ends before the
-call, or pick a callee-saved register:
+To make the program compile, narrow the placement's lifetime so it ends before the
+call, or choose a callee-saved register:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-pass -->
 ```wyst
-work :: (handler : @(u64) -> u64) {
-    {
-        state : u64 #pin(x0) = 0xdead
-        // ... use state here ...
-    }                                // pin lifetime ends
-    result := handler(0)             // x0 free to be clobbered
-    use(result)
+module demo
+
+fn use(first: u64, second: u64) { }
+
+fn work(handler: fn(u64) -> u64) {
+  if true {
+    var state: u64 in x0 = 0xdead
+    // ... use state here ...
+  }
+  const result: u64 = handler(0)
+  use(result, 0)
 }
 
 // or
-
-work :: (handler : @(u64) -> u64) {
-    state : u64 #pin(x19) = 0xdead   // callee-saved; prologue saves x19
-    result := handler(state)         // x19 preserved across call
-    use(state, result)
+fn preserved(handler: fn(u64) -> u64) {
+  var state: u64 in x19 = 0xdead
+  const result: u64 = handler(state)
+  use(state, result)
 }
 ```
 
-Pinned parameters follow the same rule: a `#pin(x0)` parameter that is read
-after a call is a compile error unless its value has been moved to a
+Placed parameters follow the same rule: an `in x0` parameter that is read
+after a call is rejected unless its value has been moved to a
 callee-saved location first.
 
 ---
 
-### Pinning Special-Purpose Registers
+### Target-Reserved Registers
 
-ARM64 has four registers with architectural roles:
+Source placement cannot name ARM64 state reserved by the target ABI:
 
-| Register | Role                           | `#pin` semantics                           |
-| -------- | ------------------------------ | ------------------------------------------ |
-| `lr`     | link register (return address) | read-only alias, any function              |
-| `x18`    | platform register (reserved)   | read-only alias, any function              |
-| `sp`     | stack pointer                  | rejected by `#pin`; a future active checked row must prove any stack transition |
-| `x29`    | frame pointer                  | rejected by `#pin`; no ordinary binding may alias the compiler frame base |
+| Register | Architectural role | Source `in register` result |
+| -------- | ------------------ | --------------------------- |
+| `x18` | platform register | compile error |
+| `x29` / `fp` | frame pointer | compile error |
+| `x30` / `lr` | link register | compile error |
+| `sp` / `wsp` | stack pointer | compile error |
+| `xzr` / `wzr` | zero register | compile error |
 
-A `#pin(special)` declaration is a **read-only alias** of the named register
-at the declaration point. It introduces an immutable local binding initialized
-to the current value of the architectural register, and it constrains the
-compiler not to mutate that architectural register while the binding is live.
+There is no source-level read-only alias declaration for `lr` or `x18`. A
+local `var` requires an initializer, and reserved-register placement is
+rejected before lowering; the backend has no compatibility path that treats a
+missing initializer as an implicit register read. Code that needs architectural
+state must use an authenticated system-register, hardware, trap-frame, or
+checked-assembly contract whose generated row owns that state.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-fail -->
 ```wyst
-#[naked, noreturn]
-exception_handler :: () {
-  saved_lr : u64 #pin(lr) // snapshot of lr at entry
+module demo
 
-  // saved_lr is a normal u64 value; the compiler must not emit
-  // any instruction that overwrites the architectural `lr` while
-  // saved_lr is live.
-
-  loop {
-    %wfe()
-  }
+fn bad_lr() -> u64 {
+  var saved: u64 in x30 = 0
+  return saved
 }
 ```
 
-Read-only means assignment is rejected:
-
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: check-fail -->
 ```wyst
-saved_lr : u64 #pin(lr) = 0          // compile error: special-register pins
-                                     // cannot take an initializer; the
-                                     // initializer is the register's value
-saved_lr = 1                         // compile error: pinned alias is immutable
-```
+module demo
 
-Earlier drafts allowed `#pin(sp)` and `#pin(x29)` inside `#naked`
-functions. Wyst rejects both forms. The grammar reserves `asm establishes
-stack`, but the pinned v0.9 checked-assembly pack has no generated row proving
-that transition and rejects the clause. A later pack may activate stack setup
-only with a complete generated state proof.
+fn bad_platform() -> u64 {
+  var platform: u64 in x18 = 0
+  return platform
+}
+```
 
 ---
 
-### Interaction with `#naked`
+### Interaction with `naked`
 
-`#naked` suppresses the standard prologue and epilogue. That changes which
-forms of `#pin` are legal inside the function:
+`naked` suppresses the standard prologue and epilogue. That changes which
+placements are legal inside the function:
 
-| `#pin` form                             | In `#naked`?      | Reason                                                                                  |
-| --------------------------------------- | ----------------- | --------------------------------------------------------------------------------------- |
-| Parameter pin (`(x : T #pin(x0))`)      | **allowed**       | Names the entry-state contract; no prologue work required.                              |
-| Local pin to callee-saved (`#pin(x19)`) | **compile error** | There is no prologue to save the register; the pinned checked-assembly pack has no stack-save row. |
-| Local pin to caller-saved (`#pin(x0)`)  | **allowed**       | Same call-boundary rule as non-`#naked`: live across a clobbering call is a hard error. |
-| Special-register pin (`#pin(lr/x18)`)   | **allowed**       | Read-only alias; no prologue required.                                                  |
-| Special-register pin (`#pin(sp/x29)`)   | **compile error** | Stack clauses require generated row proofs; no active v0.9 row creates either alias.     |
+| Placement form | In `naked`? | Reason |
+| -------------- | ----------- | ------ |
+| Parameter placement (`value: T in x0`) | allowed | It names entry state and requires no prologue. |
+| Local placement in callee-saved `x19`–`x28` | compile error | No compiler-owned prologue may save the register. |
+| Local placement in caller-saved `x0`–`x17` | allowed | The ordinary live-across-clobber rule still applies. |
+| Any placement in `x18`, `x29`, `x30`/`lr`, `sp`, or a zero register | compile error | The state is target-reserved, independent of `naked`. |
 
-The reason callee-saved local pins are illegal in `#naked` and not just
-"unsupported" here is a semantic boundary: silently emitting a prologue inside a `#naked` function would
-defeat `#naked`'s purpose, and silently _not_ emitting one would corrupt the
-caller's state. There is no useful middle ground.
+Callee-saved local placement in `naked` code is a semantic error: silently
+emitting a prologue would defeat `naked`, while omitting preservation would
+corrupt the caller's state.
 
-The pinned v0.9 checked-assembly pack cannot save a callee-saved register from
+The current checked-assembly pack cannot save a callee-saved register from
 a naked function: its `stp`/`ldp` and stack-transition source forms are
 `known_unsupported`. A future pack may admit the pattern only when the
 `preserves stack` verifier proves the complete incoming state at every normal
@@ -1005,24 +1011,21 @@ silently receiving a prologue or an opaque assembly escape.
 
 ### Conflict Rules
 
-The assembler enforces pinning strictly:
+The compiler enforces explicit register placement strictly:
 
 | Situation                                                         | Result            |
 | ----------------------------------------------------------------- | ----------------- |
-| Register is free at pin site                                      | pin applied       |
-| Register is live and another pin already holds it                 | **compile error** |
-| Two pins in scope request the same register                       | **compile error** |
-| Pin on a global or constant                                       | **compile error** |
-| Post-hoc `name #pin(reg)` statement                               | **compile error** |
-| Caller-saved pin live across a `bl`/`blr`/`svc`/`hvc`/`smc`/`brk` | **compile error** |
-| Callee-saved local pin inside `#naked`                            | **compile error** |
-| `#pin(sp)` or `#pin(x29)`                                         | **compile error** |
-| Initializer on a special-register pin (`#pin(lr) = 0`)            | **compile error** |
-| Assignment to a special-register pin (`saved_lr = ...`)           | **compile error** |
+| Register is free at placement site | placement applied |
+| Register is live and another placement already owns it | **compile error** |
+| Two simultaneous placements request the same register | **compile error** |
+| Placement on a module variable, constant, field, or type | **compile error** |
+| Caller-saved placement live across a clobbering call or assembly block | **compile error** |
+| Callee-saved local placement inside `naked` | **compile error** |
+| Placement in `x18`, `x29`, `x30`/`lr`, `sp`, or a zero register | **compile error** |
 
-The compiler never silently moves a pin to a different register, silently
-spills a pinned binding around a call, or silently inserts a prologue into a
-`#naked` function. If a pin cannot be satisfied, it is always a compile error.
+The compiler never silently moves a placement, spills a placed binding around
+a call, or inserts a prologue into a `naked` function. An unsatisfied placement
+is always a compile error.
 
 ---
 
@@ -1053,17 +1056,15 @@ are no manual constraint or clobber lists.
 
 ### Design Rationale
 
-| Choice                                        | Reason                                                                                                                           |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `#pin` on declaration only                    | Keeps register assignment visible at the binding site; one form means the register a name inhabits is determined by one line.    |
-| No post-hoc re-pin                            | A second form would make liveness windows depend on statement order, not declaration order; harder to reason about and to parse. |
-| Callee-saved pins: always save in prologue    | Prologue shape predictable from declarations alone, no liveness pass required. Cost of an unused pin is the cost of removing it. |
-| Caller-saved live-across-call is a hard error | The alternative — silent spill — violates the "this name lives in this register" contract.                                       |
-| Special-register pins are read-only aliases   | Captures the common exception-handler pattern (snapshot `lr` at entry) without giving up control of architectural state.         |
-| `#pin(sp)`/`#pin(x29)` rejected               | Stack initialization needs an active generated transition proof; the pinned v0.9 pack intentionally has none.                  |
-| Callee-saved local pins illegal in `#naked`   | Silently adding a prologue would defeat `#naked`; future explicit save/restore rows remain support-gated.                        |
-| Locals and parameters only (not globals)      | Globals would silently reserve registers program-wide; that's an ABI-level concern, not a declaration-level one.                 |
-| `schedule source` block                       | Consistent with other keyword-led structured statements and explicit ordering policy.                                        |
+| Choice | Reason |
+| ------ | ------ |
+| `in register` at the type position | Keeps ABI and storage identity visible where the value is declared. |
+| No post-hoc placement | Liveness windows follow lexical binding scopes. |
+| Callee-saved placements always save in framed prologues | Prologue shape is predictable from declarations. |
+| Caller-saved live-across-call is a hard error | Silent spilling would violate the exact-location contract. |
+| Reserved architectural registers are rejected | Platform, frame, link, stack, and zero state remain owned by the ABI or authenticated operations. |
+| Callee-saved local placements are illegal in `naked` | Silently adding a prologue would defeat `naked`. |
+| Locals, parameters, and scalar results only | Module-wide register reservation would hide an ABI-wide side effect. |
 
 ---
 
@@ -1072,7 +1073,7 @@ are no manual constraint or clobber lists.
 Labels are bare code regions, declared at **module top level** with the
 `label` type. They are not nested inside functions.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 name :: label {
   body
@@ -1106,7 +1107,7 @@ Labels follow the same `pub` / `#import` machinery as functions. A label
 declared without `pub` is module-private; with `pub`, it is visible
 to other modules that `#import` the module.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.handlers
 
@@ -1121,7 +1122,7 @@ resume :: label {
 }
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.vectors
 
@@ -1189,7 +1190,7 @@ not silently do nothing.
 The same syntax is used when the return value is consumed by an enclosing
 expression:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x := sum(arr[:])
 total   = a + sum(arr[:]) + b
@@ -1287,7 +1288,7 @@ new function-local identifier scope the language does not have.
 end-exclusive test runs before the next body entry, exactly as if control had
 reached the loop body's closing brace.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Skip rows where the first byte is zero:
 // `base` is @u8, and `row_size` is measured in bytes.
@@ -1301,7 +1302,7 @@ for i in 0 ..< 100 {
 `break value` and `loop`-as-rvalue are not part of the language. Use a
 mutable variable assigned before `break`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 result : u64 = 0
 loop {
@@ -1348,7 +1349,7 @@ value = if cond {
 
 ### Integer-Range `for`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 for i in start ..< end {
     total += u64@[data + i]
@@ -1367,7 +1368,7 @@ only as negative diagnostic examples.
 
 ### While
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // UARTFR is declared `@volatile u32` elsewhere
 while u32@[UARTFR] & TXFF != 0 {
@@ -1377,7 +1378,7 @@ while u32@[UARTFR] & TXFF != 0 {
 
 ### Infinite Loop
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 loop {
     %wfe()
@@ -1392,7 +1393,7 @@ elements. Exhaustiveness is checked at compile time: an unhandled variant
 is an error unless an `else:` arm is present or the switch is annotated
 `#partial`.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 switch m {
     case Quit:             handle_quit()
@@ -1418,7 +1419,7 @@ follow the statement-position call rule from §2.5 above.
 
 Annotated to opt out of the exhaustiveness check entirely:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #partial switch m {
     case Write(p):         handle_write(p)
@@ -1434,7 +1435,7 @@ and reaching an unhandled variant should silently do nothing. Without
 
 The same rules apply to payload-less enums:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 switch d {
     case North:   ...
@@ -1451,7 +1452,7 @@ Missing any variant is a compile error; `else:` or `#partial` opts out.
 Pattern-bound names are local to the arm's body and immutable within it.
 Assignment to a binding is a compile error:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 switch m {
     case Custom(code):
@@ -1461,7 +1462,7 @@ switch m {
 
 To produce a mutable local, rebind:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 switch m {
     case Custom(code):
@@ -1478,7 +1479,7 @@ itself contain a sub-pattern. To
 destructure a payload that is itself an enum, nest a `switch` or `is` in
 the body:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 switch outer {
     case Wrap(inner):
@@ -1494,7 +1495,7 @@ switch outer {
 `switch` produces no value. To compute a value across variants, use a
 mutable local:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 n : u64 = 0
 switch m {
@@ -1575,7 +1576,7 @@ if !(m is Custom(code)) {    // compile error
 on all variants." When more than one variant needs handling, prefer
 `switch` — it gets exhaustiveness checking; chained `if … is` does not.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Bad — no exhaustiveness check, easy to forget a variant:
 if      m is Quit          { handle_quit() }
@@ -1604,7 +1605,7 @@ A **function pointer** is an address of a function with a given shape. The type
 is written `@(args) -> ret`, applying the `@T` rule to a function shape exactly
 the way it applies to data:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 handler :: (x : u64) -> u64 { return x + 1 }
 
@@ -1623,7 +1624,7 @@ A declaration like `cb : (u64) -> u64 = ...` is a **compile error** — bare
 function shapes cannot appear in a value context. The diagnostic suggests
 the `@(...)` form:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 cb : (u64) -> u64 = #addr_of(handler)
 // compile error: bare function shape `(u64) -> u64` is not a value type;
@@ -1641,7 +1642,7 @@ system means the source always reflects what's in memory.
 function declaration. There is no implicit "function-name decays to pointer"
 rule — assigning a bare function name without `#addr_of` is rejected:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 cb : @(u64) -> u64 = handler // compile error: implicit address-of
 // a function is not allowed; write
@@ -1669,7 +1670,7 @@ still has to be known before an indirect call can be marshalled safely. Wyst
 has no return-value `#pin` syntax; result placement is owned by the selected
 calling convention.
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1689,7 +1690,7 @@ A function pointer converts to `u64` (the bare address bits) via `as.address`.
 Constructing a function pointer from a raw integer address requires the
 explicit `#trusted_cast` form:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 fp   : @(u64) -> u64 = #addr_of(handler)
 addr := fp as.address u64                        // extract address
@@ -1726,7 +1727,7 @@ ordered comparisons (`callback < other`), nonzero integer comparisons
 `as.address u64` conversion first if numeric address inspection is truly
 intended.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1744,7 +1745,7 @@ main :: () -> bool {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1759,7 +1760,7 @@ A function declared with `[aapcs]` has a pointer type written
 `@[aapcs] (args) -> ret`. The annotation is part of the type and not
 implicitly compatible with the native form:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 [aapcs]
 puts :: (s : @u8) -> i32
@@ -1823,7 +1824,7 @@ is no silently degraded behavior.
 
 ### Syntax
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 helper :: (x : u64) -> u64 {
@@ -1836,7 +1837,7 @@ When a declaration has two or more annotations, the canonical formatter spelling
 is a single grouped line. This keeps directives out of the parameter and
 return-type shape:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #[naked, noreturn]
 _start :: () {
@@ -1875,7 +1876,7 @@ void and limited to stackless statements: intrinsic expression statements,
 nested stackless inline helper calls, `#static_assert`, simple `if` control
 flow, and a final loop whose body is recursively stackless.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #[inline, noreturn]
 idle :: () {
@@ -1912,7 +1913,7 @@ of the following conditions make inlining impossible:
 
 Directly recursive `#inline` functions are rejected:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 fact :: (n : u64) -> u64 {
@@ -1925,7 +1926,7 @@ fact :: (n : u64) -> u64 {
 
 Indirect recursion is also rejected:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 a :: (n : u64) {
@@ -1950,7 +1951,7 @@ dependencies that cannot be duplicated at arbitrary call sites. A verified
 `pure` result block is an ordinary deterministic `effects(none)` computation
 and follows normal inline eligibility:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 read_ctr :: () -> u64 {
@@ -1987,7 +1988,7 @@ the 128-byte slot budget. If the body **cannot fit even in the most
 optimistic call site** (a slot whose only content is this one call), the
 error fires at the `#inline` function definition:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 large_helper :: () {
@@ -2033,7 +2034,7 @@ register pressure at that call point. The compiler:
 If the total exceeds 128 bytes, the error fires **at the `vector_table` slot**,
 with a note pointing back to the `#inline` function:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 medium_helper :: () {
@@ -2085,7 +2086,7 @@ label that is itself a function, no indirect calls via `#addr_of`. The
 restriction applies transitively: any `#inline` function the body invokes
 must also be call-free.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 helper :: () {
@@ -2114,7 +2115,7 @@ accounts for the call's clobber set; the `#inline` body's analysis
 inline-only: every call must be expanded at the call site, no callable code
 body is emitted, and the helper is not an ABI-exported symbol.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module helpers
 
@@ -2143,7 +2144,7 @@ If the address of an `#inline` function is taken (stored in a variable,
 passed as a callback, etc.), inlining is impossible because there is no
 code address to capture:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #inline
 compare :: (a : u64, b : u64) -> i64 {
@@ -2185,7 +2186,7 @@ sort :: (data : @u64, len : u64) {
 
 ### `#likely` / `#unlikely`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 if #likely cond {
     hot_path()
@@ -2229,7 +2230,7 @@ rule.
 **Legal positions:** `#likely` and `#unlikely` may appear before the
 condition expression in `if` and `while` statements only.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 if #likely x > 0 { ... }          // OK
 while #unlikely queue_empty { ... } // OK
@@ -2238,7 +2239,7 @@ while #unlikely queue_empty { ... } // OK
 
 ### `#cold`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #cold
 error_handler :: () {
@@ -2302,11 +2303,14 @@ conventions.
 ## 2.9 Inline Assembly
 
 `asm` is Wyst's checked escape hatch into explicit ARM64. The pinned v0.9 pack
-admits twelve exact source forms covering local/direct branches, ordinary and
-exception returns, system-register moves, and selected architectural hints.
-Traps, cache and TLB maintenance, exclusive-monitor pairs, and other
-load-bearing encodings remain `known_unsupported` until a later profile
-activates their exact parser, semantic, and allocation rows.
+admits 13 exact general-purpose source forms covering page-relative addresses,
+local/direct branches, ordinary and exception returns, system-register moves,
+and selected architectural hints. A target-structural-only pack separately
+admits seven exact forms for target-owned stack and frame transitions; it does
+not widen ordinary checked `asm`. Traps, cache and TLB maintenance,
+exclusive-monitor pairs, and other load-bearing encodings remain
+`known_unsupported` until a later profile activates their exact parser,
+semantic, and allocation rows.
 
 The bootstrap compiler intentionally treats the body as a checked mnemonic
 subset, not as an embedded general-purpose assembler. Supported mnemonics have
@@ -2489,8 +2493,8 @@ This example stays within the pinned v0.9 checked-assembly pack. Broader local
 control-flow forms remain `known_unsupported` until a later support profile
 activates their exact parser, semantic, and allocation rows.
 
-### v0.8 compatibility grammar
+### Historical v0.8 grammar
 
 The removed predecessor grammar is documented only in the explicitly versioned
-[Appendix B §4.6](appendix-b-grammar.md). It is a compatibility parser surface
-for v0.8 source and is not part of the v0.9 language.
+[Appendix B §4.6](appendix-b-grammar.md). It is a non-normative archive, not a
+production parser surface.

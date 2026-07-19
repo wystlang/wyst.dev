@@ -51,7 +51,8 @@ Validation includes:
 - import-closure source discovery for project and explicit root-file modes;
 - target profile validation and module `#target` compatibility checks;
 - layout module parsing and semantic checking;
-- source graph parsing and semantic checking with layout exports available.
+- source graph parsing and semantic checking with published typed layout
+  symbols available.
 
 Check mode does not:
 
@@ -112,6 +113,13 @@ actions, and evidence-labeled source insights. Generic prose is rendered as a
 `suggestion`; only an applicability-checked exact source edit may be called a
 `fix` or `code_action`.
 
+Placement failures use that same structured diagnostic. Their related labels
+retain the normalized `after` edges and fixed-address source spans, while notes
+render the causal section path, arithmetic operands, and its image-base,
+region-origin, or fixed-address authority origin. Text, JSON, and LSP adapters
+must consume this provenance rather than reconstructing a path from the final
+section addresses.
+
 ## LSP-Compatible Diagnostic JSON
 
 `--diagnostic-format lsp-json` is the first editor-protocol bridge. It is not a
@@ -162,7 +170,7 @@ The catalog contains:
 
 This catalog is lexical and built-in only. It does not include user-defined
 modules, functions, constants, globals, structs, enums, bitstructs, labels, or
-layout exports. Project-aware symbol completion is outside the lexical catalog
+published layout symbols. Project-aware symbol completion is outside the lexical catalog
 surface.
 
 Diagnostic recovery is intentionally narrow: `wync check` can report
@@ -191,7 +199,10 @@ type, comment, and string highlighting floor.
 ## Format Mode
 
 `wync fmt <input.wyst>` parses one source file and prints the canonical source
-form to stdout. It does not rewrite the input file.
+form to stdout. When the input is named `wyst.project`, the same command uses
+the closed project-manifest parser and prints the canonical manifest form,
+including kind-specific layout and companion clauses. It does not rewrite the
+input file.
 
 `wync fmt <input.wyst> --check` parses the same source, compares it with the
 canonical form, exits `0` for already formatted input, and exits `1` with a
@@ -200,15 +211,23 @@ source diagnostic when the file differs.
 Formatter canonicalization includes declaration annotations and imports:
 
 - block indentation uses two spaces per nesting level;
-- one declaration annotation stays as a bare `#name` line directly above the
-  declaration;
-- two or more declaration annotations become a single `#[a, b]` group directly
-  above the declaration, sorted by this canonical directive order:
-  `[aapcs, naked, inline, noreturn, trap_frame, initcall, cold, section,
-  align, percpu, tls, weak, hidden]`;
-- one import stays as `#import module.path`;
-- two or more adjacent imports become a sorted `#import (` block with one
-  import item per line and no commas.
+- declaration attributes use the canonical `#[name]` or `#[a, b]` form
+  directly above the declaration, with catalog-defined ordering for grouped
+  attributes;
+- declaration-prefix modifiers, calling conventions, placements, and linkage
+  remain in their canonical keyword-led positions rather than being converted
+  into attributes;
+- in v0.9 source, adjacent standalone module imports remain standalone and use
+  exactly one line break between declarations: the formatter inserts no blank
+  line between standalone imports, and instead places a blank line around the
+  complete import section;
+- an explicit v0.9 `import (...)` or `pub import (...)` group remains grouped,
+  preserves written order, and renders one entry per line at one indentation
+  level with a comma after every entry; a public group has one leading `pub`
+  applying uniformly to all entries, while different visibilities use separate
+  groups or standalone declarations; adjacent explicit private and public
+  groups are separated by exactly one blank line, distinguishing ordinary
+  dependencies from public re-exports;
 - in a string-literal initializer for `[N]u8`, trailing `\0` bytes that the
   zero-fill rule would supply are omitted; leading or interior null bytes are
   preserved.
@@ -219,11 +238,8 @@ Formatter canonicalization includes declaration annotations and imports:
 The formatter is AST-backed:
 
 - it supports one source file at a time;
-- it renders function-level directives such as `#inline`, `#naked`, and
-  `#noreturn` as prefix lines before the function signature;
-- it renders two or more declaration annotations as one grouped line such as
-  `#[naked, noreturn]` directly above the declaration, while a single
-  annotation remains in bare form such as `#cold`;
+- it renders declaration-prefix modifiers and canonical `#[...]` attributes in
+  their grammar-owned positions before the declaration;
 - it preserves one intentional blank line between block statements and collapses
   larger vertical gaps to one blank line;
 - it keeps top-level constant/global facts and `#static_assert` runs dense
@@ -238,7 +254,9 @@ The formatter is AST-backed:
   attach yet, such as comments embedded inside expressions;
 - it rejects syntax placeholders that the parser cannot round-trip;
 - it does not run semantic analysis or require a layout file;
-- it does not format project manifests;
+- for `wyst.project`, it emits canonical project, artifact, clause, policy,
+  verification, `layout .environment`, and `static_library` ordering without
+  resolving target profiles or reading a source layout;
 - it does not modify files in place.
 
 The long-term formatter direction is rustfmt-level precision: a richer

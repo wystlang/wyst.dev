@@ -26,7 +26,8 @@ from the scalar and aggregate rules.
 ## v0.9 Types, Aggregates, and Generics (Current)
 
 Wyst v0.9 keeps fixed arrays (`[N]T`), slices (`[]T`), vectors (`[T:N]`),
-addresses, callable shapes, and nominal types, but removes `[dynamic]T`.
+addresses, callable shapes, and nominal types, but removes the predecessor
+dynamic-array type marker.
 Dynamic containers use the authenticated ordinary generic declaration whose
 canonical identity is `core.collections.DynamicArray`; source must import it
 explicitly and then apply the locally bound type as `DynamicArray<T>` (or its
@@ -35,8 +36,10 @@ import qualifier/alias). Chapter 10 defines that role and its storage contract.
 Nominal aggregate declarations are keyword-led. Generic parameter lists are
 permitted only on `struct`, `enum`, and `fn` declarations:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: fmt -->
 ```wyst
+module types.aggregates
+
 struct Pair<T, U> {
   first: T
   second: U
@@ -67,7 +70,7 @@ draw(point = { x = 10, y = 20 })
 const bytes: [4]u8 = [1, 2, 3, 4]
 ```
 
-`Type { ... }`, `Type(...)` as a struct-construction spelling, `{ value, ... }`
+Type-prefixed struct-construction spellings and `{ value, ... }`
 array literals, and `field: value` literal entries are removed. Arrays and
 vectors use `[value, ...]`; named multi-results use `(value, ...)`. A
 payload-free enum variant may use expected-type shorthand such as
@@ -102,9 +105,10 @@ and reports that same canonical trace; it is not the semantic termination rule.
 
 This section is the current source and semantic authority for conversions,
 addresses, memory access, address offsets, and slices. The released v0.8
-snapshot below remains useful background, but its `as.<category>`,
-`T@[address]`, typed-address arithmetic, `%addr_of`, endian primitive, colon
-slice, and raw slice-descriptor spellings are not accepted v0.9 alternatives.
+snapshot below remains useful background, but its categorized conversions,
+typed-memory access, typed-address arithmetic, runtime address-of and endian
+primitives, colon ranges, and raw descriptor constructors are not accepted
+v0.9 alternatives.
 
 #### Named conversion operations
 
@@ -144,7 +148,7 @@ whose source and target types are outside its row is a compile-time error; the
 compiler never silently selects another conversion class.
 
 Raw integer construction of a callable remains a trust boundary and uses the
-separately specified `#trusted_cast`, not `address<T>`. `checked<T>(value)` is a
+separately specified `trusted_callable<T>(address)`, not `address<T>`. `checked<T>(value)` is a
 reserved spelling and is rejected until its failure model is implemented.
 
 #### Address types and explicit access
@@ -290,10 +294,9 @@ fixed-width integer and a provably negative value is rejected. The receiver
 and count are evaluated once from left to right. Construction itself performs
 no memory access or allocation.
 
-The predecessor spellings `source[start:end]`, `[]T{data = ..., len = ...}`,
-`[]T { data = ..., len = ... }`, `T@[address]`, every `as.<category>` form,
-typed-address arithmetic, `%addr_of(local)`, `%load_be`, `%load_le`,
-`%store_be`, and `%store_le` are removed and rejected in v0.9.
+The predecessor colon-range, raw-descriptor-constructor, typed-memory,
+categorized-conversion, typed-address-arithmetic, runtime address-of, and
+endian-primitive spelling classes are removed and rejected in v0.9.
 
 ## Released v0.8 Syntax Snapshot
 
@@ -321,7 +324,7 @@ the direct operands for Wyst's numeric and boolean operators.
 
 Examples:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : u64 = 0
 temperature : f32 = 21.5
@@ -354,7 +357,7 @@ keyword token.
 
 Examples:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 addr : @u64 = 0x4000
 
@@ -398,7 +401,7 @@ checks the literal value against the target type's range:
 - If the value is not representable, compilation fails with a diagnostic
   that names the literal, the target type, and the representable range.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : u8 = 256 // compile error: 256 does not fit in u8 (max 255)
 counter : u8 = 255 // OK
@@ -418,7 +421,7 @@ If an integer literal appears in a position with no contextual target type
 annotation — the compiler picks **`i64`** as the default and emits the
 binding at that type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter := 0            // counter : i64 (default)
 counter := 0 as.numeric u32 // counter : u32 (explicit conversion)
@@ -436,7 +439,7 @@ same 64-bit pattern as a negative two's-complement `i64` and emits warning
 `W0202`. This keeps the default deterministic while making likely mask mistakes
 visible:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 MASK ::= 1 << 63 // warning[W0202], MASK :: i64 = -9223372036854775808
 ALL ::= 0xFFFF_FFFF_FFFF_FFFF // warning[W0202], ALL :: i64 = -1
@@ -466,7 +469,7 @@ in constant declarations, but floating-point arithmetic is not part of the
 current compile-time constant evaluator. Use a literal or an explicitly typed
 value today; arithmetic in constant contexts is future work:
 
-<!-- wyst-contract: future -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 GAIN ::= 0.5 + 0.25
 ```
@@ -497,7 +500,7 @@ Dangerous and lossy conversions are therefore greppable: truncation uses
 `as.qualifier`, bit reinterpretation uses `as.bits`, and floating conversion
 uses `as.float`. Diagnostics and reports name these exact categories.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 small : u8  = 5
 big   := small as.widen u64
@@ -552,7 +555,7 @@ instruction directly and does not insert checks.
 There is **no implicit conversion** between `bool` and integers. Use
 `as.numeric` explicitly when needed:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 flag : bool = true
 n := flag as.numeric u8     // 1
@@ -585,7 +588,7 @@ may bind directly when the expected type is explicit `@T`, `@volatile T`, or
 The expected address type can come from an annotation or from a typed parameter
 position. This is still a compile-time address binding, not a runtime coercion:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UART0_BASE :: u64 = 0x0900_0000
 UARTDR :: @mmio u32 = UART0_BASE + 0x00
@@ -607,7 +610,7 @@ alias or that a page table maps the address as ARM Device memory. See
 [chapter-09-memory-model.md](chapter-09-memory-model.md) for the corresponding
 aliasing and reordering rules.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -623,7 +626,7 @@ literal_contexts :: () -> @u8 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -636,7 +639,7 @@ Conversion between `@T` and `@U` for different element types `T ≠ U` is
 explicit-only. To re-type a region (e.g., view a `@u8` buffer as `@u32`),
 write the retargeting cast at the point where the memory lens changes:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 bytes := 0x4000 as.address @u8
 words := bytes as.lens @u32
@@ -644,7 +647,7 @@ words := bytes as.lens @u32
 
 Adding or stripping volatility or MMIO intent is also explicit-only:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 device : @mmio u32 = 0x0900_0018
 plain := device as.qualifier @u32
@@ -686,7 +689,7 @@ documenting intent at a call site.
 Wyst has **no implicit numeric conversions**. The following are all
 compile errors:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 a : u8  = 5
 b : u64 = 10
@@ -706,7 +709,7 @@ n    : u64 = addr          // compile error: @u8 cannot be assigned to u64
 
 To make these compile, write the conversion explicitly:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 sum := (a as.widen u64) + b              // OK
 cmp := x < (y as.signedness i32)         // OK (but see Mixed-Signedness Comparison below)
@@ -729,7 +732,7 @@ correct silent answer. Wyst rejects it. The two paths are:
 - **Cast the signed side to unsigned:** safe when the signed value is known
   to be non-negative.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x : i32 = -1
 y : u32 = 1
@@ -790,7 +793,7 @@ system does not try to prove whether a particular `u32` is a count, an
 address-sized value, a mask, or a register image. Use names, constants, and
 `bitstruct` declarations to make that intent explicit at the source level.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UARTFR_TXFF :: u32 = 1 << 5
 UARTFR_RXFE :: u32 = 1 << 4
@@ -820,7 +823,7 @@ const tx_full: bool = flags.TXFF
 Wyst has no endian-suffixed scalar primitive family. Byte order is explicit at
 the memory access boundary through typed runtime primitives:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 magic := %load_be<u32>(packet)            // big-endian bytes -> host-order u32
 count := %load_le<u16>(packet + 4)        // little-endian bytes -> host-order u16
@@ -850,14 +853,14 @@ Rules:
   `rev` as needed. Little-endian primitives usually lower to plain
   native-endian load/store.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 buf : [4]u8 = { 0x12, 0x34, 0x56, 0x78 }
 
 first := %load_be<u16>(#addr_of(buf))       // first == 0x1234
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1002,7 +1005,7 @@ Type-system rules:
 
 #### Address Arithmetic
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1027,7 +1030,7 @@ distance :: (base : @u8, cursor : @u8) -> u64 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1036,7 +1039,7 @@ bad_distance :: (base : @u8, cursor : @u8) -> u64 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1047,7 +1050,7 @@ bad_offset :: (base : @u8, flag : bool) -> @u8 {
 
 #### Address Equality and Ordering
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1064,7 +1067,7 @@ before :: (a : @u8, b : @u8) -> bool {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1075,7 +1078,7 @@ bad_lens :: (a : @u8, b : @u32) -> bool {
 
 #### Symbol Address Contexts
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1098,7 +1101,7 @@ main :: () -> u64 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1110,7 +1113,7 @@ bad :: () -> u64 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1122,7 +1125,7 @@ bad :: () -> u64 {
 }
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1135,7 +1138,7 @@ main :: () -> u64 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1146,7 +1149,7 @@ bad :: () -> u64 {
 }
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1159,7 +1162,7 @@ bad :: () -> u8 {
 
 #### Explicit Address Retargeting
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1171,7 +1174,7 @@ read_word :: () -> u32 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1185,7 +1188,7 @@ read_word :: () -> u32 {
 
 #### Explicit Address-Qualifier Changes
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1211,7 +1214,7 @@ explicit_boundary :: () -> u32 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1226,7 +1229,7 @@ bad_strip :: () -> u32 {
 }
 ```
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1243,7 +1246,7 @@ bad_add :: () -> u32 {
 
 #### `@T = 0` Example
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 addr : @u8 = 0                  // OK: 0 is a valid address value
 if addr == 0 {
@@ -1320,7 +1323,7 @@ integrated linker resolves them, what the section layout looks like — is in
 The following cases exercise the conversion-and-promotion rules. Each
 either compiles or errors with a documented reason.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 counter : u8 = 256                // ERROR: 256 not representable in u8 (max 255)
 
@@ -1380,7 +1383,7 @@ byte_orderless : u8 = %load_be<u8>(packet)  // ERROR: endian load of 8-bit value
 
 When an array base address comes from outside (parameter, global, loaded value):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 base = @u64@[buffer]
 
@@ -1407,7 +1410,7 @@ str x2, [xbuf, #16]
 
 Array literals use **braces** `{}` to avoid collision with the `type[address]` memory access syntax:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 {5, 10, 15}           // array literal, element type inferred from context
 {5 as.numeric u8, 10, 15} // explicit: array of u8
@@ -1419,7 +1422,7 @@ Braces are already used for blocks and struct bodies, but a comma-separated list
 
 Stack-allocated fixed-size arrays use the `[N]T` type notation — count before element type:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [3]u8 = {5, 10, 15}
 ```
@@ -1459,7 +1462,7 @@ the array capacity, decoded byte length, and literal. This rule applies only to
 string-literal initializers for `[N]u8`; brace array literals, non-`u8` arrays,
 and the `string` type keep their existing behavior.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 module_name :: [16]u8 = "uart_driver_v1" // two trailing zero bytes emitted
 magic :: [4]u8 = "WYST" // exact fit
@@ -1483,7 +1486,7 @@ If the index is known at compile time, it must be in bounds for the fixed
 array. Runtime indices remain unchecked and lower to direct address
 calculation:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1496,7 +1499,7 @@ _start :: () -> u8 {
 To use the address-level memory-load form, materialize the base address
 explicitly. For symbol-backed storage, use `#addr_of`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [4]u64 = {10, 20, 30, 40}
 
@@ -1506,7 +1509,7 @@ val = u64@[base + i]
 
 For stack-local storage inside the current function, use `%addr_of`:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1520,7 +1523,7 @@ _start :: () -> u64 {
 The non-decay rule is enforced even when the destination type is visibly an
 address:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1541,7 +1544,7 @@ So the two forms are intentionally different:
 | `#addr_of(arr)`   | produce an address for symbol storage   | no load by itself |
 | `%addr_of(arr)`   | produce an address for stack storage    | no load by itself |
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1559,7 +1562,7 @@ Loading the **entire vector** at once (e.g. into a SIMD register) uses
 the vector type as the load prefix, reusing the `[T:N]` SIMD vector type
 from [chapter-09-memory-model.md §1.3.1](chapter-09-memory-model.md) / [chapter-12-simd.md](chapter-12-simd.md):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 v = [u8:16]@[ptr]      // load 16 u8s at once into a SIMD register (ldr q0, [xN])
 w = [f32:4]@[ptr]      // load 4 f32 lanes  (ldr q0, [xN])
@@ -1584,7 +1587,7 @@ uses angle brackets.
 
 ### Accessing by Index
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [3]u8 = {5, 10, 15}
 
@@ -1601,7 +1604,7 @@ element type to compute the byte address of the selected element.
 When using `@T` address arithmetic, offsets are **element offsets**. The
 compiler scales the offset by `#size_of(T)` before computing the byte address:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 bytes : [4]u8  = {1, 2, 3, 4}
 words : [2]u64 = {100, 200}
@@ -1633,7 +1636,7 @@ evaluate to an address, even if the linker eventually places the storage in
 read-only memory. Address-level access uses `#addr_of` just like other
 symbol-backed storage:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 TABLE : [5]u32 = 0
 
@@ -1656,7 +1659,7 @@ not a symbol relocation site. Its address-level form is
 
 #### Stack Array
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [3]u8 = {5, 10, 15}
 x = arr[0]
@@ -1672,7 +1675,7 @@ ldrb w0, [sp, #0]      // x = arr[0]
 
 #### Global Array
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 TABLE : [3]u32 = 0
 
@@ -1698,7 +1701,7 @@ the standard arithmetic and bitwise operators work element-wise. Operators map
 to fixed ARM64 SIMD instruction sequences — no hidden loops, no unrolling
 decisions.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 a : [f32:4] = {1.0, 2.0, 3.0, 4.0}
 b : [f32:4] = {5.0, 6.0, 7.0, 8.0}
@@ -1709,7 +1712,7 @@ d := a * b    // [5.0, 12.0, 21.0, 32.0] — fmul v0.4s, v1.4s, v2.4s
 
 Integer element-wise:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x : [u8:16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 y : [u8:16] = {1, 1, 1, 1, 1, 1, 1, 1, 1,  1,  1,  1,  1,  1,  1,  1}
@@ -1767,7 +1770,7 @@ comparison result-mask semantics are reserved until specified explicitly.
 constant `u64`. It is resolved entirely at compile time — no runtime cost,
 no code emitted.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [8]u64 = {0, 1, 2, 3, 4, 5, 6, 7}
 n ::= #len(arr) // n == 8 — local compile-time constant
@@ -1780,7 +1783,7 @@ rejected so `#len` never looks like it evaluates a runtime expression.
 `#len()` is most useful in generic code or when the array size comes from a
 named constant and you want to avoid repeating it:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 CAPACITY :: 64
 
@@ -1804,7 +1807,7 @@ address only or a length-carrying slice.
 
 For a symbol-backed address-only parameter, write `#addr_of(arr)`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [4]u64 = {10, 20, 30, 40}
 
@@ -1825,7 +1828,7 @@ main :: () {
 
 For a length-carrying parameter, use a slice (`[]T`):
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 sum_slice :: (s : []u64) -> u64 {
   total : u64 = 0
@@ -1857,7 +1860,7 @@ ABI parameter/return rules must be explicit before that surface can exist.
 For stack-local scalar/object storage, an address-only parameter must opt into
 the non-escaping contract:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1906,7 +1909,7 @@ boundary without losing the length.
 
 `[]T` is the slice type for element type `T`. It is structurally equivalent to:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 struct { data : @T, len : u64 }
 ```
@@ -1918,7 +1921,7 @@ two fields are always named `.data` and `.len`.
 
 **From a fixed array using slice syntax:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr : [8]u8 = {1, 2, 3, 4, 5, 6, 7, 8}
 
@@ -1930,7 +1933,7 @@ The address source is `#addr_of(arr)` for symbol-backed arrays and
 `%addr_of(arr)` for stack-local arrays. The `@T` address lens scales `lo` by
 the element size:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 words : [4]u64 = {10, 20, 30, 40}
 
@@ -1939,7 +1942,7 @@ s := words[1:3]  // []u64 — s.data = address(words) + one u64 element, s.len =
 
 Omitting either bound uses the natural limit:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 arr[2:]      // from element 2 to end: len = #len(arr) - 2
 arr[:5]      // from start to element 5: len = 5
@@ -1948,7 +1951,7 @@ arr[:]       // whole array as a slice
 
 Slice bounds may be any integer scalar type:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1964,7 +1967,7 @@ For fixed arrays, slice bounds known at compile time must be within
 `0..=#len(arr)`, and a fully constant range must have `start <= end`. Runtime
 bounds remain unchecked:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -1976,14 +1979,14 @@ _start :: () {
 
 **Reslicing an existing slice:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 t := s[1:3]   // narrower view into s — s.data + 1*stride, len = 2
 ```
 
 **From an address and length directly:**
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 base : @u8 = 0x4000
 n : u32 = 64
@@ -1999,7 +2002,7 @@ Direct raw slice construction is allowed in constant and global initializers
 when `data` is a compile-time address value and `len` is a constant
 non-negative integer expression:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 buf : [4]u8 = 0
 view : []u8 = []u8{data = #addr_of(buf), len = 4}
@@ -2009,7 +2012,7 @@ empty :: []u8 = []u8{data = 0 as.address @u8, len = 0}
 Constant negative lengths are rejected, while runtime signed length values
 remain unchecked:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -2022,7 +2025,7 @@ _start :: () {
 Integer expressions are not implicitly accepted for `data`. Cast the address
 explicitly so the lens is visible:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -2037,7 +2040,7 @@ values and cannot appear in global slice initializers.
 Slice `.data` and `.len` fields are read-only projections. To retarget or
 resize a slice variable, assign a whole new slice value:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 s = []u8{data = new_base, len = new_len}
 s = s[1:]
@@ -2047,7 +2050,7 @@ s = s[1:]
 
 Slices support element indexing:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -2067,7 +2070,7 @@ the slice's `.data` field and uses typed address arithmetic to step by
 elements. `.data` remains available when raw byte-address work should be
 spelled directly; cast it to `@u8` before byte stepping:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 byte_offset : u64 = i * #size_of(u64)
 addr := (s.data as.lens @u8) + byte_offset
@@ -2078,7 +2081,7 @@ If the compiler knows the slice descriptor's `.len` value and the element index
 is also a compile-time constant, the index must be in range. This catches obvious
 descriptor-length mistakes without inserting a runtime branch:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -2099,7 +2102,7 @@ constant.
 `s.len` reads the slice's runtime length field. It is explicit field access,
 not a counted operation, and it is not assignable on its own.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 s : []u64 = ...
 
@@ -2115,7 +2118,7 @@ loop {
 
 Slices support same-type descriptor equality:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 same_view : bool = left == right
 different_view : bool = left != right
@@ -2154,7 +2157,7 @@ The check is visible, the branch is explicit, and the cost is clear.
 
 Slices are the idiomatic way to pass variable-length arrays to functions:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 sum :: (s : []u64) -> u64 {
   total : u64 = 0
@@ -2227,7 +2230,7 @@ No allocation occurs. A slice is a view into existing memory.
 element type is `T`. The annotation itself does not allocate and does not imply a
 global allocator or mandatory runtime. A value must be initialized through an
 explicit standard-library-shaped API that names its storage source and policy.
-The compatibility surface uses concrete monomorphic wrapper names such as
+The bootstrap library surface uses concrete monomorphic wrapper names such as
 `dyn_array_init_Token`, and accepts the narrow checked source spelling
 `dyn_array_init<T>(arena, capacity = ..., growth = ...)` for arena-backed
 initialization. That spelling deterministically reports a typed wrapper
@@ -2323,7 +2326,7 @@ msg.len
 
 Lowering:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 len_addr : @u64 = ((%addr_of(msg) as.lens @u8) + #field_offset(string, len)) as.lens @u64
 u64@[len_addr]
@@ -2412,7 +2415,7 @@ aligned.)
 
 #### Worked Examples
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 ab :: struct {
   a : u8 // offset 0, size 1
@@ -2422,7 +2425,7 @@ ab :: struct {
 // size_of(ab)  = 16  (no trailing padding needed; already a multiple of 8)
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 abc :: struct {
   a : u8 // offset 0,  size 1
@@ -2433,7 +2436,7 @@ abc :: struct {
 // size_of(abc)  = 24  (6 bytes of trailing padding to reach next 8-multiple)
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 uart_regs :: struct {
   dr : u32 // 0x00
@@ -2460,7 +2463,7 @@ A struct declared with `#packed` has alignment 1 and no inter-field or trailing
 padding. Every field occupies its `size_of` bytes at the next consecutive
 offset, regardless of natural alignment.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 header :: #packed struct {
   magic : u32 // offset 0, size 4
@@ -2516,7 +2519,7 @@ Wyst guarantees:
 
 Programs that need SoA layout should declare it explicitly:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // AoS (default) — each particle is contiguous
 particle :: struct {
@@ -2538,7 +2541,7 @@ particle_soa :: struct {
 
 ### `#repr(field_order: preserve)`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #repr(field_order: preserve)
 my_struct :: struct {
@@ -2560,7 +2563,7 @@ keys, values, or field-order strategies are specified.
 
 ### `#field_offset(T, field)`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 off :: u64 = #field_offset(uart_regs, fr) // byte offset of field 'fr' in uart_regs
 ```
@@ -2575,7 +2578,7 @@ offset of a named field within struct type `T`. It is analogous to C's
 constant declarations, array sizes, `#align` arguments, arithmetic in
 constant expressions.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #static_assert(#field_offset(uart_regs, fr) == 0x18,
                "fr must be at offset 0x18 per PL011 spec")
@@ -2840,7 +2843,7 @@ backing integer for the rare byte-reinterpretation case.
 
 ### Declaration
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Plain enum — payload-less variants.
 Direction :: enum: u8 {
@@ -2913,7 +2916,7 @@ the current ARM64 targets this means little-endian tag and integer-payload
 bytes. Endianness does not change offsets, total size, alignment, tag values,
 or ABI classification.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module enum_layout_contract
 
@@ -2943,7 +2946,7 @@ format) should declare a struct and convert explicitly via `as`.
 
 ### Construction
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Payload-less:
 d : Direction = Direction.North
@@ -2964,7 +2967,7 @@ t : Tree = Tree.Node(#addr_of(left))
 A non-`@`-indirected self-reference is a compile error because the
 payload would have infinite size:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 Bad :: enum: u8 {
   Recurse(Bad) // compile error: #size_of(Bad) depends on #size_of(Bad)
@@ -2975,7 +2978,7 @@ Bad :: enum: u8 {
 
 ### Tag Extraction
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #tag_of(EnumName.Variant)             // compile-time constant — usable in #static_assert
 %tag_of(enum_value)                   // runtime tag projection
@@ -2986,7 +2989,7 @@ an integer from a variant path. `%tag_of` is the runtime spelling for projecting
 the active discriminator from an enum value. The result type is the enum's
 declared discriminator type.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #static_assert(#tag_of(Errno.NotFound) == 2, "Errno.NotFound must remain 2 for ABI compat")
 
@@ -3015,7 +3018,7 @@ constructors instead.
 See [chapter-08-functions.md §2.5](chapter-08-functions.md) for the full grammar of `switch`
 and `is`. In summary:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // Exhaustive: every variant must be handled or an `else:` clause present.
 switch irq {
@@ -3069,7 +3072,7 @@ discipline requires for any structure that might otherwise have unbounded
 size. The `@` makes the indirection visible and forces the programmer to
 manage the storage:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 List :: enum: u8 {
   Nil
@@ -3133,7 +3136,7 @@ section.
 
 Example:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 msg :: "Hello\n"
 ```
@@ -3161,7 +3164,7 @@ No null terminator is required.
 
 A single-quoted character literal has type `u8`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 ch : u8 = 'A' // 0x41
 newline : u8 = '\n' // 0x0a
@@ -3179,7 +3182,7 @@ truncated; use string literals for UTF-8 text.
 Because the type is `u8`, character literals participate in the normal
 type system with no implicit widening:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 uart_write :: (byte : u8) { /* ... */ }
 uart_write('h')              // OK: 'h' is u8
@@ -3204,7 +3207,7 @@ are rejected.
 
 Example:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UART0_BASE :: u64 = 0x09_00_00_00
 UART_CLOCK ::= 24_000_000
@@ -3214,7 +3217,7 @@ TXFF :: u32 = 1 << 5
 
 Forward top-level references are valid when acyclic:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -3226,7 +3229,7 @@ THIRD :: u64 = 40
 
 Cycles are rejected:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -3242,7 +3245,7 @@ Compile-time evaluation is part of the core language.
 
 Numeric literals support `_` as a digit separator to improve readability:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 UART0_BASE :: u64 = 0x09_00_00_00
 PAGE_SIZE :: u64 = 4_096
@@ -3267,7 +3270,7 @@ This applies to all numeric bases:
 
 Float literals also support separators:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 val : f64 = 3_141_592.653_589
 big : f64 = 1e6
@@ -3279,14 +3282,14 @@ big : f64 = 1e6
 
 Single-line comments use `//`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 x = u64@[addr]     // load from address
 ```
 
 Multi-line comments use `/* ... */`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 /*
  * This block waits for the UART transmit
@@ -3311,7 +3314,7 @@ Rules:
 
 Multiline strings use triple-quotes `""" ... """`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 banner :: """\
 Wyst Bootloader
@@ -3330,7 +3333,7 @@ Rules:
 
 Examples:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 # includes surrounding newlines
 with_newlines :: """\nHello\nWorld\n"""
@@ -3361,7 +3364,7 @@ When a multiline string is indented in source code to match surrounding code,
 the indentation becomes part of the string content. The `#dedent` directive
 strips common leading whitespace at compile time:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 html :: string = #dedent """\
     <html>
@@ -3515,7 +3518,7 @@ explicit grouping.
 
 Common expressions and how they parse:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // & binds before != — parentheses not needed
 // (UARTFR is `@mmio u32`, so u32@[UARTFR] is a volatile MMIO-intent load)
@@ -3599,7 +3602,7 @@ Short-circuit semantics are preserved in `&&=` and `||=`.
 
 Compile-time conditionals use the `#if` directive in the locked design:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -3648,7 +3651,7 @@ useful as no assert.
 
 `#if` selects between two outcomes — it is a tool for variation:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 PREFIX :: string = #if DEBUG {
   "DBG: "
@@ -3694,7 +3697,7 @@ awareness semantics.
 
 #### Hardware layout contracts
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 uart_regs :: struct {
   dr : u32 // +0x00  data register
@@ -3735,7 +3738,7 @@ trap_frame TrapFrame: aarch64 {
 
 #### DTB compatibility
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // struct shared with C firmware — must match C layout exactly
 fdt_header :: struct {
@@ -3769,7 +3772,7 @@ fdt_header :: struct {
 Statement-level `#if` expansion happens before function-body semantic checking,
 so `#static_assert` is evaluated only in the selected branch.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 // module scope — always checked
 #static_assert(#size_of(u64) == 8, "u64 must be 8 bytes")
@@ -3825,7 +3828,7 @@ must be a type, and it does not accept compile-time values.
 
 Wyst's generic syntax supports type parameters on functions, structs, and enums:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 swap<T>(left : @T, right : @T)
 
@@ -3866,7 +3869,7 @@ methods, or interface/trait members.
 
 A type parameter may carry one built-in compile-time capability bound:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 add_one<T: integer> :: (value : T) -> T {
   return value + 1
@@ -3938,7 +3941,7 @@ payload_word` or a narrower payload-compatible bound: `integer`,
 floating-point types. Violations are rejected at the generic declaration or at
 the instantiation boundary:
 
-<!-- wyst-contract: check-fail -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module generic_enum_payload_reject
 
@@ -4137,7 +4140,7 @@ Write one function per concrete type. For small, frequently-monomorphic
 operations (swap, min, max, byte-reverse), this is the path of least
 resistance.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 swap_u32 :: (a : @u32, b : @u32) {
   tmp := u32@[a]
@@ -4161,7 +4164,7 @@ When compile-time conditionals are used for variation, they pick between two
 same-typed values or same-signature implementations based on a build-time
 constant:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot
 
@@ -4197,7 +4200,7 @@ Since `@T` is structurally a tagged 64-bit address (see §1.4.1) and
 arithmetic on it is element-scaled, address-walking code can be written over
 the _bit width_ of the access by passing the address with the intended lens:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 zero_words :: (start : @u64, count : u64) {
     i : u64 = 0

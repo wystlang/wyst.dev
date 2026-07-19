@@ -46,7 +46,8 @@ Sequentially consistent loads use acquire loads, stores use release stores, and 
 
 The RMW LSE families and LL/SC updates are the method rows in the normative JSON source. Pair-atomic/exclusive catalog rows remain separate checked 16-byte operations and do not add a `atomic<T>` element, widen `@atomic<u64>` to 16 bytes, or authorize aggregate atomic storage.
 
-Legacy hash-directive dispositions are owned only by the item 54 non-parser
-release-audit manifest. Every migrated address must explicitly have type
+Legacy hash-directive dispositions are owned only by the
+`language.legacy-hash-directive-dispositions` non-parser release-audit
+manifest. Every migrated address must explicitly have type
 `@atomic<T>`; a pair-atomic row cannot claim scalar
 `atomic<u64>` storage.

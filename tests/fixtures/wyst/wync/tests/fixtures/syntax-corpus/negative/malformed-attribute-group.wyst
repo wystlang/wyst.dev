@@ -1,0 +1,4 @@
+module syntax_bad_attr
+
+#[inline
+fn main() { }

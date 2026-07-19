@@ -9,8 +9,9 @@ summary: "Modules, imports, visibility, source references, and layout/module bou
 # Chapter 4: Wyst Modules, Targets, and Layout
 
 > **Canonical scope.** Module declaration, import resolution, symbol
-> visibility (`pub`), source requirements, `#target` declarations, layout modules, custom
-> sections (`#section`), and the layout-vs-GNU-LD comparison. Output
+> visibility (`pub`), source requirements, `#target` declarations, named layout
+> modules, custom sections (`#[section("NAME")]`), and the layout-vs-GNU-LD
+> comparison. Output
 > object format lives in [chapter-16-object-format.md](chapter-16-object-format.md); ABI is
 > in [chapter-15-abi-spec.md](chapter-15-abi-spec.md).
 
@@ -23,16 +24,22 @@ and the layout module boundary.
 
 Wyst v0.9 source uses keyword-led hierarchical module and import declarations.
 After leading trivia, every source file declares exactly one module with
-`module path`; `#module` and `#import` are not v0.9 spellings.
+`module path`; predecessor punctuation-led module/import directives are not
+v0.9 spellings.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: fmt -->
 ```wyst
 module platform.timer
 
-import platform.clock
-import platform.clock as timer
-import platform.clock { now, sleep as delay }
-pub import platform.errors { Error }
+import (
+  drivers.timer as timer,
+  platform.clock { now, sleep as delay },
+)
+
+pub import (
+  platform.errors { Error },
+  platform.status { Status },
+)
 ```
 
 A path is a dot-separated sequence of case-sensitive ASCII identifiers. The
@@ -44,6 +51,21 @@ public declarations into bare scope; a selection may have a local alias.
 Wildcard imports do not exist. Duplicate module imports, missing selections,
 and every ambiguous collision with a local, import, alias, or re-export are
 errors.
+
+Module imports may be written as one import group. The group contains a
+non-empty comma-separated list of ordinary import items and admits one optional
+trailing comma. It is syntax sugar only: every entry keeps the same
+whole-module, alias, selection, collision, sealed-core, and import-closure
+behavior as its standalone `import` declaration, and source order is preserved.
+Groups contain only module imports; linker `import symbol` declarations are
+independent.
+
+An import group is private when written as `import (...)`. A single leading
+`pub` produces `pub import (...)` and applies public re-export visibility
+uniformly to every entry. An entry cannot carry its own `pub`, and one group
+cannot mix private and public imports; write separate groups or standalone
+declarations when the visibilities differ. Standalone `import path` and `pub
+import path` declarations remain valid.
 
 `pub` is source visibility only. A public declaration may be selected by
 another module, and `pub import` re-exports its selected public declarations to
@@ -75,14 +97,260 @@ semantic-operation catalog and cannot be selected as bare functions.
 Authentication is by sealed catalog identity, never by a user declaration with
 the same spelling.
 
+`core.execution` is the sealed namespace for the provider-facing compiler
+operation `suspension_point`. Its only import shape is a private direct
+whole-module import, optionally with an ordinary explicit module alias. The
+whole import exposes the final qualifier, so canonical source calls
+`execution.suspension_point()`. Selective, bare, public, re-exported, or leaf
+imports are rejected, as are a local `core` replacement, a shadowed qualifier,
+or an attempt to use a same-spelled project declaration as this identity. An
+ordinary declaration named `suspension_point` remains an ordinary project
+function and gains neither the effect nor the marker boundary. Import
+authentication alone does not authorize a call: Chapter 13 additionally
+requires the selected target's exact provider and authenticated provider-leaf
+placement. No manifest flag, target name convention, or textual same-name
+declaration activates the compiler identity.
+
+## v0.9 Named Layout DSL (Current)
+
+A v0.9 layout file is a Wyst module containing one or more named `layout`
+declarations. An artifact-owned manifest selection
+`layout NAME from "PATH"` selects exactly one block by name. Its name is a
+stable semantic identity, not an implicit profile selector. A missing selected
+block, a selected block without an entry, or a block with a second entry is a
+compile error. An environment-owned `layout .environment` has no source layout
+file and therefore does not parse this DSL. Apart from its `module` declaration
+and applicable target, requirement, or deny policy, a v0.9 layout input contains
+no ordinary source declarations outside its layout blocks.
+
+That identity and every checked member contract survive in typed layout IR:
+region access, section kind, normalized placement operands and their spans,
+semantic entry selection, and typed symbol expressions are not reconstructed
+later from spellings. Final placement and artifact construction consume those
+facts or verify any syntax-backed artifact adapter exactly against them.
+
+<!-- wyst-contract: sketch -->
+```wyst
+module boot.layout
+
+layout kernel {
+  entry boot.entry._start at 0x4008_0000
+  region ram: readwrite at 0x4008_0000 size 0x0008_0000
+
+  section ".text": code in ram align 16
+  section ".rodata": rodata after ".text" align 16
+  section ".data": data after ".rodata" align 8
+  section ".bss": bss in ram align 16
+
+  pub symbol __text_start: @u8 = start(".text")
+  pub symbol __text_end: @u8 = end(".text")
+  pub symbol __text_size: u64 = size(".text")
+}
+```
+
+### Semantic Entry Selection
+
+`entry` takes an exact module-qualified Wyst declaration path. Resolution uses
+the declaration's semantic identity, never an import alias, source `pub`
+status, explicit export alias, ELF spelling, or suffix match. Selecting an
+entry sets the final image entry address and creates a reachability root; it
+does not publish, export, rename, strengthen, or weaken the selected symbol.
+
+The selected declaration must be a body-bearing target-admissible Wyst entry.
+`qemu-virt-aarch64-el1` and `qemu-raspi4b-aarch64-el2` require a Wyst Native,
+zero-parameter, unplaced, never-returning function (or the equivalent
+body-bearing terminal label). `qemu-virt-aarch64-el2` and
+`qemu-virt-aarch64-el2-lse` instead authenticate an exact typed firmware root:
+
+<!-- wyst-contract: sketch -->
+```wyst
+pub naked fn _start(dtb: @u8 in x0) -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+  boot_main(dtb)
+}
+```
+
+Those EL2 profiles require exactly that one `dtb` parameter name, `@u8` type,
+`x0` placement, Wyst Native convention, `pub naked` declaration,
+never-returning behavior, authenticated EL2 fact, and exactly one checked
+stack initialization transition. The transition is fixed to its cataloged
+`mov sp, stack` source form with one `u64` input in `x1`, so it cannot clobber
+firmware `x0`.
+
+The secure direct-ELF `qemu-virt-aarch64-el3` profile authenticates a distinct
+zero-parameter root instead:
+
+<!-- wyst-contract: sketch -->
+```wyst
+pub naked fn _start() -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+  firmware_main()
+}
+```
+
+Its schema identity is `qemu-virt-aarch64-el3-noargs-v1`, its entry ABI is
+`wyst-native-noargs-v1`, and its authenticated initial level is secure EL3.
+The root has exactly zero parameters, so `x0` is not an entry parameter and no
+DTB authority is implied. The shown checked block is the one admitted stack
+transition. In the canonical production fixture `firmware_main()` is its
+direct successor, but that callee name is fixture evidence rather than a field
+enforced by the target-entry schema. Foreign declarations, linker imports and
+aliases, returning or wrong-EL declarations, extra or absent parameters, and
+any name, type, placement, convention, or stack-transition mismatch are
+rejected before artifact construction. Source placements and clauses alone
+never expand or translate between the EL2 and EL3 authenticated target schemas.
+
+The optional `at ADDRESS` clause is a hard unsigned-64-bit placement
+constraint on the resolved declaration's first emitted byte. Without `at`, the
+entry receives the address produced by ordinary section placement. With `at`,
+the solver derives the containing section's required start from the entry's
+section-relative offset and rejects underflow, misalignment, overlap, region
+escape, or any conflicting fixed address. It never moves the entry within its
+section or synthesizes an entry alias.
+
+### Regions And Sections
+
+`region NAME: readonly|readwrite at ORIGIN size SIZE` declares one half-open
+address range `[ORIGIN, ORIGIN + SIZE)`. `SIZE` must be nonzero; empty sections
+remain representable within a nonempty region and do not require a zero-sized
+region. Origin, size, range end, alignment
+rounding, and all derived addresses use checked `u64` arithmetic. Region and
+section names are unique within a layout block.
+
+Named layouts have no separate image-base member. When at least one region is
+declared, the minimum region origin is the image base used by otherwise
+unconstrained sections; region declaration order cannot change it. With no
+region, the selected target's default executable base applies. Released-v0.8
+layouts retain their historical explicit `__image_base`/first-region rule.
+
+A section declaration names an exact quoted ELF section, assigns exactly one
+kind (`code`, `rodata`, `data`, or `bss`), and contributes placement
+constraints. `in REGION` selects a region; each `after "SECTION"` adds a
+dependency edge; and `align N` adds a positive power-of-two start alignment.
+Compiler-owned non-`ALLOC` output names (`.debug_*`, `.symtab`, `.strtab`, and
+`.shstrtab`) and the `.wyst.*` namespace are not layout sections and are
+rejected before object construction.
+Repeated identical constraints normalize to one assertion. Distinct `after`
+clauses are all enforced, while conflicting `in` or `align` values are errors.
+When alignment is omitted, the class default in the deterministic placement
+solver applies. A section without an explicit region may inherit one from its
+predecessors under the solver rules below.
+
+The kind is a hard contract with emitted contributions: functions and labels
+require `code`, immutable objects require `rodata`, initialized mutable objects
+require `data`, and zero-filled mutable objects require `bss`. A source
+`#[section("NAME")]` selects an already declared, non-reserved custom section;
+it cannot create placement, change the declared kind, target a canonical or
+`.wyst.*` section, export a declaration, or rename its symbol.
+The released-v0.8 `.tls` section is not a v0.9 named-layout section; declaring
+it is an error because v0.9 has no TLS storage class or emitted `.tls` payload.
+
+### Typed Layout Symbols
+
+A layout symbol has an explicit source type and a placement-time initializer.
+The v0.9 layout-symbol type set is closed to `@u8` and `u64`; other address
+lenses, integer widths, booleans, and aggregate types are rejected before IR:
+
+<!-- wyst-contract: sketch -->
+```wyst
+layout bounds {
+  entry boot.entry._start
+  region ram: readwrite at 0x4008_0000 size 0x0008_0000
+  section ".text": code in ram align 16
+
+  pub symbol text_begin: @u8 = start(".text")
+  pub symbol text_limit: @u8 = end(".text")
+  pub symbol text_bytes: u64 = size(".text")
+  pub symbol text_address_bits: u64 = address<u64>(start(".text"))
+}
+```
+
+`start("NAME")` and `end("NAME")` are unshadowable layout-only operations
+whose result type is `@u8`; `end` denotes the first byte after the section's
+memory extent. `size("NAME")` is a layout-only operation returning that memory
+extent as `u64`. Each argument is one single-line string naming a section in
+the same layout block. These operations are valid only in layout-symbol
+initializers and become concrete only after placement. They are not ordinary
+frontend constants and cannot influence type checking, generic selection, or
+compile-time conditionals.
+
+The `ConstExpr` grammar permits ordinary compile-time integer facts—including
+target and type-layout queries—as pure leaves. The only deferred placement
+leaves admitted in a named layout symbol are `start`, `end`, and `size` for a
+section in that layout. Ordinary declaration-address relocations and
+per-instance offsets are rejected here rather than turning a layout symbol into
+an undocumented linker alias. Layout-symbol initializers also cannot reference
+another layout symbol (earlier, later, private, public, or themselves); no
+second placement-time dependency language is implied by declaration names. An
+`@u8` initializer must derive from `start` or
+`end`; a `u64` initializer may be an ordinary compile-time integer, `size`, or
+a typed numeric expression over layout metrics after explicit address
+conversion where required. Deferred evaluation uses the same typed integer
+semantics as every other `ConstExpr`: operations wrap at their result width and
+shift counts are reduced modulo `max(32, width)`. Layout placement does not
+replace those rules with checked arithmetic. Floating-point literals,
+conversions to or from floating-point types, floating-point comparisons, and
+floating-point arithmetic are not layout-symbol operations; a placement metric
+cannot be routed through a floating-point intermediate.
+
+There is no implicit conversion between a typed address and numeric address
+bits. A numeric value derived from `start` or `end` must use the ordinary
+explicit conversion `address<u64>(...)`; declaring an `@u8` query as `u64`, or
+a `size` query as `@u8`, is a type error. `pub` publishes the typed value
+through Wyst source visibility only. It does not create an external alias or
+change ELF binding; explicit `export` remains the sole external-linkage
+surface. A published layout symbol uses its module-qualified declaration
+identity. Because the selected layout is an artifact input rather than an
+ordinary imported source module, its `pub symbol` members are also available
+to source by their bare declared spelling. That spelling must resolve to one
+unique layout identity and cannot be shadowed by an ordinary declaration or
+import; ambiguity and every duplicate semantic or bare name are hard errors.
+
+### Init Records And Checked Assembly
+
+If at least one `#[init(order = N)]` contribution survives, this selected
+layout must explicitly declare, for example,
+`section ".initcalls": rodata after ".rodata" align 8`; any declared
+alignment must be at least 8. There is no implicit/default `.initcalls`
+placement. The layout may
+publish typed `start(".initcalls")` and `end(".initcalls")` symbols for an
+ordinary runtime walker. `.initcalls` is reserved, so user
+`#[section(".initcalls")]` attributes are always rejected.
+
+Placement preserves every checked-assembly contract. A checked block's fixed
+placement, typed fixups, first-instruction alignment, and source instruction
+sequence survive unchanged. The layout may insert only the cataloged and
+reported AArch64 NOP padding authorized by that block's `asm align N`; it may
+not insert a literal pool, relaxation, veneer, thunk, or any other instruction
+inside the block. In particular, an out-of-range checked `bl`/`CALL26` fixup is
+a hard diagnostic that preserves the source instruction; the ordinary
+non-checked direct-call veneer policy does not relax it. If placement or range
+constraints cannot be satisfied, the compiler diagnoses the conflict instead
+of synthesizing code.
+
+The deterministic placement algorithm under “Deterministic Placement Solver”
+below consumes only the current named layout DSL. Historical layout examples
+may explain the origin of individual placement rules, but no source or layout
+dialect switch feeds the solver and no implicit predecessor edges are retained.
+
 ## Released v0.8 Syntax Snapshot
 
 > The remainder of this chapter preserves the released v0.8 exposition and
 > remains useful for non-conflicting module-discovery, target, layout, and
 > placement semantics. Its `#module`/`#import` spellings, full-path default
-> qualifier, and any claim that `pub` controls linker export are historical
-> v0.8 syntax and do not describe the current v0.9 language. Where the two
-> surfaces conflict, the v0.9 section above is authoritative.
+> qualifier, flat `#entry`/`#region`/`#section` declarations,
+> `#start`/`#end` queries, and any claim that `pub` controls linker export are
+> historical v0.8 syntax and do not describe the current v0.9 language. The
+> production parser does not accept that released grammar. Where the two
+> surfaces conflict, the current sections above are authoritative.
 
 ### Modules and Targets
 
@@ -94,7 +362,7 @@ A **module** is a directory of one or more Wyst source files that share a
 namespace. Every source file declares which module it belongs to with
 `#module name` on the first non-comment line:
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.hello
 ```
@@ -196,7 +464,7 @@ specification.
 
 ## Imports
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import (
   drivers.uart as uart
@@ -209,7 +477,7 @@ declarations available through a qualified namespace. It does not place those
 declarations into the importing file's bare namespace. Two or more imports are
 usually written in a block:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import (
   drivers.uart as uart
@@ -221,7 +489,7 @@ Each block entry is the same import item as a standalone `#import name` line,
 with the same optional `as alias` clause and optional selective import list.
 With an alias, the alias is the qualified namespace:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import drivers.uart as uart
 
@@ -232,7 +500,7 @@ _start :: () {
 
 Without an alias, the full module name is the qualified namespace:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import runtime.clock
 
@@ -243,7 +511,7 @@ tick :: () {
 
 An import can explicitly select public names for unqualified use:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import runtime.clock { now, Instant as ClockInstant }
 
@@ -259,7 +527,7 @@ name, or under the selection alias when the selection uses `as`. The module
 dependency remains module-qualified at the same time, so `runtime.clock.now()`
 or `clock.now()` remains valid when the import also has a module alias:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #import runtime.clock as clock { now }
 ```
@@ -347,7 +615,7 @@ at the conflicting selected name and at the first bare name in that scope.
 Keep both dependencies qualified, or alias one selected name before importing
 both modules into the same scope.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module main
 
@@ -370,7 +638,7 @@ Every top-level declaration in a module is **private to that module by
 default**. A declaration is visible to importers only when prefixed with
 `pub`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module runtime.uart
 
@@ -416,7 +684,7 @@ there is no language-level synchronization. Use atomics
 ([chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md)) or explicit serialization for
 any concurrent access.
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 pub boot_counter : u64 = 0 // visible and writable by every importer
 ```
@@ -463,8 +731,8 @@ linker export from `pub`, and no source form for hidden shared-object visibility
 The current whole-program compiler keeps module-qualified semantic identities
 separate from these external spellings. Changing only `pub`, a module import
 alias, or source re-export therefore cannot change ELF identity. The canonical
-object-unit mangling and cross-object resolution rules remain owned by Roadmap
-item 61 and do not relax this source/linker separation.
+object-unit mangling and cross-object resolution rules remain owned by the
+semantic-object-unit contract and do not relax this source/linker separation.
 
 In the implemented `ET_EXEC` pipeline, each imported boundary must resolve to
 exactly one compatible explicit export in the selected whole program. Code
@@ -489,7 +757,7 @@ construct accepts minimum architecture revision, required ISA features, minimum
 exception level, and required ABI capabilities. It does not select a CPU or a
 complete machine profile.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module reusable_spin
 
@@ -575,7 +843,7 @@ Descriptor direction:
 
 ---
 
-## Layout
+## Layout (Historical v0.8 Surface)
 
 A layout file is a valid Wyst module. It uses the same language, same type
 system, same tool. No foreign file format to learn.
@@ -589,7 +857,7 @@ frontend-time constants.
 
 ### Entry Point
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #entry _start at 0x0008_0000
 ```
@@ -598,7 +866,7 @@ The entry symbol and its load address are declared together.
 
 ### Regions
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #region rom : origin = 0x0000_0000, size = 0x0010_0000, attrs = (readonly)
 #region ram : origin = 0x8000_0000, size = 0x8000_0000
@@ -609,7 +877,7 @@ Regions name address ranges with optional attributes (`readonly`).
 
 ### Sections
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section .text : align = 16, in = rom
 #section .rodata : align = 16, after = .text
@@ -620,7 +888,7 @@ Regions name address ranges with optional attributes (`readonly`).
 Sections are placed by constraint: `in` pins to a region, `after` chains
 sequentially. Alignment is explicit.
 
-### Deterministic Placement Solver
+### Deterministic Placement Solver (Current For v0.8 And v0.9)
 
 Final placement is a deterministic constraint problem owned by
 `phase.placement_constraints` and `phase.placement_solving`. A conforming
@@ -639,8 +907,8 @@ The placement constraint set contains only finalized products:
 - section declarations: name, layout-file declaration index, alignment,
   zero or more `in` region constraints, and zero or more `after` section
   constraints;
-- fixed-address constraints from `#entry` and from any compiler-normalized
-  exact-start requirement;
+- fixed-address constraints from a v0.9 entry `at` clause (or historical
+  v0.8 `#entry`) and from any compiler-normalized exact-start requirement;
 - section contribution lists with byte size, memory size, declaration
   identity, declaration-order index, required declaration alignment, section
   class, and file-byte payload;
@@ -675,10 +943,14 @@ solving:
   every predecessor after each predecessor is solved.
 - A fixed-address constraint pins a section or symbol to exactly one address.
   Multiple fixed-address constraints for the same entity must name the same
-  value. Different values are conflicting fixed addresses.
+  value. Identical claims collapse without discarding their meaning; different
+  values are conflicting fixed addresses. Each normalized claim retains its
+  source span, authority origin (for example, the selected entry's `at`
+  operand), and exact unsigned-64-bit operand for later diagnostics.
 - Fixed-address arithmetic is checked in unsigned 64-bit space. An entry
-  symbol fixed by `#entry sym at A` creates the implied section-start
-  constraint `A - offset(sym)`. If that subtraction underflows, or if any
+  declaration fixed by `entry path at A` (or historical `#entry sym at A`)
+  creates the implied section-start constraint `A - offset(entry)`. If that
+  subtraction underflows, or if any
   addition used to compute an end address overflows, the solver reports address
   overflow.
 
@@ -688,8 +960,10 @@ solving:
 one or more `after` predecessors inherits the direct predecessors' region only
 when every direct predecessor has the same resolved region. This inherited
 region is part of the solved placement and is used for bounds checks. If direct
-predecessors resolve to different regions, the section has no inherited region
-unless it also has an explicit `in`.
+predecessors resolve to different regions and the section has no explicit
+`in`, inheritance is ambiguous and the solver diagnoses every predecessor and
+its resolved region. An explicit `in` resolves that ambiguity and is checked
+against every predecessor lower bound.
 
 An explicit `in` may follow a predecessor from another region. In that case the
 section is placed at the first address in its explicit region that also
@@ -726,8 +1000,12 @@ solver may insert padding for alignment, but it must not reorder contributions.
 For each section in solve order:
 
 1. Start with the maximum of: the image base or zero for the first unconstrained
-   section; the origin of an explicit or inherited region; every predecessor's
-   end address; every fixed section-start address for that section.
+   section; the origin and current cursor of an explicit or inherited region;
+   every predecessor's end address; every fixed section-start address for that
+   section. A region cursor is the maximum end of the already solved non-empty
+   sections in that region, initially the region origin. Consequently, two
+   independent sections explicitly placed in the same region advance in
+   deterministic solve order instead of both beginning at the origin.
 2. Start the file offset at the maximum of: the previous file-backed section's
    end offset in solve order, every predecessor's file end offset, and every
    file-offset floor imposed by the writer for headers or program segments.
@@ -742,12 +1020,14 @@ For each section in solve order:
 6. Compute `file_size`, `memory_size`, and `end` using checked 64-bit
    arithmetic.
 7. Verify region bounds and overlap against every previously solved non-empty
-   allocated section.
+   allocated section, then advance the resolved region's cursor to the maximum
+   of its old value and this section's end.
 
 All empty sections have `file_size = 0`, `memory_size = 0`, and `start = end`.
-They still receive deterministic `#start` and `#end` values, and they do not
+They still receive deterministic `start("NAME")` and `end("NAME")` values (or
+historical v0.8 `#start`/`#end` values), and they do not
 overlap any other section. An implementation may omit an empty section header
-only when no source-visible layout export, synthesized bookend, or object
+only when no source-visible layout symbol, synthesized bookend, or object
 schema rule requires that header; omission must not change any solved address.
 
 #### Padding And Fill
@@ -779,7 +1059,7 @@ diagnostic must also show the dependency path that made the failure reachable:
   maximum predecessor end; when they are not, report each predecessor edge and
   the fixed, region, overlap, or overflow constraint that prevents a solution;
 - conflicting fixed addresses: report all fixed-address constraints for the
-  entity and their source locations;
+  entity, their exact operands, authority origins, and source locations;
 - inherited region conflicts: report the section, each direct predecessor that
   supplied a region, and the chosen explicit region if one exists;
 - overlap: report both section intervals, their source layout constraints, and
@@ -788,7 +1068,9 @@ diagnostic must also show the dependency path that made the failure reachable:
 - alignment failure: report the alignment, original lower bound, aligned value,
   and fixed address or region bound it conflicts with;
 - address overflow: report the arithmetic operation, operands, section or
-  symbol being placed, and the dependency path to the overflowed computation;
+  symbol being placed, and the dependency path to the overflowed computation,
+  including the fixed-address, region-origin, or image-base origin that began
+  that path;
 - empty-section diagnostics: report zero-sized intervals as `start == end`
   so users can distinguish emptiness from missing placement.
 
@@ -798,7 +1080,7 @@ produce either the same placement or the same required diagnostic.
 
 ### Exports
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 pub __text_start ::= #start(.text)
 pub __text_end ::= #end(.text)
@@ -813,7 +1095,7 @@ section.
 
 ### Complete Layout Module
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.layout
 
@@ -835,7 +1117,7 @@ pub __stack_top :: u64 = 0x8000_4000
 
 ### Usage from Source
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.hello
 
@@ -858,7 +1140,7 @@ The per-declaration `#section(.name)` attribute names _which_ section a
 specific declaration belongs to. Together they express the pattern
 "these declarations go into this section, which lives at this address."
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section(.init.text)
 bring_up_uart :: () {
@@ -873,7 +1155,7 @@ module_name :: [16]u8 = "uart_driver_v1"
 
 The layout module places those sections:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section .init.text : align = 16, after = .text
 #section .modinfo : align = 8, after = .rodata
@@ -988,7 +1270,7 @@ These match the convention already used for canonical sections (see
 [chapter-16-object-format.md §4](chapter-16-object-format.md)) and unblock the kernel pattern
 of freeing `.init.text` after early bring-up:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 free_init_text :: () {
   start := __init_text_start
@@ -1018,7 +1300,7 @@ There is no per-module restriction. Any module can write
 
 #### Worked Example: `.init.text`
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module boot.init
 
@@ -1049,7 +1331,7 @@ free_init_section :: () {
 
 Layout module:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section .text : align = 16, in = rom
 #section .init.text : align = 16, after = .text
@@ -1062,7 +1344,7 @@ that range.
 
 #### Worked Example: `.modinfo` Aggregation
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module driver.uart
 
@@ -1070,7 +1352,7 @@ that range.
 uart_modinfo :: [16]u8 = "uart_pl011_v1"
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module driver.gic
 
@@ -1078,7 +1360,7 @@ uart_modinfo :: [16]u8 = "uart_pl011_v1"
 gic_modinfo :: [16]u8 = "gic_v3"
 ```
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #module kernel.modinfo_walk
 
@@ -1115,7 +1397,7 @@ is for code that is not a function declaration (e.g. a `label`).
 **Non-`#cold` functions** stay in `.text` by default. A function may
 explicitly opt into `.text.hot` via `#section(.text.hot)`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section(.text.hot)
 inner_loop :: () {
@@ -1138,7 +1420,7 @@ function lands in. See [chapter-08-functions.md §2.7.2](chapter-08-functions.md
 `.text.cold` and the program has a layout module, the layout module must
 declare `.text.cold`:
 
-<!-- wyst-contract: sketch -->
+<!-- wyst-contract: historical-v0.8 -->
 ```wyst
 #section .text : align = 16, in = rom
 #section .text.hot : align = 16, after = .text // optional

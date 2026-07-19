@@ -1,0 +1,68 @@
+# kind	stage	name	tags	file	expect
+positive	parse	precedence-is	precedence,is,recovery	positive/precedence-is.wyst	-
+positive	parse	generics-if-mmio-atomics	generics,compile-time-if,mmio,atomic-orders,version-gating	positive/generics-if-mmio-atomics.wyst	-
+positive	parse	item42-callable-storage	callable-types,declaration-prefix,register-placement,storage-classes,never	positive/item42-callable-storage.wyst	-
+positive	parse	item49-checked-asm	checked-asm,signature-asm,register-placement,version-gating	positive/item49-checked-asm.wyst	-
+positive	parse	item57-linker-boundaries	linker-boundaries,imports,exports,version-gating	positive/item57-linker-boundaries.wyst	-
+positive	parse	grouped-module-imports	imports,grouped-imports,version-gating	positive/grouped-module-imports.wyst	-
+positive	parse	unreserved-predecessor-identifiers	identifiers,version-gating	positive/unreserved-predecessor-identifiers.wyst	-
+positive	parse	discard-binding-positions	bindings,discard,destructuring,match	positive/discard-binding-positions.wyst	-
+positive	parse	classifier-numeric-context	literals,version-gating	positive/classifier-numeric-context.wyst	-
+negative	parse	malformed-attribute-group	malformed-directives,recovery	negative/malformed-attribute-group.wyst	error[E0101]|expected ']'
+negative	parse	generic-value-argument	generics,version-gating	negative/generic-value-argument.wyst	error[E0101]|compile-time value generic arguments are not supported
+negative	parse	compile-time-if-missing-block	compile-time-if,malformed-directives	negative/compile-time-if-missing-block.wyst	error[E0101]|expected '{'
+negative	parse	reserved-postfix-question	version-gating,malformed-directives	negative/reserved-postfix-question.wyst	error[E0101]|reserved token '?'
+negative	parse	item49-legacy-asm-sections	checked-asm,signature-asm,version-gating	negative/item49-legacy-asm-sections.wyst	error[E0110]|unknown directive
+negative	parse	item57-weak-import	linker-boundaries,imports,version-gating	negative/item57-weak-import.wyst	error[E0101]|weak symbol imports are not supported
+negative	parse	per-entry-public-grouped-module-import	imports,grouped-imports,version-gating	negative/per-entry-public-grouped-module-import.wyst	error[E0101]|import group entries cannot have individual 'pub' modifiers
+negative	parse	future-symbol-attributes	version-gating	negative/future-symbol-attributes.wyst	error[E0110]|unknown directive
+negative	parse	removed-exact-attribute	version-gating,malformed-directives	negative/removed-exact-attribute.wyst	error[E0101]|unknown grouped annotation 'exact'
+negative	parse	removed-export-directive	linker-boundaries,version-gating	negative/removed-export-directive.wyst	error[E0110]|unknown directive
+negative	parse	removed-percent-primitives	version-gating,runtime-primitives,atomics,system-registers	negative/removed-percent-primitives.wyst	error[E0101]|expected expression, found
+negative	parse	removed-acquire-directive	version-gating,atomics	negative/removed-acquire-directive.wyst	error[E0110]|unknown directive
+negative	parse	removed-release-directive	version-gating,atomics	negative/removed-release-directive.wyst	error[E0110]|unknown directive
+negative	parse	removed-effect-attributes	version-gating,effects,malformed-directives	negative/removed-effect-attributes.wyst	error[E0110]|unknown directive
+negative	parse	legacy-layout-directives	layouts,version-gating	negative/legacy-layout-directives.wyst	error[E0110]|unknown directive
+negative	parse	legacy-bitfield-declaration	bitstructs,version-gating	negative/legacy-bitfield-declaration.wyst	error[E0101]
+negative	check	legacy-dynamic-array-type	dynamic-arrays,version-gating	negative/legacy-dynamic-array-type.wyst	error[E0228]|unknown name 'dynamic'
+negative	parse	removed-switch-case	enums,match,version-gating	negative/removed-switch-case.wyst	error[E0101]
+negative	parse	legacy-qualified-enum-match-pattern	enums,match,version-gating	negative/legacy-qualified-enum-match-pattern.wyst	error[E0101]|match patterns use dot-prefixed enum variants
+negative	check	removed-repeat-statement	control-flow,loops,version-gating	negative/removed-repeat-statement.wyst	error[E0237]|statement-position expression must be a function call or runtime primitive call
+negative	parse	legacy-thread-local-declaration	storage,version-gating	negative/legacy-thread-local-declaration.wyst	error[E0101]
+negative	parse	removed-at-size-of	compile-time-if,intrinsics,version-gating	negative/removed-at-size-of.wyst	error[E0101]|expected expression, found '@'
+negative	parse	removed-at-addr-of	addresses,intrinsics,version-gating	negative/removed-at-addr-of.wyst	error[E0101]|expected expression, found '@'
+negative	parse	removed-typed-struct-literal	aggregates,structs,version-gating	negative/removed-typed-struct-literal.wyst	error[E0101]|expected
+negative	check	atomic-order-spelling	atomic-orders,version-gating	negative/atomic-order-spelling.wyst	invalid memory order '.acqrel'
+negative	parse	legacy-typed-memory-access	memory,version-gating	negative/legacy-typed-memory-access.wyst	error[E0101]
+negative	parse	legacy-vector-typed-memory-access	memory,vectors,version-gating	negative/legacy-vector-typed-memory-access.wyst	error[E0101]
+negative	parse	legacy-spaced-typed-memory-access	memory,whitespace,version-gating	negative/legacy-spaced-typed-memory-access.wyst	error[E0101]
+negative	check	removed-machine-integer-types	types,version-gating	negative/removed-machine-integer-types.wyst	error[
+negative	check	removed-null-literal	literals,version-gating	negative/removed-null-literal.wyst	error[
+negative	parse	removed-numeric-suffix	literals,version-gating	negative/removed-numeric-suffix.wyst	error[E0106]
+negative	check	removed-typed-struct-constructor	aggregates,structs,version-gating	negative/removed-typed-struct-constructor.wyst	error[
+negative	check	removed-link-name-attribute	attributes,linkage,version-gating	negative/removed-link-name-attribute.wyst	error[
+negative	check	legacy-raw-slice-constructor	slices,version-gating	negative/legacy-raw-slice-constructor.wyst	error[E0234]|array literals require an expected fixed-array or vector type
+negative	check	nested-is-pattern	is,version-gating	negative/nested-is-pattern.wyst	expected match payload binding
+negative	parse	unshadowable-module-component	bindings,identifiers,unshadowable	negative/unshadowable-module-component.wyst	error[E0101]|module component|unshadowable
+negative	parse	unshadowable-import-alias	bindings,identifiers,imports,unshadowable	negative/unshadowable-import-alias.wyst	error[E0101]|import alias|unshadowable
+negative	parse	unshadowable-selected-import-alias	bindings,identifiers,imports,unshadowable	negative/unshadowable-selected-import-alias.wyst	error[E0101]|selected import alias|unshadowable
+negative	parse	unshadowable-selected-import-binding	bindings,identifiers,imports,unshadowable	negative/unshadowable-selected-import-binding.wyst	error[E0101]|selected import binding|unshadowable
+negative	parse	unshadowable-top-level-declaration	bindings,declarations,identifiers,unshadowable	negative/unshadowable-top-level-declaration.wyst	error[E0101]|top-level declaration|unshadowable
+negative	parse	unshadowable-generic-parameter	bindings,generics,identifiers,unshadowable	negative/unshadowable-generic-parameter.wyst	error[E0101]|generic type parameter|unshadowable
+negative	parse	unshadowable-parameter	bindings,identifiers,parameters,unshadowable	negative/unshadowable-parameter.wyst	error[E0101]|parameter|unshadowable
+negative	parse	unshadowable-struct-field	bindings,identifiers,structs,unshadowable	negative/unshadowable-struct-field.wyst	error[E0101]|struct field|unshadowable
+negative	parse	unshadowable-enum-variant	bindings,enums,identifiers,unshadowable	negative/unshadowable-enum-variant.wyst	error[E0101]|enum variant|unshadowable
+negative	parse	unshadowable-tuple-return-field	bindings,identifiers,returns,unshadowable	negative/unshadowable-tuple-return-field.wyst	error[E0101]|tuple return field|unshadowable
+negative	parse	unshadowable-local-binding	bindings,identifiers,locals,unshadowable	negative/unshadowable-local-binding.wyst	error[E0101]|local binding|unshadowable
+negative	parse	unshadowable-destructuring-binding	bindings,destructuring,identifiers,unshadowable	negative/unshadowable-destructuring-binding.wyst	error[E0101]|destructuring binding|unshadowable
+negative	parse	unshadowable-for-index	bindings,for,identifiers,unshadowable	negative/unshadowable-for-index.wyst	error[E0101]|for-loop index|unshadowable
+negative	parse	unshadowable-match-payload	bindings,identifiers,match,unshadowable	negative/unshadowable-match-payload.wyst	error[E0101]|match payload binding|unshadowable
+negative	parse	discard-module-component	bindings,discard,identifiers	negative/discard-module-component.wyst	error[E0101]|bare '_'|cannot be used as a name
+negative	parse	discard-top-level-declaration	bindings,declarations,discard,identifiers	negative/discard-top-level-declaration.wyst	error[E0101]|bare '_'|cannot be used as a name
+negative	parse	discard-for-index	bindings,discard,for,identifiers	negative/discard-for-index.wyst	error[E0101]|bare '_'|cannot name a for-loop index
+negative	parse	semicolon-statement	punctuation,semicolon,version-gating	negative/semicolon-statement.wyst	error[E0101]|';' is not valid in semicolon-free Wyst source
+negative	parse	semicolon-checked-asm	checked-asm,punctuation,semicolon,version-gating	negative/semicolon-checked-asm.wyst	error[E0101]|';' is not valid in semicolon-free Wyst source
+negative	parse	unbraced-if-body	braces,control-flow,if,recovery	negative/unbraced-if-body.wyst	error[E0101]|expected '{'
+negative	parse	unbraced-while-body	braces,control-flow,recovery,while	negative/unbraced-while-body.wyst	error[E0101]|expected '{'
+negative	parse	unbraced-for-body	braces,control-flow,for,recovery	negative/unbraced-for-body.wyst	error[E0101]|expected '{'
+negative	parse	unbraced-match-body	braces,control-flow,match,recovery	negative/unbraced-match-body.wyst	error[E0101]|expected '{'

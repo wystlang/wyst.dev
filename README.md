@@ -50,6 +50,7 @@ Node.js 22 or newer and Chrome or Chromium are required.
 ```sh
 npm ci
 npm run build
+npm run build:worker-assets # canonical clean Worker-assets build gate
 npm run serve              # http://127.0.0.1:8347
 ```
 
@@ -76,8 +77,13 @@ activates it through `core.hooksPath`; CI remains authoritative.
 ## Imported Wyst snapshots
 
 The compiler repository remains the source of truth for the language design.
-This public repository includes only the publication inputs and four example
-fixtures required to build and test the site. `vendor/wyst-design/.source-commit`
+This public repository includes only the publication inputs, the four homepage
+and runtime fixtures, and the shared positive/negative syntax corpus required to
+build and test the site. The vendored `syntax-words.tsv`,
+`attribute-catalog.tsv`, and `meta-operation-catalog.tsv` are the complete
+public editor vocabulary inputs. `syntax-words.tsv` drives documentation
+highlighting, so Prism does not maintain a parallel keyword or
+compiler-operation list. `vendor/wyst-design/.source-commit`
 records the source commit reported by the trusted local sync operation, while
 `vendor/wyst-snapshot.json` hashes every imported design and fixture byte. The
 build and public CI verify those committed bytes against the snapshot manifest;

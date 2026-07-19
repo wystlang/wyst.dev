@@ -105,14 +105,14 @@ editor-distributed binaries.
   locals are resolved from the enclosing function's scope. Function hovers render
   the signature, while other declarations, parameters, and locals render their
   parsed source form; declaration hovers include adjacent `///` or `/** ... */`
-  doc comments, and layout hovers describe dot-prefixed section names such as
-  `.bss` plus `#region` fields and attributes. Numeric literals, string
-  literals, operators, enum variants, payload bindings, struct members, memory
-  accesses, and target/profile arguments have focused hover payloads when the
-  compiler has stable facts for them.
+  doc comments. This implemented hover contract does not yet include
+  member-specific named-layout payloads. Numeric literals, string literals,
+  operators, enum variants, payload bindings, struct members, memory accesses,
+  and target/profile arguments have focused hover payloads when the compiler
+  has stable facts for them.
 - `textDocument/codeAction`: returns applicability-checked code actions for
   cases, including numeric literal base conversion, close-match unknown-name
-  replacement, duplicate `#module` line removal, and diagnostic-backed explicit
+  replacement, duplicate `module` declaration removal, and diagnostic-backed explicit
   cast insertion for narrow type-mismatch spans. Diagnostic-backed actions carry
   diagnostic IDs, the source document version, exact ranges, expected source
   text, exact replacements, and applicability in action data. If any of those
@@ -151,6 +151,31 @@ The Zed extension declares the `wync` language server and launches `wync lsp`
 through a Rust/Wasm extension wrapper. It resolves the binary from Zed
 `lsp.wync.binary.path` settings, then `wync` on the workspace `PATH`, then a
 documented local development path.
+
+## Authenticated A64 Source Domains
+
+Editor-facing checked-assembly facts come from
+`design/a64-support-source-domains.json` (`wyst.a64-support-source-domains.v1`).
+That generated artifact is the exact join of active `source_form` support rows
+with the encoding catalog; editor code must not reconstruct a mnemonic-only or
+hand-maintained operand list. The current matrix contains 20 source forms: 13
+in `wyst.a64.checked-asm.core.v1` (including `adrp`) and seven in
+`wyst.a64.target-structural-asm.aarch64.v1`.
+
+For every active row, the compiler-owned editor catalog publishes
+`sourceFormId`, `sourceMnemonic`, `supportPack`, `semanticOperands`,
+`operandGrammar`, nullable `aliasOf`, and the full `registerViews` and
+`registerLists` projections. Each register projection retains its operand
+index, semantic role, domain, and exact grammar fragment. The catalog also
+publishes the source-domain schema and authenticated digest.
+
+Checked-assembly mnemonic hovers consume the same generated rows and report
+their operand grammar, alias identity, and register domains. The canonical
+formatter treats assembly body text as target-owned and its matrix regression
+iterates those same rows, proving that every authenticated grammar, alias, and
+register projection survives formatting and a second formatting pass. These
+editor, LSP, formatter, and documentation surfaces therefore close over the
+generated 20-row domain rather than over a separately curated mnemonic set.
 
 ## Typed Editor Index
 
@@ -232,24 +257,26 @@ only from a project-local `.zed/tasks.json` or the global
 - `wync fmt` on `$ZED_FILE` (in-place canonical formatting);
 - `wync build` on `$ZED_WORKTREE_ROOT` (project build).
 
-The same `tasks.json` files add two QEMU-backed templates for the
-`qemu-virt-aarch64-el2` profile that are explicit about target, ELF path, and
-adapter:
+The reference `tasks.json` files deliberately omit generic QEMU run and gdbstub
+tasks. They are copied into arbitrary projects, while the installed `wync`
+surface does not publish the repository-internal Arm64 Linux Image packager.
+An editor template must not guess a compiler checkout, duplicate that envelope,
+or launch the emitted EL2 ELF directly.
 
-- `qemu-virt run` boots the project's emitted ELF — the `wyst.project` `output`
-  path — headless under
-  `qemu-system-aarch64 -machine virt,virtualization=on -cpu cortex-a53`.
-- `qemu-virt debug (gdbstub)` boots the same ELF frozen at reset with a QEMU
-  gdbstub on `tcp::1234` (`-s -S`) for an external GDB or LLDB, or a DAP adapter
-  such as CodeLLDB.
+A project-local runner script, provided by the project, owns launch for a
+supported QEMU profile. For
+`qemu-virt-aarch64-el2`, it deterministically derives and verifies the Arm64
+Linux `.Image` from the emitted ELF, then immediately runs
+`wync runner-preflight <artifact.elf> --runner qemu-system-aarch64-semihost-v1`
+before passing that verified `.Image` — never the ELF — to QEMU's `-kernel`.
+A gdbstub mode has the same preparation and preflight contract before it adds
+`-s -S`. The debugger or DAP adapter may load the ELF separately as its symbol
+file. Debug integration must name the existing adapter it depends on; a
+Wyst-specific debug adapter is out of scope.
 
-Debug integration must name the existing adapter it depends on and the emitted
-artifact it launches. A Wyst-specific debug adapter is out of scope.
-
-The gdbstub template launches the emitted ELF, so it proves the narrow debug
-scenario, but it provides only source-line stepping and `x29`-chain backtraces.
-Full debugger fidelity — variable values, type-aware inspection, and watch
-identity — requires debug information beyond the deterministic DWARF source
-floor (function and source-line rows), including
+That authenticated gdbstub path provides only source-line stepping and
+`x29`-chain backtraces. Full debugger fidelity — variable values, type-aware
+inspection, and watch identity — requires debug information beyond the
+deterministic DWARF source floor (function and source-line rows), including
 variable-location lists, type DIEs, or call-frame information (see
 [chapter-23-debug-info.md](chapter-23-debug-info.md)).

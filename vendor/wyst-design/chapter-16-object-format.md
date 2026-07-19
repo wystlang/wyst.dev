@@ -15,15 +15,16 @@ Object format describes emitted artifacts, not source syntax. It builds on
 modules, layout declarations, boot entry, and ABI classification.
 
 > **Source-version boundary.** Object and relocation behavior is current.
-> Any retained `T@[address]`, `%addr_of`, colon-slice, typed-address arithmetic,
-> raw descriptor, or `as.<category>` example outside a section explicitly
-> marked current v0.9 is released-v0.8 source background. Chapter 6 owns and
-> supersedes those source spellings.
+> Predecessor address-access, categorized-conversion, and raw-descriptor
+> examples are released-v0.8 source background. Chapter 6 owns and supersedes
+> those spelling classes with address methods, named conversions, and
+> `address.slice(elements = count)`.
 
 ## v0.9 `per_cpu` Object Contract (Current)
 
-Chapter 8 owns item-42 source semantics. In the current whole-program
-`ET_EXEC` mode, every accepted `per_cpu var` contributes exactly one entry to
+Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
+In the current whole-program `ET_EXEC` mode, every accepted `per_cpu var`
+contributes exactly one entry to
 the `.percpu` initialization template. Its source type fixes the entry's size
 and natural alignment; its statically representable initializer fixes the
 entry bytes and internal relocation records. Entries are placed
@@ -48,8 +49,10 @@ The `.percpu` bytes are an immutable initialization template even when the
 current static-image transport marks the containing load segment writable for
 a later runtime copier. The template is never the live current-core instance.
 The compiler emits no copied instances, allocation metadata, base setup,
-startup copy, or ordinary-global alias. No `.tls` section, `PT_TLS`, TLS symbol,
-TLS relocation, or TLS size export is emitted for v0.9 source.
+startup copy, or ordinary-global alias. A v0.9 source contributes no TLS
+payload, symbol, relocation, or size export. A selected v0.9 named layout emits
+no `.tls` section or `PT_TLS`; a selected released-v0.8 layout may retain its
+historical empty `.tls` compatibility row without admitting v0.9 TLS storage.
 
 ## v0.9 Placement and Initialization Attributes (Current)
 
@@ -68,10 +71,9 @@ Chapters 14 and 8 respectively.
 `#[section("NAME")]` accepts one literal matching `\.[A-Za-z0-9_.]+`. The
 selected artifact layout must declare that exact non-reserved name whenever a
 contribution is emitted, and that layout declaration must state the compatible
-`code`, `rodata`, `data`, or `bss` kind. In the current flat layout surface this
-is written, for example, as
-`#section .state : kind = data, align = 64, in = ram`; item 58 changes the
-layout syntax without weakening the declared-kind contract. Functions require
+`code`, `rodata`, `data`, or `bss` kind. The current named layout surface writes
+this, for example, as
+`section ".state": data in ram align 64`. Functions require
 `code`, constants require `rodata`, initialized mutable objects require `data`,
 and zero-filled mutable objects require `bss`, which emits writable
 `SHT_NOBITS` storage. A missing or incompatible kind and any attempt to mix
@@ -101,6 +103,79 @@ shares no cache line with another live object. Padding is not part of the
 source type or symbol size, creates no retention root, and implies no atomicity,
 ordering, volatility, synchronization, or visibility semantics.
 
+## v0.9 Named Layout Object Contract (Current)
+
+An artifact-owned manifest layout clause selects exactly one named `layout`
+block from its layout file. Its `entry` member resolves one exact
+module-qualified Wyst declaration. That semantic selection supplies
+`e_entry` and a reachability root but emits no alias, changes no source or ELF
+name, and changes no binding. The optional `at` clause pins the resolved
+declaration's first byte; without it, ordinary section constraints determine
+the address. The QEMU EL1 and Raspberry Pi profiles require a zero-parameter,
+unpinned Wyst Native function returning `never`, or the equivalent body-bearing
+terminal label. The two QEMU EL2 profiles instead require the complete
+`wyst.target-entry-schema.v1` root: `pub naked`, Wyst Native, exactly
+`dtb: @u8 in x0`, `-> never`, authenticated EL2, and exactly one cataloged
+checked stack transition from a `u64` value in `x1`. These ABI, register,
+execution-level, stack-transition, and terminal checks complete before the
+writer consumes the selection.
+
+Typed IR is the semantic authority passed to the writer. It retains the typed
+target-entry schema and digest when present, as well as the layout
+block identity and dialect, declaration-ordered region access contracts,
+declaration-ordered section kinds and normalized constraints with operand
+provenance, the entry claim, and every typed layout-symbol expression. A
+syntax-backed layout adapter may retain source structure for diagnostics, but
+the writer must reject any mismatch instead of silently replacing an IR fact.
+
+Each layout `section` declaration fixes the exact ELF name and its `code`,
+`rodata`, `data`, or `bss` class. `in`, every `after`, and `align` become the
+normalized constraints solved under Chapter 4. A `readonly` region can contain
+only non-writable allocated sections; a `readwrite` region admits either, while
+section kind still determines ELF flags. Section names are never renamed by
+layout. Writer-owned non-layout outputs (`.debug_*`, `.symtab`, `.strtab`,
+`.shstrtab`, and every `.wyst.*` section) cannot be declared as named-layout
+sections. All origin, extent, alignment, fixed-address, section-offset, and end
+computations are checked in unsigned 64-bit space.
+
+A layout `symbol` is an explicit typed placement product. For
+`symbol begin: @u8 = start(".name")` and the corresponding `end`, `st_value`
+is the solved virtual address, `st_shndx` identifies the referenced section,
+and `st_type` is `STT_NOTYPE`. For
+`symbol extent: u64 = size(".name")`, `st_value` is the solved memory extent,
+`st_shndx` is `SHN_ABS`, and `st_type` is `STT_NOTYPE`. An explicit
+`address<u64>(start(...))` likewise produces numeric address bits and an
+absolute typed value; the source type, not ELF's untyped value field, remains
+the authority for Wyst consumers.
+
+Layout symbols use `STB_LOCAL` independently of `pub`. `pub` exposes the typed
+placement product through Wyst module visibility only; it does not export or
+rename it. An explicit external `export` declaration remains the sole way to
+request a global or weak linker alias, and semantic entry selection never
+implies one. Synthesized debugger bookends remain local and are suppressed
+when an explicit layout symbol declares the same canonical bookend name.
+Explicit layout symbols retain layout-member declaration order in `.symtab`;
+name-map order is not an artifact-ordering authority.
+
+If any `#[init(order = N)]` record survives, the selected layout must contain
+an explicit `.initcalls` section of kind `rodata` with alignment at least 8.
+The writer supplies no default. The table may be bounded by explicit typed
+layout symbols, but user `#[section(".initcalls")]` attributes remain invalid.
+
+The placement writer must preserve checked-assembly block identity. It may
+insert only cataloged and reported AArch64 NOP padding authorized by a block's
+`asm align N` contract before that block's first instruction. It may not place
+a literal pool, relaxation, veneer, thunk, or other synthesized instruction
+inside a checked block. Typed fixups and fixed-placement/range obligations are
+resolved exactly or diagnosed. Thus an out-of-range checked `bl`/`CALL26`
+produces a hard diagnostic that retains the source instruction; it never uses
+the ordinary direct-call veneer policy.
+
+The released-v0.8 layout-directive rows in the hash-removal audit name ordinary
+invalid source. Those forms survive only in the historical grammar snapshot
+and removal audit; they never enter the parser, placement/object machinery, or
+editor vocabulary.
+
 Wyst's integrated compiler reads a set of source modules and emits a single
 binary image in the current implemented artifact mode. There is no separate
 assembler, no separate linker, and no intermediate object files written to disk
@@ -108,6 +183,101 @@ for the implemented `ET_EXEC` mode. Relocatable object files are a
 future-version normative R8 surface (`wyst.language.v0.8` target 32) and do not
 override the current single-image rules until Chapter 16 is updated for that
 artifact mode.
+
+## v0.9 Suspension And Context Summary Closure (Current)
+
+Before any body-independent callable fact is admitted, one authenticated
+sidecar atomically retains its exact or conservative effect bound, the bound's
+exact authority, and the closed `context_stability` provenance of every
+parameter, result, reachable aggregate field, and possible enum payload.
+`effects(all)` uses bound tag 0 (`None`, conservative top) and therefore
+includes `execution_suspension`; its distinct authority tag preserves whether
+that top was declared, asserted, or conservatively supplied. Tag 1 carries a
+32-bit count followed by exact effect-name strings in closed catalog order;
+tag 1 with count zero is `effects(none)`. Top is therefore never confused with
+an absent sidecar or an empty exact list. Unknown context provenance is
+explicit and cannot cross a strand boundary.
+
+Current source function syntax cannot author a context classification, and the
+execution-strand contract does not activate portable provider accessors. The
+compiler therefore emits ordinary parameter and result facts for current
+ordinary Wyst and foreign declarations. Classified facts are accepted only when
+their owner is a compiler-owned operation or an authenticated provider producer;
+the consumer rejects a hand-edited or otherwise unsourced classified override as
+incompatible transport. This admission rule is separate from the wire format:
+the same codec preserves classified facts exactly once such a producer exists.
+
+The canonical transport is `wyst.callable-context-summary.v2`; v1 is unsupported rather than aliased.
+Its body order is exactly: the eight bytes
+`WYSTCTX\0`; little-endian 16-bit version 2; a length-prefixed canonical
+callable identity; the effect-bound tag and optional counted canonical effect
+names; one `SuspensionEffectAuthority` byte; a 32-bit parameter count and
+ordered provenance entries; and one result provenance entry. Exactly 71 ASCII
+bytes spelling lowercase `sha256:` plus 64 hexadecimal digits follow the body
+and authenticate every preceding byte. All multibyte integers are
+little-endian and counts are 32-bit. A summary is at most 1,048,576 bytes; each
+parameter, effect, path, or alternative count is at most 4,096 and each encoded
+string is at most 16,384 bytes.
+
+The exact effect/authority tags are:
+
+| Byte field | Tag | Meaning |
+| ---------- | --- | ------- |
+| effect bound | 0 | conservative top (`None`) |
+| effect bound | 1 | exact counted catalog-ordered effect list |
+| suspension authority | 0 | `InternalProved` |
+| suspension authority | 1 | `InternalDeclared` |
+| suspension authority | 2 | `ExternalConservative` |
+| suspension authority | 3 | `ExternalAsserted` |
+| suspension authority | 4 | `IndirectKnownTargetsProved` |
+| suspension authority | 5 | `IndirectKnownTargetsDeclared` |
+| suspension authority | 6 | `IndirectConservative` |
+
+`semantic-db.json` pins those tags and every one-byte provenance, stability,
+origin, provider-authority, detach, escape, lifetime, path-segment, and Boolean
+tag; unknown tags are never version-tolerated. Each provenance leaf retains
+stability, origin, authority kind and digest, target/provider/accessor,
+instance and generation identities, detach/escape/lifetime contracts, and
+core/address-derived bits. Decoding against an authenticated interface
+requires exact equality with the canonical callable signature and authority
+map. Missing or extra summaries, corruption, truncation, a bound or authority
+mismatch, unknown tags, duplicate facts, noncanonical effect/path/alternative
+order, erasure, upgrade, or incompatible transport fails before any call is
+admitted.
+
+The current in-memory semantic-interface consumer, and every future public
+object or archive consumer, derives one `strand_suspension_boundary` from each
+imported call whose decoded bound contains `execution_suspension`, at the same
+post-argument/pre-transfer position as a source-visible call. The summary does
+not serialize a backend instruction, runtime hook, or optional optimization
+hint. Inlining, devirtualization, tail-call formation, and any future archive
+extraction or final linking preserve the boundary and its target/provider
+provenance. The final marker itself contributes no symbol, relocation, code
+byte, stack map, or metadata-driven runtime dependency.
+
+Known-target indirect calls join decoded target bounds in closed catalog order
+and require that result to equal the typed call-site bound before consuming it.
+These sidecar and verifier rules are active compiler compatibility rules in the
+current in-memory semantic interface. The reserved `static_library`
+archive/companion remains feature-unavailable while portable provider accessors
+are unavailable, so no current public object or archive emitter is claimed.
+That future producer and every consumer must use the exact v2 contract rather
+than inventing a bodyless-call exception or silently accepting v1.
+
+## v0.9 Reserved Static-Library Contract
+
+The project-manifest grammar accepts `static_library` with one source-module
+root closure, primary archive path, companion semantic-interface path, target,
+and explicit artifact policies. The kind has no entry and no layout. Source
+`export` declarations are the future archive's native export roots; source
+`pub` declarations are the companion's Wyst-visible authenticated interface.
+
+This is a grammar, validation, and identity reservation, not an object writer.
+Selecting the kind fails with the stable unavailable-feature diagnostic before
+creating or replacing either path. No ELF executable is written under the
+archive name, no partial `ar` container is produced, and no companion is
+serialized. The future archive/companion producer must define both products
+atomically before this boundary can change.
 
 ---
 
@@ -125,7 +295,7 @@ For the implemented `ET_EXEC` artifact mode, the Wyst compiler is
   implemented mode. `wync -c` / `--emit-object` is reserved for the R8
   relocatable-object milestone.
 - No external `ld` is invoked.
-- No `ar` archive format is defined.
+- No active `ar` archive or static-library companion format is defined.
 
 The output of a successful compilation is exactly one **ELF64
 little-endian AArch64 executable**.
@@ -144,12 +314,12 @@ a dynamic loader, no GOT, no PLT, no `DT_NEEDED` entries.
 ### 2.1 ELF Discipline
 
 The output is ELF64 (`EI_CLASS = ELFCLASS64`), little-endian
-(`EI_DATA = ELFDATA2LSB`), AArch64 (`e_machine = EM_AARCH64 = 183`), executable
+(`EI_DATA = ELFDATA2LSB`), with AArch64 machine value `EM_AARCH64 = 183`, executable
 (`e_type = ET_EXEC`).
 
 Position-independent executable output (`ET_DYN` with PIE semantics) is **not
 supported**. All addresses are resolved to absolute values at compile time,
-driven by the layout module's `#entry`, `#region`, and `#section` constraints.
+driven by the selected named layout's entry, region, and section constraints.
 
 ### 2.2 ELF Header
 
@@ -162,7 +332,7 @@ driven by the layout module's `#entry`, `#region`, and `#section` constraints.
 | `e_ident[EI_OSABI]`   | `ELFOSABI_NONE` (0) — bare-metal default                     |
 | `e_type`              | `ET_EXEC` (2)                                                |
 | `e_machine`           | `EM_AARCH64` (183)                                           |
-| `e_entry`             | absolute address of the layout module's `#entry` symbol      |
+| `e_entry`             | absolute address of the selected semantic entry declaration  |
 | `e_flags`             | `0` — no AArch64-specific ABI flags defined by this contract |
 
 ### 2.3 Program Headers
@@ -244,7 +414,8 @@ The `.symtab` includes one entry per:
   current v0.9 contract above.
 - each explicit `export` mapping as a distinct external alias of its local
   target, with the requested strong or weak binding.
-- Layout module export (`__text_start`, `__bss_end`, etc.).
+- Explicit typed layout symbol (`start`, `end`, `size`, or a typed numeric
+  placement expression).
 - Compiler-created initcall metadata symbols named as specified in §4.3.
 - Section start symbol (synthesized: `_section.text_start`, etc., for
   debugger convenience). These are local symbols.
@@ -255,7 +426,7 @@ The `.symtab` includes one entry per:
 
 | Binding      | When emitted                                                 |
 | ------------ | ------------------------------------------------------------ |
-| `STB_LOCAL`  | Internal semantic/debug declarations, every `per_cpu` offset symbol, synthesized symbols |
+| `STB_LOCAL`  | Internal semantic/debug declarations, layout symbols, every `per_cpu` offset symbol, synthesized symbols |
 | `STB_GLOBAL` | Strong explicit `export` aliases and compiler-created initcall metadata |
 | `STB_WEAK`   | Explicit `export weak` aliases                               |
 
@@ -269,7 +440,7 @@ The `.symtab` includes one entry per:
 | Initcall metadata     | `STT_OBJECT`                                                               |
 | Label (§2.4)          | `STT_NOTYPE` — executable text symbol, but not a callable function symbol |
 | Section start         | `STT_NOTYPE`                                                               |
-| Layout export         | `STT_NOTYPE`                                                               |
+| Layout symbol         | `STT_NOTYPE`                                                               |
 
 A label symbol's section index points at an executable text section and its
 size covers the emitted label body. Tools must not infer function-call
@@ -295,21 +466,21 @@ module-qualified semantic identity for debugging and relocation resolution,
 independent of `pub`, source imports, and export aliases. A separate
 source-facing lookup/display spelling may remain local inside the compiler; it
 is never an external claim and cannot replace the semantic identity in ELF.
-Item 61 freezes the canonical object-unit encoding for these identities before
-relocatable objects are exposed; that later encoding cannot change the external
-spelling selected here.
+The semantic-object-unit contract freezes the canonical encoding for these
+identities before relocatable objects are exposed; that later encoding cannot
+change the external spelling selected here.
 
 Compiler-created initcall metadata symbols are an explicit exception. Every
 `#[init(order = N)]` function emits one 16-byte `.initcalls` entry and one
 metadata symbol whose value is the address of that entry and whose size is 16:
 
 ```text
-InitcallSymbol = "__initcall_" OrderHex "_" QualifiedFunction
-OrderHex       = 16 lowercase hexadecimal digits for the `u64` order
-QualifiedFunction = PathComponent ("__" PathComponent)* "__" FunctionComponent
+initcall-symbol = "__initcall_" order-hex "_" qualified-function
+order-hex       = 16 lowercase hexadecimal digits for the `u64` order
+qualified-function = path-component ("__" path-component)* "__" function-component
 ```
 
-`QualifiedFunction` uses the source module path components followed by the
+`qualified-function` uses the source module path components followed by the
 function name. Each component is encoded as ASCII alphanumeric bytes unchanged,
 `_` as `_u`, and any other byte as `_x` plus two lowercase hexadecimal digits.
 The module separator `.` is structural and becomes the `__` component separator,
@@ -360,7 +531,7 @@ Type components use this canonical ASCII encoding:
 | Fixed array `[N]T`                  | `array_` plus escaped `N`, `_`, then `T`          |
 | Vector `[T:N]`                      | `vec_` plus escaped `N`, `_`, then `T`            |
 | Tuple `(name: T, ...)`              | `tuple` plus arity, then escaped field/type pairs |
-| Function pointer `@(A, B) -> R`     | `fn` plus arity, parameters, and optional return  |
+| Function pointer `fn(A, B) -> R`    | `fn` plus arity, parameters, and optional return  |
 | Calling-convention function pointer | `fn_` plus escaped convention before the arity    |
 
 Escaping leaves ASCII letters and digits unchanged, writes `_` as `_u`, `.`
@@ -564,16 +735,18 @@ symbols, relocations-before-resolution, final offsets, and consuming patches.
 
 The object pipeline does not manufacture runtime behavior. It emits no
 `__percpu_size` runtime allocator API, copied instance, startup routine, or base
-installation unless a later owning item defines such an interface. Before item
-92, a code patch for reachable access is legal only with
+installation unless a later semantic contract defines such an interface.
+Before the production multicore per-CPU realization, a code patch for reachable
+access is legal only with
 `#target(..., per_cpu = single_instance_tpidr_el1)`: available,
 `MRS TPIDR_EL1`, EL1+, 16-byte live-base alignment, reserved system state
 `TPIDR_EL1`, realization `single-instance-test-runtime`. Otherwise compilation
 fails. Declarations and offset constants alone do not select or imply that
 realization.
 
-Released v0.8 `.tls`, `#tls_offset_of`, `__tls_size`, TPIDR_EL0, and
-address-materialization rules are historical and produce no v0.9 artifact.
+The released-v0.8 TLS offset-query row, `.tls` template, `__tls_size`,
+TPIDR_EL0, and associated address-materialization rules are historical and
+produce no v0.9 artifact.
 
 ---
 
@@ -645,10 +818,10 @@ documented path if needed.
 | Position-independent executables (`ET_DYN`)     | Outside base image model | Base output lowers against absolute addresses                                                          |
 | Shared objects (`.so`)                          | Outside base image model | Same dependency on dynamic linking                                                                     |
 | COMDAT / section groups                         | Outside base image model | `#[inline]` is the only deduplication mechanism; multiply-defined exports are a hard error             |
-| `#weak` directives and `#hidden` visibility     | Outside symbol model     | Use `export weak` for weak external definitions; hidden shared-object visibility remains undefined     |
-| `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the layout module's `#entry` is the only entry point          |
+| Predecessor weak and hidden-visibility directives | Outside symbol model   | Use `export weak` for weak external definitions; hidden shared-object visibility remains undefined     |
+| `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the selected layout's semantic `entry` is the only entry point |
 | Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `vector_table` models hardware exception entry only      |
-| ar archives, static libraries                   | Outside base image model | The compiler reads source modules directly                                                             |
+| ar archives, static-library companions          | Reserved grammar; outside implemented base image model | `static_library` selection fails before output; a future producer must emit the archive and authenticated companion atomically |
 | Mach-O, PE, COFF output                         | Outside base image model | See §11.                                                                                               |
 
 ---
@@ -663,24 +836,28 @@ ELF output.
 
 Specific determinism requirements:
 
-- Section order is determined by the layout module (`in` / `after`
-  constraints), then by declaration order within a section. There is no
-  topological-sort tie-break dependent on hashtable iteration.
+- Section virtual-address and file-offset order is determined by the layout
+  module (`in` / `after` constraints) and Chapter 4's deterministic solve;
+  declaration order remains authoritative within a section. ELF section-header
+  indices use the fixed deterministic producer catalog and do not override the
+  solved placement. No order depends on hashtable iteration.
 - Symbol table entry zero is the null symbol. Every remaining `STB_LOCAL`
   entry precedes every `STB_GLOBAL` or `STB_WEAK` entry, and `.symtab`
   `sh_info` is the index of the first non-local entry. Within the local
-  partition, internal declarations retain module-then-declaration order and
-  synthesized section symbols retain deterministic layout-section order.
-  Within the non-local partition, layout exports and compiler metadata retain
-  their defined deterministic order, followed by explicit `export` aliases in
-  module-then-declaration order; strong and weak aliases are not regrouped.
+  partition, internal declarations retain module-then-declaration order,
+  explicit layout symbols retain layout-member order, and synthesized section
+  symbols retain deterministic layout-section order. Within the non-local
+  partition, compiler metadata retains its defined deterministic order,
+  followed by explicit `export` aliases in module-then-declaration order;
+  strong and weak aliases are not regrouped.
   Module order is the compiler source input order: explicit multi-file builds
   use command-line source order, while project and explicit-root import-closure
   builds use the canonical traversal from
   [chapter-03-project-builds.md](chapter-03-project-builds.md). Declaration
   order is source-text order.
 - The `.shstrtab` and `.strtab` are built in deterministic producer order,
-  never by hash-table traversal. `.shstrtab` follows section-layout order;
+  never by hash-table traversal. `.shstrtab` follows the fixed section-header
+  producer order (independently of solved virtual/file placement order);
   `.strtab` records internal declarations, explicit aliases, and synthesized
   section symbols in their deterministic producer order before symbol binding
   partitions are assembled. String
