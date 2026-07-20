@@ -1,9 +1,9 @@
 # kind	stage	name	tags	file	expect
 positive	parse	precedence-is	precedence,is,recovery	positive/precedence-is.wyst	-
 positive	parse	generics-if-mmio-atomics	generics,compile-time-if,mmio,atomic-orders,version-gating	positive/generics-if-mmio-atomics.wyst	-
-positive	parse	item42-callable-storage	callable-types,declaration-prefix,register-placement,storage-classes,never	positive/item42-callable-storage.wyst	-
-positive	parse	item49-checked-asm	checked-asm,signature-asm,register-placement,version-gating	positive/item49-checked-asm.wyst	-
-positive	parse	item57-linker-boundaries	linker-boundaries,imports,exports,version-gating	positive/item57-linker-boundaries.wyst	-
+positive	parse	callable-storage	callable-types,declaration-prefix,register-placement,storage-classes,never	positive/callable-storage.wyst	-
+positive	parse	checked-asm	checked-asm,signature-asm,register-placement,version-gating	positive/checked-asm.wyst	-
+positive	parse	linker-boundaries	linker-boundaries,imports,exports,version-gating	positive/linker-boundaries.wyst	-
 positive	parse	grouped-module-imports	imports,grouped-imports,version-gating	positive/grouped-module-imports.wyst	-
 positive	parse	unreserved-predecessor-identifiers	identifiers,version-gating	positive/unreserved-predecessor-identifiers.wyst	-
 positive	parse	discard-binding-positions	bindings,discard,destructuring,match	positive/discard-binding-positions.wyst	-
@@ -12,8 +12,8 @@ negative	parse	malformed-attribute-group	malformed-directives,recovery	negative/
 negative	parse	generic-value-argument	generics,version-gating	negative/generic-value-argument.wyst	error[E0101]|compile-time value generic arguments are not supported
 negative	parse	compile-time-if-missing-block	compile-time-if,malformed-directives	negative/compile-time-if-missing-block.wyst	error[E0101]|expected '{'
 negative	parse	reserved-postfix-question	version-gating,malformed-directives	negative/reserved-postfix-question.wyst	error[E0101]|reserved token '?'
-negative	parse	item49-legacy-asm-sections	checked-asm,signature-asm,version-gating	negative/item49-legacy-asm-sections.wyst	error[E0110]|unknown directive
-negative	parse	item57-weak-import	linker-boundaries,imports,version-gating	negative/item57-weak-import.wyst	error[E0101]|weak symbol imports are not supported
+negative	parse	legacy-asm-sections	checked-asm,signature-asm,version-gating	negative/legacy-asm-sections.wyst	error[E0110]|unknown directive
+negative	parse	weak-import	linker-boundaries,imports,version-gating	negative/weak-import.wyst	error[E0101]|weak symbol imports are not supported
 negative	parse	per-entry-public-grouped-module-import	imports,grouped-imports,version-gating	negative/per-entry-public-grouped-module-import.wyst	error[E0101]|import group entries cannot have individual 'pub' modifiers
 negative	parse	future-symbol-attributes	version-gating	negative/future-symbol-attributes.wyst	error[E0110]|unknown directive
 negative	parse	removed-exact-attribute	version-gating,malformed-directives	negative/removed-exact-attribute.wyst	error[E0101]|unknown grouped annotation 'exact'

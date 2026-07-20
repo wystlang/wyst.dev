@@ -1,4 +1,4 @@
-module corpus.item57
+module corpus.linker_boundaries
 
 import symbol "memcpy" as c_memcpy: extern "C" fn(@u8, @u8, u64) -> @u8
 import symbol "errno" as c_errno: @i32

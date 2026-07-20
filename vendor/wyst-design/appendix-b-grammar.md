@@ -2000,7 +2000,7 @@ release catalogs.
 scans active compiler, tooling, fixture, documentation, manifest, and release
 inputs and rejects an unlisted predecessor spelling.
 The sole workspace-level release invocation for this closure is
-`wync/tools/item63-workspace-release-gate.sh`. It requires the Wyst, kernel,
+`wync/tools/compiler-efficiency-workspace-release-gate.sh`. It requires the Wyst, kernel,
 and website repositories and runs the closure test with workspace enforcement.
 The corpus must cover precedence, malformed directives, version gating, atomic
 orders, generics, `is`, compile-time `#if`, MMIO constructs, and recovery

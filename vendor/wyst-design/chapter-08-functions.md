@@ -314,7 +314,7 @@ are active. A named bitstruct-field write is one logical type-appropriate source
 operation: it uses one fresh base and one narrowly confined backing-word
 `Load -> BitfieldInsert -> Store` read-modify-write sequence. The verifier
 admits only that exact dataflow and no address escape or unrelated second use
-(`item_42_confines_per_cpu_bitfield_reads_and_writes_to_one_live_base`).
+(`callable_storage_confines_per_cpu_bitfield_reads_and_writes_to_one_live_base`).
 Compound assignment is rejected because it would reuse one internal
 current-instance address for both a load and a store; spell the read and write
 as separate direct accesses so each obtains a fresh base. A base obtained for
