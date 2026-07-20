@@ -84,7 +84,7 @@ full statement-row policy are outside the source floor.
 
 ## 11.3 Section Set
 
-The locked debug sections are:
+The current DWARF profile includes these debug sections:
 
 | Section           | Purpose                                         | Required    |
 | ----------------- | ----------------------------------------------- | ----------- |
@@ -297,7 +297,7 @@ Determinism rules:
 - **`.debug_aranges`:** range tuples in compilation-unit order, matching
   the order CUs appear in `.debug_info`.
 
-The same source input manifest, compiler version, build optimization mode,
+The same source input manifest, compiler build identity, build optimization mode,
 target, and selected scheduling policies produce byte-identical debug sections.
 
 ---

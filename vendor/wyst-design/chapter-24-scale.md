@@ -140,7 +140,8 @@ Neither the policy nor any evidence may affect:
 - interface, object, archive, link, or final-artifact identity; or
 - emitted bytes.
 
-They may fail only this compiler-efficiency gate or the v0.9 release gate.
+They may fail only this compiler-efficiency gate or a release gate for an
+explicitly nominated snapshot.
 Samples use host clocks and process telemetry. They neither consume nor extend
 the platform counter-instance records defined in Chapter 11. Later stage-
 identity and freshness work may incorporate report identities, but this
@@ -294,10 +295,10 @@ Debug and optimized-release compiler binaries have separate performance
 samples, aggregates, baselines, and budgets; performance values are never
 compared across profiles. Acceptance, diagnostic precedence, canonical
 verified-IR identity, artifact identity, bytes, traced phase mapping/order, and
-cache semantics must nevertheless be equivalent across profiles. The
-optimized build supplies the v0.9 release candidate and hard
-release verdict; the debug build remains a separately budgeted developer-
-throughput product and cannot substitute for the release build.
+cache semantics must nevertheless be equivalent across profiles. The optimized
+build supplies the measured publication build and hard release verdict when its
+exact snapshot is nominated; the debug build remains a separately budgeted
+developer-throughput product and cannot substitute for the publication build.
 
 For each named gate-runner workload and required metric, the checked-in policy
 contains an absolute ceiling and a permitted regression from the pinned
@@ -414,7 +415,7 @@ each iteration, and fails if the bytes differ. Successful stdout is one
 
 The report identifies the selected artifact rather than treating the project
 default as implicit. It binds the complete target facts and artifact policy
-tuple, compiler version/build profile, canonical workload/content digests,
+tuple, compiler build identity/profile, canonical workload/content digests,
 source and layout identities, the canonical verified-IR content digest and its
 same-process stability result, iteration kind, elapsed host time, eligible
 resettable per-iteration memory metrics, output size and digest, and the byte-

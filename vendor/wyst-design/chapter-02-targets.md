@@ -26,7 +26,7 @@ layers instead of flattening everything into one target string.
 
 | Layer                 | Owns                                                                      | Examples                                                                                            |
 | --------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Host/tool             | Facts about the tool invocation and host-side providers.                  | Host OS, compiler version, helper tools, SDK discovery, generated-artifact provenance.              |
+| Host/tool             | Facts about the tool invocation and host-side providers.                  | Host OS, compiler build identity, helper tools, SDK discovery, generated-artifact provenance.       |
 | ISA                   | Facts about instruction legality and microarchitectural estimates.        | `arm64-v8a`, CPU class, exact CPU when known, `lse`, cache-line width, scheduling/estimate table.   |
 | Execution environment | Facts about how the binary is entered, who owns layout, and what privileged services exist. | Root/entry ABI and return policy, layout owner, privilege/admission policy, dynamic imports, TLS, unwind, panic/exit, loader contract, firmware calls, syscalls. |
 | Platform/device       | Facts about declared hardware and protocol surfaces.                      | MMIO ranges, timers, interrupt controller, framebuffer, board memory map, generated bindings.       |
