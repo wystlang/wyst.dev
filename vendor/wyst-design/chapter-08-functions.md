@@ -120,6 +120,16 @@ match-expression forms. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
 the binding scoped to the successful branch.
 
+The `wyst.outcome.v1` contract uses this exact enum control flow.
+Fallible APIs return the future `core.outcome.Outcome<V, P, E>` carrier and
+callers inspect or propagate it with an explicit exhaustive `match`. Wyst adds
+no hidden propagation operator, implicit unwrap, exception edge, unwind edge,
+panic edge, or status-tuple convention. `.partial(P)` resumes only through a
+subsequent explicit call; `.complete` and `.err(E)` are terminal for that
+invocation. The sealed declaration and `checked<T>` remain unavailable until
+the checked outcome implementation milestone, so this paragraph freezes
+control flow without adding grammar.
+
 ## v0.9 Callable Identity, Terminal Entries, and Storage Classes (Current)
 
 This section is the sole source-semantic owner for

@@ -79,6 +79,138 @@ neither an alias nor a second
 accepted spelling. There is no transition mode in which both forms denote the
 same type.
 
+## Frozen Error And Partial-Success Contract (Activation Pending)
+
+`wyst.errorModelCatalog.v1` selects one convention for every fallible or
+resumable core/library boundary. The machine-readable authority is
+[`error-model.tsv`](error-model.tsv). The source carrier is the future sealed
+identity `core.outcome.Outcome` under `wyst.outcome.v1`:
+
+<!-- wyst-contract: sketch -->
+```wyst
+module core.outcome
+
+pub enum Outcome<V: payload_word, P: payload_word, E: payload_word>: u8 {
+  ok(V)
+  partial(P)
+  complete
+  err(E)
+}
+```
+
+This declaration uses only the already-frozen enum, generic, call, and
+`match` syntax. `wyst.outcome.v1` freezes its meaning, representation, ABI,
+interface summary, and foreign mapping. It does not activate the sealed module
+or any checked operation in the current compiler. The checked outcome
+implementation milestone activates them together; until then
+`checked<T>(value)` remains reserved and rejected. An ordinary
+project declaration named `Outcome` has no compiler role and cannot impersonate
+the future sealed identity.
+
+The variants have exactly these meanings and tags:
+
+| Variant | Tag | Payload | Meaning |
+| ------- | --- | ------- | ------- |
+| `.ok(value)` | 0 | `V` | This invocation successfully produced its final value. |
+| `.partial(progress)` | 1 | `P` | This invocation committed positive, observable progress and the same logical operation may be resumed. |
+| `.complete` | 2 | canonical zero word | Successful terminal completion with no value, including exhaustion/end-of-stream where the API defines it. |
+| `.err(error)` | 3 | `E` | This invocation failed with a typed cause. |
+
+`V`, `P`, and `E` must satisfy the existing `payload_word` bound. Concrete
+type identities are part of the complete `Outcome<V, P, E>` identity; there is
+no implicit widening, erased error base class, default type argument, or nested
+enum payload. An error domain may use an integer, address, callable, or nominal
+bitstruct error payload, but the payload is a cause, never a second carrier.
+New APIs may not replace `Outcome` with a null/integer sentinel, Boolean or
+integer status, status-plus-value tuple, a second result type, `errno` or other
+thread-local status, exception, unwind, panic, or implicit retry convention.
+Named multi-results may carry additional successful data, but no tuple field
+may duplicate or override the `Outcome` disposition.
+
+### Control flow and trapping
+
+Constructing, returning, storing, passing, or matching an outcome has no
+implicit effect, allocation, cleanup, retry, trap, panic, or unwind. Control
+flow is the existing explicit enum control flow:
+
+<!-- wyst-contract: sketch -->
+```wyst
+match outcome {
+  .ok(value) {
+    use(value)
+  }
+  .partial(count) {
+    retain_progress(count)
+  }
+  .complete {
+    finish()
+  }
+  .err(error) {
+    return Outcome<V, P, E>.err(error)
+  }
+}
+```
+
+There is no implicit propagation operator and no implicit unwrap. A library
+may provide ordinary helper functions, but their complete input, output,
+effects, and terminal behavior remain visible. Allocation failure, parsing and
+I/O failure, boot-discovery failure, container growth failure, checked
+conversion failure, request cancellation, deadline expiry, provider failure,
+invalid resource or resumable-lifecycle transitions, and checked proof,
+synchronization, or context failures all use `.err(E)`. Normal terminal
+completion uses `.complete`; it is neither an error nor an error-code sentinel.
+
+A normal `.err(E)` never traps. Explicit hardening first constructs the same
+`.err(E)` disposition. A selected `wyst.outcomeHardeningTrap.v1` adapter may
+then consume that error and invoke the already-explicit trap operation; its
+policy and error class are object/interface facts. No safety profile may
+silently change an ordinary error into a trap, panic, sentinel, unwind, or
+exception. A raw machine-profile operation retains its existing Defined,
+Target-defined, Architectural-fault-or-trap, Indeterminate-bits, or
+Trusted-contract-violation semantics and does not synthesize an `Outcome`.
+Failure to prove a required fact under a verification profile is a compile-time
+diagnostic. Only an explicitly selected checked operation has a runtime
+outcome.
+
+### Partial progress
+
+`.partial(P)` is successful committed progress, not a disguised error. Its
+payload names the operation's documented unit, such as input bytes, output
+bytes, records, or code points, and must be strictly positive. The count covers
+only progress committed by that invocation. Committed reads remain visible in
+the caller's buffer or explicit state; committed writes are not rolled back;
+parser progress remains in an explicit caller-owned state or resource. The
+operation performs no hidden retry and a zero-progress `.partial` is invalid.
+
+One return has exactly one disposition, so partial progress cannot be bundled
+with an error, cancellation, deadline, provider failure, or completion status.
+If a provider discovers a terminal disposition only after committing progress,
+it returns `.partial(P)`, retains the exact pending disposition in the explicit
+operation/resource state, and on the next resume returns `.err(E)` or
+`.complete` before doing new work. Cancellation and deadline handling obey the
+same rule and cannot erase already committed progress. An API that cannot
+retain such state must stop before committing progress and return `.err(E)`
+directly.
+
+### Allocation, containers, and lifecycle
+
+Allocation and growth return `.ok(value)` for the resulting address/handle or
+capacity-bearing value and `.err(E)` on failure; they never use a null pointer,
+unchanged capacity, Boolean status, or trap as the failure carrier. Parsing,
+I/O, and boot discovery select the applicable value, partial, completion, and
+error variants explicitly. Cancellation, deadline expiry, provider failure,
+and invalid resource/resumable transitions are typed `.err(E)` causes rather
+than extra top-level variants, which keeps all APIs composable through one
+carrier and one exhaustive `match` shape.
+
+The bootstrap `wyst.dynamicArrayDescriptor.v0` `failure_policy = 0` trap/panic
+encoding predates this selected convention. It is compatibility-only for that
+descriptor version, cannot be selected by a new API or safety profile, and is
+not the final container-growth contract. The checked outcome and final
+collection-library milestones migrate checked container operations to
+`Outcome`; they may not carry the bootstrap policy
+forward as an alternative convention.
+
 ## Released v0.8 Syntax Snapshot
 
 > The remainder of this chapter preserves the released v0.8 storage and

@@ -1,0 +1,25 @@
+// schema=wyst.errorModelCatalog.v1
+// columns=subject	outcome	payload_role	progress_contract	continuation	trap_policy	foreign_mapping	contract_owner
+allocation-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+boot-discovery-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+c-interop-failure	err	error	none	terminal-for-invocation	forbidden	explicit-normalizing-adapter	error-and-partial-success-contract
+checked-conversion-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	checked-outcome-implementation
+checked-core-operation-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	checked-core-operations
+container-growth-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+deadline-expiry	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+hardening-failure	err	error	none	terminal-for-invocation	explicit-trap-on-err-adapter	two-word-outcome-adapter	explicit-hardening-policy
+invalid-resource-transition	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	resource-state-protocol
+io-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+machine-raw-operation	raw-semantics	none	none	operation-defined	existing-behavior-taxonomy	raw-foreign-contract	error-and-partial-success-contract
+parsing-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+parsing-partial-progress	partial	progress	committed-positive-input-units	resume-same-operation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+partial-read-progress	partial	progress	committed-positive-read-units	resume-same-operation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+partial-write-progress	partial	progress	committed-positive-write-units	resume-same-operation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+proof-boundary-checked-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	verification-proof-boundary
+provider-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+request-cancellation	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+resumable-lifecycle-misuse	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+static-proof-failure	compile-time-rejection	none	none	no-runtime-operation	forbidden	not-applicable	verification-proof-boundary
+synchronization-context-failure	err	error	none	terminal-for-invocation	forbidden	two-word-outcome-adapter	synchronization-context-verification
+terminal-completion	complete	none	none	terminal-success	forbidden	two-word-outcome-adapter	error-and-partial-success-contract
+value-success	ok	value	none	operation-defined	forbidden	two-word-outcome-adapter	error-and-partial-success-contract

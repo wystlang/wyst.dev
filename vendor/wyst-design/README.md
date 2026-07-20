@@ -44,6 +44,13 @@ mapping is isolated in the non-parser
 diagnostic, alias, rewrite, completion, hover, or highlighting path.
 [generic-bounds.tsv](generic-bounds.tsv) is the closed active capability-bound
 registry consumed by parsing, instantiation, diagnostics, and tooling.
+[error-model.tsv](error-model.tsv) is the frozen `wyst.errorModelCatalog.v1`
+authority for the
+future `core.outcome.Outcome<V, P, E>` carrier. It closes allocation, partial
+progress, parsing/I/O, C normalization, cancellation/deadline, provider,
+terminal completion, resource/lifecycle, proof, and hardening dispositions
+without activating `checked<T>` before the checked outcome implementation
+milestone.
 [sealed-core.tsv](sealed-core.tsv) authenticates compiler-bundled core
 namespaces. [declaration-roles.tsv](declaration-roles.tsv) is the sole closed
 registry for privileged declaration roles; it binds the source-backed dynamic

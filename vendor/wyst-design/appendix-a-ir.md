@@ -136,6 +136,38 @@ also prevent observable memory, volatile/MMIO/atomic operations, effects,
 calls, and base acquisitions from crossing in either direction, while leaving
 independent pure operations eligible for deterministic scheduling.
 
+## Frozen Outcome IR Contract (Activation Pending)
+
+The `wyst.outcome.v1` freeze adds no source or IR operation. When the checked
+outcome implementation milestone activates
+`core.outcome.Outcome<V, P, E>`, typed IR uses the existing canonical enum
+construction, field extraction, tag comparison, branch, and phi operations.
+The value is the fixed `{tag_word, payload_word}` pair; `ok`, `partial`,
+`complete`, and `err` have exact tags 0 through 3, and `complete` requires a
+zero payload word. No pass may replace an error branch with poison,
+`unreachable`, a trap, an exception edge, or an optimizer assumption.
+
+The owning semantic product attaches one authenticated
+`wyst.outcomeSummary.v1` to each outcome-bearing callable/interface fact. It
+records the exact `V`, `P`, and `E` identities, allowed-variant mask,
+operation-defined progress unit, and either `forbidden` or
+`explicit-trap-on-err-adapter` trap policy. Decoding is length-delimited,
+versioned, digested, and fail-closed; missing, extra, stale, malformed, or
+unknown fields cannot be inferred from the IR pair. Ordinary enum IR need not
+repeat those fields on every SSA copy, but copies, phis, calls, spills,
+inlining, objects, and archives preserve the complete type and owning summary.
+
+A `partial` producer must prove that its payload is positive committed progress
+in the summary's unit and that an explicit state/resource retains any terminal
+disposition discovered after that commit. The next resume observes the pending
+`err` or `complete` before a new effect. Scheduling may not move the committed
+effects, state update, or terminal-disposition record across the return. A
+hardening trap is a separately selected explicit terminal operation that
+consumes an `err`; constructing or propagating the enum never emits it. Static
+proof rejection produces no IR, and raw machine operations retain their
+existing typed IR and behavior category instead of acquiring a synthetic
+outcome.
+
 ## v0.9 Address, Slice, and Conversion IR Contract (Current)
 
 Chapter 6 owns the source semantics represented by

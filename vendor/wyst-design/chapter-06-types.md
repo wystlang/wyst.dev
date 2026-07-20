@@ -149,7 +149,12 @@ compiler never silently selects another conversion class.
 
 Raw integer construction of a callable remains a trust boundary and uses the
 separately specified `trusted_callable<T>(address)`, not `address<T>`. `checked<T>(value)` is a
-reserved spelling and is rejected until its failure model is implemented.
+reserved spelling and is rejected until the checked outcome implementation
+milestone activates the frozen
+`wyst.outcome.v1` model from Chapter 10. That model's future
+`Outcome<V, P, E>` declaration is an ordinary fixed-representation generic
+payload enum with tags `ok = 0`, `partial = 1`, `complete = 2`, and `err = 3`;
+the frozen contract does not make the sealed source identity importable early.
 
 #### Address types and explicit access
 
