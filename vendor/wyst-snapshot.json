@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "9a896084c6daa3c6d312e6e0396e90e0e28a86cd",
-  "snapshotSha256": "36ddf312c727d8c2e4e693c743b5b3592a42487179730b14b5689f676afc8ce3",
+  "sourceCommit": "15a9e8449d57c48b182fa349a1b98aae775697ea",
+  "snapshotSha256": "30e15fa1ed838651e40ea5d63c9d5cad803addeeeab442001107c84969073381",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
       "sha256": "6211bec4371902f8c6a97abf490a70c0c0b731a0bfc8abd584457b38710ae110",
@@ -292,7 +292,7 @@
       "size": 139
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "a0d02a412882cce62954b5f6edb78626186251e4e75a3c15afc6d3ca27298da8",
+      "sha256": "7384d899d62de4a3134df60df738f3580c33786fbe2b812f81c0d7ada657485b",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -420,8 +420,8 @@
       "size": 11729
     },
     "vendor/wyst-design/conformance-index.md": {
-      "sha256": "6cbd6de5282c7ef54a182527b1f50511bed5898377196ce825605de53f3d9b1a",
-      "size": 196195
+      "sha256": "367fc72d654deaae74398e3831d44c5e427e7ef33feb647e874f03fb0d243e5b",
+      "size": 196474
     },
     "vendor/wyst-design/declaration-roles.tsv": {
       "sha256": "9243dfef0ee5b7656b3298a315cc6f30ed873cd0d5728f43121a5e679cf2f883",
