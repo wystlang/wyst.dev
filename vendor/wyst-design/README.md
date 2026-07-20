@@ -45,8 +45,11 @@ diagnostic, alias, rewrite, completion, hover, or highlighting path.
 [generic-bounds.tsv](generic-bounds.tsv) is the closed active capability-bound
 registry consumed by parsing, instantiation, diagnostics, and tooling.
 [sealed-core.tsv](sealed-core.tsv) authenticates compiler-bundled core
-namespaces and declaration roles, including the source-backed dynamic
-container declaration.
+namespaces. [declaration-roles.tsv](declaration-roles.tsv) is the sole closed
+registry for privileged declaration roles; it binds the source-backed dynamic
+container declaration to its exact semantic identity, signature, ABI, and
+interface/body digests and reserves future resource capability fields without
+granting project code authority.
 [a64-compiler-semantics.md](a64-compiler-semantics.md) defines the experimental
 pinned A64 compiler-semantic contract for the completed focused A64 authority-
 through-conformance profile. [a64-support-policy.json](a64-support-policy.json) is the

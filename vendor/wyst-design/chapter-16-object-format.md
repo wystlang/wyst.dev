@@ -135,8 +135,9 @@ declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2
 reserves all three slots now:
 
 - generic body/dependency slot: `wyst.generic-transport.v1`;
-- declaration-role slot: `wyst.declaration-role-slot.reserved.v1`, activated by
-  the versioned declaration-role contract without changing generic identity;
+- declaration-role slot: `wyst.declaration-role-claim.v1`, authenticated against
+  `wyst.declaration-role-registry.v1` and its content digest without changing
+  generic identity;
 - effect/authority-summary slot:
   `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
   effect/authority contract without weakening a callable type argument's fixed bound.
