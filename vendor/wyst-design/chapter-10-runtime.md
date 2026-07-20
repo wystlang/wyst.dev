@@ -44,6 +44,25 @@ ordinary source-visibility rules.
 spelling. A project declaration with the same name cannot acquire the role or
 replace the sealed module.
 
+The sole authority for that metadata is the compiler-shipped
+[`declaration-roles.tsv`](declaration-roles.tsv) registry under
+`wyst.declaration-role-registry.v1`. Its row binds the stable role and contract
+version to `core.collections.DynamicArray`, the declaration kind and complete
+generic field signature, the native ABI, an interface digest, the exact bundled
+body digest, compiler semantics, compatibility rules, and the absence of
+resource-state capabilities. The compiler re-authenticates all of those facts;
+an import alias or re-export carries the authenticated identity rather than
+causing a second name lookup for semantics.
+
+Project source, manifests, foreign metadata, and ordinary dependency interfaces
+cannot assign a role. Unknown, duplicate, stale, unavailable, or mismatched
+interface claims are rejected. In particular, ordinary functions named
+`arena_storage_init`, `byte_storage_*`, `dyn_array_*`, `typed_handle_*`,
+`buffer_*`, or `c_string_*` are ordinary typed APIs: their spelling alone
+creates no allocator, storage, movement, container, runtime, retention,
+lowering, effect, or report fact. `wync explain storage` reports the sealed
+registry and authenticated `DynamicArray<T>` uses only.
+
 `DynamicArray<T>` preserves the explicit
 `wyst.dynamicArrayDescriptor.v0` storage representation and
 `wyst.dynamicArrayOperation.v0` operation contract described below. It is

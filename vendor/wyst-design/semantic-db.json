@@ -53,7 +53,10 @@
     "genericProvenanceMerge": "wyst.generic-provenance-merge.v1",
     "genericDemandWorklist": "wyst.generic-demand-worklist.v1",
     "genericArchiveIndex": "wyst.generic-archive-index.v1",
-    "declarationRoleSlot": "wyst.declaration-role-slot.reserved.v1",
+    "declarationRoleRegistry": "wyst.declaration-role-registry.v1",
+    "declarationRoleClaim": "wyst.declaration-role-claim.v1",
+    "declarationRoleResourceCapability": "wyst.declaration-role-resource-capability.v1",
+    "declarationRoleSlot": "wyst.declaration-role-claim.v1",
     "effectAuthoritySummarySlot": "wyst.effect-authority-summary-slot.reserved.v1"
   },
   "semanticObjectIdentityContract": {
@@ -82,6 +85,8 @@
       "hardening-policy",
       "generic-body-dependency-slot",
       "declaration-role-slot",
+      "declaration-role-registry",
+      "declaration-role-registry-digest",
       "effect-authority-summary-slot"
     ],
     "objectMemberTuple": [
@@ -204,7 +209,7 @@
     },
     "semanticInterfaceSlots": {
       "genericBodyDependency": "wyst.generic-transport.v1",
-      "declarationRole": "wyst.declaration-role-slot.reserved.v1",
+      "declarationRole": "wyst.declaration-role-claim.v1",
       "effectAuthoritySummary": "wyst.effect-authority-summary-slot.reserved.v1"
     },
     "callableTypeArgumentRule": "complete-canonical-function-type-includes-fixed-effect-upper-bound-through-identity-inference-transport-and-deduplication",
@@ -446,6 +451,12 @@
       "state": "implemented",
       "version": "wyst.language.v0.9",
       "owner": "design/chapter-10-runtime.md"
+    },
+    {
+      "id": "language.sealed-declaration-role-authority",
+      "state": "implemented",
+      "version": "wyst.declaration-role-registry.v1",
+      "owner": "design/declaration-roles.tsv"
     },
     {
       "id": "language.hierarchical-modules-imports-visibility",
@@ -4259,13 +4270,104 @@
         "storageContract": "wyst.dynamicArrayDescriptor.v0",
         "operationContract": "wyst.dynamicArrayOperation.v0",
         "bundledSource": "wync/core/collections.wyst",
-        "authentication": "sealed-bundled-declaration-role-metadata",
+        "registry": "design/declaration-roles.tsv",
+        "registrySchema": "wyst.declaration-role-registry.v1",
+        "claimSchema": "wyst.declaration-role-claim.v1",
+        "authentication": "sealed-registry+semantic-identity+signature+abi+interface-digest+body-digest",
         "nameBasedRecognition": false,
         "allocation": "explicit",
         "importSideEffects": "none",
         "automaticRetention": false
       }
     ]
+  },
+  "declarationRoleContract": {
+    "schema": "wyst.declaration-role-registry.v1",
+    "claimSchema": "wyst.declaration-role-claim.v1",
+    "resourceCapabilitySchema": "wyst.declaration-role-resource-capability.v1",
+    "source": "design/declaration-roles.tsv",
+    "assignmentAuthority": "compiler-shipped-registry-only",
+    "permittedModules": ["sealed-compiler", "sealed-core", "sealed-runtime"],
+    "requiredEntryFields": [
+      "stable-role-id",
+      "contract-version",
+      "state",
+      "sealed-module-identity",
+      "sealed-declaration-identity",
+      "declaration-kind",
+      "generic-arity",
+      "complete-signature",
+      "native-abi",
+      "interface-digest",
+      "body-digest",
+      "compiler-semantics",
+      "compatibility",
+      "resource-capabilities"
+    ],
+    "authenticatedOrigins": ["compiler-registry", "authenticated-compiler-interface"],
+    "forbiddenAssignmentOrigins": [
+      "project-source",
+      "project-manifest",
+      "foreign-metadata",
+      "ordinary-dependency-interface"
+    ],
+    "claimRejections": [
+      "unknown-role",
+      "duplicate-claim",
+      "stale-registry",
+      "claim-mismatch",
+      "unavailable-role",
+      "unauthorized-origin",
+      "unavailable-body",
+      "body-digest-mismatch",
+      "interface-digest-mismatch",
+      "signature-mismatch",
+      "abi-mismatch"
+    ],
+    "ordinaryLookalikeDisposition": "ordinary-code-with-no-privileged-semantics-lowering-retention-or-report-claims",
+    "customProviderRule": "ordinary-typed-api-plus-explicit-effects",
+    "sourceExtension": "none",
+    "transport": {
+      "interfaceSlot": "wyst.declaration-role-claim.v1",
+      "objects": "exact-claim-preservation-required",
+      "companions": "exact-claim-preservation-required",
+      "effectAuthoritySummary": "authenticated-role-identity-not-written-name",
+      "stageIdentity": "registry-schema-and-content-digest-plus-exact-claims"
+    },
+    "resourceCapabilities": {
+      "schema": "wyst.declaration-role-resource-capability.v1",
+      "kinds": [
+        "owned-storage",
+        "page",
+        "mapping",
+        "handle",
+        "request-token",
+        "lease",
+        "pinned-buffer",
+        "provider-registration"
+      ],
+      "transitionFields": [
+        "resource-kind",
+        "source-state",
+        "target-state",
+        "consuming",
+        "returning",
+        "generation-relation",
+        "lifetime-relation",
+        "terminal-obligation"
+      ],
+      "implicitDestructor": false,
+      "implicitCleanup": false,
+      "implicitAllocation": false,
+      "implicitCopy": false,
+      "generalUserOwnershipSystem": false,
+      "ordinaryProjectAuthority": false
+    },
+    "reporting": {
+      "authenticatedFacts": "compiler-proved-from-registry-signature-interface-and-body-digests",
+      "ordinaryNameRecognition": false,
+      "rejectionReasons": "closed-and-machine-readable"
+    }
   },
   "reportEpistemicSchema": {
     "schema": "wync.reportEpistemic.v0",

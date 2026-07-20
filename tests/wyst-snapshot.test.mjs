@@ -29,6 +29,7 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
+const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
 
 const coreFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
@@ -135,6 +136,10 @@ for (const response of responses) {
 			"design/meta-operation-catalog.tsv",
 			"spelling\tstate\n#len\timplemented\n",
 		],
+		[
+			"design/declaration-roles.tsv",
+			"role_id\tversion\tstate\nfixture.role\t1\timplemented\n",
+		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
 		["wync/src/main.rs", "fn compiler() {}\n"],
@@ -211,7 +216,7 @@ test("the versioned Wyst publication snapshot has provenance and build inputs", 
 		readFile(path.join(designDir, ".source-commit"), "utf8"),
 		stat(path.join(designDir, "README.md")),
 		stat(path.join(designDir, "semantic-db.json")),
-		Promise.all(vocabularyCatalogs.map((file) => stat(path.join(designDir, file)))),
+		Promise.all(designCatalogs.map((file) => stat(path.join(designDir, file)))),
 		listFiles(designDir),
 	]);
 
@@ -225,7 +230,7 @@ test("the versioned Wyst publication snapshot has provenance and build inputs", 
 				!file.includes("/") &&
 				(file === ".source-commit" ||
 					file === "semantic-db.json" ||
-					vocabularyCatalogs.includes(file) ||
+					designCatalogs.includes(file) ||
 					file.endsWith(".md")),
 		),
 		"the design snapshot should contain only top-level publication inputs",
@@ -268,7 +273,7 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 			(await listFiles(path.join(siteRoot, "tests", "fixtures", "wyst"))).length,
 	);
 	assert.ok(manifest.files["vendor/wyst-design/.source-commit"]);
-	for (const catalog of vocabularyCatalogs) {
+	for (const catalog of designCatalogs) {
 		assert.ok(manifest.files[`vendor/wyst-design/${catalog}`]);
 	}
 	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {

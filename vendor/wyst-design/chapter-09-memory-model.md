@@ -1388,7 +1388,7 @@ proofs:
    proven base are disjoint when their byte offsets and widths are compile-time
    known and the ranges do not overlap. Typed element offsets, byte-lens casts,
    and `#field_offset` may be used to compute the ranges.
-4. **Explicit future uniqueness guarantees.** A later language version may add
+4. **Explicit future uniqueness guarantees.** A later language snapshot may add
    a source feature that states uniqueness or no-aliasing. Such a feature is an
    alias proof only after it has its own semantic-db row, chapter rule, and
    conformance evidence. Current `noescape` is not a uniqueness guarantee.
@@ -1830,7 +1830,7 @@ embedded in an aggregate, converted, relensed, or used by ordinary value
 operations. It does not initialize, read, or destroy a hidden `T`. Wyst
 currently has no implicit destructors or cleanup hooks for ordinary locals;
 `MaybeUninit<T>` therefore adds no hidden cleanup obligation. If a later
-language version adds destructors, the destructor for `T` must not run merely
+language snapshot adds destructors, the destructor for `T` must not run merely
 because `MaybeUninit<T>` storage goes out of scope.
 
 Register-resident and stack-resident storage have identical source semantics.

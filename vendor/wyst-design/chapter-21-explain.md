@@ -247,21 +247,25 @@ size, veneers, or caller-owned aggregate copies as semantic effects.
 
 `wync explain storage <project-dir|path/to/wyst.project>` uses schema
 `wync.explain.storage.v1`. It consumes the selected, instantiated current-build
-program and resolved call-site products. A storage fact is emitted only for a
-call site that exists in the selected program; the unselected side of a
-compile-time conditional is absent.
+program and the sealed declaration-role registry. The report always publishes
+the exact registry schema and digest, assignment authority, active roles,
+reserved resource kinds and transition fields, and closed rejection
+dispositions. Authenticated `DynamicArray<T>` descriptor annotations and
+compiler-owned descriptor operations are compiler-proved facts tied to the
+sealed role, its semantic identity, and its interface/body digests.
 
-Current library-contract facts remain assertions under the trust-boundary
-model. Each row names its resolved call site, source-map location, contract
-version, `basis = asserted`, and
-`trustedFact = library contract not proven from a body`. A spelling match in a
-raw source buffer is not a storage fact. Unknown callees and unsupported shapes
-are reported as unavailable rather than assigned a guessed storage contract.
+Ordinary arena, byte-storage, typed-handle, buffer, string, movement, runtime,
+or generated-support function names create no storage fact. The same is true
+for matching signatures and source comments or metadata. Such APIs remain
+ordinary typed code and can be reported only when an authenticated body or
+future interface summary supplies the evidence; absent that evidence the
+authority-only report succeeds without guessing a contract.
 
-The report may describe explicit arena/byte storage, dynamic-array descriptor
-operations, typed-handle operations, and buffer/string conversions already
-recognized by the current compiler. It does not introduce allocation
-semantics, implicit conversions, hidden checks, or report-local API authority.
+The report does not introduce allocation semantics, implicit conversions,
+hidden checks, cleanup, copying, retention, lowering, or report-local API
+authority. Text and JSON distinguish compiler-proved sealed-role facts from
+ordinary code and expose the unknown, duplicate, stale, unavailable,
+mismatched, and unauthorized claim dispositions.
 
 ## Failure Behavior And Parity
 
