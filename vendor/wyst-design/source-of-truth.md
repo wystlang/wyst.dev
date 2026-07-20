@@ -2,10 +2,50 @@
 title: "Wyst Source Of Truth"
 group: manual
 order: 0
-summary: "Versioned authority, conflict resolution, feature states, and schema versions."
+summary: "Snapshot authority, conflict resolution, feature states, and schema contracts."
 ---
 
 # Wyst Source Of Truth
+
+## Development Status
+
+Wyst is unpublished and under active development. It makes no backwards-
+compatibility promise for source, semantics, design principles, ABI behavior,
+object or report schemas, compiler interfaces, names, identities, or digest
+algorithms. Any of them may be revised or replaced when the project learns that
+a different design is better.
+
+This document is authoritative for the currently selected repository snapshot,
+not for all future Wyst designs. Terms such as _canonical_, _versioned_,
+_stable_, _closed_, _normative_, and _exact_ require consistency and
+determinism inside that snapshot. They do not make a decision permanent or
+create a migration obligation. A content digest identifies exact content under
+its selected algorithm; changing the content or algorithm changes the digest.
+Digest checks exist to reject accidentally mixed artifacts, not to preserve an
+obsolete contract.
+
+The Wyst language and `wync` compiler use independent semantic versions for
+actual releases. Roadmap completion and ordinary development changes do not
+change those versions. Exact content-derived identities distinguish development
+language snapshots and compiler builds between releases. A release is an
+explicit publication decision that may nominate any clean committed snapshot
+at any time; its proposed language and compiler versions are selected from the
+changes since their respective previous releases and bound into the full gate.
+They become released only when that exact passing snapshot is published.
+
+Before `1.0.0`, a breaking change or compatible feature increments the
+applicable language or compiler minor version, while a contract-preserving fix
+increments its patch version. At or after `1.0.0`, an incompatible change
+increments the major version, a compatible feature increments the minor
+version, and a compatible fix increments the patch version. Documentation,
+tests, and evidence-only changes require no release. A compiler-only release
+does not change the language version. Schema revisions, target architecture
+revisions, and external tool versions remain independent domain identifiers.
+
+Existing active `wyst.language.v0.*`, `languageVersion*`, and compiler package-
+version fields predate the complete separation of release version from exact
+snapshot/build identity. Until migrated, they must not authenticate development
+artifacts or imply that roadmap work itself changed a released version.
 
 The target-architecture authority is versioned too. For A64,
 `a64-authority.json` pins the upstream release and generator,
@@ -81,8 +121,8 @@ assert origin-surface activation: an encoding can be active for ordinary
 lowering and architecture operations while its source form remains
 `known_unsupported` in the narrower checked-assembly pack.
 
-This document is the human-readable view of the versioned Wyst semantic
-authority. The machine-readable registry is
+This document is the human-readable view of the selected Wyst semantic
+snapshot. The machine-readable registry is
 [`design/semantic-db.json`](semantic-db.json); it owns enumerated semantic
 facts such as feature states, version identifiers, operator spellings, effect
 names, public vocabularies, ABI classifications, and schema names. Detailed
@@ -166,11 +206,12 @@ record. Preservation verification replays semantic suite, compiler-role,
 absolute-budget, equivalence, repository, and verdict checks; byte presence
 alone is insufficient. Numeric budgets are inactive until their exact content
 digest has explicit human reviewer/time/reason approval.
-The policy freezes each timing host ID's exact kind and ordered canonical-phase
-mapping. Evidence aggregation revalidates sample membership, interleaved
-execution ordinals, compiler identities, and rebuild-report fields; preservation
-revalidates byte identity between verbatim evidence, its local-report envelope,
-and every archived raw command output while rejecting unreviewed objects.
+The selected policy records each timing host ID's exact kind and ordered
+canonical-phase mapping. Evidence aggregation revalidates sample membership,
+interleaved execution ordinals, compiler identities, and rebuild-report fields;
+preservation revalidates byte identity between verbatim evidence, its local-
+report envelope, and every archived raw command output while rejecting
+unreviewed objects.
 
 Execution-strand authority is versioned by
 `wyst.execution-strands.v1` and `wyst.context-stability.v1`. Chapter 13 owns
@@ -187,7 +228,7 @@ native stack.
 The closed v0.9 `#` surface is the 14-row
 [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv), which owns each
 operation's legal positions, parameters, phase, result, target facts,
-relocation behavior, and diagnostics contract. The complete frozen 53-name
+relocation behavior, and diagnostics contract. The complete recorded 53-name
 predecessor **disposition mapping** lives only in
 [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv). No predecessor
 row remains in the current syntax-word catalog. No production lexer, parser,
@@ -210,18 +251,18 @@ conformance row must be added or updated at the same time.
 
 Current manual snapshot:
 
-| Surface | Version | Status | Notes |
+| Surface | Current identity | Status | Notes |
 | ------- | ------- | ------ | ----- |
-| Language | `wyst.language.v0.9` | released normative snapshot | Covers the keyword-led v0.9 core syntax, closed meta-operation and attribute surfaces, hard modifiers, non-parser predecessor-removal audits, and target-defined vector-table and trap-frame DSLs. |
-| Native ABI | `wyst.nativeAbi.v0.8` | released normative snapshot | Chapter 15 owns the detailed Native and AAPCS64 rules. |
+| Language | `wyst.language.v0.9` (legacy development key) | selected snapshot pending release-version/identity separation | Covers the current keyword-led core syntax, closed meta-operation and attribute surfaces, hard modifiers, non-parser predecessor-removal audits, and target-defined vector-table and trap-frame DSLs currently selected in this worktree. The key does not by itself authenticate exact development content or claim that a release occurred. |
+| Native ABI | `wyst.nativeAbi.v0.8` | current selected snapshot | Chapter 15 owns the currently selected Native and AAPCS64 rules. |
 | Object/interface schema bundle | `wyst.objectInterface.v2` | implemented plus future-version rows | Chapter 16 and the semantic database own semantic-module variants, declaration/symbol/member/compatibility identities, generic body/dependency ownership and link-once survivor contracts, object artifact, relocation, and emitted-interface classifications. |
 | Report schema bundle | `wync.reports.v1` | implemented and experimental rows | Groups the report schemas listed below. Individual report payloads still carry their own `schema` and status fields. |
 | Editor/diagnostic interface schema bundle | `wync.interfaces.v1` | implemented | Groups CLI/editor/LSP adapter payloads listed below. |
 
-Released `wync` package version `0.9.0` implements the `v0.9` release line. The
-current compiler and manual snapshot target `wyst.language.v0.9`;
-rows marked implemented below are active on this release line unless they
-explicitly name an earlier released version.
+The repository contains historical release tags, including `v0.8`. No new
+release is currently nominated. Future releases use the semantic-version policy
+above, while rows marked implemented below describe the active worktree unless
+they explicitly describe a historical snapshot.
 
 ## Authority Order
 
@@ -251,16 +292,18 @@ must be corrected.
 
 ## Feature States
 
-Every feature row uses one of these states:
+Every feature row uses one of these states. These are current development and
+implementation states, not compatibility promises; a deliberate clean-break
+change may revise a row and remove its old surface atomically.
 
 | State | Meaning |
 | ----- | ------- |
-| Implemented | Accepted by the current compiler or emitted by the current tooling, with tests or snapshots protecting the contract. |
-| Future-version normative | The rule is already chosen for a named future version or release target, but the current compiler may reject it or omit it. |
-| Experimental | An available inspection/research surface or planning rule that is not a normative compatibility promise and may change or be removed without migration support. |
-| Reserved | Syntax, names, encodings, or namespaces are held so future additions remain non-breaking. Reserved forms are rejected unless a later row changes their state. |
-| Deprecated | Still accepted, but discouraged and scheduled for replacement or removal. A deprecated row must name the replacement or removal condition. |
-| Removed | No longer part of Wyst. Implementations should reject it or treat it as an unknown construct; examples must not use it except in diagnostics. |
+| Implemented | Accepted by the compiler or emitted by tooling in the selected snapshot, with tests or snapshots protecting its current contract. It may still be redesigned. |
+| Future-version normative | A candidate rule selected for planned work, but not necessarily accepted or emitted by the current compiler. It may be revised before implementation. |
+| Experimental | An available inspection or research surface that may change or be removed without migration support. |
+| Reserved | Rejected syntax, names, encodings, or namespaces with no active meaning in the selected snapshot. Reservation makes no promise about their future use. |
+| Deprecated | Still accepted in the selected snapshot but currently planned for replacement or removal. No minimum compatibility period is implied. |
+| Removed | Absent from the selected snapshot. Implementations reject it or treat it as unknown; examples use it only when documenting history or diagnostics. |
 
 Features not listed here inherit the state of the nearest listed feature
 family. A chapter that introduces a new externally visible syntax form, ABI
@@ -285,7 +328,7 @@ or update a row in this registry.
 | Whole-object deliberate raw storage uses the non-copyable `MaybeUninit<T>` API: `uninit<T>()`, `.write`, proved `.read`, audited `.read_uninit`, `.assume_init`, and `addr_of`, with CFG-joined initialization evidence and distinct typed IR/report facts (`language.maybe-uninit-whole-object-storage`) | Implemented | `wyst.language.v0.9` | the qualified semantic-operation catalog milestone; Chapter 9; Chapter 11; Appendix A |
 | Qualified semantic operations under sealed `core.arch`/`core.environment` categories and the authenticated whole-module `core.execution` provider marker, stable typed-IR/report identity, target plans, fixed counter-source/service/provider descriptors, and the exact non-parser 88-name `%` removal audit (`language.semantic-operation-catalog`) | Implemented | `wyst.semantic-operation-catalog.v0.9` | [`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv); [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv); the qualified semantic-operation catalog milestone |
 | Closed 14-form compile-time, target, and layout-query `#` surface with phase, type, target-fact, and relocation contracts (`language.meta-operation-catalog`) | Implemented | `wyst.metaOperations.v0.9` | [`meta-operation-catalog.tsv`](meta-operation-catalog.tsv); the meta-operation and declaration-policy closure milestone |
-| Every frozen predecessor `#` name outside the retained 14-form surface (`language.legacy-hash-directive-dispositions`) | Removed | `wyst.language.v0.9` | [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) is a non-parser v0.9 release audit. Production source has one grammar and no compatibility path for these spellings. |
+| Every recorded predecessor `#` name outside the retained 14-form surface (`language.legacy-hash-directive-dispositions`) | Removed | `wyst.language.v0.9` | [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) is a non-parser legacy development-snapshot audit. Production source has one grammar and no compatibility path for these spellings. |
 | UTF-8 source, ASCII identifiers, comments, string literals, byte character literals with ASCII direct characters and explicit byte escapes, numeric literal separators (`language.lexical-literal-surface`) | Implemented | `wyst.language.v0.8` | Appendix B, Chapter 6 |
 | Semicolon-free, whitespace-insensitive source; grammar-complete statement boundaries; maximal expression continuation; brace-only control-flow bodies; bare `_` discard; and longest-match `..<`, `..=`, `..` punctuation (`language.source-lexical-contract-v0.9`) | Implemented | `wyst.language.v0.9` | Appendix B |
 | One versioned syntax-word catalog with unique reserved, contextual, and unshadowable rows shared by all source tools (`language.syntax-word-catalog`) | Implemented | `wyst.syntaxWords.v0.9` | [`syntax-words.tsv`](syntax-words.tsv) |
@@ -343,7 +386,7 @@ or update a row in this registry.
 | Exhaustive enum-only `match`, shallow dot-variant alternatives, scoped payload bindings, optional final `else`, and matching `if value is .variant(binding)` patterns (`language.enum-match-patterns`) | Implemented | `wyst.language.v0.9` | Chapter 8 |
 | Predecessor enum-dispatch statement, arm, and partial-mode spellings (`language.switch-case-partial`) | Removed | `wyst.language.v0.9` | Use `match`. |
 | Anonymous tuple return fields, nested tuple returns, tuple parameters beyond the documented boundary | Reserved | none | Chapter 8 |
-| Complete callable identity (convention, ordered parameter/result types, positional register placement, and per-parameter `noescape`, but never declaration parameter names), no implicit callable adaptation, `never`, inherently terminal `label` entries, `naked` lowering, `packed struct`, local `var name: T in register`, and the immutable-template/direct-access `per_cpu var` contract; before the production multicore realization milestone reachable access requires `#target(..., per_cpu = single_instance_tpidr_el1)` with the frozen EL1+/TPIDR_EL1/16-byte-aligned single-instance facts (`language.callable-storage-contracts`) | Implemented | `wyst.language.v0.9` | Chapter 8, “v0.9 Callable Identity, Terminal Entries, and Storage Classes,” is the sole source-semantic owner; Chapters 9, 11, 15, and 16 and Appendices A and B define aligned memory, target, ABI, object, IR, and grammar projections; `semantic-db.json`; `syntax-words.tsv` |
+| Complete callable identity (convention, ordered parameter/result types, positional register placement, and per-parameter `noescape`, but never declaration parameter names), no implicit callable adaptation, `never`, inherently terminal `label` entries, `naked` lowering, `packed struct`, local `var name: T in register`, and the immutable-template/direct-access `per_cpu var` contract; before the production multicore realization milestone reachable access requires `#target(..., per_cpu = single_instance_tpidr_el1)` with the selected EL1+/TPIDR_EL1/16-byte-aligned single-instance facts (`language.callable-storage-contracts`) | Implemented | `wyst.language.v0.9` | Chapter 8, “v0.9 Callable Identity, Terminal Entries, and Storage Classes,” is the sole source-semantic owner; Chapters 9, 11, 15, and 16 and Appendices A and B define aligned memory, target, ABI, object, IR, and grammar projections; `semantic-db.json`; `syntax-words.tsv` |
 | Initializer-free or read-only local aliases for reserved architectural registers such as `lr`/`x30` and `x18` (`language.special-register-local-aliases`) | Removed | `wyst.language.v0.9` | Chapter 8; every local `var` has an initializer and ordinary `in register` placement rejects target-reserved registers. Use an authenticated checked-assembly, trap-frame, hardware, or system-register contract for architectural state. |
 | Predecessor callable-modifier, register-placement, per-CPU/TLS, ABI-marker, and callable-type spellings | Removed | `wyst.language.v0.9` | Use `-> never`, declaration-prefix modifiers, callable parameter contracts, `in register`, `per_cpu var`, `fn(...)` / `extern "C" fn(...)`, and `#percpu_offset_of`. Wyst v0.9 has no TLS storage class. |
 | The final v0.9 declaration-attribute registry and atomic owner activation checks (`language.declaration-attribute-registry`) | Implemented | `wyst.declarationAttributes.v0.9` | [`attribute-catalog.tsv`](attribute-catalog.tsv); `align`, `section`, `inline`, `init`, `frame`, `deny_effects`, `cache_isolated`, and `schedule` are active; emitted custom sections require a matching layout-declared `code`/`rodata`/`data`/`bss` kind. |
@@ -382,7 +425,7 @@ or update a row in this registry.
 | Volatile memory, atomics, barriers, shareability/freshness vocabulary, and no hidden synchronization | Implemented | `wyst.language.v0.7` | Chapter 9 and Chapter 11 |
 | Concurrent memory model: per-location modification order, reads-from, synchronizes-with, happens-before, global `seq_cst` order, release sequences, barrier-mediated synchronization, race behavior, atomic RMW retry-until-complete correctness distinct from progress guarantees, volatile interactions, and closed alias proofs for transformations | Implemented | `wyst.language.v0.8` | Chapter 9 and Chapter 11 |
 | Opaque non-copyable `atomic<T>` storage, direct-destination `atomic<T>(value)` construction, and the closed element, method, and order vocabulary (`language.opaque-atomic-storage-closed-orders`) | Implemented | `wyst.language.v0.9` | Chapter 9; Chapter 11; [`atomic-matrix.json`](atomic-matrix.json) is the sole catalog authority. |
-| Predecessor atomic runtime primitives and per-access ordering directives (`language.predecessor-atomic-primitives-and-order-directives`) | Removed | `wyst.language.v0.9` | Use typed `@atomic<T>` methods; the exact dispositions are frozen only in the two non-parser removal manifests. Neither audit feeds the atomic matrix or source tooling. |
+| Predecessor atomic runtime primitives and per-access ordering directives (`language.predecessor-atomic-primitives-and-order-directives`) | Removed | `wyst.language.v0.9` | Use typed `@atomic<T>` methods; the exact dispositions are recorded only in the two non-parser removal manifests. Neither audit feeds the atomic matrix or source tooling. |
 | Explicit ordinary allocation/storage APIs, arenas, typed handles, and buffer/string APIs with no privileged semantics or report facts inferred from their names | Implemented | `wyst.language.v0.7` plus `wyst.declaration-role-registry.v1` authority closure | Chapter 10 and Chapter 21 |
 | Dynamic-array descriptor contract `wyst.dynamicArrayDescriptor.v0`: public seven-field authenticated `DynamicArray<T>` descriptor layout, invariants, policy encodings, lifetime rules, ABI/debug/persistence/foreign-inspection consequences, and `wyst.dynamicArrayOperation.v0` compiler-owned descriptor operations | Implemented | `wyst.dynamicArrayDescriptor.v0` | Chapter 10; Chapter 23; `wync explain storage` |
 | Standard-library expansion beyond the thin allocation-explicit core | Future-version normative | `wyst.language.v0.8+` | Chapter 10; not current language surface. |
@@ -532,39 +575,53 @@ or update a row in this registry.
 | LSP 3.x JSON-RPC payloads with Wyst-owned method subset | Implemented | `wync lsp` |
 | Zed extension manifest `schema_version = 1` | Implemented | `editors/zed-wyst/extension.toml` |
 
-Schema version changes require updating this registry, the owning chapter, the
-producer, and the snapshot tests in the same change.
+Schema changes require updating this registry, the owning chapter, every
+producer and consumer, and the snapshot tests in the same atomic change. A
+schema name or version may be replaced; retaining the previous schema is not
+required.
 
-## Compatibility And Change Process
+## Development Change Process
 
-A change is source-compatible when existing accepted source continues to parse,
-check, format, and lower with the same user-visible meaning under the same
-language version. A change is source-breaking when it rejects previously
-accepted source, changes parse structure, changes overload/operator meaning,
-changes default target facts, or changes diagnostics relied on by checked
-fixtures. Source-breaking changes require a new language version row, a
-deprecation or removal row for the affected feature, and conformance tests for
-old and new behavior.
+Clean-break changes are allowed throughout the unpublished language. A change
+may replace accepted syntax, semantics, design principles, ABI behavior,
+schemas, names, identities, or digest algorithms in place. A suffix such as
+`v1` records a selected contract; it does not grant that contract permanent
+identity or require a compatibility layer. The project may rename, renumber,
+or replace it whenever that makes the current design clearer.
 
-A change is ABI-compatible when existing compiled interfaces keep the same
-calling convention, register ownership, stack layout, aggregate
-classification, symbol spelling, relocation meaning, section contract, and
-debug/unwind implication under the same Native ABI version. ABI-breaking
-changes require a new Native ABI version, an owning Chapter 15 or Chapter 16
-rule update, and binary-inspection or QEMU evidence.
+Make each change atomically across every affected authority and consumer. This
+includes this registry, the owning design chapters, `design/semantic-db.json`,
+grammar and generated catalogs, compiler phases, runtime or library code,
+artifact producers and consumers, CLI/editor surfaces, fixtures, conformance
+rows, snapshots, and release checks. Until that set agrees, the change is
+incomplete.
 
-A change is schema-compatible when existing JSON/report/interface consumers can
-ignore added fields and continue to read all previously documented fields with
-the same type and meaning. Removing fields, renaming fields, changing field
-types, changing enum string values, or changing required/optional status is
-schema-breaking and requires a new schema version plus snapshot updates.
+By default, remove obsolete parsers, aliases, adapters, schema readers, ABI
+paths, identities, fixtures, and migration diagnostics. Do not retain a legacy
+path or deprecation window merely because the replaced design once existed in
+the repository. Historical tags, changelog entries, and archived evidence may
+record an older snapshot without making it a supported input.
 
-Deprecation requires an explicit feature row with state `Deprecated`, a named
-replacement or removal condition, diagnostics or documentation explaining the
-transition, and at least one release line where the deprecated surface remains
-recognized unless the row states that the feature is already removed. Removed
-features must be deleted from normative examples or marked only as diagnostic
-examples.
+Version and digest fields remain useful for internal consistency. Select or
+change them so artifacts from incompatible snapshots fail clearly instead of
+being combined accidentally. When governed content or the digest algorithm
+changes, its digest must change. A digest authenticates bytes under the current
+contract; it does not make those bytes or that contract unchangeable.
+
+Language snapshots and compiler builds use content-derived identities in
+addition to semantic release versions. A package or release version identifies
+a compatibility-positioned publication, not exact compiler bytes. Release
+tooling operates only after maintainers explicitly nominate an exact clean
+snapshot and select proposed language and compiler versions under the bump rules
+above. It validates all claims marked implemented in that snapshot and never
+consults unrelated roadmap completion. The proposed versions, exact identities,
+artifacts, and evidence must agree; the versions become released only on
+publication.
+
+If Wyst later publishes a surface whose users need compatibility, the owning
+design document must introduce that explicit promise, its scope, and its test
+obligations. No current version, state, identity, or historical release implies
+such a promise.
 
 Documentation CI rejects contradictory normative claims by checking
 `design/semantic-db.json`, this file, checked `wyst` contract fences, and

@@ -411,7 +411,7 @@ Separating layout from scheduling preserves two properties:
 
 1. **Reproducibility scope.** Layout decisions are deterministic under the
    Reproducibility Model's input catalog (same source input manifest,
-   compiler version, build optimization mode, target, and selected scheduling
+   compiler build identity, build optimization mode, target, and selected scheduling
    policies → same layout).
 
 2. **Composability.** A programmer can pin layout with explicit branch facts

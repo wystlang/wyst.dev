@@ -266,7 +266,7 @@ demanded by ordinary reachability or another explicit artifact root.
 
 `per_cpu` is legal only on a module-scope mutable `var` with an explicit
 statically representable initializer under
-`language.keyword-led-declarations-bindings`. The declaration freezes one
+`language.keyword-led-declarations-bindings`. Under the current contract, the declaration defines one
 natural-layout initialization-template entry: source type and layout, natural
 alignment, initializer bytes and relocations, canonical storage-class/symbol
 identity, deterministic template placement, and final byte offset in
@@ -342,10 +342,10 @@ that exact selection, every reachable `per_cpu` access is a hard target
 diagnostic. The compiler never infers single-core operation from observed
 hardware and never aliases the template itself as the live instance.
 
-This item emits only the immutable template and the requested access sequence.
+The current compiler emits only the immutable template and the requested access sequence.
 It performs no instance replication, allocation, base installation, startup
 copy, or implicit collapse to an ordinary global. Later runtime work may copy
-the frozen template without changing its source, object, or offset semantics.
+the immutable template without changing its source, object, or offset semantics.
 Wyst v0.9 has no TLS storage class. The predecessor TLS, callable-modifier,
 register-placement, per-CPU, ABI-marker, and callable-type spellings are
 removed source forms. Current callable forms use `extern "C" fn(...)` and

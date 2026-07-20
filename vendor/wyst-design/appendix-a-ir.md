@@ -318,7 +318,7 @@ is expressed against this representation. Its design priorities, in order:
    provenance.
 3. **Stay small.** ~30 op kinds. New language features prefer new attributes
    on existing ops over new ops.
-4. **Be deterministic.** Identical source + compiler version + target +
+4. **Be deterministic.** Identical source + compiler build identity + target +
    selected scheduling policies → identical IR. No hash-table-iteration-order
    dependencies, no rolling unique IDs that vary across runs (use
    declaration-order IDs).
@@ -1460,8 +1460,8 @@ The IR has a human-readable textual form used for:
 - Pass snapshots.
 - Documentation worked examples.
 
-The textual form is **not guaranteed to parse back across compiler versions**.
-It is a stable dump format within a single compiler version.
+The textual form is **not guaranteed to parse back across compiler build
+identities**. It is a stable dump format within a single build identity.
 
 ### 8.1 Grammar Sketch
 
@@ -1592,7 +1592,7 @@ Every pass must be deterministic. Specific requirements:
   in a fixed order. There is no cost-driven pass selection.
 
 This is what underlies the Reproducibility Model claim in
-`chapter-01-language-design.md`: same source input manifest, compiler version,
+`chapter-01-language-design.md`: same source input manifest, compiler build identity,
 build optimization mode, target, and selected scheduling policies → identical IR →
 identical object output.
 
@@ -1798,7 +1798,7 @@ scheduling policies, the register allocator produces:
 - The same register-sharing decisions for non-interfering values.
 
 This holds **across compiler invocations on the same machine** and **across
-machines running the same compiler version** — there is no nondeterminism
+machines running the same compiler build identity** — there is no nondeterminism
 from heap layout, hashtable iteration, or threading. The allocator is
 single-threaded by spec.
 

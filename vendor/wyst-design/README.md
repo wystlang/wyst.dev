@@ -11,6 +11,23 @@ organized for lookup by topic, not as a tutorial or a sequence to read from
 front to back. Use the contents and appendices to go directly to the contract
 you need.
 
+Wyst is unpublished and under active development, with no backwards-
+compatibility promise. This manual describes the currently selected repository
+snapshot. Every language syntax, semantic rule, design principle, ABI rule,
+schema, name, identity, and digest algorithm remains open to deliberate
+revision. In this manual, _canonical_, _versioned_, _stable_, _closed_, and
+_normative_ constrain the selected snapshot and its internally consistent
+artifacts; they do not make a choice permanent. A content digest changes when
+its content or digest algorithm changes and exists to reject mixed artifacts,
+not to preserve an old design.
+
+The language and compiler use independent semantic versions for actual
+releases. Exact content identities distinguish development language snapshots
+and compiler builds. Roadmap work never bumps a release version. A release may
+be nominated at any time, independently of the roadmap; its proposed semantic
+versions are selected from the changes since the previous releases, bound into
+the complete gate, and become released only on publication.
+
 Each topic describes the language or compiler contract at the design level.
 Feature state, schema versions, and conflict authority are defined in
 [source-of-truth.md](source-of-truth.md). If any chapter, appendix, example, IR
@@ -19,13 +36,14 @@ lower-authority document must be updated.
 
 ## Authority
 
-[source-of-truth.md](source-of-truth.md) is the versioned registry for:
+[source-of-truth.md](source-of-truth.md) is the selected-snapshot registry for:
 
-- the current language, Native ABI, report, and interface schema versions;
+- the currently selected language snapshot and Native ABI, report, and
+  interface schema contracts;
 - which document wins when prose, grammar, IR documentation, ABI rules,
   and examples conflict;
-- feature status: implemented, future-version normative, experimental,
-  reserved, deprecated, or removed.
+- feature status within the selected snapshot: implemented, future-version
+  normative, experimental, reserved, deprecated, or removed;
 - compilation phase products and semantic fact ownership boundaries.
 
 [conformance-index.md](conformance-index.md) is the clause-to-test
@@ -33,8 +51,8 @@ traceability index. It records the positive, negative, execution, IR, lowering,
 artifact, explain-report, and reproducibility evidence for each semantic
 database feature row, and it names untested evidence explicitly.
 
-[syntax-words.tsv](syntax-words.tsv) is the normative v0.9 source-word
-catalog. [attribute-catalog.tsv](attribute-catalog.tsv) is the closed final-v0.9
+[syntax-words.tsv](syntax-words.tsv) is the normative selected-snapshot source-
+word catalog. [attribute-catalog.tsv](attribute-catalog.tsv) is the closed current
 declaration-attribute registry; its rows remain inactive until their semantic
 owner changes the row state atomically with the implementation and evidence.
 [meta-operation-catalog.tsv](meta-operation-catalog.tsv) is the closed active
