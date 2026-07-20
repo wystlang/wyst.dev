@@ -12,6 +12,15 @@ This chapter is the conceptual map for Wyst. It summarizes memory ordering,
 effects, ABI, IR, object files, and tooling; the canonical definitions are
 linked below.
 
+Wyst is unpublished and under active development. This chapter describes the
+currently selected design, not an immutable constitution. Every principle,
+syntax form, semantic rule, ABI decision, schema, name, identity, and digest
+algorithm remains open to deliberate revision. Here, _canonical_, _stable_,
+_versioned_, and _normative_ mean consistent within the selected repository
+snapshot; they do not promise backwards compatibility or permanence. See
+[source-of-truth.md](source-of-truth.md) for the atomic clean-break change
+process.
+
 > **Chapter scope.** This chapter states the identity, principles, and
 > high-level rules of the language. When a topic is defined in more detail
 > elsewhere, this chapter summarizes and links.
@@ -819,12 +828,12 @@ The goal is:
 ## Reproducibility Model
 
 Wyst guarantees **reproducible lowering**: given the same source, the same
-compiler version, the same build optimization mode, the same canonical
+compiler build identity, the same build optimization mode, the same canonical
 `#target(...)` configuration or authenticated target-profile contract, the same
 source input manifest, and the same selected scheduling policies including
 implicit `schedule.standard`, the compiler always produces identical output.
 Reproducibility is scoped to these inputs; it is not guaranteed across compiler
-versions, build optimization modes, target configurations, source manifests, or
+build identities, build optimization modes, target configurations, source manifests, or
 different selected scheduling policies.
 
 The `#target` input is the entire canonical `#target(...)` argument list, not
@@ -835,7 +844,7 @@ field participates through its specified default value.
 
 Requirements for reproducibility:
 
-- same compiler version
+- same compiler build identity
 - same build optimization mode (`--optimization` or the project manifest's
   `optimization` field, defaulting to `reproducible`)
 - same source input manifest:
@@ -854,7 +863,7 @@ Requirements for reproducibility:
 - same selected scheduling policies, including implicit `schedule.standard`
   and any explicit `schedule.source` boundary
 
-Register allocation is a pure function of the source, compiler version, and
+Register allocation is a pure function of the source, compiler build identity, and
 target. The same inputs always produce the same allocation.
 
 ---
@@ -989,10 +998,10 @@ placement stage has fixed the referenced section.
 
 **Register Allocation.** Variables are assigned to ARM64 registers. Explicit
 `in register` constraints apply first; remaining variables are allocated by the compiler.
-Register allocation is a pure function of source, compiler version, and
+Register allocation is a pure function of source, compiler build identity, and
 target triple. Tie-breaking must not use hash-based ordering, pointer-
 derived ordering, or any input that varies across invocations — the same
-source compiled with the same compiler version against the same target
+source compiled with the same compiler build identity against the same target
 produces the same register assignment on every invocation. This is a
 specified invariant; reproducible lowering depends on it. Full algorithm
 and tie-breaks in [appendix-a-ir.md §11](appendix-a-ir.md).
@@ -1011,7 +1020,7 @@ cross-module symbols are resolved. Slot size enforcement for `vector_table`
 bodies is verified after placement.
 
 **Binary Emission.** Machine code emitted. Output is reproducible under the
-Reproducibility Model above: the same source input manifest, compiler version,
+Reproducibility Model above: the same source input manifest, compiler build identity,
 build optimization mode, canonical `#target(...)` configuration, and selected
 scheduling policies produce identical output.
 
@@ -1020,8 +1029,8 @@ scheduling policies produce identical output.
 ## ARM64 Feature Scope
 
 Wyst targets the **ARMv8-A baseline** instruction set. Three
-modern ARM64 features are explicitly out of scope for this version of the
-language: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
+modern ARM64 features are explicitly out of scope for the selected language
+snapshot: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
 specific instructions in these families can be exposed through checked `asm`
 as complete encoder and semantic-catalog support is activated.
 
@@ -1054,7 +1063,7 @@ operations if a future version catalogs them.
 **Extension point:** a `#pac` function-level directive that enables
 `paciasp` / `autiasp` emission, plus `@signed(@T)` for authenticated
 pointers across trust boundaries. See [chapter-15-abi-spec.md §A.7](chapter-15-abi-spec.md)
-for the ABI-level PAC behaviour already locked in.
+for the PAC behavior specified by the currently selected ABI design.
 
 ### MTE (Memory Tagging Extension)
 

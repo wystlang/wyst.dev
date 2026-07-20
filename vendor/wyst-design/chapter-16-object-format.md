@@ -22,7 +22,7 @@ modules, layout declarations, boot entry, and ABI classification.
 
 ## v0.9 Semantic Object Units And Canonical Symbol Identities (Current)
 
-`wyst.objectInterface.v2` freezes the identity and generic-ownership contract used by the current
+`wyst.objectInterface.v2` specifies the identity and generic-ownership contract used by the current
 final-image compiler and by every later semantic interface, relocatable object,
 archive, or linker. The current `ET_EXEC` writer does not expose public object
 output, but every build constructs this product before artifact identity and
@@ -85,7 +85,7 @@ symbol, export alias, or independent semantic declaration identity.
 
 ## v0.9 Generic Instantiation Ownership And Transport (Current Contract)
 
-`wyst.generic-ownership.v1` freezes generic ownership before public semantic
+`wyst.generic-ownership.v1` specifies generic ownership for the current semantic
 interfaces, relocatable objects, and archives are implemented. It consumes
 `wyst.genericInstantiationKey.v0.9` from Chapter 6 unchanged. The key is the
 canonical semantic declaration identity plus the complete ordered concrete
@@ -135,8 +135,9 @@ declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2
 reserves all three slots now:
 
 - generic body/dependency slot: `wyst.generic-transport.v1`;
-- declaration-role slot: `wyst.declaration-role-slot.reserved.v1`, activated by
-  the versioned declaration-role contract without changing generic identity;
+- declaration-role slot: `wyst.declaration-role-claim.v1`, authenticated against
+  `wyst.declaration-role-registry.v1` and its content digest without changing
+  generic identity;
 - effect/authority-summary slot:
   `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
   effect/authority contract without weakening a callable type argument's fixed bound.
@@ -588,7 +589,7 @@ canonical names.
 Chapter 14 §10.2. Source section and alignment attributes cannot rename or
 weaken it.
 
-`.percpu` is placed once in the image. A later runtime may copy its frozen bytes
+`.percpu` is placed once in the image. A later runtime may copy its immutable template bytes
 to live instances, but the compiler performs no replication and the template
 is not itself live storage. `.tls` is not a v0.9 section; any occurrence in a
 released v0.8 artifact is historical compatibility material. See §7.
@@ -657,9 +658,10 @@ module-qualified semantic identity for debugging and relocation resolution,
 independent of `pub`, source imports, and export aliases. A separate
 source-facing lookup/display spelling may remain local inside the compiler; it
 is never an external claim and cannot replace the semantic identity in ELF.
-The semantic-object-unit contract freezes the canonical encoding for these
-identities before relocatable objects are exposed; that later encoding cannot
-change the external spelling selected here.
+The semantic-object-unit contract specifies the canonical encoding for these
+identities in the current snapshot. A deliberate redesign may replace it, but
+all producers and consumers selected for one build must use the same contract;
+the internal encoding does not change the external spelling selected here.
 
 Compiler-created initcall metadata symbols are an explicit exception. Every
 `#[init(order = N)]` function emits one 16-byte `.initcalls` entry and one
@@ -1021,7 +1023,7 @@ documented path if needed.
 
 Object format output is **bit-for-bit reproducible** under the
 reproducibility contract (`chapter-01-language-design.md`, Reproducibility Model):
-same compiler version, same build optimization mode, same target, the same
+same compiler build identity, same build optimization mode, same target, the same
 selected scheduling policies, and the same source input manifest produce byte-identical
 ELF output.
 

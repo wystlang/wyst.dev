@@ -41,10 +41,11 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
+const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
 	":(top,literal)design/semantic-db.json",
-	...vocabularyCatalogs.map((file) => `:(top,literal)design/${file}`),
+	...designCatalogs.map((file) => `:(top,literal)design/${file}`),
 	":(top,literal)wync/Cargo.lock",
 	":(top,literal)wync/Cargo.toml",
 	":(top,glob)wync/core/**/*.wyst",
@@ -125,7 +126,7 @@ const designFileNames = (await readdir(path.join(wystRoot, "design"), {
 			entry.isFile() &&
 			(entry.name.endsWith(".md") ||
 				entry.name === "semantic-db.json" ||
-				vocabularyCatalogs.includes(entry.name)),
+				designCatalogs.includes(entry.name)),
 	)
 	.map((entry) => entry.name)
 	.sort();
@@ -133,7 +134,7 @@ const designFileNames = (await readdir(path.join(wystRoot, "design"), {
 for (const requiredDesignFile of [
 	"README.md",
 	"semantic-db.json",
-	...vocabularyCatalogs,
+	...designCatalogs,
 ]) {
 	if (!designFileNames.includes(requiredDesignFile)) {
 		throw new Error(`Missing Wyst design input: design/${requiredDesignFile}`);

@@ -652,7 +652,7 @@ const difference = fma(a, b, -c)     // a * b - c, fused — lowers to fmsub
 The distinction matters for:
 
 - **Reproducibility**: `a * b + c` always produces the two-rounded result,
-  regardless of platform or compiler version.
+  regardless of platform or compiler build identity.
 - **Checksums**: sequential rounding is exact and consistent.
 - **Performance-sensitive paths**: `fma` is explicitly faster where available
   and the programmer has decided the rounding difference is acceptable.

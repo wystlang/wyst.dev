@@ -1988,7 +1988,7 @@ source-only compiler diagnostic checks
 and editor/syntax-tooling drift checks
 (`wync/tests/syntax_corpus.rs::editor_and_syntax_tooling_cover_shared_syntax_corpus_tokens`).
 The release-input clean-break audit is driven by
-`design/removed-source-spelling-allowlist.tsv`. Only the two frozen non-parser
+`design/removed-source-spelling-allowlist.tsv`. Only the two recorded non-parser
 removal manifests and explicit invalid-syntax `.wyst` fixtures may receive
 whole-file allowances. Genuine released-history prose uses
 `archived-historical` with exact Markdown section boundaries, and every scope
