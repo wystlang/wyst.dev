@@ -41,11 +41,7 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
-const designCatalogs = [
-	...vocabularyCatalogs,
-	"declaration-roles.tsv",
-	"error-model.tsv",
-];
+const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
 	":(top,literal)design/semantic-db.json",

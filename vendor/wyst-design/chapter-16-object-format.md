@@ -33,8 +33,7 @@ key from source names or ELF fields.
 Each semantic module has exactly one `wyst.semantic-interface.v2` variant for
 the selected language and interface schemas, authenticated target semantic
 catalog and support manifest, Native ABI, executable-environment identity,
-layout/root ABI and admission identity, selected error-model schema/catalog
-digest and `wyst.outcomeSummary.v1` slot, and safety/trust/proof/hardening tuple.
+layout/root ABI and admission identity, and safety/trust/proof/hardening tuple.
 The pre-safety-profile state writes
 `wyst.safety-trust-hardening.inactive.v1` into all four reserved slots. Absence
 is invalid and a consumer cannot supply a default. Execution-environment and
@@ -42,24 +41,12 @@ provider/service records participate atomically, so an imported module cannot
 lose an `execution_suspension` provider requirement or other authenticated
 environment dependency.
 
-The error-model slot is present even before the checked outcome implementation
-milestone activates a source outcome.
-It binds `wyst.errorModelCatalog.v1`, `wyst.outcome.v1`, the exact catalog
-digest, Native ABI projection, four tags, partial-progress rule, foreign
-mapping, and hardening-trap adapter schema. A callable that returns an outcome
-adds a canonical `wyst.outcomeSummary.v1` record containing concrete `V`, `P`,
-and `E` identities, the allowed-variant mask, progress unit, and trap policy.
-Missing, stale, malformed, unknown-tagged, or type-incompatible summaries fail
-before a call is admitted. No consumer may reconstruct a result/status
-convention from a signature, symbol spelling, C declaration, or machine code.
-
 The module-specific `wyst.object-member-identity.v1` digest contains the
 semantic-interface identity plus the object schema, code-generation profile,
 the four safety/trust/proof/hardening slots, debug/unwind/frame policies,
 backend identity, and generated-input identity. The separate homogeneous
 `wyst.object-compatibility-key.v1` contains language/interface/object schemas,
-target semantic catalog, support manifest, Native ABI, error-model schema and
-catalog digest, environment/provider
+target semantic catalog, support manifest, Native ABI, environment/provider
 tuple, profile, safety/trust/proof/hardening tuple, debug/unwind/frame policies,
 and backend identity. It deliberately excludes semantic-module, interface-
 content, and member digests. Thus unrelated modules built under one exact
@@ -144,8 +131,8 @@ type-checked body under `wyst.generic-body.v1` and its complete authenticated
 text, a backend IR dump, or machine code. The envelope binds the declaration
 identity and semantic home, source/interface-private visibility, body digest,
 ordered dependency-closure digest, `wyst.generic-placement.v1` policy, and the versioned
-declaration-role, effect/authority-summary, and error-model-summary slots.
-`wyst.semantic-interface.v2` reserves all four slots now:
+declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2`
+reserves all three slots now:
 
 - generic body/dependency slot: `wyst.generic-transport.v1`;
 - declaration-role slot: `wyst.declaration-role-claim.v1`, authenticated against
@@ -154,10 +141,6 @@ declaration-role, effect/authority-summary, and error-model-summary slots.
 - effect/authority-summary slot:
   `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
   effect/authority contract without weakening a callable type argument's fixed bound.
-- error-model summary slot: `wyst.outcomeSummary.v1`, bound to the exact
-  `wyst.errorModelCatalog.v1` digest and capable of encoding concrete value,
-  progress, and error type identities, allowed variants, progress units, and
-  the closed trap policy without inventing a sentinel or status carrier.
 
 Private generic declarations needed transitively travel as
 `interface-private-dependency` bodies and acquire canonical hidden link-once

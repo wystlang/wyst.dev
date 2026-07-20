@@ -57,12 +57,7 @@
     "declarationRoleClaim": "wyst.declaration-role-claim.v1",
     "declarationRoleResourceCapability": "wyst.declaration-role-resource-capability.v1",
     "declarationRoleSlot": "wyst.declaration-role-claim.v1",
-    "effectAuthoritySummarySlot": "wyst.effect-authority-summary-slot.reserved.v1",
-    "errorModelCatalog": "wyst.errorModelCatalog.v1",
-    "outcome": "wyst.outcome.v1",
-    "outcomeSummary": "wyst.outcomeSummary.v1",
-    "outcomeForeign": "wyst.outcomeForeign.v1",
-    "outcomeHardeningTrap": "wyst.outcomeHardeningTrap.v1"
+    "effectAuthoritySummarySlot": "wyst.effect-authority-summary-slot.reserved.v1"
   },
   "semanticObjectIdentityContract": {
     "bundleSchema": "wyst.objectInterface.v2",
@@ -82,9 +77,6 @@
       "target-semantic-catalog",
       "support-manifest",
       "native-abi",
-      "error-model-schema",
-      "error-model-catalog-digest",
-      "error-model-summary-slot",
       "executable-environment-identity",
       "layout-root-abi-admission-identity",
       "safety-profile",
@@ -118,8 +110,6 @@
       "target-semantic-catalog",
       "support-manifest",
       "native-abi",
-      "error-model-schema",
-      "error-model-catalog-digest",
       "environment-provider-tuple",
       "profile",
       "safety-profile",
@@ -189,7 +179,6 @@
       "dependency-closure-digest",
       "declaration-role-identity",
       "effect-authority-identity",
-      "error-model-identity",
       "native-abi-and-calling-convention",
       "placement-and-semantic-root-policy",
       "generated-definition-digest"
@@ -210,8 +199,7 @@
         "ordered-dependency-closure-digest",
         "placement-policy-digest",
         "declaration-role-slot",
-        "effect-authority-summary-slot",
-        "error-model-summary-slot"
+        "effect-authority-summary-slot"
       ],
       "privateGenericDependency": "transport-body-and-closure-with-interface-private-hidden-link-once-identity",
       "privateNonGenericFunction": "home-owned-canonical-hidden-symbol-with-no-cloneable-body",
@@ -222,8 +210,7 @@
     "semanticInterfaceSlots": {
       "genericBodyDependency": "wyst.generic-transport.v1",
       "declarationRole": "wyst.declaration-role-claim.v1",
-      "effectAuthoritySummary": "wyst.effect-authority-summary-slot.reserved.v1",
-      "errorModelSummary": "wyst.outcomeSummary.v1"
+      "effectAuthoritySummary": "wyst.effect-authority-summary-slot.reserved.v1"
     },
     "callableTypeArgumentRule": "complete-canonical-function-type-includes-fixed-effect-upper-bound-through-identity-inference-transport-and-deduplication",
     "worklist": {
@@ -281,116 +268,6 @@
     ],
     "currentTransport": "wyst.genericInstantiationKey.v0.9-identity-is-carried-through-instantiated-ast-typed-ir-and-authenticated-final-artifact-records",
     "futureImplementationBoundary": "separate-interface-object-archive-and-link-milestones-serialize-and-execute-this-contract-without-placeholder-semantics"
-  },
-  "errorModelContract": {
-    "catalogSchema": "wyst.errorModelCatalog.v1",
-    "catalogSource": "design/error-model.tsv",
-    "catalogDigest": "sha256:fee2b2388e11f67fe01e104dae1ad235a9c5fdf64cd0b6d66f3c3c725dad3af1",
-    "outcomeSchema": "wyst.outcome.v1",
-    "sourceIdentity": "core.outcome.Outcome",
-    "sourceState": "future-version-normative-until-checked-outcome-implementation",
-    "declaration": "enum Outcome<V:payload_word,P:payload_word,E:payload_word>:u8{ok(V)=0;partial(P)=1;complete=2;err(E)=3}",
-    "representation": {
-      "sizeBytes": 16,
-      "alignmentBytes": 8,
-      "tagWordOffset": 0,
-      "payloadWordOffset": 8,
-      "tagWordCanonicalization": "zero-extended-u8",
-      "completePayloadWord": 0,
-      "variants": [
-        { "name": "ok", "tag": 0, "payload": "V", "disposition": "value-success" },
-        { "name": "partial", "tag": 1, "payload": "P", "disposition": "committed-partial-success" },
-        { "name": "complete", "tag": 2, "payload": "canonical-zero-word", "disposition": "normal-terminal-completion" },
-        { "name": "err", "tag": 3, "payload": "E", "disposition": "typed-error" }
-      ],
-      "payloadBounds": ["V:payload_word", "P:payload_word", "E:payload_word"],
-      "concreteTypeIdentity": "Outcome-plus-complete-V-P-E-identities"
-    },
-    "nativeAbi": {
-      "schema": "wyst.nativeAbi.v0.8",
-      "argument": "two-consecutive-gpr-slots-or-unsplit-16-byte-stack-value",
-      "result": "tag-in-x0+payload-in-x1",
-      "indirectResult": false
-    },
-    "controlFlow": {
-      "inspection": "explicit-exhaustive-match",
-      "propagation": "explicit-return-of-constructed-outcome",
-      "implicitPropagation": false,
-      "implicitUnwrap": false,
-      "exceptionEdge": false,
-      "unwindEdge": false,
-      "implicitRetry": false
-    },
-    "partialProgress": {
-      "meaning": "strictly-positive-progress-committed-by-this-invocation-in-the-documented-operation-unit",
-      "zeroProgressPartial": "invalid",
-      "rollback": "forbidden",
-      "hiddenRetry": false,
-      "state": "explicit-caller-owned-or-authenticated-resource-state",
-      "terminalAfterCommit": "return-partial-retain-exact-pending-disposition-and-return-err-or-complete-before-new-work-on-next-resume",
-      "cancellationAndDeadlinePreserveCommittedProgress": true,
-      "errorAndProgressInOneReturn": false
-    },
-    "failureMappings": {
-      "allocation": "err(E)",
-      "parsing": "err(E)",
-      "io": "err(E)",
-      "cInterop": "explicit-adapter-to-err(E)",
-      "bootDiscovery": "err(E)",
-      "containerGrowth": "err(E)",
-      "checkedConversion": "err(E)-after-checked-outcome-implementation",
-      "requestCancellation": "err(E)",
-      "deadlineExpiry": "err(E)",
-      "providerFailure": "err(E)",
-      "terminalCompletion": "complete",
-      "resumableLifecycleMisuse": "err(E)",
-      "proofBoundaryCheckedOperation": "err(E)",
-      "checkedCoreOperation": "err(E)",
-      "invalidResourceTransition": "err(E)",
-      "checkedSynchronizationOrContext": "err(E)",
-      "explicitHardeningFailure": "err(E)-then-optional-explicit-trap-adapter"
-    },
-    "staticProofFailure": "compile-time-rejection-with-no-runtime-outcome",
-    "machineRawOperation": "retain-existing-behavior-category-with-no-synthetic-outcome",
-    "trapping": {
-      "ordinaryErr": "forbidden",
-      "schema": "wyst.outcomeHardeningTrap.v1",
-      "hardening": "explicit-policy-selected-terminal-adapter-consuming-err-only",
-      "safetyProfileMayInventTrapPanicSentinelOrUnwind": false
-    },
-    "foreign": {
-      "schema": "wyst.outcomeForeign.v1",
-      "wire": "struct{tag:u64,payload:u64}",
-      "enumDirectlyInCAbi": false,
-      "adapter": "validate-tag-and-active-payload-then-construct-typed-outcome",
-      "legacyConventions": "sample-once-and-normalize-inside-explicit-adapter",
-      "unknownTag": "checked-adapter-err(E)-or-explicit-trusted-contract-violation",
-      "implicitErrnoNullNegativeOrStatusLeak": false
-    },
-    "interfaceSummary": {
-      "schema": "wyst.outcomeSummary.v1",
-      "fields": ["V-identity", "P-identity", "E-identity", "allowed-variant-mask", "progress-unit", "trap-policy"],
-      "encoding": "WYSTOUT-NUL+little-endian-v1+length-delimited-fields+closed-tags+sha256-body-digest",
-      "rejections": ["missing", "extra", "stale", "corrupt", "unknown-tag", "type-mismatch", "ambiguous-progress-unit", "unauthorized-trap-policy"]
-    },
-    "objectBinding": {
-      "semanticInterfaceSlot": "wyst.outcomeSummary.v1",
-      "compatibilityInputs": ["wyst.outcome.v1", "wyst.errorModelCatalog.v1-content-digest"],
-      "artifactRecords": "object.error-model.*",
-      "reconstructionFromNamesSignaturesCDeclarationsOrMachineCode": false
-    },
-    "forbiddenAlternativeCarriers": [
-      "implicit-null-or-integer-sentinel",
-      "bool-status",
-      "named-tuple-status",
-      "errno-or-thread-local-status",
-      "second-result-type",
-      "implicit-panic",
-      "exception",
-      "implicit-unwind",
-      "implicit-retry"
-    ],
-    "checkedSurfaceActivation": "checked-outcome-implementation-atomically-activates-core.outcome-and-checked<T>-with-this-model"
   },
   "authorityOrder": [
     {
@@ -682,14 +559,6 @@
       "state": "reserved",
       "version": null,
       "owner": "design/chapter-06-types.md"
-    },
-    {
-      "id": "language.error-partial-success-outcome",
-      "state": "future-version-normative",
-      "version": "wyst.outcome.v1",
-      "owner": "design/chapter-10-runtime.md",
-      "catalog": "design/error-model.tsv",
-      "contract": "errorModelContract"
     },
     {
       "id": "language.compilation-phase-contract",
@@ -1060,14 +929,6 @@
       "version": "wyst.objectInterface.v2",
       "owner": "design/chapter-16-object-format.md",
       "contract": "genericInstantiationOwnershipContract"
-    },
-    {
-      "id": "artifacts.error-model-contract",
-      "state": "implemented",
-      "version": "wyst.errorModelCatalog.v1",
-      "owner": "design/chapter-16-object-format.md",
-      "catalog": "design/error-model.tsv",
-      "contract": "errorModelContract"
     },
     {
       "id": "artifacts.relocatable-object-files",

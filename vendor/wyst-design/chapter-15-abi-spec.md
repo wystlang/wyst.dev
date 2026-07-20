@@ -103,51 +103,6 @@ module abi.contract
 extern "C" fn foreign(value: u64 in x0) -> u64 in x0
 ```
 
-## Frozen Outcome ABI And C Mapping (Activation Pending)
-
-Chapter 10 owns `wyst.outcome.v1`. Its future
-`core.outcome.Outcome<V, P, E>` is exactly the existing payload-enum
-representation: 16 bytes, alignment 8, a zero-extended tag word at byte 0, and
-one payload word at byte 8. The canonical tags are `ok = 0`, `partial = 1`,
-`complete = 2`, and `err = 3`. The `.complete` payload word is canonically zero.
-The other payload word is the ordinary Native-ABI representation of the active
-`payload_word` type; inactive bytes are not a second source value.
-
-Under `wyst.nativeAbi.v0.8`, an outcome argument consumes two consecutive GPR
-slots and an outcome result returns tag in `x0` and payload in `x1`, exactly as
-for every current payload enum. If two consecutive argument slots are not
-available, the complete 16-byte value follows the existing stack rule and is
-never split. Concrete `V`, `P`, and `E` identities, allowed variants, progress
-unit, and trap policy are semantic-interface facts under
-`wyst.outcomeSummary.v1`; callers do not infer them from the two machine words.
-
-Wyst enums still have no direct C layout. `wyst.outcomeForeign.v1` defines the
-only canonical C bridge as an explicit layout-equivalent record:
-
-```c
-struct wyst_outcome_v1 {
-    uint64_t tag;
-    uint64_t payload;
-};
-```
-
-An `extern "C"` declaration names that explicit two-word struct, not the Wyst
-enum. An ordinary adapter validates `tag`, validates the active payload against
-the declared `V`, `P`, or `E` type, requires zero payload for `complete`, and
-constructs the typed outcome. Unknown tags, noncanonical payloads, or a
-nonzero completion payload are malformed foreign results; a checked adapter
-maps them to its declared `.err(E)` foreign-contract cause, while a deliberately
-trusted adapter exposes the existing trusted-contract-violation boundary.
-Neither case authorizes a default variant or implicit trap.
-
-Legacy C APIs may use negative returns, nulls, status/value pairs, `errno`, or
-other external conventions. Those shapes are permitted only inside an
-explicit normalizing adapter. The adapter samples every foreign status input
-exactly once, preserves committed partial progress, and returns one canonical
-outcome before any Wyst-facing API observes it. A Wyst interface, semantic
-interface, object, or core API may not expose the legacy sentinel/status shape
-as an alternative error convention.
-
 ## Released v0.8 ABI Syntax Snapshot
 
 > **Released v0.8 ABI syntax below.** The remainder of this chapter preserves

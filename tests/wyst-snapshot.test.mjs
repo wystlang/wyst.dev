@@ -29,11 +29,7 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
-const designCatalogs = [
-	...vocabularyCatalogs,
-	"declaration-roles.tsv",
-	"error-model.tsv",
-];
+const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
 
 const coreFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
@@ -143,10 +139,6 @@ for (const response of responses) {
 		[
 			"design/declaration-roles.tsv",
 			"role_id\tversion\tstate\nfixture.role\t1\timplemented\n",
-		],
-		[
-			"design/error-model.tsv",
-			"subject\toutcome\nfixture-failure\terr\n",
 		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
