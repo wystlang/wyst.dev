@@ -498,7 +498,7 @@ without a small piece of that surface.
 ## Layout And Output
 
 The target profile owns the layout-owner decision. For `.artifact`,
-`layout NAME from "PATH"` selects exactly one named v0.9 layout block from the
+`layout NAME from "PATH"` selects exactly one named selected snapshot layout block from the
 referenced file; that block must exist and its semantic entry must name the
 artifact root. Two artifacts may select different named layouts from one file,
 but neither may borrow a layout whose entry belongs to the other root. For

@@ -1,7 +1,7 @@
 spelling	class	legal_positions	parameters	phase	result	target_facts	relocation	behavior	owner	state	tooling_metadata
 #addr_of	symbol-query	expression	symbol:linkable-symbol	link-layout	contextual-address	selected-artifact-layout	symbol-address	require-linkable-symbol-and-preserve-relocation	meta.operation	implemented	meta.addr_of
 #align_of	layout-query	expression	type:complete-type	type-layout	u64	selected-target-layout	none	return-required-alignment-without-evaluating-a-value	meta.operation	implemented	meta.align_of
-#cache_line_width	target-query	expression	none	target-selection	u64	selected-cache-line-width-or-v0.9-default-64	none	return-the-selected-width-or-the-v0.9-default-of-64	meta.operation	implemented	meta.cache_line_width
+#cache_line_width	target-query	expression	none	target-selection	u64	selected-cache-line-width-or-selected-snapshot-default-64	none	return-the-selected-width-or-the-selected-snapshot-default-of-64	meta.operation	implemented	meta.cache_line_width
 #dedent	string-transform	expression	text:multiline-string-literal	compile-time	string	none	none	remove-common-leading-indentation-deterministically	meta.operation	implemented	meta.dedent
 #else	compile-time-control	paired-branch	paired-with:#if	compile-time	selected-branch-type	none	none	select-only-when-the-paired-if-condition-is-false	meta.operation	implemented	meta.else
 #field_offset	layout-query	expression	type:ordinary-struct|field:declared-field	type-layout	u64	selected-target-layout	none	return-the-final-ordinary-struct-field-offset	meta.operation	implemented	meta.field_offset

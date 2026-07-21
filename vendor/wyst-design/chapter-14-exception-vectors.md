@@ -8,7 +8,7 @@ summary: "Alignment, target-defined vector tables, and target-checked trap-frame
 
 # Chapter 14: Wyst Alignment and Exception Vectors
 
-This chapter specifies the v0.9 alignment contract and the target-defined
+This chapter specifies the selected snapshot alignment contract and the target-defined
 `vector_table` and `trap_frame` declarations. A target profile, rather than
 source annotations, owns the architectural section, alignment, slot or field
 shape, state transitions, and legal execution levels of these declarations.
@@ -386,7 +386,7 @@ The released-v0.8 vector, vector-entry, and trap-frame directive spellings are
 historical syntax only. Appendix B preserves them solely inside its explicitly
 versioned v0.8 grammar snapshot, and the corresponding rows in
 [`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) record their
-v0.9 disposition. They are not aliases, migration forms, contextual tokens, or
+selected snapshot disposition. They are not aliases, migration forms, contextual tokens, or
 inputs to current parser, formatter, diagnostic, editor, or code-generation
 tables.
 

@@ -54,9 +54,9 @@ reserved syntax vocabulary.
 
 ---
 
-## v0.9 Core Declaration Grammar (Current)
+## selected snapshot Core Declaration Grammar (Current)
 
-This section is the current `wyst.language.v0.9` grammar authority for the
+This section is the current selected snapshot grammar authority for the
 foundational declaration and expression surface. The versioned
 [syntax-word catalog](syntax-words.tsv) is the sole keyword, contextual-word,
 and unshadowable-name table; this appendix does not maintain a second word
@@ -98,7 +98,7 @@ commas are invalid.
 `..<`, `..=`, and `..` are indivisible punctuation, not expression operators
 or first-class range values. Later owning grammar items admit them only in
 their range positions. `$` and `?` are reserved tokens. `#` remains reserved
-for authenticated compile-time, target, and layout operations. Wyst v0.9 has
+for authenticated compile-time, target, and layout operations. The selected snapshot has
 no prefix-`%` compiler-operation token or call production: every `%name(...)`
 spelling is rejected uniformly before operation-name lookup. `%` remains an
 ordinary arithmetic remainder token only where the expression grammar admits
@@ -276,7 +276,7 @@ artifact manifest grammar can select one block explicitly, that selected file
 contains exactly one layout declaration, and that declaration contains
 exactly one `LayoutEntry`. `pub` and declaration attributes cannot prefix the
 layout itself or its entry, region, or section members; only `LayoutSymbol`
-admits `pub`. The selected v0.9 layout input otherwise admits only its module
+admits `pub`. The selected snapshot layout input otherwise admits only its module
 declaration and applicable target, requirement, or deny policy; ordinary
 source declarations cannot be siblings of the layout block. The word `layout`
 is contextual only when it begins this
@@ -518,7 +518,7 @@ Modifiers have the exact order shown. A present parameter list is non-empty.
 `pure` cannot be combined with alignment or a stack clause. `AsmValueResult`
 without `: Type` is the bare tied-result form and cannot add a placement.
 Parenthesized results contain at least two values. Statement-only `asm` omits a
-result. `CheckedAsmPrimary` is a current-v0.9 primary-expression alternative
+result. `CheckedAsmPrimary` is a selected-snapshot primary-expression alternative
 and requires a value result or `-> never`.
 
 The instruction body is the parsed generated A64 target sublanguage, not an
@@ -567,7 +567,7 @@ variant uses its enum constructor.
 
 Generic parameter lists occur only on `fn`, `struct`, and `enum`. Parameter and
 argument lists are non-empty. Applications require a complete explicit list of
-full type arguments; v0.9 has no inference, defaults, value parameters,
+full type arguments; selected snapshot has no inference, defaults, value parameters,
 aliases, user-defined bounds, traits, or turbofish. After a value path, a
 matching generic `>` commits only when followed by `(`, `.`, `[`, `)`, `]`,
 `,`, `}`, or end of file. Within an already committed generic list, `>>` and
@@ -727,7 +727,7 @@ access expression operator.
 
 The predecessor categorized-conversion, typed-memory, colon-range, and raw
 descriptor-constructor source forms are removed. Every prefix-primitive form is
-also removed, including the runtime address-of and endian-access rows. A v0.9
+also removed, including the runtime address-of and endian-access rows. A selected snapshot
 parser must reject known and unknown names in that prefix class uniformly, must
 not consult the legacy-disposition manifest during parsing, and must not
 construct current AST nodes for them.
@@ -742,7 +742,7 @@ name/field/element use is constrained semantically by Chapter 8, and
 `#percpu_offset_of(binding)` remains the sole offset query. Predecessor callable
 modifiers, register placement, storage classes, ABI markers, and callable types
 are ordinary invalid syntax rather than productions. No TLS declaration or
-callable/storage type exists in v0.9.
+callable/storage type exists in selected snapshot.
 
 ## Released v0.8 Formal Grammar Snapshot
 

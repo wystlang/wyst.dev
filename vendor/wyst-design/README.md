@@ -27,6 +27,10 @@ and compiler builds. Roadmap work never bumps a release version. A release may
 be nominated at any time, independently of the roadmap; its proposed semantic
 versions are selected from the changes since the previous releases, bound into
 the complete gate, and become released only on publication.
+[`release-identity.md`](release-identity.md) defines the exact canonical input
+sets, domain-separated encodings, independent bump policy, nomination gate, and
+publication transition. Computed digests are carried by compiler outputs and
+are deliberately absent from their own authority inputs.
 
 Each topic describes the language or compiler contract at the design level.
 Feature state, schema versions, and conflict authority are defined in

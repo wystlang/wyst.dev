@@ -8,9 +8,9 @@ summary: "Qualified semantic operations, declared hardware access, target effect
 
 # Chapter 11: Wyst Semantic Operations
 
-## v0.9 Operation Surface (Normative)
+## selected snapshot Operation Surface (Normative)
 
-Wyst v0.9 has **no prefix-`%` user syntax**. Every `%name(...)` spelling,
+The selected snapshot has **no prefix-`%` user syntax**. Every `%name(...)` spelling,
 whether known to v0.8 or not, is rejected before operation-name lookup. `%`
 may appear in internal compiler and IR notation and remains the arithmetic
 remainder operator where expression grammar permits it; neither use creates a
@@ -24,7 +24,7 @@ identity, and implementation state. Target plans join the authenticated A64
 instruction, system-operation, and machine-semantics catalogs rather than
 forming a second instruction or effect table. The separate
 [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv) is only
-release evidence for the exact 88 pre-v0.9 names. It is not grammar, tooling
+release evidence for the exact 88 predecessor names. It is not grammar, tooling
 vocabulary, a migration alias table, or an operation-resolution input.
 
 Architecture operations are qualified-only members of sealed `core.arch`
@@ -104,7 +104,7 @@ atomic matrix; system-register declarations provide `.read()`, `.write(...)`,
 and `.modify(...)`; endian access is an address method; vectors provide
 `.abs()`, `.sqrt()`, and unary negation; and enum values provide `.tag`. The
 bare `fma(a, b, c)` operation and generic `uninit<T>()` constructor are
-unshadowable. `addr_of(local)` is the v0.9 runtime address-materialization
+unshadowable. `addr_of(local)` is the selected snapshot runtime address-materialization
 operation. These surfaces still carry catalog identities even though they do
 not require an architecture-category import.
 
@@ -113,7 +113,7 @@ not require an architecture-category import.
 `MaybeUninit<T>` is opaque storage with exactly `T`'s size, alignment, storage
 class, and calling-convention footprint, but it does not contain a
 compiler-proved initialized `T` until a complete write establishes that fact.
-The complete v0.9 surface is:
+The complete selected snapshot surface is:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -146,7 +146,7 @@ permission for unrelated optimizer assumptions.
 
 `MaybeUninit<T>` is non-copyable and cannot be passed or returned by value,
 embedded in an aggregate, converted, relensed, or used by ordinary value
-operations. v0.9 tracks initialization at whole-object granularity only.
+operations. selected snapshot tracks initialization at whole-object granularity only.
 `addr_of(slot)` yields `@MaybeUninit<T>` without reading it; that address has no
 ordinary `.load()`, `.store()`, conversion, or relensing surface. A verified
 complete producer write may establish initialized state. Foreign or opaque
@@ -495,9 +495,9 @@ O is treated as a memory operation of the corresponding row/column.
 ## 1.3.3 Hardware Register Declarations and Access (v0.9 Normative Declarations)
 
 The declaration, snapshot, field-policy, and compiler-owned method surface
-through **System Register Declarations** below is current v0.9. The later
+through **System Register Declarations** below is current selected snapshot. The later
 prefix-`%` register-call subsections are an explicitly labeled v0.8 snapshot;
-v0.9 uses the declared receiver methods described in the normative operation
+selected snapshot uses the declared receiver methods described in the normative operation
 surface above.
 
 ### Register Maps and MMIO Placement
@@ -693,7 +693,7 @@ The exact tuple must resolve to one active authenticated target-extension row
 with complete compiler semantics and selected-target availability. The literal
 selects that known row and never creates a register or instruction fact.
 Unknown or unnamed tuples are rejected. The predecessor generic encoded
-read/write primitive rows are unavailable in v0.9; there is no raw encoding
+read/write primitive rows are unavailable in selected snapshot; there is no raw encoding
 escape.
 
 Each system-register read, write, and complete modify is a full two-way
@@ -1556,7 +1556,7 @@ requested atomic operation.
 The compile-time `#percpu_offset_of(binding)` query emits only the final
 template byte offset and does not acquire a base.
 
-Compound assignment is not one such operation: v0.9 rejects it for `per_cpu`
+Compound assignment is not one such operation: selected snapshot rejects it for `per_cpu`
 storage and requires separate direct read and write expressions, each with its
 own fresh base acquisition.
 
@@ -1577,9 +1577,9 @@ initialization template and access instruction sequence only: it performs no
 replication, allocation, base installation, startup copy, or ordinary-global
 collapse.
 
-Wyst v0.9 has no TLS storage class or TLS base mechanism. The predecessor TLS
+The selected snapshot has no TLS storage class or TLS base mechanism. The predecessor TLS
 declaration and offset-query rows, `.tls` template generation, `PT_TLS`, and
-ELF TLS relocations are outside the v0.9 language and target contract.
+ELF TLS relocations are outside the selected snapshot language and target contract.
 
 ### Released v0.8 Per-CPU and TLS Model (Historical)
 
@@ -1937,17 +1937,17 @@ enablement, failure, and source-report identity. In particular,
 may acquire a realized frequency; `cpu.read_counter()` itself does not read
 that register or authenticate a frequency value.
 
-The v0.9 descriptor result-width contract is the closed range `1..=64`. The
+The selected snapshot descriptor result-width contract is the closed range `1..=64`. The
 declared width may be narrower than the generated system-register carrier, but
 may never be wider. The operation still returns `u64`: bits below the declared
 width are the counter value and all higher bits are zero. Wrapping is modulo
 `2^width`.
 
-Runtime enablement is also a closed v0.9 vocabulary. It describes a condition
+Runtime enablement is also a closed selected snapshot vocabulary. It describes a condition
 that the execution environment must already satisfy; it is never an implicit
 compiler setup sequence.
 
-| Descriptor value | v0.9 meaning |
+| Descriptor value | selected snapshot meaning |
 | --- | --- |
 | `none` | No additional runtime-enablement condition is declared. |
 | `CNTKCTL_EL1.EL0VCTEN_when_EL0` | An EL0 read requires the generated `CNTKCTL_EL1.EL0VCTEN` dependency to permit virtual-counter access. |

@@ -111,7 +111,7 @@ map, verified typed IR, callable ABI classification and obligations, machine
 image, register-allocation facts, final frame/resource facts, relocation facts,
 and artifact bytes.
 
-For a v0.9 function, the report's `callableIdentity` block exposes the calling
+For a selected snapshot function, the report's `callableIdentity` block exposes the calling
 convention; each positional parameter's type, explicit register placement, and
 `noescape` bit; and the result type, explicit result register, and `never`
 state. Declaration parameter names are deliberately absent from that identity

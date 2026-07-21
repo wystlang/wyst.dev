@@ -17,9 +17,9 @@ Allocation is described as visible storage contracts rather than hidden
 language behavior. The memory model and the storage and library contracts
 remain separate concerns.
 
-## v0.9 Dynamic Container Role (Current)
+## selected snapshot Dynamic Container Role (Current)
 
-The v0.9 dynamic container is the ordinary explicit generic declaration with
+The selected snapshot dynamic container is the ordinary explicit generic declaration with
 canonical identity `core.collections.DynamicArray`. It is not a prelude type
 and must be obtained from the sealed compiler-provided module before its local
 binding is applied as `DynamicArray<T>` (or through an import qualifier/alias):
@@ -74,7 +74,7 @@ stored binding still has an explicit initializer, and allocation, capacity,
 growth, failure, movement, and storage identity remain visible in the selected
 storage API.
 
-The predecessor dynamic-array type marker is removed syntax in v0.9; it is
+The predecessor dynamic-array type marker is removed syntax in selected snapshot; it is
 neither an alias nor a second
 accepted spelling. There is no transition mode in which both forms denote the
 same type.

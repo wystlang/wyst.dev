@@ -20,7 +20,7 @@ modules, layout declarations, boot entry, and ABI classification.
 > those spelling classes with address methods, named conversions, and
 > `address.slice(elements = count)`.
 
-## v0.9 Semantic Object Units And Canonical Symbol Identities (Current)
+## selected snapshot Semantic Object Units And Canonical Symbol Identities (Current)
 
 `wyst.objectInterface.v2` specifies the identity and generic-ownership contract used by the current
 final-image compiler and by every later semantic interface, relocatable object,
@@ -31,7 +31,8 @@ writer must transport the same identities; it may not reconstruct a smaller
 key from source names or ELF fields.
 
 Each semantic module has exactly one `wyst.semantic-interface.v2` variant for
-the selected language and interface schemas, authenticated target semantic
+the selected language-snapshot schema and exact snapshot identity, interface
+schema, authenticated target semantic
 catalog and support manifest, Native ABI, executable-environment identity,
 layout/root ABI and admission identity, and safety/trust/proof/hardening tuple.
 The pre-safety-profile state writes
@@ -45,7 +46,8 @@ The module-specific `wyst.object-member-identity.v1` digest contains the
 semantic-interface identity plus the object schema, code-generation profile,
 the four safety/trust/proof/hardening slots, debug/unwind/frame policies,
 backend identity, and generated-input identity. The separate homogeneous
-`wyst.object-compatibility-key.v1` contains language/interface/object schemas,
+`wyst.object-compatibility-key.v2` contains the language-snapshot schema and
+exact snapshot identity, interface/object schemas,
 target semantic catalog, support manifest, Native ABI, environment/provider
 tuple, profile, safety/trust/proof/hardening tuple, debug/unwind/frame policies,
 and backend identity. It deliberately excludes semantic-module, interface-
@@ -83,14 +85,14 @@ template-relative offset described below. Runtime core instances are derived
 storage selected through the target execution environment. They have no linker
 symbol, export alias, or independent semantic declaration identity.
 
-## v0.9 Generic Instantiation Ownership And Transport (Current Contract)
+## selected snapshot Generic Instantiation Ownership And Transport (Current Contract)
 
 `wyst.generic-ownership.v1` specifies generic ownership for the current semantic
 interfaces, relocatable objects, and archives are implemented. It consumes
 `wyst.genericInstantiationKey.v0.9` from Chapter 6 unchanged. The key is the
 canonical semantic declaration identity plus the complete ordered concrete
 type-argument list and complete ordered value-argument list; the latter is
-empty in v0.9. No interface, object writer, archive index, linker, cache, or
+empty in selected snapshot. No interface, object writer, archive index, linker, cache, or
 backend may select a generic from source spelling, parse `__wg` mangling back
 into semantics, omit an argument, or define a second key. A function-pointer
 type argument includes its calling convention, parameter/result contract, and
@@ -212,7 +214,7 @@ milestones serialize and execute this already-versioned contract; they may not
 invent a body format field, placeholder body semantics, fallback key,
 archive-order rule, or linker-side instantiator.
 
-## v0.9 `per_cpu` Object Contract (Current)
+## selected snapshot `per_cpu` Object Contract (Current)
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 In the current whole-program `ET_EXEC` mode, every accepted `per_cpu var`
@@ -241,12 +243,12 @@ The `.percpu` bytes are an immutable initialization template even when the
 current static-image transport marks the containing load segment writable for
 a later runtime copier. The template is never the live current-core instance.
 The compiler emits no copied instances, allocation metadata, base setup,
-startup copy, or ordinary-global alias. A v0.9 source contributes no TLS
-payload, symbol, relocation, or size export. A selected v0.9 named layout emits
+startup copy, or ordinary-global alias. A selected snapshot source contributes no TLS
+payload, symbol, relocation, or size export. A selected snapshot named layout emits
 no `.tls` section or `PT_TLS`; a selected released-v0.8 layout may retain its
-historical empty `.tls` compatibility row without admitting v0.9 TLS storage.
+historical empty `.tls` compatibility row without admitting selected snapshot TLS storage.
 
-## v0.9 Placement and Initialization Attributes (Current)
+## selected snapshot Placement and Initialization Attributes (Current)
 
 The active placement surface is `#[align(N)]`, `#[section("NAME")]`,
 `#[init(order = N)]`, and `#[cache_isolated]`. These are hard compiler
@@ -295,7 +297,7 @@ shares no cache line with another live object. Padding is not part of the
 source type or symbol size, creates no retention root, and implies no atomicity,
 ordering, volatility, synchronization, or visibility semantics.
 
-## v0.9 Named Layout Object Contract (Current)
+## selected snapshot Named Layout Object Contract (Current)
 
 An artifact-owned manifest layout clause selects exactly one named `layout`
 block from its layout file. Its `entry` member resolves one exact
@@ -372,11 +374,11 @@ Wyst's integrated compiler reads a set of source modules and emits a single
 binary image in the current implemented artifact mode. There is no separate
 assembler, no separate linker, and no intermediate object files written to disk
 for the implemented `ET_EXEC` mode. Relocatable object files are a
-future-version normative R8 surface (`wyst.language.v0.8` target 32) and do not
+future-version normative R8 surface (planned target 32) and do not
 override the current single-image rules until Chapter 16 is updated for that
 artifact mode.
 
-## v0.9 Suspension And Context Summary Closure (Current)
+## selected snapshot Suspension And Context Summary Closure (Current)
 
 Before any body-independent callable fact is admitted, one authenticated
 sidecar atomically retains its exact or conservative effect bound, the bound's
@@ -456,7 +458,7 @@ are unavailable, so no current public object or archive emitter is claimed.
 That future producer and every consumer must use the exact v2 contract rather
 than inventing a bodyless-call exception or silently accepting v1.
 
-## v0.9 Reserved Static-Library Contract
+## selected snapshot Reserved Static-Library Contract
 
 The project-manifest grammar accepts `static_library` with one source-module
 root closure, primary archive path, companion semantic-interface path, target,
@@ -591,7 +593,7 @@ weaken it.
 
 `.percpu` is placed once in the image. A later runtime may copy its immutable template bytes
 to live instances, but the compiler performs no replication and the template
-is not itself live storage. `.tls` is not a v0.9 section; any occurrence in a
+is not itself live storage. `.tls` is not a selected snapshot section; any occurrence in a
 released v0.8 artifact is historical compatibility material. See §7.
 
 ---
@@ -603,7 +605,7 @@ The `.symtab` includes one entry per:
 - emitted address-bearing top-level declaration (function, label, constant,
   or ordinary mutable global) as a local semantic/debug identity, independently
   of source `pub`. `per_cpu` entries are the local offset symbols defined by the
-  current v0.9 contract above.
+  current selected snapshot contract above.
 - each explicit `export` mapping as a distinct external alias of its local
   target, with the requested strong or weak binding.
 - Explicit typed layout symbol (`start`, `end`, `size`, or a typed numeric
@@ -642,7 +644,7 @@ prologue, epilogue, or return semantics from a label symbol; source-level
 `STT_TLS` is **not** used. A `per_cpu` entry is a local `STT_OBJECT` whose
 value is its byte offset within `.percpu`; it is an offset identity rather than
 a process address. The selected target access sequence consumes that offset.
-Wyst v0.9 emits no TLS symbol.
+The selected snapshot emits no TLS symbol.
 
 ### 4.3 Internal And External Names
 
@@ -781,7 +783,7 @@ enumerated here so that:
 
 - `R_AARCH64_GOT_*` family — no GOT in static linking.
 - `R_AARCH64_TLSGD_*`, `R_AARCH64_TLSDESC_*` — no dynamic TLS.
-- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in v0.9.
+- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in selected snapshot.
 - `R_AARCH64_TLSIE_*` — initial-exec model not used.
 - `R_AARCH64_COPY`, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT` — dynamic linker only.
 
@@ -939,7 +941,7 @@ realization.
 
 The released-v0.8 TLS offset-query row, `.tls` template, `__tls_size`,
 TPIDR_EL0, and associated address-materialization rules are historical and
-produce no v0.9 artifact.
+produce no selected snapshot artifact.
 
 ---
 
@@ -982,7 +984,7 @@ Declarations". The rules relevant to the object format are:
   are reserved. User code cannot target them with `#[section(...)]`;
   canonical sections are written by omitting the attribute. `.tls` remains
   reserved so removed v0.8 TLS syntax cannot be recreated as a misleading
-  custom section, and it is not emitted by v0.9.
+  custom section, and it is not emitted by selected snapshot.
 - **Flags are derived** from the declaration kind (function → `ALLOC |
   EXECINSTR`; constant → `ALLOC`; mutable initialized → `ALLOC | WRITE`;
   zero-filled mutable storage → `ALLOC | WRITE` with `SHT_NOBITS`). The ELF
