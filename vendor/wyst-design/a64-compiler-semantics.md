@@ -146,8 +146,8 @@ Functional execution remains independent from static differential evidence.
 At conformance-ledger level, all 330 active rows are covered by pinned
 independent QEMU 11.0.0 evidence; none carries an unavailable-oracle gap or
 claims an authenticated reference vector. The 308 instruction rows divide
-into 302 expected-value paths in `item50-execution`, five state paths in
-`item50-stateful`, and the `SVC` trap structural path in `trap-frame`. The 13
+into 302 expected-value paths in `a64-instruction-execution`, five state paths in
+`a64-stateful-execution`, and the `SVC` trap structural path in `trap-frame`. The 13
 active general-purpose source-form rows project their corresponding instruction evidence. The
 same `trap-frame` fixture pins both active structural rows by observing the
 selected `current_el_spx_sync` vector slot and the complete canonical
@@ -166,7 +166,7 @@ shippable compiler targets: dependency, revision, conflict, and future-feature
 rules still apply, while unresolved authority residual constraints are bypassed
 only at this named test boundary and covered by a per-target selection digest.
 
-Allocation evidence `wyst.a64.checked-asm-allocation.item50.v1` includes the
+Allocation evidence `wyst.a64.checked-asm-allocation.v1` includes the
 generated maximum-cardinality scratch family: the complete verifier accepts a
 28-register no-spill assignment, rejects the 29-member family with a recorded
 conflict core, and accepts every one-member deletion. Paired witnesses also

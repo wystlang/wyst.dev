@@ -122,10 +122,16 @@ commit.
 
 ## GitHub verification and release
 
-`.github/workflows/site.yml` runs for every pull request, every push to `main`,
-and manual dispatches. Its `Verify` job has read-only repository permissions and
-receives no deployment secrets. It installs the lockfile exactly, runs
-`npm run check`, which includes build-manifest verification.
+`.github/workflows/site.yml` runs for every pull request, every push to `next`
+or `main`, and manual dispatches. Its `Verify` job has read-only repository
+permissions and receives no deployment secrets. It installs the lockfile
+exactly and runs `npm run check`, which includes build-manifest verification.
+
+`next` is the integration branch for frequent roadmap-driven updates. Pushes to
+`next` stop after `Verify`; they do not upload release artifacts, enter the
+`production` environment, or deploy. A release is the deliberate act of merging
+`next` into protected `main`. The resulting `main` push verifies the release
+commit again before any production work begins.
 
 For `main`, that job uploads the exact `dist/` tree as a one-day GitHub artifact,
 including the normally excluded `.well-known/build.json`. The production job
@@ -183,11 +189,12 @@ third-party action in the workflows is pinned to a full commit SHA.
 ## Repository and production configuration
 
 The public repository and production deployment path are already configured.
-`main` requires a pull request and the exact `Verify` status check. The
-`production` environment is restricted to `main` and holds the Cloudflare
-account identifier and narrowly scoped Workers deployment token. GitHub Actions
-is the sole release authority; Cloudflare Workers Builds and Git deployment
-remain disabled.
+Day-to-day work is pushed to `next`. `main` requires a pull request and the
+exact `Verify` status check, so merging `next` into `main` is the manual release
+gate. The `production` environment is restricted to `main` and holds the
+Cloudflare account identifier and narrowly scoped Workers deployment token.
+GitHub Actions is the sole release authority; Cloudflare Workers Builds and Git
+deployment remain disabled.
 
 The authoritative routing, client-policy, and deployment-ownership requirements
 are in the [Cloudflare production runbook](ops/cloudflare.md). Update that

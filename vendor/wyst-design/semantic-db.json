@@ -2136,7 +2136,7 @@
       "knownUnsupportedEncodingRowsCovered": 4023
     },
     "allocationEvidence": {
-      "id": "wyst.a64.checked-asm-allocation.item50.v1",
+      "id": "wyst.a64.checked-asm-allocation.v1",
       "testSource": "wync/src/arm64/backend/tests/checked_asm_evidence.rs",
       "maximumSatisfiableScratchFamilyMembers": 28,
       "minimalUnsatisfiableFamilyMembers": 29,
@@ -2282,7 +2282,7 @@
     "schema": "wyst.semantic-operation-catalog.v0.9",
     "state": "implemented",
     "source": "design/semantic-operation-catalog.tsv",
-    "digest": "sha256:e2dea16ccdbd4d07a82202fc3cd0cebf550e178cb6e71c269e126638ff0a5a4c",
+    "digest": "sha256:d7d36eb08ec67d4f75f389ecff99f21eb6019890c4bc92c77b5e3125d848bef1",
     "legacyRemovalAudit": "design/legacy-percent-removal-audit.tsv",
     "legacyRemovalCount": 88,
     "legacyRemovalDigest": "sha256:57be6ba82f91901c18927a1dbf6d801a35ba81f156f1aa89446df932f4d8f5e0",
@@ -2307,12 +2307,12 @@
     "schema": "wyst.metaOperations.v0.9",
     "state": "implemented",
     "source": "design/meta-operation-catalog.tsv",
-    "digest": "sha256:646b27d5c30023d2da83e49da881a08aac4c5247734f9802e5861f6974efb908",
+    "digest": "sha256:22330e7f6d38afffc91d3c670b48c7c095a1f0e69903a9d664689ddd780f6e60",
     "count": 14,
     "legacyRemovalAudit": "design/legacy-hash-removal-audit.tsv",
     "legacyRemovalCount": 53,
     "legacyRemovalDigest": "sha256:5787c24f6e069e8eefcac2ed04bf1497f279d4f4bf259724dd7ca9a19a07b018",
-    "legacyRemovalManifestDigest": "sha256:48e0cb2b0b994f939a06735257a6339f66f499eec19c24f498f0f2bb07f9b278",
+    "legacyRemovalManifestDigest": "sha256:1d70c9914263ca255300bcb79066a380f2fbfa112d5f507938466d927e825918",
     "legacyParserCompatibility": false,
     "legacyDiagnosticCompatibility": false,
     "editorPublishesLegacyNames": false

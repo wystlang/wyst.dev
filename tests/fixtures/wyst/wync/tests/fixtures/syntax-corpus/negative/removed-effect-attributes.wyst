@@ -2,7 +2,7 @@ module removed_effect_denial
 #deny(trap)
 fn denied() {}
 
-// item56-explicit-negative-case
+// effect_contracts-explicit-negative-case
 module removed_frame_assertion
 #frame(max_bytes = 0)
 fn framed() {}

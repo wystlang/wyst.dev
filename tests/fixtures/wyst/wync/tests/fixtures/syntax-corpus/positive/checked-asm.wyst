@@ -1,4 +1,4 @@
-module syntax.item49
+module syntax.checked_asm
 
 const ASM_ALIGNMENT: u64 = 16
 
@@ -17,7 +17,7 @@ fn inspect(location_address: @u64, expected: u64, desired: u64) -> u64 {
     old_value = expected,
     new_value = desired,
     retry_limit: imm = 4,
-    helper_symbol: symbol = syntax.item49.helper,
+    helper_symbol: symbol = syntax.checked_asm.helper,
     scratch status: u32 in w9,
   ) -> (
     observed: u64,

@@ -1,4 +1,4 @@
-module syntax.item49_legacy
+module syntax.checked_asm_legacy
 
 fn legacy(value: u64) {
   #asm(effects: none) {

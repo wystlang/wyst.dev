@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "70073fc49b7334288f05498870bd5d328a29cde0",
-  "snapshotSha256": "1b6a7e7b4e7a54d8be6968c75f8e9b4bc31fdc8d3236c402012e61bfc74ae5ab",
+  "sourceCommit": "15a9e8449d57c48b182fa349a1b98aae775697ea",
+  "snapshotSha256": "30e15fa1ed838651e40ea5d63c9d5cad803addeeeab442001107c84969073381",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
       "sha256": "6211bec4371902f8c6a97abf490a70c0c0b731a0bfc8abd584457b38710ae110",
@@ -20,8 +20,8 @@
       "size": 2455
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/manifest.tsv": {
-      "sha256": "4b4deff65b719203cd575e6e66d27dd3557b44e438f11c7b41158ee8aa07ccdc",
-      "size": 9987
+      "sha256": "ad012dfeea2e0ecc850735d5879801c019ae824115ba25288b9fa243ec71cde7",
+      "size": 9917
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/atomic-order-spelling.wyst": {
       "sha256": "49d69df6bcf348d301e333cefa6d2071e6e33520da7998c9b44571f020f98d4d",
@@ -51,13 +51,9 @@
       "sha256": "1711176c8c098138ad7a9f8487369070a89022820d782cfd2b76ee036029f0bd",
       "size": 90
     },
-    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/item49-legacy-asm-sections.wyst": {
-      "sha256": "d0bf6b3fab93b788fba3b02c0b366796783f5aae63488fb80dcbdf9e147385bf",
-      "size": 200
-    },
-    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/item57-weak-import.wyst": {
-      "sha256": "5326618cb652f3475071c421612fdf689e607c5dc8bd26300646e014e77c55e0",
-      "size": 95
+    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/legacy-asm-sections.wyst": {
+      "sha256": "fb42006f51050bd62ca848e69f227e92d63c557c3d799927558b69418a99d396",
+      "size": 205
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/legacy-bitfield-declaration.wyst": {
       "sha256": "f8b937621eda1c84539712e1f993d23183aaec0faf17b0fa222b53dc09316e9a",
@@ -120,8 +116,8 @@
       "size": 95
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/removed-effect-attributes.wyst": {
-      "sha256": "1cb97ed1ac5671f6e2c869617508848554d5bd5158f05313e9115ca366504993",
-      "size": 158
+      "sha256": "a6a61f76f32beb491a78d45154dc9285d91ec7828a3fd562b5ddb2921223f9d2",
+      "size": 168
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/removed-exact-attribute.wyst": {
       "sha256": "888cc2e8222e316ee82ced3f5d2e3b3280ad8c0dce0c8052ef0a2197bd78ad49",
@@ -255,6 +251,18 @@
       "sha256": "6963676ba53489408ed6870ada46fc0128fa96327b3088b69fcf68f49a1eef5f",
       "size": 68
     },
+    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/negative/weak-import.wyst": {
+      "sha256": "92eb334c9e39421d062e1d75c951bee3d2c2551900345c531fad9ecefb65cd38",
+      "size": 106
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/callable-storage.wyst": {
+      "sha256": "0de61faa765706eecf28a97c5ed82da73ec4303b77a8030f30ff41bd040c388e",
+      "size": 712
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/checked-asm.wyst": {
+      "sha256": "e22caf9ce0c9fc2ca506be2a61be71e51eebf07f23e2ea955161a28ae4c2991a",
+      "size": 1115
+    },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/classifier-numeric-context.wyst": {
       "sha256": "3dde2c0c5e319f475523c0f1f87e9fbb3b2b97d44655b3b67e0185650f44864a",
       "size": 191
@@ -271,17 +279,9 @@
       "sha256": "55b1c35d5f01796798ea705fba5b92da881a46c3d029dfcb44e9f51c570c7a07",
       "size": 135
     },
-    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/item42-callable-storage.wyst": {
-      "sha256": "fa4943dc0ca7a83920c8e81936a29ce458f54e07c74bac3a9e164fa4f7c2a10d",
-      "size": 702
-    },
-    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/item49-checked-asm.wyst": {
-      "sha256": "1290b5294b990bbd2cabef5b57ae0c11aa8f511b7ec5d30588fd228c218e21b7",
-      "size": 1105
-    },
-    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/item57-linker-boundaries.wyst": {
-      "sha256": "3a7b3ab5cbca1bd57a82fa533421b9b873973a34ae24e16f131ae9e021d6d068",
-      "size": 312
+    "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/linker-boundaries.wyst": {
+      "sha256": "a38d3612c3454e5df070fd880fcbf8333fd7071011752749aeb1039e4a971c06",
+      "size": 323
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/positive/precedence-is.wyst": {
       "sha256": "75bf77905297c87730c03681a4d3c108076e414606da4b8a1b641a887b5cd599",
@@ -292,7 +292,7 @@
       "size": 139
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "0e009f8ca9eca48ac377dbd16b8ed0bd62fa99ad6dbd1152ef72cecb8e0074ee",
+      "sha256": "7384d899d62de4a3134df60df738f3580c33786fbe2b812f81c0d7ada657485b",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -300,24 +300,24 @@
       "size": 17080
     },
     "vendor/wyst-design/a64-compiler-semantics.md": {
-      "sha256": "eecc2ab61dfd9faa44ab295408240bf8c052654ba31febd14e36d0653b6b3f19",
-      "size": 20643
+      "sha256": "e5e747fb73b2c7895d219b7f8b1976ff4f6552dd857b0b7fcb64daacba77f243",
+      "size": 20652
     },
     "vendor/wyst-design/appendix-a-ir.md": {
       "sha256": "efc6d6a5d3bacc61eb0fc373187e5711443d9e5d7173bd7b3438ab3747643951",
       "size": 110232
     },
     "vendor/wyst-design/appendix-b-grammar.md": {
-      "sha256": "bc30274e51c400c5489a8db3c396916819d9d738d5a03c2472d0d2c8ee0e5d17",
-      "size": 92639
+      "sha256": "89105ae224186967649fda995b3317700daeacfa3d7389b92eac4882c3a9497b",
+      "size": 92652
     },
     "vendor/wyst-design/appendix-c-doc-example-contracts.md": {
       "sha256": "0950eeb7ad2fdad80d01b480e3fe190777d6389a254a227fb6c3164ee567c770",
       "size": 3656
     },
     "vendor/wyst-design/attribute-catalog.tsv": {
-      "sha256": "3bc98110f7932a0254d33ad12f326d4945d31a0567e583452aacac8312f001a6",
-      "size": 2118
+      "sha256": "24ac2cfca64b8781e3b430290b4f19aa430c78fedd8afd1706357da2273cf180",
+      "size": 2158
     },
     "vendor/wyst-design/chapter-01-language-design.md": {
       "sha256": "a6d1dc2fe4d122cbc4cf4815ac605f0dcc5872627090c0a4f6373cc7bfe06082",
@@ -348,8 +348,8 @@
       "size": 32188
     },
     "vendor/wyst-design/chapter-08-functions.md": {
-      "sha256": "6f2aa0262e09b8ba1423c4568e72a0e1b58cb270f7c0db6e44d6b2b7e96949fa",
-      "size": 99191
+      "sha256": "a9d7d0d23cd7b5c8e54791dc20245b9ea7e96af9c03f0c3f246335e56df370b5",
+      "size": 99200
     },
     "vendor/wyst-design/chapter-09-memory-model.md": {
       "sha256": "081ae8511a5a0999b325cefd7a9a320e0833eeb6386ac4af0b0bc627e35ee00a",
@@ -420,8 +420,8 @@
       "size": 11729
     },
     "vendor/wyst-design/conformance-index.md": {
-      "sha256": "0553b1a0793ab9e8736bbe7fb97cd013a05c623a5065a79d8269f3058ae17f42",
-      "size": 190561
+      "sha256": "367fc72d654deaae74398e3831d44c5e427e7ef33feb647e874f03fb0d243e5b",
+      "size": 196474
     },
     "vendor/wyst-design/declaration-roles.tsv": {
       "sha256": "9243dfef0ee5b7656b3298a315cc6f30ed873cd0d5728f43121a5e679cf2f883",
@@ -432,12 +432,12 @@
       "size": 6690
     },
     "vendor/wyst-design/meta-operation-catalog.tsv": {
-      "sha256": "646b27d5c30023d2da83e49da881a08aac4c5247734f9802e5861f6974efb908",
-      "size": 2991
+      "sha256": "22330e7f6d38afffc91d3c670b48c7c095a1f0e69903a9d664689ddd780f6e60",
+      "size": 3033
     },
     "vendor/wyst-design/semantic-db.json": {
-      "sha256": "92b9ba412df3fc97dd7dc846cd31341a8f1137794df7b7f332ddad8fca8fa23f",
-      "size": 219346
+      "sha256": "699a9b7bb86d5ad2eced57170aef294a029a147a21750c363307420440c01da0",
+      "size": 219339
     },
     "vendor/wyst-design/source-of-truth.md": {
       "sha256": "99602983b92fcd4452b46cf0d18993377101a9df7bb5efbd5e7160a6e3fc5a16",

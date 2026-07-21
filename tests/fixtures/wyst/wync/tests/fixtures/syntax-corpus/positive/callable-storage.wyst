@@ -1,4 +1,4 @@
-module syntax.item42
+module syntax.callable_storage
 import core.arch { cpu }
 
 #[schedule(source)]
