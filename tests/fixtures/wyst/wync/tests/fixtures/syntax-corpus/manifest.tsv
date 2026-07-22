@@ -8,10 +8,10 @@ positive	parse	grouped-module-imports	imports,grouped-imports,version-gating	pos
 positive	parse	unreserved-predecessor-identifiers	identifiers,version-gating	positive/unreserved-predecessor-identifiers.wyst	-
 positive	parse	discard-binding-positions	bindings,discard,destructuring,match	positive/discard-binding-positions.wyst	-
 positive	parse	classifier-numeric-context	literals,version-gating	positive/classifier-numeric-context.wyst	-
+positive	parse	typed-outcomes	outcomes,operations,match,effects,version-gating	positive/typed-outcomes.wyst	-
 negative	parse	malformed-attribute-group	malformed-directives,recovery	negative/malformed-attribute-group.wyst	error[E0101]|expected ']'
 negative	parse	generic-value-argument	generics,version-gating	negative/generic-value-argument.wyst	error[E0101]|compile-time value generic arguments are not supported
 negative	parse	compile-time-if-missing-block	compile-time-if,malformed-directives	negative/compile-time-if-missing-block.wyst	error[E0101]|expected '{'
-negative	parse	reserved-postfix-question	version-gating,malformed-directives	negative/reserved-postfix-question.wyst	error[E0101]|reserved token '?'
 negative	parse	legacy-asm-sections	checked-asm,signature-asm,version-gating	negative/legacy-asm-sections.wyst	error[E0110]|unknown directive
 negative	parse	weak-import	linker-boundaries,imports,version-gating	negative/weak-import.wyst	error[E0101]|weak symbol imports are not supported
 negative	parse	per-entry-public-grouped-module-import	imports,grouped-imports,version-gating	negative/per-entry-public-grouped-module-import.wyst	error[E0101]|import group entries cannot have individual 'pub' modifiers
@@ -26,6 +26,7 @@ negative	parse	legacy-layout-directives	layouts,version-gating	negative/legacy-l
 negative	parse	legacy-bitfield-declaration	bitstructs,version-gating	negative/legacy-bitfield-declaration.wyst	error[E0101]
 negative	check	legacy-dynamic-array-type	dynamic-arrays,version-gating	negative/legacy-dynamic-array-type.wyst	error[E0228]|unknown name 'dynamic'
 negative	parse	removed-switch-case	enums,match,version-gating	negative/removed-switch-case.wyst	error[E0101]
+negative	parse	removed-partial-match	enums,match,version-gating	negative/removed-partial-match.wyst	error[E0110]|unknown directive
 negative	parse	legacy-qualified-enum-match-pattern	enums,match,version-gating	negative/legacy-qualified-enum-match-pattern.wyst	error[E0101]|match patterns use dot-prefixed enum variants
 negative	check	removed-repeat-statement	control-flow,loops,version-gating	negative/removed-repeat-statement.wyst	error[E0237]|statement-position expression must be a function call or runtime primitive call
 negative	parse	legacy-thread-local-declaration	storage,version-gating	negative/legacy-thread-local-declaration.wyst	error[E0101]

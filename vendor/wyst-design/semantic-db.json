@@ -9,6 +9,8 @@
     "nativeAbi": "wyst.nativeAbi.v0.8",
     "objectInterface": "wyst.objectInterface.v2",
     "semanticInterface": "wyst.semantic-interface.v2",
+    "materializedSum": "wyst.materializedSum.v1",
+    "operationProtocol": "wyst.operationProtocol.v1",
     "semanticObject": "wyst.semantic-object.v2",
     "objectMemberIdentity": "wyst.object-member-identity.v1",
     "objectCompatibilityKey": "wyst.object-compatibility-key.v2",
@@ -348,6 +350,13 @@
     }
   ],
   "features": [
+    {
+      "id": "language.typed-outcomes-and-progress",
+      "state": "implemented",
+      "selection": "selected-snapshot",
+      "owner": "design/chapter-26-errors-and-progress.md",
+      "catalogs": ["design/c-operation-adapter-catalog.tsv", "design/generic-bounds.tsv", "design/sealed-core.tsv", "design/meta-operation-catalog.tsv", "design/syntax-words.tsv"]
+    },
     {
       "id": "release.semantic-version-and-exact-identity",
       "state": "implemented",
@@ -2344,8 +2353,8 @@
     "schema": "wyst.metaOperations.v0.9",
     "state": "implemented",
     "source": "design/meta-operation-catalog.tsv",
-    "digest": "sha256:8e67c1d72899914267d20ede202c657023b0161c118e8f51ba0a93cf18e7a7f9",
-    "count": 14,
+    "digest": "sha256:b3966ee5fa12c12b419aae9e2aaf9f8f164dbb58ddb26fead7be8ddb6878e017",
+    "count": 15,
     "legacyRemovalAudit": "design/legacy-hash-removal-audit.tsv",
     "legacyRemovalCount": 53,
     "legacyRemovalDigest": "sha256:5787c24f6e069e8eefcac2ed04bf1497f279d4f4bf259724dd7ca9a19a07b018",
@@ -4767,6 +4776,32 @@
       "cross-machine-verdict-without-versioned-calibration",
       "freshness-taxonomy"
     ]
+  },
+  "outcomeProtocolContract": {
+    "authority": "design/chapter-26-errors-and-progress.md",
+    "cAdapterCatalog": "design/c-operation-adapter-catalog.tsv",
+    "categories": ["option", "materialized-result", "live-operation", "trap"],
+    "implicitConversions": false,
+    "recoveryInteraction": "ordinary-explicit-noescape-typed-decision-capability",
+    "progress": {
+      "synchronous": true,
+      "serial": true,
+      "sameStrand": true,
+      "unbuffered": true,
+      "notificationOnly": true,
+      "replyValue": false,
+      "capture": "zero-capture-fresh-report-payload-or-explicit-caller-owned-storage",
+      "effect": "handler_invoke",
+      "ceiling": "required-concrete-closed-subset-checked"
+    },
+    "terminalCommitment": "payload-move-then-label-commit-then-reverse-lexical-defer-cleanup-then-handler",
+    "cancellationRequest": "ordinary-explicit-input",
+    "sumLayout": "tag-plus-largest-fixed-layout-movable-payload-storage-with-deterministic-zeroed-inactive-bytes",
+    "fatalExtraction": "core.collections.expect_or_trap(value,reason:u16)-via-#fatal_trap",
+    "cAdapters": ["status-out", "tagged-out"],
+    "records": ["wyst.materializedSum.v1", "wyst.operationProtocol.v1"],
+    "futureTransportOwners": ["public-interface", "relocatable-object", "archive", "linker"],
+    "forbidden": ["ambient-last-status", "dynamic-handler-search", "reply-bearing-progress", "hidden-retry", "hidden-allocation", "general-effect-polymorphism", "alternate-recovery-syntax", "general-word-only-enum-payload"]
   },
   "reportSchemas": [
     { "schema": "wync.explain.lowering.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.lowering.v1" },

@@ -60,10 +60,12 @@ word catalog. [attribute-catalog.tsv](attribute-catalog.tsv) is the closed curre
 declaration-attribute registry; its rows remain inactive until their semantic
 owner changes the row state atomically with the implementation and evidence.
 [meta-operation-catalog.tsv](meta-operation-catalog.tsv) is the closed active
-14-form compiler/meta-operation surface. The complete 53-name predecessor
+15-form compiler/meta-operation surface. The complete 53-name predecessor
 mapping is isolated in the non-parser
 [legacy-hash-removal-audit.tsv](legacy-hash-removal-audit.tsv); it creates no
 diagnostic, alias, rewrite, completion, hover, or highlighting path.
+[c-operation-adapter-catalog.tsv](c-operation-adapter-catalog.tsv) is the closed
+status/out and tagged/out adapter-profile registry owned by Chapter 26.
 [generic-bounds.tsv](generic-bounds.tsv) is the closed active capability-bound
 registry consumed by parsing, instantiation, diagnostics, and tooling.
 [sealed-core.tsv](sealed-core.tsv) authenticates compiler-bundled core
@@ -196,6 +198,7 @@ region classification.
 | 23      | [chapter-23-debug-info.md](chapter-23-debug-info.md)                             | Debug information goals, DWARF sections, DIEs, locations, and determinism.                                                         |
 | 24      | [chapter-24-scale.md](chapter-24-scale.md)                                       | Scale measurement, deterministic rebuild benchmarking, and non-goals.                                                              |
 | 25      | [chapter-25-compilation-phases.md](chapter-25-compilation-phases.md)             | Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters.                       |
+| 26      | [chapter-26-errors-and-progress.md](chapter-26-errors-and-progress.md)           | Materialized outcomes, live operations, exact forwarding, progress, recovery, cancellation, cleanup, traps, and C adapters.         |
 
 ## Appendices
 

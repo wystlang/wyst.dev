@@ -268,3 +268,11 @@ awkward edge placements without relying on AST-only attachment heuristics.
 Project-wide formatting and in-place rewrite flags are outside the formatter
 surface. `wync check` remains validation-only and does not rewrite
 source files or report style-only failures.
+
+Outcome diagnostics use the canonical typed diagnostic registry. Check mode
+rejects category conversion, first-class operations, missing/duplicate
+handlers, mismatched forwarding, illegal `?`, nonexhaustive or mismatched
+expression matches, invalid sum payload capability, progress escape/capture,
+missing or exceeded ceilings, denied `handler_invoke`/`trap`, cleanup escape,
+terminal local borrows, and invalid C output obligations. The formatter emits
+the single Chapter 26 spelling and no compatibility alternative.

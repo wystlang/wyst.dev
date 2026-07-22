@@ -4,6 +4,7 @@ spelling	class	legal_positions	parameters	phase	result	target_facts	relocation	b
 #cache_line_width	target-query	expression	none	target-selection	u64	selected-cache-line-width-or-selected-snapshot-default-64	none	return-the-selected-width-or-the-selected-snapshot-default-of-64	meta.operation	implemented	meta.cache_line_width
 #dedent	string-transform	expression	text:multiline-string-literal	compile-time	string	none	none	remove-common-leading-indentation-deterministically	meta.operation	implemented	meta.dedent
 #else	compile-time-control	paired-branch	paired-with:#if	compile-time	selected-branch-type	none	none	select-only-when-the-paired-if-condition-is-false	meta.operation	implemented	meta.else
+#fatal_trap	runtime-terminal	expression	reason:u16	typed-ir	never	none	none	evaluate-the-explicit-reason-and-enter-the-authenticated-target-trap-path	meta.operation	implemented	meta.fatal_trap
 #field_offset	layout-query	expression	type:ordinary-struct|field:declared-field	type-layout	u64	selected-target-layout	none	return-the-final-ordinary-struct-field-offset	meta.operation	implemented	meta.field_offset
 #if	compile-time-control	declaration|expression|statement	condition:constant-bool|then:branch|else:optional-branch	compile-time	selected-branch-type	none	none	typecheck-and-emit-only-the-selected-branch	meta.operation	implemented	meta.if
 #len	layout-query	expression	value:fixed-array-storage-path	compile-time	u64	none	none	return-the-fixed-array-length-without-loading-elements	meta.operation	implemented	meta.len

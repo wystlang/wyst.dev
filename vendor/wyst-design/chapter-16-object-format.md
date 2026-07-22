@@ -862,11 +862,11 @@ The integrated linker uses the address-expression distinction directly:
 
 Global enum initializers are persisted using the representation in
 [chapter-06-types.md §1.6.3](chapter-06-types.md). A payload-less enum writes
-only the discriminator type's bytes. A payload enum writes 16 bytes: the tag
-word at offset 0 and the payload word at offset 8. If the active variant has no
-payload, the payload word is non-semantic inactive storage; the current writer
-zero-fills it as part of ordinary deterministic data emission, but programs
-must not rely on those bytes as a source-level value.
+only the discriminator type's bytes. A payload enum writes its exact concrete
+size: the discriminator at offset 0, zeroed padding/inactive storage, and the
+active variant's inline fields at the computed aligned payload offset. Programs
+must not treat inactive bytes as source-level fields even though deterministic
+emission zero-fills them.
 
 Typed addresses do not support plain `+` or `-`. `element_offset` counts and
 scales elements exactly once, while `byte_offset` consumes an already byte-
@@ -1098,3 +1098,13 @@ that would prevent a future port.
 | Reproducibility contract                          | `chapter-01-language-design.md`, "Reproducibility Model"                 |
 | IR ↔ object-format interaction                    | `appendix-a-ir.md` (Phase 5.2)                                           |
 | DWARF emission (dialect, DIE set, determinism)    | [chapter-23-debug-info.md](chapter-23-debug-info.md)                     |
+
+## Outcome semantic payload transport
+
+Chapter 26 owns `wyst.materializedSum.v1` and `wyst.operationProtocol.v1`.
+Current in-memory and final-image consumers retain their nominal identities,
+transitions, effects, concrete layouts, ownership, ABI, C-adapter obligations,
+and provenance. Future public interface, relocatable-object, archive, and
+linker containers must authenticate and transport these records exactly;
+their wire emission and standalone consumption remain owned by the dedicated
+artifact work and are not claimed by the current compiler.

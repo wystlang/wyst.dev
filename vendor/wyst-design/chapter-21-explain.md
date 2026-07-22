@@ -278,3 +278,13 @@ epistemic classification, generated/source origins, decoder status, allocation
 meaning, and read-only claim. CLI diagnostics for report failures use the same
 canonical diagnostic-kind registry and LSP-compatible data as other compiler
 diagnostics.
+
+Outcome-aware reports preserve the checked operation protocol record: nominal
+identity, ordered effective transitions, exact payload layouts, operation
+effects, progress ceiling, recovery-capability parameters, hidden callback and
+result ABI, suspension authority, cleanup order, C profile obligations, and
+semantic provenance. Large materialized sums report concrete copy/frame costs
+as `terminal_copy_bytes` and `caller_frame_result_storage_bytes`, together with
+the exact Native return placement, zero hidden-allocation count, and absence of
+runtime support. These facts supplement the existing storage/lowering reports
+rather than hiding the value behind a boxed abstraction.

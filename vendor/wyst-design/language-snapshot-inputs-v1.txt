@@ -10,6 +10,7 @@ design/appendix-b-grammar.md
 design/appendix-c-doc-example-contracts.md
 design/atomic-matrix.json
 design/attribute-catalog.tsv
+design/c-operation-adapter-catalog.tsv
 design/chapter-01-language-design.md
 design/chapter-02-targets.md
 design/chapter-03-project-builds.md
@@ -35,6 +36,7 @@ design/chapter-22-generated-manifest.md
 design/chapter-23-debug-info.md
 design/chapter-24-scale.md
 design/chapter-25-compilation-phases.md
+design/chapter-26-errors-and-progress.md
 design/declaration-roles.tsv
 design/environment-service-catalog.tsv
 design/generic-bounds.tsv

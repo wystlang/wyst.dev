@@ -1,0 +1,7 @@
+module syntax.removed_partial_match
+
+enum Event { Idle Ready(u64) }
+
+fn rejected(event: Event) -> u64 effects(none) {
+  return #partial match event { .Idle { 0 } }
+}

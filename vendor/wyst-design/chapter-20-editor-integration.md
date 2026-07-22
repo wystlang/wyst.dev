@@ -282,3 +282,10 @@ inspection, and watch identity — requires debug information beyond the
 deterministic DWARF source floor (function and source-line rows), including
 variable-location lists, type DIEs, or call-frame information (see
 [chapter-23-debug-info.md](chapter-23-debug-info.md)).
+
+The editor catalog, semantic tokens, hovers, Tree-sitter grammar, and generated
+editor assets share the operation/progress/failure/cancellation/defer words,
+`handler_invoke`, `fixed_layout_movable`, postfix `?`, expression `match`, and
+`#fatal_trap` from their owning catalogs. Operation hovers expose ordered
+members and the progress ceiling; fatal hover identifies the explicit `u16`
+reason. Drift tests reject catalog or generated-parser disagreement.

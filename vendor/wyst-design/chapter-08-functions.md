@@ -91,7 +91,7 @@ written order, before ABI placement, so duplicate, unknown, missing, and
 positional-after-labeled arguments are errors. Public parameter names are part
 of the Wyst source interface, but not ABI or symbol identity.
 
-`match` is the exhaustive enum-only statement in selected snapshot:
+`match` is exhaustive and enum-only in statement or expression position:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -114,9 +114,11 @@ shallow `.variant`, `.variant(name)`, or `.variant(_)` patterns followed
 directly by a required brace body. Alternatives bind the same names and types;
 arms do not fall through, and `break` does not target a `match`. Without a
 final `else`, the variants must be statically exhaustive. A final explicit
-`else {}` deliberately accepts unlisted variants. There are no predecessor arm
-keywords, colon or arrow arms, wildcard arms, guards, nested patterns, or
-match-expression forms. The same
+`else {}` deliberately accepts unlisted variants. In expression position each
+reachable arm supplies a tail value of one exact common type; `never` is
+compatible and ownership joins are exact. A partial-match opt-out is illegal.
+There are no predecessor arm keywords, colon or arrow arms, wildcard arms,
+guards, or nested patterns. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
 the binding scoped to the successful branch.
 
@@ -289,7 +291,7 @@ direct scalar element/field projections. Vector storage is rejected until a
 scalar lane-access contract exists; slice and dynamic-array descriptor storage
 remains rejected. Payload-less enums use their scalar tag representation;
 payload-bearing enums are rejected because selected snapshot has no direct scalar projection
-for their two-word stored value.
+for their whole aggregate stored value.
 
 `#percpu_offset_of(binding)` is the only non-access projection. It produces a
 `u64` byte offset from the start of the final linked `.percpu` template to the
@@ -1385,125 +1387,45 @@ loop {
 }
 ```
 
-### Switch — Exhaustive Enum Discrimination
+### `match` — Exhaustive Enum Discrimination
 
-`switch` is the exhaustive form for reading enum values (§1.6.3). Each
-arm is a `case` matching a single variant, optionally binding payload
-elements. Exhaustiveness is checked at compile time: an unhandled variant
-is an error unless an `else:` arm is present or the switch is annotated
-`#partial`.
+`match` is available in statement and expression position. Its scrutinee is
+evaluated exactly once. Each arm begins with one or more shallow variants and
+may bind every declared payload field. Alternatives in one arm use the same
+binding names and exact field types. There is no fallthrough.
 
-<!-- wyst-contract: historical-v0.8 -->
+<!-- wyst-contract: sketch -->
 ```wyst
-switch m {
-    case Quit:             handle_quit()
-    case Write(p):         handle_write(p)
-    case Custom(code):     handle_custom(code)
-    case Uart(v), Virtio(v): handle_irq(v)
+match message {
+  .Quit {
+    handle_quit()
+  }
+  .Write(data) {
+    handle_write(data)
+  }
+  .Moved(x, y) {
+    handle_move(x, y)
+  }
 }
 ```
 
-| Form                  | Meaning                                                           |
-| --------------------- | ----------------------------------------------------------------- |
-| `case Variant:`       | Match the variant, ignore payload (legal for any variant).        |
-| `case Variant(a):`    | Match a single-payload variant, bind payload to `a` for this arm. |
-| `case A(a), B(a):`    | Match either variant and bind the same-name, same-type payload.   |
-| `case Variant(a, b):` | Tuple payload binding; outside the enum payload model.            |
-| `case Variant(_):`    | Match the variant, explicitly discard payload.                    |
-| `else:`               | Catch-all arm. Must come last. Disables the exhaustiveness check. |
+Pattern bindings are immutable and scoped to the arm. Patterns are not nested;
+inspect an enum-valued field with another `match` or `is` inside the arm. A
+final `else` covers every remaining variant. Without `else`, all statically
+reachable variants must appear exactly once.
 
-A `case` arm body is a statement context. Function calls in arm bodies
-follow the statement-position call rule from §2.5 above.
+Expression `match` requires a tail expression in every reachable arm, and all
+tails have one exact common type; `never` is compatible with that type. Exact
+ownership state must join at the result phi. `#partial` is removed and illegal:
+an omitted expression arm cannot manufacture a value.
 
-#### `#partial switch`
-
-Annotated to opt out of the exhaustiveness check entirely:
-
-<!-- wyst-contract: historical-v0.8 -->
+<!-- wyst-contract: sketch -->
 ```wyst
-#partial switch m {
-    case Write(p):         handle_write(p)
-    // Quit and Custom are silently skipped — no compile error
+const code: u64 = match message {
+  .Quit { 0 }
+  .Write(data) { data.len }
+  .Moved(x, y) { widen<u64>(x) + widen<u64>(y) }
 }
-```
-
-Use `#partial` when only a subset of variants is relevant at this site
-and reaching an unhandled variant should silently do nothing. Without
-`#partial`, the same code is a compile error.
-
-#### Exhaustive switch on plain enums
-
-The same rules apply to payload-less enums:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-switch d {
-    case North:   ...
-    case East:    ...
-    case South:   ...
-    case West:    ...
-}
-```
-
-Missing any variant is a compile error; `else:` or `#partial` opts out.
-
-#### Pattern Binding Scope
-
-Pattern-bound names are local to the arm's body and immutable within it.
-Assignment to a binding is a compile error:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-switch m {
-    case Custom(code):
-        code = 5         // compile error: pattern bindings are immutable
-}
-```
-
-To produce a mutable local, rebind:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-switch m {
-    case Custom(code):
-        mx := code       // mx is a new mutable local
-        mx += 5
-        process(mx)
-}
-```
-
-#### Patterns Are Not Nested
-
-`case Variant(a, b)` is outside the enum payload model and cannot
-itself contain a sub-pattern. To
-destructure a payload that is itself an enum, nest a `switch` or `is` in
-the body:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-switch outer {
-    case Wrap(inner):
-        switch inner {
-            case Foo(p):   ...
-            case Bar(q):   ...
-        }
-}
-```
-
-#### `switch` Is a Statement, Not an Expression
-
-`switch` produces no value. To compute a value across variants, use a
-mutable local:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-n : u64 = 0
-switch m {
-    case Quit:             n = 0
-    case Custom(code):     n = code
-    case Write(_):         n = 1
-}
-return n
 ```
 
 ### `is` — Single-Variant Test and Bind
@@ -1528,7 +1450,7 @@ if !(m is Quit) && (m is Write(_) || ready) {
 | -------------------- | -------------------------------------------------------------------------------------------- |
 | `m is Variant`       | True iff `m`'s tag is `Variant`. No bindings.                                                |
 | `m is Variant(a)`    | True iff `m`'s tag is `Variant`; in the `if`-true body, `a` is bound to the payload element. |
-| `m is Variant(a, b)` | Tuple payload binding; outside the enum payload model.                                       |
+| `m is Variant(a, b)` | True iff the tag matches; `a` and `b` bind the two declared payload fields in order.        |
 | `m is Variant(_)`    | True iff `m`'s tag is `Variant`; payload explicitly discarded.                               |
 
 #### Binding Scope
@@ -1570,11 +1492,11 @@ if !(m is Custom(code)) {    // compile error
 }
 ```
 
-#### `is` vs `switch`
+#### `is` vs `match`
 
-`is` is for "check one variant, do one thing." `switch` is for "dispatch
+`is` is for "check one variant, do one thing." `match` is for "dispatch
 on all variants." When more than one variant needs handling, prefer
-`switch` — it gets exhaustiveness checking; chained `if … is` does not.
+`match` — it gets exhaustiveness checking; chained `if … is` does not.
 
 <!-- wyst-contract: historical-v0.8 -->
 ```wyst
@@ -1585,10 +1507,10 @@ else if m is Write(p)      { handle_write(p) }
 // Fault was added to the enum later — silently does nothing
 
 // Good — compile error if a variant is added:
-switch m {
-    case Quit:           handle_quit()
-    case Custom(code):   handle_custom(code)
-    case Write(p):       handle_write(p)
+match m {
+  .Quit { handle_quit() }
+  .Custom(code) { handle_custom(code) }
+  .Write(p) { handle_write(p) }
 }
 ```
 
@@ -2498,3 +2420,13 @@ activates their exact parser, semantic, and allocation rows.
 The removed predecessor grammar is documented only in the explicitly versioned
 [Appendix B §4.6](appendix-b-grammar.md). It is a non-normative archive, not a
 production parser surface.
+
+## Live operation protocols
+
+Chapter 26 defines `operation` as a nominal non-first-class synchronous
+callable kind with canonical `success`, `progress`, `failure`, and `cancelled`
+member order. `with` consumes one root call, non-success members are handled
+exactly once, success defaults to identity, and forwarding is per-label and
+exact. Recovery is an ordinary explicitly passed `noescape` typed decision
+capability. Progress callbacks are synchronous, resume-only, zero-capture, and
+checked against the protocol's concrete effect ceiling.

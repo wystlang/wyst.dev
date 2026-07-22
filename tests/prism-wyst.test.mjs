@@ -162,6 +162,7 @@ test("Prism derives active word dispositions from the shared catalog", () => {
 test("the generated reference publishes the exact editor vocabulary catalogs", async () => {
 	for (const catalog of [
 		"attribute-catalog.tsv",
+		"c-operation-adapter-catalog.tsv",
 		"meta-operation-catalog.tsv",
 		"syntax-words.tsv",
 	]) {

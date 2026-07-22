@@ -95,3 +95,9 @@ descriptor changes it by implication.
 It is not a cryptographic hash, but changing an explicit target fact or selected
 scheduling policy changes this identity so reports cannot hide byte-affecting
 build selection changes.
+
+Generated manifests authenticate the source, catalogs, bundled collections
+body, and compiler inputs that select Chapter 26. When an artifact contains an
+operation, its final-image facts retain the `wyst.operationProtocol.v1` record
+and exact materialized-sum layouts; the manifest does not invent a public
+interface/object emitter or a C mapping absent from the checked declaration.

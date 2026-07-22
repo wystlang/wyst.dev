@@ -1,0 +1,46 @@
+module syntax_outcomes
+
+enum Stored: u8 {
+  Empty
+  Pair(u64, u64)
+}
+
+operation leaf(value: u64) { success(u64) failure(u8) } effects(none) {
+  if value == 0 {
+    fail 7
+  }
+  return value
+}
+
+operation forwarded(value: u64) { success(u64) failure(u8) } effects(none) {
+  return leaf(value)?
+}
+
+operation pulse(value: u64) { success(u64) progress(u64) effects(none) failure(u8) cancelled(u16) } effects(handler_invoke) {
+  defer { }
+  report value
+  return value
+}
+
+fn handled(value: u64) -> u64 effects(handler_invoke) {
+  return pulse(value) with {
+    progress(_) { }
+    failure(problem) {
+      widen<u64>(problem)
+    }
+    cancelled(cause) {
+      widen<u64>(cause)
+    }
+  }
+}
+
+fn extracted(value: Stored) -> u64 effects(none) {
+  return match value {
+    .Empty {
+      0
+    }
+    .Pair(left, right) {
+      left + right
+    }
+  }
+}

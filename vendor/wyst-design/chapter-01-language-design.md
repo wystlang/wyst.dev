@@ -1153,6 +1153,14 @@ The performance model should remain:
 - approximate
 - inspectable
 - measurable
+
+## Typed outcome behavior taxonomy
+
+Chapter 26's four categories are disjoint: absence and stored errors are data;
+live operation failure is an exact declared synchronous transition; and traps
+remain fatal behavior. Progress handlers do not catch traps, and no diagnostic,
+target fault, trusted-boundary violation, completion status, or timeout is
+silently converted among those categories.
 - architecture-aware
 
 ### TMA Vocabulary

@@ -246,3 +246,10 @@ identity, or artifact bytes.
 | Adapter ID | Current carrier | Allowed consumers | Forbidden consumers | Enforcement evidence | Removal condition |
 | --- | --- | --- | --- | --- | --- |
 | `adapter.synthetic_build_inputs_span` | Synthetic `<build inputs>` display identity for concatenated sources. | Diagnostic rendering and manifest/report provenance display through `SourceMapProduct` segments. | Module identity, declaration identity, semantic caches, IR identity, or artifact bytes. | Source graph/design contract tests and phase characterization. | Public diagnostic/span snapshots migrate from synthetic display labels to original-file source spans. |
+
+Chapter 26 protocol facts are produced by semantic analysis after exact type,
+effect, lifetime, ownership, and layout checking. IR construction consumes and
+validates the record; it may not reconstruct transitions or ceilings from
+names. ABI lowering, final-image construction, DWARF, explain reports, and
+editor products are projections. Future object/interface/archive phases
+transport the same authenticated payload without becoming new semantic owners.

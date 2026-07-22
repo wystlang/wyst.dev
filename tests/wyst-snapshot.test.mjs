@@ -29,7 +29,11 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
-const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
+const designCatalogs = [
+	...vocabularyCatalogs,
+	"c-operation-adapter-catalog.tsv",
+	"declaration-roles.tsv",
+];
 const designAuthorities = ["language-snapshot-inputs-v1.txt"];
 
 const coreFixtures = [
@@ -140,6 +144,10 @@ for (const response of responses) {
 		[
 			"design/declaration-roles.tsv",
 			"role_id\tversion\tstate\nfixture.role\t1\timplemented\n",
+		],
+		[
+			"design/c-operation-adapter-catalog.tsv",
+			"profile\tstate\nstatus-out\timplemented\n",
 		],
 		[
 			"design/language-snapshot-inputs-v1.txt",
