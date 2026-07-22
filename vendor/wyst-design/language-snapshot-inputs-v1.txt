@@ -1,0 +1,49 @@
+# Canonical UTF-8, repository-relative input paths for wyst.language-snapshot.v1.
+# Blank lines and lines beginning with # are not inputs. The build canonicalizer
+# sorts paths by their UTF-8 bytes and rejects duplicates, missing paths, and
+# paths outside the repository. This manifest is itself an input.
+CONTEXT.md
+design/README.md
+design/a64-compiler-semantics.md
+design/appendix-a-ir.md
+design/appendix-b-grammar.md
+design/appendix-c-doc-example-contracts.md
+design/atomic-matrix.json
+design/attribute-catalog.tsv
+design/chapter-01-language-design.md
+design/chapter-02-targets.md
+design/chapter-03-project-builds.md
+design/chapter-04-modules.md
+design/chapter-05-boot.md
+design/chapter-06-types.md
+design/chapter-07-operators.md
+design/chapter-08-functions.md
+design/chapter-09-memory-model.md
+design/chapter-10-runtime.md
+design/chapter-11-intrinsics.md
+design/chapter-12-simd.md
+design/chapter-13-scheduling.md
+design/chapter-14-exception-vectors.md
+design/chapter-15-abi-spec.md
+design/chapter-16-object-format.md
+design/chapter-17-optimization-modes.md
+design/chapter-18-check-format-diagnostics.md
+design/chapter-19-learning-diagnostics.md
+design/chapter-20-editor-integration.md
+design/chapter-21-explain.md
+design/chapter-22-generated-manifest.md
+design/chapter-23-debug-info.md
+design/chapter-24-scale.md
+design/chapter-25-compilation-phases.md
+design/declaration-roles.tsv
+design/environment-service-catalog.tsv
+design/generic-bounds.tsv
+design/measurement-counter-catalog.tsv
+design/meta-operation-catalog.tsv
+design/release-identity.md
+design/sealed-core.tsv
+design/semantic-db.json
+design/semantic-operation-catalog.tsv
+design/source-of-truth.md
+design/syntax-words.tsv
+wync/core/collections.wyst

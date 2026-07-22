@@ -378,7 +378,7 @@ uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
 conduit when the DTB says so.
 
 The checked `smc` spelling in the following future-profile sketch is not active
-in the pinned v0.9 pack and is rejected there. Current v0.9 code uses the
+in the pinned selected snapshot pack and is rejected there. Current selected snapshot code uses the
 cataloged `exception.smc(imm)` operation and its conservative register
 contract; a later checked profile may activate the exact signature form shown
 here.

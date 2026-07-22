@@ -8,7 +8,7 @@ summary: "Declarations, functions, parameters, returns, control flow, labels, in
 
 # Chapter 8: Wyst Functions, Control Flow, and Inline Assembly
 
-> **Canonical scope.** The current v0.9 sections below own keyword-led
+> **Canonical scope.** The current selected snapshot sections below own keyword-led
 > declarations, callable identity, register placement, mandatory `#[inline]`,
 > `per_cpu` storage, and structured control flow. The numbered §2.x material
 > after “Released v0.8 Syntax Snapshot” is historical source background. The ABI
@@ -22,7 +22,7 @@ elsewhere.
 
 ---
 
-## v0.9 Declarations, Calls, and Enum Control Flow (Current)
+## selected snapshot Declarations, Calls, and Enum Control Flow (Current)
 
 Core declarations and stored bindings are keyword-led:
 
@@ -42,7 +42,7 @@ and then the declaration keyword. A declaration has at most one non-empty
 `#[...]` group. The versioned attribute catalog owns legal subjects, argument
 forms, conflicts, and formatter order; unknown and inactive attributes are
 errors rather than ignored annotations. Predecessor punctuation-led and
-unkeyworded bindings, along with `let`, are not v0.9 declarations.
+unkeyworded bindings, along with `let`, are not selected snapshot declarations.
 
 Every `const` and `var`, including a destructuring binding, has an explicit
 initializer. `const` is immutable and `var` is mutable. Either may omit `: T`
@@ -80,7 +80,7 @@ non-discard names to exist and be mutable, evaluates its right side once, and
 updates every target simultaneously. Bare comma forms and mixed declaration
 and assignment are errors. Tuples remain restricted to named multi-results and
 their result storage: anonymous, nested, single-element, parameter, and
-general-purpose tuple types are not part of v0.9.
+general-purpose tuple types are not part of selected snapshot.
 
 Every call argument has one parser form: `expression` or `name = expression`.
 Positional arguments precede labeled arguments. Labels on a statically resolved
@@ -91,7 +91,7 @@ written order, before ABI placement, so duplicate, unknown, missing, and
 positional-after-labeled arguments are errors. Public parameter names are part
 of the Wyst source interface, but not ABI or symbol identity.
 
-`match` is the exhaustive enum-only statement in v0.9:
+`match` is the exhaustive enum-only statement in selected snapshot:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -120,7 +120,7 @@ match-expression forms. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
 the binding scoped to the successful branch.
 
-## v0.9 Callable Identity, Terminal Entries, and Storage Classes (Current)
+## selected snapshot Callable Identity, Terminal Entries, and Storage Classes (Current)
 
 This section is the sole source-semantic owner for
 `language.callable-storage-contracts`. Chapters 9, 11, 15, and 16 and
@@ -274,7 +274,7 @@ the linked `.percpu` template. The template is semantically immutable. `pub`
 controls Wyst source visibility only; it does not export a process address,
 current-instance address, or raw template address.
 
-A v0.9 `per_cpu` declaration may raise its template-entry alignment with
+A selected snapshot `per_cpu` declaration may raise its template-entry alignment with
 `#[align(N)]`. Both the final template offset and every live-instance address
 must then satisfy the maximum of the natural, explicit, and realization
 alignment requirements. The selected realization must prove the corresponding
@@ -288,7 +288,7 @@ bitstructs, and statically representable string descriptors expose only their
 direct scalar element/field projections. Vector storage is rejected until a
 scalar lane-access contract exists; slice and dynamic-array descriptor storage
 remains rejected. Payload-less enums use their scalar tag representation;
-payload-bearing enums are rejected because v0.9 has no direct scalar projection
+payload-bearing enums are rejected because selected snapshot has no direct scalar projection
 for their two-word stored value.
 
 `#percpu_offset_of(binding)` is the only non-access projection. It produces a
@@ -346,7 +346,7 @@ The current compiler emits only the immutable template and the requested access 
 It performs no instance replication, allocation, base installation, startup
 copy, or implicit collapse to an ordinary global. Later runtime work may copy
 the immutable template without changing its source, object, or offset semantics.
-Wyst v0.9 has no TLS storage class. The predecessor TLS, callable-modifier,
+The selected snapshot has no TLS storage class. The predecessor TLS, callable-modifier,
 register-placement, per-CPU, ABI-marker, and callable-type spellings are
 removed source forms. Current callable forms use `extern "C" fn(...)` and
 `fn(...)`.

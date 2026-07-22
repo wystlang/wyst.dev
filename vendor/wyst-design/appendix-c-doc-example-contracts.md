@@ -31,7 +31,7 @@ Use these contract modes:
   in [source-of-truth.md](source-of-truth.md).
 - `<!-- wyst-contract: sketch -->`: the block is a syntax sketch rather than a normative
   example. A sketch may be incomplete, but every source spelling in it must be
-  part of the current v0.9 grammar.
+  part of the current selected snapshot grammar.
 - `<!-- wyst-contract: historical-v0.8 -->`: the block is a read-only archival
   snapshot of source that used the v0.8 grammar. The harness requires at least
   one recognized predecessor spelling and never treats the block as accepted
@@ -49,7 +49,7 @@ spellings. Use `future` only for syntax that is
 future-version normative in [source-of-truth.md](source-of-truth.md) and is
 expected not to compile yet. Use `historical-v0.8` only when the surrounding
 text explicitly discusses an archival v0.8 design snapshot; current guidance
-and examples are always migrated to v0.9.
+and examples are always migrated to selected snapshot.
 
 ## Checked Examples
 

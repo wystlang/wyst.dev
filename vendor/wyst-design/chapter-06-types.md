@@ -23,9 +23,9 @@ from the scalar and aggregate rules.
 
 ---
 
-## v0.9 Types, Aggregates, and Generics (Current)
+## selected snapshot Types, Aggregates, and Generics (Current)
 
-Wyst v0.9 keeps fixed arrays (`[N]T`), slices (`[]T`), vectors (`[T:N]`),
+The selected snapshot keeps fixed arrays (`[N]T`), slices (`[]T`), vectors (`[T:N]`),
 addresses, callable shapes, and nominal types, but removes the predecessor
 dynamic-array type marker.
 Dynamic containers use the authenticated ordinary generic declaration whose
@@ -79,7 +79,7 @@ for example `Message.write(packet)`.
 
 Generics are explicit and type-only. Parameter and argument lists are
 non-empty; every application supplies the complete type-argument list, and
-arguments are full types that may nest. Wyst v0.9 has no generic inference,
+arguments are full types that may nest. The selected snapshot has no generic inference,
 defaults, value parameters, aliases, user-defined bounds, traits, or turbofish.
 Bounds come only from the closed compiler-defined capability catalog. Built-in
 or duplicate parameter names and incorrect arity are errors.
@@ -95,20 +95,20 @@ otherwise comparison parsing wins. Within an already committed generic list,
 remainder, so `Outer<Inner<u8>>` needs no separating whitespace.
 
 Every instantiation is keyed by semantic declaration identity plus its complete
-ordered concrete type arguments (and an empty value-argument tuple in v0.9).
+ordered concrete type arguments (and an empty value-argument tuple in selected snapshot).
 Revisiting the same canonical key closes a legitimate recursive cycle. A
 strictly growing instantiation chain is rejected with a deterministic
 root-to-demand trace. A compiler safety budget is a distinct resource failure
 and reports that same canonical trace; it is not the semantic termination rule.
 
-### v0.9 Named Conversions, Addresses, and Slices
+### selected snapshot Named Conversions, Addresses, and Slices
 
 This section is the current source and semantic authority for conversions,
 addresses, memory access, address offsets, and slices. The released v0.8
 snapshot below remains useful background, but its categorized conversions,
 typed-memory access, typed-address arithmetic, runtime address-of and endian
 primitives, colon ranges, and raw descriptor constructors are not accepted
-v0.9 alternatives.
+selected snapshot alternatives.
 
 #### Named conversion operations
 
@@ -296,7 +296,7 @@ no memory access or allocation.
 
 The predecessor colon-range, raw-descriptor-constructor, typed-memory,
 categorized-conversion, typed-address-arithmetic, runtime address-of, and
-endian-primitive spelling classes are removed and rejected in v0.9.
+endian-primitive spelling classes are removed and rejected in selected snapshot.
 
 ## Released v0.8 Syntax Snapshot
 

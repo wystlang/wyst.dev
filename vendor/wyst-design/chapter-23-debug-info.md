@@ -299,6 +299,12 @@ Determinism rules:
 
 The same source input manifest, compiler build identity, build optimization mode,
 target, and selected scheduling policies produce byte-identical debug sections.
+The compile-unit `DW_AT_producer` value names `wync`, the release status,
+nullable proposed language/compiler versions when this is a nominated
+candidate, and the exact `wyst.language-snapshot.v1` and
+`wync.compiler-build.v1` identities. It never substitutes the Cargo package
+version for compiler identity or claims that an ordinary development build is
+a release.
 
 ---
 

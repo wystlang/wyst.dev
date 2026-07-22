@@ -17,7 +17,7 @@ This advanced compiler-internal reference maps Wyst source concepts into SSA,
 verifier invariants, scheduling regions, allocation, and lowering. The source
 contracts it depends on are linked above.
 
-## v0.9 Callable and `per_cpu` IR Contract (Current)
+## selected snapshot Callable and `per_cpu` IR Contract (Current)
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 Typed IR must preserve, without reconstruction, a callable's convention,
@@ -73,12 +73,12 @@ reserved system state `TPIDR_EL1`; and realization
 `single-instance-test-runtime`. Without that exact selection, reachable access
 is a source/target diagnostic rather than malformed IR.
 
-Typed IR for v0.9 admits no TLS storage kind, offset constant, current-instance
+Typed IR for selected snapshot admits no TLS storage kind, offset constant, current-instance
 operation, symbol, or relocation. Internal names inherited from the released
 v0.8 implementation do not authorize predecessor per-CPU or TLS source
 behavior.
 
-## v0.9 Strand Suspension And Context-Stability IR Contract (Current)
+## selected snapshot Strand Suspension And Context-Stability IR Contract (Current)
 
 The target-neutral effect enum contains `execution_suspension` in addition to
 the machine-effect vocabulary. It is present in `effects(all)`, callable
@@ -136,7 +136,7 @@ also prevent observable memory, volatile/MMIO/atomic operations, effects,
 calls, and base acquisitions from crossing in either direction, while leaving
 independent pure operations eligible for deterministic scheduling.
 
-## v0.9 Address, Slice, and Conversion IR Contract (Current)
+## selected snapshot Address, Slice, and Conversion IR Contract (Current)
 
 Chapter 6 owns the source semantics represented by
 `language.ir-source-semantic-agreement`. IR construction must erase the old
@@ -179,7 +179,7 @@ IR construction; a dynamic MMIO address carries
 `possible_architectural_fault=true`. No verifier or optimizer may turn that
 fact into an impossible-state assumption.
 
-The v0.9 parser rejects the predecessor typed-memory, categorized-conversion,
+The selected snapshot parser rejects the predecessor typed-memory, categorized-conversion,
 colon-range, raw-descriptor, runtime address-of, and endian-primitive spelling
 classes before semantic or IR construction. The verifier then validates the canonical structural result: it
 rejects typed-address add/sub, a second scale on a canonical byte offset, a
@@ -189,7 +189,7 @@ IR nodes do not retain a redundant copy of the discarded source spelling;
 source-origin metadata is retained only where it changes an IR invariant, such
 as GEP unit/origin verification.
 
-## v0.9 Atomic IR Contract (Current)
+## selected snapshot Atomic IR Contract (Current)
 
 `language.opaque-atomic-storage-closed-orders` preserves atomic opacity in typed
 IR. `atomic<T>` is a storage type and `@atomic<T>` is the only address form that
@@ -233,7 +233,7 @@ SC order. ARM64 `ldar`/`stlr`/acquire-release-RMW selection is accepted only
 with Chapter 9's architecture proof and normative SC litmus obligations; the
 absence of an implicit `dmb` is not by itself evidence of correctness.
 
-## v0.9 Hardware Register IR Contract (Current)
+## selected snapshot Hardware Register IR Contract (Current)
 
 Hardware declarations are semantic module facts, not allocated globals. A
 register-map fact records stable map/register identity, unsigned backing type,
@@ -473,15 +473,15 @@ type-declaration = visibility name type-form
 ```
 
 `visibility` is `pub` or absent (private; see [chapter-04-modules.md](chapter-04-modules.md)).
-In current v0.9 typed IR, hard facts are separate fields: definition lowering
+In current selected snapshot typed IR, hard facts are separate fields: definition lowering
 records `naked`; callable signatures record convention, placements,
 `noescape`, and `never`; globals record `GlobalStorage::PerCpu`; declaration
 attributes retain only activated catalog entries. The predecessor renderer's
 callable modifiers, register placement, storage classes, and ABI markers are
 not source spellings or a current open attribute set. No TLS fact is legal in
-v0.9 IR.
+selected snapshot IR.
 
-The current v0.9 layout authority is likewise structural rather than a textual
+The current selected snapshot layout authority is likewise structural rather than a textual
 directive replay. Module IR preserves the selected layout declaration's exact
 name and dialect; declaration-ordered region records with origin, size,
 `readonly`/`readwrite` access, and operand spans; declaration-ordered section
@@ -931,7 +931,7 @@ Relocation-producing origins are explicit in IR or in the lowering artifact
 records that consume IR. The current compiler recognizes these origins:
 
 The released v0.8 umbrella term **per-instance object references** survives in
-some internal/test vocabulary. For v0.9 it denotes only the non-addressable
+some internal/test vocabulary. For selected snapshot it denotes only the non-addressable
 `per_cpu` access and offset records below; it does not include TLS or authorize
 general current-instance addresses.
 
@@ -1065,7 +1065,7 @@ future jump-table entry.
   `core.arch.cache.data.clean_to_poc` carries the exact generated target and
   ordering facts selected by its semantic-operation row.
 
-Wyst v0.9 source has no prefix-`%` operation namespace. Typed IR retains an
+The selected snapshot source has no prefix-`%` operation namespace. Typed IR retains an
 internal operation node only after semantic analysis has attached the stable
 identity, surface, target plan, source privilege, compiler ordering, report
 identity, and exact generated target facts from
@@ -1263,8 +1263,8 @@ lowering may consume the function.
     one backing-word `Load` and the matching `Store` only when the loaded value
     flows through one `BitfieldInsert` into that store and nowhere else. This
     is one logical source RMW, not reusable address provenance.
-20. **No v0.9 TLS**: no TLS storage kind, offset constant, current-instance
-    operation, symbol, or relocation may occur in a v0.9 module.
+20. **No selected snapshot TLS**: no TLS storage kind, offset constant, current-instance
+    operation, symbol, or relocation may occur in a selected snapshot module.
 21. **Naked resource prohibition**: a `naked` definition contains no
     compiler-owned frame, prologue/epilogue, spill/reload, callee-save,
     argument home, or synthesized return resource.
@@ -1303,9 +1303,9 @@ lowering may consume the function.
     validity or natural GPR view is used. The verifier rejects constrained
     `bool`, enum, address/provenance, and callable result types and rejects a
     fabricated or mismatched nominal backing even when it has the same size.
-29. **Checked-assembly metadata closure**: every `asm` value in a v0.9 module
+29. **Checked-assembly metadata closure**: every `asm` value in a selected snapshot module
     carries a complete checked semantic signature; `checked: none` is confined
-    to explicitly versioned pre-v0.9 compatibility IR. Each retained direct
+    to explicitly versioned predecessor compatibility IR. Each retained direct
     call carries its full ABI/resource contract and a sema-sealed local-CFG
     reachability bit. The verifier reconstructs the typed CFG and rejects any
     disagreement before naked-stack or backend link-register safety consumes
@@ -1409,7 +1409,7 @@ runtime.
 section checked statically. A future profile that activates `blr` for checked
 assembly requires an ordinary signature input with an exact callable type and
 ABI/effect/terminal contract; raw integers and untyped addresses are rejected.
-The pinned v0.9 pack recognizes `blr` as `known_unsupported` and emits no such
+The pinned selected snapshot pack recognizes `blr` as `known_unsupported` and emits no such
 IR operation.
 
 ### 7.2 Checked-`asm` Stack-State Verification
@@ -1437,7 +1437,7 @@ note: every normal exit from `asm preserves stack` must have zero net delta
 `asm establishes stack` and `asm restores stack` are restricted to their owning
 naked entry and restore contexts under `language.callable-storage-contracts`
 and require a complete target
-transition contract, not just a numeric `sp` delta. The pinned v0.9 pack has no
+transition contract, not just a numeric `sp` delta. The pinned selected snapshot pack has no
 active row proving either transition and therefore rejects both clauses; it also
 has no stack-access row with which `preserves` could perform temporary stack
 use. A naked block with stack behavior but no matching active proof is rejected

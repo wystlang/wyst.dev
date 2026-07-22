@@ -25,7 +25,7 @@ types, the `in register` placement in `language.callable-storage-contracts`,
 
 Wyst supports two calling conventions:
 
-| Convention | v0.9 callable syntax | Default | Purpose |
+| Convention | selected snapshot callable syntax | Default | Purpose |
 | ---------- | ---------------------- | ------- | ------- |
 | Wyst Native | `fn(...) -> ...` | yes | Wyst-to-Wyst calls; optimized for register use |
 | AAPCS64 | `extern "C" fn(...) -> ...` | no | C interop, OS calls, foreign callbacks |
@@ -42,7 +42,7 @@ detectable statically. The compiler emits a diagnostic when a call is checked
 against a callable of the wrong convention; it does not adapt between native
 and `extern "C"` identities.
 
-## v0.9 Callable Boundary Identity and Explicit Placement (Current)
+## selected snapshot Callable Boundary Identity and Explicit Placement (Current)
 
 Chapter 8 is the sole source-semantic owner for
 `language.callable-storage-contracts`. This section fixes its ABI projection. A

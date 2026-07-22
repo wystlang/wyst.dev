@@ -156,7 +156,10 @@ editor-local vocabulary.
 
 The catalog contains:
 
-- `schema`: `wync.editorCatalog.v0`.
+- `schema`: `wync.editorCatalog.v1`.
+- `compilerIdentity`: release status, nullable language/compiler release
+  versions, and exact language-snapshot/compiler-build identities. Ordinary
+  development catalogs carry no release version claim.
 - `completionItems`: keyword, directive, intrinsic, builtin type, and reserved
   register entries.
 - `label`: completion/hover lookup text.
@@ -217,11 +220,11 @@ Formatter canonicalization includes declaration annotations and imports:
 - declaration-prefix modifiers, calling conventions, placements, and linkage
   remain in their canonical keyword-led positions rather than being converted
   into attributes;
-- in v0.9 source, adjacent standalone module imports remain standalone and use
+- in selected snapshot source, adjacent standalone module imports remain standalone and use
   exactly one line break between declarations: the formatter inserts no blank
   line between standalone imports, and instead places a blank line around the
   complete import section;
-- an explicit v0.9 `import (...)` or `pub import (...)` group remains grouped,
+- an explicit selected snapshot `import (...)` or `pub import (...)` group remains grouped,
   preserves written order, and renders one entry per line at one indentation
   level with a comma after every entry; a public group has one leading `pub`
   applying uniformly to all entries, while different visibilities use separate

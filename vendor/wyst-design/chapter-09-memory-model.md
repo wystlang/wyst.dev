@@ -25,17 +25,17 @@ The memory model defines ordering for normal and volatile memory,
 acquire/release operations, atomics, barriers, agents, and happens-before.
 Its address and access dependencies are linked above.
 
-> **Source-version boundary.** Sections explicitly headed as current v0.9
+> **Source-version boundary.** Sections explicitly headed as current selected snapshot
 > contracts use the active language surface. Other examples in this chapter
 > retain the released v0.8 memory-model exposition for compatibility context.
 > In those older sections, predecessor typed-memory, address-arithmetic,
 > colon-range, runtime address-of, endian-access, categorized-conversion,
 > atomic-primitive, and per-access-ordering forms are historical spellings,
-> not v0.9 alternatives. Chapter 6's named address methods,
+> not selected snapshot alternatives. Chapter 6's named address methods,
 > unit-explicit offsets, `addr_of`, slice ranges, and named conversions
 > supersede those spellings without changing the ordering model.
 
-## v0.9 Atomic Acquire and Release Access (Current)
+## selected snapshot Atomic Acquire and Release Access (Current)
 
 Acquire and release ordering is part of the closed method surface of opaque
 atomic storage. The receiver is an `atomic<T>` binding or an explicit
@@ -112,7 +112,7 @@ the opaque storage boundary.
 
 ### Sequential consistency and progress obligations
 
-The v0.9 ARM64 mapping uses acquire loads, release stores, and acquire-release
+The selected snapshot ARM64 mapping uses acquire loads, release stores, and acquire-release
 RMW forms for `.seq_cst`, with no implicit `dmb`. Instruction selection alone
 is not a proof of sequential consistency. The single global SC-order rules in
 §9.3 and the normative store-buffering, load-buffering, and IRIW outcomes in
@@ -129,10 +129,10 @@ wait-free guarantee for an individual agent: under contention an LL/SC caller
 may retry indefinitely. Reports identify the selected lowering and progress
 class explicitly.
 
-## v0.9 Register and `per_cpu` Memory Contract (Current)
+## selected snapshot Register and `per_cpu` Memory Contract (Current)
 
 Chapter 8 is the sole source-semantic owner for
-`language.callable-storage-contracts`. In v0.9, explicit register placement is
+`language.callable-storage-contracts`. In selected snapshot, explicit register placement is
 written `in register`; the predecessor register-placement directive is removed. Parameter and
 result placement is part of callable identity, while `var name: T in register`
 is a hard local-storage requirement.
@@ -243,7 +243,7 @@ asm align 16 {
 }
 ```
 
-The pinned v0.9 pack does not activate `add` as a checked source form, so the
+The pinned selected snapshot pack does not activate `add` as a checked source form, so the
 fixed-local expression above is the supported way to request `add x0, x1, x2`.
 A literal checked `add` remains a support error until a later profile activates
 its exact row.
@@ -600,9 +600,9 @@ Wyst intentionally favors semantic clarity over optimizer complexity.
 ## 1.3.1 Volatility, Historical Per-Access Directives, and Current Barriers
 
 The `@volatile T` and `@mmio T` qualifier discussion remains applicable to
-v0.9. The predecessor per-access acquire/release subsections and examples are a
-released-v0.8 snapshot only; v0.9 uses the typed atomic methods in the current
-section above. The qualified barrier subsection is an active v0.9 contract.
+selected snapshot. The predecessor per-access acquire/release subsections and examples are a
+released-v0.8 snapshot only; selected snapshot uses the typed atomic methods in the current
+section above. The qualified barrier subsection is an active selected snapshot contract.
 
 Wyst distinguishes five orthogonal mechanisms for controlling memory
 operations:
@@ -797,7 +797,7 @@ applying it to a load is a compile error.
 
 ---
 
-### Qualified Barrier Operations (Current v0.9)
+### Qualified Barrier Operations (Current selected snapshot)
 
 Barriers enforce memory ordering at the CPU level, independent of any
 specific memory access. They are required wherever the ARM64 weak memory
@@ -929,7 +929,7 @@ between the writes themselves does not.
 ### Spinlock Migration Example
 
 The released-v0.8 spelling used predecessor compare-and-swap and release-order
-forms. The current v0.9 spelling uses the typed methods on opaque atomic
+forms. The current selected snapshot spelling uses the typed methods on opaque atomic
 storage:
 
 The example assumes `import core.arch { cpu }`; the category name is not
@@ -955,7 +955,7 @@ fn spin_unlock() {
 }
 ```
 
-This is the canonical v0.9 spelling. The pinned v0.9 checked-assembly pack does
+This is the canonical selected snapshot spelling. The pinned selected snapshot checked-assembly pack does
 not activate open-coded `ldaxr`/`stlxr`, so production code uses the typed
 atomic methods. The retired atomic-primitive spellings survive only in the non-parser
 [`legacy-percent-removal-audit.tsv`](legacy-percent-removal-audit.tsv)
@@ -973,7 +973,7 @@ CPU reordering at the hardware level; use `barrier.dsb` or `barrier.dmb` for tha
 
 The released-v0.8 per-access ordering forms established ordering at the
 hardware level via `ldar`/`stlr`; they did not constrain assembler scheduling
-of non-memory operations. Current v0.9 expresses those same orderings through
+of non-memory operations. Current selected snapshot expresses those same orderings through
 `.load(.acquire)` and `.store(value, .release)` on atomic storage.
 
 ---
@@ -1768,7 +1768,7 @@ if flag == 1 {
 
 ---
 
-## 9.8 Initial Values and `MaybeUninit<T>` (Current v0.9)
+## 9.8 Initial Values and `MaybeUninit<T>` (Current selected snapshot)
 
 Memory locations not explicitly initialized contain `Indeterminate bits`:
 
@@ -1880,7 +1880,7 @@ required.
 
 **Beyond this model:** The ARM64 VMSA has additional mechanisms
 (load-exclusive/store-exclusive pairs for RMW atomicity, cache maintenance
-instructions, and TLB invalidation). The pinned v0.9 checked-assembly pack does
+instructions, and TLB invalidation). The pinned selected snapshot checked-assembly pack does
 not activate those source forms; use the corresponding Wyst intrinsic where one
 exists, otherwise the compiler rejects the operation until a later profile adds
 its exact row. An admitted non-pure `asm` block is a full two-way compiler memory
@@ -2033,10 +2033,10 @@ degrade throughput by 10–50×.
 
 > **Released v0.8 placement snapshot.** The predecessor cache-isolation and
 > per-CPU declaration forms and false-sharing diagnostic described below are historical v0.8
-> material. They are not v0.9 alternatives and do not modify
+> material. They are not selected snapshot alternatives and do not modify
 > the `per_cpu var` layout or access rules in
 > `language.callable-storage-contracts`. The predecessor cache-isolation
-> attribute is removed in v0.9;
+> attribute is removed in selected snapshot;
 > cache-isolated storage requires its later owning item. The independent
 > `#cache_line_width()` target query remains governed by its own current
 > semantic-authority row.

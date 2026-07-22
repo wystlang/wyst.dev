@@ -1,14 +1,18 @@
 {
   "schema": "wyst.semanticAuthority.v0",
   "versions": {
-    "language": "wyst.language.v0.9",
+    "languageSnapshot": "wyst.language-snapshot.v1",
+    "compilerBuild": "wync.compiler-build.v1",
+    "compilerIdentity": "wync.compilerIdentity.v1",
+    "releaseRecords": "wync.releaseRecords.v1",
     "atomicMatrix": "wyst.atomic-matrix.v1",
     "nativeAbi": "wyst.nativeAbi.v0.8",
     "objectInterface": "wyst.objectInterface.v2",
     "semanticInterface": "wyst.semantic-interface.v2",
     "semanticObject": "wyst.semantic-object.v2",
     "objectMemberIdentity": "wyst.object-member-identity.v1",
-    "objectCompatibilityKey": "wyst.object-compatibility-key.v1",
+    "objectCompatibilityKey": "wyst.object-compatibility-key.v2",
+    "artifactIdentity": "wyst.artifact-identity.v2",
     "declarationIdentity": "wyst.declaration-identity.v1",
     "symbolIdentity": "wyst.symbol-identity.v1",
     "symbolMangling": "wyst.symbol-mangling.v1",
@@ -59,12 +63,36 @@
     "declarationRoleSlot": "wyst.declaration-role-claim.v1",
     "effectAuthoritySummarySlot": "wyst.effect-authority-summary-slot.reserved.v1"
   },
+  "releaseIdentityContract": {
+    "languageSnapshotSchema": "wyst.language-snapshot.v1",
+    "compilerBuildSchema": "wync.compiler-build.v1",
+    "canonicalEncoding": "wyst.length-prefixed-records.v1",
+    "digestAlgorithm": "sha256",
+    "languageInputManifest": "design/language-snapshot-inputs-v1.txt",
+    "generatedDigestDisposition": "computed and carried by compiler outputs; never embedded in an input authority",
+    "developmentReleaseStatus": "development",
+    "candidateReleaseStatus": "candidate",
+    "publishedReleaseStatus": "external publication record over one passing candidate",
+    "currentProjectionSchemas": [
+      "wync.compilerIdentity.v1",
+      "wync.generatedManifest.v1",
+      "wync.releaseEvidence.v1",
+      "wync.releaseHostFacts.v1",
+      "wync.releaseArchiveFacts.v1",
+      "wync.editorCatalog.v1"
+    ],
+    "semanticVersions": {
+      "language": "independent release-time semantic version or null during development",
+      "compiler": "independent release-time semantic version or null during development"
+    }
+  },
   "semanticObjectIdentityContract": {
     "bundleSchema": "wyst.objectInterface.v2",
     "semanticInterfaceSchema": "wyst.semantic-interface.v2",
     "objectSchema": "wyst.semantic-object.v2",
     "memberIdentitySchema": "wyst.object-member-identity.v1",
-    "compatibilityKeySchema": "wyst.object-compatibility-key.v1",
+    "compatibilityKeySchema": "wyst.object-compatibility-key.v2",
+    "finalArtifactIdentitySchema": "wyst.artifact-identity.v2",
     "declarationIdentitySchema": "wyst.declaration-identity.v1",
     "symbolIdentitySchema": "wyst.symbol-identity.v1",
     "symbolManglingSchema": "wyst.symbol-mangling.v1",
@@ -72,7 +100,8 @@
     "semanticInterfaceTuple": [
       "semantic-module",
       "interface-content-digest",
-      "language-schema",
+      "language-snapshot-schema",
+      "language-snapshot-identity",
       "interface-schema",
       "target-semantic-catalog",
       "support-manifest",
@@ -104,7 +133,8 @@
       "generated-inputs-identity"
     ],
     "compatibilityTuple": [
-      "language-schema",
+      "language-snapshot-schema",
+      "language-snapshot-identity",
       "interface-schema",
       "object-schema",
       "target-semantic-catalog",
@@ -319,22 +349,29 @@
   ],
   "features": [
     {
+      "id": "release.semantic-version-and-exact-identity",
+      "state": "implemented",
+      "selection": "selected-snapshot",
+      "owner": "design/release-identity.md",
+      "catalog": "design/language-snapshot-inputs-v1.txt"
+    },
+    {
       "id": "language.generics.type-parameter-model",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md",
       "catalog": "design/generic-bounds.tsv"
     },
     {
       "id": "language.generics.instantiation-termination",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
-      "id": "language.source-lexical-contract-v0.9",
+      "id": "language.source-lexical-contract",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/appendix-b-grammar.md"
     },
     {
@@ -346,44 +383,44 @@
     {
       "id": "language.keyword-led-declarations-bindings",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.named-multi-return-destructuring",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.expected-type-aggregate-literals",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.bitstruct-typed-fields",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md",
       "catalog": "design/generic-bounds.tsv"
     },
     {
       "id": "language.register-map-mmio-declarations",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-11-intrinsics.md"
     },
     {
       "id": "language.hardware-field-policies",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-11-intrinsics.md"
     },
     {
       "id": "language.system-register-declarations",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-11-intrinsics.md",
       "catalog": "design/a64-support-manifest.json"
     },
@@ -404,52 +441,52 @@
     {
       "id": "language.legacy-hash-directive-dispositions",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/legacy-hash-removal-audit.tsv",
       "catalog": "design/legacy-hash-removal-audit.tsv"
     },
     {
       "id": "language.maybe-uninit-whole-object-storage",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-11-intrinsics.md",
       "catalog": "design/semantic-operation-catalog.tsv"
     },
     {
       "id": "language.predecessor-bitfield-syntax",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.labeled-call-arguments",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.callable-storage-contracts",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
-      "id": "language.checked-assembly-signature-v0.9",
+      "id": "language.checked-assembly-signature",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md",
       "catalog": "design/a64-support-manifest.json"
     },
     {
       "id": "language.enum-match-patterns",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.dynamic-array-core-role",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-10-runtime.md"
     },
     {
@@ -461,37 +498,37 @@
     {
       "id": "language.hierarchical-modules-imports-visibility",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.grouped-module-imports",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.sealed-core-imports",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.source-visibility-not-linkage",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.directional-linker-boundaries",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.named-layout-dsl",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-04-modules.md"
     },
     {
@@ -503,31 +540,31 @@
     {
       "id": "language.predecessor-declaration-attribute-spellings",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/attribute-catalog.tsv"
     },
     {
       "id": "language.punctuation-led-core-declarations",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/appendix-b-grammar.md"
     },
     {
       "id": "language.legacy-dynamic-array-type-spelling",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-10-runtime.md"
     },
     {
       "id": "language.switch-case-partial",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.typed-struct-literal-spelling",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -539,19 +576,19 @@
     {
       "id": "language.compile-time-if",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.named-explicit-conversions",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.predecessor-categorized-conversions",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -563,7 +600,7 @@
     {
       "id": "language.compilation-phase-contract",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-25-compilation-phases.md"
     },
     {
@@ -588,13 +625,13 @@
     {
       "id": "language.module-discovery-model",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-03-project-builds.md"
     },
     {
       "id": "build.hosted-distributable-artifacts",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-03-project-builds.md"
     },
     {
@@ -619,55 +656,55 @@
     {
       "id": "language.qualified-imports-default",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-04-modules.md"
     },
     {
       "id": "language.ir-source-semantic-agreement",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/appendix-a-ir.md"
     },
     {
       "id": "language.structural-ssa-and-incoming-abi-transfers",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/appendix-a-ir.md"
     },
     {
       "id": "language.lexical-literal-surface",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/appendix-b-grammar.md"
     },
     {
       "id": "language.truncating-non-ascii-character-literals",
       "state": "removed",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/appendix-b-grammar.md"
     },
     {
       "id": "language.expression-evaluation-order",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-07-operators.md"
     },
     {
       "id": "language.operator-precedence-and-comparison-associativity",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-07-operators.md"
     },
     {
       "id": "language.standard-scheduling-policy",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
       "id": "language.source-scheduling-boundaries",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
@@ -685,73 +722,73 @@
     {
       "id": "language.predecessor-scheduling-modes",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
       "id": "language.integer-range-for-loop",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.repeat-loop-spelling",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.exact-code-contracts",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-13-scheduling.md"
     },
     {
       "id": "language.exception-vector-slots",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-14-exception-vectors.md"
     },
     {
       "id": "language.target-checked-trap-frame-dsl",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-14-exception-vectors.md"
     },
     {
       "id": "language.predecessor-vector-trap-directives",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-14-exception-vectors.md"
     },
     {
       "id": "language.function-label-control-flow",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.register-pinning",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.special-register-local-aliases",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-08-functions.md"
     },
     {
       "id": "language.behavior-taxonomy",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-01-language-design.md"
     },
     {
       "id": "language.trust-boundary-model",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-01-language-design.md"
     },
     {
@@ -763,87 +800,87 @@
     {
       "id": "language.effect-authority-resource-taxonomy",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-01-language-design.md"
     },
     {
       "id": "language.volatile-mmio-memory-type-taxonomy",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-09-memory-model.md"
     },
     {
       "id": "language.concurrent-memory-model",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-09-memory-model.md"
     },
     {
       "id": "language.opaque-atomic-storage-closed-orders",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-09-memory-model.md",
       "catalog": "design/atomic-matrix.json"
     },
     {
       "id": "language.predecessor-atomic-primitives-and-order-directives",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/legacy-hash-removal-audit.tsv",
       "catalog": "design/legacy-hash-removal-audit.tsv"
     },
     {
       "id": "language.execution-level-control-flow",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-11-intrinsics.md"
     },
     {
       "id": "language.system-register-canonical-spelling",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-11-intrinsics.md"
     },
     {
       "id": "language.explicit-raw-storage",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-09-memory-model.md"
     },
     {
       "id": "language.explicit-address-memory-operations",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.unit-explicit-address-offsets",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.runtime-local-address-materialization",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.slice-range-views",
       "state": "implemented",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.predecessor-address-access-syntax",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.predecessor-slice-construction-syntax",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/chapter-06-types.md"
     },
     {
@@ -855,13 +892,13 @@
     {
       "id": "language.enum-representation",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-06-types.md"
     },
     {
       "id": "language.enum-is-patterns",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-08-functions.md"
     },
     {
@@ -873,7 +910,7 @@
     {
       "id": "targets.source-requirements-build-selections",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-02-targets.md"
     },
     {
@@ -906,14 +943,14 @@
     {
       "id": "artifacts.layout-placement-solver",
       "state": "implemented",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/chapter-04-modules.md",
       "contract": "namedLayoutContract"
     },
     {
       "id": "artifacts.static-et-exec-image",
       "state": "implemented",
-      "version": "wyst.language.v0.7",
+      "introducedInLegacyRelease": "0.7.0",
       "owner": "design/chapter-16-object-format.md"
     },
     {
@@ -933,13 +970,13 @@
     {
       "id": "artifacts.relocatable-object-files",
       "state": "future-version-normative",
-      "version": "wyst.language.v0.8 target 32",
+      "plannedTarget": "object-files",
       "owner": "design/chapter-16-object-format.md"
     },
     {
       "id": "debug.dwarf5-source-floor",
       "state": "implemented",
-      "version": "wyst.language.v0.7",
+      "introducedInLegacyRelease": "0.7.0",
       "owner": "design/chapter-23-debug-info.md"
     },
     {
@@ -951,7 +988,7 @@
     {
       "id": "debug.backtrace-attribute",
       "state": "removed",
-      "version": "wyst.language.v0.9",
+      "selection": "selected-snapshot",
       "owner": "design/legacy-hash-removal-audit.tsv"
     },
     {
@@ -963,7 +1000,7 @@
     {
       "id": "language.legacy-export-directive",
       "state": "removed",
-      "version": "wyst.language.v0.8",
+      "introducedInLegacyRelease": "0.8.0",
       "owner": "design/source-of-truth.md"
     },
     {
@@ -976,7 +1013,7 @@
   "compilationPhases": [
     {
       "id": "phase.abi_lowering",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Whole-program callable and call-site ABI products after semantic verification.",
       "purpose": "Convert verified IR call boundaries and typed aggregate facts into Native ABI and foreign ABI lowering obligations without changing source meaning.",
       "immutableInputs": ["fact.ir_module", "fact.callable_abi_classification", "fact.type_layout"],
@@ -994,7 +1031,7 @@
     },
     {
       "id": "phase.build_inputs",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "CLI invocation, project manifest, explicit root-file mode, normalized artifact-owned or environment-owned layout choice, authenticated target-profile contract and extension set, and host/tool facts that are declared build inputs.",
       "purpose": "Freeze the input set for a compilation so later phases never discover source, target, layout, profile-policy, or extension inputs implicitly.",
       "immutableInputs": [],
@@ -1012,7 +1049,7 @@
     },
     {
       "id": "phase.callable_abi_classification",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Functions, labels, extern declarations, callbacks, indirect callable values, and call sites.",
       "purpose": "Classify each callable boundary under the active ABI using finalized type layout, placement, effect, and execution-level facts.",
       "immutableInputs": ["fact.type_layout", "fact.placement_address", "fact.effect_authority_summary", "fact.execution_level"],
@@ -1030,7 +1067,7 @@
     },
     {
       "id": "phase.compile_time_selection",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Top-level and item-level compile-time conditionals selected by deterministic constants.",
       "purpose": "Select the active source item set before generic canonicalization and layout-sensitive analysis.",
       "immutableInputs": ["fact.syntax_tree", "fact.ordinary_constant_value", "fact.resolved_symbol"],
@@ -1048,7 +1085,7 @@
     },
     {
       "id": "phase.declaration_collection",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Parsed module top-level declarations, imports, visibility, and declaration headers.",
       "purpose": "Assign stable declaration identities before resolving references or checking bodies.",
       "immutableInputs": ["fact.module_identity", "parse.module_ast"],
@@ -1066,7 +1103,7 @@
     },
     {
       "id": "phase.definite_initialization",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Function and label bodies after name resolution and type checking.",
       "purpose": "Prove ordinary local reads are initialized while preserving explicit raw-storage operations as separate facts.",
       "immutableInputs": ["fact.resolved_symbol", "type.checked_body"],
@@ -1084,7 +1121,7 @@
     },
     {
       "id": "phase.diagnostic_rendering",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Diagnostics already produced by prior phases.",
       "purpose": "Render text, JSON, and LSP diagnostic payloads without changing semantic facts, accepted programs, emitted bytes, or report facts.",
       "immutableInputs": ["diagnostic.record_set"],
@@ -1102,7 +1139,7 @@
     },
     {
       "id": "phase.effect_authority_analysis",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Semantic effects, authority assertions, trust-boundary facts, denies, and call-effect summaries.",
       "purpose": "Compute the authority summary consumed by ABI classification, IR construction, diagnostics, and explain reports.",
       "immutableInputs": ["fact.resolved_symbol", "type.checked_body", "sema.definite_initialization_state"],
@@ -1120,7 +1157,7 @@
     },
     {
       "id": "phase.execution_level_analysis",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Execution-level requirements and transitions for functions, labels, callbacks, exception vectors, and privileged intrinsics.",
       "purpose": "Assign the execution-level fact used by semantic diagnostics, ABI classification, and IR construction.",
       "immutableInputs": ["fact.resolved_symbol", "type.checked_body", "fact.effect_authority_summary"],
@@ -1138,7 +1175,7 @@
     },
     {
       "id": "phase.final_resource_computation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Post-lowering backend resources, exact-code resources, frame facts, spill facts, register facts, veneers, and code-size facts.",
       "purpose": "Compute the final resource summary after allocation without reclassifying semantic effects or authority.",
       "immutableInputs": ["fact.callable_abi_obligation", "machine.module", "fact.register_assignment"],
@@ -1156,7 +1193,7 @@
     },
     {
       "id": "phase.generic_canonicalization",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Generic declarations and explicit generic argument references after compile-time selection; value-argument lists are empty until a future value-parameter feature exists.",
       "purpose": "Produce canonical generic instantiation identities and substitutions before instantiation.",
       "immutableInputs": ["fact.declaration_identity", "fact.resolved_symbol", "source.selected_declaration_set"],
@@ -1174,7 +1211,7 @@
     },
     {
       "id": "phase.generic_instantiation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Reachable concrete generic functions, structs, enums, and enum variants.",
       "purpose": "Create the closed set of concrete declarations that later layout, ABI, and IR phases consume.",
       "immutableInputs": ["fact.selected_ast", "generic.canonical_instantiation_key", "generic.canonical_symbol", "generic.substitution_key", "type.checked_declaration"],
@@ -1192,7 +1229,7 @@
     },
     {
       "id": "phase.ir_construction",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Fully checked concrete declarations and finalized semantic phase products.",
       "purpose": "Build the authoritative IR module from finalized semantic facts without recomputing semantic ownership.",
       "immutableInputs": ["fact.declaration_identity", "fact.resolved_symbol", "fact.ordinary_constant_value", "fact.instantiated_ast", "fact.layout_time_value", "fact.type_layout", "fact.placement_address", "fact.effect_authority_summary", "fact.execution_level", "fact.callable_abi_classification"],
@@ -1210,7 +1247,7 @@
     },
     {
       "id": "phase.layout_time_evaluation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Layout-sensitive compile-time expressions, field offsets, sizes, alignments, and layout assertions.",
       "purpose": "Evaluate layout-time values after generic instantiation and before type-layout ownership is finalized.",
       "immutableInputs": ["fact.target_fact", "fact.ordinary_constant_value", "generic.instantiated_declaration_set", "type.checked_declaration"],
@@ -1228,7 +1265,7 @@
     },
     {
       "id": "phase.machine_lowering",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Verified IR functions, ABI obligations, scheduling regions, and target instruction selection.",
       "purpose": "Lower IR into target machine operations while preserving finalized semantic and ABI obligations.",
       "immutableInputs": ["fact.ir_module", "fact.callable_abi_obligation", "fact.target_fact", "fact.type_layout"],
@@ -1246,7 +1283,7 @@
     },
     {
       "id": "phase.manifest_provenance_generation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Generated manifest, release evidence, benchmark metadata, and build provenance payloads.",
       "purpose": "Render terminal provenance facts from frozen build inputs and source graph facts without feeding back into semantic or codegen phases.",
       "immutableInputs": ["build.input_set", "fact.module_identity"],
@@ -1264,7 +1301,7 @@
     },
     {
       "id": "phase.name_resolution",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Identifiers, paths, imports, type names, value names, callable names, and module-qualified references.",
       "purpose": "Bind references to declaration identities before type checking and constant evaluation.",
       "immutableInputs": ["fact.declaration_identity", "parse.module_ast"],
@@ -1282,7 +1319,7 @@
     },
     {
       "id": "phase.ordinary_constant_evaluation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Ordinary compile-time constants that are not layout-time facts.",
       "purpose": "Evaluate deterministic constant values used by type checking, compile-time selection, generics, and IR construction.",
       "immutableInputs": ["fact.resolved_symbol", "type.checked_constant_expression"],
@@ -1300,7 +1337,7 @@
     },
     {
       "id": "phase.parsing",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Source documents after acquisition and lexical classification.",
       "purpose": "Build concrete syntax and module AST products without performing semantic availability or feature-state inference.",
       "immutableInputs": ["fact.source_document"],
@@ -1318,7 +1355,7 @@
     },
     {
       "id": "phase.placement_constraints",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Section, symbol, object-placement, alignment, and layout-file constraints before concrete placement solving.",
       "purpose": "Collect placement obligations from finalized type layout, target selection, layout file, and source attributes.",
       "immutableInputs": ["build.layout_selection", "fact.type_layout", "fact.layout_time_value"],
@@ -1336,7 +1373,7 @@
     },
     {
       "id": "phase.placement_solving",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Concrete addresses, section offsets, symbol addresses, and placement-dependent facts.",
       "purpose": "Solve placement constraints into stable addresses consumed by ABI classification, IR construction, and artifact preparation.",
       "immutableInputs": ["placement.constraint_set"],
@@ -1354,7 +1391,7 @@
     },
     {
       "id": "phase.register_allocation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Machine operations, ABI register obligations, pinned registers, spills, reloads, and stack-slot allocation.",
       "purpose": "Assign physical registers and stack resources without changing semantic effects or ABI classifications.",
       "immutableInputs": ["machine.module", "fact.callable_abi_obligation"],
@@ -1372,7 +1409,7 @@
     },
     {
       "id": "phase.relocation_artifact_preparation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Object sections, symbols, relocations, debug sections, and final emitted artifact records.",
       "purpose": "Prepare artifact records from allocated machine code and solved placement facts without creating new semantic facts.",
       "immutableInputs": ["fact.target_fact", "fact.instantiated_ast", "fact.type_layout", "fact.placement_address", "fact.final_resource_summary", "register.assignment_set"],
@@ -1390,7 +1427,7 @@
     },
     {
       "id": "phase.report_only_fact_computation",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Explain-report, generated-report, benchmark, and inspection facts that are not consumed by semantic, ABI, lowering, object, or diagnostic decisions.",
       "purpose": "Compute typed terminal report-only summaries from already-owned products without changing accepted programs, emitted bytes, or diagnostics.",
       "immutableInputs": ["fact.target_fact", "fact.source_map", "fact.module_identity", "fact.instantiated_ast", "fact.type", "fact.effect_authority_summary", "fact.callable_abi_obligation", "fact.ir_module", "fact.machine_code", "fact.register_assignment", "fact.final_resource_summary", "fact.artifact_bytes"],
@@ -1408,7 +1445,7 @@
     },
     {
       "id": "phase.semantic_verification",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Cross-phase semantic products before ABI lowering and machine lowering.",
       "purpose": "Verify that finalized semantic facts and IR agree before backend phases consume them.",
       "immutableInputs": ["fact.ir_module", "fact.resolved_symbol", "fact.type_layout", "fact.effect_authority_summary", "fact.execution_level", "fact.callable_abi_classification"],
@@ -1426,7 +1463,7 @@
     },
     {
       "id": "phase.source_acquisition",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Source files, generated source inputs already declared by the build input phase, and immutable source text.",
       "purpose": "Read and fingerprint the frozen input set without discovering additional modules or target facts.",
       "immutableInputs": ["build.input_set"],
@@ -1444,7 +1481,7 @@
     },
     {
       "id": "phase.source_graph",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Module identities, import graph, root modules, source-to-module mapping, and original-file source-map segments.",
       "purpose": "Construct the authoritative module graph, stable module identities, and source map consumed by declaration collection, diagnostics, and reports.",
       "immutableInputs": ["build.input_set", "parse.module_ast", "source.fingerprint"],
@@ -1462,7 +1499,7 @@
     },
     {
       "id": "phase.type_checking",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Resolved declarations, expressions, statements, types, and source attributes before layout-sensitive evaluation.",
       "purpose": "Assign and validate source types while leaving layout, placement, ABI, and report-only facts to their owning phases.",
       "immutableInputs": ["fact.target_fact", "fact.resolved_symbol", "parse.module_ast"],
@@ -1480,7 +1517,7 @@
     },
     {
       "id": "phase.type_layout",
-      "languageVersionIntroduced": "wyst.language.v0.8",
+      "introducedInLanguageRelease": "0.8.0",
       "scope": "Concrete scalar, aggregate, enum, bitstruct, array, slice, descriptor, and address layouts.",
       "purpose": "Finalize the authoritative type-layout facts consumed by placement, ABI classification, IR construction, debug info, and reports.",
       "immutableInputs": ["fact.layout_time_value", "generic.instantiated_declaration_set", "type.checked_declaration"],
@@ -1895,7 +1932,7 @@
   "a64SupportManifest": {
     "state": "implemented-exact-release-support-partition",
     "schema": "wyst.a64-support-manifest.v1",
-    "release": "wyst-v0.9",
+    "release": "selected-snapshot",
     "manifest": "design/a64-support-manifest.json",
     "manifestDigest": "sha256:100951a00c3635cbc585dd20f4bd0341b5c2ac879bae1c7446c3d0efc282ef29",
     "rows": "design/a64-support-rows.tsv",
@@ -2014,7 +2051,7 @@
     "targetSchema": "wyst.a64-conformance-targets.v2",
     "oracleSchema": "wyst.a64-conformance-static-oracles.v2",
     "policySchema": "wyst.a64-conformance-policy.v2",
-    "release": "wyst-v0.9",
+    "release": "selected-snapshot",
     "generator": "wync-a64-conformance-v1",
     "generatorSource": "wync/tools/a64-conformance.mjs",
     "manifest": "design/a64-conformance-manifest.json",
@@ -2307,7 +2344,7 @@
     "schema": "wyst.metaOperations.v0.9",
     "state": "implemented",
     "source": "design/meta-operation-catalog.tsv",
-    "digest": "sha256:22330e7f6d38afffc91d3c670b48c7c095a1f0e69903a9d664689ddd780f6e60",
+    "digest": "sha256:8e67c1d72899914267d20ede202c657023b0161c118e8f51ba0a93cf18e7a7f9",
     "count": 14,
     "legacyRemovalAudit": "design/legacy-hash-removal-audit.tsv",
     "legacyRemovalCount": 53,
@@ -2351,7 +2388,7 @@
     "callArgumentForms": ["expression", "name = expression"],
     "listTrailingCommaPolicy": "one-optional-trailing-comma",
     "statementTermination": "grammar-production-completion",
-    "semicolonPolicy": "invalid-everywhere-in-v0.9-source-including-checked-assembly-instruction-bodies",
+    "semicolonPolicy": "invalid-everywhere-in-selected-snapshot-source-including-checked-assembly-instruction-bodies",
     "whitespacePolicy": "spaces-tabs-and-newlines-interchangeable-outside-literals-comments-and-checked-assembly-instruction-bodies",
     "reservedTokens": ["$", "?"],
     "reservedGeneratedSymbolMarker": "__wg"
@@ -3143,7 +3180,7 @@
     "keySchema": "wyst.genericInstantiationKey.v0.9",
     "traceSchema": "wyst.genericInstantiationTrace.v0.9",
     "keyFields": ["semanticDeclarationIdentity", "concreteTypeArguments", "concreteValueArguments"],
-    "currentValueArgumentRule": "complete-list-is-empty-because-v0.9-has-no-value-parameters",
+    "currentValueArgumentRule": "complete-list-is-empty-because-selected-snapshot-has-no-value-parameters",
     "typeArgumentEncoding": "complete-ordered-canonical-semantic-type-identities",
     "cycleRule": "revisiting-the-same-canonical-key-closes-a-valid-cycle",
     "growthRule": "reject-every-strictly-growing-canonical-instantiation-chain",
@@ -4519,7 +4556,7 @@
     "dataClasses": {
       "policy": "checked-in-host-release-gate-input",
       "samplesAggregatesVerdicts": "terminal-host-release-evidence",
-      "failureScope": ["compiler-efficiency-gate", "v0.9-release-gate"]
+      "failureScope": ["compiler-efficiency-gate", "generic-release-gate"]
     },
     "forbiddenCompilationInfluence": [
       "wync-check-input",
@@ -4738,7 +4775,7 @@
     { "schema": "wync.explain.effects.v1", "status": "experimental", "producer": "wync explain effects --format json and text header" },
     { "schema": "wync.explain.storage.v0", "status": "removed", "producer": "none", "supersededBy": "wync.explain.storage.v1" },
     { "schema": "wync.explain.storage.v1", "status": "experimental", "producer": "wync explain storage --format json and text header" },
-    { "schema": "wync.generatedManifest.v0", "status": "implemented", "producer": "wync generated-manifest" },
+    { "schema": "wync.generatedManifest.v1", "status": "implemented", "producer": "wync generated-manifest" },
     { "schema": "wync.rebuildBenchmark.v0", "status": "superseded", "disposition": "retained-read-only-historical", "producer": "none", "supersededBy": "wync.rebuildBenchmark.v1", "fieldReinterpretation": false },
     { "schema": "wync.rebuildBenchmark.v1", "status": "implemented", "producer": "wync rebuild-benchmark" },
     { "schema": "wync.localBench.v0", "status": "superseded", "disposition": "retained-read-only-historical", "producer": "none", "supersededBy": "wync.localBench.v1", "fieldReinterpretation": false },
@@ -4750,9 +4787,9 @@
     { "schema": "wync.compilerEfficiencyPreservationRecord.v1", "status": "implemented", "producer": "reviewed wync/tools/bench/evidence/v1/records ledger" },
     { "schema": "wync.compilerEfficiencyPolicyTransition.v1", "status": "implemented", "producer": "reviewed P0-to-P1 release transition" },
     { "schema": "wync.compilerEfficiencyTerminalEvidenceRegistry.v1", "status": "pending-required-inputs", "producer": "wync/tools/bench/evidence/v1/terminal-evidence-registry.json" },
-    { "schema": "wync.releaseEvidence.v0", "status": "implemented", "producer": "wync release-evidence" },
-    { "schema": "wync.releaseHostFacts.v0", "status": "implemented", "producer": "release-evidence host-facts.json" },
-    { "schema": "wync.releaseArchiveFacts.v0", "status": "implemented", "producer": "release-evidence release-facts.json" }
+    { "schema": "wync.releaseEvidence.v1", "status": "implemented", "producer": "wync release-evidence" },
+    { "schema": "wync.releaseHostFacts.v1", "status": "implemented", "producer": "release-evidence host-facts.json" },
+    { "schema": "wync.releaseArchiveFacts.v1", "status": "implemented", "producer": "release-evidence release-facts.json" }
   ],
   "diagnosticKindRegistry": {
     "schema": "wync.diagnosticKinds.v1",
@@ -4765,12 +4802,14 @@
     { "schema": "wync.diagnostics.v1", "status": "implemented", "producer": "wync check --diagnostic-format json" },
     { "schema": "wync.diagnostics.lsp.v0", "status": "removed", "producer": "none", "supersededBy": "wync.diagnostics.lsp.v1" },
     { "schema": "wync.diagnostics.lsp.v1", "status": "implemented", "producer": "wync check --diagnostic-format lsp-json" },
-    { "schema": "wync.editorCatalog.v0", "status": "implemented", "producer": "wync editor-catalog" },
+    { "schema": "wync.compilerIdentity.v1", "status": "implemented", "producer": "wync identity" },
+    { "schema": "wync.releaseRecords.v1", "status": "implemented", "producer": "generic release nomination, gate, and publication tooling" },
+    { "schema": "wync.editorCatalog.v1", "status": "implemented", "producer": "wync editor-catalog" },
     { "schema": "lsp-3.x-json-rpc-wyst-subset", "status": "implemented", "producer": "wync lsp" },
     { "schema": "zed.extension.schema_version.1", "status": "implemented", "producer": "editors/zed-wyst/extension.toml" }
   ],
   "editorMetadata": {
-    "schema": "wync.editorCatalog.v0",
+    "schema": "wync.editorCatalog.v1",
     "categories": ["keyword", "contextual-word", "unshadowable-name", "compiler-operation", "meta-operation", "declaration-attribute", "intrinsic", "builtin-type", "register"],
     "vocabularySources": {
       "syntaxWords": "design/syntax-words.tsv",

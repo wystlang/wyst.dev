@@ -20,12 +20,12 @@ and the layout module boundary.
 
 ---
 
-## v0.9 Modules, Imports, and Visibility (Current)
+## selected snapshot Modules, Imports, and Visibility (Current)
 
-Wyst v0.9 source uses keyword-led hierarchical module and import declarations.
+The selected snapshot source uses keyword-led hierarchical module and import declarations.
 After leading trivia, every source file declares exactly one module with
 `module path`; predecessor punctuation-led module/import directives are not
-v0.9 spellings.
+selected snapshot spellings.
 
 <!-- wyst-contract: fmt -->
 ```wyst
@@ -111,16 +111,16 @@ requires the selected target's exact provider and authenticated provider-leaf
 placement. No manifest flag, target name convention, or textual same-name
 declaration activates the compiler identity.
 
-## v0.9 Named Layout DSL (Current)
+## selected snapshot Named Layout DSL (Current)
 
-A v0.9 layout file is a Wyst module containing one or more named `layout`
+A selected snapshot layout file is a Wyst module containing one or more named `layout`
 declarations. An artifact-owned manifest selection
 `layout NAME from "PATH"` selects exactly one block by name. Its name is a
 stable semantic identity, not an implicit profile selector. A missing selected
 block, a selected block without an entry, or a block with a second entry is a
 compile error. An environment-owned `layout .environment` has no source layout
 file and therefore does not parse this DSL. Apart from its `module` declaration
-and applicable target, requirement, or deny policy, a v0.9 layout input contains
+and applicable target, requirement, or deny policy, a selected snapshot layout input contains
 no ordinary source declarations outside its layout blocks.
 
 That identity and every checked member contract survive in typed layout IR:
@@ -250,13 +250,13 @@ require `data`, and zero-filled mutable objects require `bss`. A source
 `#[section("NAME")]` selects an already declared, non-reserved custom section;
 it cannot create placement, change the declared kind, target a canonical or
 `.wyst.*` section, export a declaration, or rename its symbol.
-The released-v0.8 `.tls` section is not a v0.9 named-layout section; declaring
-it is an error because v0.9 has no TLS storage class or emitted `.tls` payload.
+The released-v0.8 `.tls` section is not a selected snapshot named-layout section; declaring
+it is an error because selected snapshot has no TLS storage class or emitted `.tls` payload.
 
 ### Typed Layout Symbols
 
 A layout symbol has an explicit source type and a placement-time initializer.
-The v0.9 layout-symbol type set is closed to `@u8` and `u64`; other address
+The selected snapshot layout-symbol type set is closed to `@u8` and `u64`; other address
 lenses, integer widths, booleans, and aggregate types are rejected before IR:
 
 <!-- wyst-contract: sketch -->

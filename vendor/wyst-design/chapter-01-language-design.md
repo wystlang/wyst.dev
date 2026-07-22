@@ -29,6 +29,7 @@ process.
 >
 > | Topic                                      | Canonical file                                                     |
 > | ------------------------------------------ | ------------------------------------------------------------------ |
+> | Release versions and exact identities      | [release-identity.md](release-identity.md)                          |
 > | Type system, conversions, aggregates       | [chapter-06-types.md](chapter-06-types.md)                         |
 > | Address types (`@T`, `@volatile T`, `@mmio T`) | [chapter-06-types.md §1.4.1](chapter-06-types.md)                  |
 > | Struct, bitstruct, enum layout             | [chapter-06-types.md §1.6, §1.6.1, §1.6.3](chapter-06-types.md)    |
@@ -85,6 +86,22 @@ Wyst is intentionally positioned between:
 It is best understood as:
 
 > a human-readable semantic IR for machine-oriented programming.
+
+### Snapshot, Build, And Release Identity
+
+The selected language snapshot and a compiler build are exact content
+identities, not semantic versions. The language snapshot authenticates the
+selected contract; the compiler build separately authenticates the compiler,
+the selected language snapshot, dependencies, toolchain, target, profile,
+flags, and release state. Domain separation prevents either identity from being
+substituted for the other.
+
+Language and compiler semantic versions are independent publication labels.
+They are absent from ordinary development builds, proposed only for an explicit
+clean-snapshot nomination, and released only by publication after the full gate
+passes. Roadmap completion never changes either version. The exact canonical
+encoding, input closure, bump rules, and publication workflow are normative in
+[`release-identity.md`](release-identity.md).
 
 ---
 
@@ -345,7 +362,7 @@ When a value must live in a specific register because of a hardware or ABI
 contract — firmware delivering a DTB pointer in `x0`, an exception handler
 expecting the syndrome in a particular register, an `asm` block whose
 encoding is fixed — the programmer expresses this with the declaration's
-v0.9 `in register` clause:
+selected snapshot `in register` clause:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -674,13 +691,13 @@ memory operation, floating-point state operation, or CPU wait instruction
 contributes its cataloged effects automatically. Marking an effectful active row
 `pure` is a compile-time error; omitting `pure` preserves the exact derived
 effects and makes the block a full two-way compiler fence. Mentioning a
-recognized row that is not active in the pinned v0.9 pack is a support error,
+recognized row that is not active in the pinned selected snapshot pack is a support error,
 not a way to obtain its effects.
 
 Stack-pointer state is verified separately from the `deny_effects` effect system. The
 grammar reserves `preserves`, `establishes`, and `restores stack`, but a clause
 is accepted only when active generated rows prove its complete transition. The
-pinned v0.9 pack has no stack-access or establish/restore transition row:
+pinned selected snapshot pack has no stack-access or establish/restore transition row:
 `establishes` and `restores` are therefore rejected even in their owning naked
 contexts, and `preserves` cannot authorize temporary stack access. These
 stack-state contracts do not introduce a separate effect category; a future

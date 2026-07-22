@@ -16,7 +16,7 @@ The generated manifest records build provenance: what source and conditional
 layout inputs were declared, what host/tool facts were observed, and what
 artifact facts were available after the build.
 
-The schema is `wync.generatedManifest.v0` in the `wync.reports.v1` report
+The schema is `wync.generatedManifest.v1` in the `wync.reports.v1` report
 schema bundle. It covers one
 build-configuration artifact: the resolved project build described by
 `wyst.project`. The command is a reporting step, not a build step. It writes only
@@ -42,8 +42,10 @@ The manifest records:
   source requirements, selected scheduling policies, permitted analysis
   defaults, and unverified assumptions;
 - cache-purity/freshness status, including `not-used` and `current-run`;
-- observed host/tool facts: `wync` version, host OS, host architecture, host
-  family, target profile, and optimization mode;
+- observed host/tool facts: `wync` release status, nullable language and
+  compiler release versions, exact language-snapshot and compiler-build
+  identities, host OS, host architecture, host family, target profile, and
+  optimization mode;
 - emitted artifact facts for the selected manifest product, including artifact
   name and kind, normalized output and optional companion identity, existence,
   object class/machine/entry when applicable, source-map status, provenance,
@@ -68,7 +70,9 @@ The `buildIdentity` value is a deterministic local fingerprint over the
 resolved target display, optimization mode, ordered target facts, and selected
 artifact/layout choice and scheduling policies, including implicit
 `schedule.standard`. The ordered target facts include every policy field and
-the authenticated contract/extension identities. For a counter-capable built-
+the authenticated contract/extension identities. It is a project-target
+selection identity, not the `compilerBuildIdentity` and not a semantic release
+version. For a counter-capable built-
 in target this includes static provider
 `a64-generic-virtual-counter-instance-provider-v1` version 1, product schema
 `wyst.platform-counter-instance-provider.v1`, source descriptor
