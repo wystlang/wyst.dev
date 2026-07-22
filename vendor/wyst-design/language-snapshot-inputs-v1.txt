@@ -48,4 +48,5 @@ design/semantic-db.json
 design/semantic-operation-catalog.tsv
 design/source-of-truth.md
 design/syntax-words.tsv
+design/typed-operation-kernel-control-budget-v1.json
 wync/core/collections.wyst

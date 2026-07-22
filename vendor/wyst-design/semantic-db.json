@@ -358,6 +358,13 @@
       "catalogs": ["design/c-operation-adapter-catalog.tsv", "design/generic-bounds.tsv", "design/sealed-core.tsv", "design/meta-operation-catalog.tsv", "design/syntax-words.tsv"]
     },
     {
+      "id": "language.typed-operation-direct-native-results",
+      "state": "implemented",
+      "selection": "selected-snapshot",
+      "owner": "design/chapter-17-optimization-modes.md",
+      "catalog": "design/typed-operation-kernel-control-budget-v1.json"
+    },
+    {
       "id": "release.semantic-version-and-exact-identity",
       "state": "implemented",
       "selection": "selected-snapshot",

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "51668d01014072cfce283a0701db2e22f1287fb9",
-  "snapshotSha256": "391f9b2b4e2dc1bdf0d09f17853ab22b2a63b9b7eb4adfac84423b4dee03f404",
+  "sourceCommit": "28ec3c818d7d4d2007ab5d41741eabb340e0367d",
+  "snapshotSha256": "f45caa94b17e684a457775c51d6dbb74ed81ce2297eac9985443fe4a8b9f1d98",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
       "sha256": "a418b08134837ab740348928cd664c1271bfbd7b2952420e61130b3605aadb3d",
@@ -296,7 +296,7 @@
       "size": 139
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "4e9d658613e939fd86b1066d4410e66ab9f431e18f386e87b4572bf8e85ab9bd",
+      "sha256": "e77c5f50c085e114077051675e3afa0207c4280a1b7b01b1a61ab33f320d29f7",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -392,8 +392,8 @@
       "size": 69336
     },
     "vendor/wyst-design/chapter-17-optimization-modes.md": {
-      "sha256": "f0704e01b0a37553d6abfa49b56c35cebc24de1dfd9a7fe976dc75971ff0a250",
-      "size": 5133
+      "sha256": "db1638c59207c99785000fab0a6f8a7d1188e7f1c4cb829aab82fe0d5d2d890e",
+      "size": 7018
     },
     "vendor/wyst-design/chapter-18-check-format-diagnostics.md": {
       "sha256": "fa80610925837eda7a6edad2265a551b79f3dbf8fc23c0604ad0a4b3fbd620d1",
@@ -432,8 +432,8 @@
       "size": 20192
     },
     "vendor/wyst-design/conformance-index.md": {
-      "sha256": "e22fd49d209ed5600fe24bf07b71390d7d3821dd0a95977d1895dc7506234b60",
-      "size": 200295
+      "sha256": "b22a1947b44f7c187e48bfaabf5d20060a05434313184db55af3356350a13d36",
+      "size": 201515
     },
     "vendor/wyst-design/declaration-roles.tsv": {
       "sha256": "1a2c5a1d0443ab8dffe0f64a3434ebd9f375a2e869ebe40a7ea1ab0db47e1305",
@@ -444,8 +444,8 @@
       "size": 6694
     },
     "vendor/wyst-design/language-snapshot-inputs-v1.txt": {
-      "sha256": "05b367221dc39f3f3527d691ccd0b769a61e773c3da520a1a7c2c210520d8e6e",
-      "size": 1794
+      "sha256": "842cf6e7a230589d857c11fa05f03cfc70c47decd1db7a08450479e0f8fd44c9",
+      "size": 1847
     },
     "vendor/wyst-design/meta-operation-catalog.tsv": {
       "sha256": "b3966ee5fa12c12b419aae9e2aaf9f8f164dbb58ddb26fead7be8ddb6878e017",
@@ -456,12 +456,12 @@
       "size": 8499
     },
     "vendor/wyst-design/semantic-db.json": {
-      "sha256": "be518ed02970ed90890575107e6d64aa56a205d8346fbc27d317c57f8f322e64",
-      "size": 223144
+      "sha256": "b07ae3dcdf20a463df9ec1efbdc881f65eacc995e45116b82655a884d39912c6",
+      "size": 223419
     },
     "vendor/wyst-design/source-of-truth.md": {
-      "sha256": "7931d803b76701636e5cd3a37cf352966e90fabd2e3de98a8384131083ddf05a",
-      "size": 86685
+      "sha256": "fca7ac5080a2f01f4ae806955d39faeedb7a7520be3f17d12946699fee36b025",
+      "size": 87193
     },
     "vendor/wyst-design/syntax-words.tsv": {
       "sha256": "0bf48ec36120f1b2e2d71f4d37c1fd19f6d3c2a1ded865a3318233f34727bb5f",

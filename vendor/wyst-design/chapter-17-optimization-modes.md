@@ -35,6 +35,38 @@ not hidden global optimization passes: they do not change source-observable
 effects, invent new control flow, infer aliasing contracts, or depend on
 profile feedback.
 
+### Direct Native enum-result components
+
+For a typed-operation outcome payload enum classified as a direct Native
+aggregate result, reproducible lowering may keep the tag and a scalar payload
+in their already assigned result GPR components instead of materializing the
+whole enum in a stack slot. This is an ordinary aggregate-ABI lowering choice,
+not an operation-specific calling convention. It is permitted only when the
+operation protocol is present in verified function IR and all of the following
+are proved from that IR and the concrete ABI product:
+
+- a constructor is the final value before its direct return, its tag is a
+  constant transition commitment, and no cleanup or other value lies between
+  construction and return; or
+- a direct call result is used only by compiler-origin tag or scalar-payload
+  projections, the tag is projected immediately after the call, each payload
+  is projected first in its transition arm, each projection fits wholly within
+  one returned GPR component, and materializing the tag cannot overwrite a
+  payload component needed by a later transition arm.
+
+The selected path preserves the enum layout and deterministic inactive-byte
+rule: narrow components are zero-extended, absent payload components are zero,
+and packed components are assembled or extracted at their declared layout
+offset. The typed enum value, operation protocol identity, transition dispatch,
+effects, ownership movement, and verifier facts remain present in IR and
+reports. Cleanup-bearing returns, explicit projections, indirect results,
+aggregate payload projections, cross-component projections, and any
+unproved register conflict use the ordinary materialized aggregate path.
+
+The reviewed kernel-control budget and its generator-owned, build-twice
+evidence are
+[`typed-operation-kernel-control-budget-v1.json`](typed-operation-kernel-control-budget-v1.json).
+
 Wyst rejects unknown build optimization modes. Additional non-default build
 optimization modes must be explicit in the command or build profile, and must
 document whether they preserve byte-for-byte reproducibility.
