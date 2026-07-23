@@ -1,6 +1,6 @@
 # Chapter 26 — Errors, outcomes, progress, and recovery
 
-This chapter is normative except for the final section, “Rationale and
+This chapter is required except for the final section, “Rationale and
 reconsideration”. It defines the selected model for absence, materialized
 outcomes, live operation protocols, recovery policy, progress, cancellation,
 terminal cleanup, fatal termination, and C adapters.
@@ -203,7 +203,7 @@ typed strand-suspension boundary and all context-stability checks apply. No
 boundary is invented when authenticated evidence excludes suspension. Denying
 `handler_invoke` rejects reporting; denying an arm effect rejects that arm.
 
-## 26.7 Selected recovery interaction
+## 26.7 Recovery interaction
 
 Wyst selects an explicitly passed typed recovery-decision capability. It is an
 ordinary `noescape` function-pointer parameter with a visible closed effect

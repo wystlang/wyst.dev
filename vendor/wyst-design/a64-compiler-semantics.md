@@ -7,7 +7,7 @@ summary: "Authenticated register, state, memory, control, privilege, effect, and
 
 # A64 Compiler-Semantic Catalog
 
-This document is the normative human-readable contract for
+This document is the required human-readable contract for
 `targets.a64-compiler-semantic-catalog`. The machine-readable authorities are:
 
 - [`a64-instruction-semantics.tsv`](a64-instruction-semantics.tsv), schema
@@ -273,7 +273,7 @@ for authenticated functional reference vectors. The second names a pinned
 independent executor and exact runtime fixture. The third records an explicit,
 row-specific gap; it does not weaken the row's static compiler support.
 
-The selected snapshot focused instruction profile has all 308 rows covered by pinned QEMU
+Wyst focused instruction profile has all 308 rows covered by pinned QEMU
 11.0.0 independent-oracle evidence and no unavailable-oracle gaps. Its primary
 coverage partition is 302 `expected_value` paths, five `state_path` rows, and
 one `structural_path` row. No current instruction row claims an authenticated

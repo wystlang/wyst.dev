@@ -15,11 +15,9 @@ promises. They are not performance insights, teaching diagnostics, or a
 complete source-to-machine explanation facility.
 
 The active schema identifiers are `wync.explain.lowering.v1`,
-`wync.explain.effects.v1`, and `wync.explain.storage.v1`. The earlier `v0`
-schemas are removed because they exposed synthetic authority, timing claims,
-and ambiguous write/freshness fields that cannot be interpreted as the `v1`
-truth contract. Their experimental status is part of every text and machine-
-readable report. Promotion requires a separate schema-status change in
+`wync.explain.effects.v1`, and `wync.explain.storage.v1`. Their experimental
+status is part of every text and machine-readable report. Promotion requires a
+separate schema-status change in
 [source-of-truth.md](source-of-truth.md) and
 [`semantic-db.json`](semantic-db.json).
 
@@ -111,7 +109,7 @@ map, verified typed IR, callable ABI classification and obligations, machine
 image, register-allocation facts, final frame/resource facts, relocation facts,
 and artifact bytes.
 
-For a selected snapshot function, the report's `callableIdentity` block exposes the calling
+For a Wyst function, the report's `callableIdentity` block exposes the calling
 convention; each positional parameter's type, explicit register placement, and
 `noescape` bit; and the result type, explicit result register, and `never`
 state. Declaration parameter names are deliberately absent from that identity

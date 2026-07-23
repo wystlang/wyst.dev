@@ -57,7 +57,7 @@ The Zed extension should resolve the language-server binary in this order:
 3. A documented local development path, if the workspace has a usable compiler
    binary.
 
-Automatic compiler downloads require a versioning and distribution policy for
+Automatic compiler downloads require a compatibility and distribution policy for
 editor-distributed binaries.
 
 ## Language Server Protocol Surface
@@ -65,9 +65,8 @@ editor-distributed binaries.
 `wync lsp` starts a persistent stdio JSON-RPC server using standard
 `Content-Length` framed messages. The surface handles:
 
-- `initialize`: returns `serverInfo` for `wync` whose version string carries
-  release status, nullable release versions, and exact language-snapshot and
-  compiler-build identities, and advertises open/close, save,
+- `initialize`: returns `serverInfo` for `wync` whose identity string carries
+  exact language and compiler content identities, and advertises open/close, save,
   incremental change synchronization, document formatting, completion, code
   actions, hover, semantic tokens, inlay hints, signature help, folding,
   selection ranges, document links, document symbols, call hierarchy,

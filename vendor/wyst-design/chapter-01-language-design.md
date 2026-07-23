@@ -13,13 +13,9 @@ effects, ABI, IR, object files, and tooling; the canonical definitions are
 linked below.
 
 Wyst is unpublished and under active development. This chapter describes the
-currently selected design, not an immutable constitution. Every principle,
-syntax form, semantic rule, ABI decision, schema, name, identity, and digest
-algorithm remains open to deliberate revision. Here, _canonical_, _stable_,
-_versioned_, and _normative_ mean consistent within the selected repository
-snapshot; they do not promise backwards compatibility or permanence. See
-[source-of-truth.md](source-of-truth.md) for the atomic clean-break change
-process.
+language design. Every principle, syntax form, semantic rule, ABI decision,
+schema, name, identity, and digest algorithm remains open to deliberate
+revision.
 
 > **Chapter scope.** This chapter states the identity, principles, and
 > high-level rules of the language. When a topic is defined in more detail
@@ -29,13 +25,12 @@ process.
 >
 > | Topic                                      | Canonical file                                                     |
 > | ------------------------------------------ | ------------------------------------------------------------------ |
-> | Release versions and exact identities      | [release-identity.md](release-identity.md)                          |
 > | Type system, conversions, aggregates       | [chapter-06-types.md](chapter-06-types.md)                         |
 > | Address types (`@T`, `@volatile T`, `@mmio T`) | [chapter-06-types.md §1.4.1](chapter-06-types.md)                  |
 > | Struct, bitstruct, enum layout             | [chapter-06-types.md §1.6, §1.6.1, §1.6.3](chapter-06-types.md)    |
 > | Memory model (ordering, races)             | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
 > | Volatility, MMIO intent, atomic acquire/release methods | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
-> | Semantic operations and removed-`%` audit  | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv); [legacy-percent-removal-audit.tsv](legacy-percent-removal-audit.tsv) |
+> | Semantic operations                        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv) |
 > | Typed atomic storage, methods, and orders  | [atomic-matrix.json](atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
 > | System register access                     | [chapter-11-intrinsics.md §1.3.3](chapter-11-intrinsics.md)        |
 > | Trap / cache / TLB / CPU operations        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                |
@@ -86,24 +81,6 @@ Wyst is intentionally positioned between:
 It is best understood as:
 
 > a human-readable semantic IR for machine-oriented programming.
-
-### Snapshot, Build, And Release Identity
-
-The selected language snapshot and a compiler build are exact content
-identities, not semantic versions. The language snapshot authenticates the
-selected contract; the compiler build separately authenticates the compiler,
-the selected language snapshot, dependencies, toolchain, target, profile,
-flags, and release state. Domain separation prevents either identity from being
-substituted for the other.
-
-Language and compiler semantic versions are independent publication labels.
-They are absent from ordinary development builds, proposed only for an explicit
-clean-snapshot nomination, and released only by publication after the full gate
-passes. Roadmap completion never changes either version. The exact canonical
-encoding, input closure, bump rules, and publication workflow are normative in
-[`release-identity.md`](release-identity.md).
-
----
 
 ## Design Constraints
 
@@ -362,7 +339,7 @@ When a value must live in a specific register because of a hardware or ABI
 contract — firmware delivering a DTB pointer in `x0`, an exception handler
 expecting the syndrome in a particular register, an `asm` block whose
 encoding is fixed — the programmer expresses this with the declaration's
-selected snapshot `in register` clause:
+Wyst `in register` clause:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -691,13 +668,13 @@ memory operation, floating-point state operation, or CPU wait instruction
 contributes its cataloged effects automatically. Marking an effectful active row
 `pure` is a compile-time error; omitting `pure` preserves the exact derived
 effects and makes the block a full two-way compiler fence. Mentioning a
-recognized row that is not active in the pinned selected snapshot pack is a support error,
+recognized row that is not active in the pinned Wyst pack is a support error,
 not a way to obtain its effects.
 
 Stack-pointer state is verified separately from the `deny_effects` effect system. The
 grammar reserves `preserves`, `establishes`, and `restores stack`, but a clause
 is accepted only when active generated rows prove its complete transition. The
-pinned selected snapshot pack has no stack-access or establish/restore transition row:
+pinned Wyst pack has no stack-access or establish/restore transition row:
 `establishes` and `restores` are therefore rejected even in their owning naked
 contexts, and `preserves` cannot authorize temporary stack access. These
 stack-state contracts do not introduce a separate effect category; a future
@@ -966,8 +943,8 @@ build identity, and authenticated target. Every admitted transform carries a
 compiler-owned proof, target cost, provenance, and deterministic tie decision.
 Diagnostics and reports project those facts but are never proof authority.
 
-The complete preservation contract and current reviewed growth, stack, spill,
-and duplication bounds are normative in
+The complete preservation contract and reviewed growth, stack, spill,
+and duplication bounds are required in
 [chapter-17-optimization.md](chapter-17-optimization.md). Source scheduling and
 the explicit `machine`, `verified`, and `hardened` safety policies remain
 orthogonal inputs.
@@ -1041,8 +1018,8 @@ scheduling policies produce identical output.
 ## ARM64 Feature Scope
 
 Wyst targets the **ARMv8-A baseline** instruction set. Three
-modern ARM64 features are explicitly out of scope for the selected language
-snapshot: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
+modern ARM64 features are explicitly out of scope: SVE/SVE2, PAC, and MTE.
+None has a Wyst-surface representation;
 specific instructions in these families can be exposed through checked `asm`
 as complete encoder and semantic-catalog support is activated.
 

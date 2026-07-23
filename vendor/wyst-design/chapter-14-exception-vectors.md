@@ -8,7 +8,7 @@ summary: "Alignment, target-defined vector tables, and target-checked trap-frame
 
 # Chapter 14: Wyst Alignment and Exception Vectors
 
-This chapter specifies the selected snapshot alignment contract and the target-defined
+This chapter specifies Wyst alignment contract and the target-defined
 `vector_table` and `trap_frame` declarations. A target profile, rather than
 source annotations, owns the architectural section, alignment, slot or field
 shape, state transitions, and legal execution levels of these declarations.
@@ -377,17 +377,5 @@ Any future nested-interrupt profile must allocate a distinct frame per nesting
 level, define ownership of the interrupted stack, and state the exact DAIF
 transition and barrier sequence before unmasking. The base `aarch64` profile
 cannot be weakened locally to opt into nesting.
-
----
-
-## 10.4 Historical v0.8 Removal Boundary
-
-The released-v0.8 vector, vector-entry, and trap-frame directive spellings are
-historical syntax only. Appendix B preserves them solely inside its explicitly
-versioned v0.8 grammar snapshot, and the corresponding rows in
-[`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) record their
-selected snapshot disposition. They are not aliases, migration forms, contextual tokens, or
-inputs to current parser, formatter, diagnostic, editor, or code-generation
-tables.
 
 ---

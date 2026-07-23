@@ -207,7 +207,7 @@ authenticates the architecture revision and feature set, entry and supported
 execution/security/streaming-state model, ABI, executable environment, closed
 environment-service offer, layout owner, root/entry ABI and return policy,
 privilege/admission policy, and dynamic-import/TLS/unwind/panic/exit policies.
-It also authenticates one complete versioned target-profile extension set.
+It also authenticates one complete target-profile extension set.
 Unknown, absent, stale, partial, or incompatible extensions fail before any
 subset becomes visible to a consumer.
 
@@ -254,7 +254,7 @@ policies, and complete execution/completion provider descriptor lists. The
 five built-in profiles use
 `wyst-execution-environment-freestanding-privileged-v1` version 1 with empty
 provider lists. The compiler-owned synthetic conformance target separately
-authenticates the versioned execution- and completion-provider descriptors.
+authenticates the execution- and completion-provider descriptors.
 These products activate provider semantics without linking a provider merely
 because a callable carries `execution_suspension`; source must import an exact
 offered descriptor.
@@ -298,8 +298,9 @@ unsupported. A runtime record with the closed disposition `unknown`,
 `malformed`, `incomplete`, `stale`, `mismatched`, or `ambiguous` fails before
 any record field becomes visible. An unrecognized provider identity is
 `unknown`; a source or other recognized-fact disagreement and an invalid epoch
-transition are `mismatched`; a recognized provider's obsolete version, schema,
-or product digest is `stale`. Missing authority-declared rows or a present
+transition are `mismatched`; a recognized provider identity, schema, or product
+digest that disagrees with the authenticated selection is `stale`. Missing
+authority-declared rows or a present
 record without authority are `incomplete`; extra rows, changed effects, scope,
 trust-anchor identity or references, and authority-digest disagreement are
 `mismatched`; multiple authorities are `ambiguous`. No record and no authority
@@ -323,7 +324,7 @@ families or exact post-relocation bytes, plus prologue presence, compiler spill
 slots, and veneers. Verification observes final code and rejects a mismatch; it
 never rewrites code to satisfy the contract. `transcript` names at most one
 external transcript contract, and repeated `report` clauses may name only
-already-versioned report schemas.
+identified report schemas.
 
 Manifest members are fixed-arity contextual clauses, not generic keys or Wyst
 expressions. Clause order is insignificant to parsing; the formatter emits the
@@ -494,7 +495,7 @@ without a small piece of that surface.
 ## Layout And Output
 
 The target profile owns the layout-owner decision. For `.artifact`,
-`layout NAME from "PATH"` selects exactly one named selected snapshot layout block from the
+`layout NAME from "PATH"` selects exactly one named Wyst layout block from the
 referenced file; that block must exist and its semantic entry must name the
 artifact root. Two artifacts may select different named layouts from one file,
 but neither may borrow a layout whose entry belongs to the other root. For

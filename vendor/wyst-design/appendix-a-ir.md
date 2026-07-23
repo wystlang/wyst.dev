@@ -17,7 +17,7 @@ This advanced compiler-internal reference maps Wyst source concepts into SSA,
 verifier invariants, scheduling regions, allocation, and lowering. The source
 contracts it depends on are linked above.
 
-## selected snapshot Callable and `per_cpu` IR Contract (Current)
+## Callable and `per_cpu` IR Contract
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 Typed IR must preserve, without reconstruction, a callable's convention,
@@ -73,12 +73,10 @@ reserved system state `TPIDR_EL1`; and realization
 `single-instance-test-runtime`. Without that exact selection, reachable access
 is a source/target diagnostic rather than malformed IR.
 
-Typed IR for selected snapshot admits no TLS storage kind, offset constant, current-instance
-operation, symbol, or relocation. Internal names inherited from the released
-v0.8 implementation do not authorize predecessor per-CPU or TLS source
-behavior.
+Typed IR for Wyst admits no TLS storage kind, offset constant, current-instance
+operation, symbol, or relocation.
 
-## selected snapshot Strand Suspension And Context-Stability IR Contract (Current)
+## Strand Suspension And Context-Stability IR Contract
 
 The target-neutral effect enum contains `execution_suspension` in addition to
 the machine-effect vocabulary. It is present in `effects(all)`, callable
@@ -136,7 +134,7 @@ also prevent observable memory, volatile/MMIO/atomic operations, effects,
 calls, and base acquisitions from crossing in either direction, while leaving
 independent pure operations eligible for deterministic scheduling.
 
-## selected snapshot Address, Slice, and Conversion IR Contract (Current)
+## Address, Slice, and Conversion IR Contract
 
 Chapter 6 owns the source semantics represented by
 `language.ir-source-semantic-agreement`. IR construction must erase the old
@@ -179,9 +177,7 @@ IR construction; a dynamic MMIO address carries
 `possible_architectural_fault=true`. No verifier or optimizer may turn that
 fact into an impossible-state assumption.
 
-The selected snapshot parser rejects the predecessor typed-memory, categorized-conversion,
-colon-range, raw-descriptor, runtime address-of, and endian-primitive spelling
-classes before semantic or IR construction. The verifier then validates the canonical structural result: it
+The verifier validates the canonical structural result: it
 rejects typed-address add/sub, a second scale on a canonical byte offset, a
 non-byte endian receiver, non-ordinary raw-slice data, an inexact stack-address
 lens, and a conversion kind outside its closed endpoint row. Shape-equivalent
@@ -189,7 +185,7 @@ IR nodes do not retain a redundant copy of the discarded source spelling;
 source-origin metadata is retained only where it changes an IR invariant, such
 as GEP unit/origin verification.
 
-## selected snapshot Atomic IR Contract (Current)
+## Atomic IR Contract
 
 `language.opaque-atomic-storage-closed-orders` preserves atomic opacity in typed
 IR. `atomic<T>` is a storage type and `@atomic<T>` is the only address form that
@@ -230,10 +226,10 @@ contain a lock, helper, retry limit, timeout, or synthetic failure. The IR
 progress identity means lock-free implementation, not per-agent wait-freedom.
 For `.seq_cst`, verification also retains participation in the single global
 SC order. ARM64 `ldar`/`stlr`/acquire-release-RMW selection is accepted only
-with Chapter 9's architecture proof and normative SC litmus obligations; the
+with Chapter 9's architecture proof and required SC litmus obligations; the
 absence of an implicit `dmb` is not by itself evidence of correctness.
 
-## selected snapshot Hardware Register IR Contract (Current)
+## Hardware Register IR Contract
 
 Hardware declarations are semantic module facts, not allocated globals. A
 register-map fact records stable map/register identity, unsigned backing type,
@@ -300,11 +296,6 @@ selects exactly one width-matched load or store per access; system-register IR
 selects exactly one authenticated `mrs` or `msr` per access. No lowering may
 introduce a retry, truncation, additional access, raw-encoding escape, or
 architectural barrier.
-
-> Later predecessor register-placement, callable-modifier, per-CPU, and TLS
-> wording in this appendix belongs to the released v0.8 IR exposition unless
-> explicitly updated. Read non-conflicting allocation details through the
-> current `in register`, `naked`, `never`, and `per_cpu` contract above.
 
 The Wyst IR is the compiler-internal source of truth between the semantic analyzer and
 the ARM64 backend. Every optimization, scheduling decision, and lowering rule
@@ -474,15 +465,13 @@ type-declaration = visibility name type-form
 ```
 
 `visibility` is `pub` or absent (private; see [chapter-04-modules.md](chapter-04-modules.md)).
-In current selected snapshot typed IR, hard facts are separate fields: definition lowering
+In Wyst typed IR, hard facts are separate fields: definition lowering
 records `naked`; callable signatures record convention, placements,
 `noescape`, and `never`; globals record `GlobalStorage::PerCpu`; declaration
-attributes retain only activated catalog entries. The predecessor renderer's
-callable modifiers, register placement, storage classes, and ABI markers are
-not source spellings or a current open attribute set. No TLS fact is legal in
-selected snapshot IR.
+attributes retain only activated catalog entries. No TLS fact is legal in Wyst
+IR.
 
-The current selected snapshot layout authority is likewise structural rather than a textual
+The Wyst layout authority is likewise structural rather than a textual
 directive replay. Module IR preserves the selected layout declaration's exact
 name and dialect; declaration-ordered region records with origin, size,
 `readonly`/`readwrite` access, and operand spans; declaration-ordered section
@@ -675,7 +664,7 @@ The IR has **32 op kinds**, grouped below. Each op section lists:
 - **Semantics** — what it computes.
 - **Effects** — what memory or machine state it touches.
 - **Legality** — when it may appear in IR.
-- **Lowering** — the canonical ARM64 emission. (Lowering is normative
+- **Lowering** — the canonical ARM64 emission. (Lowering is required
   only at the type-erasure boundary; passes above that boundary need not
   agree.)
 
@@ -804,29 +793,6 @@ or an alignment check.
 - **Lowering:** copy or load the storage home into a normal result home using
   the same storage class and type-erased representation as `T`.
 
-### 6.3 Atomic RMW (released v0.8 IR snapshot)
-
-This subsection preserves the predecessor IR spelling for historical context.
-The current typed `atomic<T>`/`@atomic<T>` contract and generated operation
-matrix are defined in the v0.9 section above; source tools do not expose these
-old forms.
-
-#### `atomic.cas`
-
-- **Signature:** `(@T, T, T) -> (T, bool)` — (prior, ok).
-- **Attribute:** `order : { relaxed, acquire, release, acqrel, seq_cst }`.
-- **Lowering:** `cas{,a,l,al}` on LSE targets; `ldxr`/`stxr` loop otherwise (per `#target features = (lse)`). The non-LSE loop retries store-exclusive failure until the compare-and-swap operation completes; it has no retry budget or hidden fallback result.
-
-#### `atomic.rmw`
-
-- **Signature:** `(@T, T) -> T` (returns prior value).
-- **Attribute:** `op : { add, or, and, xor, xchg, bit_set, bit_clear }`, `order : same as cas`.
-- **Lowering:** `ldadd`/`ldset`/`ldclr`/`ldeor`/`swp` (LSE); `ldxr`+arith+`stxr` loop otherwise. The non-LSE loop retries store-exclusive failure until the update store succeeds; it does not lower through a bounded internal retry count, fallback lock, or runtime helper.
-
-#### `atomic.load` / `atomic.store`
-
-- Like `load`/`store` but `order` is restricted to `{ relaxed, seq_cst }` (acquire/release continue to use the `#acquire`/`#release` directives, which lower to `load`/`store` with `order=acquire`/`release` — see §1.3.2).
-
 ### 6.4 Control Flow
 
 #### `br`
@@ -931,18 +897,13 @@ old forms.
 Relocation-producing origins are explicit in IR or in the lowering artifact
 records that consume IR. The current compiler recognizes these origins:
 
-The released v0.8 umbrella term **per-instance object references** survives in
-some internal/test vocabulary. For selected snapshot it denotes only the non-addressable
-`per_cpu` access and offset records below; it does not include TLS or authorize
-general current-instance addresses.
-
 | Origin | IR or lowering representation | Emitted artifact consequence |
 | --- | --- | --- |
 | direct calls | `call` with a `SymbolId` callee, recorded as a direct call patch during ARM64 lowering | `CALL26` when in range, or a deterministic veneer whose body uses an address-materialization relocation |
 | symbol branches | `tail` / `goto` to a label or function symbol, recorded as a direct branch patch | `JUMP26` when in range, or a deterministic veneer whose body uses an address-materialization relocation; a fixed target-owned vector-table chunk instead rejects an out-of-range branch because it has no veneer extent |
 | address materialization | `addr_of`, string address materialization, and symbol-base materialization for constant-address `gep` | `ADR_PG_HI21` + `ADD_LO12` page-pair relocation, with byte addends folded only for constant offsets |
 | constant address initializers | `ConstIr::Address` and slice/string/data descriptors containing an address constant | `ABS64` data slot patched during final image write-out |
-| `per_cpu` object references | a non-addressable direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
+| per-instance object references | a non-addressable `per_cpu` direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
 | jump tables | future explicit jump-table records, if an authenticated lowering emits tables | table entries are relocation origins; the universal optimizer does not currently emit jump tables |
 | address-bearing inline assembly operands | checked `asm` `symbol` parameters and typed address operands | retain the typed fixup or address materialization record on the exact parsed instruction |
 
@@ -1066,7 +1027,7 @@ future jump-table entry.
   `core.arch.cache.data.clean_to_poc` carries the exact generated target and
   ordering facts selected by its semantic-operation row.
 
-The selected snapshot source has no prefix-`%` operation namespace. Typed IR retains an
+Wyst source has no prefix-`%` operation namespace. Typed IR retains an
 internal operation node only after semantic analysis has attached the stable
 identity, surface, target plan, source privilege, compiler ordering, report
 identity, and exact generated target facts from
@@ -1264,8 +1225,8 @@ lowering may consume the function.
     one backing-word `Load` and the matching `Store` only when the loaded value
     flows through one `BitfieldInsert` into that store and nowhere else. This
     is one logical source RMW, not reusable address provenance.
-20. **No selected snapshot TLS**: no TLS storage kind, offset constant, current-instance
-    operation, symbol, or relocation may occur in a selected snapshot module.
+20. **No Wyst TLS**: no TLS storage kind, offset constant, current-instance
+    operation, symbol, or relocation may occur in a Wyst module.
 21. **Naked resource prohibition**: a `naked` definition contains no
     compiler-owned frame, prologue/epilogue, spill/reload, callee-save,
     argument home, or synthesized return resource.
@@ -1304,9 +1265,9 @@ lowering may consume the function.
     validity or natural GPR view is used. The verifier rejects constrained
     `bool`, enum, address/provenance, and callable result types and rejects a
     fabricated or mismatched nominal backing even when it has the same size.
-29. **Checked-assembly metadata closure**: every `asm` value in a selected snapshot module
-    carries a complete checked semantic signature; `checked: none` is confined
-    to explicitly versioned predecessor compatibility IR. Each retained direct
+29. **Checked-assembly metadata closure**: every `asm` value in a Wyst module
+    carries a complete checked semantic signature; `checked: none` is invalid
+    in source-backed modules. Each retained direct
     call carries its full ABI/resource contract and a sema-sealed local-CFG
     reachability bit. The verifier reconstructs the typed CFG and rejects any
     disagreement before naked-stack or backend link-register safety consumes
@@ -1410,7 +1371,7 @@ runtime.
 section checked statically. A future profile that activates `blr` for checked
 assembly requires an ordinary signature input with an exact callable type and
 ABI/effect/terminal contract; raw integers and untyped addresses are rejected.
-The pinned selected snapshot pack recognizes `blr` as `known_unsupported` and emits no such
+The pinned Wyst pack recognizes `blr` as `known_unsupported` and emits no such
 IR operation.
 
 ### 7.2 Checked-`asm` Stack-State Verification
@@ -1438,7 +1399,7 @@ note: every normal exit from `asm preserves stack` must have zero net delta
 `asm establishes stack` and `asm restores stack` are restricted to their owning
 naked entry and restore contexts under `language.callable-storage-contracts`
 and require a complete target
-transition contract, not just a numeric `sp` delta. The pinned selected snapshot pack has no
+transition contract, not just a numeric `sp` delta. The pinned Wyst pack has no
 active row proving either transition and therefore rejects both clauses; it also
 has no stack-access row with which `preserves` could perform temporary stack
 use. A naked block with stack behavior but no matching active proof is rejected
@@ -1606,7 +1567,7 @@ before instruction selection. Its output is the same IR with every non-void SSA
 value assigned either to a physical register home or to a deterministic
 stack-slot home.
 
-This section is **normative**. Every Wyst-conforming compiler must implement
+This section is **required**. Every Wyst-conforming compiler must implement
 this SSA-based allocator and these tie-breaks. The Reproducibility Model
 ([chapter-01-language-design.md](chapter-01-language-design.md)) requires it:
 two compilers that allocate differently produce different ELF bytes and
@@ -1891,7 +1852,7 @@ use to claim instruction latency, throughput, cache state, branch-prediction
 state, or cycle cost. A selected target identity names semantic and lowering
 capabilities; it does not imply that a corresponding performance model exists.
 
-A future modeled-cost facility must define a separately versioned model whose
+A future modeled-cost facility must define a separately identified model whose
 underlying authenticated facts actually differ whenever model names differ. It
 must identify target applicability, assumptions, unsupported factors, and an
 uncertainty or precision class. Every numeric field must carry the common

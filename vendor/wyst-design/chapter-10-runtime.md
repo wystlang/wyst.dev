@@ -17,9 +17,9 @@ Allocation is described as visible storage contracts rather than hidden
 language behavior. The memory model and the storage and library contracts
 remain separate concerns.
 
-## selected snapshot Dynamic Container Role (Current)
+## Dynamic Container Role
 
-The selected snapshot dynamic container is the ordinary explicit generic declaration with
+Wyst dynamic container is the ordinary explicit generic declaration with
 canonical identity `core.collections.DynamicArray`. It is not a prelude type
 and must be obtained from the sealed compiler-provided module before its local
 binding is applied as `DynamicArray<T>` (or through an import qualifier/alias):
@@ -39,10 +39,9 @@ A whole public or private `import core.collections` is also valid and exposes
 the type as `collections.DynamicArray<T>`; selective imports may use a local
 alias, and `pub import` may re-export the authenticated declaration under the
 ordinary source-visibility rules.
-`DynamicArray` is authenticated by the sealed declaration's versioned
-`wyst.dynamicContainerRole.v0.9` metadata, not by its qualified or unqualified
-spelling. A project declaration with the same name cannot acquire the role or
-replace the sealed module.
+`DynamicArray` is authenticated by the sealed declaration-role metadata, not
+by its qualified or unqualified spelling. A project declaration with the same
+name cannot acquire the role or replace the sealed module.
 
 The sole authority for that metadata is the compiler-shipped
 [`declaration-roles.tsv`](declaration-roles.tsv) registry under
@@ -73,20 +72,6 @@ does not allocate, initialize, run startup code, or retain operations. Every
 stored binding still has an explicit initializer, and allocation, capacity,
 growth, failure, movement, and storage identity remain visible in the selected
 storage API.
-
-The predecessor dynamic-array type marker is removed syntax in selected snapshot; it is
-neither an alias nor a second
-accepted spelling. There is no transition mode in which both forms denote the
-same type.
-
-## Released v0.8 Syntax Snapshot
-
-> The remainder of this chapter preserves the released v0.8 storage and
-> allocation exposition. Its explicit allocation, descriptor, failure, and
-> movement semantics remain relevant to the authenticated v0.9 role, but every
-> `[dynamic]T` annotation and typed punctuation-led declaration shown below is
-> a historical v0.8 spelling. Read it as `DynamicArray<T>` with keyword-led
-> bindings when applying the contract to current v0.9 source.
 
 ## Thesis
 
@@ -160,7 +145,7 @@ required labels. The remaining dot-syntax forms take positional arguments
 only — labels on `push`, `push_from_address`, `init_slot`, or
 `commit_slot` are a compile error.
 
-The descriptor representation is public and normative under
+The descriptor representation is public and required under
 `wyst.dynamicArrayDescriptor.v0`. A `DynamicArray<T>` value has total size 56 bytes and alignment 8.
 Its fields are fixed in this order:
 
@@ -245,7 +230,7 @@ wrappers are monomorphic in the bootstrap surface and report their shared
 byte-storage provenance for initialization, push-by-value, push-from-address,
 reserve-only, allocate-slot, initialize-slot, and commit-slot operations.
 Current compatibility wrapper spellings such as `dyn_array_init_Token` select
-entries from this versioned metadata table; the function name is not the
+entries from this authenticated metadata table; the function name is not the
 contract authority. The narrow `dyn_array_init<T>` source spelling reports as a
 deterministic typed wrapper instance rather than hidden runtime type erasure.
 
@@ -329,15 +314,15 @@ post-lowering constraints and reports, not in `#[deny_effects(...)]`.
 ## Kernel Initcalls, Panic, And Logging
 
 A small kernel-runtime metadata contract provides initcall tables without
-introducing a hidden runtime. A function marked `#initcall(order)` contributes one inspectable
+introducing a hidden runtime. A function marked `#[init(order = N)]` contributes one inspectable
 `.initcalls` entry. Entries are written deterministically as
 `u64 order` plus `u64 function_address`, sorted by order and then by function
 symbol name. Each entry also has a compiler-created ELF metadata symbol whose
 name includes the fixed-width `u64` order and source module-qualified function
 identity; see [chapter-16-object-format.md §4.3](chapter-16-object-format.md).
-The function must have signature `()`, must use the native calling convention,
-must not be `#inline`, `#naked`, or `#noreturn`, and must return so the next
-table entry can run.
+The function must have signature `()`, use the native calling convention, omit
+`#[inline]`, omit `naked`, return a value other than `never`, and return so the
+next table entry can run.
 
 The runtime invocation path is ordinary Wyst code. The selected named layout
 explicitly declares `.initcalls` as `rodata` with alignment at least 8 and may
@@ -349,7 +334,7 @@ explicit loads, constructs a `@()` function pointer with
 link-time rewrite, and no implicit allocation.
 
 Panic and logging stay target-profile conventions. Early kernels should expose
-plain, inspectable entry points such as `panic_code(code : u64) #noreturn` and
+plain, inspectable entry points such as `fn panic_code(code: u64) -> never` and
 `log_event(code : u64)`. Formatting, buffers, UART routing, and persistence are
 chosen by the profile or example; they are not variadic and do not allocate
 unless a visible logging API takes explicit storage.

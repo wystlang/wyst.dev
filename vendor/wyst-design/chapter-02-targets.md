@@ -151,7 +151,7 @@ selection.
 
 Target profiles also authenticate exactly one
 `wyst.target-profile-extension-set.v1`. An extension selection is an
-indivisible, versioned product bound to the complete
+indivisible, authenticated product bound to the complete
 `wyst.target-profile-base.v1` digest and layout owner. Authentication covers
 its identity, active version, product
 schema, complete normalized fields, compiler-owned expected content digest,
@@ -324,7 +324,7 @@ extension fact, never source syntax or an independent manifest switch:
 | `freestanding_privileged` | Kernels and privileged bare-metal images. |
 | `freestanding_unprivileged` | Restricted bare-metal images. |
 | `hosted_systems` | Ordinary systems programs on an existing operating system. |
-| `hosted_restricted` | WystOS first-party EL0 service images and comparable restricted services. |
+| `hosted_restricted` | Restricted hosted EL0 service images. |
 
 The product schema is `wyst.execution-environment-contract.v1`. It is bound to
 the selected target's exact authenticated base-profile digest; that base
@@ -374,7 +374,7 @@ convention or fallback. This admission does not permit strand migration:
 compiler's synthetic conformance environment
 separately authenticates `wyst-synthetic-execution-provider-v1` version 1 and
 `wyst-synthetic-completion-provider-v1` version 1; those synthetic products do
-not claim a WystOS, Linux, macOS, QEMU, or bare-metal runtime implementation.
+not claim a Linux, macOS, QEMU, bare-metal, or other runtime implementation.
 
 The synthetic execution-provider product has the exact pinned digest
 `sha256:3a698ddcfbc34f0d6f556b71d672e114dd550cf58fe4ca862544dddd566d716a`
@@ -412,9 +412,10 @@ enforce privilege, mappings, and capabilities.
 The five current built-in profiles select the same source-matched static
 provider/schema product because all five expose
 `a64-generic-virtual-counter-v1`. This is compiler-owned synthetic conformance,
-not a claim that QEMU, a board, WystOS, Linux, or macOS currently produces a
-runtime record. A later concrete environment may produce at most one immutable
-record under the selected schema for one launch or measurement lifetime.
+not a claim that QEMU, a board, Linux, macOS, or another runtime currently
+produces a runtime record. A later concrete environment may produce at most one
+immutable record under the selected schema for one launch or measurement
+lifetime.
 
 The record schema is `wyst.platform-counter-instance-record.v1`; the normalized
 per-run identity derived from it uses

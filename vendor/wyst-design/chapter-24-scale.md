@@ -16,18 +16,18 @@ the named release runner. It makes no claim about the performance of emitted
 programs.
 
 The only compiler-efficiency measurement path is `wync rebuild-benchmark`
-driven by `wync/tools/bench/`. The policy, samples, aggregates, and verdict are
-versioned independently so the harness cannot silently change a budget or
-reinterpret old evidence.
+driven by `wync/tools/bench/`. The policy, samples, aggregates, and verdict
+carry independent identities so the harness cannot silently change a budget
+or reinterpret evidence.
 
-## Versioned Contracts
+## Contracts
 
-The five produced v1 payloads have non-overlapping ownership:
+The five produced payloads have non-overlapping ownership:
 
 | Schema | Responsibility |
 | ------ | -------------- |
 | `wync.rebuildBenchmark.v1` | One compiler invocation's deterministic whole-project rebuild result and its canonical project, artifact, target, input, iteration, compiler-profile, and output identities. |
-| `wync.timingTrace.v1` | Out-of-band host timing attribution, including a root interval, versioned host-only interval IDs, canonical `phase.*` mappings, trace bookkeeping, residual reconciliation, and no semantic facts. |
+| `wync.timingTrace.v1` | Out-of-band host timing attribution, including a root interval, identified host-only intervals, canonical `phase.*` mappings, trace bookkeeping, residual reconciliation, and no semantic facts. |
 | `wync.compilerEfficiencyPolicy.v1` | The checked-in workload, runner-eligibility, measurement-protocol, aggregation, pinned-baseline, evidence-preservation, and numeric-budget release-gate input. |
 | `wync.compilerEfficiencyEvidence.v1` | Raw baseline and candidate samples, aggregates and dispersion, status axes, attribution completeness, and the sole budget/regression verdict derived under one exact policy. |
 | `wync.localBench.v1` | The harness/run envelope. It embeds or references the exact canonical policy and evidence and may render their aggregates, but owns no second baseline, aggregation, budget calculation, or verdict. |
@@ -49,78 +49,6 @@ evidence and produces no verdict.
 `wync.localBench.v1` must preserve that binding rather than replacing it with
 envelope-local fields.
 
-The v0 dispositions are closed:
-
-| Schema | Disposition |
-| ------ | ----------- |
-| `wync.rebuildBenchmark.v0` | Read-only historical payload envelope with the withdrawn optimizer field erased; superseded for all current production by `wync.rebuildBenchmark.v1`. |
-| `wync.localBench.v0` | Retained unchanged as a read-only historical payload contract; superseded for all current production by `wync.localBench.v1`. |
-| `wync.timingTrace.v0` | Retained unchanged as a read-only historical payload contract; superseded for all current production by `wync.timingTrace.v1`. |
-
-The historical `wync.rebuildBenchmark.v0` payload remains defined by this exact
-shape; it is not a v1 example:
-
-```json
-{
-	"schema": "wync.rebuildBenchmark.v0",
-	"compilerVersion": "0.3.0",
-	"workload": "project",
-	"target": "qemu-virt-aarch64-el2",
-	"buildIdentity": "fnv1a64:0000000000000000",
-	"targetFacts": {
-		"buildIdentity": "fnv1a64:0000000000000000",
-		"facts": [
-			{
-				"name": "arch",
-				"value": "arm64-v8a",
-				"provenance": "explicit-profile",
-				"source": "profile:qemu-virt-aarch64-el2"
-			}
-		],
-		"sourceRequirements": [],
-		"analysisDefaults": [],
-		"unverifiedAssumptions": []
-	},
-	"output": "build/kernel.elf",
-	"sourceCount": 2,
-	"layout": {
-		"path": "layout.wyst",
-		"fingerprint": "fnv1a64:0000000000000000"
-	},
-	"modules": [
-		{
-			"name": "boot",
-			"path": "src/boot.wyst",
-			"fingerprint": "fnv1a64:0000000000000000",
-			"imports": ["drivers.uart"]
-		},
-		{
-			"name": "drivers.uart",
-			"path": "src/drivers/uart.wyst",
-			"fingerprint": "fnv1a64:0000000000000000",
-			"imports": []
-		}
-	],
-	"iterations": [
-		{ "index": 1, "elapsedMicros": 1000, "outputBytes": 4096 },
-		{ "index": 2, "elapsedMicros": 900, "outputBytes": 4096 }
-	],
-	"byteIdentical": true
-}
-```
-
-`elapsedMicros` is observation-only; byte identity is its sole pass/fail
-contract. Its module, layout, and `buildIdentity` values with the `fnv1a64:`
-prefix are stable non-cryptographic local build-unit identifiers, not v1
-content digests.
-
-No current producer emits a v0 payload, and no v0 payload can satisfy the v1
-release gate. The historical envelope erases the withdrawn optimizer selector
-instead of carrying it as a compatibility axis. The exact read-only files are
-`schemas/rebuild-benchmark-v0.schema.json`, `schemas/local-bench-v0.schema.json`,
-and `schemas/timing-trace-v0.schema.json` under `wync/tools/bench/`; checked-in
-examples pin the rebuild and timing shapes.
-
 ## Host-Only Input And Terminal Evidence
 
 The canonical `wync.compilerEfficiencyPolicy.v1` document is a checked-in host
@@ -137,8 +65,8 @@ Neither the policy nor any evidence may affect:
 - interface, object, archive, link, or final-artifact identity; or
 - emitted bytes.
 
-They may fail only this compiler-efficiency gate or a release gate for an
-explicitly nominated snapshot.
+They may fail only this compiler-efficiency gate or a publication gate for an
+explicitly nominated build.
 Samples use host clocks and process telemetry. They neither consume nor extend
 the platform counter-instance records defined in Chapter 11. Later stage-
 identity and freshness work may incorporate report identities, but this
@@ -191,7 +119,7 @@ configuration and canonical workload inputs; otherwise they are
 A non-eligible set retains its raw samples and exact reason but produces neither
 an aggregate budget verdict nor a regression verdict.
 
-Different physical runners require a separately versioned calibration and
+Different physical runners require a authenticated calibration and
 host-class contract. Cross-version results that require different source or
 artifact contracts may be retained as product-evolution context, but they are
 `not_comparable` and never drive a regression verdict.
@@ -239,7 +167,7 @@ records the externally measured tracing overhead beside the traced
 reconciliation; it never subtracts that overhead from a hard verdict.
 
 The timing trace uses existing canonical semantic-database `phase.*` IDs. Each
-versioned host-only interval ID maps explicitly either to the canonical phase
+identified host-only interval maps explicitly either to the canonical phase
 IDs it observes or to compiler initialization or teardown. A host interval
 owns no semantic fact and cannot redefine phase order, ownership, or
 dependencies. The policy's `requiredHostIntervalMappings` object is the frozen
@@ -367,7 +295,7 @@ equivalence tests. Repeated catalog scans, parsing, allocation, hashing, or
 reconstruction may be replaced by generated indexes, direct maps, compact
 authenticated products, or process-global caches only when the input is an
 immutable compiler-owned product and the cache key covers its complete
-versioned identity. Each accelerated view is mechanically derived and
+authenticated identity. Each accelerated view is mechanically derived and
 non-authoritative; it adds no semantic field.
 
 An accelerated A64 index declares its exact authenticated authority source
@@ -439,4 +367,4 @@ and artifact identities.
 - No target-runtime, emitted-code performance, backend-cost, PMU/TMA, or
   platform-counter claim; the platform-counter contract and later backend
   contracts own those.
-- No cross-machine verdict without a later versioned calibration contract.
+- No cross-machine verdict without a authenticated calibration contract.

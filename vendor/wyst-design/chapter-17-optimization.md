@@ -79,7 +79,7 @@ resource is made worse without a reviewed target-specific benefit. Stable
 symbol identity, source position, case order, and canonical type identity are
 the only tie inputs.
 
-### 3.1 Current reviewed bounds
+### 3.1 Reviewed Bounds
 
 Compiler-selected internal inlining is limited to a Native, non-exported,
 non-public, body-visible callable with an authenticated `effects(none)` bound.
@@ -185,15 +185,7 @@ loads, stack stores, or frame bytes. The fixture also authenticates operation
 identity, transitions, effects, cleanup, debug provenance, explanations,
 build-twice bytes, and QEMU output.
 
-## 7. Withdrawn spellings
-
-There is no optimization command option or manifest clause. Stale options and
-clauses are ordinary unknown input and are rejected without aliases or ignored
-fallback. The abandoned dotted size policy has no reserved, deprecated, or
-audited spelling. The undotted word `size` remains an ordinary identifier and
-retains its existing contextual uses in layout syntax.
-
-## 8. Relationship to scheduling and hardening
+## 7. Relationship to scheduling and hardening
 
 `schedule source` is a source-level compiler-ordering boundary, not an
 optimizer selector. `schedule.standard` permits only transformations that meet

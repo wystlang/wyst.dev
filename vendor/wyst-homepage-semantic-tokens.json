@@ -496,7 +496,7 @@
   },
   "schema": 1,
   "source": {
-    "gitCommit": "208890984e399eeb8965037b5daa394dc9e5d95d",
+    "gitCommit": "50c9895417d814afb37c2ad04c55d0176abec124",
     "path": "wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
     "sha256": "ca4e7b83d9536496a797531e943381bb4fb3dc6aa2c542d62f6c36f8ffe11b08"
   }

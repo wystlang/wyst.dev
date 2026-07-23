@@ -14,25 +14,18 @@ summary: "Emitted artifacts, ELF sections, symbols, relocations, deterministic o
 Object format describes emitted artifacts, not source syntax. It builds on
 modules, layout declarations, boot entry, and ABI classification.
 
-> **Source-version boundary.** Object and relocation behavior is current.
-> Predecessor address-access, categorized-conversion, and raw-descriptor
-> examples are released-v0.8 source background. Chapter 6 owns and supersedes
-> those spelling classes with address methods, named conversions, and
-> `address.slice(elements = count)`.
+## Semantic Object Units And Canonical Symbol Identities
 
-## selected snapshot Semantic Object Units And Canonical Symbol Identities (Current)
-
-`wyst.objectInterface.v2` specifies the identity and generic-ownership contract used by the current
-final-image compiler and by every later semantic interface, relocatable object,
-archive, or linker. The current `ET_EXEC` writer does not expose public object
-output, but every build constructs this product before artifact identity and
-serializes it in the authenticated `.wyst.artifact` record set. A later object
-writer must transport the same identities; it may not reconstruct a smaller
-key from source names or ELF fields.
+`wyst.objectInterface.v2` specifies the identity and generic-ownership contract
+used by the final-image compiler and by semantic interfaces, relocatable
+objects, archives, and linkers. The `ET_EXEC` writer does not expose public
+object output, but every build constructs this product before artifact identity
+and serializes it in the authenticated `.wyst.artifact` record set. Object
+writers transport the same identities; they may not reconstruct a smaller key
+from source names or ELF fields.
 
 Each semantic module has exactly one `wyst.semantic-interface.v2` variant for
-the selected language-snapshot schema and exact snapshot identity, interface
-schema, authenticated target semantic
+the exact language identity, interface schema, authenticated target semantic
 catalog and support manifest, Native ABI, executable-environment identity,
 layout/root ABI and admission identity, and safety/trust/proof/hardening tuple.
 The pre-safety-profile state writes
@@ -46,8 +39,8 @@ The module-specific `wyst.object-member-identity.v1` digest contains the
 semantic-interface identity plus the object schema, code-generation profile,
 the four safety/trust/proof/hardening slots, debug/unwind/frame policies,
 backend identity, and generated-input identity. The separate homogeneous
-`wyst.object-compatibility-key.v2` contains the language-snapshot schema and
-exact snapshot identity, interface/object schemas,
+`wyst.object-compatibility-key.v2` contains the exact language identity,
+interface/object schemas,
 target semantic catalog, support manifest, Native ABI, environment/provider
 tuple, profile, safety/trust/proof/hardening tuple, debug/unwind/frame policies,
 and backend identity. It deliberately excludes semantic-module, interface-
@@ -85,14 +78,14 @@ template-relative offset described below. Runtime core instances are derived
 storage selected through the target execution environment. They have no linker
 symbol, export alias, or independent semantic declaration identity.
 
-## selected snapshot Generic Instantiation Ownership And Transport (Current Contract)
+## Generic Instantiation Ownership And Transport
 
-`wyst.generic-ownership.v1` specifies generic ownership for the current semantic
+`wyst.generic-ownership.v1` specifies generic ownership for semantic
 interfaces, relocatable objects, and archives are implemented. It consumes
-`wyst.genericInstantiationKey.v0.9` from Chapter 6 unchanged. The key is the
+the generic-instantiation key from Chapter 6 unchanged. The key is the
 canonical semantic declaration identity plus the complete ordered concrete
 type-argument list and complete ordered value-argument list; the latter is
-empty in selected snapshot. No interface, object writer, archive index, linker, cache, or
+empty in Wyst. No interface, object writer, archive index, linker, cache, or
 backend may select a generic from source spelling, parse `__wg` mangling back
 into semantics, omit an argument, or define a second key. A function-pointer
 type argument includes its calling convention, parameter/result contract, and
@@ -132,7 +125,7 @@ type-checked body under `wyst.generic-body.v1` and its complete authenticated
 `wyst.generic-transport.v1`. This is a semantic representation, not raw source
 text, a backend IR dump, or machine code. The envelope binds the declaration
 identity and semantic home, source/interface-private visibility, body digest,
-ordered dependency-closure digest, `wyst.generic-placement.v1` policy, and the versioned
+ordered dependency-closure digest, `wyst.generic-placement.v1` policy, and the
 declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2`
 reserves all three slots now:
 
@@ -141,7 +134,7 @@ reserves all three slots now:
   `wyst.declaration-role-registry.v1` and its content digest without changing
   generic identity;
 - effect/authority-summary slot:
-  `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
+  `wyst.effect-authority-summary-slot.reserved.v1`, activated by the
   effect/authority contract without weakening a callable type argument's fixed bound.
 
 Private generic declarations needed transitively travel as
@@ -169,14 +162,14 @@ relabeling it.
 Only ordinary typed reachability, a transitive request in an authenticated
 body/closure, or an explicit `artifact_verify` root creates a concrete demand.
 The `wyst.generic-demand-worklist.v1` map is keyed and popped by the
-`wyst.genericInstantiationKey.v0.9` identity digest. Repeated exact demands
+the generic-instantiation key identity digest. Repeated exact demands
 merge their canonical provenance; the canonical-instantiation exact-cycle and
 strictly-growing-chain rules from Chapter 6 continue to govern expansion. A
 different transport/cache tuple for the same key is a stale/incompatible
 diagnostic, never a competing worklist entry.
 
 `wyst.generic-archive-index.v1` maps a
-`wyst.genericInstantiationKey.v0.9` identity to canonically sorted member and
+the generic-instantiation key identity to canonically sorted member and
 transport identities. Merely containing or indexing a generic body,
 definition, custom section, or semantic root never creates a demand. A real
 demand may extract the indexed interface/home member and any already-emitted
@@ -203,18 +196,18 @@ by preferring another emitter. Type-only struct and enum instantiations carry
 no code contribution or semantic root.
 
 The current whole-program compiler transports the
-`wyst.genericInstantiationKey.v0.9` identity from
+the generic-instantiation key identity from
 monomorphization through typed IR and records each concrete identity, semantic
 home, physical member, hidden-link-once mode, complete argument lists, and
 placement policy in the authenticated final artifact. The executable model in
 `wync/src/generic_ownership.rs` fixes body authentication, closure visibility,
 demand order, archive lookup, duplicate validation, provenance merge, and
 survivor selection. The separate interface, object, archive, and link
-milestones serialize and execute this already-versioned contract; they may not
+milestones serialize and execute this already-contract; they may not
 invent a body format field, placeholder body semantics, fallback key,
 archive-order rule, or linker-side instantiator.
 
-## selected snapshot `per_cpu` Object Contract (Current)
+## `per_cpu` Object Contract
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 In the current whole-program `ET_EXEC` mode, every accepted `per_cpu var`
@@ -243,12 +236,11 @@ The `.percpu` bytes are an immutable initialization template even when the
 current static-image transport marks the containing load segment writable for
 a later runtime copier. The template is never the live current-core instance.
 The compiler emits no copied instances, allocation metadata, base setup,
-startup copy, or ordinary-global alias. A selected snapshot source contributes no TLS
-payload, symbol, relocation, or size export. A selected snapshot named layout emits
-no `.tls` section or `PT_TLS`; a selected released-v0.8 layout may retain its
-historical empty `.tls` compatibility row without admitting selected snapshot TLS storage.
+startup copy, or ordinary-global alias. A Wyst source contributes no TLS
+payload, symbol, relocation, or size export. A Wyst named layout emits no
+`.tls` section or `PT_TLS`.
 
-## selected snapshot Placement and Initialization Attributes (Current)
+## Placement and Initialization Attributes
 
 The active placement surface is `#[align(N)]`, `#[section("NAME")]`,
 `#[init(order = N)]`, and `#[cache_isolated]`. These are hard compiler
@@ -297,7 +289,7 @@ shares no cache line with another live object. Padding is not part of the
 source type or symbol size, creates no retention root, and implies no atomicity,
 ordering, volatility, synchronization, or visibility semantics.
 
-## selected snapshot Named Layout Object Contract (Current)
+## Named Layout Object Contract
 
 An artifact-owned manifest layout clause selects exactly one named `layout`
 block from its layout file. Its `entry` member resolves one exact
@@ -365,20 +357,15 @@ resolved exactly or diagnosed. Thus an out-of-range checked `bl`/`CALL26`
 produces a hard diagnostic that retains the source instruction; it never uses
 the ordinary direct-call veneer policy.
 
-The released-v0.8 layout-directive rows in the hash-removal audit name ordinary
-invalid source. Those forms survive only in the historical grammar snapshot
-and removal audit; they never enter the parser, placement/object machinery, or
-editor vocabulary.
-
 Wyst's integrated compiler reads a set of source modules and emits a single
 binary image in the current implemented artifact mode. There is no separate
 assembler, no separate linker, and no intermediate object files written to disk
 for the implemented `ET_EXEC` mode. Relocatable object files are a
-future-version normative R8 surface (planned target 32) and do not
+planned surface and do not
 override the current single-image rules until Chapter 16 is updated for that
 artifact mode.
 
-## selected snapshot Suspension And Context Summary Closure (Current)
+## Suspension And Context Summary Closure
 
 Before any body-independent callable fact is admitted, one authenticated
 sidecar atomically retains its exact or conservative effect bound, the bound's
@@ -401,7 +388,7 @@ the consumer rejects a hand-edited or otherwise unsourced classified override as
 incompatible transport. This admission rule is separate from the wire format:
 the same codec preserves classified facts exactly once such a producer exists.
 
-The canonical transport is `wyst.callable-context-summary.v2`; v1 is unsupported rather than aliased.
+The canonical transport is `wyst.callable-context-summary.v2`.
 Its body order is exactly: the eight bytes
 `WYSTCTX\0`; little-endian 16-bit version 2; a length-prefixed canonical
 callable identity; the effect-bound tag and optional counted canonical effect
@@ -458,7 +445,7 @@ are unavailable, so no current public object or archive emitter is claimed.
 That future producer and every consumer must use the exact v2 contract rather
 than inventing a bodyless-call exception or silently accepting v1.
 
-## selected snapshot Reserved Static-Library Contract
+## Reserved Static-Library Contract
 
 The project-manifest grammar accepts `static_library` with one source-module
 root closure, primary archive path, companion semantic-interface path, target,
@@ -593,8 +580,7 @@ weaken it.
 
 `.percpu` is placed once in the image. A later runtime may copy its immutable template bytes
 to live instances, but the compiler performs no replication and the template
-is not itself live storage. `.tls` is not a selected snapshot section; any occurrence in a
-released v0.8 artifact is historical compatibility material. See §7.
+is not itself live storage. `.tls` is not a Wyst section.
 
 ---
 
@@ -605,7 +591,7 @@ The `.symtab` includes one entry per:
 - emitted address-bearing top-level declaration (function, label, constant,
   or ordinary mutable global) as a local semantic/debug identity, independently
   of source `pub`. `per_cpu` entries are the local offset symbols defined by the
-  current selected snapshot contract above.
+  Wyst contract above.
 - each explicit `export` mapping as a distinct external alias of its local
   target, with the requested strong or weak binding.
 - Explicit typed layout symbol (`start`, `end`, `size`, or a typed numeric
@@ -644,7 +630,7 @@ prologue, epilogue, or return semantics from a label symbol; source-level
 `STT_TLS` is **not** used. A `per_cpu` entry is a local `STT_OBJECT` whose
 value is its byte offset within `.percpu`; it is an offset identity rather than
 a process address. The selected target access sequence consumes that offset.
-The selected snapshot emits no TLS symbol.
+Wyst emits no TLS symbol.
 
 ### 4.3 Internal And External Names
 
@@ -655,15 +641,15 @@ choice. Distinct explicit exports of one declaration produce distinct symbol
 table entries with the same value and independently selected `STB_GLOBAL` or
 `STB_WEAK` binding.
 
-The current whole-program emitter gives every internal declaration a stable
+The whole-program emitter gives every internal declaration a stable
 module-qualified semantic identity for debugging and relocation resolution,
 independent of `pub`, source imports, and export aliases. A separate
 source-facing lookup/display spelling may remain local inside the compiler; it
 is never an external claim and cannot replace the semantic identity in ELF.
 The semantic-object-unit contract specifies the canonical encoding for these
-identities in the current snapshot. A deliberate redesign may replace it, but
-all producers and consumers selected for one build must use the same contract;
-the internal encoding does not change the external spelling selected here.
+identities. All producers and consumers selected for one build use the same
+contract; the internal encoding does not change the external spelling selected
+here.
 
 Compiler-created initcall metadata symbols are an explicit exception. Every
 `#[init(order = N)]` function emits one 16-byte `.initcalls` entry and one
@@ -783,7 +769,7 @@ enumerated here so that:
 
 - `R_AARCH64_GOT_*` family — no GOT in static linking.
 - `R_AARCH64_TLSGD_*`, `R_AARCH64_TLSDESC_*` — no dynamic TLS.
-- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in selected snapshot.
+- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in Wyst.
 - `R_AARCH64_TLSIE_*` — initial-exec model not used.
 - `R_AARCH64_COPY`, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT` — dynamic linker only.
 
@@ -939,12 +925,6 @@ access is legal only with
 fails. Declarations and offset constants alone do not select or imply that
 realization.
 
-The released-v0.8 TLS offset-query row, `.tls` template, `__tls_size`,
-TPIDR_EL0, and associated address-materialization rules are historical and
-produce no selected snapshot artifact.
-
----
-
 ## 8. Sections from User Declarations
 
 User code places a declaration in a custom section with the
@@ -982,9 +962,8 @@ Declarations". The rules relevant to the object format are:
   `.rodata`, `.data`, `.bss`, `.initcalls`, `.percpu`, `.tls`, the `.debug_*` family,
   `.symtab`, `.strtab`, `.shstrtab`) and any name starting with `.wyst.`
   are reserved. User code cannot target them with `#[section(...)]`;
-  canonical sections are written by omitting the attribute. `.tls` remains
-  reserved so removed v0.8 TLS syntax cannot be recreated as a misleading
-  custom section, and it is not emitted by selected snapshot.
+  canonical sections are written by omitting the attribute. `.tls` is reserved
+  and is not emitted by Wyst.
 - **Flags are derived** from the declaration kind (function → `ALLOC |
   EXECINSTR`; constant → `ALLOC`; mutable initialized → `ALLOC | WRITE`;
   zero-filled mutable storage → `ALLOC | WRITE` with `SHT_NOBITS`). The ELF
@@ -1008,12 +987,11 @@ documented path if needed.
 
 | Feature                                         | Boundary                 | Future path                                                                                            |
 | ----------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Per-module `.o` relocatable output              | Outside implemented base image model | Future-version normative for R8 target 32 as `wync -c` / `--emit-object`; would serialize the §5 relocation vocabulary into `.rela.*` sections |
+| Per-module `.o` relocatable output              | Outside implemented base image model | planned for R8 target 32 as `wync -c` / `--emit-object`; would serialize the §5 relocation vocabulary into `.rela.*` sections |
 | Dynamic linking (`ld.so`, `PT_INTERP`)          | Outside base image model | Requires GOT/PLT relocations, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT`, dynamic symbol table        |
 | Position-independent executables (`ET_DYN`)     | Outside base image model | Base output lowers against absolute addresses                                                          |
 | Shared objects (`.so`)                          | Outside base image model | Same dependency on dynamic linking                                                                     |
 | COMDAT / section groups                         | Outside base image model | `#[inline]` is the only deduplication mechanism; multiply-defined exports are a hard error             |
-| Predecessor weak and hidden-visibility directives | Outside symbol model   | Use `export weak` for weak external definitions; hidden shared-object visibility remains undefined     |
 | `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the selected layout's semantic `entry` is the only entry point |
 | Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `vector_table` models hardware exception entry only      |
 | ar archives, static-library companions          | Reserved grammar; outside implemented base image model | `static_library` selection fails before output; a future producer must emit the archive and authenticated companion atomically |

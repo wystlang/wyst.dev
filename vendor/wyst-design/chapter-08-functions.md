@@ -8,12 +8,11 @@ summary: "Declarations, functions, parameters, returns, control flow, labels, in
 
 # Chapter 8: Wyst Functions, Control Flow, and Inline Assembly
 
-> **Canonical scope.** The current selected snapshot sections below own keyword-led
-> declarations, callable identity, register placement, mandatory `#[inline]`,
-> `per_cpu` storage, and structured control flow. The numbered §2.x material
-> after “Released v0.8 Syntax Snapshot” is historical source background. The ABI
-> (calling-convention-level rules) lives in [chapter-15-abi-spec.md](chapter-15-abi-spec.md);
-> exception vectors live in [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md).
+> **Scope.** This chapter owns keyword-led declarations, callable identity,
+> register placement, mandatory `#[inline]`, `per_cpu` storage, and structured
+> control flow. Calling-convention rules live in
+> [chapter-15-abi-spec.md](chapter-15-abi-spec.md); exception vectors live in
+> [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md).
 
 The core contract covers declarations, parameters, return values, and
 structured control flow. Explicit register placement, `naked`, and checked
@@ -22,7 +21,7 @@ elsewhere.
 
 ---
 
-## selected snapshot Declarations, Calls, and Enum Control Flow (Current)
+## Declarations, Calls, and Enum Control Flow
 
 Core declarations and stored bindings are keyword-led:
 
@@ -39,10 +38,9 @@ bitstruct Name: u32 { FIELD: u8 at 0..=3 }
 An optional declaration attribute group comes first, followed by `pub`, any
 activated hard modifier or storage class, an activated external convention,
 and then the declaration keyword. A declaration has at most one non-empty
-`#[...]` group. The versioned attribute catalog owns legal subjects, argument
+`#[...]` group. The attribute catalog owns legal subjects, argument
 forms, conflicts, and formatter order; unknown and inactive attributes are
-errors rather than ignored annotations. Predecessor punctuation-led and
-unkeyworded bindings, along with `let`, are not selected snapshot declarations.
+errors rather than ignored annotations.
 
 Every `const` and `var`, including a destructuring binding, has an explicit
 initializer. `const` is immutable and `var` is mutable. Either may omit `: T`
@@ -80,7 +78,7 @@ non-discard names to exist and be mutable, evaluates its right side once, and
 updates every target simultaneously. Bare comma forms and mixed declaration
 and assignment are errors. Tuples remain restricted to named multi-results and
 their result storage: anonymous, nested, single-element, parameter, and
-general-purpose tuple types are not part of selected snapshot.
+general-purpose tuple types are not part of Wyst.
 
 Every call argument has one parser form: `expression` or `name = expression`.
 Positional arguments precede labeled arguments. Labels on a statically resolved
@@ -117,12 +115,11 @@ final `else`, the variants must be statically exhaustive. A final explicit
 `else {}` deliberately accepts unlisted variants. In expression position each
 reachable arm supplies a tail value of one exact common type; `never` is
 compatible and ownership joins are exact. A partial-match opt-out is illegal.
-There are no predecessor arm keywords, colon or arrow arms, wildcard arms,
-guards, or nested patterns. The same
+There are no colon or arrow arms, wildcard arms, guards, or nested patterns. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
 the binding scoped to the successful branch.
 
-## selected snapshot Callable Identity, Terminal Entries, and Storage Classes (Current)
+## Callable Identity, Terminal Entries, and Storage Classes
 
 This section is the sole source-semantic owner for
 `language.callable-storage-contracts`. Chapters 9, 11, 15, and 16 and
@@ -211,8 +208,7 @@ register must be legal for the value class and width under Chapter 15, must not
 conflict with another simultaneously required location, and must not name
 target-reserved state. If allocation and preservation cannot satisfy the exact
 request, compilation fails; the compiler does not silently choose another
-register. The removed register-placement directive is never an alternative
-spelling.
+register.
 
 ### `never`, labels, and `naked`
 
@@ -268,7 +264,7 @@ demanded by ordinary reachability or another explicit artifact root.
 
 `per_cpu` is legal only on a module-scope mutable `var` with an explicit
 statically representable initializer under
-`language.keyword-led-declarations-bindings`. Under the current contract, the declaration defines one
+`language.keyword-led-declarations-bindings`. The declaration defines one
 natural-layout initialization-template entry: source type and layout, natural
 alignment, initializer bytes and relocations, canonical storage-class/symbol
 identity, deterministic template placement, and final byte offset in
@@ -276,7 +272,7 @@ the linked `.percpu` template. The template is semantically immutable. `pub`
 controls Wyst source visibility only; it does not export a process address,
 current-instance address, or raw template address.
 
-A selected snapshot `per_cpu` declaration may raise its template-entry alignment with
+A Wyst `per_cpu` declaration may raise its template-entry alignment with
 `#[align(N)]`. Both the final template offset and every live-instance address
 must then satisfy the maximum of the natural, explicit, and realization
 alignment requirements. The selected realization must prove the corresponding
@@ -290,7 +286,7 @@ bitstructs, and statically representable string descriptors expose only their
 direct scalar element/field projections. Vector storage is rejected until a
 scalar lane-access contract exists; slice and dynamic-array descriptor storage
 remains rejected. Payload-less enums use their scalar tag representation;
-payload-bearing enums are rejected because selected snapshot has no direct scalar projection
+payload-bearing enums are rejected because Wyst has no direct scalar projection
 for their whole aggregate stored value.
 
 `#percpu_offset_of(binding)` is the only non-access projection. It produces a
@@ -348,371 +344,8 @@ The current compiler emits only the immutable template and the requested access 
 It performs no instance replication, allocation, base installation, startup
 copy, or implicit collapse to an ordinary global. Later runtime work may copy
 the immutable template without changing its source, object, or offset semantics.
-The selected snapshot has no TLS storage class. The predecessor TLS, callable-modifier,
-register-placement, per-CPU, ABI-marker, and callable-type spellings are
-removed source forms. Current callable forms use `extern "C" fn(...)` and
+Wyst has no TLS storage class. Callable forms use `extern "C" fn(...)` and
 `fn(...)`.
-
-## Released v0.8 Syntax Snapshot
-
-> The remainder of this chapter preserves the released v0.8 exposition and
-> remains useful for non-conflicting function, control-flow, ABI, and assembly
-> semantics. Its punctuation-led declarations and bindings, `switch`/`case`,
-> `#partial`, brace array examples, `#pin`, `#noreturn`, `#naked`,
-> `#noescape`, `#percpu`, and every TLS form and old attribute placement are
-> historical v0.8 syntax, not current v0.9 alternatives. The v0.9 section
-> above controls every conflict.
-
-### Functions and Control Flow
-
-Wyst uses a **unified declaration syntax** for everything:
-
-```
-name : type = value     // local variable (mutable)
-name :: type = value    // constant binding (immutable)
-name := value           // inferred local variable
-name ::= value          // inferred constant binding
-```
-
-The colon is the declaration point everywhere. Single `:` declares mutable
-storage: inside function bodies it declares locals, and at top level it
-declares mutable globals. Double `::` binds constants wherever declarations are
-allowed; at top level it also introduces named declarations such as functions,
-labels, and types. There is no `fn` keyword
-prefix, no type-before-name ordering, and no dot-prefixed labels.
-
----
-
-## 2.1 Unified Declarations
-
-All declarations follow the same pattern:
-
-```
-name : type = value     // mutable storage (local or global by scope)
-name :: type = value    // constant binding (local or top-level by scope)
-```
-
-### Type Inference
-
-The type annotation can be omitted. When absent, the compiler infers the type from the right-hand side:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-# Explicit type
-counter  : u64 = 0
-
-# Inferred — equivalent to `counter : i64 = 0`
-counter  := 0
-
-# Inferred constant — equivalent to `LIMIT :: i64 = 16`
-LIMIT ::= 16
-```
-
-`:=` and `::=` are declaration tokens. Whitespace is not allowed inside
-them: `counter : = 0` and `LIMIT :: = 16` are syntax errors.
-
-#### Literal Typing
-
-Integer and float literals are **untyped** until they are bound to a context
-that requires a concrete type. The compiler then checks that the value
-fits in the target type. See §1.4.1 for the complete model.
-
-| Literal                | Initial type                            | Default when no context demands one |
-| ---------------------- | --------------------------------------- | ----------------------------------- |
-| `123`                  | `untyped_int`                           | `i64`                               |
-| `0x4000`               | `untyped_int`                           | `i64`                               |
-| `0b1010`               | `untyped_int`                           | `i64`                               |
-| `4_096`                | `untyped_int`                           | `i64`                               |
-| `3.14`                 | `untyped_float`                         | `f64`                               |
-| `true`, `false`        | `bool`                                  | —                                   |
-| `"hello"`              | `string`                                | —                                   |
-| `{1, 2, 3}`            | inferred from element types and context | —                                   |
-| `[1.0, 2.0, 3.0, 4.0]` | inferred vector type                    | —                                   |
-
-For local inference, `name := expr` infers from a value expression only.
-String literals and boolean literals are already concrete, so
-`s := "hello"` gives `s : string` and `b := true` gives `b : bool`.
-Bare type names are not values: `x := u64` and `x := string` are compile
-errors. Write `x : u64 = 0` or `s : string = "hello"` when a type annotation
-is intended.
-
-Constant inference uses the same type rules with `::=`, but the right-hand
-side must be a constant expression:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-NAME ::= "wyst" // NAME :: string = "wyst"
-LIMIT ::= 16 // LIMIT :: i64 = 16
-MASK ::= 1 << 5 // MASK :: i64 = 32
-```
-
-Inside a function body, `::` and `::=` introduce **local constants**. They are
-block scoped, visible only after their declaration, and have no addressable
-stack storage:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-zero_bss :: () {
-  stride :: u64 = 8
-  half ::= stride / 2
-  scratch : [half]u8
-  lanes : [u32: half]
-  #static_assert(half == 4, "stride sanity")
-
-  addr := __bss_start
-  while addr < __bss_end {
-    u64@[addr as.address @u64] = 0
-    addr += stride
-  }
-}
-```
-
-Local constants can feed later constant contexts such as fixed-array lengths,
-vector lane counts, `#static_assert`, and integer-range loop bounds. They cannot be
-assigned, pinned with `#pin`, or passed to `%addr_of`, because they are
-immutable values rather than local storage slots.
-
-The current constant evaluator folds integer arithmetic, boolean logic, and
-the compile-time query forms. Floating-point literals may bind directly, but
-floating-point arithmetic in a constant expression is future work:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-HALF_PI ::= 3.141592653589793 / 2.0
-```
-
-Use annotations or categorized conversions to select a narrower literal type:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-x : u8 = 123      // annotation gives the literal a target type
-y := 0x4000 as.numeric u64
-z := 3.14 as.float f32
-```
-
-Out-of-range literals are rejected at the bind site:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-counter : u8 = 256 // compile error: 256 not representable in u8
-mask : u8 = 0xFF // OK
-```
-
-#### Inference from Memory Operations
-
-Loads and stores also drive inference:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-mem : @u64 = 0x4000
-
-# Type inferred from the load — x is u64
-x := u64@[mem]
-
-# Explicit form — equivalent
-x : u64 = u64@[mem]
-```
-
-#### Full Examples
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-# Local variables (mutable)
-counter  : u64          = 0        // explicit
-count    := 0                       // i64 (default when no context demands a type)
-total    : u64 = 0                  // u64 (literal 0 is untyped, fits)
-ptr      : @u8          = buffer   // address type requires annotation
-callback : @(u64) -> u64 = #addr_of(handler)  // function pointer requires annotation
-
-# Constants (immutable)
-BASE :: u64 = 0x4000_0000
-```
-
----
-
-## 2.2 Functions
-
-Functions are declared with `::` binding. No `fn` keyword — the signature itself is the type:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-name :: (args) -> ret { body }              // returns a value
-name :: (args) { body }                      // no return value (omit -> entirely)
-name :: () #noreturn { body }                // never returns to caller
-```
-
-Named tuple multi-return syntax:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-name :: (args) -> (a: T1, b: T2) { body }
-```
-
-Example:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-sum :: (data : @u64, count : u64) -> u64 {
-
-  total : u64 = 0
-
-  for i in 0 ..< count {
-    total += u64@[data + i]
-  }
-
-  return total
-}
-```
-
-`return` is valid inside function blocks. It returns from the function's own stack frame.
-After a statement that cannot fall through, later statements in the same block
-are unreachable and are rejected. Non-fallthrough statements include
-`return`, `goto`, `%eret()`, unbreakable `loop` statements, and direct calls to
-functions declared `#noreturn`. A direct `#noreturn` call is a terminal
-statement in ordinary functions, `#naked` functions after their stack contract
-permits the call, and labels. A `loop` statement can fall through only if its
-body contains a reachable `break` that targets that loop. `while` and `for`
-may always execute zero iterations and therefore fall through. `break` exits
-the innermost loop and `continue` takes that loop's next-iteration edge.
-
-`for i in start ..< end { ... }` binds `i` as an immutable index scoped to the
-loop body. Evaluate `start` and then `end` exactly once before the first test.
-Both bounds must have one compatible integer type; an integer literal adopts
-the other bound's type. The index has that type, has no addressable storage and
-cannot be passed to `%addr_of`, starts at `start`, advances by one after each
-completed body or `continue`, and is retested against the
-exclusive `end`. `start >= end` executes zero iterations. This is a built-in
-integer loop, not an iterator protocol.
-
----
-
-## 2.2.1 Multiple Return Values
-
-Functions can return multiple values using a **tuple return type**:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-foo :: () -> (x: u8, y: u64) {
-  return (5, 100)
-}
-```
-
-| Part                 | Meaning                               |
-| -------------------- | ------------------------------------- |
-| `-> (x: u8, y: u64)` | tuple return type with named fields   |
-| `return (5, 100)`    | return expression producing the tuple |
-
-The names in the return type (`x`, `y`) are the **field names** of the return
-tuple. They exist so the caller can inspect fields by name.
-
-### Binding Multiple Return Values
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-result : (x: u8, y: u64) = foo()
-x_val = result.x
-y_val = result.y
-
-x, y := foo()
-```
-
-Call results bind as tuple values whose fields are read by name. The order of
-field names in the return type determines the ABI return-register order and
-the positional order for tuple destructuring. Use `_` to discard a field:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-_, remainder := divmod(7, 3)
-```
-
-### Single-Element Tuples
-
-A single return value is just the plain type (no tuple needed):
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-get_count :: () -> u64 {
-  return 42
-}
-```
-
-Tuples are only required for **two or more** return values.
-
-### ARM64 Lowering
-
-Multiple return values map directly to Wyst Native ABI return registers:
-
-| Return Count | Registers Used |
-| ------------ | -------------- |
-| 1            | x0             |
-| 2            | x0, x1         |
-| 3            | x0, x1, x2     |
-| 4            | x0, x1, x2, x3 |
-
-Note: AAPCS64 functions use a separate compatibility surface. `[aapcs]` tuple
-returns are outside the direct multi-return model; the 4-register return is a
-Wyst Native ABI extension.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-# Wyst
-foo :: () -> (x: u8, y: u64) {
-    return (5, 100)
-}
-```
-
-```asm
-# ARM64
-mov w0, #5          // x -> x0 (lower 8 bits)
-mov x1, #100        // y -> x1
-ret
-```
-
-Wider types (f64, vectors) use the appropriate register class (d0-d3 for floats, v0-v3 for SIMD).
-
-### Function Pointer Types
-
-Multi-return signatures are valid function shapes and may appear in a function
-pointer type:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-callback : @() -> (x: u8, y: u64) = #addr_of(foo)
-```
-
-See §2.6 for the full rules on function pointer types — in particular, that
-the bare shape `() -> (x: u8, y: u64)` is only legal as a function
-declaration's signature, and a storage variable must use `@(...)`.
-
-### Tuple Parameter Boundary
-
-Tuple types are currently a multi-return value surface. They may appear as
-function return types, in function-pointer return shapes, in result storage,
-and in tuple destructuring. They are not parameter types in the current
-compiler contract. Pass the fields as separate parameters or wrap them in a
-named `struct`.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-consume_pair :: (pair : (x: u64, y: u64)) { }
-```
-
-### Design Rationale
-
-| Choice                     | Reason                                                            |
-| -------------------------- | ----------------------------------------------------------------- |
-| named fields in return     | caller can destructure by name, not just position                 |
-| `return (a, b)` expression | consistent with array literal `{}` vs tuple `()` distinction      |
-| direct register mapping    | no hidden struct allocation; values returned in registers         |
-| `()` for tuples            | distinguishes from `{}` (array literals) and `[]` (memory access) |
-
-### Tradeoffs
-
-- **Register limit** — more than 4 return values requires stack allocation or a hidden struct. The exact limit depends on type widths (e.g., two f64s use both float return slots).
-- **Name requirement** — field names in the return type are mandatory; anonymous tuples like `-> (u8, u64)` are outside the model. Names improve call-site clarity.
-- **No nesting** — nested tuples like `-> (x: u8, y: (a: u64, b: u64))` are outside the model. Flatten to a single tuple level.
-
----
 
 ## 2.3 Explicit Register Placement
 
@@ -724,8 +357,7 @@ register or silently spilling the value.
 
 Placement is not legal on module variables, constants, fields, types, a whole
 callable, named multi-results, or `never`. Platform-reserved registers belong to
-the target ABI and cannot be claimed by source declarations. The removed
-`#pin` spelling is not an alternate form.
+the target ABI and cannot be claimed by source declarations.
 
 ---
 
@@ -959,10 +591,9 @@ Source placement cannot name ARM64 state reserved by the target ABI:
 
 There is no source-level read-only alias declaration for `lr` or `x18`. A
 local `var` requires an initializer, and reserved-register placement is
-rejected before lowering; the backend has no compatibility path that treats a
-missing initializer as an implicit register read. Code that needs architectural
-state must use an authenticated system-register, hardware, trap-frame, or
-checked-assembly contract whose generated row owns that state.
+rejected before lowering. Code that needs architectural state must use an
+authenticated system-register, hardware, trap-frame, or checked-assembly
+contract whose generated row owns that state.
 
 <!-- wyst-contract: check-fail -->
 ```wyst
@@ -1075,66 +706,24 @@ are no manual constraint or clobber lists.
 Labels are bare code regions, declared at **module top level** with the
 `label` type. They are not nested inside functions.
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-name :: label {
-  body
-} // bare code region
-
-name :: label #noreturn {
-  body
-} // never returns
-
-name :: label #naked #noreturn {
-  body
-} // raw entry label
-```
-
 A label:
 
 - has no parameters and no return value
-- when marked `#naked`, has no generated prologue, epilogue, or stack frame
+- when declared `naked`, has no generated prologue, epilogue, or stack frame
 - has no `return` (there is no caller to return to)
-- must terminate with a `goto` or a `#noreturn` call — no fall-through
+- must terminate with a `goto` or a call returning `never` — no fall-through
 - is a top-level declaration with the same visibility rules as a function
 
-`#naked` labels exist for architectural entry points such as exception-vector
-targets. They use the same raw stack discipline as `#naked` functions: any
+`naked` labels exist for architectural entry points such as exception-vector
+targets. They use the same raw stack discipline as `naked` functions: any
 save area, stack switch, register preservation, and eventual `eret`/halt path
 must be visible in source, normally through checked `asm`.
 
 ### Visibility and Cross-Module References
 
-Labels follow the same `pub` / `#import` machinery as functions. A label
+Labels follow the same `pub` / `import` machinery as functions. A label
 declared without `pub` is module-private; with `pub`, it is visible
-to other modules that `#import` the module.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module boot.handlers
-
-pub handle_sync :: label {
-  // ...
-  goto resume
-}
-
-resume :: label {
-  // module-private
-  // ...
-}
-```
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module boot.vectors
-
-#import boot.handlers // brings `handle_sync` into scope
-
-vector_table el1_vectors: aarch64.el1 {
-  current.spx.sync -> handle_sync // cross-module goto — OK
-  // ...
-}
-```
+to modules that import it.
 
 The integrated linker resolves the cross-module reference exactly as it
 does for function calls (`R_AARCH64_JUMP26` for `goto`, see
@@ -1168,8 +757,7 @@ fn_ptr(args)        // invoke function pointer — statement position
 ```
 
 `goto` is a statement keyword. Function calls use the same postfix call
-syntax in statement position and expression position. The old exploratory
-`call f(args)` statement form is not part of Wyst.
+syntax in statement position and expression position.
 
 #### Statement-Position Calls
 
@@ -1192,14 +780,6 @@ not silently do nothing.
 The same syntax is used when the return value is consumed by an enclosing
 expression:
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-x := sum(arr[:])
-total   = a + sum(arr[:]) + b
-result  = callback(7)              // function-pointer call
-process(transform(input))
-```
-
 #### Summary Table
 
 | Position                                     | Form          | Rule                                      |
@@ -1221,8 +801,7 @@ practice that means `goto` is legal only inside:
 
 - a `label` body (§2.4)
 - a block-form `vector_table` slot (§10.2)
-- a position in any other bare construct introduced later (e.g. a future
-  trampoline directive)
+- a position in another target-defined bare construct
 
 `goto` in an ordinary function body is a **compile error**, even if the
 function has no live locals. The diagnostic suggests `return` (to exit) or
@@ -1233,24 +812,22 @@ extracting the work into a `label`.
 | From                                                                             | To                                              | Result                                                                          |
 | -------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
 | `label` / `vector_table` slot                                                     | another `label`                                 | OK (same module)                                                                |
-| `label` / `vector_table` slot                                                     | public label in another `#import`ed module      | OK                                                                              |
+| `label` / `vector_table` slot                                                     | public label in an imported module              | OK                                                                              |
 | `label` / `vector_table` slot                                                     | function name                                   | **compile error** — `goto` cannot enter a prologue; use a function call instead |
 | function body                                                                    | any label                                       | **compile error** — `goto` cannot abandon a live frame                          |
 | inside a structured construct (`if`, `while`, `loop`, `for`) within a `label` | label outside the construct                     | OK — the construct emits no frame; the `goto` is still a tail transfer          |
 | any position with a pending function-call return                                 | any label                                       | **compile error** — would skip the return                                       |
 
-The last row is the formal statement of "never inward past a function-call
-boundary" from earlier drafts: if control flow has reached a point where a
-called function is expected to return, that return cannot be skipped by a
-`goto`.
+If control flow has reached a point where a called function is expected to
+return, that return cannot be skipped by a `goto`.
 
 #### What `goto` Targets
 
 The target is a bare identifier naming a `label`. The label must be in scope —
-either declared in the current module or imported via `#import`. There is no
+either declared in the module or imported. There is no
 label literal, no computed `goto`, and no `goto *expr`. A `vector_table` arrow
-uses the same target rule. Dispatch tables are built from function pointers
-(see §2.6), not label addresses.
+uses the same target rule. Dispatch tables are built from callable values, not
+label addresses.
 
 #### `break` and `continue`
 
@@ -1290,31 +867,9 @@ new function-local identifier scope the language does not have.
 end-exclusive test runs before the next body entry, exactly as if control had
 reached the loop body's closing brace.
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-// Skip rows where the first byte is zero:
-// `base` is @u8, and `row_size` is measured in bytes.
-for i in 0 ..< 100 {
-    if u8@[base + i * row_size] == 0 { continue }
-    process_row(i)
-}
-```
-
 **`loop` is not an expression** — `loop { ... }` produces no value, so
 `break value` and `loop`-as-rvalue are not part of the language. Use a
 mutable variable assigned before `break`:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-result : u64 = 0
-loop {
-    if condition_met {
-        result = computed_value
-        break
-    }
-}
-return result
-```
 
 #### ARM64 Lowering
 
@@ -1351,41 +906,21 @@ value = if cond {
 
 ### Integer-Range `for`
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-for i in start ..< end {
-    total += u64@[data + i]
-}
-```
-
 The range is always end-exclusive and advances by one. Bounds are evaluated
 once, left to right, before the first comparison. Both bounds have one
 compatible integer type; an untyped integer literal adopts the other bound's
-type. The index is immutable and has that same type. Wyst v0.9 has no custom
+type. The index is immutable and has that same type. Wyst has no custom
 step, iterator protocol, C-style `for`, or `do while` form.
-
-The predecessor `repeat count { ... }` and `repeat count, i { ... }` forms are
-removed. They have no compatibility alias or automatic rewrite and are valid
-only as negative diagnostic examples.
 
 ### While
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-// UARTFR is declared `@volatile u32` elsewhere
-while u32@[UARTFR] & TXFF != 0 {
-    %nop()
-}
-```
+`while condition { ... }` evaluates the condition before every iteration and
+executes the body while it is true. The loop may execute zero times.
 
 ### Infinite Loop
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-loop {
-    %wfe()
-}
-```
+`loop { ... }` repeats until control reaches a `break` or another terminal
+statement.
 
 ### `match` — Exhaustive Enum Discrimination
 
@@ -1416,8 +951,8 @@ reachable variants must appear exactly once.
 
 Expression `match` requires a tail expression in every reachable arm, and all
 tails have one exact common type; `never` is compatible with that type. Exact
-ownership state must join at the result phi. `#partial` is removed and illegal:
-an omitted expression arm cannot manufacture a value.
+ownership state must join at the result phi. An omitted expression arm cannot
+manufacture a value.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -1498,733 +1033,11 @@ if !(m is Custom(code)) {    // compile error
 on all variants." When more than one variant needs handling, prefer
 `match` — it gets exhaustiveness checking; chained `if … is` does not.
 
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-// Bad — no exhaustiveness check, easy to forget a variant:
-if      m is Quit          { handle_quit() }
-else if m is Custom(code)  { handle_custom(code) }
-else if m is Write(p)      { handle_write(p) }
-// Fault was added to the enum later — silently does nothing
-
-// Good — compile error if a variant is added:
-match m {
-  .Quit { handle_quit() }
-  .Custom(code) { handle_custom(code) }
-  .Write(p) { handle_write(p) }
-}
-```
-
----
-
-## 2.6 Function Pointers
-
-A **function shape** is the syntactic form `(args) -> ret` (or its multi-return
-variant). Function shapes describe the parameter and return types of a
-function. A function shape by itself is not a value type and not a storable
-type.
-
-A **function pointer** is an address of a function with a given shape. The type
-is written `@(args) -> ret`, applying the `@T` rule to a function shape exactly
-the way it applies to data:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-handler :: (x : u64) -> u64 { return x + 1 }
-
-callback : @(u64) -> u64 = #addr_of(handler)    // pointer to function
-result   := callback(7)                         // call through the pointer
-```
-
-### Where Each Form Is Legal
-
-| Form             | Where legal                                                             |
-| ---------------- | ----------------------------------------------------------------------- |
-| `(args) -> ret`  | Signature of a function declaration (`name :: (args) -> ret { ... }`) |
-| `@(args) -> ret` | Variable type, parameter type, return type, struct field, array element |
-
-A declaration like `cb : (u64) -> u64 = ...` is a **compile error** — bare
-function shapes cannot appear in a value context. The diagnostic suggests
-the `@(...)` form:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-cb : (u64) -> u64 = #addr_of(handler)
-// compile error: bare function shape `(u64) -> u64` is not a value type;
-// did you mean `@(u64) -> u64`?
-```
-
-The reason: a function's "value" would be the bytes of its compiled code,
-which Wyst does not allow programs to read, copy, or store. What a program
-actually holds is the function's address. Distinguishing the two in the type
-system means the source always reflects what's in memory.
-
-### Address-Taking
-
-`#addr_of(name)` produces a value of type `@(args) -> ret` when `name` is a
-function declaration. There is no implicit "function-name decays to pointer"
-rule — assigning a bare function name without `#addr_of` is rejected:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-cb : @(u64) -> u64 = handler // compile error: implicit address-of
-// a function is not allowed; write
-// `#addr_of(handler)`
-cb : @(u64) -> u64 = #addr_of(handler)
-```
-
-This mirrors data: you cannot write `p : @u64 = my_u64_var` either.
-
-A function whose parameters use `#pin(reg)` is a **special entry point**, not
-an ordinary function-pointer target. Direct calls can inspect the callee
-declaration and marshal arguments into the pinned registers, but an ordinary
-function pointer type records only the calling convention and value shape. It
-does not encode a pin map. Therefore `#addr_of(name)` is rejected for any
-function declaration with a pinned parameter unless a future surface adds an
-explicit pin-map function type or the program provides an ordinary-ABI wrapper
-that performs the re-marshalling.
-
-This restriction applies anywhere the address would be stored or passed:
-callbacks, dispatch-table fields, arrays of function pointers, returned
-function pointers, and imported ABI table entries all use ordinary function
-pointer types unless another convention is explicitly named. Large or
-indirect-result return shapes do not loosen the rule; the argument pin map
-still has to be known before an indirect call can be marshalled safely. Wyst
-has no return-value `#pin` syntax; result placement is owned by the selected
-calling convention.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module boot
-
-pinned_entry :: (arg : u64 #pin(x7)) -> u64 {
-  return arg
-}
-
-bad :: () -> u64 {
-  cb : @(u64) -> u64 = #addr_of(pinned_entry)
-  return cb(1)
-}
-```
-
-### Conversions
-
-A function pointer converts to `u64` (the bare address bits) via `as.address`.
-Constructing a function pointer from a raw integer address requires the
-explicit `#trusted_cast` form:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-fp   : @(u64) -> u64 = #addr_of(handler)
-addr := fp as.address u64                        // extract address
-
-// Construct a function pointer from a raw address (e.g. loaded from a
-// dynamic dispatch table). The programmer asserts the convention.
-addr2 := load_dispatch_slot()
-cb2   := #trusted_cast<@(u64) -> u64>(addr2)
-```
-
-There is no implicit conversion in either direction, raw
-`u64 as.address @(...) -> ...` conversions are rejected, and there is no
-conversion between function pointer types of different shapes or different
-calling conventions. Two function pointer types are the same type only if
-their shapes and (per §2.7 / chapter-15-abi-spec.md B) their calling-convention
-annotations match exactly.
-
-### Operators
-
-Function pointers are code addresses, not data address lenses. The supported
-operations are:
-
-- indirect call: `callback(7)`
-- equality and inequality with the same exact function pointer type:
-  `left == right`, `left != right`
-- equality and inequality with the untyped integer constant `0`:
-  `callback == 0`, `0 != callback`
-- explicit extraction to `u64`: `callback as.address u64`
-- trusted construction from `u64`: `#trusted_cast<@(u64) -> u64>(raw)`
-
-Function pointers do not support address arithmetic (`callback + 4`),
-ordered comparisons (`callback < other`), nonzero integer comparisons
-(`callback == 1`), or `type[address]` memory access. Use an explicit
-`as.address u64` conversion first if numeric address inspection is truly
-intended.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module boot
-
-handler :: (x : u64) -> u64 {
-  return x
-}
-
-has_callback :: (callback : @(u64) -> u64) -> bool {
-  return callback != 0
-}
-
-main :: () -> bool {
-  callback : @(u64) -> u64 = #addr_of(handler)
-  return 0 != callback
-}
-```
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module boot
-
-bad_compare :: (callback : @(u64) -> u64) -> bool {
-  return callback == 1
-}
-```
-
-### Calling Convention in the Type
-
-A function declared with `[aapcs]` has a pointer type written
-`@[aapcs] (args) -> ret`. The annotation is part of the type and not
-implicitly compatible with the native form:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-[aapcs]
-puts :: (s : @u8) -> i32
-
-p_native : @(@u8) -> i32 = #addr_of(puts) // compile error: shape OK
-// but convention differs
-p_aapcs : @[aapcs] (@u8) -> i32 = #addr_of(puts) // OK
-```
-
-Calls through a pointer always use the convention encoded in the pointer
-type. The compiler picks `bl` vs `blr` and the argument-marshaling sequence
-from the pointer's type alone — there is no per-call-site convention
-override. See [chapter-15-abi-spec.md B.5](chapter-15-abi-spec.md) for the cross-language rules.
-
-### Interaction with `deny_effects`
-
-Indirect calls do not bypass effect checking. A call through a function
-pointer contributes the conservative effect upper bound of the pointer value
-to the caller's inferred effect set:
-
-- A known function value contributes the inferred effects of that body.
-- Callable assignments, branches, phis, arrays, fields, returns, and
-  parameters preserve a declared `effects(...)` upper bound and reject any
-  known candidate whose inferred effects exceed it.
-- A raw integer-to-function-pointer cast, imported ABI table entry, external
-  declaration without an inspectable body, or otherwise unknown function
-  pointer is treated as `effects(all)` unless it carries a narrower visible
-  trusted bound.
-
-When an indirect call violates `deny_effects`, the diagnostic points at the call and
-lists the known candidate target or explains that the target is unknown.
-
----
-
-## 2.7 Function Attributes
-
-| Directive            | Applies to         | Meaning                                                                                                                                        |
-| -------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pub`              | functions          | visible to Wyst source importers; has no linker effect                                                                                         |
-| `export` / `export weak` | functions, labels | standalone strong or weak external alias (Chapter 4)                                                                                        |
-| `#noreturn`          | functions, labels  | never returns to caller                                                                                                                        |
-| `#naked`             | functions, labels  | suppress generated prologue and epilogue                                                                                                       |
-| `#inline`            | functions          | always-inline (compile error if impossible)                                                                                                    |
-| `#initcall(order)`   | functions          | emit deterministic kernel initcall metadata                                                                                                    |
-| `#pin(reg)`          | parameters, locals | constrain variable to named register                                                                                                           |
-| `#noescape`          | address parameters | permit stack-local address arguments without allowing escape                                                                                   |
-| `#[deny_effects(...)]` | body functions, labels, modules | restrict which architectural effects may appear in the graph (see [chapter-01-language-design.md](chapter-01-language-design.md) Effect System) |
-| `#[frame(...)]`        | body functions, labels  | assert post-lowering frame bytes and spill slots (see [chapter-01-language-design.md](chapter-01-language-design.md) Generated Resources)    |
-
----
-
-## 2.7.1 `#inline` — Always-Inline Semantics
-
-`#inline` is an **always-inline** directive, not a hint. The compiler must
-inline every call to the function. If inlining is impossible, compilation
-fails with a diagnostic at the function definition.
-
-This is consistent with Wyst's design principle: the programmer declares
-intent, and the compiler either satisfies it or rejects the program. There
-is no silently degraded behavior.
-
-### Syntax
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-helper :: (x : u64) -> u64 {
-  return x + 1
-}
-```
-
-Function-level directives appear as prefix lines on the function declaration.
-When a declaration has two or more annotations, the canonical formatter spelling
-is a single grouped line. This keeps directives out of the parameter and
-return-type shape:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#[naked, noreturn]
-_start :: () {
-  loop {
-    %wfe()
-  }
-}
-```
-
-Names inside an annotation group are bare because the `#[` marker carries the
-`#` once for the whole group. A single annotation remains bare, for example
-`#cold`, and parameter annotations such as `#pin(x0)` stay inline on the
-parameter.
-
-### When Inlining Is Mandatory
-
-Every call site to an `#inline` function must be replaced with the function
-body. The call disappears from the output — no branch, no `blr`, no prologue
-or epilogue for the callee. The callee's parameters are bound to the caller's
-arguments directly.
-
-### Definition-Time Semantic Checks
-
-An `#inline` function body is semantically checked at the function definition,
-independent of call sites. `#static_assert` directives inside the body are
-therefore evaluated even when the `#inline` function is unreachable or has no
-calls. Statement-level `#if` expansion still happens first, so only the selected
-branch contributes `#static_assert` directives to that definition-time check.
-
-### Raw-Context Inline Call Sites
-
-Calls to `#inline` helpers from raw contexts such as `#naked` functions,
-labels, and `vector_table` slots get an additional stackless proof. These call
-sites cannot rely on ordinary compiler-owned stack slots, so the helper must be
-void and limited to stackless statements: intrinsic expression statements,
-nested stackless inline helper calls, `#static_assert`, simple `if` control
-flow, and a final loop whose body is recursively stackless.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#[inline, noreturn]
-idle :: () {
-  loop {
-    %wfe()
-  }
-}
-
-#[naked, noreturn]
-_start :: () {
-  idle()
-}
-```
-
-The final loop rule exists so reusable idle tails can be factored without
-weakening `#naked`'s no-implicit-stack boundary.
-
-### When Inlining Is Impossible (Compile Errors)
-
-The compiler emits a hard error at the `#inline` function definition if any
-of the following conditions make inlining impossible:
-
-| Condition                | Reason                                                   | Error location      |
-| ------------------------ | -------------------------------------------------------- | ------------------- |
-| direct recursion         | infinite expansion                                       | function definition |
-| indirect recursion       | call cycle through other functions                       | function definition |
-| non-`pure` `asm` in body | source-mandated checked assembly cannot be duplicated     | function definition |
-| `#addr_of(self)`         | function takes its own address                           | function definition |
-| function pointer capture | address stored in variable or passed to another function | function definition |
-| `vector_table` slot overflow | inlined body exceeds its target-owned slot budget | function definition |
-| `#naked`                 | naked functions have no frame to inline into             | function definition |
-
-#### Recursion
-
-Directly recursive `#inline` functions are rejected:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-fact :: (n : u64) -> u64 {
-  if n <= 1 {
-    return 1
-  }
-  return n * fact(n - 1) // ERROR: recursive #inline function
-}
-```
-
-Indirect recursion is also rejected:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-a :: (n : u64) {
-  if n > 0 {
-    b(n - 1) // ERROR: indirect recursion through b → a
-  }
-}
-
-#inline
-b :: (n : u64) {
-  if n > 0 {
-    a(n - 1)
-  }
-}
-```
-
-#### Checked `asm` Bodies
-
-Functions containing non-`pure` checked assembly cannot be inlined because the
-block is source-mandated and may have derived effects or architectural-state
-dependencies that cannot be duplicated at arbitrary call sites. A verified
-`pure` result block is an ordinary deterministic `effects(none)` computation
-and follows normal inline eligibility:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-read_ctr :: () -> u64 {
-    return asm -> value: u64 {                    // ERROR: non-pure asm in #inline function
-        mrs value, CNTVCT_EL0
-    }
-}
-```
-
-#### `vector_table` Slot Overflow
-
-This is the most important interaction. The current AArch64 `vector_table`
-profile gives every slot a hard 128-byte budget. Whether an `#inline` function
-will fit depends on **register pressure at the call site** — a body that fits
-with three callee-saved registers free might require spills, and therefore
-overflow the slot, when fewer are available. The compiler resolves this with a
-**two-check hybrid**.
-
-##### Check 1 — Definition-time budget check (worst-case pressure)
-
-Every `#inline` function that is reachable (directly or transitively) from
-any `vector_table` slot is analyzed at its definition site under a fixed
-worst-case register-pressure model:
-
-| Assumption                                   | Rationale                                                                                                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `x0`–`x17` are occupied by the caller        | A vector slot that has done any work before the `#inline` call has typically clobbered the AAPCS caller-saved set. |
-| `x19`–`x28` are free                         | The handler may save and use callee-saved registers; we don't assume the whole pool is gone.                             |
-| `x18`, `lr`, `sp`, `x29`, `xzr` are reserved | Same as the regalloc free-pool rules ([appendix-a-ir.md §11.2](appendix-a-ir.md)).                                       |
-
-The compiler computes the inlined body's emitted size under this model
-(including any spills the regalloc pass would insert) and compares it to
-the 128-byte slot budget. If the body **cannot fit even in the most
-optimistic call site** (a slot whose only content is this one call), the
-error fires at the `#inline` function definition:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-large_helper :: () {
-  // ... worst-case lowering: 160 bytes after spills ...
-}
-
-vector_table el1_vectors: aarch64.el1 {
-  current.sp0.sync {
-    large_helper()
-    goto handler
-  }
-  // ... every other required slot in canonical order ...
-}
-```
-
-```text
-error: #inline function 'large_helper' cannot fit in any vector_table slot
-       worst-case emitted size: 160 bytes (exceeds 128-byte slot budget)
-       worst-case assumes x0–x17 occupied, x19–x28 free
-  note: reachable from vector_table slot current.sp0.sync (line 17)
-```
-
-The programmer fixes this by shrinking `large_helper` (the function is
-literally too large for any vector slot), not by editing call sites.
-
-If `large_helper` were never reachable from a `vector_table` slot, this check
-**does not fire** — `#inline` functions used only in ordinary code have no
-size cap.
-
-##### Check 2 — Call-site budget check (actual pressure)
-
-Even if `large_helper` passes the definition-time check, each individual
-call site in a `vector_table` slot body is re-checked against the actual
-register pressure at that call point. The compiler:
-
-1. Computes the live-register set at the site (from the IR's liveness
-   analysis).
-2. Inlines the body and runs the regalloc pass with that set excluded from
-   the free pool.
-3. Sums the emitted bytes (the helper plus the rest of the `vector_table` slot
-   body).
-
-If the total exceeds 128 bytes, the error fires **at the `vector_table` slot**,
-with a note pointing back to the `#inline` function:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-medium_helper :: () {
-  // worst-case 100 bytes; under low pressure 80 bytes
-}
-
-vector_table el1_vectors: aarch64.el1 {
-  current.sp0.sync {
-    // ... 50 bytes of preceding work ...
-    medium_helper() // 80 bytes here; total 130 > 128
-    goto handler
-  }
-  // ... every other required slot in canonical order ...
-}
-```
-
-```text
-error: vector_table slot 'current.sp0.sync' exceeds 128-byte budget
-       slot size after inlining: 130 bytes
-       call to #inline 'medium_helper' contributed 80 bytes here
-  note: #inline 'medium_helper' passes the worst-case definition check
-        (100-byte ceiling); the overflow is specific to this slot's
-        accumulated pressure. See definition at line 23.
-```
-
-The programmer fixes this by restructuring the site(moving work
-out, or shrinking the preceding code), not by editing the `#inline`
-function.
-
-##### The two checks together
-
-| Failure mode                                          | Where the error fires       |
-| ----------------------------------------------------- | --------------------------- |
-| Function literally too large to fit any slot          | At the `#inline` definition |
-| Function fits in a low-pressure slot but not this one | At the `vector_table` slot  |
-| Function passes both checks                           | Compiles                    |
-
-This gives the programmer the right error in each case. A grossly
-oversized helper gets the early definitional rejection ("this function can
-never fit any slot — shrink it"). A helper that's marginal under load gets
-the late call-site rejection ("this specific slot is too tight — adjust
-the slot's other contents").
-
-##### Inline-reaching-`vector_table` Restriction: No Calls Inside
-
-An `#inline` function that is reachable from any `vector_table` slot must be
-**call-free** in its body — no `name(...)`, no `tail`/`goto` to a
-label that is itself a function, no indirect calls via `#addr_of`. The
-restriction applies transitively: any `#inline` function the body invokes
-must also be call-free.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-helper :: () {
-  other_function() // ERROR if reachable from a vector_table slot
-}
-```
-
-```text
-error: #inline function 'helper' contains a call but is reachable from vector_table
-       calls inside #inline functions reaching vector_table are forbidden
-       (an inlined call would clobber caller-saved registers, forcing spills
-        whose worst-case size cannot be bounded locally)
-  note: reachable from vector_table slot current.sp0.sync (line 17)
-```
-
-The rule keeps both checks above local and predictable. If you need a
-call inside a vector slot, place it directly in the `vector_table` body, not
-inside an `#inline` helper. The slot body's own size analysis (Check 2)
-accounts for the call's clobber set; the `#inline` body's analysis
-(Check 1) does not.
-
-#### Public `#inline` Functions
-
-`pub` and `#inline` are compatible, but they control different surfaces.
-`pub` makes the helper visible to importing Wyst modules. `#inline` keeps it
-inline-only: every call must be expanded at the call site, no callable code
-body is emitted, and the helper is not an ABI-exported symbol.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module helpers
-
-#inline
-pub helper :: (x : u64) -> u64 {
-  return x + 1
-}
-
-#module boot
-
-#import helpers as h
-
-main :: () -> u64 {
-  return h.helper(41) // inlined here; no call to helper remains
-}
-```
-
-If inlining is impossible at any importer call site, compilation fails
-instead of falling back to a call. `#addr_of(helper)` remains illegal for
-both private and public inline helpers because there is no function address
-to capture.
-
-#### Function Pointer Capture
-
-If the address of an `#inline` function is taken (stored in a variable,
-passed as a callback, etc.), inlining is impossible because there is no
-code address to capture:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#inline
-compare :: (a : u64, b : u64) -> i64 {
-  return a as.signedness i64 - b as.signedness i64
-}
-
-sort :: (data : @u64, len : u64) {
-  cmp : @(u64, u64) -> i64 = #addr_of(compare) // ERROR: address of #inline function taken
-  // ...
-}
-```
-
-### Design Rationale
-
-| Choice                                       | Reason                                                                                                                                         |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| always-inline, not hint                      | consistent with Wyst's explicit philosophy                                                                                                      |
-| hybrid budget check                          | definition-time check catches grossly-oversized helpers; call-site check catches pressure-specific overflow; each error lands where the fix is |
-| worst-case `x0`–`x17` model                  | realistic for vector slots (caller-saved usually gone before the call) without rejecting helpers that would work with callee-saved registers free |
-| no calls inside `#inline` helpers reached from vector slots | keeps the worst-case analysis local; call clobbers cannot be bounded without inter-procedural analysis                              |
-| no recursion                                 | infinite expansion is unsound; use non-inline for recursive code                                                                               |
-| no non-`pure` `asm`                          | source-mandated checked assembly and its derived effects are not duplicable                                                                     |
-| no explicit `export`                     | an always-inline-only body cannot promise an external code address                                                                              |
-| `vector_table` budget checked early          | slot overflow is a compile error, not a silent hardware fault                                                                                  |
-
-### Tradeoffs
-
-- **No recursive helpers** — common patterns like tree traversal require
-  non-inline functions. This is intentional: recursion needs a stack frame,
-  and inlining eliminates the frame.
-- **Code size** — aggressive inlining increases code size. The programmer
-  controls this explicitly by choosing which functions get `#inline`.
-- **No opt-out** — there is no `#inline` variant that silently falls back
-  to a call. If you need that, don't use `#inline`.
-
----
-
-## 2.7.2 Branch Hints and Cold Marking
-
-### `#likely` / `#unlikely`
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-if #likely cond {
-    hot_path()
-} else {
-    error_handler()
-}
-
-while #unlikely retry_flag {
-    attempt_recovery()
-}
-```
-
-`#likely` and `#unlikely` are branch hints that affect **basic block layout**
-— specifically, which branch direction is the fall-through path. They do not
-affect instruction scheduling within blocks.
-
-**Semantics:**
-
-- `#likely` makes the annotated condition's true-branch the fall-through
-  (spatially adjacent) path. The false-branch is placed out-of-line.
-- `#unlikely` makes the annotated condition's false-branch the fall-through
-  path. The true-branch is placed out-of-line.
-- Without a hint, the compiler uses source order (true-branch is
-  fall-through by default).
-
-**Determinism:** Same source + same compiler version + same target + same
-scheduling policies = same block layout. The hints are ordering constraints on
-layout, not optimization hints. They are deterministic across invocations.
-
-**ARM64 note:** ARM64 has no branch prediction hint encoding. The effect
-of `#likely`/`#unlikely` is entirely through spatial locality — the
-fall-through path stays in the same cache line or adjacent lines, improving
-i-cache utilization.
-
-**Interaction with scheduling:** `#likely`/`#unlikely` control block
-placement. `schedule source` constrains compiler ordering without changing
-block layout. The two are orthogonal and compose without interaction. See
-[chapter-13-scheduling.md](chapter-13-scheduling.md) for the layout constraint
-rule.
-
-**Legal positions:** `#likely` and `#unlikely` may appear before the
-condition expression in `if` and `while` statements only.
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-if #likely x > 0 { ... }          // OK
-while #unlikely queue_empty { ... } // OK
-// for i in 0 ..< n { ... }        // no boolean condition — hints not applicable
-```
-
-### `#cold`
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#cold
-error_handler :: () {
-  log_error()
-  panic()
-}
-```
-
-`#cold` is a function-level attribute indicating that the function is rarely
-executed. It has one deterministic effect: `#cold` functions are implicitly
-placed in `#section(.text.cold)` unless an explicit `#section(...)` overrides
-it.
-
-**Semantics:**
-
-- `#cold` applies to function declarations only.
-- A `#cold` function's code is placed in `.text.cold`, separating it from
-  hot code to improve i-cache density of the hot path.
-- Explicit `#section(name)` on the same function overrides the implicit
-  `.text.cold` placement.
-- `#cold #inline` is legal: when the inlined body contains a branch to the
-  `#cold` function's code, the branch hint propagates — the path leading to
-  the inlined cold code is treated as unlikely.
-
-**Determinism:** `#cold` is an ordering constraint (section placement), not
-an optimization hint. Same source = same section placement.
-
-See [chapter-04-modules.md](chapter-04-modules.md) for `.text.hot` / `.text.cold` section
-conventions.
-
-### Updated Attribute Table
-
-| Directive   | Applies to               | Meaning                                                      |
-| ----------- | ------------------------ | ------------------------------------------------------------ |
-| `pub`   | functions                | visible to Wyst source importers; no linker effect             |
-| `export` / `export weak` | functions, labels | standalone strong or weak external alias       |
-| `#noreturn` | functions, labels        | never returns to caller                                      |
-| `#naked`    | functions, labels        | suppress generated prologue and epilogue                     |
-| `#inline`   | functions                | always-inline (compile error if impossible)                  |
-| `#pin(reg)` | parameters, locals       | constrain variable to named register                         |
-| `#noescape` | address parameters       | permit stack-local address arguments without allowing escape |
-| `#likely`   | `if`, `while` conditions | expected-path hint; affects block layout                     |
-| `#unlikely` | `if`, `while` conditions | unexpected-path hint; affects block layout                   |
-| `#cold`     | functions                | rarely executed; placed in `.text.cold`                      |
-
----
-
-## 2.8 Constraints
-
-| Constraint                     | Rule                                                                                                                                             |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `return` only inside functions | labels have no frame to unwind                                                                                                                   |
-| label bodies must terminate    | must end with `goto` or `#noreturn` call (no fall-through)                                                                                       |
-| `#noreturn` is a directive     | prefix directive, orthogonal to return type; applies to functions and labels                                                                     |
-| `goto` is bare-context only    | legal only inside `label` bodies and block-form `vector_table` slots; targets top-level `label` declarations (including imported labels); see §2.5 for the full scope table |
-| `::` vs `:`                    | `::` for constants in any declaration scope and named top-level declarations such as functions, labels, and types; `:` for mutable storage (locals in function bodies, globals at top level) |
-| `:=` / `::=` are tokens        | inferred mutable and inferred constant declarations are visually distinct; `x : = 1` and `X :: = 1` are syntax errors                            |
-
 ---
 
 ## 2.9 Inline Assembly
 
-`asm` is Wyst's checked escape hatch into explicit ARM64. The pinned v0.9 pack
+`asm` is Wyst's checked escape hatch into explicit ARM64. The selected checked-assembly pack
 admits 13 exact general-purpose source forms covering page-relative addresses,
 local/direct branches, ordinary and exception returns, system-register moves,
 and selected architectural hints. A target-structural-only pack separately
@@ -2241,7 +1054,7 @@ errors until their encoding and operand checks are added. This keeps
 inline assembly auditable, deterministic, and aligned with Wyst's explicit
 machine-semantics model.
 
-V0.9 checked assembly is a statement or expression with a signature-style
+Checked assembly is a statement or expression with a signature-style
 header and a parsed instruction body:
 
 <!-- wyst-contract: sketch -->
@@ -2351,7 +1164,7 @@ pre-stack and link-register safety checks consume only that exact reachability;
 IR verification rederives it from the retained typed instruction CFG rather
 than trusting the sealed bit.
 
-The pinned v0.9 pack does not expose an external tail-transfer contract.
+The selected checked-assembly pack does not expose an external tail-transfer contract.
 Accordingly, `b` accepts a named block-local label but rejects a `symbol`
 operand even when it resolves to code; accepting that form later requires an
 exact target ABI/result/effect/terminal contract distinct from `bl`. An
@@ -2363,7 +1176,7 @@ Exception returns, authenticated halt/
 exception terminals, and calls whose callable contract is `never` retain their
 separate terminal meanings.
 
-The pinned v0.9 checked-assembly pack has no active indirect-call source form:
+The selected checked-assembly pack has no active indirect-call source form:
 `blr` is recognized but rejected as known unsupported, so a raw integer or
 address input cannot become a callable through checked assembly. Any future
 profile that activates an indirect-call form remains gated by the exact
@@ -2411,15 +1224,9 @@ fn read_saved_return_state() -> (pc: u64, status: u64) {
 }
 ```
 
-This example stays within the pinned v0.9 checked-assembly pack. Broader local
+This example stays within the selected checked-assembly pack. Broader local
 control-flow forms remain `known_unsupported` until a later support profile
 activates their exact parser, semantic, and allocation rows.
-
-### Historical v0.8 grammar
-
-The removed predecessor grammar is documented only in the explicitly versioned
-[Appendix B §4.6](appendix-b-grammar.md). It is a non-normative archive, not a
-production parser surface.
 
 ## Live operation protocols
 

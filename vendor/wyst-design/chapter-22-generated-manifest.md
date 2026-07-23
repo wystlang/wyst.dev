@@ -42,10 +42,9 @@ The manifest records:
   source requirements, selected scheduling policies, permitted analysis
   defaults, and unverified assumptions;
 - cache-purity/freshness status, including `not-used` and `current-run`;
-- observed host/tool facts: `wync` release status, nullable language and
-  compiler release versions, exact language-snapshot and compiler-build
-  identities, host OS, host architecture, host family, target profile, and
-  optimization mode;
+- observed host/tool facts: exact language and compiler content identities,
+  host OS, host architecture, host family, target profile, and optimization
+  mode;
 - emitted artifact facts for the selected manifest product, including artifact
   name and kind, normalized output and optional companion identity, existence,
   object class/machine/entry when applicable, source-map status, provenance,
