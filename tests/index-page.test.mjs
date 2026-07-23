@@ -269,9 +269,9 @@ test("shared headers keep only Reference and Source", () => {
 test("homepage metadata states the current project value without a release claim", () => {
 	const title = textContent(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? "");
 	const description =
-		"Wyst is a personal ARM64 language and compiler project with explicit low-level behavior and inspectable lowering.";
+		"Wyst is an ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.";
 	const socialDescription =
-		"A personal language project with explicit low-level behavior and inspectable ARM64 lowering.";
+		"An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.";
 	const socialAlt =
 		"Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering.";
 
@@ -287,6 +287,17 @@ test("homepage metadata states the current project value without a release claim
 });
 
 test("homepage leads with evidence and keeps a minimal personal introduction", () => {
+	const lede = textContent(
+		taggedElementWithOpeningMatch(
+			html,
+			/<([a-z][\w-]*)\b[^>]*class="[^"]*\bproject-lede\b[^"]*"[^>]*>/i,
+			"missing project lede",
+		),
+	);
+	assert.equal(
+		lede,
+		"An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.",
+	);
 	const introText = textContent(
 		taggedElementWithOpeningMatch(
 			html,
@@ -298,7 +309,9 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 		["web-interface day job", /\bday job\b[^.]*\bbuilding web interfaces\b/i],
 		["low-level programming itch", /\blow-level programming itch\b/i],
 		["ARM64 language and compiler", /\bARM64 language and compiler\b/i],
-		["explicit low-level behavior", /\blow-level behavior explicit and inspectable\b/i],
+		["readable low-level code", /\breadable low-level code\b/i],
+		["no hidden runtime behavior", /\bwithout hidden runtime behavior\b/i],
+		["no avoidable abstraction cost", /\bavoidable abstraction cost\b/i],
 		["computer science degree", /\bCS degree\b/i],
 		["author ownership", /\bI own the language and compiler decisions\b/i],
 		["candid AI use", /\bAI assists implementation\b/i],

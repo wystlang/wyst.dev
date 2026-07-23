@@ -23,21 +23,6 @@ const REQUIRED_FILES = [
 	"robots.txt",
 	"sitemap.xml",
 ];
-const ALLOWED_TOP_LEVEL_CONFIG = new Set([
-	"$schema",
-	"name",
-	"compatibility_date",
-	"workers_dev",
-	"preview_urls",
-	"observability",
-	"assets",
-]);
-const ALLOWED_OBSERVABILITY_CONFIG = new Set(["enabled"]);
-const ALLOWED_ASSET_CONFIG = new Set([
-	"directory",
-	"html_handling",
-	"not_found_handling",
-]);
 
 function assert(condition, message) {
 	if (!condition) throw new Error(message);
@@ -45,166 +30,6 @@ function assert(condition, message) {
 
 function formatBytes(bytes) {
 	return `${bytes.toLocaleString("en-US")} bytes`;
-}
-
-function stripJsonComments(source) {
-	let output = "";
-	let state = "code";
-	for (let index = 0; index < source.length; index++) {
-		const char = source[index];
-		const next = source[index + 1];
-		if (state === "string") {
-			output += char;
-			if (char === "\\") {
-				output += next ?? "";
-				index++;
-			} else if (char === '"') {
-				state = "code";
-			}
-			continue;
-		}
-		if (state === "line-comment") {
-			if (char === "\n") {
-				output += char;
-				state = "code";
-			} else {
-				output += " ";
-			}
-			continue;
-		}
-		if (state === "block-comment") {
-			if (char === "*" && next === "/") {
-				output += "  ";
-				index++;
-				state = "code";
-			} else {
-				output += char === "\n" ? "\n" : " ";
-			}
-			continue;
-		}
-
-		if (char === '"') {
-			output += char;
-			state = "string";
-		} else if (char === "/" && next === "/") {
-			output += "  ";
-			index++;
-			state = "line-comment";
-		} else if (char === "/" && next === "*") {
-			output += "  ";
-			index++;
-			state = "block-comment";
-		} else {
-			output += char;
-		}
-	}
-	assert(state !== "string", "Wrangler config contains an unterminated string");
-	assert(
-		state !== "block-comment",
-		"Wrangler config contains an unterminated block comment",
-	);
-	return output;
-}
-
-function stripTrailingCommas(source) {
-	let output = "";
-	let inString = false;
-	for (let index = 0; index < source.length; index++) {
-		const char = source[index];
-		if (inString) {
-			output += char;
-			if (char === "\\") {
-				output += source[++index] ?? "";
-			} else if (char === '"') {
-				inString = false;
-			}
-			continue;
-		}
-		if (char === '"') {
-			inString = true;
-			output += char;
-			continue;
-		}
-		if (char === ",") {
-			let lookahead = index + 1;
-			while (/\s/.test(source[lookahead] ?? "")) lookahead++;
-			if (source[lookahead] === "}" || source[lookahead] === "]") {
-				output += " ";
-				continue;
-			}
-		}
-		output += char;
-	}
-	return output;
-}
-
-export function parseJsonc(source) {
-	try {
-		return JSON.parse(stripTrailingCommas(stripJsonComments(source)));
-	} catch (error) {
-		throw new Error(`could not parse Wrangler JSONC: ${error.message}`);
-	}
-}
-
-function validateObjectKeys(value, allowed, label) {
-	assert(
-		value && typeof value === "object" && !Array.isArray(value),
-		`${label} must be an object`,
-	);
-	const unexpected = Object.keys(value).filter((key) => !allowed.has(key));
-	assert(
-		unexpected.length === 0,
-		`${label} contains unsupported release configuration: ${unexpected.join(", ")}`,
-	);
-}
-
-export async function validateWranglerConfig(configPath, publicRoot) {
-	const source = await readFile(configPath, "utf8");
-	const config = parseJsonc(source);
-	validateObjectKeys(config, ALLOWED_TOP_LEVEL_CONFIG, "Wrangler config");
-	assert(
-		config.$schema === "./node_modules/wrangler/config-schema.json",
-		"Wrangler config must use the checked-in Wrangler schema",
-	);
-	assert(config.name === "wyst", 'Wrangler config name must be "wyst"');
-	assert(
-		/^\d{4}-\d{2}-\d{2}$/.test(config.compatibility_date ?? ""),
-		"Wrangler config requires an ISO compatibility_date",
-	);
-	assert(config.workers_dev === false, "workers_dev must remain disabled");
-	assert(config.preview_urls === false, "preview_urls must remain disabled");
-	validateObjectKeys(
-		config.observability,
-		ALLOWED_OBSERVABILITY_CONFIG,
-		"observability config",
-	);
-	assert(
-		config.observability.enabled === false,
-		"Worker observability must remain disabled",
-	);
-	validateObjectKeys(config.assets, ALLOWED_ASSET_CONFIG, "assets config");
-	assert(
-		config.assets.html_handling === "auto-trailing-slash",
-		'assets.html_handling must be "auto-trailing-slash"',
-	);
-	assert(
-		config.assets.not_found_handling === "404-page",
-		'assets.not_found_handling must be "404-page"',
-	);
-	assert(
-		typeof config.assets.directory === "string" &&
-			config.assets.directory.length > 0,
-		"assets.directory is required",
-	);
-	const configuredRoot = path.resolve(
-		path.dirname(configPath),
-		config.assets.directory,
-	);
-	assert(
-		configuredRoot === path.resolve(publicRoot),
-		`assets.directory resolves to ${configuredRoot}, not the validated artifact ${path.resolve(publicRoot)}`,
-	);
-	return config;
 }
 
 function validateSegment(segment, relativePath) {
@@ -436,21 +261,17 @@ export async function validateAssetInventory(publicRoot, limits = DEFAULT_LIMITS
 
 function parseArgs(argv) {
 	let publicRoot = path.join(root, "dist");
-	let configPath = path.join(root, "wrangler.jsonc");
 	for (let index = 0; index < argv.length; index++) {
 		if (argv[index] === "--root" && argv[index + 1]) {
 			publicRoot = path.resolve(argv[++index]);
-		} else if (argv[index] === "--config" && argv[index + 1]) {
-			configPath = path.resolve(argv[++index]);
 		} else {
 			throw new Error(`unknown argument: ${argv[index]}`);
 		}
 	}
-	return { publicRoot, configPath };
+	return { publicRoot };
 }
 
-export async function validateCloudflareAssets({ publicRoot, configPath }) {
-	await validateWranglerConfig(configPath, publicRoot);
+export async function validateCloudflareAssets({ publicRoot }) {
 	return validateAssetInventory(publicRoot);
 }
 

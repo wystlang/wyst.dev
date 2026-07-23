@@ -123,7 +123,6 @@
     "objectMemberTuple": [
       "semantic-interface-identity",
       "object-schema",
-      "profile",
       "safety-profile",
       "trust-policy",
       "proof-schema",
@@ -143,7 +142,6 @@
       "support-manifest",
       "native-abi",
       "environment-provider-tuple",
-      "profile",
       "safety-profile",
       "trust-policy",
       "proof-schema",
@@ -358,10 +356,10 @@
       "catalogs": ["design/c-operation-adapter-catalog.tsv", "design/generic-bounds.tsv", "design/sealed-core.tsv", "design/meta-operation-catalog.tsv", "design/syntax-words.tsv"]
     },
     {
-      "id": "language.typed-operation-direct-native-results",
+      "id": "compiler.universal-deterministic-optimization",
       "state": "implemented",
       "selection": "selected-snapshot",
-      "owner": "design/chapter-17-optimization-modes.md",
+      "owner": "design/chapter-17-optimization.md",
       "catalog": "design/typed-operation-kernel-control-budget-v1.json"
     },
     {
@@ -4600,7 +4598,6 @@
       "selected-artifact",
       "target-facts",
       "layout",
-      "profile",
       "debug-policy",
       "unwind-policy",
       "frame-policy",
@@ -4778,7 +4775,7 @@
       "target-runtime-performance",
       "emitted-code-canonicalization-selection-allocation-or-size",
       "static-modeled-or-target-measured-performance-reports",
-      "optimization-profile-or-reproducible-transformation-change",
+      "universal-optimizer-policy-change",
       "persistent-semantic-object-or-incremental-build-cache",
       "cross-machine-verdict-without-versioned-calibration",
       "freshness-taxonomy"

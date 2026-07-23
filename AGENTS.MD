@@ -16,8 +16,8 @@ never committed; GitHub Actions deploys the exact verified `dist/` artifact.
 - `npm run build`: cleanly generate the complete site into `dist/` from the
   vendored Wyst snapshot.
 - `npm test`: run Node test files under `tests/*.test.mjs`.
-- `npm run check`: run the same build, test, artifact, browser, determinism, and
-  Wrangler dry-run gates used by CI.
+- `npm run check`: run the same build, test, artifact, browser, and determinism
+  gates used by CI.
 - `npm run audit:live`: audit the deployed production origin and exact build
   manifest.
 - `npm run sync:brand`: copy approved web assets from the local brand repo.

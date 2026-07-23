@@ -19,7 +19,8 @@ Worker entry point, runtime bindings, storage products, or request-time code.
 - Cloudflare Web Analytics injection remains disabled.
 - Bot or challenge features must not inject `/cdn-cgi/` JavaScript into normal
   site responses.
-- Persisted Worker logs and traces remain disabled through `wrangler.jsonc`.
+- Persisted Worker logs and traces remain disabled in the Cloudflare project
+  settings.
 
 The production audit enforces these externally observable controls after every
 release and on a schedule. Dashboard-only settings are not silently changed by
@@ -27,20 +28,12 @@ application deployments.
 
 ## Deployment ownership
 
-GitHub Actions is the only release authority. Cloudflare Workers Builds and its
-Git repository connection are disabled. The production GitHub environment owns
-an account-scoped token with only Workers Scripts edit permission; the account
-identifier is stored as a non-secret environment variable.
+The protected GitHub repository is the release authority. Cloudflare's GitHub
+connection builds and publishes `main`; GitHub Actions verifies the same source
+but stores no Cloudflare deployment token and invokes no deployment CLI.
 
-Every established release uploads an immutable version tagged with the full Git
-commit, adds it to the active deployment at zero percent, audits that version
-through the production domain with a version override and browser crawl, and
-promotes the same version to 100 percent. The audit pins the public tree,
-non-public `_headers`, `wrangler.jsonc`, and the exact build-manifest bytes. A
-failed post-promotion content audit restores the previously active version.
-Zone-policy drift alerts without rolling back site content.
-
-The explicit bootstrap path uses `wrangler deploy` only when Cloudflare returns
-a Worker-not-found code, or deploys an uploaded version when the Worker exists
-without a deployment. It is audited immediately; rollback begins with the
-second release because a first deployment has no prior version.
+The production integration reports the deployed commit through GitHub
+Deployments. Scheduled audits rebuild that exact commit, authenticate the public
+tree, non-public `_headers`, and exact build-manifest bytes, and compare them
+with production responses. Zone-policy drift is reported separately from
+content drift.

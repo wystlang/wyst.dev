@@ -53,7 +53,7 @@ The v0 dispositions are closed:
 
 | Schema | Disposition |
 | ------ | ----------- |
-| `wync.rebuildBenchmark.v0` | Retained unchanged as a read-only historical payload contract; superseded for all current production by `wync.rebuildBenchmark.v1`. |
+| `wync.rebuildBenchmark.v0` | Read-only historical payload envelope with the withdrawn optimizer field erased; superseded for all current production by `wync.rebuildBenchmark.v1`. |
 | `wync.localBench.v0` | Retained unchanged as a read-only historical payload contract; superseded for all current production by `wync.localBench.v1`. |
 | `wync.timingTrace.v0` | Retained unchanged as a read-only historical payload contract; superseded for all current production by `wync.timingTrace.v1`. |
 
@@ -66,7 +66,6 @@ shape; it is not a v1 example:
 	"compilerVersion": "0.3.0",
 	"workload": "project",
 	"target": "qemu-virt-aarch64-el2",
-	"optimization": "reproducible",
 	"buildIdentity": "fnv1a64:0000000000000000",
 	"targetFacts": {
 		"buildIdentity": "fnv1a64:0000000000000000",
@@ -110,16 +109,14 @@ shape; it is not a v1 example:
 }
 ```
 
-In v0, `optimization` records the build-level `--optimization` mode and is
-neither a source scheduling policy nor an incremental-build mode.
 `elapsedMicros` is observation-only; byte identity is its sole pass/fail
 contract. Its module, layout, and `buildIdentity` values with the `fnv1a64:`
 prefix are stable non-cryptographic local build-unit identifiers, not v1
 content digests.
 
-No v0 field is reinterpreted, no current producer emits a v0 payload, and no
-v0 payload can satisfy the v1 release gate. The schemas are not removed because
-historical evidence must remain intelligible. The exact read-only files are
+No current producer emits a v0 payload, and no v0 payload can satisfy the v1
+release gate. The historical envelope erases the withdrawn optimizer selector
+instead of carrying it as a compatibility axis. The exact read-only files are
 `schemas/rebuild-benchmark-v0.schema.json`, `schemas/local-bench-v0.schema.json`,
 and `schemas/timing-trace-v0.schema.json` under `wync/tools/bench/`; checked-in
 examples pin the rebuild and timing shapes.
@@ -439,8 +436,8 @@ and artifact identities.
 - No persistent build cache or incremental code generation; the persistent
   incremental-build-cache contract owns immutable snapshots, invalidation, and
   reuse.
-- No optimization-profile change and no new transformation authorization for
-  `profile .reproducible`.
+- No user-selected optimizer policy; compiler-efficiency evidence compares
+  Rust compiler build profiles without changing the universal Wyst optimizer.
 - No target-runtime, emitted-code performance, backend-cost, PMU/TMA, or
   platform-counter claim; the platform-counter contract and later backend
   contracts own those.

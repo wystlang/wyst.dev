@@ -70,7 +70,7 @@ process.
 
 Wyst is a semantic ARM64 systems language and assembler focused on:
 
-- reproducible lowering
+- deterministic target-aware optimization
 - explicit machine semantics
 - no compiler-exploitable undefined behavior
 - performance transparency
@@ -845,12 +845,12 @@ The goal is:
 ## Reproducibility Model
 
 Wyst guarantees **reproducible lowering**: given the same source, the same
-compiler build identity, the same build optimization mode, the same canonical
+compiler build identity, the same canonical
 `#target(...)` configuration or authenticated target-profile contract, the same
 source input manifest, and the same selected scheduling policies including
 implicit `schedule.standard`, the compiler always produces identical output.
 Reproducibility is scoped to these inputs; it is not guaranteed across compiler
-build identities, build optimization modes, target configurations, source manifests, or
+build identities, target configurations, source manifests, or
 different selected scheduling policies.
 
 The `#target` input is the entire canonical `#target(...)` argument list, not
@@ -862,8 +862,6 @@ field participates through its specified default value.
 Requirements for reproducibility:
 
 - same compiler build identity
-- same build optimization mode (`--optimization` or the project manifest's
-  `optimization` field, defaulting to `reproducible`)
 - same source input manifest:
   - explicit source-list mode: the same ordered command-line source paths and
     file contents;
@@ -953,29 +951,26 @@ Indentation-based syntax may exist as optional sugar, but brace-delimited syntax
 
 ## Compiler Architecture
 
-### Default Optimization Profile
+### Universal deterministic optimization
 
-The default build profile is a reproducible lowering profile, not an
-optimizing release profile. It may perform deterministic local
-canonicalization required for compilation or directly implied by source:
-compile-time constant evaluation, syntax-to-IR lowering, deterministic
-instruction selection, deterministic register allocation, removal of unused
-pure temporaries, and required object/relocation emission.
+One deterministic, target-aware, performance-first production optimizer is
+always active. It may perform hidden compiler work, including authenticated
+canonicalization, scalar replacement, propagation, branch and operation-tag
+fusion, compiler-selected internal inlining, call/frame elimination, and
+removal of work those transformations make unreachable. It may not introduce
+hidden runtime behavior.
 
-Default lowering must not perform hidden global optimization,
-profile-guided optimization, hidden vectorization, hidden branch conversion,
-hidden allocation or lifetime rewrites, hidden data-structure substitution,
-or alias/UB-backed load-store rewrites.
+There is no build optimization selector or mode identity. The optimizer is a
+pure function of the canonical source, semantic and ABI products, compiler
+build identity, and authenticated target. Every admitted transform carries a
+compiler-owned proof, target cost, provenance, and deterministic tie decision.
+Diagnostics and reports project those facts but are never proof authority.
 
-Non-default build optimization modes must be explicit in the command or build
-profile, and each mode must document whether it is byte-for-byte reproducible
-under the Reproducibility Model's input catalog. Source-level scheduling
-boundaries are a separate input, not build optimization modes.
-Aggressive optimization passes need an explain/pass-trace story before they can
-become candidates for any default profile.
-
-This profile follows the explicit build optimization mode policy documented in
-[chapter-17-optimization-modes.md](chapter-17-optimization-modes.md).
+The complete preservation contract and current reviewed growth, stack, spill,
+and duplication bounds are normative in
+[chapter-17-optimization.md](chapter-17-optimization.md). Source scheduling and
+the explicit `machine`, `verified`, and `hardened` safety policies remain
+orthogonal inputs.
 
 ### High-Level Pipeline
 
@@ -1038,7 +1033,7 @@ bodies is verified after placement.
 
 **Binary Emission.** Machine code emitted. Output is reproducible under the
 Reproducibility Model above: the same source input manifest, compiler build identity,
-build optimization mode, canonical `#target(...)` configuration, and selected
+canonical `#target(...)` configuration, and selected
 scheduling policies produce identical output.
 
 ---

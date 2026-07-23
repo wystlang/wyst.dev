@@ -1,8 +1,9 @@
 # wyst.dev
 
 Source for [wyst.dev](https://wyst.dev), the project homepage and generated
-reference manual for Wyst. The production site is an assets-only Cloudflare
-Worker; GitHub Actions is its only build and deployment authority.
+reference manual for Wyst. The production site is static assets on Cloudflare;
+publishing is connected to the protected GitHub repository and this repository
+does not contain a deployment CLI or Cloudflare credentials.
 
 This repository is public so its standard GitHub Actions usage and repository
 protections can remain free. **Public does not mean open source.** Most site
@@ -25,8 +26,7 @@ vendor/wyst-homepage-semantic-tokens.json
 tests/fixtures/wyst/       Versioned Wyst sample fixtures used by tests
 build/                     Documentation generator, templates, and local server
 tools/                     Build, audit, snapshot, and reproducibility programs
-.github/workflows/         Verification, release, and production monitoring
-wrangler.jsonc             Assets-only Worker configuration
+.github/workflows/         Verification and production monitoring
 dist/                      GENERATED, ignored, and never committed
 ```
 
@@ -35,9 +35,9 @@ assets, and Cloudflare `_headers` directly into `dist/`. It also writes
 `dist/.well-known/build.json`, which records the full site commit, the imported
 Wyst snapshot digest and sync-time source-commit attribution, a deterministic
 public tree hash, and the expected hash and size of every public file. A
-separate release identity binds that tree to the non-public `_headers` file and
-`wrangler.jsonc`; CI also pins the exact bytes of `build.json` itself. The
-manifest deliberately contains no timestamp or CI run number.
+separate release identity binds that tree to the non-public `_headers` file; CI
+also pins the exact bytes of `build.json` itself. The manifest deliberately
+contains no timestamp or CI run number.
 
 Generated HTML and deployment bundles are not committed. Pull requests review
 their source changes; CI supplies the generated result and proves that two
@@ -65,8 +65,7 @@ npm run audit:external     # external links (scheduled; intentionally not a PR g
 npm run audit:dependencies # high/critical npm advisories (scheduled)
 npm run verify:build       # build identity and byte hashes
 npm run verify:determinism # two isolated builds must match exactly
-npm run validate:assets    # Cloudflare limits, config, paths, headers, and HTML
-npm run deploy:dry-run     # validate the Wrangler upload without credentials
+npm run validate:assets    # Cloudflare limits, paths, headers, and HTML
 npm run check              # all of the above, beginning with a clean build
 ```
 
@@ -123,51 +122,15 @@ commit.
 ## GitHub verification and release
 
 `.github/workflows/site.yml` runs for every pull request, every push to `next`
-or `main`, and manual dispatches. Its `Verify` job has read-only repository
-permissions and receives no deployment secrets. It installs the lockfile
-exactly and runs `npm run check`, which includes build-manifest verification.
+or `main`, and manual dispatches. Its read-only `Verify` job installs the
+lockfile exactly and runs `npm run check`, including build-manifest
+verification. It has no deployment credentials and performs no upload.
 
-`next` is the integration branch for frequent roadmap-driven updates. Pushes to
-`next` stop after `Verify`; they do not upload release artifacts, enter the
-`production` environment, or deploy. A release is the deliberate act of merging
-`next` into protected `main`. The resulting `main` push verifies the release
-commit again before any production work begins.
-
-For `main`, that job uploads the exact `dist/` tree as a one-day GitHub artifact,
-including the normally excluded `.well-known/build.json`. The production job
-downloads and re-verifies that artifact instead of rebuilding it. Before using
-the protected production environment, a separate job confirms that the workflow
-commit is still the tip of `main`. The protected job repeats that check after
-admission, so an older queued run cannot deploy over a newer release.
-
-The release then:
-
-1. Verifies the downloaded artifact's public tree, release inputs, and exact
-   manifest bytes against the checked-out release source.
-2. Sorts Cloudflare deployments by `created_on` and requires the newest one to
-   contain exactly one version at 100% traffic.
-3. Uploads an undeployed version tagged with the full Git commit.
-4. Stages the old version at 100% and the candidate at 0%.
-5. Audits the candidate through the production hostname using a Cloudflare
-   version-override header, exact artifact identity, and a full browser crawl.
-6. Promotes the candidate to 100% and repeats the exact content and identity
-   audit with bounded retries.
-7. Restores the old version if the candidate audit fails, or rolls back to it if
-   the post-promotion content audit fails.
-8. Audits zone-owned HTTPS and injection policy separately. Policy drift fails
-   and alerts without pointlessly rolling back otherwise-correct site content.
-
-If no Worker exists, Wrangler's normal `deploy` command creates the first
-version; if the Worker exists without a deployment, the uploaded candidate is
-bootstrapped at 100%. Those explicit creation paths are audited immediately but
-cannot promise rollback because no prior production version exists. Every
-subsequent release must use the zero-percent staging path above.
-
-Production deployments share a non-cancelling concurrency group, so a release
-cannot be interrupted halfway through its safety sequence. The protected job
-allows 30 minutes, while each Wrangler and audit subprocess has a shorter safety
-timeout that returns control to the release script with time left to restore the
-prior version.
+`next` is the integration branch for frequent roadmap-driven updates. A release
+is the deliberate act of merging `next` into protected `main`. The Cloudflare
+GitHub integration observes the resulting `main` commit and owns the production
+build and publication. Deployment configuration and credentials remain outside
+this repository.
 
 `.github/workflows/monitor.yml` resolves the newest successful `production`
 deployment recorded by the GitHub Environment, checks out that exact commit,
@@ -191,10 +154,8 @@ third-party action in the workflows is pinned to a full commit SHA.
 The public repository and production deployment path are already configured.
 Day-to-day work is pushed to `next`. `main` requires a pull request and the
 exact `Verify` status check, so merging `next` into `main` is the manual release
-gate. The `production` environment is restricted to `main` and holds the
-Cloudflare account identifier and narrowly scoped Workers deployment token.
-GitHub Actions is the sole release authority; Cloudflare Workers Builds and Git
-deployment remain disabled.
+gate. Cloudflare's GitHub connection publishes the protected `main` branch;
+GitHub Actions verifies source but holds no Cloudflare deployment secret.
 
 The authoritative routing, client-policy, and deployment-ownership requirements
 are in the [Cloudflare production runbook](ops/cloudflare.md). Update that
@@ -207,17 +168,14 @@ long-lived GitHub artifacts.
 
 ## Artifact validation and cost model
 
-`wrangler.jsonc` publishes `./dist` as an assets-only Worker. The generated
-`_headers` supplies the content security policy and related response
-protections.
+The generated `_headers` supplies the content security policy and related
+response protections for the static artifact.
 
 Before any upload, `npm run validate:assets` checks the exact artifact against
 the Workers Free allowance of 20,000 files, the 25 MiB per-file ceiling, the
 100-rule and 2,000-characters-per-line `_headers` limits, and a project-specific
 25 MiB total release budget. It also rejects symlinks, URL-ambiguous or hidden
-paths, case-folding collisions, unexpected Worker code or bindings, config that
-re-enables preview hostnames, and malformed generated HTML. This complements
-Wrangler's dry run, which does not perform a remote static-assets sync.
+paths, case-folding collisions, and malformed generated HTML.
 
 Check them at any time with:
 

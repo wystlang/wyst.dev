@@ -943,7 +943,7 @@ general current-instance addresses.
 | address materialization | `addr_of`, string address materialization, and symbol-base materialization for constant-address `gep` | `ADR_PG_HI21` + `ADD_LO12` page-pair relocation, with byte addends folded only for constant offsets |
 | constant address initializers | `ConstIr::Address` and slice/string/data descriptors containing an address constant | `ABS64` data slot patched during final image write-out |
 | `per_cpu` object references | a non-addressable direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
-| jump tables | future explicit jump-table records, if a lowering mode emits tables | table entries are relocation origins; current `switch-dispatch` mode does not emit jump tables |
+| jump tables | future explicit jump-table records, if an authenticated lowering emits tables | table entries are relocation origins; the universal optimizer does not currently emit jump tables |
 | address-bearing inline assembly operands | checked `asm` `symbol` parameters and typed address operands | retain the typed fixup or address materialization record on the exact parsed instruction |
 
 Passes must not infer relocation provenance from arbitrary integer values or

@@ -834,7 +834,7 @@ kind visible until the writer patches the emitted bytes.
 | Direct symbol branches | IR `goto` / tail control transfer to a label or function symbol | Emits a direct `JUMP26` branch when in range; otherwise emits a deterministic veneer that materializes the target address with `ADR_PG_HI21` + `ADD_LO12`, except that fixed `.wyst.vectors.*` slots reject an out-of-range transfer. |
 | Symbol materialization | IR `addr_of`, string-address materialization, and symbol-base materialization for constant-address `gep` | Emits `ADR_PG_HI21` + `ADD_LO12` page-pair patches in text, with byte addends folded only for constant offsets. |
 | Object references | Global `ConstIr::Address`, slice/string descriptors, `per_cpu` direct-access patches, and `#percpu_offset_of` constants | Emits `ABS64` data patches for ordinary address constants or compiler-owned `.percpu` offset patches; `per_cpu` never becomes an address relocation. |
-| Jump tables | Future explicit jump-table lowering records | Table entries are relocation origins. Current `switch-dispatch` mode does not emit jump tables or serialized jump-table relocations. |
+| Jump tables | Future explicit jump-table lowering records | Table entries are relocation origins. The universal optimizer does not currently emit jump tables or serialized jump-table relocations. |
 | Address-bearing instructions | Checked inline assembly memory/address operands and future load/store address forms that carry a symbol target | Use the same address-materialization or low-12 load/store relocation records as ordinary compiler-generated instructions. |
 
 `#addr_of(symbol)` (§7.1 of [chapter-05-boot.md](chapter-05-boot.md)) is the

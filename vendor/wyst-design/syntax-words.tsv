@@ -162,7 +162,6 @@ root	contextual	core.project-manifests	manifest-artifact-root-clause	implemented
 output	contextual	core.project-manifests	manifest-artifact-output-clause	implemented
 companion	contextual	core.project-manifests	manifest-static-library-companion-clause	reserved
 from	contextual	core.project-manifests	manifest-layout-source-marker	implemented
-profile	contextual	core.project-manifests	manifest-profile-clause	implemented
 debug	contextual	core.project-manifests	manifest-debug-policy-clause	implemented
 unwind	contextual	core.project-manifests	manifest-unwind-policy-clause	implemented
 frame_pointers	contextual	core.project-manifests	manifest-frame-pointer-policy-clause	implemented
@@ -174,7 +173,6 @@ bytes	contextual	core.project-manifests	manifest-code-verification-field	impleme
 prologue	contextual	core.project-manifests	manifest-code-verification-field	implemented
 spill_slots	contextual	core.project-manifests	manifest-code-verification-field	implemented
 veneers	contextual	core.project-manifests	manifest-code-verification-field	implemented
-reproducible	contextual	core.project-manifests	manifest-profile-variant	implemented
 environment	contextual	core.project-manifests	manifest-layout-owner-variant	implemented
 line_tables	contextual	core.project-manifests	manifest-debug-policy-variant	implemented
 full	contextual	core.project-manifests	manifest-debug-policy-variant	implemented

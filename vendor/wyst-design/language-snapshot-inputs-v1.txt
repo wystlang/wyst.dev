@@ -27,7 +27,7 @@ design/chapter-13-scheduling.md
 design/chapter-14-exception-vectors.md
 design/chapter-15-abi-spec.md
 design/chapter-16-object-format.md
-design/chapter-17-optimization-modes.md
+design/chapter-17-optimization.md
 design/chapter-18-check-format-diagnostics.md
 design/chapter-19-learning-diagnostics.md
 design/chapter-20-editor-integration.md

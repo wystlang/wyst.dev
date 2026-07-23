@@ -109,7 +109,6 @@ project project_graph_smoke {
     output "build/kernel.elf"
     layout kernel from "layout.wyst"
 
-    profile .reproducible
     debug .full
     unwind .tables
     frame_pointers .all
@@ -130,7 +129,6 @@ project project_graph_smoke {
     output "build/kernel-benchmark.elf"
     layout benchmark from "layout.wyst"
 
-    profile .reproducible
     debug .none
     unwind .none
     frame_pointers .minimal
@@ -146,7 +144,6 @@ executable tool for "macos-aarch64" {
   root app.main
   output "build/tool"
   layout .environment
-  profile .reproducible
   debug .full
   unwind .tables
   frame_pointers .all
@@ -165,7 +162,6 @@ static_library widgets for "macos-aarch64" {
   root widgets
   output "build/libwidgets.a"
   companion "build/libwidgets.wystlib"
-  profile .reproducible
   debug .full
   unwind .tables
   frame_pointers .all

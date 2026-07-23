@@ -108,7 +108,7 @@ test("preview server serves public assets without exposing repository internals"
 	for (const path of [
 		"/.git/config",
 		"/.claude/launch.json",
-		"/.wrangler/cache/wrangler-account.json",
+		"/.github/workflows/site.yml",
 		"/package.json",
 	]) {
 		const res = await request(preview.port, path);
@@ -282,10 +282,9 @@ test("deploy artifact contains discovery files and only fingerprinted scripts", 
 });
 
 test("deploy artifact identifies its immutable source and public files", async () => {
-	const [manifestSource, headers, wranglerConfig] = await Promise.all([
+	const [manifestSource, headers] = await Promise.all([
 		readFile(new URL("../dist/.well-known/build.json", import.meta.url), "utf8"),
 		readFile(new URL("../dist/_headers", import.meta.url)),
-		readFile(new URL("../wrangler.jsonc", import.meta.url)),
 	]);
 	const manifest = JSON.parse(manifestSource);
 	assert.equal(manifest.schema, 2);
@@ -294,14 +293,10 @@ test("deploy artifact identifies its immutable source and public files", async (
 	assert.match(manifest.wystSnapshotSha256, /^[0-9a-f]{64}$/);
 	assert.match(manifest.treeSha256, /^[0-9a-f]{64}$/);
 	assert.match(manifest.releaseSha256, /^[0-9a-f]{64}$/);
-	assert.deepEqual(Object.keys(manifest.releaseFiles), ["_headers", "wrangler.jsonc"]);
+	assert.deepEqual(Object.keys(manifest.releaseFiles), ["_headers"]);
 	assert.deepEqual(manifest.releaseFiles._headers, {
 		sha256: createHash("sha256").update(headers).digest("hex"),
 		size: headers.byteLength,
-	});
-	assert.deepEqual(manifest.releaseFiles["wrangler.jsonc"], {
-		sha256: createHash("sha256").update(wranglerConfig).digest("hex"),
-		size: wranglerConfig.byteLength,
 	});
 	assert.ok(manifest.files["/"], "manifest should map index.html to its canonical URL");
 	assert.ok(manifest.files["/404.html"]);

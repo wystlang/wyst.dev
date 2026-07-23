@@ -8,7 +8,7 @@ import { verifyWystSnapshot } from "./wyst-snapshot.mjs";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MANIFEST_PATH = ".well-known/build.json";
 const EXCLUDED_PATHS = new Set([MANIFEST_PATH, "_headers"]);
-const RELEASE_FILE_PATHS = ["_headers", "wrangler.jsonc"];
+const RELEASE_FILE_PATHS = ["_headers"];
 
 export function compareText(left, right) {
 	return left < right ? -1 : left > right ? 1 : 0;
@@ -84,9 +84,6 @@ export async function collectReleaseFiles(outputDir = resolveOutputDir()) {
 	const output = path.resolve(outputDir);
 	const releaseFiles = {
 		_headers: fileMetadata(await readFile(path.join(output, "_headers"))),
-		"wrangler.jsonc": fileMetadata(
-			await readFile(path.join(ROOT, "wrangler.jsonc")),
-		),
 	};
 	return Object.fromEntries(
 		Object.entries(releaseFiles).sort(([a], [b]) => compareText(a, b)),

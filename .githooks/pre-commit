@@ -8,7 +8,7 @@ set -eu
 
 staged_paths=$(git diff --cached --name-only --diff-filter=ACMRD)
 
-if printf '%s\n' "$staged_paths" | grep -Eq '^(\.githooks/|\.github/|assets/|build/|index\.html$|package(-lock)?\.json$|robots\.txt$|tests/|tools/|vendor/|wrangler\.jsonc$)'; then
+if printf '%s\n' "$staged_paths" | grep -Eq '^(\.githooks/|\.github/|assets/|build/|index\.html$|package(-lock)?\.json$|robots\.txt$|tests/|tools/|vendor/)'; then
 	echo "pre-commit: running read-only source tests (the hook never changes or stages files)…"
 	npm run --silent test:fast
 fi
