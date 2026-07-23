@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "e10db1b831dfdc64e21acc6612d97332ca9efe2c",
-  "snapshotSha256": "2cbf904b68193ff0f0a92ba1f701e7eb35825b941842b53dba6ed4425c9fc5bd",
+  "sourceCommit": "510ebe9d3116ca822fa90612545dd03616518cc4",
+  "snapshotSha256": "301dc579165f9f7fe9be9a6951c18dcdf217a8b69d43337d5c406883ecf3157d",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
       "sha256": "a418b08134837ab740348928cd664c1271bfbd7b2952420e61130b3605aadb3d",
@@ -296,7 +296,7 @@
       "size": 139
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "12392bf30824a13b6b8bb3a6d1d9d3b1cc6010d4c297c26726dceaac12c8e20e",
+      "sha256": "08bf0a0d9fee300336e2f776b5e394c7d7b3b7b6e7ae1d546ced2d2ead6100ef",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
