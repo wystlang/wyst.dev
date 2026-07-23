@@ -429,3 +429,12 @@ automatic rewrite. The compiler reports these as invalid syntax. The former
 internal/report names `schedule.default`, `schedule.strict`,
 `schedule.relaxed`, `schedule.throughput`, and `schedule.latency` are likewise
 not emitted by selected snapshot tooling.
+
+## Progress scheduling
+
+Progress is serial, same-strand, unbuffered, and synchronous: reporting blocks
+until the noescape handler returns. It promises no fairness or independent
+forward progress. `report` charges `handler_invoke` plus the declared concrete
+handler ceiling. A ceiling containing `execution_suspension` creates the
+existing typed strand boundary and context-stability checks; an authenticated
+nonsuspending ceiling creates none.

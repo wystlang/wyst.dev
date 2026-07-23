@@ -1,11 +1,8 @@
 // Generates the site's 404 page from the shared HTML shell so it inherits the
 // same header, footer, and design system as every other page.
 //
-// Workers Static Assets is configured with `not_found_handling: "404-page"`
-// (see wrangler.jsonc), which serves the nearest 404.html for any unmatched
-// path. Without this file that setting silently falls back to a blank,
-// null-body 404 response. The output is generated directly into the deploy
-// artifact and is never committed.
+// The static host serves this page for unmatched paths. The output is generated
+// directly into the deploy artifact and is never committed.
 
 import fs from "node:fs";
 import path from "node:path";

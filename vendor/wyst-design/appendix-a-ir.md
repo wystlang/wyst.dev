@@ -398,7 +398,7 @@ pass may infer or apply another scale.
 | --------------------------------------- | --------------------------------------------------------------- |
 | `struct { f0: T0, f1: T1, ... }`        | Type-erasure pass                                               |
 | `bitstruct Name: Backing { ... }`       | Type-erasure pass; lowered to the backing integer plus typed bit-field extract/insert ops |
-| `enum T` with payload variant `P`      | Type-erasure pass; payload-less enums lower as their tag, and payload enums use the fixed two-word representation `{tag_word, payload_word}` |
+| `enum T` with payload variants         | Type-erasure pass; payload-less enums lower as their tag, and payload enums retain exact tag/payload size, alignment, variant, and field facts |
 | `[N]T`                                  | Type-erasure pass; indexed access stays as `gep`                |
 | `[]T`                                   | Type-erasure pass; lowered to an address-and-length descriptor    |
 | `[T:N]`                                 | Survives end-to-end; mapped to NEON registers in regalloc       |
@@ -414,10 +414,10 @@ value itself never carries an implicit runtime length field.
 Slice values are descriptors with `data` and `len`. Dynamic arrays are
 seven-field descriptors matching `wyst.dynamicArrayDescriptor.v0`: `data`,
 `len`, `capacity`, `storage_identity`, `growth_policy`, `failure_policy`, and
-`movement_policy`. Payload-less enums are tag values; payload enums are fixed
-two-word values with tag at word 0 and payload at word 1. Aggregates preserve
-their source layout until type erasure so IR, ABI classification, debug info,
-and emitted data all agree on field order, size, alignment, and inactive bytes.
+`movement_policy`. Payload-less enums are tag values; payload enums are exact
+tag-plus-inline-payload aggregates. Aggregates preserve their source layout
+until type erasure so IR, ABI classification, debug info, and emitted data all
+agree on field order, size, alignment, and inactive bytes.
 
 Typed data addresses carry an element lens in the IR type (`@T`,
 `@volatile T`, or `@mmio T`) until explicit address traversal has been lowered
@@ -434,13 +434,14 @@ After the type-erasure pass:
 - All `struct` types are dissolved; field accesses become `gep` + scalar load/store.
 - All `bitstruct` types are dissolved; field reads become carrier-typed bit-field extracts and field writes become range-proved bit-field inserts.
 - All payload-less `enum` types are dissolved into tag-typed integer values.
-- All payload-carrying `enum` types are dissolved into fixed two-word
-  `{tag_word, payload_word}` values; `enum_field(tag)` reads word 0 and
-  `enum_field(payload)` reads word 1.
-- The verifier admits only source-level payload-word types in the payload word:
-  `bool`, integer scalars, pointers, function pointers, and bitstructs. Structs,
-  slices, floating-point values, and nested enum values must not appear as enum
-  payload IR.
+- All payload-carrying `enum` types are dissolved into exact aggregate storage;
+  `enum_field(tag)` reads the declared discriminator at offset 0 and payload
+  projection reads the checked variant's field at its authenticated offset.
+- The verifier admits only compiler-proven fixed-layout movable fields and
+  checks exact tag, payload offset/size/alignment, variant tag, field type, and
+  field offset facts. Structs, arrays, slices, floating-point values, nested
+  enums, multi-field payloads, and concrete generic instantiations are valid;
+  nonmovable, symbolic, or recursively inline fields are rejected.
 - All `[]T` slices are dissolved into address-and-length pairs.
 - `[N]T` arrays remain inline aggregate storage until their indexed accesses,
   copies, or address projections are decomposed into `gep`, load/store, and
@@ -942,7 +943,7 @@ general current-instance addresses.
 | address materialization | `addr_of`, string address materialization, and symbol-base materialization for constant-address `gep` | `ADR_PG_HI21` + `ADD_LO12` page-pair relocation, with byte addends folded only for constant offsets |
 | constant address initializers | `ConstIr::Address` and slice/string/data descriptors containing an address constant | `ABS64` data slot patched during final image write-out |
 | `per_cpu` object references | a non-addressable direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
-| jump tables | future explicit jump-table records, if a lowering mode emits tables | table entries are relocation origins; current `switch-dispatch` mode does not emit jump tables |
+| jump tables | future explicit jump-table records, if an authenticated lowering emits tables | table entries are relocation origins; the universal optimizer does not currently emit jump tables |
 | address-bearing inline assembly operands | checked `asm` `symbol` parameters and typed address operands | retain the typed fixup or address materialization record on the exact parsed instruction |
 
 Passes must not infer relocation provenance from arbitrary integer values or
@@ -1618,7 +1619,7 @@ The allocator uses deterministic SSA interference coloring:
 1. **Classify homes.** Scalar integer, pointer, function-pointer, bitstruct,
    boolean, and payloadless-enum SSA values are GPR candidates. Composite
    values (`string`, slice, dynamic array descriptor, tuple, array,
-   payload-carrying enum two-word values, and named aggregate) are stack-resident. Scalar
+   payload-carrying enum aggregates, and named aggregate) are stack-resident. Scalar
    floating-point and vector SSA values are stack-resident in the current
    AArch64 backend unless an explicit `in register` placement is present;
    automatic
@@ -1954,3 +1955,15 @@ platform-state set and progress evidence, mutable source/frequency/offset/reset/
 rebase/comparability-control exclusion, and a maximum span below the modulus
 before publishing a numeric elapsed claim. These runtime contracts do not add
 fields to the current counter-source IR record.
+
+## Typed outcome IR
+
+An operation signature carries `OperationProtocolIr`: exact effective success,
+progress, failure, and cancellation types; progress handler effects; and one
+concrete outcome enum layout. Producer `return`/`fail`/`cancel` construct the
+terminal tag and payload before cleanup, and `report` is an indirect noescape
+call plus the authenticated suspension boundary required by its ceiling.
+`with` and `?` lower to explicit tag dispatch, exact projections, typed phis,
+and exact outer outcome construction. The verifier rejects record/layout
+disagreement, invalid tags/projections, missing effect authority, or a terminal
+return that bypasses registered cleanup.

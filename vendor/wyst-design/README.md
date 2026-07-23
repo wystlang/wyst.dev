@@ -60,10 +60,12 @@ word catalog. [attribute-catalog.tsv](attribute-catalog.tsv) is the closed curre
 declaration-attribute registry; its rows remain inactive until their semantic
 owner changes the row state atomically with the implementation and evidence.
 [meta-operation-catalog.tsv](meta-operation-catalog.tsv) is the closed active
-14-form compiler/meta-operation surface. The complete 53-name predecessor
+15-form compiler/meta-operation surface. The complete 53-name predecessor
 mapping is isolated in the non-parser
 [legacy-hash-removal-audit.tsv](legacy-hash-removal-audit.tsv); it creates no
 diagnostic, alias, rewrite, completion, hover, or highlighting path.
+[c-operation-adapter-catalog.tsv](c-operation-adapter-catalog.tsv) is the closed
+status/out and tagged/out adapter-profile registry owned by Chapter 26.
 [generic-bounds.tsv](generic-bounds.tsv) is the closed active capability-bound
 registry consumed by parsing, instantiation, diagnostics, and tooling.
 [sealed-core.tsv](sealed-core.tsv) authenticates compiler-bundled core
@@ -187,7 +189,7 @@ region classification.
 | 14      | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md)               | Alignment, exception vectors, vector slots, and checked trap-frame ABI basics.                                                     |
 | 15      | [chapter-15-abi-spec.md](chapter-15-abi-spec.md)                                 | Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership.                               |
 | 16      | [chapter-16-object-format.md](chapter-16-object-format.md)                       | Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries.                         |
-| 17      | [chapter-17-optimization-modes.md](chapter-17-optimization-modes.md)             | Optimization modes and the boundary between explicit source behavior and compiler choices.                                         |
+| 17      | [chapter-17-optimization.md](chapter-17-optimization.md)                         | Universal deterministic optimization, proof/cost/provenance, and the boundary between compiler work and runtime behavior.           |
 | 18      | [chapter-18-check-format-diagnostics.md](chapter-18-check-format-diagnostics.md) | Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor.                                 |
 | 19      | [chapter-19-learning-diagnostics.md](chapter-19-learning-diagnostics.md)         | Diagnostic explanations, learning fields, source insights, and teachable compiler feedback.                                        |
 | 20      | [chapter-20-editor-integration.md](chapter-20-editor-integration.md)             | Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries.                                    |
@@ -196,6 +198,7 @@ region classification.
 | 23      | [chapter-23-debug-info.md](chapter-23-debug-info.md)                             | Debug information goals, DWARF sections, DIEs, locations, and determinism.                                                         |
 | 24      | [chapter-24-scale.md](chapter-24-scale.md)                                       | Scale measurement, deterministic rebuild benchmarking, and non-goals.                                                              |
 | 25      | [chapter-25-compilation-phases.md](chapter-25-compilation-phases.md)             | Compilation phase products, semantic fact ownership, dependency rules, and rendering compatibility adapters.                       |
+| 26      | [chapter-26-errors-and-progress.md](chapter-26-errors-and-progress.md)           | Materialized outcomes, live operations, exact forwarding, progress, recovery, cancellation, cleanup, traps, and C adapters.         |
 
 ## Appendices
 

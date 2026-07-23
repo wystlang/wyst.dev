@@ -1,4 +1,13 @@
 ---
+
+## Materialized sums and canonical outcomes
+
+Chapter 26 replaces the former general one-word enum payload restriction.
+Every variant may carry compiler-proven `fixed_layout_movable` fields; concrete
+tag, payload offset, maximum payload size/alignment, inactive-byte zeroing,
+active-variant, move, initialization, destruction, and equality rules are
+defined there. `core.collections.Option<T>` and `Result<T,E>` are ordinary
+authenticated nominal enums and never acquire implicit conversion or boxing.
 title: "Chapter 6: Wyst Type System"
 group: chapter
 chapter: 6
@@ -45,7 +54,7 @@ struct Pair<T, U> {
   second: U
 }
 
-enum Result<T: payload_word, E: payload_word> {
+enum Result<T: fixed_layout_movable, E: fixed_layout_movable> {
   ok(T)
   err(E)
 }
@@ -2831,8 +2840,9 @@ identifies which variant a value currently holds.
 Enums subsume two distinct features other languages call out separately:
 plain "C-style enums" (variants with no payload — just named tag values)
 and "tagged unions" (variants with payloads). Both are special cases of
-the single `enum` construct. The payload surface supports zero or one
-payload-word value per variant.
+the single `enum` construct. The payload surface supports zero or more fields
+per variant. Every field must have compiler-proven fixed layout and ordinary
+move semantics.
 
 `union` is not a Wyst keyword. Untagged-overlay use cases that other
 languages spell as `union` are covered by `bitstruct` for register
@@ -2853,16 +2863,12 @@ Direction :: enum: u8 {
   West = 3
 }
 
-// Sum-type enum — allowed for zero or one payload-word value per variant.
+// Sum-type enum — fixed-layout movable fields are stored inline.
 Message :: enum: u16 {
   Quit // tag = 0, no payload
-  Write(@u8) // tag = 1, payload is one @u8
-  Custom(u32) // tag = 2, payload is one u32
+  Write([]u8) // tag = 1, payload is a slice descriptor
+  Move(u32, u32) // tag = 2, payload has two fields
 }
-
-// Tuple payloads are outside the enum payload model:
-// Move(u32, u32)
-// Color(u8, u8, u8)
 // Tag values default to 0, 1, 2, ... starting from the previous
 // explicit value + 1. Explicit values may be mixed with implicit:
 Errno :: enum: u32 {
@@ -2879,8 +2885,8 @@ Errno :: enum: u32 {
 | `: u8` / `: u16` / etc.    | Discriminator width. Optional; defaults to smallest unsigned int that holds `variant_count - 1`. |
 | `VariantName`              | Payload-less variant. Tag = (previous tag) + 1 or 0 if first.                                    |
 | `VariantName = N`          | Explicit tag value. Subsequent implicit values continue from `N + 1`.                            |
-| `VariantName(T)`           | Single-element payload of type `T`.                                                              |
-| `VariantName(T1, T2, ...)` | Tuple payload; outside the enum payload model.                                                   |
+| `VariantName(T)`           | One-field payload of fixed-layout movable type `T`.                                              |
+| `VariantName(T1, T2, ...)` | Multi-field payload laid out as an inline tuple in declaration order.                            |
 
 Duplicate tag values are a compile error.
 
@@ -2888,28 +2894,23 @@ Duplicate tag values are a compile error.
 
 ### Layout
 
-Wyst has exactly one enum representation rule. The presence of any payload
-variant selects the payload enum representation for the whole enum type.
+Wyst has exactly one enum representation rule. Payload-less enums are their
+discriminator. For a payload enum, each variant's fields use ordinary tuple
+layout. The shared payload alignment is the largest variant alignment and its
+size is the largest variant size rounded to that alignment. The payload begins
+at `align_up(size_of(tag_type), payload_alignment)`; enum alignment is the
+maximum of tag and payload alignment; total size is rounded up to that enum
+alignment. This exact formula is shared with Chapter 26, typed IR, DWARF, and
+Native/AAPCS64 classification.
 
-| Enum shape | Tag type and size | Tag values | Payload offset | Payload storage size | Alignment | Total size | Padding bytes |
-| ---------- | ----------------- | ---------- | -------------- | -------------------- | --------- | ---------- | ------------- |
-| Payload-less enum | The declared unsigned discriminator type, or the smallest unsigned integer type that contains all variant values. Its size is `size_of(tag_type)`. | Explicit and implicit values are non-negative, unique, and must fit in `tag_type`. | not applicable | 0 | `align_of(tag_type)` | `size_of(tag_type)` | none beyond the tag type itself |
-| Payload enum | The same declared-or-inferred discriminator type. The tag is stored in the first native word at byte offset 0; bytes `0..size_of(tag_type)` contain the tag value. | Same as payload-less enums. | offset 8 | one native word, exactly 8 bytes | 8 | 16 | bytes `size_of(tag_type)..8` are tag-word padding; bytes after the active payload value inside the payload word are payload-word padding |
-
-Payload enum variants may carry zero or one payload-word value: `bool`,
-integer scalars, address types, function-pointer types, or `bitstruct` types.
-`f32`, `f64`, structures, arrays, slices, dynamic arrays, tuples, and nested
-enum values are not payload-word values. A payload-bearing variant stores its
-payload at offset 8 using the payload type's normal byte width and byte order.
-A payload-less variant in a payload enum has no active payload value; the
-entire payload word is inactive storage.
-
-Padding bytes, inactive payload bytes, and bytes in a payload word outside the
-active payload type are not source-level values. A raw read of those bytes
-observes `Indeterminate bits` as defined by the behavior taxonomy. Enum
-equality compares only the tag and, when both values have the same active
-payload-bearing variant, the active payload value; it never compares padding or
-inactive payload bytes.
+Construction writes the tag, zeroes inactive payload and padding bytes, then
+writes the active fields. Only active fields are source-level values. Enum
+equality is available only when every possible active payload supplies the
+ordinary equality capability; it compares the tag and active fields, never
+inactive storage. Structs, arrays, slices, floating-point values, nested enums,
+multi-field payloads, and concrete generic instantiations are eligible when
+fixed-layout movable. `never`, `MaybeUninit<T>`, atomics, symbolic layouts, and
+recursive inline values are rejected; recursion requires explicit indirection.
 
 All integer fields in the representation use the target's data endianness. On
 the current ARM64 targets this means little-endian tag and integer-payload
@@ -2933,8 +2934,8 @@ Message :: enum: u16 {
 
 #static_assert(#size_of(Plain) == 2, "Plain is represented by its tag")
 #static_assert(#align_of(Plain) == 2, "Plain alignment is tag alignment")
-#static_assert(#size_of(Message) == 16, "payload enum is two native words")
-#static_assert(#align_of(Message) == 8, "payload enum alignment is one native word")
+#static_assert(#size_of(Message) == 16, "tag plus largest aligned payload")
+#static_assert(#align_of(Message) == 8, "largest payload owns alignment")
 ```
 
 Wyst does not define `#repr(C)` or other explicit layout
@@ -3090,23 +3091,22 @@ build_list :: () {
 ### ARM64 Lowering
 
 Payload-less enum values lower as their discriminator integer. Payload enums
-in the first payload slice lower as a native two-register pair: discriminator
-word followed by payload word. The compiler:
+retain their exact tag-plus-inline-payload aggregate through typed IR and use
+the ordinary Native aggregate classification. The compiler:
 
 - Materializes the tag at the declared discriminator width
 - Lowers `switch` to a deterministic `cmp`/`b.eq` chain over the tag
-- Binds single-word payload values inside the matching `switch` arm
+- Binds every declared payload field inside the matching `match` arm
 - Lowers `==`/`!=` to a tag compare plus an active-payload compare only when
   the matched variant carries a payload
-- Lowers `%tag_of(value)` to extraction of the tag-typed integer at offset 0
-- Future `is` lowers to a single tag compare + conditional branch
+- Lowers `#tag_of(value)` to the declared variant's tag-typed constant
+- Lowers `is` to a single tag compare plus conditional branch
 
-Payload memory for inactive variants has no valid source-level meaning. Reading
-a payload field of a variant other than the currently-active one is a compile
-error in `switch`/`is` patterns (the type system rules it out) and is an
-unchecked invalid-payload read if expressed through raw address manipulation.
-That raw read observes `Indeterminate bits`. The compiler must not exploit it
-as C-style undefined behavior or treat the value as optimizer poison.
+Payload fields of an inactive variant have no source-level value and cannot be
+projected. Construction zeroes inactive payload and padding bytes, so raw byte
+observation is deterministic but never makes those bytes an active field. The
+compiler must not exploit inactive storage as C-style undefined behavior or
+optimizer poison.
 
 ---
 
@@ -3836,7 +3836,7 @@ Box<T> :: struct {
     value : T
 }
 
-Result<T: payload_word, E: payload_word> :: enum : u8 {
+Result<T: fixed_layout_movable, E: fixed_layout_movable> :: enum : u8 {
     Ok(T)
     Err(E)
 }
@@ -3889,6 +3889,7 @@ GenericBound     <- 'integer'
                   / 'address'
                   / 'bitstruct'
                   / 'payload_word'
+                  / 'fixed_layout_movable'
 ```
 
 The bound names are recognized only in generic type-parameter bound position.
@@ -3910,7 +3911,8 @@ are valid for every concrete type in that closed family:
 | `scalar`           | `bool`, all integer scalar types, and floats     | equality, inequality, storage, passing, returning, and address-taking              |
 | `address`          | pointer types such as `@T`, `@volatile T`, and `@mmio T` | pointer equality and address movement where pointer operations are already legal   |
 | `bitstruct`        | nominal `bitstruct` types                        | whole-value equality, storage, passing, returning, and address-taking              |
-| `payload_word`     | `bool`, integer scalar types, pointer types, function-pointer types, and nominal `bitstruct` types | equality, inequality, storage, passing, returning, address-taking, and use as a generic enum payload |
+| `payload_word`     | `bool`, integer scalar types, pointer types, function-pointer types, and nominal `bitstruct` types | narrowly word-sized generic storage contracts; not the general enum capability |
+| `fixed_layout_movable` | compiler-proven fixed-layout values with ordinary move semantics | storage, passing, returning, address-taking, and inline enum payload fields |
 
 The built-in bound set is intentionally narrow. It is not a trait, concept,
 interface, typeclass, or structural predicate system. User-defined capability
@@ -3933,13 +3935,12 @@ If a type parameter has a bound, the corresponding type argument must satisfy
 that bound at the instantiation site. For example, `add_one<bool>(true)` is
 rejected because `bool` does not satisfy `integer`.
 
-Generic enum payloads are also a bounded capability. A payload variant that
-stores a type parameter directly, such as `Ok(T)`, must declare `T:
-payload_word` or a narrower payload-compatible bound: `integer`,
-`unsigned_integer`, `signed_integer`, `address`, or `bitstruct`. The broader
-`scalar` and `numeric` bounds are not payload-compatible because they include
-floating-point types. Violations are rejected at the generic declaration or at
-the instantiation boundary:
+Generic enum payloads use the `fixed_layout_movable` capability. A payload
+variant that stores a type parameter directly, such as `Ok(T)`, must declare
+`T: fixed_layout_movable`. The narrower `payload_word` bound remains available
+only to APIs whose own contract genuinely requires one word; it is not an enum
+restriction. Violations are rejected at the declaration or instantiation
+boundary:
 
 <!-- wyst-contract: historical-v0.8 -->
 ```wyst
@@ -3949,12 +3950,12 @@ Error :: struct {
   code : u64
 }
 
-Result<T: payload_word, E: payload_word> :: enum: u8 {
+Result<T: fixed_layout_movable, E: fixed_layout_movable> :: enum: u8 {
   Ok(T)
   Err(E)
 }
 
-bad : Result<[]u8, Error> = 0
+bad : Result<MaybeUninit<u64>, Error> = 0
 ```
 
 Generic type arguments are full types, so they may contain other instantiated

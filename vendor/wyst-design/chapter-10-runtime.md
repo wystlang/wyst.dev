@@ -361,3 +361,10 @@ unless a visible logging API takes explicit storage.
 - Do not make a global allocator part of the core language.
 - Do not hide allocation behind syntax, implicit temporaries, or library magic.
 - Do not make page management, TLS, or device memory portable source semantics.
+
+Operations, progress, exact forwarding, recovery capabilities, cancellation,
+and cleanup require no language runtime, allocation, executor, coroutine,
+exception object, dynamic handler stack, TLS status, or retained continuation.
+The canonical Option/Result source is bundled and authenticated like the
+existing collections declaration, but its helpers remain ordinary generic
+Wyst code.

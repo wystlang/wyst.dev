@@ -4,9 +4,9 @@ var semihost_exit_status: u64 = 1
 
 fn test_exit(code: u64) -> never {
   semihost_exit_status = code
-  var operation: u64 in x0 = 0x18
+  var op_code: u64 in x0 = 0x18
   var args: u64 in x1 = #addr_of(semihost_exit_reason)
-  semihost.call(operation, args)
+  semihost.call(op_code, args)
 
   loop {
     cpu.wfe()

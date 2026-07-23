@@ -5,7 +5,6 @@ import path from "node:path";
 import test from "node:test";
 import {
 	DEFAULT_LIMITS,
-	parseJsonc,
 	validateAssetInventory,
 	validateCloudflareAssets,
 	validateHeaders,
@@ -41,26 +40,7 @@ async function makeFixture(t) {
 		writeFile(path.join(publicRoot, "robots.txt"), "User-agent: *\nAllow: /\n"),
 		writeFile(path.join(publicRoot, "sitemap.xml"), "<urlset></urlset>\n"),
 	]);
-	const configPath = path.join(fixture, "wrangler.jsonc");
-	await writeFile(
-		configPath,
-		`{
-			// Comments and trailing commas are valid Wrangler JSONC.
-			"$schema": "./node_modules/wrangler/config-schema.json",
-			"name": "wyst",
-			"compatibility_date": "2026-07-13",
-			"workers_dev": false,
-			"preview_urls": false,
-			"observability": {"enabled": false},
-			"assets": {
-				"directory": "./public",
-				"html_handling": "auto-trailing-slash",
-				"not_found_handling": "404-page",
-			},
-		}
-`,
-	);
-	return { fixture, publicRoot, configPath };
+	return { fixture, publicRoot };
 }
 
 test("Cloudflare validator accepts the intended assets-only release shape", async (t) => {
@@ -69,40 +49,6 @@ test("Cloudflare validator accepts the intended assets-only release shape", asyn
 	assert.equal(result.files.length, 6);
 	assert.equal(result.headerRules, 1);
 	assert.ok(result.totalSize > 0);
-	assert.equal(parseJsonc('{"url":"https://example.test/a//b",}').url, "https://example.test/a//b");
-});
-
-test("Cloudflare validator rejects Worker code and release-surface config drift", async (t) => {
-	const fixture = await makeFixture(t);
-	await writeFile(
-		fixture.configPath,
-		`{
-			"$schema": "./node_modules/wrangler/config-schema.json",
-			"name": "wyst",
-			"main": "src/worker.js",
-			"compatibility_date": "2026-07-13",
-			"workers_dev": false,
-			"preview_urls": false,
-			"assets": {"directory":"./public","html_handling":"auto-trailing-slash","not_found_handling":"404-page"}
-		}`,
-	);
-	await assert.rejects(
-		validateCloudflareAssets(fixture),
-		/unsupported release configuration: main/,
-	);
-});
-
-test("Cloudflare validator requires disabled Worker observability", async (t) => {
-	const fixture = await makeFixture(t);
-	const source = await readFile(fixture.configPath, "utf8");
-	await writeFile(
-		fixture.configPath,
-		source.replace('"observability": {"enabled": false}', '"observability": {"enabled": true}'),
-	);
-	await assert.rejects(
-		validateCloudflareAssets(fixture),
-		/Worker observability must remain disabled/,
-	);
 });
 
 test("asset inventory rejects symlinks and URL-ambiguous paths", async (t) => {

@@ -2098,3 +2098,11 @@ row. No current parser recognizes it, and it does not define the semantics of
 | Non-temporal load/store operations use pairs    | ARM64 `LDNP`/`STNP` are pair instructions — exposing single-element non-temporal ops would require synthetic pair construction.            |
 | `cpu.read_counter` is a full fence               | The fence keeps source loads/stores inside the sampled region. It neither serializes hardware endpoints nor upgrades raw ticks into elapsed-time evidence. |
 | Artifact target selects one source descriptor    | Counter source, availability, privilege, frequency acquisition, and failure stay explicit; feature inference and fallback cannot change emitted code. |
+
+## Canonical fatal boundary
+
+`#fatal_trap(reason: u16) -> never effects(trap)` is the target-neutral
+authenticated fatal boundary. The explicit reason evaluates once and is
+retained in typed IR; ARM64 places it in `x0` and emits reserved `BRK #0xf001`.
+It never grants undefined-behavior assumptions and is rejected by
+`#[deny_effects(trap)]`. Chapter 26 owns materialized `expect_or_trap` policy.

@@ -19,8 +19,7 @@
     "audit:dependencies": "npm audit --audit-level=high",
     "audit:external": "node tools/audit-external-links.mjs",
     "audit:live": "node tools/audit-live-site.mjs",
-    "deploy:dry-run": "wrangler versions upload --dry-run",
-    "check": "npm run build && npm run test:unit && npm run verify:build && npm run validate:assets && npm run audit && npm run audit:browser && npm run verify:determinism && npm run deploy:dry-run",
+    "check": "npm run build && npm run test:unit && npm run verify:build && npm run validate:assets && npm run audit && npm run audit:browser && npm run verify:determinism",
     "serve": "node build/serve.mjs",
     "sync:brand": "node tools/sync-brand-assets.mjs",
     "sync:wyst": "node tools/sync-wyst-snapshot.mjs",
@@ -29,7 +28,6 @@
   "devDependencies": {
     "markdown-it": "14.3.0",
     "markdown-it-anchor": "9.2.1",
-    "prismjs": "1.30.0",
-    "wrangler": "4.112.0"
+    "prismjs": "1.30.0"
   }
 }

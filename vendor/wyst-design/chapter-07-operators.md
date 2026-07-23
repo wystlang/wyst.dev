@@ -785,3 +785,12 @@ Vector element-wise lowering (examples; arrangement suffix determined by type):
 | `[u8:16]: a \| b` | `orr`          | sixteen byte lanes               |
 | `[u8:16]: a ^ b`   | `eor`          | sixteen byte lanes               |
 | `[u8:16]: a &^ b`  | `bic`          | sixteen byte lanes               |
+
+## Outcome operators
+
+Postfix `?` is the sole outcome-specific operator. It accepts only a direct
+success-plus-failure operation call in an exactly compatible enclosing
+operation and is identical to implicit success plus `forward failure`. It does
+not apply to `Result`, translate errors, forward progress/cancellation, or
+provide recovery policy. Exhaustive expression `match`, not punctuation
+unwrapping, transforms stored outcomes.

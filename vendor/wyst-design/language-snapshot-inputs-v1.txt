@@ -10,6 +10,7 @@ design/appendix-b-grammar.md
 design/appendix-c-doc-example-contracts.md
 design/atomic-matrix.json
 design/attribute-catalog.tsv
+design/c-operation-adapter-catalog.tsv
 design/chapter-01-language-design.md
 design/chapter-02-targets.md
 design/chapter-03-project-builds.md
@@ -26,7 +27,7 @@ design/chapter-13-scheduling.md
 design/chapter-14-exception-vectors.md
 design/chapter-15-abi-spec.md
 design/chapter-16-object-format.md
-design/chapter-17-optimization-modes.md
+design/chapter-17-optimization.md
 design/chapter-18-check-format-diagnostics.md
 design/chapter-19-learning-diagnostics.md
 design/chapter-20-editor-integration.md
@@ -35,6 +36,7 @@ design/chapter-22-generated-manifest.md
 design/chapter-23-debug-info.md
 design/chapter-24-scale.md
 design/chapter-25-compilation-phases.md
+design/chapter-26-errors-and-progress.md
 design/declaration-roles.tsv
 design/environment-service-catalog.tsv
 design/generic-bounds.tsv
@@ -46,4 +48,5 @@ design/semantic-db.json
 design/semantic-operation-catalog.tsv
 design/source-of-truth.md
 design/syntax-words.tsv
+design/typed-operation-kernel-control-budget-v1.json
 wync/core/collections.wyst

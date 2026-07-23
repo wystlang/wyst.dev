@@ -1,4 +1,14 @@
 ---
+
+## Outcomes and operations
+
+DWARF materializes arbitrary enums at their exact concrete byte size and
+alignment with discriminator and payload-storage offsets derived from the same
+semantic layout facts as ABI lowering. Operation functions retain their exact
+outcome return type; progress callbacks retain payload type, noescape callable
+identity, and effect-ceiling provenance in compiler records. Generated handler
+entries use deterministic semantic names. No debug type implies boxing,
+unwinding, a coroutine frame, dynamic handler state, or an ambient error slot.
 title: "Chapter 23: Wyst Debug Information"
 group: chapter
 chapter: 23
@@ -168,13 +178,16 @@ members: `data : @T` (offset 0) and `len : u64` (offset 8), matching the
 ABI layout. The struct's `DW_AT_name` is `"[]T"` with `T` substituted.
 
 **Payload enums.** A Wyst `enum` with payload variants emits a
-`DW_TAG_structure_type` named after the enum with byte size 16. It contains
-`tag` at byte offset 0 with the enum's discriminator type. It also contains
-`payload` at byte offset 8 with the shared payload word type. Debuggers must
-use the source-level variant metadata to interpret which payload-word type is
-active for a given tag; arbitrary aggregate, slice, floating-point, and nested
-enum payloads are rejected by the language. Padding and inactive payload bytes
-are not source-level values.
+`DW_TAG_structure_type` named after the enum with the exact concrete byte size.
+It contains `tag` at byte offset 0 with the declared discriminator type and
+`payload` at the computed aligned payload offset. When one representative
+payload type exactly matches the shared storage size and alignment, the member
+references that type; otherwise it references exact `[N]u8` storage so DWARF
+never lies about a narrower value. The authenticated materialized-sum semantic
+record retains every variant and field type. Struct, array, slice,
+floating-point, nested-enum, multi-field, and concrete-generic payloads all use
+this path. Padding and inactive payload bytes are not active source-level
+fields.
 Payload-less enums emit a `DW_TAG_enumeration_type` with byte size equal to the
 discriminator type.
 

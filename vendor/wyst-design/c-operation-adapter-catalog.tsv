@@ -1,0 +1,4 @@
+// wyst.cOperationAdapterProfiles.v1
+// profile	eligible_transitions	return_carrier	terminal_storage	common_output	progress_crossing	recovery_crossing	ambient_status	owner	state
+status-out	success|failure	u32-explicit-complete-status-mapping	caller-success-out-selected-only	optional-explicit-always-initialized	noescape-callback+context+concrete-effects	noescape-callback+context+concrete-effects	forbidden	chapter-26-errors-and-progress	implemented
+tagged-out	success|failure|cancelled-subset	u8-canonical-terminal-tag	caller-exact-payload-outs-selected-only	optional-explicit-always-initialized	noescape-callback+context+concrete-effects	noescape-callback+context+concrete-effects	forbidden	chapter-26-errors-and-progress	implemented

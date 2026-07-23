@@ -61,7 +61,7 @@ foundational declaration and expression surface. The versioned
 [syntax-word catalog](syntax-words.tsv) is the sole keyword, contextual-word,
 and unshadowable-name table; this appendix does not maintain a second word
 list. The closed [meta-operation catalog](meta-operation-catalog.tsv) owns the
-exact 14 active `#` forms and their phase/type/target/relocation contracts. The
+exact 15 active `#` forms and their phase/type/target/relocation contracts. The
 versioned [declaration-attribute catalog](attribute-catalog.tsv) likewise owns
 attribute activation and signatures. The historical productions later in this
 appendix do not reactivate a name absent from those current catalogs.
@@ -445,10 +445,15 @@ CallArg <- UserIdentifier '=' Expr / Expr
 CallStmt <- CallableExpr '(' CallArgList? ')'
 
 MatchStmt <- 'match' Expr '{' MatchArm* MatchElse? '}'
+MatchExpr <- 'match' Expr '{' MatchExprArm+ MatchElseExpr? '}'
 MatchArm <- VariantPattern (',' VariantPattern)* Block
 VariantPattern <- '.' UserIdentifier
-                  ('(' (UserIdentifier / Discard) ')')?
+                  ('(' PatternBinding (',' PatternBinding)* ','? ')')?
+PatternBinding <- UserIdentifier / Discard
 MatchElse <- 'else' Block
+MatchExprArm <- VariantPattern (',' VariantPattern)* ValueBlock
+MatchElseExpr <- 'else' ValueBlock
+ValueBlock <- '{' Statement* Expr '}'
 
 IsPattern <- Expr 'is' VariantPattern
 Block <- '{' Statement* '}'
@@ -1057,6 +1062,7 @@ GenericBound         <- 'integer'
                       / 'address'
                       / 'bitstruct'
                       / 'payload_word'
+                      / 'fixed_layout_movable'
 ```
 
 The bound names are recognized only in generic bound position, not as global
@@ -1846,11 +1852,14 @@ and every alternate range spelling are rejected.
 
 Enum variants without explicit values receive increasing tag values after
 parse. `EnumPayload` is parsed as a type list so diagnostics can point at
-the precise payload shape; semantic analysis currently accepts zero or one
-payload-word value per variant and rejects tuple payloads, structures, slices,
-floating-point payloads, and nested enum payloads. Generic type parameters are
-legal on enum declarations, but direct generic enum payload parameters must
-declare a payload-compatible bound such as `payload_word`.
+the precise payload shape. Semantic analysis accepts zero or more fields whose
+types have compiler-proven fixed layout and ordinary move semantics, including
+structures, arrays, slices and other descriptors, nested enums, and concrete
+generic instantiations. Recursive by-value payloads require explicit
+indirection. Generic type parameters are legal on enum declarations; a generic
+parameter used as an enum payload declares the `fixed_layout_movable` bound.
+The narrower `payload_word` capability remains available only to APIs that
+intrinsically require one word and is not the general enum-payload model.
 
 ### 5.4 Global / Constant Declarations
 
@@ -1953,8 +1962,10 @@ case the prose specification flagged as needing clarification.
 The following symbols and forms remain reserved for future use:
 
 - `$` — reserved.
-- `?` as a postfix operator — reserved (no assigned use; the token
-  itself is recognized so future addition is non-breaking).
+
+Postfix `?` is active only on a direct operation call under the exact failure
+forwarding contract in Chapter 26. Every other use is a context-specific
+diagnostic, not a reserved-token use.
 
 Angle brackets are not reserved tokens. They are active grammar syntax for
 generic type parameter lists, generic type argument lists, and primitive type
@@ -2000,9 +2011,31 @@ release catalogs.
 scans active compiler, tooling, fixture, documentation, manifest, and release
 inputs and rejects an unlisted predecessor spelling.
 The sole workspace-level release invocation for this closure is
-`wync/tools/compiler-efficiency-workspace-release-gate.sh`. It requires the Wyst, kernel,
-and website repositories and runs the closure test with workspace enforcement.
+`wync/tools/compiler-efficiency-workspace-release-gate.sh`. It requires the Wyst,
+website, and brand repositories and runs the closure test with workspace
+enforcement.
 The corpus must cover precedence, malformed directives, version gating, atomic
 orders, generics, `is`, compile-time `#if`, MMIO constructs, and recovery
 behavior; adding or changing any of those syntax surfaces requires updating the
 manifest and the linked tests in the same change.
+
+## Outcome and cleanup grammar
+
+```ebnf
+operation-decl = "operation" ident generic-params? params operation-protocol effects-clause block? ;
+operation-protocol = "{" success-member progress-member? failure-member? cancelled-member? "}" ;
+success-member = "success" "(" type ")" ;
+progress-member = "progress" "(" type ")" effects-clause ;
+failure-member = "failure" "(" type ")" ;
+cancelled-member = "cancelled" "(" type ")" ;
+operation-expression = direct-call "with" "{" handler-arm+ "}" | direct-call "?" ;
+handler-arm = transition "(" binding ")" block | "forward" ("progress" | "failure" | "cancelled") ;
+defer-statement = "defer" block ;
+terminal-statement = "report" expression | "fail" expression | "cancel" expression ;
+match-expression = "match" expression "{" expression-match-arm+ "}" ;
+```
+
+Members occur only in the shown canonical order. `?` is postfix punctuation
+only on a direct operation call. Expression-match arms use the existing
+shallow enum patterns and blocks whose final expression is the arm value.
+`#fatal_trap(expression)` is the sole fatal meta-operation spelling.

@@ -41,7 +41,11 @@ const vocabularyCatalogs = [
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ];
-const designCatalogs = [...vocabularyCatalogs, "declaration-roles.tsv"];
+const designCatalogs = [
+	...vocabularyCatalogs,
+	"c-operation-adapter-catalog.tsv",
+	"declaration-roles.tsv",
+];
 const designAuthorities = ["language-snapshot-inputs-v1.txt"];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",

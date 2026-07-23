@@ -1,4 +1,13 @@
 ---
+
+## Terminal ownership and cleanup
+
+Operation termination evaluates and moves the payload into caller-owned
+outcome storage, commits the label, disarms the moved source, then executes
+`defer` registrations innermost-first in reverse order before the handler.
+Cleanup cannot relabel or escape the outcome. Partial-completion payloads state
+the exact valid extent; caller-owned prefixes stay caller-owned, while
+producer-owned partial output moves into failure or cancellation data.
 title: "Chapter 9: Wyst Memory Model"
 group: chapter
 chapter: 9
