@@ -157,8 +157,6 @@ The checked-in policy covers at least:
 
 - a tiny project with no checked assembly;
 - a tiny project whose first checked-assembly use activates the A64 catalogs;
-- the `language.exact-code-contracts` `kernel` named artifact;
-- the `language.exact-code-contracts` `kernel-benchmark` named artifact; and
 - deterministic module-count and function-count scale projects.
 
 A baseline/candidate verdict comparison requires identical source bytes,
@@ -167,8 +165,8 @@ debug/unwind/frame policies, compiler build profile, and workload content. The
 pinned baseline and candidate run on the same privacy-preserving physical
 gate-runner instance, in one run-session UUID, under one eligible
 runner-configuration identity, with samples interleaved in the order frozen by
-the policy. Each workload also binds its owning Wyst or kernel repository's
-clean revision and committed-tree identity before and after the sample set.
+the policy. Each workload also binds the Wyst repository's clean revision and
+committed-tree identity before and after the sample set.
 
 Runner eligibility freezes the hardware or VM identity, CPU, memory, firmware,
 OS and kernel, Rust toolchain, clock source and resolution, power and thermal
@@ -322,7 +320,7 @@ change.
 The policy enforces that preservation structurally and semantically. A pending
 bootstrap has `baselineReview: null` and cannot produce a verdict. Explicit
 `bootstrap_review` mode can produce only a reviewed null-verdict result, and
-only after budget approval, physical-runner pinning, clean Wyst/kernel pins,
+only after budget approval, physical-runner pinning, a clean Wyst pin,
 eligible controls, absolute budgets, attribution, and equivalence all pass.
 The policy's `releaseReadiness` field derives only from those checked-in
 policy-side prerequisites (budget approval, runner pin, repository pins, and

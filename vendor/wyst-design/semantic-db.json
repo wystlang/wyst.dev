@@ -4587,8 +4587,6 @@
     "requiredWorkloads": [
       "checked-in-tiny-no-checked-assembly",
       "checked-in-tiny-first-checked-assembly-a64-catalog-activation",
-      "kernel-named-artifact",
-      "kernel-benchmark-named-artifact",
       "deterministic-module-scale-projects",
       "deterministic-function-scale-projects"
     ],
@@ -4622,7 +4620,7 @@
     "privacyPreservingPhysicalInstance": "domain-separated-sha256-only-raw-machine-uuid-never-serialized",
     "runSessionIdentity": "one-urn-uuid-shared-by-runner-and-all-comparable-sample-sets",
     "perSampleSetControls": ["firmware", "power-and-thermal", "affinity-isolation-and-priority", "bounded-background-load", "no-competing-build-or-benchmark", "filesystem-cache-procedure"],
-    "repositoryBindings": ["wyst-clean-revision-and-tree-before-after", "kernel-clean-revision-and-tree-before-after"],
+    "repositoryBindings": ["wyst-clean-revision-and-tree-before-after"],
     "sampleSetStatuses": ["eligible", "ineligible", "incomplete", "protocol_mismatch"],
     "comparisonStatuses": ["comparable", "not_comparable", "not_attempted"],
     "comparisonRules": [

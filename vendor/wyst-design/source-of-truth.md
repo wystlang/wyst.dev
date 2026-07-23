@@ -191,8 +191,8 @@ schema/version/identity/content digest produces no verdict. Only two eligible
 sample sets with identical canonical workload inputs and the required same
 runner-configuration identity are `comparable`; cross-machine evidence cannot
 drive a verdict without a separately versioned calibration contract. The same
-domain-separated physical-instance digest, one run-session UUID, and clean
-before/after Wyst or kernel revision/tree identity are also required. A pending
+domain-separated physical-instance digest, one run-session UUID, and a clean
+before/after Wyst revision/tree identity are also required. A pending
 bootstrap has no baseline review and cannot produce a verdict; explicit
 bootstrap-review mode can produce only reviewed null-verdict P0 evidence after
 all non-baseline facts pass. Every pinned
