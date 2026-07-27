@@ -61,6 +61,32 @@ pub naked fn _start(dtb: @u8 in x0) -> never {
   kernel_main(dtb)
 }
 
+fn kernel_main(dtb: @u8) -> never {
+  // Production code would parse the DTB.
+  // This fixture only checks that the handoff supplied it.
+  if dtb == address<@u8>(0) {
+    test_exit(0x63)
+  }
+
+  uart_hello()
+
+  // Bare metal has no caller to return to. `test_exit`
+  // plays the role of process exit for this QEMU test:
+  // report status 0, then stop the virtual machine.
+  test_exit(0)
+}
+
+fn uart_hello() {
+  // `_` infers a fixed [6]u8 from the literal's decoded bytes.
+  // The array has no runtime length field or trailing NUL byte.
+  const msg: [_]u8 = "hello\n"
+
+  // #len reads the inferred array length at compile time.
+  for i in 0 ..< #len(msg) {
+    uart_write(msg[i])
+  }
+}
+
 fn uart_write(byte: u8) {
   // Poll for space in the transmit FIFO.
   while UART0.FR.read().TXFF {
@@ -68,30 +94,5 @@ fn uart_write(byte: u8) {
   }
 
   UART0.DR.write(DATA = byte)
-}
-
-fn uart_hello() {
-  // UART output is byte-oriented.
-  const msg: [6]u8 = ['h', 'e', 'l', 'l', 'o', '\n']
-
-  // #len is compile-time metadata;
-  // the array has no runtime length field.
-  for i in 0 ..< #len(msg) {
-    uart_write(msg[i])
-  }
-}
-
-fn kernel_main(dtb: @u8) -> never {
-  // Production code would parse the DTB.
-  // This fixture only checks that the handoff supplied it.
-  if dtb == address<@u8>(0) {
-    test_exit(0x63)
-  }
-  uart_hello()
-
-  // Bare metal has no caller to return to. `test_exit`
-  // plays the role of process exit for this QEMU test:
-  // report status 0, then stop the virtual machine.
-  test_exit(0)
 }
 // homepage-example:end

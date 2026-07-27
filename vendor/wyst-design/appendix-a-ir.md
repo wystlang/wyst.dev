@@ -17,7 +17,7 @@ This advanced compiler-internal reference maps Wyst source concepts into SSA,
 verifier invariants, scheduling regions, allocation, and lowering. The source
 contracts it depends on are linked above.
 
-## selected snapshot Callable and `per_cpu` IR Contract (Current)
+## Callable and `per_cpu` IR Contract
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 Typed IR must preserve, without reconstruction, a callable's convention,
@@ -47,7 +47,7 @@ key. Its final `.percpu` byte offset is a placement result. A
 then becomes that final `u64` byte offset; it never becomes an address.
 
 A direct `per_cpu` read, write, field access, element access, or method from
-`wyst.atomic-matrix.v1` remains a non-addressable access record through
+The atomic matrix remains a non-addressable access record through
 scheduling. The record
 contains the global identity, checked subobject byte offset, requested typed
 operation, source origin, and selected target/runtime realization facts. An
@@ -73,12 +73,10 @@ reserved system state `TPIDR_EL1`; and realization
 `single-instance-test-runtime`. Without that exact selection, reachable access
 is a source/target diagnostic rather than malformed IR.
 
-Typed IR for selected snapshot admits no TLS storage kind, offset constant, current-instance
-operation, symbol, or relocation. Internal names inherited from the released
-v0.8 implementation do not authorize predecessor per-CPU or TLS source
-behavior.
+Typed IR for Wyst admits no TLS storage kind, offset constant, current-instance
+operation, symbol, or relocation.
 
-## selected snapshot Strand Suspension And Context-Stability IR Contract (Current)
+## Strand Suspension And Context-Stability IR Contract
 
 The target-neutral effect enum contains `execution_suspension` in addition to
 the machine-effect vocabulary. It is present in `effects(all)`, callable
@@ -94,36 +92,29 @@ and its verifier-required adjacent call or authenticated marker fact retain the
 source call or marker identity, exact or conservative effect-bound provenance,
 and adjacent transfer identity. An inlined call retains the record
 immediately before the first expanded callee operation, and a tail call retains
-it immediately before its terminator. Objects, archives, devirtualization, and
-linking consume or reproduce the same typed record from the serialized bound;
-they may not lower it to optional metadata.
+it immediately before its terminator.
 
 `context_stability` is a required provenance component for every value
 originating in a compiler-owned current-context operation or authenticated
 provider interface. Its closed values are `active_context_affine`,
 `task_stable`, and `cross_strand_stable`, ordered from most to least
-restrictive. SSA copies, arguments/results, phi nodes, fields, aggregate and
-enum construction/extraction, generic substitutions, spills/reloads, and
-interface/object/archive serialization carry the exact component. Projection
-selects the field component; aggregate and possible-variant joins take the
-most restrictive live component. A raw address conversion records a trust
-boundary and cannot clear or upgrade this provenance.
+restrictive. SSA copies, arguments/results, phi nodes, fields, and aggregate
+and enum construction/extraction carry the exact component. Projection selects
+the field component; aggregate and possible-variant joins take the most
+restrictive live component. A raw address conversion records a trust boundary
+and cannot clear or upgrade this provenance.
 
 The current module builder emits ordinary callable parameter/result summaries
 because the execution-strand contract adds no source qualifier and
 authenticated provider accessors are not yet active. The verifier authenticates
-that ordinary product and rejects unsourced classified replacement bytes. This
-does not create a second schema: compiler-owned or authenticated provider
-producers use the same `wyst.callable-context-summary.v2` transport, and its
-consumer preserves and joins those classified facts without erasure when such a
-producer is active.
+that ordinary product and rejects unsourced classified replacement bytes.
 
-That v2 sidecar authenticates the callable signature's exact effect list or
+That summary authenticates the callable signature's exact effect list or
 conservative top, the exact `SuspensionEffectAuthority`, ordered parameter
 provenance, and result provenance under one digest. A known-target indirect
 call joins the decoded target bounds in closed catalog order and requires that
 join to equal its typed call-site bound before boundary analysis consumes it.
-Missing or extra sidecars, a bound/authority disagreement with the canonical
+Missing or extra summaries, a bound/authority disagreement with the canonical
 signature and module authority map, or any noncanonical effect ordering is
 invalid IR.
 
@@ -136,7 +127,7 @@ also prevent observable memory, volatile/MMIO/atomic operations, effects,
 calls, and base acquisitions from crossing in either direction, while leaving
 independent pure operations eligible for deterministic scheduling.
 
-## selected snapshot Address, Slice, and Conversion IR Contract (Current)
+## Address, Slice, and Conversion IR Contract
 
 Chapter 6 owns the source semantics represented by
 `language.ir-source-semantic-agreement`. IR construction must erase the old
@@ -179,9 +170,7 @@ IR construction; a dynamic MMIO address carries
 `possible_architectural_fault=true`. No verifier or optimizer may turn that
 fact into an impossible-state assumption.
 
-The selected snapshot parser rejects the predecessor typed-memory, categorized-conversion,
-colon-range, raw-descriptor, runtime address-of, and endian-primitive spelling
-classes before semantic or IR construction. The verifier then validates the canonical structural result: it
+The verifier validates the canonical structural result: it
 rejects typed-address add/sub, a second scale on a canonical byte offset, a
 non-byte endian receiver, non-ordinary raw-slice data, an inexact stack-address
 lens, and a conversion kind outside its closed endpoint row. Shape-equivalent
@@ -189,7 +178,7 @@ IR nodes do not retain a redundant copy of the discarded source spelling;
 source-origin metadata is retained only where it changes an IR invariant, such
 as GEP unit/origin verification.
 
-## selected snapshot Atomic IR Contract (Current)
+## Atomic IR Contract
 
 `language.opaque-atomic-storage-closed-orders` preserves atomic opacity in typed
 IR. `atomic<T>` is a storage type and `@atomic<T>` is the only address form that
@@ -230,10 +219,10 @@ contain a lock, helper, retry limit, timeout, or synthetic failure. The IR
 progress identity means lock-free implementation, not per-agent wait-freedom.
 For `.seq_cst`, verification also retains participation in the single global
 SC order. ARM64 `ldar`/`stlr`/acquire-release-RMW selection is accepted only
-with Chapter 9's architecture proof and normative SC litmus obligations; the
+with Chapter 9's architecture proof and required SC litmus obligations; the
 absence of an implicit `dmb` is not by itself evidence of correctness.
 
-## selected snapshot Hardware Register IR Contract (Current)
+## Hardware Register IR Contract
 
 Hardware declarations are semantic module facts, not allocated globals. A
 register-map fact records stable map/register identity, unsigned backing type,
@@ -301,11 +290,6 @@ selects exactly one authenticated `mrs` or `msr` per access. No lowering may
 introduce a retry, truncation, additional access, raw-encoding escape, or
 architectural barrier.
 
-> Later predecessor register-placement, callable-modifier, per-CPU, and TLS
-> wording in this appendix belongs to the released v0.8 IR exposition unless
-> explicitly updated. Read non-conflicting allocation details through the
-> current `in register`, `naked`, `never`, and `per_cpu` contract above.
-
 The Wyst IR is the compiler-internal source of truth between the semantic analyzer and
 the ARM64 backend. Every optimization, scheduling decision, and lowering rule
 is expressed against this representation. Its design priorities, in order:
@@ -318,7 +302,7 @@ is expressed against this representation. Its design priorities, in order:
    provenance.
 3. **Stay small.** ~30 op kinds. New language features prefer new attributes
    on existing ops over new ops.
-4. **Be deterministic.** Identical source + compiler build identity + target +
+4. **Be deterministic.** Identical source + checked-out compiler source + target +
    selected scheduling policies → identical IR. No hash-table-iteration-order
    dependencies, no rolling unique IDs that vary across runs (use
    declaration-order IDs).
@@ -412,7 +396,7 @@ array-to-slice lowering may build a separate descriptor, but the fixed-array
 value itself never carries an implicit runtime length field.
 
 Slice values are descriptors with `data` and `len`. Dynamic arrays are
-seven-field descriptors matching `wyst.dynamicArrayDescriptor.v0`: `data`,
+seven-field descriptors matching `wyst.dynamicArrayDescriptor`: `data`,
 `len`, `capacity`, `storage_identity`, `growth_policy`, `failure_policy`, and
 `movement_policy`. Payload-less enums are tag values; payload enums are exact
 tag-plus-inline-payload aggregates. Aggregates preserve their source layout
@@ -474,15 +458,13 @@ type-declaration = visibility name type-form
 ```
 
 `visibility` is `pub` or absent (private; see [chapter-04-modules.md](chapter-04-modules.md)).
-In current selected snapshot typed IR, hard facts are separate fields: definition lowering
+In Wyst typed IR, hard facts are separate fields: definition lowering
 records `naked`; callable signatures record convention, placements,
 `noescape`, and `never`; globals record `GlobalStorage::PerCpu`; declaration
-attributes retain only activated catalog entries. The predecessor renderer's
-callable modifiers, register placement, storage classes, and ABI markers are
-not source spellings or a current open attribute set. No TLS fact is legal in
-selected snapshot IR.
+attributes retain only activated catalog entries. No TLS fact is legal in Wyst
+IR.
 
-The current selected snapshot layout authority is likewise structural rather than a textual
+The Wyst layout authority is likewise structural rather than a textual
 directive replay. Module IR preserves the selected layout declaration's exact
 name and dialect; declaration-ordered region records with origin, size,
 `readonly`/`readwrite` access, and operand spans; declaration-ordered section
@@ -675,7 +657,7 @@ The IR has **32 op kinds**, grouped below. Each op section lists:
 - **Semantics** — what it computes.
 - **Effects** — what memory or machine state it touches.
 - **Legality** — when it may appear in IR.
-- **Lowering** — the canonical ARM64 emission. (Lowering is normative
+- **Lowering** — the canonical ARM64 emission. (Lowering is required
   only at the type-erasure boundary; passes above that boundary need not
   agree.)
 
@@ -804,29 +786,6 @@ or an alignment check.
 - **Lowering:** copy or load the storage home into a normal result home using
   the same storage class and type-erased representation as `T`.
 
-### 6.3 Atomic RMW (released v0.8 IR snapshot)
-
-This subsection preserves the predecessor IR spelling for historical context.
-The current typed `atomic<T>`/`@atomic<T>` contract and generated operation
-matrix are defined in the v0.9 section above; source tools do not expose these
-old forms.
-
-#### `atomic.cas`
-
-- **Signature:** `(@T, T, T) -> (T, bool)` — (prior, ok).
-- **Attribute:** `order : { relaxed, acquire, release, acqrel, seq_cst }`.
-- **Lowering:** `cas{,a,l,al}` on LSE targets; `ldxr`/`stxr` loop otherwise (per `#target features = (lse)`). The non-LSE loop retries store-exclusive failure until the compare-and-swap operation completes; it has no retry budget or hidden fallback result.
-
-#### `atomic.rmw`
-
-- **Signature:** `(@T, T) -> T` (returns prior value).
-- **Attribute:** `op : { add, or, and, xor, xchg, bit_set, bit_clear }`, `order : same as cas`.
-- **Lowering:** `ldadd`/`ldset`/`ldclr`/`ldeor`/`swp` (LSE); `ldxr`+arith+`stxr` loop otherwise. The non-LSE loop retries store-exclusive failure until the update store succeeds; it does not lower through a bounded internal retry count, fallback lock, or runtime helper.
-
-#### `atomic.load` / `atomic.store`
-
-- Like `load`/`store` but `order` is restricted to `{ relaxed, seq_cst }` (acquire/release continue to use the `#acquire`/`#release` directives, which lower to `load`/`store` with `order=acquire`/`release` — see §1.3.2).
-
 ### 6.4 Control Flow
 
 #### `br`
@@ -931,18 +890,13 @@ old forms.
 Relocation-producing origins are explicit in IR or in the lowering artifact
 records that consume IR. The current compiler recognizes these origins:
 
-The released v0.8 umbrella term **per-instance object references** survives in
-some internal/test vocabulary. For selected snapshot it denotes only the non-addressable
-`per_cpu` access and offset records below; it does not include TLS or authorize
-general current-instance addresses.
-
 | Origin | IR or lowering representation | Emitted artifact consequence |
 | --- | --- | --- |
 | direct calls | `call` with a `SymbolId` callee, recorded as a direct call patch during ARM64 lowering | `CALL26` when in range, or a deterministic veneer whose body uses an address-materialization relocation |
 | symbol branches | `tail` / `goto` to a label or function symbol, recorded as a direct branch patch | `JUMP26` when in range, or a deterministic veneer whose body uses an address-materialization relocation; a fixed target-owned vector-table chunk instead rejects an out-of-range branch because it has no veneer extent |
 | address materialization | `addr_of`, string address materialization, and symbol-base materialization for constant-address `gep` | `ADR_PG_HI21` + `ADD_LO12` page-pair relocation, with byte addends folded only for constant offsets |
 | constant address initializers | `ConstIr::Address` and slice/string/data descriptors containing an address constant | `ABS64` data slot patched during final image write-out |
-| `per_cpu` object references | a non-addressable direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
+| per-instance object references | a non-addressable `per_cpu` direct-access record and `#percpu_offset_of` constant keyed by `GlobalStorage::PerCpu` identity | compiler-owned `.percpu` offset patching; direct access expands only after target realization validation and no TLS relocation exists |
 | jump tables | future explicit jump-table records, if an authenticated lowering emits tables | table entries are relocation origins; the universal optimizer does not currently emit jump tables |
 | address-bearing inline assembly operands | checked `asm` `symbol` parameters and typed address operands | retain the typed fixup or address materialization record on the exact parsed instruction |
 
@@ -1066,7 +1020,7 @@ future jump-table entry.
   `core.arch.cache.data.clean_to_poc` carries the exact generated target and
   ordering facts selected by its semantic-operation row.
 
-The selected snapshot source has no prefix-`%` operation namespace. Typed IR retains an
+Wyst source has no prefix-`%` operation namespace. Typed IR retains an
 internal operation node only after semantic analysis has attached the stable
 identity, surface, target plan, source privilege, compiler ordering, report
 identity, and exact generated target facts from
@@ -1093,7 +1047,7 @@ features, execution state, privilege, register and memory contract, effects,
 and faults. Counter reads additionally preserve the selected artifact-target
 profile, exact source-descriptor identity and compatibility profile, source,
 read plan, width, frequency-acquisition classification, minimum EL, enablement,
-failure, source-report identity, and origin. These are generic read-operation
+failure, and origin. These are generic read-operation
 facts only; typed IR does not invent a per-run counter domain/configuration
 epoch, realized frequency, endpoint comparability/offset, serialization,
 platform-state progress, mutable-control exclusion, or maximum interval span.
@@ -1144,7 +1098,7 @@ cache-maintenance effect.
 Generated resources such as local stack slots, frame bytes, spill and reload
 counts, register-class pressure, veneers, code size, and caller-owned aggregate
 copies are not IR effect categories. They are backend facts checked and reported
-by ABI, lowering, object, and generated-manifest surfaces after lowering.
+by ABI, lowering, and object-report surfaces after lowering.
 
 Effects propagate through the call graph automatically during semantic
 analysis (see [chapter-01-language-design.md](chapter-01-language-design.md) Effect System).
@@ -1264,8 +1218,8 @@ lowering may consume the function.
     one backing-word `Load` and the matching `Store` only when the loaded value
     flows through one `BitfieldInsert` into that store and nowhere else. This
     is one logical source RMW, not reusable address provenance.
-20. **No selected snapshot TLS**: no TLS storage kind, offset constant, current-instance
-    operation, symbol, or relocation may occur in a selected snapshot module.
+20. **No Wyst TLS**: no TLS storage kind, offset constant, current-instance
+    operation, symbol, or relocation may occur in a Wyst module.
 21. **Naked resource prohibition**: a `naked` definition contains no
     compiler-owned frame, prologue/epilogue, spill/reload, callee-save,
     argument home, or synthesized return resource.
@@ -1304,9 +1258,9 @@ lowering may consume the function.
     validity or natural GPR view is used. The verifier rejects constrained
     `bool`, enum, address/provenance, and callable result types and rejects a
     fabricated or mismatched nominal backing even when it has the same size.
-29. **Checked-assembly metadata closure**: every `asm` value in a selected snapshot module
-    carries a complete checked semantic signature; `checked: none` is confined
-    to explicitly versioned predecessor compatibility IR. Each retained direct
+29. **Checked-assembly metadata closure**: every `asm` value in a Wyst module
+    carries a complete checked semantic signature; `checked: none` is invalid
+    in source-backed modules. Each retained direct
     call carries its full ABI/resource contract and a sema-sealed local-CFG
     reachability bit. The verifier reconstructs the typed CFG and rejects any
     disagreement before naked-stack or backend link-register safety consumes
@@ -1337,11 +1291,11 @@ lowering may consume the function.
     `execution_suspension` has exactly one `strand_suspension_boundary` after
     its last evaluated operand and immediately before transfer. A call whose
     bound excludes the effect has none. Inlining, devirtualization, tail-call
-    formation, interface/object/archive round trips, and final linking may not
-    drop, duplicate, separate, or move the boundary after its transfer. The v2
-    callable sidecar's bound and authority must exactly match the canonical
-    signature and module authority map; known indirect targets must join to the
-    retained call-site bound before this invariant is evaluated.
+    formation, and current optimizer passes may not drop, duplicate, separate,
+    or move the boundary after its transfer. The callable summary's bound and
+    authority must exactly match the canonical signature and module authority
+    map; known indirect targets must join to the retained call-site bound before
+    this invariant is evaluated.
 34. **Suspension ordering and base invalidation**: no observable memory,
     volatile/MMIO/atomic operation, effect, call, or current-context/current-
     instance base acquisition crosses a boundary in either direction. Every
@@ -1349,13 +1303,12 @@ lowering may consume the function.
     later access reacquires it. A live current-core/affine handle or derived
     address is invalid; an ordinary copied non-address value is not.
 35. **Context-stability closure**: compiler-owned and authenticated interface
-    origins carry exactly one closed stability value. Every assignment,
-    argument/result, alias, projection, aggregate/enum payload, generic
-    substitution, phi, spill/reload, inline expansion, and serialized summary
-    preserves or conservatively joins it. The same v2 sidecar digest covers
-    these facts, the callable effect bound, and its authority atomically. No
-    cast or adapter upgrades it, and affine/task-stable values do not escape
-    compiler-proven eligible storage.
+    origins carry exactly one closed stability value. Current typed-IR copies,
+    arguments/results, projections, aggregate/enum payloads, phi nodes, calls,
+    and callable summaries preserve or conservatively join it. The same summary
+    digest covers these facts, the callable effect bound, and its authority
+    atomically. No cast or adapter upgrades it, and classified values do not
+    escape compiler-proven eligible storage.
 36. **Provider marker authentication**: `execution_suspension_point` names the
     sealed semantic identity `core.execution.suspension_point`, one selected
     target/provider/leaf declaration, and one immediately following
@@ -1410,7 +1363,7 @@ runtime.
 section checked statically. A future profile that activates `blr` for checked
 assembly requires an ordinary signature input with an exact callable type and
 ABI/effect/terminal contract; raw integers and untyped addresses are rejected.
-The pinned selected snapshot pack recognizes `blr` as `known_unsupported` and emits no such
+The pinned Wyst pack recognizes `blr` as `known_unsupported` and emits no such
 IR operation.
 
 ### 7.2 Checked-`asm` Stack-State Verification
@@ -1438,7 +1391,7 @@ note: every normal exit from `asm preserves stack` must have zero net delta
 `asm establishes stack` and `asm restores stack` are restricted to their owning
 naked entry and restore contexts under `language.callable-storage-contracts`
 and require a complete target
-transition contract, not just a numeric `sp` delta. The pinned selected snapshot pack has no
+transition contract, not just a numeric `sp` delta. The pinned Wyst pack has no
 active row proving either transition and therefore rejects both clauses; it also
 has no stack-access row with which `preserves` could perform temporary stack
 use. A naked block with stack behavior but no matching active proof is rejected
@@ -1461,8 +1414,8 @@ The IR has a human-readable textual form used for:
 - Pass snapshots.
 - Documentation worked examples.
 
-The textual form is **not guaranteed to parse back across compiler build
-identities**. It is a stable dump format within a single build identity.
+The textual form is a current debugging view, not a stable interchange format.
+It is not guaranteed to parse after the compiler source changes.
 
 ### 8.1 Grammar Sketch
 
@@ -1593,8 +1546,8 @@ Every pass must be deterministic. Specific requirements:
   in a fixed order. There is no cost-driven pass selection.
 
 This is what underlies the Reproducibility Model claim in
-`chapter-01-language-design.md`: same source input manifest, compiler build identity,
-build optimization mode, target, and selected scheduling policies → identical IR →
+`chapter-01-language-design.md`: same source input manifest, checked-out
+compiler source, target, and selected scheduling policies → identical IR →
 identical object output.
 
 ---
@@ -1606,7 +1559,7 @@ before instruction selection. Its output is the same IR with every non-void SSA
 value assigned either to a physical register home or to a deterministic
 stack-slot home.
 
-This section is **normative**. Every Wyst-conforming compiler must implement
+This section is **required**. Every Wyst-conforming compiler must implement
 this SSA-based allocator and these tie-breaks. The Reproducibility Model
 ([chapter-01-language-design.md](chapter-01-language-design.md)) requires it:
 two compilers that allocate differently produce different ELF bytes and
@@ -1655,9 +1608,8 @@ The allocator uses deterministic SSA interference coloring:
 7. **Spill fallback.** If no register in the class is available, assign the
    value to stack. Explicitly placed values are never spilled.
 
-This is not a graph-coloring license for implementation-defined behavior: the
-graph construction, ordering, register choice, and spill fallback above are part
-of conformance.
+The graph construction, ordering, register choice, and spill fallback above
+define the compiler's current deterministic behavior.
 
 ### 11.2 Register Pool
 
@@ -1798,10 +1750,9 @@ scheduling policies, the register allocator produces:
 - The same spill slot for every spilled value.
 - The same register-sharing decisions for non-interfering values.
 
-This holds **across compiler invocations on the same machine** and **across
-machines running the same compiler build identity** — there is no nondeterminism
-from heap layout, hashtable iteration, or threading. The allocator is
-single-threaded by spec.
+This holds **across compiler invocations and machines running the same compiler
+source** — there is no nondeterminism from heap layout, hashtable iteration, or
+threading. The allocator is single-threaded by spec.
 
 ### 11.9 Callee-Entry Transfer Planning
 
@@ -1841,9 +1792,9 @@ not physical locations and are never planner scratch registers.
 
 These remain outside this IR model:
 
-- **Profile-guided scheduling**: the `br` op now carries an optional `hint`
+- **Profile-guided scheduling**: the `br` op carries an optional `hint`
   attribute (`likely_true`, `likely_false`, `none`) from compiler-owned branch
-  facts. A future version may add numeric `weights` for PGO data.
+  facts. Numeric PGO weights are outside this IR model.
 - **Loop dependency annotations**: vectorization-specific loop policy is
   outside the scheduling model and has no reserved source spelling.
 - **DWARF emission lowering**: spec locked at
@@ -1891,12 +1842,11 @@ use to claim instruction latency, throughput, cache state, branch-prediction
 state, or cycle cost. A selected target identity names semantic and lowering
 capabilities; it does not imply that a corresponding performance model exists.
 
-A future modeled-cost facility must define a separately versioned model whose
+A future modeled-cost facility must define a separately identified model whose
 underlying authenticated facts actually differ whenever model names differ. It
 must identify target applicability, assumptions, unsupported factors, and an
-uncertainty or precision class. Every numeric field must carry the common
-epistemic metadata, and modeled estimates must remain distinct from exact
-machine facts and measured observations.
+uncertainty or precision class. Modeled estimates must remain distinct from
+exact machine facts and measured observations.
 
 No future machine critical-path or cycle claim may be derived from §6.9 alone.
 Such a claim requires final-machine CFG paths, scheduling, instruction
@@ -1905,56 +1855,15 @@ assumptions. Unknown factors remain unknown. Until that facility is implemented,
 the compiler inspection reports expose only the unweighted typed-IR structure
 defined in §6.9.
 
-Two verified `cpu.read_counter` records likewise establish only two raw source
-reads. Width-aware subtraction yields a modular tick delta; it is not by itself
-elapsed-time or latency evidence. The selected target's static platform-counter-
-instance provider `a64-generic-virtual-counter-instance-provider-v1` version 1,
-under `wyst.platform-counter-instance-provider.v1`, is an authenticated target-
-profile extension bound to the exact source descriptor. It names
-`wyst.platform-counter-instance-record.v1`; a validated record has a normalized
-`wyst.platform-counter-instance-identity.v1` identity, and the static product
-also names field `universe_evidence_schema` with value
-`wyst.platform-counter-universe-evidence.v1`. Its five-field product digest is
-`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`.
-These static facts belong to target compatibility and compilation identity, not
-to either `cpu.read_counter` operation record.
+Two verified `cpu.read_counter` records establish only two raw source reads.
+Width-aware subtraction yields a modular tick delta; it is not by itself
+elapsed-time or latency evidence. The selected target directly names the
+counter source descriptor.
 
-An optional immutable per-run instance record is a launch/measurement product,
-not typed IR and not a reusable compilation-cache input. It separately carries
-the runtime domain and configuration epoch, realized frequency, comparison and
-serialization modes/overhead, complete platform-state applicability/progress
-evidence, mutable controls/exclusions/epoch transitions, evidence identities,
-an authenticated universe-authority contract identity and content digest, and
-normalized record content digest. The authority uses
-`wyst.platform-counter-universe-evidence.v1`; an independently selected
-platform-environment contract under
-`wyst.platform-counter-universe-evidence-contract.v1` pins its exact digest.
-Self-consistent resealing cannot establish completeness. The authority binds
-provider/source, exact counter domain and configuration epoch, both universe
-evidence references, exact sorted states, and exact sorted controls with sorted
-effects. Scope enters its digest, preventing authority replay across domains or
-epochs; the record binds both the selected trust anchor identity and that digest
-and must match all authority facts. Runtime authority and record content remain
-outside typed IR and reusable compilation identity. No-record/no-authority
-consumption leaves the two raw
-reads legal and every numeric result explicitly unsupported. Records with the
-closed disposition `unknown`, `malformed`, `incomplete`, `stale`, `mismatched`,
-or `ambiguous` fail before exposing any trusted record field. An unrecognized
-provider identity is `unknown`; source or another recognized-fact disagreement
-and an invalid epoch transition are `mismatched`. Missing authority-declared
-rows or missing authority for a present record are `incomplete`; extras and
-effect, scope, trust-anchor, reference, or digest differences are `mismatched`;
-multiple authorities are `ambiguous`.
-
-A measured interval from the future performance/resource-report and benchmark-
-comparison contract must bind the same source descriptor, static
-provider/schema, and immutable instance-record identity/content digest at both
-endpoints and prove one domain/configuration epoch, comparability and offset,
-explicit endpoint serialization and overhead, realized frequency, the possible
-platform-state set and progress evidence, mutable source/frequency/offset/reset/
-rebase/comparability-control exclusion, and a maximum span below the modulus
-before publishing a numeric elapsed claim. These runtime contracts do not add
-fields to the current counter-source IR record.
+A future measured-interval facility must explicitly define any runtime
+frequency, endpoint comparability, serialization overhead, mutable-control
+exclusion, and maximum span it needs before publishing a numeric claim. Those
+runtime facts do not add fields to the current counter-source IR record.
 
 ## Typed outcome IR
 

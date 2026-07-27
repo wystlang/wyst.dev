@@ -13,10 +13,10 @@ target-aware, and performance-first. There is no source, command-line,
 manifest, interface, object, cache, report, or debug selector for choosing an
 optimization mode. Compiler work may be hidden; runtime behavior may not be.
 
-The optimizer is part of the compiler build identity. Given the canonical
-inputs in Chapter 1, every admitted transformation, tie, and emitted byte is
-reproduced exactly. `machine`, `verified`, and `hardened` are explicit safety
-policies and remain orthogonal to optimization.
+The current compiler has one optimizer. Given the canonical inputs in Chapter
+1, every admitted transformation, tie, and emitted byte is reproduced exactly.
+`machine`, `verified`, and `hardened` are explicit safety policies and remain
+orthogonal to optimization.
 
 ## 1. Authority and phase boundary
 
@@ -31,13 +31,11 @@ Each admitted transform records:
 - the closed decision name;
 - the proof predicate and its semantic subjects;
 - the target cost and deterministic tie rule;
-- the compiler/optimizer schema identity;
 - source and definition provenance, including nested inlining parents; and
 - the before/after dependency needed to reproduce the decision.
 
-The current optimizer schema is `wync.optimizer.a64.v1`. Unknown decision,
-proof, or schema names are invalid IR. Reports project these authenticated
-records; they do not create or upgrade them.
+Unknown decision or proof names are invalid IR. Reports project these
+authenticated records; they do not create or upgrade them.
 
 ## 2. Preservation contract
 
@@ -79,7 +77,7 @@ resource is made worse without a reviewed target-specific benefit. Stable
 symbol identity, source position, case order, and canonical type identity are
 the only tie inputs.
 
-### 3.1 Current reviewed bounds
+### 3.1 Reviewed Bounds
 
 Compiler-selected internal inlining is limited to a Native, non-exported,
 non-public, body-visible callable with an authenticated `effects(none)` bound.
@@ -101,8 +99,8 @@ separate-compilation definitions are not compiler-selected candidates.
 
 For A64 switches, zero or one effective case uses linear source-shaped control.
 Two or more effective cases use the typed dispatch terminator. The test-only
-linear oracle is available for differential validation but is not a production
-pipeline or artifact identity.
+linear oracle is available for differential validation but is not part of the
+production pipeline.
 
 ## 4. Typed transformation rules
 
@@ -158,42 +156,13 @@ authenticated retention reason. Work made unreachable by the admitted
 expansion or fused terminal edge is removed in canonical block/value order.
 This rule does not authorize program-wide or cross-object dead stripping.
 
-## 5. Debug, reports, and artifacts
+## 5. Debug and reports
 
 Debug information attributes expanded instructions to the original definition
 and call site and preserves nested parents. Explain output exposes the decision,
-proof, cost, optimizer schema, effects, and value range. Semantic interfaces and
-final-image records preserve operation and callable identities needed by their
-current schemas, but contain no optimization selector or mode identity.
+proof, cost, effects, and value range.
 
-Generated manifests, benchmark reports, release evidence, cache keys, and final
-artifact identities contain the effective safety/debug/unwind/frame and target
-inputs they actually own. They do not serialize a fixed or user-selected
-optimization policy.
-
-## 6. Typed-operation kernel control
-
-The checked comparison at
-`wync/tests/fixtures/compiler-efficiency/typed-operation-kernel-control/` runs
-typed operations and retained modernization through this same production
-pipeline. Its generator-owned authority is
-[`typed-operation-kernel-control-budget-v1.json`](typed-operation-kernel-control-budget-v1.json).
-
-On both observed success and failure paths, the typed variant may have no
-positive delta in text bytes, non-NOP instructions, calls, branches, stack
-loads, stack stores, or frame bytes. The fixture also authenticates operation
-identity, transitions, effects, cleanup, debug provenance, explanations,
-build-twice bytes, and QEMU output.
-
-## 7. Withdrawn spellings
-
-There is no optimization command option or manifest clause. Stale options and
-clauses are ordinary unknown input and are rejected without aliases or ignored
-fallback. The abandoned dotted size policy has no reserved, deprecated, or
-audited spelling. The undotted word `size` remains an ordinary identifier and
-retains its existing contextual uses in layout syntax.
-
-## 8. Relationship to scheduling and hardening
+## 6. Relationship to scheduling and hardening
 
 `schedule source` is a source-level compiler-ordering boundary, not an
 optimizer selector. `schedule.standard` permits only transformations that meet

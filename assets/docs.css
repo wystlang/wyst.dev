@@ -372,8 +372,7 @@ body.docs footer.site .wrap {
 	color: var(--syn-op);
 }
 
-.wyst-code .token.string,
-.wyst-code .token.char {
+.wyst-code .token.string {
 	color: var(--syn-str);
 	font-weight: 550;
 }

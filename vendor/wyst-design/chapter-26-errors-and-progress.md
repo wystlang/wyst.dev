@@ -1,6 +1,6 @@
 # Chapter 26 — Errors, outcomes, progress, and recovery
 
-This chapter is normative except for the final section, “Rationale and
+This chapter is required except for the final section, “Rationale and
 reconsideration”. It defines the selected model for absence, materialized
 outcomes, live operation protocols, recovery policy, progress, cancellation,
 terminal cleanup, fatal termination, and C adapters.
@@ -203,7 +203,7 @@ typed strand-suspension boundary and all context-stability checks apply. No
 boundary is invented when authenticated evidence excludes suspension. Denying
 `handler_invoke` rejects reporting; denying an arm effect rejects that arm.
 
-## 26.7 Selected recovery interaction
+## 26.7 Recovery interaction
 
 Wyst selects an explicitly passed typed recovery-decision capability. It is an
 ordinary `noescape` function-pointer parameter with a visible closed effect
@@ -303,23 +303,21 @@ compile-time adapter error.
 
 ## 26.10 Semantic records and validation
 
-The canonical materialized-sum record is
-`wyst.materializedSum.v1 { nominalIdentity, tagType, size, alignment,
+The materialized-sum record contains
+`{ nominalIdentity, tagType, size, alignment,
 payloadOffset, payloadSize, payloadAlignment, variants[] }`; each variant is
 `{ nominalIdentity, tag, fields[] }` and each field retains exact type,
 offset, size, alignment, ownership, and movability.
 
-The canonical operation record is
-`wyst.operationProtocol.v1 { nominalIdentity, parameters[], transitions,
+The operation record contains `{ nominalIdentity, parameters[], transitions,
 effects, progressHandlerCeiling, recoveryParameters[], nativeAbi,
-cAdapters[], provenance }`. `transitions` contains canonical ordered optional
+cAdapters[] }`. `transitions` contains ordered optional
 records for success, progress, failure, and cancelled with exact payload type,
 lifetime, mutability, ownership, and concrete layout. `nativeAbi` records the
 hidden callback signature, exact outcome layout, argument/result
 classification, and noescape facts. `cAdapters` records profile, status/tag
 mapping, callback/context, output initialization matrix, alignment, aliasing,
-cleanup, and common-output obligations. `provenance` names the semantic
-producer phase and authenticated authority identities.
+cleanup, and common-output obligations.
 
 The current in-memory semantic-interface consumer validates these records
 against checked type/effect/layout facts before IR construction. Typed IR and
@@ -329,13 +327,6 @@ DWARF emits exact enum layouts and operation outcome/callback types. Explain
 reports render the same fields. A mismatch, missing member, reordered tag,
 weakened effect, incompatible layout, or unauthenticated adapter mapping is an
 error; consumers never reconstruct the record from names.
-
-Future public interfaces, relocatable objects, and archives must transport the
-two records byte-for-byte under an authenticated schema identity and include
-them in compatibility and content digests. Chapter 16 and the dedicated
-interface, object, archive, and linker work own wire containers, emission,
-standalone consumption, archive construction, and linking. Those unavailable
-emitters are not claimed here and may not weaken or redefine this payload.
 
 ## 26.11 Rationale and reconsideration (nonnormative)
 

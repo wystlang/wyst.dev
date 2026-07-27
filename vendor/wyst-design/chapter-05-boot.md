@@ -101,9 +101,8 @@ for the direct call after stack initialization.
 ### QEMU secure EL3 direct-ELF sketch
 
 `qemu-virt-aarch64-el3` is a separate secure direct-ELF profile, not an EL2
-DTB-entry alias. It authenticates schema identity
-`qemu-virt-aarch64-el3-noargs-v1`, entry ABI `wyst-native-noargs-v1`, secure
-initial EL3, and exactly this zero-parameter root shape:
+DTB-entry alias. It uses entry ABI `wyst-native-noargs`, starts at secure EL3,
+and requires exactly this zero-parameter root shape:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -119,12 +118,12 @@ pub naked fn _start() -> never {
 
 The checked block is the root's one admitted transition from an uninitialized
 stack. This canonical fixture calls `firmware_main()` directly after it; the
-callee name is runtime evidence and is not hardcoded by the compiler's entry
-schema. The profile gives `x0` no entry-parameter meaning and authenticates no
-DTB; adding a parameter or substituting either EL2 schema is a pre-artifact
+callee name is not hardcoded by the compiler's entry rules. The profile gives
+`x0` no entry-parameter meaning and provides no DTB; adding a parameter or
+substituting the EL2 entry shape is a pre-artifact
 error. The direct ELF still selects executable environment
-`qemu-aarch64-semihost-v1`, whose closed offer is
-`a64-semihost-hlt-f000-v1`. Source that imports
+`qemu-aarch64-semihost`, whose closed offer is
+`a64-semihost-hlt-f000`. Source that imports
 `core.environment.semihost` therefore records that exact service requirement,
 which runner preflight must satisfy before launch.
 
@@ -378,7 +377,7 @@ uses the SMC conduit; an EL1 guest under a hypervisor may use the HVC
 conduit when the DTB says so.
 
 The checked `smc` spelling in the following future-profile sketch is not active
-in the pinned selected snapshot pack and is rejected there. Current selected snapshot code uses the
+in the pinned Wyst pack and is rejected there. Wyst code uses the
 cataloged `exception.smc(imm)` operation and its conservative register
 contract; a later checked profile may activate the exact signature form shown
 here.
@@ -412,17 +411,14 @@ not a scheduler, per-CPU-storage implementation, or generic topology
 probe.
 
 The smoke run derives a deterministic AArch64 Linux `Image` envelope from the
-compiler ELF, verifies that the envelope still binds to the exact ELF bytes and
-entry address, and authenticates the original ELF against the runner profile
-immediately before launch:
+compiler ELF and verifies that the envelope still binds to the exact ELF bytes
+and entry address:
 
 ```sh
 node wync/tools/a64-linux-image.mjs create \
   <18-smp-smoke.elf> <18-smp-smoke.Image>
 node wync/tools/a64-linux-image.mjs verify \
   <18-smp-smoke.elf> <18-smp-smoke.Image>
-wync runner-preflight <18-smp-smoke.elf> \
-  --runner qemu-system-aarch64-semihost-v1
 qemu-system-aarch64 \
   -machine virt,virtualization=on \
   -cpu cortex-a53 \
@@ -434,10 +430,8 @@ qemu-system-aarch64 \
   -kernel <18-smp-smoke.Image>
 ```
 
-The runner profile authenticates only the executable environment and exact
-required-service offer. It does not authenticate the QEMU binary, version,
-machine, CPU, or argv. The smoke script separately pins the accepted QEMU
-version and owns the closed argv shown above; both checks fail before launch.
+The smoke script checks the accepted QEMU version and owns the argv shown
+above; both checks fail before launch.
 
 The envelope supplies QEMU's standard 64-byte Linux Image header and branches
 to the unchanged ELF entry while preserving x0, so the EL2 DTB handoff remains

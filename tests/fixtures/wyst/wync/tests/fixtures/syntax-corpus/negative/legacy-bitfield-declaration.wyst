@@ -1,5 +1,0 @@
-module typed_bits.predecessor
-
-Legacy :: bitfield(u32) {
-  FLAG: bits(0, 0)
-}

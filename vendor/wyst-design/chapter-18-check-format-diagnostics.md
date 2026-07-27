@@ -39,7 +39,7 @@ wync check src/boot.wyst \
   --target qemu-virt-aarch64-el2
 ```
 
-The explicit mode also accepts the legacy explicit source-list shape:
+The explicit mode also accepts a source list:
 
 ```sh
 wync check boot.wyst uart.wyst --layout layout.wyst
@@ -74,14 +74,14 @@ default. It also accepts `--warn-effectful-nesting`, an opt-in lint that emits
 warning `W0204` when one expression nests multiple calls, volatile memory
 accesses, atomics, or traps; the warning asks the programmer to bind those
 subexpressions to locals before combining them. JSON diagnostics are emitted to
-stderr as one object with schema `wync.diagnostics.v1` and a deterministic
-`diagnostics` array, including non-fatal warnings when validation succeeds. The
-`json` schema mirrors the in-process diagnostic model: severity, code, message,
+stderr as one object with a deterministic `diagnostics` array, including
+non-fatal warnings when validation succeeds. The `json` payload mirrors the
+in-process diagnostic model: severity, code, message,
 diagnostic-kind identity, optional primary label, secondary labels, notes,
-suggestions, checked code actions, and source insights. The `lsp-json` schema is
-`wync.diagnostics.lsp.v1` and emits LSP-style diagnostic objects for editor
-adapters: document URI, zero-based UTF-16 ranges, numeric severity, code,
-source, message, related information, and the same structured data.
+suggestions, checked code actions, and source insights. The `lsp-json` payload
+emits LSP-style diagnostic objects for editor adapters: document URI, zero-based
+UTF-16 ranges, numeric severity, code, source, message, related information, and
+the same structured data.
 
 ## Diagnostics Floor
 
@@ -109,7 +109,7 @@ not change check-mode exit status when no errors are present.
 
 The renderer and JSON payloads support one primary source label, zero or more
 secondary source labels, zero or more notes, generic suggestions, checked code
-actions, and evidence-labeled source insights. Generic prose is rendered as a
+actions, and typed source insights. Generic prose is rendered as a
 `suggestion`; only an applicability-checked exact source edit may be called a
 `fix` or `code_action`.
 
@@ -125,8 +125,8 @@ section addresses.
 `--diagnostic-format lsp-json` is the first editor-protocol bridge. It is not a
 full `textDocument/publishDiagnostics` notification and does not start a
 language server; it is a stable adapter payload that can be grouped by `uri`
-and forwarded into an editor client. The top-level object contains `schema`
-with value `wync.diagnostics.lsp.v1` and a `diagnostics` array.
+and forwarded into an editor client. The top-level object contains a
+`diagnostics` array.
 
 Each diagnostic entry contains:
 
@@ -142,10 +142,10 @@ Each diagnostic entry contains:
 - `data.why` and `data.help`: canonical diagnostic-kind context when present.
 - `data.suggestions`: generic prose choices that are not edits.
 - `data.codeActions`: exact range/replacement edits with applicability data.
-- `data.sourceInsights`: evidence-labeled observations.
+- `data.sourceInsights`: typed compiler observations with `kind` and `message`.
 
 The LSP-compatible payload is driven by the same `Diagnostic` values rendered
-by text and snapshot JSON mode. Editor integrations must not reparse source to
+by text and golden JSON mode. Editor integrations must not reparse source to
 invent diagnostics.
 
 ## Editor Completion And Hover Catalog
@@ -156,10 +156,6 @@ editor-local vocabulary.
 
 The catalog contains:
 
-- `schema`: `wync.editorCatalog.v1`.
-- `compilerIdentity`: release status, nullable language/compiler release
-  versions, and exact language-snapshot/compiler-build identities. Ordinary
-  development catalogs carry no release version claim.
 - `completionItems`: keyword, directive, intrinsic, builtin type, and reserved
   register entries.
 - `label`: completion/hover lookup text.
@@ -220,11 +216,11 @@ Formatter canonicalization includes declaration annotations and imports:
 - declaration-prefix modifiers, calling conventions, placements, and linkage
   remain in their canonical keyword-led positions rather than being converted
   into attributes;
-- in selected snapshot source, adjacent standalone module imports remain standalone and use
+- in Wyst source, adjacent standalone module imports remain standalone and use
   exactly one line break between declarations: the formatter inserts no blank
   line between standalone imports, and instead places a blank line around the
   complete import section;
-- an explicit selected snapshot `import (...)` or `pub import (...)` group remains grouped,
+- an explicit Wyst `import (...)` or `pub import (...)` group remains grouped,
   preserves written order, and renders one entry per line at one indentation
   level with a comma after every entry; a public group has one leading `pub`
   applying uniformly to all entries, while different visibilities use separate
