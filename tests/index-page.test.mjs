@@ -726,8 +726,9 @@ test("homepage shows one static UART example from the real fixture", () => {
 		/\.block-comment-line\s*\{[^}]*display:\s*inline-block;[^}]*padding-left:\s*1ch;/,
 		"block-comment stars should align with the opener",
 	);
+	const homepageSource = sourceText(sourceBlock.markup);
 	assert.equal(
-		sourceText(sourceBlock.markup),
+		homepageSource,
 		homepageFixtureExcerpt(uartFixtureSource),
 		`the homepage must be the exact marked excerpt from ${UART_EXAMPLE_PATH}`,
 	);
@@ -776,6 +777,27 @@ test("homepage shows one static UART example from the real fixture", () => {
 		sourceBlock.lines.indexOf("kernel_main(dtb)") <
 			sourceBlock.lines.indexOf("fn kernel_main(dtb: @u8) -> never {"),
 		"the homepage should show the ordinary-code function reached from _start",
+	);
+	const declarationsInCallOrder = [
+		"pub naked fn _start(dtb: @u8 in x0) -> never {",
+		"fn kernel_main(dtb: @u8) -> never {",
+		"fn uart_hello() {",
+		"fn uart_write(byte: u8) {",
+	];
+	const declarationPositions = declarationsInCallOrder.map((declaration) =>
+		sourceBlock.lines.indexOf(declaration),
+	);
+	assert.ok(
+		declarationPositions.every(
+			(position, index) =>
+				position !== -1 &&
+				(index === 0 || position > declarationPositions[index - 1]),
+		),
+		"the homepage should order function declarations from entry point to leaf call",
+	);
+	assert.ok(
+		homepageSource.includes("    test_exit(0x63)\n  }\n\n  uart_hello()"),
+		"kernel_main should visually separate validation from the uart_hello call",
 	);
 	const terminal = taggedElementWithOpeningMatch(
 		sectionHtml(html, "example"),

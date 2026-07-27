@@ -61,13 +61,19 @@ pub naked fn _start(dtb: @u8 in x0) -> never {
   kernel_main(dtb)
 }
 
-fn uart_write(byte: u8) {
-  // Poll for space in the transmit FIFO.
-  while UART0.FR.read().TXFF {
-    cpu.nop()
+fn kernel_main(dtb: @u8) -> never {
+  // Production code would parse the DTB.
+  // This fixture only checks that the handoff supplied it.
+  if dtb == address<@u8>(0) {
+    test_exit(0x63)
   }
 
-  UART0.DR.write(DATA = byte)
+  uart_hello()
+
+  // Bare metal has no caller to return to. `test_exit`
+  // plays the role of process exit for this QEMU test:
+  // report status 0, then stop the virtual machine.
+  test_exit(0)
 }
 
 fn uart_hello() {
@@ -81,17 +87,12 @@ fn uart_hello() {
   }
 }
 
-fn kernel_main(dtb: @u8) -> never {
-  // Production code would parse the DTB.
-  // This fixture only checks that the handoff supplied it.
-  if dtb == address<@u8>(0) {
-    test_exit(0x63)
+fn uart_write(byte: u8) {
+  // Poll for space in the transmit FIFO.
+  while UART0.FR.read().TXFF {
+    cpu.nop()
   }
-  uart_hello()
 
-  // Bare metal has no caller to return to. `test_exit`
-  // plays the role of process exit for this QEMU test:
-  // report status 0, then stop the virtual machine.
-  test_exit(0)
+  UART0.DR.write(DATA = byte)
 }
 // homepage-example:end

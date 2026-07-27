@@ -198,13 +198,19 @@
   <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)
 }
 
-<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
-  <span class="source-comment">// Poll for space in the transmit FIFO.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> {
-    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) -&gt; never {
+  <span class="source-comment">// Production code would parse the DTB.</span>
+  <span class="source-comment">// This fixture only checks that the handoff supplied it.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@<span data-token="type" data-token-modifiers="defaultLibrary">u8</span><span data-token="operator">&gt;</span>(<span data-token="number">0</span>) {
+    test_exit(<span data-token="number">0x63</span>)
   }
 
-  <span data-token="variable">UART0</span>.<span data-token="property">DR</span>.<span data-token="property">write</span>(<span data-token="property">DATA</span> <span data-token="operator">=</span> <span data-token="parameter">byte</span>)
+  <span data-token="function">uart_hello</span>()
+
+  <span class="source-comment">// Bare metal has no caller to return to. `test_exit`</span>
+  <span class="source-comment">// plays the role of process exit for this QEMU test:</span>
+  <span class="source-comment">// report status 0, then stop the virtual machine.</span>
+  test_exit(<span data-token="number">0</span>)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {
@@ -218,18 +224,13 @@
   }
 }
 
-<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) -&gt; never {
-  <span class="source-comment">// Production code would parse the DTB.</span>
-  <span class="source-comment">// This fixture only checks that the handoff supplied it.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@<span data-token="type" data-token-modifiers="defaultLibrary">u8</span><span data-token="operator">&gt;</span>(<span data-token="number">0</span>) {
-    test_exit(<span data-token="number">0x63</span>)
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
+  <span class="source-comment">// Poll for space in the transmit FIFO.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> {
+    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
   }
-  <span data-token="function">uart_hello</span>()
 
-  <span class="source-comment">// Bare metal has no caller to return to. `test_exit`</span>
-  <span class="source-comment">// plays the role of process exit for this QEMU test:</span>
-  <span class="source-comment">// report status 0, then stop the virtual machine.</span>
-  test_exit(<span data-token="number">0</span>)
+  <span data-token="variable">UART0</span>.<span data-token="property">DR</span>.<span data-token="property">write</span>(<span data-token="property">DATA</span> <span data-token="operator">=</span> <span data-token="parameter">byte</span>)
 }</code></pre>
 						<!-- homepage-semantic-example:end -->
 						<span id="uart-scroll-hint" class="source-scroll-hint"
