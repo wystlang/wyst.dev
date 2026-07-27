@@ -74,6 +74,23 @@ payload-free enum variant may use expected-type shorthand such as
 `const idle: Message = .quit`; payload variants use the enum constructor,
 for example `Message.write(packet)`.
 
+A direct `const` or `var` binding may write `[_]T` when its initializer is a
+direct array literal. The `_` infers only the fixed-array element count; the
+binding still explicitly selects fixed-array storage and element type `T`.
+A direct byte-string literal similarly infers `[_]u8` from its decoded byte
+count. Inference produces an ordinary concrete `[N]T` before semantic layout:
+`_` is not a runtime length, a wildcard type, or valid in fields, parameters,
+returns, nested type positions, or bindings initialized from another value.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+const msg: [_]u8 = ['h', 'e', 'l', 'l', 'o', '\n']
+
+fn msg_len() -> u64 {
+  return #len(msg)
+}
+```
+
 Generics are explicit and type-only. Parameter and argument lists are
 non-empty; every application supplies the complete type-argument list, and
 arguments are full types that may nest. Wyst has no generic inference,

@@ -1,3 +1,0 @@
-module removed_numeric_suffix
-
-const BAD: u64 = 1_u64

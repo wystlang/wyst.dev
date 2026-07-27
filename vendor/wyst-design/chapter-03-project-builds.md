@@ -187,8 +187,8 @@ kind-specific:
   `companion "PATH"`. Its `root` selects the source-module import closure.
   Source `export` declarations determine native archive exports, while `pub`
   Wyst declarations determine the authenticated semantic interface. The kind
-  rejects `entry`, either layout form, `runner`, and transcript verification.
-  Code and report verification clauses remain structurally valid.
+  rejects `entry`, either layout form, and `runner`. Code verification clauses
+  remain structurally valid.
 
 Static-library archive and companion production are unavailable. Selecting a
 valid `static_library` returns one stable unavailable-feature diagnostic before
@@ -202,95 +202,41 @@ default. `--artifact NAME` selects another artifact from that same manifest.
 An explicit manifest path is the boundary of a distinct project; project mode
 does not merge or inherit declarations from another manifest.
 
-The target profile is the sole manifest selection for target facts. It
-authenticates the architecture revision and feature set, entry and supported
-execution/security/streaming-state model, ABI, executable environment, closed
-environment-service offer, layout owner, root/entry ABI and return policy,
-privilege/admission policy, and dynamic-import/TLS/unwind/panic/exit policies.
-It also authenticates one complete target-profile extension set.
-Unknown, absent, stale, partial, or incompatible extensions fail before any
-subset becomes visible to a consumer.
+The target profile is the sole manifest selection for target facts. It defines
+the architecture and features, entry and supported execution/security/
+streaming-state model, ABI, executable environment, environment-service offer,
+layout owner, root/entry ABI and return policy, privilege/admission policy, and
+dynamic-import/TLS/unwind/panic/exit policies.
+
+The compiler resolves that profile directly to current typed data. There is no
+target-profile product, extension set, schema version, or digest layer between
+selection and use.
 
 For `qemu-virt-aarch64-el2` and `qemu-virt-aarch64-el2-lse`, that same target
-selection also carries the complete `wyst.target-entry-schema.v1` product:
-Wyst Native at EL2, `-> never`, exactly `dtb: @u8 in x0`, initially
-uninitialized stack, and the exact checked `mov sp, stack` transition with its
-stack input in `x1`. The schema digest and every normalized field participate
-in target compatibility, artifact and cache identities, reports, diagnostics,
-and runner preflight. A manifest, source register placement, or stale artifact
-record cannot synthesize or partially override it.
+selection requires Wyst Native at EL2, `-> never`, exactly `dtb: @u8 in x0`,
+an initially uninitialized stack, and the exact checked `mov sp, stack`
+transition with its stack input in `x1`. A manifest or source register
+placement cannot override that entry shape.
 
-For `qemu-virt-aarch64-el3`, target selection instead carries the distinct
-`qemu-virt-aarch64-el3-noargs-v1` schema identity and
-`wyst-native-noargs-v1` entry ABI. It authenticates secure initial EL3, the
-exact zero-parameter `pub naked fn _start() -> never` root, and exactly one
-checked `mov sp, stack` transition from `stack: u64 in x1`. The canonical
-production fixture then calls `firmware_main()` directly; the compiler schema
-does not hardcode that callee name. It does not authenticate an `x0` DTB
-parameter. A manifest or artifact record cannot substitute either EL2 DTB
-schema for this EL3 direct-ELF contract, or vice versa.
+For `qemu-virt-aarch64-el3`, target selection instead requires secure initial
+EL3, an exact zero-parameter `pub naked fn _start() -> never` root, and exactly
+one checked `mov sp, stack` transition from `stack: u64 in x1`. The canonical
+production fixture then calls `firmware_main()` directly; the compiler does not
+hardcode that callee name. This entry has no `x0` DTB parameter.
 
-Source `core.environment` imports derive the artifact's required-service set
-from that authenticated offer. The build fails when the target does not offer
-a required service. A separately selected, compiler-cataloged runner must match
-the recorded executable environment and satisfy the complete required-service
-set in `wync runner-preflight` before it launches the artifact. Runner identity
-is launch input, never a target suffix, manifest service flag, or artifact/cache
-identity. Each current built-in target that exposes
-`a64-generic-virtual-counter-v1` requires the one source-matched static platform-
-counter-instance product `a64-generic-virtual-counter-instance-provider-v1`
-version 1 in the atomic extension set. Its role is
-`platform_counter_instance_provider`, its product schema is
-`wyst.platform-counter-instance-provider.v1`, and its per-run record and
-identity schemas are `wyst.platform-counter-instance-record.v1` and
-`wyst.platform-counter-instance-identity.v1`. Its static product also names
-field `universe_evidence_schema` with value
-`wyst.platform-counter-universe-evidence.v1` and has pinned digest
-`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`.
-The same atomic extension set also carries one
-`wyst.execution-environment-contract.v1` product. It normalizes one of the four
-closed executable-environment classes, migration/preemption/current-core
-policies, and complete execution/completion provider descriptor lists. The
-five built-in profiles use
-`wyst-execution-environment-freestanding-privileged-v1` version 1 with empty
-provider lists. The compiler-owned synthetic conformance target separately
-authenticates the execution- and completion-provider descriptors.
-These products activate provider semantics without linking a provider merely
-because a callable carries `execution_suspension`; source must import an exact
-offered descriptor.
+Source `core.environment` imports derive their required-service set from the
+selected target. The build fails when the target does not offer a required
+service. Current built-in targets select measurement-counter source
+`a64-generic-virtual-counter`. They select the
+`freestanding_privileged` execution environment with empty execution- and
+completion-provider lists. A compiler-owned synthetic test target exercises
+the provider path. Provider semantics are activated by exact selection and
+source use, not merely because a callable carries `execution_suspension`.
 
-Selected target facts, offered and required services, the complete target
-policy tuple and extension identity, manifest policies, canonical A64 compiler
-identity, normalized layout owner and choice, source/layout provenance,
-verification roots, and contract inputs contribute atomically to compatibility,
-cache, semantic-interface, artifact, diagnostic, and report identities. Reports
-also retain the provenance and source of each selected target fact. Source
-requirements remain reusable semantic requirements; they do not create a
-parallel manifest target-fact surface.
-
-The platform-counter extension contributes only its static provider/schema
-identity, version, exact source-descriptor binding, instance-record schema, and
-universe-evidence schema plus authenticated product/set digests to those
-compilation identities. A concrete runtime instance record is neither manifest
-syntax nor a declared build input. Its runtime domain, configuration epoch,
-realized frequency, comparability, serialization, platform-state evidence,
-mutable controls, evidence identities, universe-authority contract identity and
-content digest, record identity, and record content digest are
-launch/measurement facts. Before a present record is trusted, one authority
-under `wyst.platform-counter-universe-evidence.v1` must authenticate against an
-independently selected platform-environment contract under
-`wyst.platform-counter-universe-evidence-contract.v1`. The contract pins the
-exact authority content digest; self-consistent resealing is insufficient. The
-authority atomically fixes the provider/source, counter domain, configuration
-epoch, both universe references, exact sorted states, and exact sorted controls
-and effects. Its scope enters that digest, preventing cross-domain or
-prior-epoch replay. The record names the selected trust anchor as well as its
-scope-bound authority digest. Their exact binding is carried through launch,
-measurement, and report identity, but all runtime
-authority and record content is excluded from reusable compilation-cache keys,
-semantic interfaces, and build identities. Reusing a
-compiled artifact across runs therefore preserves its static schema contract
-without pretending that two runs share a counter domain or epoch.
+The compiler uses selected target facts, offered and required services,
+manifest policies, and the normalized layout directly during validation,
+lowering, diagnostics, and reports. Source requirements remain semantic
+requirements; they do not create a parallel manifest target-fact surface.
 
 If no runtime record is supplied, build and raw counter reads remain valid; a
 consumer marks every numeric counter verification or report result explicitly
@@ -322,9 +268,7 @@ Each selector becomes an `artifact_verify` reachability root and final emitted
 verification subject. Constraints cover instruction count and authenticated
 families or exact post-relocation bytes, plus prologue presence, compiler spill
 slots, and veneers. Verification observes final code and rejects a mismatch; it
-never rewrites code to satisfy the contract. `transcript` names at most one
-external transcript contract, and repeated `report` clauses may name only
-identified report schemas.
+never rewrites code to satisfy the contract.
 
 Manifest members are fixed-arity contextual clauses, not generic keys or Wyst
 expressions. Clause order is insignificant to parsing; the formatter emits the
@@ -333,7 +277,7 @@ order. Within an artifact it emits `root`, `output`, the kind-specific
 `companion` or `layout`, `profile`, `debug`, `unwind`, `frame_pointers`, and
 `verify`. Unknown clauses, duplicate singleton clauses, duplicate
 normalized names/selectors, missing mandatory clauses or referenced
-declarations/layouts/contracts, and product collisions are hard errors. Generic
+declarations/layouts, and product collisions are hard errors. Generic
 `name = value` entries, includes, inheritance, interpolation, environment
 lookup, stringly typed policies, and hidden defaults are not manifest syntax.
 There are no hosted, kernel, concurrency, provider, privilege, service, or
@@ -443,8 +387,8 @@ They correspond to the QEMU-oriented AArch64 static ELF baseline:
 - exact `el = 1`, `el = 2`, or `el = 3`, matching the selected profile
 - static AArch64 ELF output
 - Wyst native ABI with AAPCS64 interop support
-- executable environment `qemu-aarch64-semihost-v1`, offering exactly
-  `a64-semihost-hlt-f000-v1`
+- executable environment `qemu-aarch64-semihost`, offering exactly
+  `a64-semihost-hlt-f000`
 
 The EL1, EL2, and EL3 baselines carry identical authenticated QEMU semihost
 service offers and measurement-counter contracts. Their entry contracts are
@@ -472,7 +416,7 @@ It corresponds to the Raspberry Pi model 4, revision B, QEMU smoke path:
 - QEMU `raspi4b` board emulation
 - static AArch64 ELF output converted to a `kernel8.img` handoff artifact
 - PL011 UART0 at `0xfe20_1000` checked through `-serial stdio`
-- executable environment `bare-aarch64-v1`, offering no environment services
+- executable environment `bare-aarch64`, offering no environment services
 
 Physical Raspberry Pi hardware validation is outside this profile.
 
@@ -573,14 +517,14 @@ The project-build surface has stable diagnostics for:
 - invalid, escaping, or colliding `output` or `companion` paths;
 - missing or mismatched named layout entry;
 - target layout-owner mismatch or a missing owner-required layout form;
-- duplicate normalized artifact, selector, contract, or product identity;
+- duplicate normalized artifact, selector, or product identity;
 - artifact product colliding with another project input or product;
 - imported module not found under source roots;
 - ambiguous module file across source roots;
 - source `module` declaration mismatch;
 - target profile unknown or incompatible with a module's exact target facts;
 - selected target missing a module requirement or environment service;
-- unknown, absent, stale, partial, or incompatible target-profile extension;
+- invalid or internally inconsistent selected target policy;
 - selected static-library production being unavailable before either product
   is created or replaced;
 - runner profile incompatible with the artifact's recorded executable

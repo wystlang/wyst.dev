@@ -766,7 +766,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"register_map Pl011 {",
 		"mmio UART0: Pl011 at 0x0900_0000",
 		"fn kernel_main(dtb: @u8) -> never {",
-		"const msg: [6]u8 = ['h', 'e', 'l', 'l', 'o', '\\n']",
+		'const msg: [_]u8 = "hello\\n"',
 		"for i in 0 ..< #len(msg) {",
 		"uart_write(msg[i])",
 	]) {

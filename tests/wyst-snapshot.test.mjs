@@ -32,10 +32,7 @@ const vocabularyCatalogs = [
 const designCatalogs = [
 	...vocabularyCatalogs,
 	"c-operation-adapter-catalog.tsv",
-	"declaration-roles.tsv",
 ];
-const designAuthorities = ["language-snapshot-inputs-v1.txt"];
-
 const coreFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
@@ -128,7 +125,6 @@ for (const response of responses) {
 	const inputs = [
 		["design/README.md", "# Wyst design\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
-		["design/semantic-db.json", "{}\n"],
 		[
 			"design/syntax-words.tsv",
 			"// wyst.syntaxWords.v0.9\nfn\treserved\tcore.declarations\tdeclaration\timplemented\n",
@@ -142,16 +138,8 @@ for (const response of responses) {
 			"spelling\tstate\n#len\timplemented\n",
 		],
 		[
-			"design/declaration-roles.tsv",
-			"role_id\tversion\tstate\nfixture.role\t1\timplemented\n",
-		],
-		[
 			"design/c-operation-adapter-catalog.tsv",
 			"profile\tstate\nstatus-out\timplemented\n",
-		],
-		[
-			"design/language-snapshot-inputs-v1.txt",
-			"design/language-snapshot-inputs-v1.txt\n",
 		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
@@ -225,31 +213,23 @@ function runSync(siteRoot, wystRoot) {
 }
 
 test("the versioned Wyst publication snapshot has provenance and build inputs", async () => {
-	const [sourceCommit, readme, semanticDb, catalogs, authorities, files] =
+	const [sourceCommit, readme, catalogs, files] =
 		await Promise.all([
 			readFile(path.join(designDir, ".source-commit"), "utf8"),
 			stat(path.join(designDir, "README.md")),
-			stat(path.join(designDir, "semantic-db.json")),
 			Promise.all(designCatalogs.map((file) => stat(path.join(designDir, file)))),
-			Promise.all(
-				designAuthorities.map((file) => stat(path.join(designDir, file))),
-			),
 			listFiles(designDir),
 		]);
 
 	assert.match(sourceCommit, /^[0-9a-f]{40,64}\n$/i);
 	assert.ok(readme.isFile());
-	assert.ok(semanticDb.isFile());
 	assert.ok(catalogs.every((catalog) => catalog.isFile()));
-	assert.ok(authorities.every((authority) => authority.isFile()));
 	assert.ok(
 		files.every(
 			(file) =>
 				!file.includes("/") &&
 				(file === ".source-commit" ||
-					file === "semantic-db.json" ||
 					designCatalogs.includes(file) ||
-					designAuthorities.includes(file) ||
 					file.endsWith(".md")),
 		),
 		"the design snapshot should contain only top-level publication inputs",
@@ -294,9 +274,6 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	assert.ok(manifest.files["vendor/wyst-design/.source-commit"]);
 	for (const catalog of designCatalogs) {
 		assert.ok(manifest.files[`vendor/wyst-design/${catalog}`]);
-	}
-	for (const authority of designAuthorities) {
-		assert.ok(manifest.files[`vendor/wyst-design/${authority}`]);
 	}
 	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);

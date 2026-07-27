@@ -3,7 +3,7 @@ title: "Appendix B: Wyst Formal Grammar"
 group: appendix
 appendix: "B"
 order: 26
-summary: "Formal grammar, lexical rules, parsing forms, reserved syntax, and conformance."
+summary: "Formal grammar, lexical rules, parsing forms, and reserved syntax."
 ---
 
 # Appendix B: Wyst Formal Grammar
@@ -639,6 +639,10 @@ Fields use `=`, appear exactly once, and evaluate in written order. A nominal
 type prefix, colon-valued fields, shorthand fields, unknown/duplicate/missing
 fields, brace array literals, and type-prefixed construction are invalid.
 Arrays and vectors use brackets; named multi-results use parentheses.
+In the direct type annotation of a `const` or `var` binding,
+`'[' '_' ']' Type` is the inferred-length fixed-array form. Its initializer
+must be a direct array literal, or a byte-string literal when `Type` is `u8`.
+The form elaborates to `[N]T` and is not part of the general `Type` grammar.
 `expected-payload-free-variant` likewise requires an expected enum type; a payload
 variant uses its enum constructor.
 
@@ -652,7 +656,7 @@ matching generic `>` commits only when followed by `(`, `.`, `[`, `)`, `]`,
 Outside that context they retain longest-match operator meaning.
 
 Generic instantiation uses the canonical identity and deterministic
-termination contract in Chapter 6 and the semantic database; grammar
+termination contract in Chapter 6 and the current semantic model; grammar
 recognition never authorizes a second expansion key or depth cutoff.
 
 ### Semantic operations, named conversions, address and hardware operations, and slice ranges

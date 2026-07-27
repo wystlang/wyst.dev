@@ -24,8 +24,8 @@ transport, LSP capabilities, packaging, and task/debug templates.
 - Provide a persistent language-server mode suitable for editors such as Zed.
 - Preserve deterministic diagnostics, formatting, completion, and hover
   behavior across CLI and editor entry points.
-- Make Zed packaging publishable without changing the compiler repository into
-  an editor-only extension repository.
+- Keep Zed packaging thin without changing the compiler repository into an
+  editor-only extension repository.
 
 ## Non-Goals
 
@@ -57,16 +57,13 @@ The Zed extension should resolve the language-server binary in this order:
 3. A documented local development path, if the workspace has a usable compiler
    binary.
 
-Automatic compiler downloads require a compatibility and distribution policy for
-editor-distributed binaries.
-
 ## Language Server Protocol Surface
 
 `wync lsp` starts a persistent stdio JSON-RPC server using standard
 `Content-Length` framed messages. The surface handles:
 
-- `initialize`: returns `serverInfo` for `wync` whose identity string carries
-  exact language and compiler content identities, and advertises open/close, save,
+- `initialize`: returns `serverInfo` with the name `wync` and no version or
+  content identity, and advertises open/close, save,
   incremental change synchronization, document formatting, completion, code
   actions, hover, semantic tokens, inlay hints, signature help, folding,
   selection ranges, document links, document symbols, call hierarchy,
@@ -156,19 +153,19 @@ documented local development path.
 ## Authenticated A64 Source Domains
 
 Editor-facing checked-assembly facts come from
-`design/a64-support-source-domains.json` (`wyst.a64-support-source-domains.v1`).
+`design/a64-support-source-domains.json`.
 That generated artifact is the exact join of active `source_form` support rows
 with the encoding catalog; editor code must not reconstruct a mnemonic-only or
 hand-maintained operand list. The current matrix contains 20 source forms: 13
-in `wyst.a64.checked-asm.core.v1` (including `adrp`) and seven in
-`wyst.a64.target-structural-asm.aarch64.v1`.
+in `wyst.a64.checked-asm.core` (including `adrp`) and seven in
+`wyst.a64.target-structural-asm.aarch64`.
 
 For every active row, the compiler-owned editor catalog publishes
 `sourceFormId`, `sourceMnemonic`, `supportPack`, `semanticOperands`,
 `operandGrammar`, nullable `aliasOf`, and the full `registerViews` and
 `registerLists` projections. Each register projection retains its operand
 index, semantic role, domain, and exact grammar fragment. The catalog also
-publishes the source-domain schema and authenticated digest.
+publishes the current source domains and authenticated digest.
 
 Checked-assembly mnemonic hovers consume the same generated rows and report
 their operand grammar, alias identity, and register domains. The canonical
@@ -266,16 +263,14 @@ or launch the emitted EL2 ELF directly.
 
 A project-local runner script, provided by the project, owns launch for a
 supported QEMU profile. For
-`qemu-virt-aarch64-el2`, it deterministically derives and verifies the Arm64
-Linux `.Image` from the emitted ELF, then immediately runs
-`wync runner-preflight <artifact.elf> --runner qemu-system-aarch64-semihost-v1`
-before passing that verified `.Image` — never the ELF — to QEMU's `-kernel`.
-A gdbstub mode has the same preparation and preflight contract before it adds
-`-s -S`. The debugger or DAP adapter may load the ELF separately as its symbol
-file. Debug integration must name the existing adapter it depends on; a
-Wyst-specific debug adapter is out of scope.
+`qemu-virt-aarch64-el2`, it derives the Arm64 Linux `.Image` from the emitted
+ELF and passes that `.Image` — never the ELF — to QEMU's `-kernel`. A gdbstub
+mode performs the same preparation before it adds `-s -S`. The debugger or DAP
+adapter may load the ELF separately as its symbol file. Debug integration must
+name the existing adapter it depends on; a Wyst-specific debug adapter is out
+of scope.
 
-That authenticated gdbstub path provides only source-line stepping and
+That gdbstub path provides only source-line stepping and
 `x29`-chain backtraces. Full debugger fidelity — variable values, type-aware
 inspection, and watch identity — requires debug information beyond the
 deterministic DWARF source floor (function and source-line rows), including

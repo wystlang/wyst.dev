@@ -188,10 +188,8 @@ facts come from checked source structure, typed IR, target descriptors, or
 lowering artifacts. Asserted facts come from trust-boundary constructs and carry
 the source location of the assertion plus a `trustedFact` label in JSON reports.
 
-This version does not add a project or function switch that prohibits selected
-trust-boundary categories. If such a switch is added later, it must be a
-separate semantic feature row and must reject prohibited categories before IR
-lowering instead of silently ignoring them.
+Wyst has no project or function switch that prohibits selected trust-boundary
+categories.
 
 ### Principles
 
@@ -471,7 +469,7 @@ resources.
 | ---- | -------- | ----------------- |
 | Semantic effects | volatile accesses, MMIO-intent loads/stores, system-register access, traps, atomics, barriers, cache/TLB maintenance, CPU events and halt, interrupt-mask changes, floating-point state access, performance-counter reads | `#[deny_effects(...)]`, effect diagnostics, `wync explain effects` |
 | Authority/trust facts | raw address assertion, retagging an address for volatile/MMIO-intent use, raw function-pointer construction or invocation, required privilege level, trusted foreign or assembly contracts, stack-address escape permission, target-provided memory-map facts | trust-boundary diagnostics and asserted facts in explain reports |
-| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#[frame(...)]` post-lowering constraints, ABI/lowering reports, generated-manifest/object reports |
+| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#[frame(...)]` post-lowering constraints and ABI/lowering reports |
 
 Retagging an address as `@volatile T` or `@mmio T` is an authority assertion.
 It is not a memory access and does not create the architectural page-table
@@ -519,8 +517,8 @@ boundaries (privilege level, memory type, synchronization domain), not
 individual instruction distinctions. TLB maintenance is separated from
 cache maintenance because address-translation invalidation is a distinct
 kernel boundary from cache-line cleaning, invalidation, or instruction-cache
-coherency. Finer-grained categories can be added in future versions without
-breaking existing `deny_effects` declarations.
+coherency. Add a finer-grained category only when the language needs to expose
+a distinct architectural boundary.
 
 ### Inference
 
@@ -821,14 +819,13 @@ The goal is:
 
 ## Reproducibility Model
 
-Wyst guarantees **reproducible lowering**: given the same source, the same
-compiler build identity, the same canonical
-`#target(...)` configuration or authenticated target-profile contract, the same
-source input manifest, and the same selected scheduling policies including
-implicit `schedule.standard`, the compiler always produces identical output.
-Reproducibility is scoped to these inputs; it is not guaranteed across compiler
-build identities, target configurations, source manifests, or
-different selected scheduling policies.
+Wyst guarantees **reproducible lowering** within the current compiler source:
+given the same source, the same canonical `#target(...)` configuration or
+selected target profile, the same source input manifest, and the same selected
+scheduling policies including implicit `schedule.standard`, the compiler
+produces identical output. Reproducibility is scoped to these inputs and the
+checked-out compiler source; it is not a compatibility promise across source
+changes.
 
 The `#target` input is the entire canonical `#target(...)` argument list, not
 only `arch` and `cpu`. Fields such as `features`, `el`, and `cache_line`
@@ -838,7 +835,7 @@ field participates through its specified default value.
 
 Requirements for reproducibility:
 
-- same compiler build identity
+- same checked-out compiler source
 - same source input manifest:
   - explicit source-list mode: the same ordered command-line source paths and
     file contents;
@@ -855,8 +852,8 @@ Requirements for reproducibility:
 - same selected scheduling policies, including implicit `schedule.standard`
   and any explicit `schedule.source` boundary
 
-Register allocation is a pure function of the source, compiler build identity, and
-target. The same inputs always produce the same allocation.
+Register allocation is a pure function of the source and target under the
+current compiler. The same inputs always produce the same allocation.
 
 ---
 
@@ -898,7 +895,6 @@ wync build <project-dir|path/to/wyst.project>
 wync check <project-dir|path/to/wyst.project>
 wync explain E####
 wync explain lowering <project-dir|path/to/wyst.project>
-wync rebuild-benchmark <project-dir|path/to/wyst.project>
 ```
 
 ---
@@ -938,8 +934,8 @@ removal of work those transformations make unreachable. It may not introduce
 hidden runtime behavior.
 
 There is no build optimization selector or mode identity. The optimizer is a
-pure function of the canonical source, semantic and ABI products, compiler
-build identity, and authenticated target. Every admitted transform carries a
+pure function of the canonical source, semantic and ABI products, and
+authenticated target. Every admitted transform carries a
 compiler-owned proof, target cost, provenance, and deterministic tie decision.
 Diagnostics and reports project those facts but are never proof authority.
 
@@ -987,10 +983,10 @@ placement stage has fixed the referenced section.
 
 **Register Allocation.** Variables are assigned to ARM64 registers. Explicit
 `in register` constraints apply first; remaining variables are allocated by the compiler.
-Register allocation is a pure function of source, compiler build identity, and
-target triple. Tie-breaking must not use hash-based ordering, pointer-
+Register allocation is a pure function of source and target under the current
+compiler. Tie-breaking must not use hash-based ordering, pointer-
 derived ordering, or any input that varies across invocations — the same
-source compiled with the same compiler build identity against the same target
+source compiled from the same compiler source against the same target
 produces the same register assignment on every invocation. This is a
 specified invariant; reproducible lowering depends on it. Full algorithm
 and tie-breaks in [appendix-a-ir.md §11](appendix-a-ir.md).
@@ -1009,8 +1005,8 @@ cross-module symbols are resolved. Slot size enforcement for `vector_table`
 bodies is verified after placement.
 
 **Binary Emission.** Machine code emitted. Output is reproducible under the
-Reproducibility Model above: the same source input manifest, compiler build identity,
-canonical `#target(...)` configuration, and selected
+Reproducibility Model above: the same source input manifest, checked-out
+compiler source, canonical `#target(...)` configuration, and selected
 scheduling policies produce identical output.
 
 ---
@@ -1047,7 +1043,7 @@ or `autiasp` in prologues/epilogues by default.
 Full PAC support would require: prologue/epilogue generation controlled
 by a `#pac` function attribute; an address type carrying PAC tag state
 (e.g. `@signed(T)`); explicit named `sign`, `authenticate`, and `strip`
-operations if a future version catalogs them.
+operations, none of which are currently part of the language.
 
 **Extension point:** a `#pac` function-level directive that enables
 `paciasp` / `autiasp` emission, plus `@signed(@T)` for authenticated

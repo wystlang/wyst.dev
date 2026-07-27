@@ -54,27 +54,23 @@ must perform its own explicit release/acquire publication.
 that an operation or call may synchronously enter or request an environment or
 provider scheduling transfer that ceases the current strand and may later
 return it. Exogenous timer, interrupt, or host preemption does not add the
-effect to the interrupted operation. The effect does not describe a dormant
-caller-owned resumable frame; that later facility has a distinct effect and
-boundary.
+effect to the interrupted operation. The effect does not describe a resumable
+frame or continuation.
 
 Every direct, indirect, imported Wyst, or foreign call whose exact or
 conservative callable bound contains `execution_suspension` has exactly one
 typed `strand_suspension_boundary`. `effects(all)` contains the effect. The
 boundary is placed after the callee expression for an indirect call and after
 all arguments have been evaluated left-to-right, immediately before transfer
-to the callee. Devirtualization, mandatory or optional inlining, tail-call
-formation, semantic-interface serialization, objects, archives, and final
-linking preserve the same boundary; none may infer its absence from an
-unavailable body. Consequently,
+to the callee. Inlining and tail-call formation preserve the same boundary;
+neither may infer its absence from an unavailable body. Consequently,
 `#[deny_effects(execution_suspension)]` proves a strand-nonsuspending call graph
 only when every reachable exact or conservative bound excludes it.
 
-The active `wyst.callable-context-summary.v2` sidecar authenticates the exact
-or conservative bound and its authority under the same digest as callable
-context provenance. Known-target indirect calls join those authenticated
-bounds and must reproduce their typed call-site bound. Chapter 16 owns the
-wire format for the not-yet-active public semantic-interface/archive producer.
+The callable context summary authenticates the exact or conservative bound and
+its authority under the same digest as callable context provenance.
+Known-target indirect calls join those authenticated bounds and must reproduce
+their typed call-site bound.
 
 If a suspending call returns, it returns to the same logical software task or
 host thread and the same retained strand. The provider may run other tasks and
@@ -109,32 +105,22 @@ cross_strand_stable`; a whole aggregate, possible enum variant, or control-flow
 join uses the most restrictive reachable live classification. Field projection
 retains the selected field's classification. The classification is non-erasable
 semantic type/provenance, not a runtime tag or optional lint. Assignment, local
-storage, arguments and results, aliases, projections, aggregates, enum
-payloads, generic substitution, joins, spills and reloads, inlining, semantic
-interfaces, objects, and archives preserve it exactly. Unknown or incompatible
-provenance cannot cross a boundary, and no source cast, adapter, or summary may
-invent or upgrade it.
+storage, arguments and results, projections, aggregates, enum payloads, joins,
+inlining, and calls preserve it exactly. Unknown or incompatible provenance
+cannot cross a boundary, and no source cast, adapter, or summary may invent or
+upgrade it.
 
 There is no source spelling that authors a `context_stability` classification.
 The current callable declaration surface therefore produces ordinary parameter
 and result summary facts; compiler-owned current-instance operations remain the
-only active classified source of values. A classified callable summary is
-admitted only from a compiler-owned or authenticated provider producer. The
-portable provider accessor surface that creates such results is not yet active;
-substituting summary bytes before that producer exists is incompatible
-transport, not a way to opt in early.
+only active classified source of values. Replacing a canonical ordinary summary
+with classified bytes is incompatible transport.
 
-The later caller-owned resumable-frame facility rejects both affine and merely
-task-stable values in frame state and accepts only an authenticated
-cross-strand-stable value under its exact lifetime contract. It does not change
-this vocabulary or weaken the ordinary strand-boundary rules.
-
-An `active_context_affine` or `task_stable` value may use only compiler-proven
-nonescaping activation- or task-local storage. It cannot escape into module or
-static storage, unclassified addressed memory, foreign storage, or a resumable
-frame. Address-taking is rejected unless every alias is proved dead or eligible
-at the applicable boundary. Raw-address circumvention remains the reported
-Chapter 1 trust boundary and never sanitizes context stability.
+A classified value may use only compiler-proven nonescaping activation storage.
+It cannot escape into module or static storage, unclassified addressed memory,
+or foreign storage. Address-taking is rejected unless every alias is proved
+dead or eligible at the applicable boundary. Raw-address circumvention remains
+the reported Chapter 1 trust boundary and never sanitizes context stability.
 
 Exogenous preemption may leave an affine value dormant only in the exact saved
 activation; a handler or other strand cannot access it. Ordinary return
@@ -200,8 +186,8 @@ one preceding marker; it may not have neither or both.
 
 Ordinary code is compiled under the implicit required policy
 `schedule.standard`. This is a language-defined policy, not an omitted or
-implementation-selected default. The compiler records it by name in IR,
-inspection reports, and generated build identity.
+implementation-selected default. The compiler records it by name in IR and
+inspection reports.
 
 The standard policy's permissions are:
 
@@ -290,7 +276,7 @@ semantic-operation sequence and any declared inspection contract:
 | ABI marshalling | Permitted for parameter passing, return-value handling, aggregate copies, indirect returns, and call-preserved register handling. Calls remain semantic barriers in source order. |
 | dead pure temporary removal | Permitted only when the temporary has no effect, no use, no source-visible address or storage identity, and no declared inspection contract. |
 | instruction combination | Permitted only when the combined instruction implements one semantic operation or combines support instructions without changing any observable intermediate. Combining distinct source-level semantic operations into one result is not permitted when it changes an intermediate value or inspection contract. |
-| vector-slot allocation changes | Permitted as generated-resource allocation. Slot placement and register choice are not semantic operations, but they remain deterministic and must satisfy any frame, vector-slot, ABI, and report contracts. |
+| vector-slot allocation changes | Permitted as generated-resource allocation. Slot placement and register choice are not semantic operations, but they remain deterministic and must satisfy frame, vector-slot, and ABI constraints. |
 
 Floating-point contraction is governed by
 [chapter-07-operators.md](chapter-07-operators.md): `fma` is the only Wyst
@@ -333,8 +319,7 @@ expanded body; inlining must not flatten it into the caller's surrounding
 semantically idempotent, but the formatter does not invent or merge them.
 
 Reports record the policies used by a function as `schedule.standard` and,
-when present, `schedule.source`. A selected policy participates in generated
-build identity whenever it can affect generated bytes.
+when present, `schedule.source`. A selected policy affects generated bytes.
 
 ---
 
@@ -397,8 +382,8 @@ Separating layout from scheduling preserves two properties:
 
 1. **Reproducibility scope.** Layout decisions are deterministic under the
    Reproducibility Model's input catalog (same source input manifest,
-   compiler build identity, build optimization mode, target, and selected scheduling
-   policies → same layout).
+   checked-out compiler source, target, and selected scheduling policies →
+   same layout).
 
 2. **Composability.** A programmer can pin layout with explicit branch facts
    while independently selecting source-order boundaries. See

@@ -307,7 +307,7 @@ source access lowers independently to exactly:
 3. exactly the one type-appropriate operation requested by source.
 
 Ordinary storage performs its normal typed load or store. Atomic storage is
-accessible only through the `wyst.atomic-matrix.v1` methods once those methods
+accessible only through the atomic-matrix methods once those methods
 are active. A named bitstruct-field write is one logical type-appropriate source
 operation: it uses one fresh base and one narrowly confined backing-word
 `Load -> BitfieldInsert -> Store` read-modify-write sequence. The verifier

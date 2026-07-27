@@ -309,11 +309,10 @@ Determinism rules:
 - **`.debug_aranges`:** range tuples in compilation-unit order, matching
   the order CUs appear in `.debug_info`.
 
-The same source input manifest, compiler build identity, build optimization mode,
-target, and selected scheduling policies produce byte-identical debug sections.
-The compile-unit `DW_AT_producer` value names `wync` and carries the exact
-language and compiler content identities. It never substitutes the Cargo
-package identity for compiler identity or makes a publication claim.
+The same source input manifest, checked-out compiler source, target, and
+selected scheduling policies produce byte-identical debug sections. The
+compile-unit `DW_AT_producer` value is exactly `wync`; it carries no version,
+content identity, package identity, or publication metadata.
 
 ---
 

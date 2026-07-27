@@ -209,7 +209,7 @@
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {
   <span class="source-comment">// UART output is byte-oriented.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [<span data-token="number">6</span>]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> [<span data-token="string">'h'</span>, <span data-token="string">'e'</span>, <span data-token="string">'l'</span>, <span data-token="string">'l'</span>, <span data-token="string">'o'</span>, <span data-token="string">'\n'</span>]
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [_]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> <span data-token="string">"hello\n"</span>
 
   <span class="source-comment">// #len is compile-time metadata;</span>
   <span class="source-comment">// the array has no runtime length field.</span>

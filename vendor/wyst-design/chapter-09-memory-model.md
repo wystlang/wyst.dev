@@ -131,7 +131,7 @@ uses its normal confined backing-word read-modify-write sequence: one load,
 `BitfieldInsert`, and one store, all through the same freshly acquired base.
 Those operations have the same volatility, ordering, race, and alias rules as
 their ordinary non-`per_cpu` counterparts. Atomic `per_cpu` storage is accessed
-only through `wyst.atomic-matrix.v1` methods; the storage class itself adds no
+only through atomic-matrix methods; the storage class itself adds no
 atomicity or ordering.
 
 There is no source-visible address, template address, or whole-aggregate copy
@@ -1579,8 +1579,8 @@ Certain instruction patterns are legal and well-defined but can behave
 differently across microarchitectures. The language assigns no latency, cache,
 store-buffer, or throughput result to them, and compiler inspection reports do
 not diagnose or price them. A modeled or measured performance surface must
-identify its model or observation and carry the common epistemic metadata
-before making such a claim.
+identify its model or observation and state its limits before making such a
+claim.
 
 ---
 

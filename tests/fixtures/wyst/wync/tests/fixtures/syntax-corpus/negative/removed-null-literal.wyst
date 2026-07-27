@@ -1,5 +1,0 @@
-module removed_null_literal
-
-fn bad() -> @u8 {
-    return null
-}

@@ -190,12 +190,12 @@ pub naked fn _start(dtb: @u8 in x0) -> never {
 
 Those EL2 profiles require exactly that one `dtb` parameter name, `@u8` type,
 `x0` placement, Wyst Native convention, `pub naked` declaration,
-never-returning behavior, authenticated EL2 fact, and exactly one checked
+never-returning behavior, initial EL2 fact, and exactly one checked
 stack initialization transition. The transition is fixed to its cataloged
 `mov sp, stack` source form with one `u64` input in `x1`, so it cannot clobber
 firmware `x0`.
 
-The secure direct-ELF `qemu-virt-aarch64-el3` profile authenticates a distinct
+The secure direct-ELF `qemu-virt-aarch64-el3` profile requires a
 zero-parameter root instead:
 
 <!-- wyst-contract: sketch -->
@@ -210,17 +210,16 @@ pub naked fn _start() -> never {
 }
 ```
 
-Its schema identity is `qemu-virt-aarch64-el3-noargs-v1`, its entry ABI is
-`wyst-native-noargs-v1`, and its authenticated initial level is secure EL3.
+Its entry ABI is `wyst-native-noargs`, and its initial level is secure EL3.
 The root has exactly zero parameters, so `x0` is not an entry parameter and no
-DTB authority is implied. The shown checked block is the one admitted stack
+DTB parameter is implied. The shown checked block is the one admitted stack
 transition. In the canonical production fixture `firmware_main()` is its
 direct successor, but that callee name is fixture evidence rather than a field
-enforced by the target-entry schema. Foreign declarations, linker imports and
+enforced by the target-entry rules. Foreign declarations, linker imports and
 aliases, returning or wrong-EL declarations, extra or absent parameters, and
 any name, type, placement, convention, or stack-transition mismatch are
 rejected before artifact construction. Source placements and clauses alone
-never expand or translate between the EL2 and EL3 authenticated target schemas.
+never expand or translate between the EL2 and EL3 target entries.
 
 The optional `at ADDRESS` clause is a hard unsigned-64-bit placement
 constraint on the resolved declaration's first emitted byte. Without `at`, the

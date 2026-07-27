@@ -47,7 +47,7 @@ key. Its final `.percpu` byte offset is a placement result. A
 then becomes that final `u64` byte offset; it never becomes an address.
 
 A direct `per_cpu` read, write, field access, element access, or method from
-`wyst.atomic-matrix.v1` remains a non-addressable access record through
+The atomic matrix remains a non-addressable access record through
 scheduling. The record
 contains the global identity, checked subobject byte offset, requested typed
 operation, source origin, and selected target/runtime realization facts. An
@@ -92,36 +92,29 @@ and its verifier-required adjacent call or authenticated marker fact retain the
 source call or marker identity, exact or conservative effect-bound provenance,
 and adjacent transfer identity. An inlined call retains the record
 immediately before the first expanded callee operation, and a tail call retains
-it immediately before its terminator. Objects, archives, devirtualization, and
-linking consume or reproduce the same typed record from the serialized bound;
-they may not lower it to optional metadata.
+it immediately before its terminator.
 
 `context_stability` is a required provenance component for every value
 originating in a compiler-owned current-context operation or authenticated
 provider interface. Its closed values are `active_context_affine`,
 `task_stable`, and `cross_strand_stable`, ordered from most to least
-restrictive. SSA copies, arguments/results, phi nodes, fields, aggregate and
-enum construction/extraction, generic substitutions, spills/reloads, and
-interface/object/archive serialization carry the exact component. Projection
-selects the field component; aggregate and possible-variant joins take the
-most restrictive live component. A raw address conversion records a trust
-boundary and cannot clear or upgrade this provenance.
+restrictive. SSA copies, arguments/results, phi nodes, fields, and aggregate
+and enum construction/extraction carry the exact component. Projection selects
+the field component; aggregate and possible-variant joins take the most
+restrictive live component. A raw address conversion records a trust boundary
+and cannot clear or upgrade this provenance.
 
 The current module builder emits ordinary callable parameter/result summaries
 because the execution-strand contract adds no source qualifier and
 authenticated provider accessors are not yet active. The verifier authenticates
-that ordinary product and rejects unsourced classified replacement bytes. This
-does not create a second schema: compiler-owned or authenticated provider
-producers use the same `wyst.callable-context-summary.v2` transport, and its
-consumer preserves and joins those classified facts without erasure when such a
-producer is active.
+that ordinary product and rejects unsourced classified replacement bytes.
 
-That v2 sidecar authenticates the callable signature's exact effect list or
+That summary authenticates the callable signature's exact effect list or
 conservative top, the exact `SuspensionEffectAuthority`, ordered parameter
 provenance, and result provenance under one digest. A known-target indirect
 call joins the decoded target bounds in closed catalog order and requires that
 join to equal its typed call-site bound before boundary analysis consumes it.
-Missing or extra sidecars, a bound/authority disagreement with the canonical
+Missing or extra summaries, a bound/authority disagreement with the canonical
 signature and module authority map, or any noncanonical effect ordering is
 invalid IR.
 
@@ -309,7 +302,7 @@ is expressed against this representation. Its design priorities, in order:
    provenance.
 3. **Stay small.** ~30 op kinds. New language features prefer new attributes
    on existing ops over new ops.
-4. **Be deterministic.** Identical source + compiler build identity + target +
+4. **Be deterministic.** Identical source + checked-out compiler source + target +
    selected scheduling policies → identical IR. No hash-table-iteration-order
    dependencies, no rolling unique IDs that vary across runs (use
    declaration-order IDs).
@@ -403,7 +396,7 @@ array-to-slice lowering may build a separate descriptor, but the fixed-array
 value itself never carries an implicit runtime length field.
 
 Slice values are descriptors with `data` and `len`. Dynamic arrays are
-seven-field descriptors matching `wyst.dynamicArrayDescriptor.v0`: `data`,
+seven-field descriptors matching `wyst.dynamicArrayDescriptor`: `data`,
 `len`, `capacity`, `storage_identity`, `growth_policy`, `failure_policy`, and
 `movement_policy`. Payload-less enums are tag values; payload enums are exact
 tag-plus-inline-payload aggregates. Aggregates preserve their source layout
@@ -1054,7 +1047,7 @@ features, execution state, privilege, register and memory contract, effects,
 and faults. Counter reads additionally preserve the selected artifact-target
 profile, exact source-descriptor identity and compatibility profile, source,
 read plan, width, frequency-acquisition classification, minimum EL, enablement,
-failure, source-report identity, and origin. These are generic read-operation
+failure, and origin. These are generic read-operation
 facts only; typed IR does not invent a per-run counter domain/configuration
 epoch, realized frequency, endpoint comparability/offset, serialization,
 platform-state progress, mutable-control exclusion, or maximum interval span.
@@ -1105,7 +1098,7 @@ cache-maintenance effect.
 Generated resources such as local stack slots, frame bytes, spill and reload
 counts, register-class pressure, veneers, code size, and caller-owned aggregate
 copies are not IR effect categories. They are backend facts checked and reported
-by ABI, lowering, object, and generated-manifest surfaces after lowering.
+by ABI, lowering, and object-report surfaces after lowering.
 
 Effects propagate through the call graph automatically during semantic
 analysis (see [chapter-01-language-design.md](chapter-01-language-design.md) Effect System).
@@ -1298,11 +1291,11 @@ lowering may consume the function.
     `execution_suspension` has exactly one `strand_suspension_boundary` after
     its last evaluated operand and immediately before transfer. A call whose
     bound excludes the effect has none. Inlining, devirtualization, tail-call
-    formation, interface/object/archive round trips, and final linking may not
-    drop, duplicate, separate, or move the boundary after its transfer. The v2
-    callable sidecar's bound and authority must exactly match the canonical
-    signature and module authority map; known indirect targets must join to the
-    retained call-site bound before this invariant is evaluated.
+    formation, and current optimizer passes may not drop, duplicate, separate,
+    or move the boundary after its transfer. The callable summary's bound and
+    authority must exactly match the canonical signature and module authority
+    map; known indirect targets must join to the retained call-site bound before
+    this invariant is evaluated.
 34. **Suspension ordering and base invalidation**: no observable memory,
     volatile/MMIO/atomic operation, effect, call, or current-context/current-
     instance base acquisition crosses a boundary in either direction. Every
@@ -1310,13 +1303,12 @@ lowering may consume the function.
     later access reacquires it. A live current-core/affine handle or derived
     address is invalid; an ordinary copied non-address value is not.
 35. **Context-stability closure**: compiler-owned and authenticated interface
-    origins carry exactly one closed stability value. Every assignment,
-    argument/result, alias, projection, aggregate/enum payload, generic
-    substitution, phi, spill/reload, inline expansion, and serialized summary
-    preserves or conservatively joins it. The same v2 sidecar digest covers
-    these facts, the callable effect bound, and its authority atomically. No
-    cast or adapter upgrades it, and affine/task-stable values do not escape
-    compiler-proven eligible storage.
+    origins carry exactly one closed stability value. Current typed-IR copies,
+    arguments/results, projections, aggregate/enum payloads, phi nodes, calls,
+    and callable summaries preserve or conservatively join it. The same summary
+    digest covers these facts, the callable effect bound, and its authority
+    atomically. No cast or adapter upgrades it, and classified values do not
+    escape compiler-proven eligible storage.
 36. **Provider marker authentication**: `execution_suspension_point` names the
     sealed semantic identity `core.execution.suspension_point`, one selected
     target/provider/leaf declaration, and one immediately following
@@ -1422,8 +1414,8 @@ The IR has a human-readable textual form used for:
 - Pass snapshots.
 - Documentation worked examples.
 
-The textual form is **not guaranteed to parse back across compiler build
-identities**. It is a stable dump format within a single build identity.
+The textual form is a current debugging view, not a stable interchange format.
+It is not guaranteed to parse after the compiler source changes.
 
 ### 8.1 Grammar Sketch
 
@@ -1554,8 +1546,8 @@ Every pass must be deterministic. Specific requirements:
   in a fixed order. There is no cost-driven pass selection.
 
 This is what underlies the Reproducibility Model claim in
-`chapter-01-language-design.md`: same source input manifest, compiler build identity,
-build optimization mode, target, and selected scheduling policies → identical IR →
+`chapter-01-language-design.md`: same source input manifest, checked-out
+compiler source, target, and selected scheduling policies → identical IR →
 identical object output.
 
 ---
@@ -1616,9 +1608,8 @@ The allocator uses deterministic SSA interference coloring:
 7. **Spill fallback.** If no register in the class is available, assign the
    value to stack. Explicitly placed values are never spilled.
 
-This is not a graph-coloring license for implementation-defined behavior: the
-graph construction, ordering, register choice, and spill fallback above are part
-of conformance.
+The graph construction, ordering, register choice, and spill fallback above
+define the compiler's current deterministic behavior.
 
 ### 11.2 Register Pool
 
@@ -1759,10 +1750,9 @@ scheduling policies, the register allocator produces:
 - The same spill slot for every spilled value.
 - The same register-sharing decisions for non-interfering values.
 
-This holds **across compiler invocations on the same machine** and **across
-machines running the same compiler build identity** — there is no nondeterminism
-from heap layout, hashtable iteration, or threading. The allocator is
-single-threaded by spec.
+This holds **across compiler invocations and machines running the same compiler
+source** — there is no nondeterminism from heap layout, hashtable iteration, or
+threading. The allocator is single-threaded by spec.
 
 ### 11.9 Callee-Entry Transfer Planning
 
@@ -1802,9 +1792,9 @@ not physical locations and are never planner scratch registers.
 
 These remain outside this IR model:
 
-- **Profile-guided scheduling**: the `br` op now carries an optional `hint`
+- **Profile-guided scheduling**: the `br` op carries an optional `hint`
   attribute (`likely_true`, `likely_false`, `none`) from compiler-owned branch
-  facts. A future version may add numeric `weights` for PGO data.
+  facts. Numeric PGO weights are outside this IR model.
 - **Loop dependency annotations**: vectorization-specific loop policy is
   outside the scheduling model and has no reserved source spelling.
 - **DWARF emission lowering**: spec locked at
@@ -1855,9 +1845,8 @@ capabilities; it does not imply that a corresponding performance model exists.
 A future modeled-cost facility must define a separately identified model whose
 underlying authenticated facts actually differ whenever model names differ. It
 must identify target applicability, assumptions, unsupported factors, and an
-uncertainty or precision class. Every numeric field must carry the common
-epistemic metadata, and modeled estimates must remain distinct from exact
-machine facts and measured observations.
+uncertainty or precision class. Modeled estimates must remain distinct from
+exact machine facts and measured observations.
 
 No future machine critical-path or cycle claim may be derived from §6.9 alone.
 Such a claim requires final-machine CFG paths, scheduling, instruction
@@ -1866,56 +1855,15 @@ assumptions. Unknown factors remain unknown. Until that facility is implemented,
 the compiler inspection reports expose only the unweighted typed-IR structure
 defined in §6.9.
 
-Two verified `cpu.read_counter` records likewise establish only two raw source
-reads. Width-aware subtraction yields a modular tick delta; it is not by itself
-elapsed-time or latency evidence. The selected target's static platform-counter-
-instance provider `a64-generic-virtual-counter-instance-provider-v1` version 1,
-under `wyst.platform-counter-instance-provider.v1`, is an authenticated target-
-profile extension bound to the exact source descriptor. It names
-`wyst.platform-counter-instance-record.v1`; a validated record has a normalized
-`wyst.platform-counter-instance-identity.v1` identity, and the static product
-also names field `universe_evidence_schema` with value
-`wyst.platform-counter-universe-evidence.v1`. Its five-field product digest is
-`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`.
-These static facts belong to target compatibility and compilation identity, not
-to either `cpu.read_counter` operation record.
+Two verified `cpu.read_counter` records establish only two raw source reads.
+Width-aware subtraction yields a modular tick delta; it is not by itself
+elapsed-time or latency evidence. The selected target directly names the
+counter source descriptor.
 
-An optional immutable per-run instance record is a launch/measurement product,
-not typed IR and not a reusable compilation-cache input. It separately carries
-the runtime domain and configuration epoch, realized frequency, comparison and
-serialization modes/overhead, complete platform-state applicability/progress
-evidence, mutable controls/exclusions/epoch transitions, evidence identities,
-an authenticated universe-authority contract identity and content digest, and
-normalized record content digest. The authority uses
-`wyst.platform-counter-universe-evidence.v1`; an independently selected
-platform-environment contract under
-`wyst.platform-counter-universe-evidence-contract.v1` pins its exact digest.
-Self-consistent resealing cannot establish completeness. The authority binds
-provider/source, exact counter domain and configuration epoch, both universe
-evidence references, exact sorted states, and exact sorted controls with sorted
-effects. Scope enters its digest, preventing authority replay across domains or
-epochs; the record binds both the selected trust anchor identity and that digest
-and must match all authority facts. Runtime authority and record content remain
-outside typed IR and reusable compilation identity. No-record/no-authority
-consumption leaves the two raw
-reads legal and every numeric result explicitly unsupported. Records with the
-closed disposition `unknown`, `malformed`, `incomplete`, `stale`, `mismatched`,
-or `ambiguous` fail before exposing any trusted record field. An unrecognized
-provider identity is `unknown`; source or another recognized-fact disagreement
-and an invalid epoch transition are `mismatched`. Missing authority-declared
-rows or missing authority for a present record are `incomplete`; extras and
-effect, scope, trust-anchor, reference, or digest differences are `mismatched`;
-multiple authorities are `ambiguous`.
-
-A measured interval from the future performance/resource-report and benchmark-
-comparison contract must bind the same source descriptor, static
-provider/schema, and immutable instance-record identity/content digest at both
-endpoints and prove one domain/configuration epoch, comparability and offset,
-explicit endpoint serialization and overhead, realized frequency, the possible
-platform-state set and progress evidence, mutable source/frequency/offset/reset/
-rebase/comparability-control exclusion, and a maximum span below the modulus
-before publishing a numeric elapsed claim. These runtime contracts do not add
-fields to the current counter-source IR record.
+A future measured-interval facility must explicitly define any runtime
+frequency, endpoint comparability, serialization overhead, mutable-control
+exclusion, and maximum span it needs before publishing a numeric claim. Those
+runtime facts do not add fields to the current counter-source IR record.
 
 ## Typed outcome IR
 

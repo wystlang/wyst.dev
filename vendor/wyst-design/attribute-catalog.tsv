@@ -1,4 +1,3 @@
-// wyst.declarationAttributes.v0.9
 // spelling	state	owner	subjects	signature	conflicts	formatter_order	tooling_metadata	behavior
 align	implemented	declaration.placement	body-fn|body-label|module-var|per-cpu-var|sectioned-module-const|nonpacked-struct-field	positional(N:positive-target-supported-power-of-two-u64)	bodyless|local|whole-type|packed-field|target-owned|fixed-placement|inline	100	declaration.attribute.align	minimum-emitted-address-or-field-layout-alignment
 section	implemented	declaration.placement	body-fn|body-label|ordinary-module-var|module-const	positional(NAME:literal-custom-section-name)	local|field|type|per-cpu|bodyless|target-owned|fixed-placement|reserved-section|canonical-section|wyst-reserved-section	200	declaration.attribute.section	retained-custom-section-contribution-per-demanded-concrete-declaration

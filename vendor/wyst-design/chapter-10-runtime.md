@@ -39,32 +39,22 @@ A whole public or private `import core.collections` is also valid and exposes
 the type as `collections.DynamicArray<T>`; selective imports may use a local
 alias, and `pub import` may re-export the authenticated declaration under the
 ordinary source-visibility rules.
-`DynamicArray` is authenticated by the sealed declaration-role metadata, not
-by its qualified or unqualified spelling. A project declaration with the same
-name cannot acquire the role or replace the sealed module.
+`DynamicArray` has a compiler-owned declaration role, selected by its exact
+sealed module and declaration identity rather than by its qualified or
+unqualified spelling. The compiler validates that the bundled declaration has
+the field shape required by its implementation. A project declaration with
+the same name cannot acquire the role or replace the sealed module.
 
-The sole authority for that metadata is the compiler-shipped
-[`declaration-roles.tsv`](declaration-roles.tsv) registry under
-`wyst.declaration-role-registry.v1`. Its row binds the stable role and contract
-version to `core.collections.DynamicArray`, the declaration kind and complete
-generic field signature, the native ABI, an interface digest, the exact bundled
-body digest, compiler semantics, compatibility rules, and the absence of
-resource-state capabilities. The compiler re-authenticates all of those facts;
-an import alias or re-export carries the authenticated identity rather than
-causing a second name lookup for semantics.
-
-Project source, manifests, foreign metadata, and ordinary dependency interfaces
-cannot assign a role. Unknown, duplicate, stale, unavailable, or mismatched
-interface claims are rejected. In particular, ordinary functions named
+In particular, ordinary functions named
 `arena_storage_init`, `byte_storage_*`, `dyn_array_*`, `typed_handle_*`,
 `buffer_*`, or `c_string_*` are ordinary typed APIs: their spelling alone
 creates no allocator, storage, movement, container, runtime, retention,
-lowering, effect, or report fact. `wync explain storage` reports the sealed
-registry and authenticated `DynamicArray<T>` uses only.
+lowering, effect, or report fact. `wync explain storage` reports compiler-owned
+`DynamicArray<T>` uses only.
 
 `DynamicArray<T>` preserves the explicit
-`wyst.dynamicArrayDescriptor.v0` storage representation and
-`wyst.dynamicArrayOperation.v0` operation contract described below. It is
+`wyst.dynamicArrayDescriptor` storage representation and
+`wyst.dynamicArrayOperation` operation contract described below. It is
 opaque at the Wyst type surface and otherwise participates in parsing, type
 checking, explicit generic instantiation, linking, debugging, and dead-code
 elimination like ordinary bundled generic library code. Importing the type
@@ -129,10 +119,9 @@ language allocation.
 
 `DynamicArray<T>` is a concrete descriptor type. The descriptor is storage for
 facts, not an allocation trigger: annotation-time allocation is `none`, and
-initialization must happen through a visible typed wrapper such as
-`dyn_array_init_Token`. The checked ergonomic surface also accepts
-`arr : DynamicArray<u8> = dyn_array_init<u8>(arena, capacity = ..., growth = ...)`;
-subsequent repeated operations can use `arr.push(value)`,
+initialization uses the explicit
+`arr : DynamicArray<u8> = dyn_array_init<u8>(arena, capacity = ..., growth = ...)`
+operation. Subsequent repeated operations can use `arr.push(value)`,
 `arr.push_from_address(ptr)`, `arr.reserve(capacity = ..., growth = ...)`,
 `arr.alloc_slot()`, `arr.init_slot(slot)`, and `arr.commit_slot(slot)` on any
 assignable `DynamicArray<T>` descriptor storage path, including locals, globals, and
@@ -146,7 +135,7 @@ only — labels on `push`, `push_from_address`, `init_slot`, or
 `commit_slot` are a compile error.
 
 The descriptor representation is public and required under
-`wyst.dynamicArrayDescriptor.v0`. A `DynamicArray<T>` value has total size 56 bytes and alignment 8.
+`wyst.dynamicArrayDescriptor`. A `DynamicArray<T>` value has total size 56 bytes and alignment 8.
 Its fields are fixed in this order:
 
 | Order | Field | Type | Offset | Size | Alignment | Meaning |
@@ -173,7 +162,7 @@ identity is attached. Nonzero values are compared as identities by descriptor
 equality and are interpreted only by the wrapper/storage contract that created
 the descriptor.
 
-`growth_policy` encodings in `wyst.dynamicArrayDescriptor.v0` are:
+`growth_policy` encodings in `wyst.dynamicArrayDescriptor` are:
 
 | Value | Meaning |
 | ----- | ------- |
@@ -181,14 +170,14 @@ the descriptor.
 | `1` | stable-storage growth; capacity may increase without moving existing element addresses |
 | `2` | relocating growth; capacity may increase by moving elements and changing `data` |
 
-`failure_policy` encodings in `wyst.dynamicArrayDescriptor.v0` are:
+`failure_policy` encodings in `wyst.dynamicArrayDescriptor` are:
 
 | Value | Meaning |
 | ----- | ------- |
 | `0` | trap or panic according to the owning runtime contract |
-| `1` | return explicit status from the wrapper operation |
+| `1` | return explicit status from the operation |
 
-`movement_policy` encodings in `wyst.dynamicArrayDescriptor.v0` are:
+`movement_policy` encodings in `wyst.dynamicArrayDescriptor` are:
 
 | Value | Meaning |
 | ----- | ------- |
@@ -196,8 +185,7 @@ the descriptor.
 | `1` | stable element addresses while the storage identity remains alive |
 | `2` | element addresses may move on growth; callers must not retain them across mutating operations |
 
-Other policy values are invalid descriptor state in this contract version unless
-a later named contract version defines them. The empty descriptor is all zero
+Other policy values are invalid descriptor state. The empty descriptor is all zero
 fields: `data = 0`, `len = 0`, `capacity = 0`, `storage_identity = 0`,
 `growth_policy = 0`, `failure_policy = 0`, and `movement_policy = 0`. It is a
 valid empty descriptor value, but indexing, slicing to nonzero length, reserve,
@@ -205,7 +193,7 @@ push, slot allocation, and foreign inspection as live storage require
 initialization through an explicit storage contract first. Invalid descriptor
 state includes `len > capacity`, nonzero capacity with zero data, misaligned
 data, unknown policy values, stale storage identity, or any state produced by a
-wrapper that does not satisfy `wyst.dynamicArrayDescriptor.v0`; using such a
+wrapper that does not satisfy `wyst.dynamicArrayDescriptor`; using such a
 descriptor is a trusted-contract violation by the program or foreign producer.
 
 Resetting a descriptor to the all-zero empty descriptor drops the descriptor's
@@ -222,17 +210,14 @@ order, offsets, and field types. Persistence is not promised: descriptor values
 contain process-local addresses and storage tokens, so only the all-zero empty
 descriptor is portable across address spaces or program runs unless an external
 persistence contract translates the fields. Foreign inspection may read and
-write the fields only when it opts into `wyst.dynamicArrayDescriptor.v0`,
+write the fields only when it opts into `wyst.dynamicArrayDescriptor`,
 knows the element type layout, and preserves every invariant above.
 
-The bootstrap wrapper operation metadata is `wyst.dynamicArrayOperation.v0`. Typed
-wrappers are monomorphic in the bootstrap surface and report their shared
-byte-storage provenance for initialization, push-by-value, push-from-address,
-reserve-only, allocate-slot, initialize-slot, and commit-slot operations.
-Current compatibility wrapper spellings such as `dyn_array_init_Token` select
-entries from this authenticated metadata table; the function name is not the
-contract authority. The narrow `dyn_array_init<T>` source spelling reports as a
-deterministic typed wrapper instance rather than hidden runtime type erasure.
+The operation contract is `wyst.dynamicArrayOperation`. The generic initializer
+and descriptor methods give initialization, push-by-value, push-from-address,
+reserve-only, allocate-slot, initialize-slot, and commit-slot their checked
+semantics. Ordinary functions with similar names remain ordinary code; names do
+not grant compiler semantics.
 
 Descriptor state is read through read-only dot projections such as `arr.data`,
 `arr.len`, `arr.capacity`, `arr.storage_identity`, `arr.growth_policy`,

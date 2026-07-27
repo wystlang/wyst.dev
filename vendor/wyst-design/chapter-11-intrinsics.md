@@ -68,20 +68,11 @@ const result: u64 = semihost.call(operation, parameter)
 ```
 
 Importing `semihost` is valid only when the target selects its exact service
-descriptor and adds that descriptor to the artifact's required-service set.
+descriptor.
 The current compatible profile selects executable environment
-`qemu-aarch64-semihost-v1`, which offers exactly
-`a64-semihost-hlt-f000-v1`; bare or unselected environments fail the import as
-a hard target-compatibility error. Artifact preparation rechecks the required
-set, and a runner must match the selected environment and satisfy every
-required descriptor before launch. Target and runner environments are selected
-independently: static artifact preparation authenticates only the target
-contract and writes the exact requirement facts into `.wyst.artifact`.
-Immediately before launch, `wync runner-preflight <artifact.elf> --runner
-<catalog-id>` authenticates that metadata and the separately selected runner,
-then rejects an unknown runner, mismatched environment identity, or incomplete
-runner service set before any guest instruction executes. Runner choice is not
-an artifact or cache identity input.
+`qemu-aarch64-semihost`, which offers exactly
+`a64-semihost-hlt-f000`; bare or unselected environments fail the import as
+a hard target-compatibility error during compilation.
 On A64, `semihost.call` places its two `u64` arguments in `x0` and `x1`, emits
 `hlt #0xf000`, and returns `x0`. It remains distinct from
 `exception.hlt(0xf000)`, which has no semihost ABI meaning.
@@ -327,7 +318,7 @@ The declared access mode cannot exceed the authenticated register directions.
 The compiler checks canonical identity, support disposition, selected target
 revision and features, execution level, security and implicit state, effects,
 faults, and field legality. All facts and the emitted `mrs`/`msr` instruction
-come exclusively from the normalized A64 authority, active support manifest,
+come exclusively from the normalized A64 authority, active support catalog,
 and compiler-semantic catalog. A declaration cannot create or override an
 architectural fact, and no compiler phase owns a parallel system-register
 table. Lowering consumes typed catalog identity and never constructs source
@@ -410,7 +401,7 @@ verification accepts only that exact read-modify-write dataflow. The compiler
 may fold an encodable constant offset into the operation, but it may not reuse
 the base from an earlier access, create a compiler-owned cache slot, hoist the
 acquisition, or materialize a general address. A method from
-`wyst.atomic-matrix.v1` uses the same one-base and offset rule around its one
+The atomic matrix uses the same one-base and offset rule around its one
 requested atomic operation.
 The compile-time `#percpu_offset_of(binding)` query emits only the final
 template byte offset and does not acquire a base.
@@ -454,7 +445,7 @@ fn sample() -> u64 {
 `cpu.read_counter() -> u64` reads the one generic measurement-counter **source
 descriptor** selected by the artifact target. The current QEMU `virt` and
 `raspi4b` artifact targets each explicitly select
-`a64-generic-virtual-counter-v1`. That descriptor authenticates one
+`a64-generic-virtual-counter`. That descriptor authenticates one
 `CNTVCT_EL0` read, a 64-bit result, modulo-`2^64` wrapping,
 `runtime_register(CNTFRQ_EL0)` frequency acquisition, minimum EL0, the
 `CNTKCTL_EL1.EL0VCTEN_when_EL0` enablement condition, and
@@ -462,7 +453,7 @@ descriptor** selected by the artifact target. The current QEMU `virt` and
 
 This generic descriptor owns only source-operation facts: read identity and
 lowering, width, frequency **acquisition**, minimum execution level,
-enablement, failure, and source-report identity. In particular,
+enablement, and failure. In particular,
 `runtime_register(CNTFRQ_EL0)` identifies how a future measurement producer
 may acquire a realized frequency; `cpu.read_counter()` itself does not read
 that register or authenticate a frequency value.
@@ -514,8 +505,7 @@ encoding ID, and semantic-operation IR record before emitting the read word.
 
 Effects and lowering reports record the selected artifact target, source-
 descriptor identity, source, width, frequency-acquisition class, minimum EL,
-enablement, failure, wrapping behavior, source-report identity, and catalog/
-authority origin.
+enablement, failure, wrapping behavior, and catalog/authority origin.
 
 **Example:**
 
@@ -530,88 +520,12 @@ These are two raw samples. Width-aware subtraction can produce only
 `(end - start) mod 2^width`, a modular tick delta. The source descriptor alone
 does not make that delta elapsed time, latency, or a value in seconds.
 
-Every current built-in target that admits this source descriptor atomically
-selects static provider `a64-generic-virtual-counter-instance-provider-v1`
-version 1 under product schema `wyst.platform-counter-instance-provider.v1` as
-a target-profile extension. That static product is bound to
-`a64-generic-virtual-counter-v1`, names record schema
-`wyst.platform-counter-instance-record.v1` and universe-evidence schema
-`wyst.platform-counter-universe-evidence.v1`, and participates in compilation
-identities. Its five-field product digest is
-`sha256:ab1c41697aac01bea2961dd676ea33f980712a4471ea70ed226adcf4ed3659b1`;
-it does not represent a runtime domain, epoch, or measurement observation. A
-valid record receives its normalized per-run identity under
-`wyst.platform-counter-instance-identity.v1`.
-
-At launch or measurement time a consumer may accept one immutable per-run
-instance record under the selected schema. The record authenticates its runtime
-counter domain and configuration epoch; exactly one `fixed_hz`, `variable`, or
-`unknown` realized-frequency mode with acquisition and evidence identities;
-exactly one `same_core_only` or
-`shared_monotonic(max_offset_ticks = N)` comparison mode with evidence identity;
-and exactly one `none_with_authority` serialization value with reason,
-authority, and evidence identities or `source_explicit` value with nonempty
-ordered `before`/`after` operations, `read = core.arch.cpu.read_counter`,
-measured overhead, and evidence identity. Each before/after step must be an
-active zero-operand void architecture barrier operation. It also authenticates
-the complete applicable/inapplicable platform-state universe and progress
-evidence, every mutable source/frequency/offset/reset/rebase/comparability
-control and its applicability/exclusion/epoch transition, all evidence
-identities, and a digest over its complete normalized content. Runtime record
-identity/content never enters a reusable compilation-cache key.
-
-Those record rows are complete only when they exactly match one independently
-authenticated combined universe authority. The selected platform-environment
-adapter supplies a contract under
-`wyst.platform-counter-universe-evidence-contract.v1` that pins the exact
-content digest of an authority under
-`wyst.platform-counter-universe-evidence.v1`; recomputing a self-consistent
-digest over producer-chosen rows is insufficient. The authority binds the
-provider/source, exact counter domain and configuration epoch, both universe
-evidence references, exact sorted state identities, and exact sorted control
-identities with sorted effects. Domain and epoch enter its digest, preventing
-authority replay across runtime scopes. The record carries both
-`universe_evidence_contract_identity` and
-`universe_evidence_content_digest`; both enter record content, evidence,
-identity, and lifecycle binding and must match that authority along with every
-row, effect, and reference. Runtime authority content remains outside
-compilation and reusable-cache identities. Current conformance uses only the
-compiler-owned baseline synthetic authority digest
-`sha256:c656328d5dde4c49e71ea298af58ac8daa27a8bb9205219d59c061bea3a3ebb1`.
-
-The closed lifecycle begins at launch as exactly `RawReadsOnly` or `Bound` and
-advances only `Launch -> Measurement -> Report`. A record may first appear at
-measurement only from the preserved raw-only launch state. Once bound it cannot
-disappear or be substituted, and it cannot first appear at report. A changed
-source, domain, universe trust anchor, authority digest, or recognized provider
-fact is `mismatched`; an unrecognized provider identity is `unknown`; a changed
-epoch, record identity, or content
-digest is `stale`; and disappearance or report-first appearance is `incomplete`.
-This state token prevents a later consumer from dropping its
-predecessor evidence or substituting an older or different otherwise-valid
-record.
-
-No runtime record is required merely to execute `cpu.read_counter()`. Without
-one, the operation remains an authenticated raw source read and every numeric
-verification or report result is explicitly unsupported. A record with the
-closed disposition `unknown`, `malformed`, `incomplete`, `stale`, `mismatched`,
-or `ambiguous` fails closed rather than lending selected fields to a numeric
-claim. Missing authority-declared rows or a present record without authority
-are `incomplete`. Extra rows; changed effects, scope, trust anchor, references,
-or digest; a source or other recognized-fact disagreement; and invalid
-epoch-transition relationships are `mismatched`. Multiple authorities are
-`ambiguous`. No record with no
-authority remains raw-only. The future
-performance/resource-report and benchmark-comparison contract may authorize a
-numeric elapsed claim only when its interval evidence binds the same source-
-descriptor, provider/schema, and immutable record identity/content digest at
-both endpoints and proves one unchanged runtime domain/configuration epoch,
-endpoint comparability and any maximum offset, explicit serialization and
-charged overhead, a realized frequency for the claimed unit, all possible
-platform states and their progress evidence, exclusion of every mutable
-control, and a maximum span strictly below the source modulus. None of those
-runtime facts is implied by `a64-generic-virtual-counter-v1`, target selection,
-the static provider/schema, the two compiler fences, or the two raw reads.
+No runtime record is required to execute `cpu.read_counter()`. The operation
+is a raw source read, and the compiler does not promote two reads into a
+numeric elapsed-time claim. Any future measurement facility must define the
+runtime frequency, endpoint comparability, serialization, mutable controls,
+and maximum unambiguous interval it needs; those facts are not implied by the
+source descriptor, compiler fences, or raw reads.
 
 ### Design Rationale
 

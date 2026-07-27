@@ -1,31 +1,27 @@
 ---
-title: "Chapter 21: Experimental Compiler Inspection Reports"
+title: "Chapter 21: Compiler Inspection Reports"
 group: chapter
 chapter: 21
 order: 21
-summary: "Authority-derived lowering, effects, and storage inspection reports with explicit evidence limits."
+summary: "Current lowering, effects, and storage inspection reports with explicit limits."
 ---
 
-# Chapter 21: Experimental Compiler Inspection Reports
+# Chapter 21: Compiler Inspection Reports
 
 `wync explain lowering`, `wync explain effects`, and `wync explain storage`
-are **experimental compiler inspection reports**. They expose current compiler
-facts for debugging and review, but their schemas are not yet compatibility
-promises. They are not performance insights, teaching diagnostics, or a
-complete source-to-machine explanation facility.
+expose current compiler facts for debugging and review. They are not
+performance insights, teaching diagnostics, or a complete source-to-machine
+explanation facility. Their output describes the current compilation.
 
-The active schema identifiers are `wync.explain.lowering.v1`,
-`wync.explain.effects.v1`, and `wync.explain.storage.v1`. Their experimental
-status is part of every text and machine-readable report. Promotion requires a
-separate schema-status change in
-[source-of-truth.md](source-of-truth.md) and
-[`semantic-db.json`](semantic-db.json).
+Text and JSON reports identify themselves only by the current report kind:
+`lowering`, `effects`, or `storage`. Tests may change with intentional language
+or compiler changes.
 
-## Authority And Input Products
+## Current Compiler Facts
 
-An inspection report is a terminal view over immutable compiler products. A
-typed constructor for each report kind obtains every material input from the
-phase that owns the fact. The constructor, not a CLI caller or renderer,
+An inspection report is a terminal view over the current compilation. A typed
+constructor for each report kind obtains every material input from the compiler
+stage that owns the fact. The constructor, not a CLI caller or renderer,
 creates the complete report input.
 
 The following substitutions are forbidden when the owning product exists:
@@ -45,44 +41,15 @@ sorting, graph strongly connected components, path display, or aggregate row
 counts. Such derivatives remain report-only facts and cannot affect accepted
 programs, diagnostics, lowering, or emitted bytes.
 
-Every text and machine-readable report records an authority envelope with:
-
-- the producing phase identity, normally
-  `phase.report_only_fact_computation`;
-- the stable identity and owner phase of every input product;
-- the report schema and experimental facility status; and
-- an explicit `unknown` or `unavailable` value when an authoritative input is
-  absent.
-
 Missing facts are never guessed, reconstructed from a mnemonic switch, or
-silently omitted.
+silently omitted. Reports use `unknown` or `unavailable` when a current fact
+cannot be supplied.
 
-## Epistemic Metadata
-
-Every modeled or numeric report field carries the common epistemic schema
-`wync.reportEpistemic.v0`. A containing object may supply metadata shared by all
-of its fields, but the association must be unambiguous. The required fields
-are:
-
-- `evidence_kind`: `compiler-proved`, `target-provided`,
-  `static-assumption`, `measured`, or `unknown`;
-- `analysis_freshness`: `current_run`, `unknown`, or `unavailable`;
-- `evidence_version`: the model, compiler evidence, target-catalog, or
-  measurement-method version, or `null` when unavailable;
-- `declared_assumptions`: a deterministic list, empty only when none are
-  required;
-- `unsupported_factors`: a deterministic list of material factors the model
-  does not cover; and
-- `measurement_status`: `not_measured` or `measured`.
-
-Static compiler analysis always uses `measurement_status = not_measured`.
-`current_run` says only that the compiler analysis was recomputed for this
-invocation. It says nothing about hardware measurement, cache state, target
-model validity, or runtime freshness.
-
-Selected target identity and model identity are distinct. Two model names may
-be distinct only when their underlying model facts differ. A report may name
-the selected target while saying that no target-specific model is available.
+Each report has one concise `limits` field instead of repeated evidence
+envelopes. Lowering does not cover hardware timing, cache state, branch
+prediction, or measured performance. Effects does not cover runtime frequency,
+target timing, or cache state. Storage does not cover runtime allocation
+behavior, machine cost, or ordinary library contracts without a compiler role.
 
 ## Project-Artifact Read-Only Contract
 
@@ -96,7 +63,7 @@ same fact as `projectArtifactWrites: "none"`. This claim is deliberately
 narrow: an inspection command still writes its requested report to stdout and
 may use process-private temporary state that is not a project artifact.
 
-Conformance compares the complete recursive content and metadata of both an
+Regression tests compare the complete recursive content and metadata of both an
 absent artifact directory and a pre-existing artifact tree before and after
 inspection. Parse, semantic, missing-function, report-construction, and output-
 rendering failures receive the same check.
@@ -104,8 +71,8 @@ rendering failures receive the same check.
 ## Lowering Report
 
 `wync explain lowering <project-dir|path/to/wyst.project> --function <name>`
-uses schema `wync.explain.lowering.v1`. It consumes the current-build source
-map, verified typed IR, callable ABI classification and obligations, machine
+emits the current lowering report. It consumes the source map, verified typed
+IR, callable ABI classification and obligations, machine
 image, register-allocation facts, final frame/resource facts, relocation facts,
 and artifact bytes.
 
@@ -194,14 +161,14 @@ Calls, memory operations, atomics, barriers, assembly, phis, loops, spills, ABI
 copies, and multi-instruction expansions may be identified structurally, but
 none receives an invented machine cost. `critical_path`, `latencyCycles`,
 throughput fields, `estimate = fixed`, unconditional cache-hit claims, and
-store-issue timing are not part of this schema. Machine-cost models and measured
-performance require a later performance schema.
+store-issue timing are not part of this report. Machine-cost models and measured
+performance require separate performance work.
 
 ## Effects Report
 
-`wync explain effects <project-dir|path/to/wyst.project>` uses schema
-`wync.explain.effects.v1`. An optional `--function <name>` filter narrows the
-view without changing the authority source.
+`wync explain effects <project-dir|path/to/wyst.project>` emits the current
+effects report. An optional `--function <name>` filter narrows the view without
+changing the underlying compiler facts.
 
 The report consumes the semantic analyzer's current-build per-function and
 per-site effect-authority product. It does not infer effects by walking raw AST
@@ -225,11 +192,11 @@ selected target, zero-instruction lowering, and provenance. A rejected marker
 or missing-provider transfer produces a diagnostic and no misleading lowered
 row.
 
-Target fact sections expose the normalized executable-environment class, exact
-environment product identity/version/digest, migration/preemption/current-core
-policies, and ordered execution/completion provider descriptors. An empty
-provider list remains explicit; a report never infers a provider from the
-environment class, target name, or presence of `execution_suspension`.
+Target fact sections expose the normalized executable-environment class,
+migration/preemption/current-core policies, and ordered execution/completion
+provider descriptors. An empty provider list remains explicit; a report never
+infers a provider from the environment class, target name, or presence of
+`execution_suspension`.
 
 Each declared MMIO read or write reports both `volatile_access` and `mmio` at
 its exact operation site. A complete modify reports its ordered read and write
@@ -243,14 +210,12 @@ size, veneers, or caller-owned aggregate copies as semantic effects.
 
 ## Storage Report
 
-`wync explain storage <project-dir|path/to/wyst.project>` uses schema
-`wync.explain.storage.v1`. It consumes the selected, instantiated current-build
-program and the sealed declaration-role registry. The report always publishes
-the exact registry schema and digest, assignment authority, active roles,
-reserved resource kinds and transition fields, and closed rejection
-dispositions. Authenticated `DynamicArray<T>` descriptor annotations and
+`wync explain storage <project-dir|path/to/wyst.project>` emits the current
+storage report. It consumes the selected, instantiated program and the
+declaration-role registry. The report publishes active roles and their current
+compiler semantics. Authenticated `DynamicArray<T>` descriptor annotations and
 compiler-owned descriptor operations are compiler-proved facts tied to the
-sealed role, its semantic identity, and its interface/body digests.
+sealed role and its semantic identity.
 
 Ordinary arena, byte-storage, typed-handle, buffer, string, movement, runtime,
 or generated-support function names create no storage fact. The same is true
@@ -271,11 +236,10 @@ Unknown functions and unavailable required products are diagnostics, never
 empty success reports. Report-construction and rendering failures preserve the
 project-artifact read-only contract.
 
-Text and JSON forms carry the same material facts, authority envelope,
-epistemic classification, generated/source origins, decoder status, allocation
-meaning, and read-only claim. CLI diagnostics for report failures use the same
-canonical diagnostic-kind registry and LSP-compatible data as other compiler
-diagnostics.
+Text and JSON forms carry the same material facts, limits, generated/source
+origins, decoder status, allocation meaning, and read-only claim. CLI
+diagnostics for report failures use the same diagnostic-kind registry and
+LSP-compatible data as other compiler diagnostics.
 
 Outcome-aware reports preserve the checked operation protocol record: nominal
 identity, ordered effective transitions, exact payload layouts, operation
