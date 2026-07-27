@@ -262,7 +262,7 @@ function manifestFailure(manifest) {
 		JSON.stringify(Object.keys(manifest.releaseFiles)) !==
 			JSON.stringify(expectedReleaseFilePaths())
 	) {
-		return "build manifest releaseFiles must contain exactly _headers";
+		return "build manifest releaseFiles must contain exactly _headers and wrangler.jsonc";
 	}
 	for (const [relativePath, entry] of Object.entries(manifest.releaseFiles)) {
 		if (

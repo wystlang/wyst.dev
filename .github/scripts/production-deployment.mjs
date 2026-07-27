@@ -124,6 +124,21 @@ export async function newestSuccessfulProductionDeployment({
 	);
 }
 
+export function assertProductionMatchesMain({ mainSha, productionSha } = {}) {
+	const shaPattern = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i;
+	if (!shaPattern.test(productionSha ?? "")) {
+		throw new Error("production deployment has an invalid commit SHA");
+	}
+	if (!shaPattern.test(mainSha ?? "")) {
+		throw new Error("expected main commit has an invalid SHA");
+	}
+	if (productionSha.toLowerCase() !== mainSha.toLowerCase()) {
+		throw new Error(
+			`production is deployed from ${productionSha.toLowerCase()}, but main is ${mainSha.toLowerCase()}`,
+		);
+	}
+}
+
 if (
 	process.argv[1] &&
 	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
@@ -133,6 +148,12 @@ if (
 		repository: process.env.GITHUB_REPOSITORY,
 		token: process.env.GITHUB_TOKEN,
 	});
+	if (process.env.WYST_EXPECTED_PRODUCTION_SHA) {
+		assertProductionMatchesMain({
+			mainSha: process.env.WYST_EXPECTED_PRODUCTION_SHA,
+			productionSha: deployment.sha,
+		});
+	}
 	console.log(`sha=${deployment.sha}`);
 	console.log(`deployment_id=${deployment.deploymentId}`);
 }
