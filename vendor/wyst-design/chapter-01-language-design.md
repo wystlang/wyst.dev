@@ -13,13 +13,9 @@ effects, ABI, IR, object files, and tooling; the canonical definitions are
 linked below.
 
 Wyst is unpublished and under active development. This chapter describes the
-currently selected design, not an immutable constitution. Every principle,
-syntax form, semantic rule, ABI decision, schema, name, identity, and digest
-algorithm remains open to deliberate revision. Here, _canonical_, _stable_,
-_versioned_, and _normative_ mean consistent within the selected repository
-snapshot; they do not promise backwards compatibility or permanence. See
-[source-of-truth.md](source-of-truth.md) for the atomic clean-break change
-process.
+language design. Every principle, syntax form, semantic rule, ABI decision,
+schema, name, identity, and digest algorithm remains open to deliberate
+revision.
 
 > **Chapter scope.** This chapter states the identity, principles, and
 > high-level rules of the language. When a topic is defined in more detail
@@ -29,13 +25,12 @@ process.
 >
 > | Topic                                      | Canonical file                                                     |
 > | ------------------------------------------ | ------------------------------------------------------------------ |
-> | Release versions and exact identities      | [release-identity.md](release-identity.md)                          |
 > | Type system, conversions, aggregates       | [chapter-06-types.md](chapter-06-types.md)                         |
 > | Address types (`@T`, `@volatile T`, `@mmio T`) | [chapter-06-types.md §1.4.1](chapter-06-types.md)                  |
 > | Struct, bitstruct, enum layout             | [chapter-06-types.md §1.6, §1.6.1, §1.6.3](chapter-06-types.md)    |
 > | Memory model (ordering, races)             | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
 > | Volatility, MMIO intent, atomic acquire/release methods | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
-> | Semantic operations and removed-`%` audit  | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv); [legacy-percent-removal-audit.tsv](legacy-percent-removal-audit.tsv) |
+> | Semantic operations                        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv) |
 > | Typed atomic storage, methods, and orders  | [atomic-matrix.json](atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
 > | System register access                     | [chapter-11-intrinsics.md §1.3.3](chapter-11-intrinsics.md)        |
 > | Trap / cache / TLB / CPU operations        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                |
@@ -86,24 +81,6 @@ Wyst is intentionally positioned between:
 It is best understood as:
 
 > a human-readable semantic IR for machine-oriented programming.
-
-### Snapshot, Build, And Release Identity
-
-The selected language snapshot and a compiler build are exact content
-identities, not semantic versions. The language snapshot authenticates the
-selected contract; the compiler build separately authenticates the compiler,
-the selected language snapshot, dependencies, toolchain, target, profile,
-flags, and release state. Domain separation prevents either identity from being
-substituted for the other.
-
-Language and compiler semantic versions are independent publication labels.
-They are absent from ordinary development builds, proposed only for an explicit
-clean-snapshot nomination, and released only by publication after the full gate
-passes. Roadmap completion never changes either version. The exact canonical
-encoding, input closure, bump rules, and publication workflow are normative in
-[`release-identity.md`](release-identity.md).
-
----
 
 ## Design Constraints
 
@@ -211,10 +188,8 @@ facts come from checked source structure, typed IR, target descriptors, or
 lowering artifacts. Asserted facts come from trust-boundary constructs and carry
 the source location of the assertion plus a `trustedFact` label in JSON reports.
 
-This version does not add a project or function switch that prohibits selected
-trust-boundary categories. If such a switch is added later, it must be a
-separate semantic feature row and must reject prohibited categories before IR
-lowering instead of silently ignoring them.
+Wyst has no project or function switch that prohibits selected trust-boundary
+categories.
 
 ### Principles
 
@@ -362,7 +337,7 @@ When a value must live in a specific register because of a hardware or ABI
 contract — firmware delivering a DTB pointer in `x0`, an exception handler
 expecting the syndrome in a particular register, an `asm` block whose
 encoding is fixed — the programmer expresses this with the declaration's
-selected snapshot `in register` clause:
+Wyst `in register` clause:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -494,7 +469,7 @@ resources.
 | ---- | -------- | ----------------- |
 | Semantic effects | volatile accesses, MMIO-intent loads/stores, system-register access, traps, atomics, barriers, cache/TLB maintenance, CPU events and halt, interrupt-mask changes, floating-point state access, performance-counter reads | `#[deny_effects(...)]`, effect diagnostics, `wync explain effects` |
 | Authority/trust facts | raw address assertion, retagging an address for volatile/MMIO-intent use, raw function-pointer construction or invocation, required privilege level, trusted foreign or assembly contracts, stack-address escape permission, target-provided memory-map facts | trust-boundary diagnostics and asserted facts in explain reports |
-| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#[frame(...)]` post-lowering constraints, ABI/lowering reports, generated-manifest/object reports |
+| Generated resources | frame bytes, spill/reload counts, register-class usage, code size, veneers, caller-owned aggregate copies, compiler-owned stack slots | `#[frame(...)]` post-lowering constraints and ABI/lowering reports |
 
 Retagging an address as `@volatile T` or `@mmio T` is an authority assertion.
 It is not a memory access and does not create the architectural page-table
@@ -542,8 +517,8 @@ boundaries (privilege level, memory type, synchronization domain), not
 individual instruction distinctions. TLB maintenance is separated from
 cache maintenance because address-translation invalidation is a distinct
 kernel boundary from cache-line cleaning, invalidation, or instruction-cache
-coherency. Finer-grained categories can be added in future versions without
-breaking existing `deny_effects` declarations.
+coherency. Add a finer-grained category only when the language needs to expose
+a distinct architectural boundary.
 
 ### Inference
 
@@ -691,13 +666,13 @@ memory operation, floating-point state operation, or CPU wait instruction
 contributes its cataloged effects automatically. Marking an effectful active row
 `pure` is a compile-time error; omitting `pure` preserves the exact derived
 effects and makes the block a full two-way compiler fence. Mentioning a
-recognized row that is not active in the pinned selected snapshot pack is a support error,
+recognized row that is not active in the pinned Wyst pack is a support error,
 not a way to obtain its effects.
 
 Stack-pointer state is verified separately from the `deny_effects` effect system. The
 grammar reserves `preserves`, `establishes`, and `restores stack`, but a clause
 is accepted only when active generated rows prove its complete transition. The
-pinned selected snapshot pack has no stack-access or establish/restore transition row:
+pinned Wyst pack has no stack-access or establish/restore transition row:
 `establishes` and `restores` are therefore rejected even in their owning naked
 contexts, and `preserves` cannot authorize temporary stack access. These
 stack-state contracts do not introduce a separate effect category; a future
@@ -844,14 +819,13 @@ The goal is:
 
 ## Reproducibility Model
 
-Wyst guarantees **reproducible lowering**: given the same source, the same
-compiler build identity, the same canonical
-`#target(...)` configuration or authenticated target-profile contract, the same
-source input manifest, and the same selected scheduling policies including
-implicit `schedule.standard`, the compiler always produces identical output.
-Reproducibility is scoped to these inputs; it is not guaranteed across compiler
-build identities, target configurations, source manifests, or
-different selected scheduling policies.
+Wyst guarantees **reproducible lowering** within the current compiler source:
+given the same source, the same canonical `#target(...)` configuration or
+selected target profile, the same source input manifest, and the same selected
+scheduling policies including implicit `schedule.standard`, the compiler
+produces identical output. Reproducibility is scoped to these inputs and the
+checked-out compiler source; it is not a compatibility promise across source
+changes.
 
 The `#target` input is the entire canonical `#target(...)` argument list, not
 only `arch` and `cpu`. Fields such as `features`, `el`, and `cache_line`
@@ -861,7 +835,7 @@ field participates through its specified default value.
 
 Requirements for reproducibility:
 
-- same compiler build identity
+- same checked-out compiler source
 - same source input manifest:
   - explicit source-list mode: the same ordered command-line source paths and
     file contents;
@@ -878,8 +852,8 @@ Requirements for reproducibility:
 - same selected scheduling policies, including implicit `schedule.standard`
   and any explicit `schedule.source` boundary
 
-Register allocation is a pure function of the source, compiler build identity, and
-target. The same inputs always produce the same allocation.
+Register allocation is a pure function of the source and target under the
+current compiler. The same inputs always produce the same allocation.
 
 ---
 
@@ -921,7 +895,6 @@ wync build <project-dir|path/to/wyst.project>
 wync check <project-dir|path/to/wyst.project>
 wync explain E####
 wync explain lowering <project-dir|path/to/wyst.project>
-wync rebuild-benchmark <project-dir|path/to/wyst.project>
 ```
 
 ---
@@ -961,13 +934,13 @@ removal of work those transformations make unreachable. It may not introduce
 hidden runtime behavior.
 
 There is no build optimization selector or mode identity. The optimizer is a
-pure function of the canonical source, semantic and ABI products, compiler
-build identity, and authenticated target. Every admitted transform carries a
+pure function of the canonical source, semantic and ABI products, and
+authenticated target. Every admitted transform carries a
 compiler-owned proof, target cost, provenance, and deterministic tie decision.
 Diagnostics and reports project those facts but are never proof authority.
 
-The complete preservation contract and current reviewed growth, stack, spill,
-and duplication bounds are normative in
+The complete preservation contract and reviewed growth, stack, spill,
+and duplication bounds are required in
 [chapter-17-optimization.md](chapter-17-optimization.md). Source scheduling and
 the explicit `machine`, `verified`, and `hardened` safety policies remain
 orthogonal inputs.
@@ -1010,10 +983,10 @@ placement stage has fixed the referenced section.
 
 **Register Allocation.** Variables are assigned to ARM64 registers. Explicit
 `in register` constraints apply first; remaining variables are allocated by the compiler.
-Register allocation is a pure function of source, compiler build identity, and
-target triple. Tie-breaking must not use hash-based ordering, pointer-
+Register allocation is a pure function of source and target under the current
+compiler. Tie-breaking must not use hash-based ordering, pointer-
 derived ordering, or any input that varies across invocations — the same
-source compiled with the same compiler build identity against the same target
+source compiled from the same compiler source against the same target
 produces the same register assignment on every invocation. This is a
 specified invariant; reproducible lowering depends on it. Full algorithm
 and tie-breaks in [appendix-a-ir.md §11](appendix-a-ir.md).
@@ -1032,8 +1005,8 @@ cross-module symbols are resolved. Slot size enforcement for `vector_table`
 bodies is verified after placement.
 
 **Binary Emission.** Machine code emitted. Output is reproducible under the
-Reproducibility Model above: the same source input manifest, compiler build identity,
-canonical `#target(...)` configuration, and selected
+Reproducibility Model above: the same source input manifest, checked-out
+compiler source, canonical `#target(...)` configuration, and selected
 scheduling policies produce identical output.
 
 ---
@@ -1041,8 +1014,8 @@ scheduling policies produce identical output.
 ## ARM64 Feature Scope
 
 Wyst targets the **ARMv8-A baseline** instruction set. Three
-modern ARM64 features are explicitly out of scope for the selected language
-snapshot: SVE/SVE2, PAC, and MTE. None has a Wyst-surface representation;
+modern ARM64 features are explicitly out of scope: SVE/SVE2, PAC, and MTE.
+None has a Wyst-surface representation;
 specific instructions in these families can be exposed through checked `asm`
 as complete encoder and semantic-catalog support is activated.
 
@@ -1070,7 +1043,7 @@ or `autiasp` in prologues/epilogues by default.
 Full PAC support would require: prologue/epilogue generation controlled
 by a `#pac` function attribute; an address type carrying PAC tag state
 (e.g. `@signed(T)`); explicit named `sign`, `authenticate`, and `strip`
-operations if a future version catalogs them.
+operations, none of which are currently part of the language.
 
 **Extension point:** a `#pac` function-level directive that enables
 `paciasp` / `autiasp` emission, plus `@signed(@T)` for authenticated

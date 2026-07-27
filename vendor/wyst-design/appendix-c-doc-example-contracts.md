@@ -3,7 +3,7 @@ title: "Appendix C: Wyst Documentation Example Contracts"
 group: appendix
 appendix: "C"
 order: 27
-summary: "Documentation example categories and normative example conventions."
+summary: "Documentation example categories and required example conventions."
 ---
 
 # Appendix C: Wyst Documentation Example Contracts
@@ -11,10 +11,10 @@ summary: "Documentation example categories and normative example conventions."
 ## Example Scope
 
 This appendix defines how manual examples claim language behavior and how
-syntax sketches stay separate from normative examples.
+syntax sketches stay separate from required examples.
 
 Manual chapters may contain broad language sketches, but examples that claim
-normative behavior use explicit contract comments immediately before a plain
+required behavior use explicit contract comments immediately before a plain
 `wyst` fence. Keeping the fence info string exactly `wyst` preserves Markdown
 preview syntax highlighting in editors that do not split info-string tokens.
 
@@ -26,30 +26,23 @@ Use these contract modes:
   pass `wync check` with the documented default layout.
 - `<!-- wyst-contract: check-fail -->`: the block is a complete source file and must
   fail `wync check` with a diagnostic.
-- `<!-- wyst-contract: future -->`: the block shows future-version normative
+- `<!-- wyst-contract: future -->`: the block shows planned
   syntax that is not expected to compile yet. The feature must also have a row
   in [source-of-truth.md](source-of-truth.md).
-- `<!-- wyst-contract: sketch -->`: the block is a syntax sketch rather than a normative
+- `<!-- wyst-contract: sketch -->`: the block is a syntax sketch rather than a required
   example. A sketch may be incomplete, but every source spelling in it must be
-  part of the current selected snapshot grammar.
-- `<!-- wyst-contract: historical-v0.8 -->`: the block is a read-only archival
-  snapshot of source that used the v0.8 grammar. The harness requires at least
-  one recognized predecessor spelling and never treats the block as accepted
-  source. This mode is not a substitute for migrating a current example.
+  part of the Wyst grammar.
 
 When a language feature changes syntax, examples in the same chapter change
 with it. Plain `wyst` fences without a preceding contract comment are not
 allowed in design docs.
 
 Each design chapter that contains Wyst source fences must keep at least one
-checked contract (`fmt`, `check-pass`, or `check-fail`) for current compiler
-behavior. Use `sketch` only for fragments, pseudocode, or examples that rely
-on features outside the current checker. Sketches still use current source
-spellings. Use `future` only for syntax that is
-future-version normative in [source-of-truth.md](source-of-truth.md) and is
-expected not to compile yet. Use `historical-v0.8` only when the surrounding
-text explicitly discusses an archival v0.8 design snapshot; current guidance
-and examples are always migrated to selected snapshot.
+checked contract (`fmt`, `check-pass`, or `check-fail`) for compiler behavior.
+Use `sketch` only for fragments, pseudocode, or examples that rely on features
+outside the checker. Sketches still use accepted source spellings. Use `future`
+only for syntax marked as planned in
+[source-of-truth.md](source-of-truth.md).
 
 ## Checked Examples
 
@@ -104,19 +97,5 @@ module sketch.generics
 
 fn identity<T>(value: T) -> T {
   return value
-}
-```
-
-This read-only block records the predecessor spelling discussed by an archival
-v0.8 note; it is not accepted by the current compiler:
-
-<!-- wyst-contract: historical-v0.8 -->
-```wyst
-#module archive.boot
-
-halt :: () #noreturn {
-  loop {
-    %wfe()
-  }
 }
 ```

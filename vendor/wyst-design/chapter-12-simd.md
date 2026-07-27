@@ -22,10 +22,6 @@ through visible vector types, operations, and primitives.
 
 ---
 
-### SIMD and Vector Syntax
-
----
-
 ## 3.1 Vector Types
 
 | Wyst     | ARM64 lane view                 |

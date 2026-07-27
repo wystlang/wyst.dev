@@ -14,207 +14,7 @@ summary: "Emitted artifacts, ELF sections, symbols, relocations, deterministic o
 Object format describes emitted artifacts, not source syntax. It builds on
 modules, layout declarations, boot entry, and ABI classification.
 
-> **Source-version boundary.** Object and relocation behavior is current.
-> Predecessor address-access, categorized-conversion, and raw-descriptor
-> examples are released-v0.8 source background. Chapter 6 owns and supersedes
-> those spelling classes with address methods, named conversions, and
-> `address.slice(elements = count)`.
-
-## selected snapshot Semantic Object Units And Canonical Symbol Identities (Current)
-
-`wyst.objectInterface.v2` specifies the identity and generic-ownership contract used by the current
-final-image compiler and by every later semantic interface, relocatable object,
-archive, or linker. The current `ET_EXEC` writer does not expose public object
-output, but every build constructs this product before artifact identity and
-serializes it in the authenticated `.wyst.artifact` record set. A later object
-writer must transport the same identities; it may not reconstruct a smaller
-key from source names or ELF fields.
-
-Each semantic module has exactly one `wyst.semantic-interface.v2` variant for
-the selected language-snapshot schema and exact snapshot identity, interface
-schema, authenticated target semantic
-catalog and support manifest, Native ABI, executable-environment identity,
-layout/root ABI and admission identity, and safety/trust/proof/hardening tuple.
-The pre-safety-profile state writes
-`wyst.safety-trust-hardening.inactive.v1` into all four reserved slots. Absence
-is invalid and a consumer cannot supply a default. Execution-environment and
-provider/service records participate atomically, so an imported module cannot
-lose an `execution_suspension` provider requirement or other authenticated
-environment dependency.
-
-The module-specific `wyst.object-member-identity.v1` digest contains the
-semantic-interface identity plus the object schema, code-generation profile,
-the four safety/trust/proof/hardening slots, debug/unwind/frame policies,
-backend identity, and generated-input identity. The separate homogeneous
-`wyst.object-compatibility-key.v2` contains the language-snapshot schema and
-exact snapshot identity, interface/object schemas,
-target semantic catalog, support manifest, Native ABI, environment/provider
-tuple, profile, safety/trust/proof/hardening tuple, debug/unwind/frame policies,
-and backend identity. It deliberately excludes semantic-module, interface-
-content, and member digests. Thus unrelated modules built under one exact
-context share a compatibility key but retain distinct member identities.
-Mixing compatibility keys, or including two variants of one semantic module,
-is a hard error for one archive or final artifact.
-
-Multi-file source parts declaring the same module contribute to one semantic
-module variant. File names, discovery order, source `pub`, import aliases, and
-re-export paths are not declaration identities. A declaration identity under
-`wyst.declaration-identity.v1` is the length-delimited tuple of semantic module,
-canonical declaration name, namespace, and declaration kind. Concrete generic
-arguments do not change that declaration's home identity; their complete
-canonical tuple participates in its symbol identity.
-
-Every linkable declaration or alias has one `wyst.symbol-identity.v1` digest
-over declaration identity, namespace and kind, Native ABI version, calling
-convention (`wyst-native`, `aapcs64`, or `none` for data), complete concrete
-generic arguments, and linkage mode. The `wyst.symbol-mangling.v1` internal ELF
-spelling is the unambiguous module-qualified semantic declaration spelling plus
-the canonical `__wgN__...` suffix for a concrete generic instantiation. The
-digest, rather than the display spelling, authenticates kind, ABI, convention,
-and linkage; object consumers compare it before ELF resolution. Internal
-definitions are local/hidden. `export` adds a separate exact strong or weak
-external alias identity, and `import symbol` retains its exact foreign
-spelling. Neither `pub` nor any external alias changes the internal identity.
-Two unrelated modules therefore have distinct internal identities and
-spellings; they collide only by explicitly choosing the same external spelling,
-which the whole-program verifier rejects deterministically.
-
-A `per_cpu var` has one `per_cpu-template` declaration kind, storage-class
-identity, and canonical local template symbol. Its `st_value` remains the
-template-relative offset described below. Runtime core instances are derived
-storage selected through the target execution environment. They have no linker
-symbol, export alias, or independent semantic declaration identity.
-
-## selected snapshot Generic Instantiation Ownership And Transport (Current Contract)
-
-`wyst.generic-ownership.v1` specifies generic ownership for the current semantic
-interfaces, relocatable objects, and archives are implemented. It consumes
-`wyst.genericInstantiationKey.v0.9` from Chapter 6 unchanged. The key is the
-canonical semantic declaration identity plus the complete ordered concrete
-type-argument list and complete ordered value-argument list; the latter is
-empty in selected snapshot. No interface, object writer, archive index, linker, cache, or
-backend may select a generic from source spelling, parse `__wg` mangling back
-into semantics, omit an argument, or define a second key. A function-pointer
-type argument includes its calling convention, parameter/result contract, and
-canonical fixed effect upper bound. Thus omitted and explicit
-`effects(all)` share one type identity, reordered equivalent named bounds
-canonicalize together, and genuinely different fixed bounds remain different
-instantiation identities through inference, transport, emission, and
-deduplication.
-
-Every generic declaration has one **semantic home**: the module owning its
-canonical declaration identity. A demanded concrete identity may be physically
-emitted by the home or by any consumer that possesses the exact authenticated
-`wyst.generic-transport.v1` payload and shares the object's complete
-compatibility key. Such definitions use canonical hidden link-once linkage;
-source `pub`, an import alias, archive position, and demand origin do not alter
-the identity or grant external visibility. An explicit external alias, where a
-later artifact surface permits one for a concrete instantiation, remains the
-separate explicit-alias ABI/linkage identity and does not replace this hidden
-definition.
-
-The deterministic survivor is the lexicographically lowest object-member
-identity among definitions whose complete definition contracts are identical.
-The complete comparison includes instantiation and semantic-home identities,
-object compatibility, body and dependency-closure digests, role and
-effect/authority identities, ABI/calling convention, generated-definition
-digest, and placement/root policy. Provenance from every identical copy and
-every demand is unioned in canonical order onto that one survivor. A duplicate
-from the same member, or any mismatch in that tuple, is a hard diagnostic;
-archive order, command-line order, and first-wins behavior cannot select around
-it. Machine-code identity alone is insufficient.
-
-### Semantic body and private dependency closure
-
-A source-public or otherwise interface-visible generic carries a canonical
-type-checked body under `wyst.generic-body.v1` and its complete authenticated
-`wyst.generic-dependency-closure.v1`. Their atomic envelope is
-`wyst.generic-transport.v1`. This is a semantic representation, not raw source
-text, a backend IR dump, or machine code. The envelope binds the declaration
-identity and semantic home, source/interface-private visibility, body digest,
-ordered dependency-closure digest, `wyst.generic-placement.v1` policy, and the versioned
-declaration-role and effect/authority-summary slots. `wyst.semantic-interface.v2`
-reserves all three slots now:
-
-- generic body/dependency slot: `wyst.generic-transport.v1`;
-- declaration-role slot: `wyst.declaration-role-claim.v1`, authenticated against
-  `wyst.declaration-role-registry.v1` and its content digest without changing
-  generic identity;
-- effect/authority-summary slot:
-  `wyst.effect-authority-summary-slot.reserved.v1`, activated by the versioned
-  effect/authority contract without weakening a callable type argument's fixed bound.
-
-Private generic declarations needed transitively travel as
-`interface-private-dependency` bodies and acquire canonical hidden link-once
-identities when concretely demanded. Presence in the closure never makes their
-source spelling importable. A referenced private nongeneric function or storage
-declaration instead carries only its canonical hidden home symbol and home
-member identities. Its definition remains home-owned: an importing consumer
-must link the exact home and may not clone the function, storage, initializer,
-address identity, or provenance. Missing home code or storage is a hard
-unavailable-definition error, not authorization to synthesize a replacement.
-
-Authentication covers the entire envelope. Missing bodies, unknown schema
-versions, noncanonical dependency order, duplicate dependency identities,
-digest corruption, cache records built from another body/closure/policy, or a
-consumer requiring another transport identity are unavailable, stale, or
-incompatible-body diagnostics. Consumers fail before code generation. A cache
-key contains the canonical instantiation identity, transport/body/closure,
-role/effect identities, placement policy, compatibility key, backend and
-generated inputs; changing any component invalidates the entry rather than
-relabeling it.
-
-### Demand worklist, archives, and linker role
-
-Only ordinary typed reachability, a transitive request in an authenticated
-body/closure, or an explicit `artifact_verify` root creates a concrete demand.
-The `wyst.generic-demand-worklist.v1` map is keyed and popped by the
-`wyst.genericInstantiationKey.v0.9` identity digest. Repeated exact demands
-merge their canonical provenance; the canonical-instantiation exact-cycle and
-strictly-growing-chain rules from Chapter 6 continue to govern expansion. A
-different transport/cache tuple for the same key is a stale/incompatible
-diagnostic, never a competing worklist entry.
-
-`wyst.generic-archive-index.v1` maps a
-`wyst.genericInstantiationKey.v0.9` identity to canonically sorted member and
-transport identities. Merely containing or indexing a generic body,
-definition, custom section, or semantic root never creates a demand. A real
-demand may extract the indexed interface/home member and any already-emitted
-definition candidates in canonical member order. Newly authenticated body
-dependencies return to the compiler worklist. The final linker only checks
-identities and identical-definition contracts, merges provenance, selects the
-survivor, resolves relocations, and deduplicates. It performs no name
-resolution, type checking, generic substitution, monomorphization, lowering,
-or other semantic code generation.
-
-### Placement and semantic roots
-
-`#[align]`, `#[section]`, and the out-of-line consequence of
-`#[inline, section(...)]` are part of the authenticated generic transport under
-`wyst.generic-placement.v1`. `section` is passive and never creates a demand.
-Once a code identity is demanded, every permitted emitter must produce the
-same section contribution with the declared or natural alignment and one
-`wyst.generic-semantic-root.v1` record. A custom section name remains exact. A
-sectioned inline declaration retains one out-of-line copy even when all direct
-calls expand. Final selection keeps exactly one contribution and one root while
-preserving their placement digest and merged provenance. It may not move the
-copy to `.text`, retain multiple roots, or repair a body/policy/layout mismatch
-by preferring another emitter. Type-only struct and enum instantiations carry
-no code contribution or semantic root.
-
-The current whole-program compiler transports the
-`wyst.genericInstantiationKey.v0.9` identity from
-monomorphization through typed IR and records each concrete identity, semantic
-home, physical member, hidden-link-once mode, complete argument lists, and
-placement policy in the authenticated final artifact. The executable model in
-`wync/src/generic_ownership.rs` fixes body authentication, closure visibility,
-demand order, archive lookup, duplicate validation, provenance merge, and
-survivor selection. The separate interface, object, archive, and link
-milestones serialize and execute this already-versioned contract; they may not
-invent a body format field, placeholder body semantics, fallback key,
-archive-order rule, or linker-side instantiator.
-
-## selected snapshot `per_cpu` Object Contract (Current)
+## `per_cpu` Object Contract
 
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 In the current whole-program `ET_EXEC` mode, every accepted `per_cpu var`
@@ -243,12 +43,11 @@ The `.percpu` bytes are an immutable initialization template even when the
 current static-image transport marks the containing load segment writable for
 a later runtime copier. The template is never the live current-core instance.
 The compiler emits no copied instances, allocation metadata, base setup,
-startup copy, or ordinary-global alias. A selected snapshot source contributes no TLS
-payload, symbol, relocation, or size export. A selected snapshot named layout emits
-no `.tls` section or `PT_TLS`; a selected released-v0.8 layout may retain its
-historical empty `.tls` compatibility row without admitting selected snapshot TLS storage.
+startup copy, or ordinary-global alias. A Wyst source contributes no TLS
+payload, symbol, relocation, or size export. A Wyst named layout emits no
+`.tls` section or `PT_TLS`.
 
-## selected snapshot Placement and Initialization Attributes (Current)
+## Placement and Initialization Attributes
 
 The active placement surface is `#[align(N)]`, `#[section("NAME")]`,
 `#[init(order = N)]`, and `#[cache_isolated]`. These are hard compiler
@@ -297,7 +96,7 @@ shares no cache line with another live object. Padding is not part of the
 source type or symbol size, creates no retention root, and implies no atomicity,
 ordering, volatility, synchronization, or visibility semantics.
 
-## selected snapshot Named Layout Object Contract (Current)
+## Named Layout Object Contract
 
 An artifact-owned manifest layout clause selects exactly one named `layout`
 block from its layout file. Its `entry` member resolves one exact
@@ -307,15 +106,14 @@ name, and changes no binding. The optional `at` clause pins the resolved
 declaration's first byte; without it, ordinary section constraints determine
 the address. The QEMU EL1 and Raspberry Pi profiles require a zero-parameter,
 unpinned Wyst Native function returning `never`, or the equivalent body-bearing
-terminal label. The two QEMU EL2 profiles instead require the complete
-`wyst.target-entry-schema.v1` root: `pub naked`, Wyst Native, exactly
-`dtb: @u8 in x0`, `-> never`, authenticated EL2, and exactly one cataloged
+terminal label. The two QEMU EL2 profiles instead require `pub naked`, Wyst
+Native, exactly `dtb: @u8 in x0`, `-> never`, initial EL2, and exactly one cataloged
 checked stack transition from a `u64` value in `x1`. These ABI, register,
 execution-level, stack-transition, and terminal checks complete before the
 writer consumes the selection.
 
-Typed IR is the semantic authority passed to the writer. It retains the typed
-target-entry schema and digest when present, as well as the layout
+Typed IR is the semantic authority passed to the writer. It retains the current
+target entry when present, as well as the layout
 block identity and dialect, declaration-ordered region access contracts,
 declaration-ordered section kinds and normalized constraints with operand
 provenance, the entry claim, and every typed layout-symbol expression. A
@@ -365,100 +163,15 @@ resolved exactly or diagnosed. Thus an out-of-range checked `bl`/`CALL26`
 produces a hard diagnostic that retains the source instruction; it never uses
 the ordinary direct-call veneer policy.
 
-The released-v0.8 layout-directive rows in the hash-removal audit name ordinary
-invalid source. Those forms survive only in the historical grammar snapshot
-and removal audit; they never enter the parser, placement/object machinery, or
-editor vocabulary.
-
 Wyst's integrated compiler reads a set of source modules and emits a single
 binary image in the current implemented artifact mode. There is no separate
 assembler, no separate linker, and no intermediate object files written to disk
 for the implemented `ET_EXEC` mode. Relocatable object files are a
-future-version normative R8 surface (planned target 32) and do not
+planned surface and do not
 override the current single-image rules until Chapter 16 is updated for that
 artifact mode.
 
-## selected snapshot Suspension And Context Summary Closure (Current)
-
-Before any body-independent callable fact is admitted, one authenticated
-sidecar atomically retains its exact or conservative effect bound, the bound's
-exact authority, and the closed `context_stability` provenance of every
-parameter, result, reachable aggregate field, and possible enum payload.
-`effects(all)` uses bound tag 0 (`None`, conservative top) and therefore
-includes `execution_suspension`; its distinct authority tag preserves whether
-that top was declared, asserted, or conservatively supplied. Tag 1 carries a
-32-bit count followed by exact effect-name strings in closed catalog order;
-tag 1 with count zero is `effects(none)`. Top is therefore never confused with
-an absent sidecar or an empty exact list. Unknown context provenance is
-explicit and cannot cross a strand boundary.
-
-Current source function syntax cannot author a context classification, and the
-execution-strand contract does not activate portable provider accessors. The
-compiler therefore emits ordinary parameter and result facts for current
-ordinary Wyst and foreign declarations. Classified facts are accepted only when
-their owner is a compiler-owned operation or an authenticated provider producer;
-the consumer rejects a hand-edited or otherwise unsourced classified override as
-incompatible transport. This admission rule is separate from the wire format:
-the same codec preserves classified facts exactly once such a producer exists.
-
-The canonical transport is `wyst.callable-context-summary.v2`; v1 is unsupported rather than aliased.
-Its body order is exactly: the eight bytes
-`WYSTCTX\0`; little-endian 16-bit version 2; a length-prefixed canonical
-callable identity; the effect-bound tag and optional counted canonical effect
-names; one `SuspensionEffectAuthority` byte; a 32-bit parameter count and
-ordered provenance entries; and one result provenance entry. Exactly 71 ASCII
-bytes spelling lowercase `sha256:` plus 64 hexadecimal digits follow the body
-and authenticate every preceding byte. All multibyte integers are
-little-endian and counts are 32-bit. A summary is at most 1,048,576 bytes; each
-parameter, effect, path, or alternative count is at most 4,096 and each encoded
-string is at most 16,384 bytes.
-
-The exact effect/authority tags are:
-
-| Byte field | Tag | Meaning |
-| ---------- | --- | ------- |
-| effect bound | 0 | conservative top (`None`) |
-| effect bound | 1 | exact counted catalog-ordered effect list |
-| suspension authority | 0 | `InternalProved` |
-| suspension authority | 1 | `InternalDeclared` |
-| suspension authority | 2 | `ExternalConservative` |
-| suspension authority | 3 | `ExternalAsserted` |
-| suspension authority | 4 | `IndirectKnownTargetsProved` |
-| suspension authority | 5 | `IndirectKnownTargetsDeclared` |
-| suspension authority | 6 | `IndirectConservative` |
-
-`semantic-db.json` pins those tags and every one-byte provenance, stability,
-origin, provider-authority, detach, escape, lifetime, path-segment, and Boolean
-tag; unknown tags are never version-tolerated. Each provenance leaf retains
-stability, origin, authority kind and digest, target/provider/accessor,
-instance and generation identities, detach/escape/lifetime contracts, and
-core/address-derived bits. Decoding against an authenticated interface
-requires exact equality with the canonical callable signature and authority
-map. Missing or extra summaries, corruption, truncation, a bound or authority
-mismatch, unknown tags, duplicate facts, noncanonical effect/path/alternative
-order, erasure, upgrade, or incompatible transport fails before any call is
-admitted.
-
-The current in-memory semantic-interface consumer, and every future public
-object or archive consumer, derives one `strand_suspension_boundary` from each
-imported call whose decoded bound contains `execution_suspension`, at the same
-post-argument/pre-transfer position as a source-visible call. The summary does
-not serialize a backend instruction, runtime hook, or optional optimization
-hint. Inlining, devirtualization, tail-call formation, and any future archive
-extraction or final linking preserve the boundary and its target/provider
-provenance. The final marker itself contributes no symbol, relocation, code
-byte, stack map, or metadata-driven runtime dependency.
-
-Known-target indirect calls join decoded target bounds in closed catalog order
-and require that result to equal the typed call-site bound before consuming it.
-These sidecar and verifier rules are active compiler compatibility rules in the
-current in-memory semantic interface. The reserved `static_library`
-archive/companion remains feature-unavailable while portable provider accessors
-are unavailable, so no current public object or archive emitter is claimed.
-That future producer and every consumer must use the exact v2 contract rather
-than inventing a bodyless-call exception or silently accepting v1.
-
-## selected snapshot Reserved Static-Library Contract
+## Reserved Static-Library Contract
 
 The project-manifest grammar accepts `static_library` with one source-module
 root closure, primary archive path, companion semantic-interface path, target,
@@ -486,8 +199,8 @@ For the implemented `ET_EXEC` artifact mode, the Wyst compiler is
 - All cross-module symbol resolution, layout, relocation, and image
   construction happen inside that one invocation.
 - No per-module relocatable `.o` files are written to disk in the current
-  implemented mode. `wync -c` / `--emit-object` is reserved for the R8
-  relocatable-object milestone.
+  implemented mode. `wync -c` / `--emit-object` is reserved for relocatable
+  object output.
 - No external `ld` is invoked.
 - No active `ar` archive or static-library companion format is defined.
 
@@ -593,8 +306,7 @@ weaken it.
 
 `.percpu` is placed once in the image. A later runtime may copy its immutable template bytes
 to live instances, but the compiler performs no replication and the template
-is not itself live storage. `.tls` is not a selected snapshot section; any occurrence in a
-released v0.8 artifact is historical compatibility material. See §7.
+is not itself live storage. `.tls` is not a Wyst section.
 
 ---
 
@@ -605,7 +317,7 @@ The `.symtab` includes one entry per:
 - emitted address-bearing top-level declaration (function, label, constant,
   or ordinary mutable global) as a local semantic/debug identity, independently
   of source `pub`. `per_cpu` entries are the local offset symbols defined by the
-  current selected snapshot contract above.
+  Wyst contract above.
 - each explicit `export` mapping as a distinct external alias of its local
   target, with the requested strong or weak binding.
 - Explicit typed layout symbol (`start`, `end`, `size`, or a typed numeric
@@ -644,7 +356,7 @@ prologue, epilogue, or return semantics from a label symbol; source-level
 `STT_TLS` is **not** used. A `per_cpu` entry is a local `STT_OBJECT` whose
 value is its byte offset within `.percpu`; it is an offset identity rather than
 a process address. The selected target access sequence consumes that offset.
-The selected snapshot emits no TLS symbol.
+Wyst emits no TLS symbol.
 
 ### 4.3 Internal And External Names
 
@@ -655,15 +367,13 @@ choice. Distinct explicit exports of one declaration produce distinct symbol
 table entries with the same value and independently selected `STB_GLOBAL` or
 `STB_WEAK` binding.
 
-The current whole-program emitter gives every internal declaration a stable
+The whole-program emitter gives every internal declaration a stable
 module-qualified semantic identity for debugging and relocation resolution,
 independent of `pub`, source imports, and export aliases. A separate
 source-facing lookup/display spelling may remain local inside the compiler; it
-is never an external claim and cannot replace the semantic identity in ELF.
-The semantic-object-unit contract specifies the canonical encoding for these
-identities in the current snapshot. A deliberate redesign may replace it, but
-all producers and consumers selected for one build must use the same contract;
-the internal encoding does not change the external spelling selected here.
+does not replace the semantic identity in ELF. The compiler uses one canonical
+internal encoding for these identities; it does not change the external
+spelling selected here.
 
 Compiler-created initcall metadata symbols are an explicit exception. Every
 `#[init(order = N)]` function emits one 16-byte `.initcalls` entry and one
@@ -783,12 +493,11 @@ enumerated here so that:
 
 - `R_AARCH64_GOT_*` family — no GOT in static linking.
 - `R_AARCH64_TLSGD_*`, `R_AARCH64_TLSDESC_*` — no dynamic TLS.
-- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in selected snapshot.
+- `R_AARCH64_TLSLE_*` — no TLS storage class or TLS lowering exists in Wyst.
 - `R_AARCH64_TLSIE_*` — initial-exec model not used.
 - `R_AARCH64_COPY`, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT` — dynamic linker only.
 
-If future Wyst versions add dynamic linking, the GOT family slots in here
-without breaking the static-only contract.
+Wyst has no dynamic linking, so the GOT relocation family is unused.
 
 ### 5.1 Page-Pair Discipline
 
@@ -939,12 +648,6 @@ access is legal only with
 fails. Declarations and offset constants alone do not select or imply that
 realization.
 
-The released-v0.8 TLS offset-query row, `.tls` template, `__tls_size`,
-TPIDR_EL0, and associated address-materialization rules are historical and
-produce no selected snapshot artifact.
-
----
-
 ## 8. Sections from User Declarations
 
 User code places a declaration in a custom section with the
@@ -970,7 +673,7 @@ const MODINFO: u64 = 0x77697374
 fn bring_up_uart() { ... }
 
 #[section(".modinfo")]
-const UART_MODINFO: [16]u8 = "uart_pl011_v1"
+const UART_MODINFO: [16]u8 = "uart_pl011"
 ```
 
 The full semantics — legal placements, section-name constraints,
@@ -982,9 +685,8 @@ Declarations". The rules relevant to the object format are:
   `.rodata`, `.data`, `.bss`, `.initcalls`, `.percpu`, `.tls`, the `.debug_*` family,
   `.symtab`, `.strtab`, `.shstrtab`) and any name starting with `.wyst.`
   are reserved. User code cannot target them with `#[section(...)]`;
-  canonical sections are written by omitting the attribute. `.tls` remains
-  reserved so removed v0.8 TLS syntax cannot be recreated as a misleading
-  custom section, and it is not emitted by selected snapshot.
+  canonical sections are written by omitting the attribute. `.tls` is reserved
+  and is not emitted by Wyst.
 - **Flags are derived** from the declaration kind (function → `ALLOC |
   EXECINSTR`; constant → `ALLOC`; mutable initialized → `ALLOC | WRITE`;
   zero-filled mutable storage → `ALLOC | WRITE` with `SHT_NOBITS`). The ELF
@@ -1008,12 +710,11 @@ documented path if needed.
 
 | Feature                                         | Boundary                 | Future path                                                                                            |
 | ----------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Per-module `.o` relocatable output              | Outside implemented base image model | Future-version normative for R8 target 32 as `wync -c` / `--emit-object`; would serialize the §5 relocation vocabulary into `.rela.*` sections |
+| Per-module `.o` relocatable output              | Outside implemented base image model | `wync -c` / `--emit-object` would serialize the §5 relocation vocabulary into `.rela.*` sections |
 | Dynamic linking (`ld.so`, `PT_INTERP`)          | Outside base image model | Requires GOT/PLT relocations, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT`, dynamic symbol table        |
 | Position-independent executables (`ET_DYN`)     | Outside base image model | Base output lowers against absolute addresses                                                          |
 | Shared objects (`.so`)                          | Outside base image model | Same dependency on dynamic linking                                                                     |
 | COMDAT / section groups                         | Outside base image model | `#[inline]` is the only deduplication mechanism; multiply-defined exports are a hard error             |
-| Predecessor weak and hidden-visibility directives | Outside symbol model   | Use `export weak` for weak external definitions; hidden shared-object visibility remains undefined     |
 | `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the selected layout's semantic `entry` is the only entry point |
 | Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `vector_table` models hardware exception entry only      |
 | ar archives, static-library companions          | Reserved grammar; outside implemented base image model | `static_library` selection fails before output; a future producer must emit the archive and authenticated companion atomically |
@@ -1025,9 +726,8 @@ documented path if needed.
 
 Object format output is **bit-for-bit reproducible** under the
 reproducibility contract (`chapter-01-language-design.md`, Reproducibility Model):
-same compiler build identity, same build optimization mode, same target, the same
-selected scheduling policies, and the same source input manifest produce byte-identical
-ELF output.
+the same checked-out compiler source, target, selected scheduling policies, and
+source input manifest produce byte-identical ELF output.
 
 Specific determinism requirements:
 
@@ -1098,13 +798,3 @@ that would prevent a future port.
 | Reproducibility contract                          | `chapter-01-language-design.md`, "Reproducibility Model"                 |
 | IR ↔ object-format interaction                    | `appendix-a-ir.md` (Phase 5.2)                                           |
 | DWARF emission (dialect, DIE set, determinism)    | [chapter-23-debug-info.md](chapter-23-debug-info.md)                     |
-
-## Outcome semantic payload transport
-
-Chapter 26 owns `wyst.materializedSum.v1` and `wyst.operationProtocol.v1`.
-Current in-memory and final-image consumers retain their nominal identities,
-transitions, effects, concrete layouts, ownership, ABI, C-adapter obligations,
-and provenance. Future public interface, relocatable-object, archive, and
-linker containers must authenticate and transport these records exactly;
-their wire emission and standalone consumption remain owned by the dedicated
-artifact work and are not claimed by the current compiler.

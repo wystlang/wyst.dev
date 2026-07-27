@@ -3,15 +3,14 @@ title: "Chapter 19: Diagnostic Explanations And Source Insights"
 group: chapter
 chapter: 19
 order: 19
-summary: "Canonical diagnostic kinds, explanation parity, suggestions, checked code actions, and evidence-labeled source insights."
+summary: "Canonical diagnostic kinds, explanation parity, suggestions, checked code actions, and typed source insights."
 ---
 
 # Chapter 19: Diagnostic Explanations And Source Insights
 
 Diagnostic explanations and source insights extend the core diagnostic value.
 They do not create a second diagnostic model for CLI, JSON, LSP, editors, or
-documentation, and they are not marketed as teaching diagnostics until their
-semantic-parity gate is complete.
+documentation; every surface consumes the current compiler model directly.
 
 ## Canonical Diagnostic-Kind Registry
 
@@ -64,8 +63,7 @@ their own registered kinds.
 `wync explain E####` and `wync explain W####` print the active registry entry
 without requiring a failing source file. Unknown and reserved codes fail with a
 normal diagnostic so scripts can distinguish them from live explanation
-coverage. In particular, reserved `E1001` is registry inventory, not a live
-standalone explanation.
+coverage.
 
 The text form is compact:
 
@@ -96,7 +94,7 @@ example, recommended manual change, or prose choice is never called a `fix` or
 - bound to an exact source document and byte/UTF-16 range;
 - backed by the semantic fact that makes the replacement valid;
 - supplied with an exact replacement string;
-- checked for applicability against the current source version; and
+- checked for applicability against the current source text; and
 - rejected when the source, range, identity, or expected text has changed.
 
 LSP `textDocument/codeAction` transports these checked edits. An editor adapter
@@ -104,9 +102,9 @@ must not convert a suggestion into an edit by parsing prose.
 
 ## Structured Diagnostic Data
 
-Text, `wync.diagnostics.v1`, `wync.diagnostics.lsp.v1`, LSP publish
-diagnostics, editor hovers, generated documentation, and `wync explain` consume
-the same diagnostic-kind entry. Material fields have parity across surfaces.
+Text, JSON, LSP-compatible JSON, LSP publish diagnostics, editor hovers,
+generated documentation, and `wync explain` consume the same diagnostic-kind
+entry. Material fields have parity across surfaces.
 
 Occurrence data may add:
 
@@ -114,7 +112,7 @@ Occurrence data may add:
 - `help`: a concise next step;
 - `suggestions`: generic prose choices from the registry or emitter;
 - `codeActions`: checked range/replacement/applicability edits; and
-- `sourceInsights`: evidence-labeled non-edit observations.
+- `sourceInsights`: typed non-edit observations.
 
 Absent optional fields are omitted. LSP-compatible diagnostics expose the same
 fields under `Diagnostic.data`; the standard `message` may include concise
@@ -127,20 +125,20 @@ use the same registry and parity rules.
 
 ## Source Insights
 
-A source insight must state what kind of fact it is and which authoritative
-product supports it. It cannot imply a performance outcome without an actual
-operation, selected lowering difference, and appropriate evidence.
+A source insight states its kind and the current compiler observation. It does
+not carry confidence or provenance bookkeeping. It cannot imply a performance
+outcome without an actual operation and selected lowering difference.
 
 When a selected target lacks `lse`, the generic observation is a
 `target-capability` insight: the selected target does not provide that feature.
 It becomes a performance or lowering insight only when it identifies an
 affected source operation and the actual selected alternative lowering. It
 must not claim a speedup, latency, throughput, or cache effect without modeled
-or measured evidence carrying the Chapter 21 epistemic metadata.
+or measured evidence and explicit limits.
 
-## Conformance
+## Regression Coverage
 
-Conformance validates:
+Tests validate:
 
 - every live error and warning in both registry-to-emitter directions;
 - subject-negative vocabulary, so an explanation does not mention an unrelated

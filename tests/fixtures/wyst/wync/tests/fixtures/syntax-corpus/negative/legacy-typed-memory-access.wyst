@@ -1,5 +1,0 @@
-module legacy_typed_memory
-
-fn bad(address: @u32) -> u32 {
-    return u32@[address]
-}

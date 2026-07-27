@@ -168,8 +168,7 @@ These are the non-obvious DWARF mappings — anywhere DWARF gives a choice
 of attribute, Wyst picks one and uses only that form.
 
 **Bitstruct fields.** Members of a `bitstruct Name: Backing` are emitted with
-`DW_AT_data_bit_offset` + `DW_AT_bit_size` (DWARF 5 form). The deprecated
-`DW_AT_bit_offset` is not used. The containing DIE is a
+`DW_AT_data_bit_offset` + `DW_AT_bit_size`. The containing DIE is a
 `DW_TAG_structure_type` whose `DW_AT_byte_size` is the backing
 `size_of(Backing)`. The member's type is its declared carrier type.
 
@@ -310,14 +309,10 @@ Determinism rules:
 - **`.debug_aranges`:** range tuples in compilation-unit order, matching
   the order CUs appear in `.debug_info`.
 
-The same source input manifest, compiler build identity, build optimization mode,
-target, and selected scheduling policies produce byte-identical debug sections.
-The compile-unit `DW_AT_producer` value names `wync`, the release status,
-nullable proposed language/compiler versions when this is a nominated
-candidate, and the exact `wyst.language-snapshot.v1` and
-`wync.compiler-build.v1` identities. It never substitutes the Cargo package
-version for compiler identity or claims that an ordinary development build is
-a release.
+The same source input manifest, checked-out compiler source, target, and
+selected scheduling policies produce byte-identical debug sections. The
+compile-unit `DW_AT_producer` value is exactly `wync`; it carries no version,
+content identity, package identity, or publication metadata.
 
 ---
 

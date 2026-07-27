@@ -44,14 +44,10 @@ const vocabularyCatalogs = [
 const designCatalogs = [
 	...vocabularyCatalogs,
 	"c-operation-adapter-catalog.tsv",
-	"declaration-roles.tsv",
 ];
-const designAuthorities = ["language-snapshot-inputs-v1.txt"];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
-	":(top,literal)design/semantic-db.json",
 	...designCatalogs.map((file) => `:(top,literal)design/${file}`),
-	...designAuthorities.map((file) => `:(top,literal)design/${file}`),
 	":(top,literal)wync/Cargo.lock",
 	":(top,literal)wync/Cargo.toml",
 	":(top,glob)wync/core/**/*.wyst",
@@ -76,7 +72,6 @@ async function isFile(file) {
 async function isWystRoot(dir) {
 	return (
 		(await isFile(path.join(dir, "design", "README.md"))) &&
-		(await isFile(path.join(dir, "design", "semantic-db.json"))) &&
 		(await isFile(path.join(dir, "wync", "Cargo.toml")))
 	);
 }
@@ -131,18 +126,14 @@ const designFileNames = (await readdir(path.join(wystRoot, "design"), {
 		(entry) =>
 			entry.isFile() &&
 			(entry.name.endsWith(".md") ||
-				entry.name === "semantic-db.json" ||
-				designCatalogs.includes(entry.name) ||
-				designAuthorities.includes(entry.name)),
+				designCatalogs.includes(entry.name)),
 	)
 	.map((entry) => entry.name)
 	.sort();
 
 for (const requiredDesignFile of [
 	"README.md",
-	"semantic-db.json",
 	...designCatalogs,
-	...designAuthorities,
 ]) {
 	if (!designFileNames.includes(requiredDesignFile)) {
 		throw new Error(`Missing Wyst design input: design/${requiredDesignFile}`);

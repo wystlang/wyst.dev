@@ -1,4 +1,0 @@
-module syntax.removed_export
-
-#export entry
-fn entry() {}

@@ -91,6 +91,7 @@ function sidebar(navModel, currentUrl) {
 	const groups = [
 		["Topics", navModel.filter((d) => d.group === "chapter")],
 		["Appendices", navModel.filter((d) => d.group === "appendix")],
+		["Manuals", navModel.filter((d) => d.group === "manual")],
 	];
 	const sections = groups
 		.filter(([, items]) => items.length)
@@ -203,6 +204,7 @@ export function docIndexPage({
 			: "";
 	const chapters = navModel.filter((d) => d.group === "chapter");
 	const appendices = navModel.filter((d) => d.group === "appendix");
+	const manuals = navModel.filter((d) => d.group === "manual");
 	const body = `		<main id="main" class="doc-index">
 			<div class="wrap">
 				<header class="doc-index-head">
@@ -211,6 +213,7 @@ export function docIndexPage({
 				</header>
 				${group("Topics", chapters)}
 				${group("Appendices", appendices)}
+				${group("Manuals", manuals)}
 			</div>
 		</main>`;
 	return shell({ title, description, canonical, bodyClass: "docs", body });

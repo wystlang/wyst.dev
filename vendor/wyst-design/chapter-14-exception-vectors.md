@@ -8,7 +8,7 @@ summary: "Alignment, target-defined vector tables, and target-checked trap-frame
 
 # Chapter 14: Wyst Alignment and Exception Vectors
 
-This chapter specifies the selected snapshot alignment contract and the target-defined
+This chapter specifies Wyst alignment contract and the target-defined
 `vector_table` and `trap_frame` declarations. A target profile, rather than
 source annotations, owns the architectural section, alignment, slot or field
 shape, state transitions, and legal execution levels of these declarations.
@@ -108,7 +108,7 @@ vector_table el1_vectors: aarch64.el1 {
 The current selectors are exactly `aarch64.el1`, `aarch64.el2`, and
 `aarch64.el3`. The selected target must authenticate the selector and admit
 its architecture, AArch64 execution state, and exception level. A selector is
-part of source and build identity; it is not inferred from the declaration
+part of source semantics; it is not inferred from the declaration
 name or from the label targets.
 
 The current AArch64 target profile owns these facts:
@@ -203,13 +203,11 @@ budget:
 | Exactly `0x80` bytes | Emit the body unchanged. |
 | More than `0x80` bytes | Reject the declaration with the overflowing slot name, body size, and budget. |
 
-Padding carries compiler-generated catalog provenance for the authenticated
-`nop` identity. Its target-owned section and exact byte range, together with
-the retained table profile and generated slot map, identify the table and
-canonical slot without decoding the instruction bytes. The compiler cannot
-use zero fill, an unauthenticated word, or a different instruction merely
-because it has no intended source effect. Each supplied instruction and
-terminal edge retains its ordinary source and catalog provenance as well.
+Padding is encoded as the current catalog's authenticated `nop` word. The
+compiler cannot use zero fill, an unauthenticated word, or a different
+instruction merely because it has no intended source effect. Reports and
+disassembly classify the final bytes against the current catalog when needed;
+the executable carries no per-instruction catalog history.
 
 The emitted table is valid only if all 16 slots end at their target-owned
 offsets and the final extent is exactly `0x800` bytes. Fixed slot size is an
@@ -377,17 +375,5 @@ Any future nested-interrupt profile must allocate a distinct frame per nesting
 level, define ownership of the interrupted stack, and state the exact DAIF
 transition and barrier sequence before unmasking. The base `aarch64` profile
 cannot be weakened locally to opt into nesting.
-
----
-
-## 10.4 Historical v0.8 Removal Boundary
-
-The released-v0.8 vector, vector-entry, and trap-frame directive spellings are
-historical syntax only. Appendix B preserves them solely inside its explicitly
-versioned v0.8 grammar snapshot, and the corresponding rows in
-[`legacy-hash-removal-audit.tsv`](legacy-hash-removal-audit.tsv) record their
-selected snapshot disposition. They are not aliases, migration forms, contextual tokens, or
-inputs to current parser, formatter, diagnostic, editor, or code-generation
-tables.
 
 ---

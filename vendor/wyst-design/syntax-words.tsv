@@ -1,4 +1,3 @@
-// wyst.syntaxWords.v0.9
 // spelling	classification	owner	legal_positions	state
 as	reserved	core.imports|core.linkage-boundaries	import-alias|linkage-alias	implemented
 bitstruct	reserved	core.bitstruct|core.generic-bounds	declaration|generic-bound	implemented
