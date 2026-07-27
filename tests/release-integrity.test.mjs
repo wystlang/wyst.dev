@@ -7,7 +7,17 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { newestSuccessfulProductionDeployment } from "../.github/scripts/production-deployment.mjs";
+import {
+	assertWorkerSubdomainsDisabled,
+	candidateVersionAuditEnvironment,
+	currentProductionVersionFrom,
+	isWorkerNotFoundOutput,
+	ordinaryOriginContentAuditEnvironment,
+} from "../.github/scripts/release-state.mjs";
+import {
+	assertProductionMatchesMain,
+	newestSuccessfulProductionDeployment,
+} from "../.github/scripts/production-deployment.mjs";
 import { verifyBuildIdentity } from "../tools/verify-build.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,6 +71,86 @@ globalThis.fetch = async (input) => {
 function differentHex(value) {
 	return `${value.startsWith("0") ? "1" : "0"}${value.slice(1)}`;
 }
+
+function deployment(id, createdOn, versionId, percentage = 100) {
+	return {
+		id,
+		created_on: createdOn,
+		versions: [{ percentage, version_id: versionId }],
+	};
+}
+
+test("release selects the newest deployment by created_on, not API order", () => {
+	const deployments = [
+		deployment("new", "2026-07-13T12:00:00Z", "version-new"),
+		deployment("old", "2026-07-11T12:00:00Z", "version-old"),
+		deployment("middle", "2026-07-12T12:00:00Z", "version-middle"),
+	];
+	assert.equal(currentProductionVersionFrom(deployments), "version-new");
+});
+
+test("release exposes an explicit first-deployment state", () => {
+	assert.equal(currentProductionVersionFrom([]), null);
+	assert.equal(
+		isWorkerNotFoundOutput("This Worker does not exist. [code: 10007]"),
+		true,
+	);
+	assert.equal(isWorkerNotFoundOutput("authentication failed"), false);
+});
+
+test("release requires both workers.dev and version previews to be disabled", () => {
+	assert.doesNotThrow(() =>
+		assertWorkerSubdomainsDisabled({ enabled: false, previews_enabled: false }),
+	);
+	assert.throws(
+		() =>
+			assertWorkerSubdomainsDisabled({ enabled: true, previews_enabled: false }),
+		/workers\.dev and version preview URLs must both be disabled/,
+	);
+	assert.throws(
+		() =>
+			assertWorkerSubdomainsDisabled({ enabled: false, previews_enabled: true }),
+		/workers\.dev and version preview URLs must both be disabled/,
+	);
+	assert.throws(
+		() => assertWorkerSubdomainsDisabled(null),
+		/settings are malformed/,
+	);
+});
+
+test("release audits allow bounded deployment convergence", () => {
+	const identity = {
+		WYST_EXPECTED_COMMIT: "a".repeat(40),
+		WYST_EXPECTED_MANIFEST_SHA256: "b".repeat(64),
+		WYST_EXPECTED_RELEASE_SHA256: "c".repeat(64),
+		WYST_EXPECTED_TREE_SHA256: "d".repeat(64),
+	};
+	const environment = ordinaryOriginContentAuditEnvironment(identity);
+	assert.deepEqual(environment, {
+		...identity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "2000",
+		WYST_CONTENT_ONLY: "1",
+	});
+	assert.deepEqual(candidateVersionAuditEnvironment(identity, "candidate.123"), {
+		...identity,
+		WYST_AUDIT_ATTEMPTS: "46",
+		WYST_AUDIT_RETRY_MS: "2000",
+		WYST_VERSION_ID: "candidate.123",
+	});
+	const retryDelayWindow =
+		(Number(environment.WYST_AUDIT_ATTEMPTS) - 1) *
+		Number(environment.WYST_AUDIT_RETRY_MS);
+	assert.equal(retryDelayWindow, 90_000);
+	assert.throws(
+		() => ordinaryOriginContentAuditEnvironment(null),
+		/expected build identity/,
+	);
+	assert.throws(
+		() => candidateVersionAuditEnvironment(identity, ""),
+		/candidate version ID/,
+	);
+});
 
 test("identity-bound audits retry stale assets but stop on manifest corruption", async (t) => {
 	const manifestBytes = await readFile(
@@ -166,6 +256,25 @@ test("identity-bound audits retry stale assets but stop on manifest corruption",
 	);
 });
 
+test("release rejects malformed deployment history and unsafe current splits", () => {
+	assert.throws(
+		() =>
+			currentProductionVersionFrom([
+				deployment("bad", "not-a-date", "version-bad"),
+				deployment("good", "2026-07-13T12:00:00Z", "version-good"),
+			]),
+		/created_on/,
+	);
+	assert.throws(
+		() =>
+			currentProductionVersionFrom([
+				deployment("old", "2026-07-12T12:00:00Z", "version-old"),
+				deployment("new", "2026-07-13T12:00:00Z", "version-new", 50),
+			]),
+		/exactly one current production version at 100%/,
+	);
+});
+
 test("monitor resolves the newest successful production deployment from main", async () => {
 	const commits = {
 		failed: "1".repeat(40),
@@ -235,6 +344,32 @@ test("monitor resolves the newest successful production deployment from main", a
 		"https://api.github.test/api/v3/repos/wystlang/wyst.dev/deployments/102/statuses?per_page=100",
 		"https://api.github.test/api/v3/repos/wystlang/wyst.dev/deployments/101/statuses?per_page=100",
 	]);
+});
+
+test("monitor requires production to match the current main commit", () => {
+	const current = "a".repeat(40);
+	assert.doesNotThrow(() =>
+		assertProductionMatchesMain({
+			mainSha: current.toUpperCase(),
+			productionSha: current,
+		}),
+	);
+	assert.throws(
+		() =>
+			assertProductionMatchesMain({
+				mainSha: "b".repeat(40),
+				productionSha: current,
+			}),
+		/production is deployed from .* but main is/,
+	);
+	assert.throws(
+		() =>
+			assertProductionMatchesMain({
+				mainSha: "not-a-sha",
+				productionSha: current,
+			}),
+		/expected main commit has an invalid SHA/,
+	);
 });
 
 test("build verification detects changes to non-public _headers", async (t) => {

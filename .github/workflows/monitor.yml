@@ -38,6 +38,7 @@ jobs:
         id: production
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          WYST_EXPECTED_PRODUCTION_SHA: ${{ github.sha }}
         run: node .github/scripts/production-deployment.mjs >> "$GITHUB_OUTPUT"
 
       - name: Check out deployed production source
