@@ -208,11 +208,11 @@
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {
-  <span class="source-comment">// UART output is byte-oriented.</span>
+  <span class="source-comment">// `_` infers a fixed [6]u8 from the literal's decoded bytes.</span>
+  <span class="source-comment">// The array has no runtime length field or trailing NUL byte.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [_]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> <span data-token="string">"hello\n"</span>
 
-  <span class="source-comment">// #len is compile-time metadata;</span>
-  <span class="source-comment">// the array has no runtime length field.</span>
+  <span class="source-comment">// #len reads the inferred array length at compile time.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">i</span> in <span data-token="number">0</span> ..&lt; <span data-token="macro" data-token-modifiers="defaultLibrary">#len</span>(<span data-token="variable">msg</span>) {
     <span data-token="function">uart_write</span>(<span data-token="variable">msg</span>[<span data-token="variable">i</span>])
   }
