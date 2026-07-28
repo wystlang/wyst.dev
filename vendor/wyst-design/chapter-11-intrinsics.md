@@ -90,6 +90,23 @@ standalone, missing, duplicate, separated, post-transfer, and redundant marker
 placements. Imported Wyst or foreign calls whose callable bound already
 contains the effect use their ordinary pre-transfer boundary and no marker.
 
+The target-neutral fatal boundary is another sealed whole-module semantic
+operation:
+
+<!-- wyst-contract: valid -->
+```wyst
+import core.trap
+
+fn fatal(reason: u16) -> never effects(trap) {
+  trap.fatal(reason)
+}
+```
+
+`core.trap` is private and cannot be selectively imported or re-exported.
+`trap.fatal` has stable semantic identity `core.trap.fatal` and internal
+lowering identity `fatal_trap`; it is a runtime operation, not a `#`-prefixed
+compile-time meta-operation.
+
 Compiler-owned operations that naturally belong to a language type use that
 type's authenticated method or property surface: atomic methods come from the
 atomic matrix; system-register declarations provide `.read()`, `.write(...)`,
@@ -539,7 +556,7 @@ source descriptor, compiler fences, or raw reads.
 
 ## Canonical fatal boundary
 
-`#fatal_trap(reason: u16) -> never effects(trap)` is the target-neutral
+`trap.fatal(reason: u16) -> never effects(trap)` is the target-neutral
 authenticated fatal boundary. The explicit reason evaluates once and is
 retained in typed IR; ARM64 places it in `x0` and emits reserved `BRK #0xf001`.
 It never grants undefined-behavior assumptions and is rejected by

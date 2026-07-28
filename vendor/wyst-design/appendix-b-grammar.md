@@ -161,7 +161,8 @@ PerCpuVarDecl <- ItemPrefix 'per_cpu' 'var' UserIdentifier
 TypeAnnotation <- ':' Type
 LabelDecl <- ItemPrefix 'naked'? 'label' UserIdentifier
              TrapFrameLabelClause? Block
-TrapFrameLabelClause <- ('establishes' / 'restores') UserIdentifier
+TrapFrameLabelClause <- 'establishes' UserIdentifier ':' '@' UserIdentifier
+                      / 'restores' UserIdentifier
 
 LayoutDecl <- 'layout' UserIdentifier '{' LayoutMember* '}'
 LayoutMember <- LayoutEntry / LayoutRegion / LayoutSection / LayoutSymbol
@@ -332,8 +333,10 @@ slot and does not introduce a general statement or expression form.
 `TrapFrameLabelClause` is contextual immediately after a label name.
 `establishes` and `restores` remain ordinary identifiers outside that slot.
 Semantic analysis admits the clause only on `naked label`, requires the named
-type to be a compatible nominal `trap_frame`, and cross-checks the first
-checked-assembly statement as specified by Chapter 14. A `trap_frame`
+type to be a compatible nominal `trap_frame`, requires the establishing form
+to bind its exact ordinary address, and cross-checks the first checked-assembly
+statement as specified by Chapter 14. The binding comes into scope only after
+that statement and cannot escape the synchronous handler. A `trap_frame`
 declaration has no generic-parameter or `packed` branch; its visible fields
 are structurally parsed like fields but its complete layout is target-owned.
 
@@ -834,4 +837,6 @@ match-expression = "match" expression "{" expression-match-arm+ "}" ;
 Members occur only in the shown canonical order. `?` is postfix punctuation
 only on a direct operation call. Expression-match arms use the existing
 shallow enum patterns and blocks whose final expression is the arm value.
-`#fatal_trap(expression)` is the sole fatal meta-operation spelling.
+Fatal termination is the runtime semantic operation `trap.fatal(expression)`
+from a private whole-module `import core.trap`; it is deliberately absent from
+the closed `MetaOperation` grammar.

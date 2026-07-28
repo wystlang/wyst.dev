@@ -219,7 +219,6 @@ core	unshadowable	core.packages	module-root	implemented
 #cache_line_width	unshadowable	core.meta-operations	expression	implemented
 #dedent	unshadowable	core.meta-operations	expression	implemented
 #else	unshadowable	core.meta-operations	compile-time-branch	implemented
-#fatal_trap	unshadowable	core.outcome-protocols	expression	implemented
 #field_offset	unshadowable	core.meta-operations	expression	implemented
 #if	unshadowable	core.meta-operations	declaration|expression|statement	implemented
 #len	unshadowable	core.meta-operations	expression	implemented

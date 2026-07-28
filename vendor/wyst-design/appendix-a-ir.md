@@ -874,6 +874,20 @@ or an alignment check.
 - **Lowering:** one stack-relative address materialization after final frame
   layout. It never creates a symbol relocation.
 
+#### `trap_frame_addr`
+
+- **Signature:** `(authenticated-entry-asm, frame-name) -> @TrapFrame`.
+- **Semantics:** introduces the immutable nonescaping binding declared by an
+  `establishes frame: @TrapFrame` label. The entry-asm operand is a real SSA
+  dependency, so scheduling cannot expose the address before the exact target
+  save sequence establishes the live frame at `sp`.
+- **Verification:** the producer and address are in the same naked label block;
+  the producer is the authenticated trap-frame entry for the same nominal
+  frame; and the result is the exact ordinary pointer type. It cannot be forged
+  from an ordinary stack address or generic checked assembly.
+- **Lowering:** materializes the current `sp` without allocating a compiler
+  stack slot. Calls may consume it only through a `noescape` parameter.
+
 #### `gep`
 
 - **Signature:** `(@T, u64) -> @T`; the offset is the canonical modulo-`2^64`
@@ -1193,7 +1207,9 @@ lowering may consume the function.
     contract and first checked-assembly stack transition must name the same
     frame/profile and exact canonical target sequence; a forged direction,
     execution level, system register, instruction identity, state transition,
-    or terminal edge is a verifier error.
+    or terminal edge is a verifier error. An establishing label also retains
+    exactly one `trap_frame_addr` dependent on that entry asm and naming the
+    same frame; this value is the only IR origin for its source binding.
 15. **Placement–calling-convention consistency**: every
     `in register` requirement from `language.callable-storage-contracts` must
     name a register legal for its value class and width and

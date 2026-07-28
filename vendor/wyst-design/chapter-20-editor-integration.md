@@ -280,6 +280,7 @@ variable-location lists, type DIEs, or call-frame information (see
 The editor catalog, semantic tokens, hovers, Tree-sitter grammar, and generated
 editor assets share the operation/progress/failure/cancellation/defer words,
 `handler_invoke`, `fixed_layout_movable`, postfix `?`, expression `match`, and
-`#fatal_trap` from their owning catalogs. Operation hovers expose ordered
-members and the progress ceiling; fatal hover identifies the explicit `u16`
-reason. Drift tests reject catalog or generated-parser disagreement.
+the qualified `trap.fatal` semantic operation from their owning catalogs.
+Operation hovers expose ordered members and the progress ceiling; fatal hover
+identifies the explicit `u16` reason. Drift tests reject catalog or
+generated-parser disagreement.
