@@ -265,7 +265,11 @@ The frame type is attached to control flow through hard label clauses:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-naked label trap_entry establishes TrapFrame {
+fn handle_trap(frame: noescape @TrapFrame) effects(none) {
+  // Inspect or update the saved state synchronously.
+}
+
+naked label trap_entry establishes frame: @TrapFrame {
   asm establishes stack {
     sub sp, sp, #0x110
     stp x0, x1, [sp, #0x000]
@@ -292,7 +296,8 @@ naked label trap_entry establishes TrapFrame {
     str x16, [sp, #0x108]
   }
 
-  trap_halt()
+  handle_trap(frame)
+  goto trap_restore
 }
 
 naked label trap_restore restores TrapFrame {
@@ -329,16 +334,23 @@ the label's checked callable-entry execution-level fact, not merely the
 module's initial entry level. It does not permit arbitrary substitution of a
 semantically similar sequence.
 
-`establishes T` and `restores T` are valid only after the name of a
+`establishes frame: @T` and `restores T` are valid only after the name of a
 `naked label`. `T` must resolve to one nominal `trap_frame` type admitted by
-the selected target. Labels are inherently terminal entries, so these clauses
-do not add or accept a redundant return-type marker.
+the selected target. The establishing form declares one immutable,
+nonescaping ordinary address binding; the restoring form declares none.
+Labels are inherently terminal entries, so these clauses do not add or accept
+a redundant return-type marker.
 
 The first statement of an establishing label must be a non-empty
 `asm establishes stack` block. Its catalog-parsed instructions must be the
 profile's complete canonical save sequence. After that transition, the stack
-contains one live `T` at the established base and subsequent source must end
-without falling through.
+contains one live `T` at the established base and the binding comes into
+scope. It may be dereferenced directly or passed to a `noescape @T` parameter,
+but it cannot be returned, stored into longer-lived state, or passed through
+an escaping parameter. With the stack established, the naked label may call
+an ordinary returning function with at most the register argument budget;
+subsequent source must still end without falling through, normally by jumping
+to the matching restore label.
 
 The first statement of a restoring label must be a non-empty
 `asm restores stack -> never` block. Its catalog-parsed instructions must be

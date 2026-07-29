@@ -19,10 +19,11 @@ them.
    declared success contract. Expected states advertised by an API—including
    EOF, readiness, cache miss, short count, parser alternative, and process or
    device completion status—remain success data.
-4. `#fatal_trap(reason: u16) -> never effects(trap)` enters the authenticated
-   target trap path. Architectural faults, violated invariants, explicit fatal
-   policy, and trusted-contract failures use traps. Operation handlers never
-   catch or convert a trap.
+4. `trap.fatal(reason: u16) -> never effects(trap)`, imported from the sealed
+   `core.trap` namespace, enters the authenticated target trap path.
+   Architectural faults, violated invariants, explicit fatal policy, and
+   trusted-contract failures use traps. Operation handlers never catch or
+   convert a trap.
 
 Compile-time diagnostics are not values. Target-defined behavior and trusted
 boundary violations retain the taxonomy in Chapter 1. There is no ambient
@@ -101,10 +102,11 @@ illegal in an expression match. Handler-head and enum patterns remain shallow
 and irrefutable; deeper inspection uses another exhaustive match.
 
 `expect_or_trap<T, E>(value, reason: u16) -> T effects(trap)` returns `Ok`'s
-payload or calls `#fatal_trap(reason)`. The reason is evaluated exactly once
+payload or calls `trap.fatal(reason)`. The reason is evaluated exactly once
 and is explicit in typed IR. The ARM64 boundary preserves it in `x0` before a
 reserved canonical `BRK #0xf001`. The instruction does not create optimizer
-undefined behavior. `#[deny_effects(trap)]` rejects the helper or intrinsic.
+undefined behavior. `#[deny_effects(trap)]` rejects the helper or semantic
+operation.
 There is no force-unwrap punctuation or `trust` alias. Postfix `?` never
 applies to `Result`.
 

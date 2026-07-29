@@ -110,6 +110,12 @@ requires the selected target's exact provider and authenticated provider-leaf
 placement. No manifest flag, target name convention, or textual same-name
 declaration activates the compiler identity.
 
+`core.trap` follows the same private direct whole-module import shape but has
+no provider-placement restriction. Its sole member is the target-neutral
+`trap.fatal(reason)` semantic operation. Selective, public, re-exported, leaf,
+bare, and shadowed forms are rejected; a user function named `fatal` does not
+acquire fatal-boundary semantics.
+
 ### Linker Boundaries
 
 `pub` is solely a Wyst source-visibility modifier. Linker symbols use
