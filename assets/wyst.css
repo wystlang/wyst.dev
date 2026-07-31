@@ -314,7 +314,7 @@ body.docs header.site .wrap {
 
 .notebook-hero {
 	max-width: 34rem;
-	padding: clamp(72px, 11vh, 128px) 0;
+	padding: clamp(36px, 5vh, 56px) 0 clamp(72px, 11vh, 128px);
 }
 
 .notebook-hero h1 {
@@ -365,11 +365,12 @@ body.docs header.site .wrap {
 
 .notebook-section {
 	min-width: 0;
-	padding: clamp(72px, 11vh, 128px) 0;
+	padding: clamp(36px, 5vh, 56px) 0 clamp(72px, 11vh, 128px);
 }
 
 .source-artifact {
-	max-width: 32rem;
+	width: 42rem;
+	max-width: 100%;
 }
 
 .source-viewport {
@@ -414,7 +415,7 @@ body.docs header.site .wrap {
 	display: none;
 }
 
-@media (min-width: 961px) {
+@media (min-width: 1201px) {
 	.source-viewport > pre {
 		max-height: min(64svh, 44rem);
 		overflow-y: auto;
@@ -654,7 +655,7 @@ footer.site {
 	font-size: var(--text-xs);
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
 	.home-split {
 		padding-right: var(--pad);
 		grid-template-columns: minmax(0, 1fr);
@@ -691,7 +692,7 @@ footer.site {
 	}
 
 	.notebook-hero {
-		padding-top: clamp(64px, 13vh, 96px);
+		padding-top: clamp(32px, 7vh, 48px);
 	}
 
 	.notebook-hero h1 {
