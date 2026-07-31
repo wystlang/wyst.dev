@@ -301,10 +301,17 @@ const PAGE_AUDIT = String.raw`(() => {
 	if (inlineHandlers.length) {
 		cspViolations.push("inline event handler (" + inlineHandlers.length + ")");
 	}
+	const homepageSource = document.querySelector(".source-viewport > pre");
 	return {
 		title: document.title,
 		viewport,
 		documentWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+		homepageSource: homepageSource
+			? {
+				clientWidth: homepageSource.clientWidth,
+				scrollWidth: homepageSource.scrollWidth,
+			}
+			: null,
 		outOfBounds,
 		smallTargets,
 		badAnchors: document.querySelectorAll(
@@ -633,6 +640,16 @@ try {
 			if (audit.outOfBounds.length) {
 				failures.push(
 					`${label} clips elements: ${JSON.stringify(audit.outOfBounds)}`,
+				);
+			}
+			if (
+				route === "/" &&
+				viewport.label === "desktop" &&
+				audit.homepageSource &&
+				audit.homepageSource.scrollWidth > audit.homepageSource.clientWidth + 1
+			) {
+				failures.push(
+					`${label} horizontally scrolls its source example: ${JSON.stringify(audit.homepageSource)}`,
 				);
 			}
 			if (audit.smallTargets.length) {

@@ -296,7 +296,7 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 	);
 	assert.equal(
 		lede,
-		"An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.",
+		"Wyst is an experimental ARM64 language and compiler exploring whether low-level code can remain readable without hiding machine behavior or cost.",
 	);
 	const introText = textContent(
 		taggedElementWithOpeningMatch(
@@ -307,14 +307,18 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 	);
 	for (const [idea, pattern] of [
 		["web-interface day job", /\bday job\b[^.]*\bbuilding web interfaces\b/i],
-		["low-level programming itch", /\blow-level programming itch\b/i],
+		["low-level programming interest", /\binterest in low-level programming\b/i],
+		["experimental status", /\bexperimental\b/i],
 		["ARM64 language and compiler", /\bARM64 language and compiler\b/i],
-		["readable low-level code", /\breadable low-level code\b/i],
-		["no hidden runtime behavior", /\bwithout hidden runtime behavior\b/i],
-		["no avoidable abstraction cost", /\bavoidable abstraction cost\b/i],
+		["readable low-level code", /\blow-level code can remain readable\b/i],
+		["visible machine behavior", /\bwithout hiding machine behavior\b/i],
+		["visible cost", /\bmachine behavior or cost\b/i],
 		["computer science degree", /\bCS degree\b/i],
-		["author ownership", /\bI own the language and compiler decisions\b/i],
-		["candid AI use", /\bAI assists implementation\b/i],
+		["author ownership", /\bI make the language and compiler decisions\b/i],
+		[
+			"candid agent implementation",
+			/\bcoding agents do the implementation work\b/i,
+		],
 		["conformance evidence", /\bConformance tests\b/i],
 		["determinism evidence", /\bbyte-identical kernel builds\b/i],
 		["fuzzing evidence", /\bfuzzing\b/i],
@@ -323,8 +327,8 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 		assert.match(introText, pattern, `the introduction should include ${idea}`);
 	}
 	assert.ok(
-		introText.split(/\s+/).filter(Boolean).length <= 60,
-		"the complete introduction should stay at or under 60 words",
+		introText.split(/\s+/).filter(Boolean).length <= 70,
+		"the complete introduction should stay at or under 70 words",
 	);
 	assert.doesNotMatch(
 		introText,
@@ -342,12 +346,8 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 		"the introduction should define Wyst before explaining the author's motivation",
 	);
 	assert.ok(
-		introText.indexOf("Conformance tests") < introText.indexOf("AI assists"),
-		"the introduction should establish verification evidence before disclosing AI assistance",
-	);
-	assert.ok(
-		introText.indexOf("I own the language and compiler decisions") <
-			introText.indexOf("AI assists"),
+		introText.indexOf("I make the language and compiler decisions") <
+			introText.indexOf("coding agents"),
 		"the introduction should establish author ownership before disclosing AI assistance",
 	);
 	assert.doesNotMatch(html, /<footer\b/i, "the homepage should not have a footer");
@@ -614,22 +614,22 @@ test("homepage contains only the introduction and real example", () => {
 	);
 	assert.match(
 		siteCss,
-		/\.notebook-hero\s*\{[^}]*padding:\s*clamp\(72px,\s*11vh,\s*128px\)\s+0;/,
-		"the introduction should use the shared desktop top inset",
+		/\.notebook-hero\s*\{[^}]*padding:\s*clamp\(36px,\s*5vh,\s*56px\)\s+0\s+clamp\(72px,\s*11vh,\s*128px\);/,
+		"the introduction should use the tighter shared desktop top inset",
 	);
 	assert.match(
 		siteCss,
-		/\.notebook-section\s*\{[^}]*padding:\s*clamp\(72px,\s*11vh,\s*128px\)\s+0;/,
-		"the example should use the shared desktop top inset",
+		/\.notebook-section\s*\{[^}]*padding:\s*clamp\(36px,\s*5vh,\s*56px\)\s+0\s+clamp\(72px,\s*11vh,\s*128px\);/,
+		"the example should use the tighter shared desktop top inset",
 	);
 	assert.match(
 		siteCss,
-		/\.source-artifact\s*\{[^}]*max-width:\s*32rem;/,
-		"the UART example should stay compact if its source grows",
+		/\.source-artifact\s*\{[^}]*width:\s*42rem;[^}]*max-width:\s*100%;/,
+		"the UART example should fit its longest source line without horizontal scrolling",
 	);
 	assert.match(
 		siteCss,
-		/@media \(min-width:\s*961px\)\s*\{[\s\S]*?\.source-viewport\s*>\s*pre\s*\{[^}]*max-height:\s*min\(64svh,\s*44rem\);[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;/,
+		/@media \(min-width:\s*1201px\)\s*\{[\s\S]*?\.source-viewport\s*>\s*pre\s*\{[^}]*max-height:\s*min\(64svh,\s*44rem\);[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;/,
 		"long source should scroll inside a balanced desktop hero",
 	);
 	assert.match(
@@ -664,7 +664,7 @@ test("homepage contains only the introduction and real example", () => {
 	);
 	assert.match(
 		siteCss,
-		/@media \(max-width:\s*960px\)\s*\{[\s\S]*?\.notebook-hero\s*\{[^}]*width:\s*100%;[^}]*justify-self:\s*center;[\s\S]*?\.notebook-section\s*\{[^}]*width:\s*max-content;[^}]*max-width:\s*100%;[^}]*justify-self:\s*center;/,
+		/@media \(max-width:\s*1200px\)\s*\{[\s\S]*?\.notebook-hero\s*\{[^}]*width:\s*100%;[^}]*justify-self:\s*center;[\s\S]*?\.notebook-section\s*\{[^}]*width:\s*max-content;[^}]*max-width:\s*100%;[^}]*justify-self:\s*center;/,
 		"the stacked hero and compact example should remain centered",
 	);
 	assert.match(
