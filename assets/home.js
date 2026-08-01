@@ -106,17 +106,17 @@
 
 			button.disabled = true;
 			button.dataset.copyState = "pending";
-			button.textContent = "copying…";
-			if (status) status.textContent = "Copying code.";
+			button.textContent = "wait…";
+			if (status) status.textContent = "The browser copies the code.";
 			try {
 				await copyText(sourceText(target));
 				button.textContent = "copied";
 				button.dataset.copyState = "success";
-				if (status) status.textContent = "Code copied to clipboard.";
+				if (status) status.textContent = "The browser copied the code.";
 			} catch {
-				button.textContent = "retry";
+				button.textContent = "copy again";
 				button.dataset.copyState = "error";
-				if (status) status.textContent = "Could not copy code.";
+				if (status) status.textContent = "The browser did not copy the code.";
 			} finally {
 				button.disabled = false;
 				resetTimer = setTimeout(() => {

@@ -159,12 +159,12 @@ test("homepage copy control writes only the source text", async () => {
 
 	await fixture.listeners.get("click")();
 	assert.equal(copied, copiedSource);
-	assert.doesNotMatch(copied, /scroll for more|main\.wyst|source ↗/i);
+	assert.doesNotMatch(copied, /scroll for more code|main\.wyst|source ↗/i);
 	assert.equal(fixture.buffers.length, 0);
 	assert.equal(fixture.button.textContent, "copied");
 	assert.equal(fixture.button.dataset.copyState, "success");
 	assert.equal(fixture.button.disabled, false);
-	assert.equal(fixture.status.textContent, "Code copied to clipboard.");
+	assert.equal(fixture.status.textContent, "The browser copied the code.");
 	const resetTimer = fixture.timers.find(({ delay }) => delay === 2_000);
 	assert.ok(resetTimer);
 
@@ -191,5 +191,5 @@ test("homepage copy control falls back when Clipboard API is unavailable", async
 	assert.deepEqual(stagedBuffer.selection, [0, copiedSource.length]);
 	assert.equal(stagedBuffer.removed, true);
 	assert.equal(fixture.button.dataset.copyState, "success");
-	assert.equal(fixture.status.textContent, "Code copied to clipboard.");
+	assert.equal(fixture.status.textContent, "The browser copied the code.");
 });
