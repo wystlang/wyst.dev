@@ -7,40 +7,40 @@
 		<meta name="theme-color" content="#0B0D12" />
 		<meta
 			name="description"
-			content="Wyst is an ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost."
+			content="Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost."
 		/>
-		<title>Wyst — an ARM64 language and compiler</title>
+		<title>Wyst: ARM64 language and compiler</title>
 		<link rel="canonical" href="https://wyst.dev/" />
 		<meta property="og:type" content="website" />
 		<meta property="og:url" content="https://wyst.dev/" />
 		<meta
 			property="og:title"
-			content="Wyst — an ARM64 language and compiler"
+			content="Wyst: ARM64 language and compiler"
 		/>
 		<meta
 			property="og:description"
-			content="An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost."
+			content="Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost."
 		/>
 		<meta property="og:image" content="https://wyst.dev/assets/social-card.png" />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
 		<meta
 			property="og:image:alt"
-			content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering."
+			content="The image shows the Wyst wordmark and Wyst source code for a UART."
 		/>
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta
 			name="twitter:title"
-			content="Wyst — an ARM64 language and compiler"
+			content="Wyst: ARM64 language and compiler"
 		/>
 		<meta
 			name="twitter:description"
-			content="An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost."
+			content="Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost."
 		/>
 		<meta name="twitter:image" content="https://wyst.dev/assets/social-card.png" />
 		<meta
 			name="twitter:image:alt"
-			content="Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering."
+			content="The image shows the Wyst wordmark and Wyst source code for a UART."
 		/>
 		<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=96d86d9d" />
 		<link
@@ -70,7 +70,7 @@
 						aria-hidden="true"
 					/>
 				</a>
-				<nav class="nav-links" aria-label="Primary">
+				<nav class="nav-links" aria-label="Primary navigation">
 					<a href="/docs/">reference</a>
 					<a href="https://github.com/wystlang/wyst.dev" rel="noopener"
 						>source</a
@@ -93,22 +93,24 @@
 				<div class="project-introduction">
 					<p class="project-lede">Wyst is an experimental ARM64 language and compiler exploring whether low-level code can remain readable without hiding machine behavior or cost.</p>
 					<div class="notebook-intro">
-						<p>I make the language and compiler decisions; coding agents do the implementation work. Conformance tests, byte-identical kernel builds, fuzzing, and QEMU fixtures check the result.</p>
+						<p>I make the language and compiler decisions. Coding agents write the implementation.</p>
+						<p>Four checks examine the result. These checks are conformance tests, byte-identical kernel builds, fuzz tests, and QEMU fixtures.</p>
 						<p>My day job is building web interfaces. Wyst is where I pursue my interest in low-level programming and put my CS degree to use.</p>
 					</div>
 				</div>
 				<p class="project-meta">
-					<span>ARM64-only</span>
+					<span>ARM64 only</span>
 					<span>pre-1.0</span>
 					<span>Rust bootstrap compiler</span>
 					<span>not memory-safe</span>
-					<span>pronounced “wist,” an old word meaning “to know”</span>
+					<span>pronunciation: “wist”</span>
+					<span>name source: a word for “to know”</span>
 				</p>
 			</section>
 
 			<section class="notebook-section" id="example" aria-labelledby="example-title">
 				<header class="notebook-heading">
-					<h2 id="example-title" class="visually-hidden">A tiny UART program.</h2>
+					<h2 id="example-title" class="visually-hidden">A small UART program.</h2>
 				</header>
 
 				<figure
@@ -117,12 +119,12 @@
 					data-example-path="wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
 				>
 					<div class="artifact-bar">
-						<span>main.wyst · excerpt</span>
+						<span>main.wyst · part</span>
 						<div class="artifact-actions">
 							<button
 								class="artifact-copy"
 								type="button"
-								aria-label="Copy Wyst example"
+								aria-label="Copy the Wyst code"
 								aria-controls="uart-source"
 								aria-describedby="uart-copy-status"
 								data-copy-target="uart-source"
@@ -234,7 +236,7 @@
 }</code></pre>
 						<!-- homepage-semantic-example:end -->
 						<span id="uart-scroll-hint" class="source-scroll-hint"
-							>scroll for more ↓</span
+							>scroll for more code ↓</span
 						>
 					</div>
 					<figcaption class="artifact-output">

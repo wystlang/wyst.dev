@@ -269,13 +269,13 @@ test("shared headers keep only Reference and Source", () => {
 test("homepage metadata states the current project value without a release claim", () => {
 	const title = textContent(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? "");
 	const description =
-		"Wyst is an ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.";
+		"Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost.";
 	const socialDescription =
-		"An ARM64 language and compiler for readable low-level code without hidden runtime behavior or avoidable abstraction cost.";
+		"Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost.";
 	const socialAlt =
-		"Wyst wordmark beside a real UART source specimen; an ARM64 language and compiler with explicit, inspectable lowering.";
+		"The image shows the Wyst wordmark and Wyst source code for a UART.";
 
-	assert.equal(title, "Wyst — an ARM64 language and compiler");
+	assert.equal(title, "Wyst: ARM64 language and compiler");
 	assert.equal(metaContent(html, "name", "description"), description);
 	assert.equal(metaContent(html, "property", "og:title"), title);
 	assert.equal(metaContent(html, "property", "og:description"), socialDescription);
@@ -286,7 +286,12 @@ test("homepage metadata states the current project value without a release claim
 	assert.doesNotMatch(html, /\bv0\.8\b|building for fun/i);
 });
 
-test("homepage leads with evidence and keeps a minimal personal introduction", () => {
+test("homepage keeps the preferred personal introduction concise", () => {
+	const introductionHtml = taggedElementWithOpeningMatch(
+		html,
+		/<([a-z][\w-]*)\b[^>]*class="[^"]*\bproject-introduction\b[^"]*"[^>]*>/i,
+		"missing personal introduction",
+	);
 	const lede = textContent(
 		taggedElementWithOpeningMatch(
 			html,
@@ -298,13 +303,7 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 		lede,
 		"Wyst is an experimental ARM64 language and compiler exploring whether low-level code can remain readable without hiding machine behavior or cost.",
 	);
-	const introText = textContent(
-		taggedElementWithOpeningMatch(
-			html,
-			/<([a-z][\w-]*)\b[^>]*class="[^"]*\bproject-introduction\b[^"]*"[^>]*>/i,
-			"missing personal introduction",
-		),
-	);
+	const introText = textContent(introductionHtml);
 	for (const [idea, pattern] of [
 		["web-interface day job", /\bday job\b[^.]*\bbuilding web interfaces\b/i],
 		["low-level programming interest", /\binterest in low-level programming\b/i],
@@ -317,18 +316,31 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 		["author ownership", /\bI make the language and compiler decisions\b/i],
 		[
 			"candid agent implementation",
-			/\bcoding agents do the implementation work\b/i,
+			/\bCoding agents write the implementation\b/i,
 		],
 		["conformance evidence", /\bConformance tests\b/i],
 		["determinism evidence", /\bbyte-identical kernel builds\b/i],
-		["fuzzing evidence", /\bfuzzing\b/i],
+		["fuzz evidence", /\bfuzz tests\b/i],
 		["runtime evidence", /\bQEMU fixtures\b/i],
 	]) {
 		assert.match(introText, pattern, `the introduction should include ${idea}`);
 	}
+	const paragraphs = [...introductionHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
+		.map(([, paragraph]) => textContent(paragraph));
+	for (const paragraph of paragraphs) {
+		const sentences = paragraph.split(/(?<=[.!?])\s+/);
+		assert.ok(sentences.length <= 6, `paragraph has too many sentences: ${paragraph}`);
+		for (const sentence of sentences) {
+			const words = sentence.match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) ?? [];
+			assert.ok(
+				words.length <= 25,
+				`descriptive sentence has more than 25 words: ${sentence}`,
+			);
+		}
+	}
 	assert.ok(
-		introText.split(/\s+/).filter(Boolean).length <= 70,
-		"the complete introduction should stay at or under 70 words",
+		introText.split(/\s+/).filter(Boolean).length <= 75,
+		"the complete introduction should stay at or under 75 words",
 	);
 	assert.doesNotMatch(
 		introText,
@@ -347,7 +359,7 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 	);
 	assert.ok(
 		introText.indexOf("I make the language and compiler decisions") <
-			introText.indexOf("coding agents"),
+			introText.indexOf("Coding agents"),
 		"the introduction should establish author ownership before disclosing AI assistance",
 	);
 	assert.doesNotMatch(html, /<footer\b/i, "the homepage should not have a footer");
@@ -361,12 +373,12 @@ test("homepage leads with evidence and keeps a minimal personal introduction", (
 	);
 	for (const [fact, pattern] of [
 		["pre-1.0", /\bpre-1\.0\b/i],
-		["ARM64 only", /\bARM64-only\b/i],
+		["ARM64 only", /\bARM64 only\b/i],
 		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
 		["not memory-safe", /\bnot memory-safe\b/i],
 		[
 			"name pronunciation and meaning",
-			/pronounced “wist,” an old word meaning “to know”/i,
+			/pronunciation: “wist” name source: a word for “to know”/i,
 		],
 	]) {
 		assert.match(projectMeta, pattern, `the metadata should say ${fact}`);
@@ -681,10 +693,10 @@ test("homepage shows one static UART example from the real fixture", () => {
 	assert.equal(matches.length, 1, "the UART source example should appear once");
 
 	const example = uartExampleHtml();
-	assert.match(example, /<span>main\.wyst · excerpt<\/span>/);
+	assert.match(example, /<span>main\.wyst · part<\/span>/);
 	assert.match(
 		example,
-		/<button\b(?=[^>]*class="artifact-copy")(?=[^>]*type="button")(?=[^>]*aria-label="Copy Wyst example")(?=[^>]*aria-controls="uart-source")(?=[^>]*aria-describedby="uart-copy-status")(?=[^>]*data-copy-target="uart-source")[^>]*>\s*copy<\/button>/,
+		/<button\b(?=[^>]*class="artifact-copy")(?=[^>]*type="button")(?=[^>]*aria-label="Copy the Wyst code")(?=[^>]*aria-controls="uart-source")(?=[^>]*aria-describedby="uart-copy-status")(?=[^>]*data-copy-target="uart-source")[^>]*>\s*copy<\/button>/,
 		"the example should expose one accessible source-copy control",
 	);
 	assert.match(
@@ -704,7 +716,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 	);
 	assert.match(
 		example,
-		/<span id="uart-scroll-hint" class="source-scroll-hint"\s*>scroll for more ↓<\/span\s*>/,
+		/<span id="uart-scroll-hint" class="source-scroll-hint"\s*>scroll for more code ↓<\/span\s*>/,
 		"the source viewport should announce that more code is available",
 	);
 	const sourceBlock = codeBlocks
@@ -866,7 +878,7 @@ test("minimal homepage retains accessibility and safe external links", () => {
 	assert.match(html, /<a\b[^>]*class="[^"]*\bskip\b[^"]*"[^>]*href="#main"[^>]*>/i);
 	assert.match(html, /<main\b[^>]*\bid="main"/i);
 	assert.equal([...html.matchAll(/<h1\b/gi)].length, 1, "homepage should have one h1");
-	assert.match(siteHeaderHtml(html), /<nav\b[^>]*aria-label="Primary"/i);
+	assert.match(siteHeaderHtml(html), /<nav\b[^>]*aria-label="Primary navigation"/i);
 
 	for (const [name, pageHtml] of [
 		["home", html],
