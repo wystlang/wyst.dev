@@ -163,28 +163,536 @@ resolved exactly or diagnosed. Thus an out-of-range checked `bl`/`CALL26`
 produces a hard diagnostic that retains the source instruction; it never uses
 the ordinary direct-call veneer policy.
 
-Wyst's integrated compiler reads a set of source modules and emits a single
-binary image in the current implemented artifact mode. There is no separate
-assembler, no separate linker, and no intermediate object files written to disk
-for the implemented `ET_EXEC` mode. Relocatable object files are a
-planned surface and do not
-override the current single-image rules until Chapter 16 is updated for that
-artifact mode.
+Wyst's integrated compiler reads a set of source modules and emits either one
+final binary image or a paired static-library archive and semantic bundle. There
+is no separate assembler or linker, and no intermediate object files are
+written to disk for `ET_EXEC` mode. The compiler emits, independently decodes,
+and validates canonical native objects in memory before final placement or
+archive packaging, one paired with each checked source/layout semantic
+interface. This does not make `-c` / `--emit-object` available.
 
-## Reserved Static-Library Contract
+An in-memory build session may reuse these exact authenticated interface and
+native-object products when all named semantic fingerprint inputs match. An
+artifact-producing compiler invocation may also read or publish the pair in a
+compiler-private, content-addressed local cache. A persistent hit is admitted
+only after the canonical interface and `ET_REL` bytes have been independently
+decoded, schema-checked, digest-checked, paired, and reconstructed as the same
+closed typed products returned by ordinary emission. No consumer receives raw
+cache bytes plus a validation flag or side-table claim.
+
+The complete canonical interface-byte digest remains the object-pairing and
+corruption identity. Invalidation separately uses an authenticated semantic
+identity that excludes only the `source_location` record family and embedded
+diagnostic spans; target, ABI, declaration, type/layout, constant, generic,
+expansion, effect, resource, safety, hardening, and reachability facts remain
+observable. A native object is reusable only when its exact complete interface
+digest and complete backend action fingerprint match. Cache paths, timestamps,
+and hit/miss state never enter those products or final bytes.
+
+Persistent reuse does not weaken eager decoding and digest validation, change
+any serialized byte, member order, pairing rule, or whole-program final-link
+contract in this chapter. Cached and rebuilt objects enter the same ordinary
+symbol resolution, section merge, placement, relocation, checked-fixup, and
+final-artifact validation path.
+
+## Static-Library Availability
 
 The project-manifest grammar accepts `static_library` with one source-module
 root closure, primary archive path, companion semantic-interface path, target,
 and explicit artifact policies. The kind has no entry and no layout. Source
-`export` declarations are the future archive's native export roots; source
-`pub` declarations are the companion's Wyst-visible authenticated interface.
+`export` declarations are the archive's native export roots; source `pub`
+declarations are the companion's Wyst-visible content-bound interface.
 
-This is a grammar, validation, and identity reservation, not an object writer.
-Selecting the kind fails with the stable unavailable-feature diagnostic before
-creating or replacing either path. No ELF executable is written under the
-archive name, no partial `ar` container is produced, and no companion is
-serialized. The future archive/companion producer must define both products
-atomically before this boundary can change.
+The compiler implements the archive and bundle formats below. It emits one
+deterministic AArch64 `ET_REL` member per source module in the selected root
+closure and one complete paired semantic interface per member. The products
+are built and validated together; a build never intentionally publishes only
+one newly generated half.
+
+Both outputs are staged and synchronized before installation. The companion is
+installed first and the archive is the pair's commit point. A reported failure
+restores both prior regular files or removes both newly created files. This is
+a defined compiler rollback protocol, not a cross-path filesystem transaction
+or a stronger host-crash atomicity promise than the filesystem provides.
+
+The same semantic-interface and native-object representations remain internal
+compiler products for final executable builds. There is no standalone
+interface-file or object-file CLI.
+
+## Complete Static Link Boundary
+
+This section is the normative boundary shared by the interface emitter, object
+emitter, archive producer, and final linker. It prevents those separate stages
+from selecting incompatible formats or changing Wyst semantics at native-link
+time.
+
+### Artifact Set and Compatibility
+
+The boundary has four representations:
+
+1. A **semantic interface** is the canonical Wyst binary interface described
+   below. It contains every fact required to type-check and instantiate an
+   imported module without source. It contains no backend IR or final address.
+2. A **native object** is restricted deterministic AArch64 ELF64 `ET_REL`.
+   Relocations are `SHT_RELA` only. A Wyst object carries the SHA-256 of its
+   semantic interface.
+3. A native **archive** is deterministic GNU/System V regular `ar`. Thin,
+   BSD-dialect, nested, and dynamically linked archives are rejected. A Wyst
+   static library additionally has a canonical Wyst-native `.wystlib`
+   companion containing semantic interfaces, lookup indexes, and object /
+   interface SHA-256 bindings.
+4. A **final artifact** is the deterministic static AArch64 ELF64 `ET_EXEC`
+   defined by the rest of this chapter. `ET_DYN`, GOT, PLT, TLS, dynamic
+   relocations, and runtime loading remain outside this boundary.
+
+When explicit hardening is enabled, every Wyst semantic interface ends in the
+authenticated hardening trailer described below. Its paired object embeds the
+digest of those complete bytes, and a `.wystlib` member embeds both the
+complete interface and that digest. All Wyst members in one archive or final
+link closure must carry the same `(catalog version, enabled-row bitset)`.
+Absence is the only disabled identity. Mixed absence/presence, versions, or
+bitsets are rejected. Foreign inputs are opaque to this identity and remain
+forbidden from impersonating it through `.wyst.*` sections.
+
+Every input states hard target requirements. Architecture (`aarch64`), little
+endianness, LP64 static ABI revision, and link-schema revision match exactly.
+Feature, minimum exception level, environment, layout, and `per_cpu`
+requirements form a union; the final target must satisfy the whole union.
+Inputs need not use the same target-profile name. Unsupported AArch64 ELF flags
+or GNU properties, including a BTI requirement for which the current veneer
+recipe is invalid, are rejected rather than ignored.
+
+SHA-256 fields are content bindings, not signatures or publisher-identity
+claims. Signature, key, and provenance policy is separate from this format. A
+digest mismatch is corruption and a hard error.
+
+### Canonical Semantic Interface
+
+The interface begins with the eight bytes `WYSTIF 00 05`, followed by the raw
+32-byte SHA-256 of the exact `design/link-interface-schema.tsv` bytes, then the
+record count as the shortest unsigned LEB128 encoding of a `u64`. Each record
+is encoded as:
+
+```text
+record-tag:ULEB  key-length:ULEB  key:bytes  field-count:ULEB
+    (field-tag:ULEB  value-length:ULEB  canonical-value:bytes)*
+```
+
+Records sort by `(record-tag, key bytes)` and are unique. Fields use their
+one-based position in the catalog's `required_fields` column as `field-tag`,
+sort by tag, and occur exactly once. Missing, duplicate, unknown, out-of-order,
+or trailing data is malformed. Keys and identities use the canonical binary
+spelling from the owning design chapter; display names and source locations do
+not participate unless the catalog explicitly makes them the canonical key.
+
+A canonical value starts with one byte: `0` false, `1` true, `2` unsigned
+`u64` followed by shortest ULEB128, `3` signed `i64` followed by zig-zag ULEB128,
+`4` byte string (`length`, bytes), `5` Unicode text (`length`, exact valid UTF-8),
+`6` record reference (`record-tag`, `key-length`, key), `7` sequence (`count`,
+values), or `8` map (`count`, key/value pairs). Sequences preserve semantic
+order. Map entries sort uniquely by the complete encoded key bytes. There are
+no alternate integer widths, null value, indefinite lengths, or ignored
+extension tags. Graphs use record references rather than recursive record
+embedding; cyclic graphs are legal.
+
+All counts, lengths, tags, and indexes are semantically `u64` and have no
+format-level small limit. Every decoder nevertheless accepts caller-set budgets
+for input bytes, decoded bytes, records, reference edges, and work steps, and
+traverses graphs iteratively. Exhausting a budget is a resource-limit failure
+distinct from malformed input. Arithmetic overflow, truncation, non-shortest
+ULEB128, invalid UTF-8, an unknown tag, or a dangling reference is
+malformed. Producers emit the unique shortest representation.
+
+The closed, content-addressed schema catalog includes module and declaration
+identities, full types and callable ABIs, imports and exports, layout and
+effects, inline and generic semantic bodies with private dependencies, generic
+demands and canonical materializations, `per_cpu` templates, section
+ownership, checked fixups and relocation authority, interactive/resumable
+contracts, roots, and diagnostic locations. Adding or changing a record
+changes the schema digest and requires an explicit schema revision. The
+interface never serializes compiler-private backend IR.
+
+`design/link-interface-schema.tsv` is also the machine-readable revision-5
+field-shape authority. Its `field_shapes` column has one shape for each
+`required_fields` entry. The primitive shapes are `bool`, `u64`, `i64`,
+`bytes`, `text`, and the closed semantic shapes named by the catalog.
+`ref(record)` requires that exact record kind; `ref_one_of(a,b)` requires one
+of the listed kinds; `seq(shape)` is ordered; and `opt(shape)` is a zero-or-one
+sequence. `visibility` admits only `public` and `interface_private`.
+`semantic_map` has unique text keys, `logical_path` excludes absolute paths,
+drive prefixes, backslashes, empty components, and `.` / `..`, and
+`source_span` carries only normalized byte offsets. An incompatible field
+shape or meaning change requires a new magic/schema revision, not merely a new
+digest under revision 5. Revision-1, revision-2, revision-3, and revision-4 interface bytes are rejected rather than
+upgraded implicitly: these products are compiler-internal and every paired
+object/interface or archive/bundle set must be rebuilt atomically.
+
+The revision-5 `callable_contract` record has the exact ordered fields
+`calling_convention`, `parameters`, `result`, `effects`, `registers`,
+`ownership`, and `entry_levels`. `entry_levels` is the canonical ordered set of
+authenticated direct-entry exception levels; it is not part of ordinary
+function-pointer identity. Decoding validates each callable against its
+effect, resource, inline, protocol, and interactive-ABI record family,
+including parameter modes and `noescape`, `never`, returned-lease sources,
+effective offers, handler ceilings, and recovery parameters. After typed IR
+exists, the consumer independently compares every cross-module direct target
+with this decoded family. Missing, stale, or wider data is malformed rather
+than permission to lower an indirect call.
+
+An interface with enabled explicit hardening appends exactly 44 bytes after
+the canonical revision-5 record stream: eight-byte magic
+`WYSTH 00 01 00`, little-endian `u16` hardening-catalog version,
+little-endian `u16` enabled-row bitset, and SHA-256 of the complete interface
+through the bitset. The trailer is absent when hardening is disabled. Unknown
+versions or bits, a zero enabled bitset, truncation, or digest disagreement are
+malformed. The trailer changes the complete interface digest embedded by the
+paired object and `.wystlib`; it does not add a source semantic-interface
+record or backend IR.
+
+An inline or generic `semantic_body` is a canonical typed semantic tree after
+top-level compile-time selection and generic-capability authentication but
+before monomorphization. Within its revision-bound record, the root map
+contains the ordered binder table, ordered statement tree, and typed result;
+the sibling `requirements` field carries its direct requirements.
+Names in the tree are canonical declaration references or declaration-local
+binder ordinals. Checked assembly is represented by authenticated catalog
+form identity, typed operands, effects, and semantic fixup authority; raw
+assembly source, backend IR, instruction bytes, and concrete ELF relocations
+are excluded. The body record references the exact transitive
+`private_dependency` closure needed to consume it. Those private declaration
+identities are interface-visible but never enter source-name lookup.
+
+The ordinary compiler forms one interface per source module and processes the
+import graph in dependency order. A strongly connected component is one
+atomic compilation unit: all member interfaces must encode, decode, validate,
+and resolve their public selections before any member is finalized. Sealed
+`core` imports are authenticated against the compiler-bundled catalog. A
+consumer substitutes an imported generic callable signature, validates its
+typed body and private closure, and emits a canonical demand plus the source
+selector that authenticated the import edge; it does not materialize an
+imported concrete definition at that immediate boundary. Public re-export
+aliases canonicalize to the original declaring identity before the demand key
+is formed. Mandatory
+inline bodies remain available for normal expansion. `resource_contract` and
+`resumable_frame` are losslessly supported revision-5 records, and a producer
+emits them only from authenticated source semantics.
+
+Each function's `resource_contract` records ordered parameter modes and
+structural abilities, result access and ordered origins, checked returned-view
+leases with result last use, and terminal obligations. The ordinary
+`callable_contract` carries the matching callable modes and origins so direct
+and indirect consumers compare one exact identity. Type and declaration
+records retain `no_copy`, `must_account`, `must_resolve`, the ordered
+structural terminal-origin set, `opaque`, and `agent_local` facts.
+Generic-body records retain every explicit bound. An absent bound authenticates
+neither movement nor copying; `fixed_layout_movable` authenticates movement but
+not copying or discard; and every stronger closed bound retains its specified
+entailments. The `fixed_layout_movable` and `copyable_discardable` type
+capabilities are derived structurally after concrete substitution from fields,
+variant payloads, and declaration abilities; neither is granted by a nominal
+spelling or by an unused phantom argument. Mandatory-inline bodies, generic
+demands and definitions, paired objects, and archive companions carry the same
+facts, and consumption rechecks the concrete type argument before selecting a
+body or definition. Within one compilation unit, returned-borrow
+provenance also retains field, tuple, variant-payload, and fixed-index paths.
+Revision 4 intentionally authenticates only the whole originating parameter
+at an opaque callable boundary. A separately compiled consumer must therefore
+keep that entire parameter borrowed until the returned value's last use; it
+must not infer a narrower field path from source spelling or layout.
+These records authorize no behavior by source spelling and add no runtime lease
+field, cleanup hook, or object section.
+
+`E0804` reports a malformed, incompatible, dangling, or semantically invalid
+interface. `E0805` reports exhaustion of a caller-supplied interface decode
+budget. Neither failure is recoverable by ignoring records or falling back to
+private producer source.
+
+### Native AArch64 Object
+
+A native object has `ELFCLASS64`, `ELFDATA2LSB`, `EV_CURRENT`,
+`ELFOSABI_NONE`, `ET_REL`, `EM_AARCH64`, `e_flags = 0`, no program headers,
+and a complete section-header table. It uses `Elf64_Sym` and `Elf64_Rela`;
+`SHT_REL` is rejected because all addends are explicit signed byte counts.
+Wyst producers emit only relocation codes in
+`design/a64-link-relocations.tsv`.
+
+Content sections occur in this order: `.text` family, `.rodata` family,
+`.data` family, `.bss` family, `.percpu`, then exact layout-declared custom
+sections. Within a family, canonical interface section identity orders
+sections; within a section, canonical owner identity and source declaration
+order order contributions. Zero-sized owned contributions remain. Every
+`.rela.<target>` follows all content sections in target-section order; records
+sort by `(r_offset, relocation code, symbol-table index, addend)`. Then come
+`.wyst.interface`, `.wyst.reloc`, admitted unwind/debug sections, `.symtab`,
+`.strtab`, and `.shstrtab`. The null section is index zero.
+
+`.wyst.interface` is non-allocated `SHT_PROGBITS` containing exactly the raw
+32-byte SHA-256 of the paired canonical interface. Pairing is supplied by the
+build plan; filename discovery is forbidden. The plan also binds the SHA-256
+of the complete object and interface, so a substitution is rejected.
+
+`.wyst.reloc` is a non-allocated Wyst sidecar; it invents no private ELF
+relocation numbers. Its eight-byte magic is `WYSTREL 01`, followed by the
+interface digest and a shortest-ULEB record count. Records sort by
+`(target-section index, target offset, kind, RELA ordinal)` and contain those
+four ULEBs followed by `origin`, `flags`, `pair-id`, and a length-delimited
+canonical semantic target identity. `kind = 0` annotates one `SHT_RELA` entry,
+whose ordinal must exist. `kind = 1` is the Wyst-only `per_cpu` template-offset
+patch and has RELA ordinal zero. Origins are `1` ordinary Wyst, `2` checked
+assembly, or `3` linker-generated veneer. Flag bit zero means
+`no_relaxation`; every checked-assembly record sets it. Unknown kinds, origins,
+or flag bits are rejected. Nonzero pair IDs occur exactly twice and bind the
+standard `ADRP` plus low-12 relocation for one address expression.
+
+Foreign objects and archives must not contain `.wyst.*` sections. Accepting
+such a section from an unpaired foreign input would let native bytes impersonate
+Wyst semantics.
+
+### Native Archive and Wyst Bundle
+
+The accepted native archive is GNU/System V regular `ar` with global magic
+`!<arch>\n`, fixed 60-byte member headers, decimal fields, and even-byte
+newline padding. The `/` symbol index and `//` long-name table are supported;
+ordinary short names use a trailing `/`. Thin archives, BSD `#1/` names,
+nested archives, duplicate normalized member names, absolute or parent-relative
+names, non-UTF-8 names, invalid indexes, and overlapping or truncated members
+are rejected. Deterministic producers write zero timestamp, UID, and GID, mode
+`0644`, canonical UTF-8 NFC member names, a complete symbol index, and members
+sorted by `(normalized name, SHA-256 of member bytes)`.
+
+The companion `.wystlib` is not an `ar` variant. It starts with eight bytes
+`WYSTLIB 02`, the interface-schema digest, then member count and index count as
+shortest ULEBs. Each member, sorted uniquely by normalized archive-member name,
+contains the name, raw object SHA-256, raw interface SHA-256, and a
+length-delimited complete canonical interface. The corresponding `ar` member
+has the named object digest and embeds the same interface digest. Indexes
+follow members and sort uniquely by `(kind, key bytes, member ordinal)`: kind
+`1` module identity, `2` semantic declaration identity, `3` canonical generic
+instantiation key, and `4` native link symbol. An index target must exist and
+its interface/object must define the key. Revision 2 has no timestamp,
+compression, signature, optional member, or opaque extension field.
+Revision-1 companions are rejected and must be rebuilt together with their
+paired objects and interfaces.
+
+Archive structure, names, indexes, member boundaries, digests, and bundle
+bindings are validated eagerly. Object and interface semantic parsing is lazy
+for unselected members, but every extracted member is fully validated before
+it contributes a definition. A malformed unused object does not fail a link if
+its enclosing archive and bundle are structurally valid; a bad index or digest
+always fails.
+
+Decoders have no arbitrary format-level size ceiling. The caller supplies
+budgets for input bytes, members, indexes, decoded interface bytes, and work
+steps; arithmetic is checked and budget exhaustion is distinct from malformed
+or incompatible input. `E0806` reports an invalid or incompatible archive pair
+with the member or boundary involved. `E0807` reports the exhausted resource
+budget.
+
+### Symbols, Visibility, Resolution, and Extraction
+
+`pub` controls Wyst source visibility only. A definition referenced only inside
+its own object is `STB_LOCAL`. A canonical semantic definition required by a
+different Wyst object is a compiler-private `STB_GLOBAL` + `STV_HIDDEN` bridge;
+both its definition and its undefined references carry that hidden visibility.
+The paired interfaces authenticate that identity, and the bridge creates no
+source-visible or default-visible native export. Explicit strong exports and
+imports are `STB_GLOBAL`; defined weak exports are `STB_WEAK`. Accepted
+visibility is `STV_DEFAULT` or `STV_HIDDEN`. `STV_INTERNAL`, `STV_PROTECTED`, GNU unique,
+common symbols, symbol versioning, undefined weak imports, and unknown symbol
+types are rejected. Hidden definitions can satisfy references inside the final
+static link but do not create a public native export.
+
+All direct objects load in build-plan order. A strong definition wins over any
+weak definitions. Two loaded strong definitions of one link name are a
+duplicate-symbol error naming both providers. With only weak providers, the
+smallest `(normalized member name, member SHA-256)` wins; direct-object
+providers use canonical build-plan identity in the same rank. Local symbols
+are never candidates. After extraction, every unresolved strong import is an
+error with the originating semantic declaration and searched inputs. There is
+no last-wins behavior.
+
+Archives are searched in build-plan order and are not revisited. Within one
+archive, extraction runs to a fixed point. A member is eligible only if it
+strongly defines a currently unresolved strong symbol; weak definitions never
+trigger extraction. Among eligible members, the smallest normalized member
+name and then member SHA-256 wins, making selection independent of physical
+member order. Loading that member adds its strong undefined symbols and can
+make another member of the same archive eligible.
+
+That rule is the native unresolved-symbol search only. Generic semantic demand
+discovery is a compiler phase and runs a global canonical-key worklist over all
+validated direct interfaces and kind-`2` / kind-`3` Wyst bundle indexes. It may
+revisit an earlier bundle after a body from a later bundle introduces a
+transitive demand. Every selected member is fully authenticated before its
+interface contributes a body or definition. Merely containing a generic body,
+definition, weak symbol, or section never creates a demand.
+
+Root demands come from concrete source applications, explicit concrete generic
+exports, address-taken concrete functions, retained data/callback references,
+and the existing artifact roots below. A body-relative demand remains a
+template until its owning concrete application is reached; the compiler then
+substitutes the parent's canonical arguments and enqueues the resulting key.
+Exact-key revisits close, strictly growing chains fail with their canonical
+trace, and caller work budgets fail separately as resource exhaustion.
+
+For each key, a direct semantic home may emit the definition. If that home is
+not a direct compiler input, the smallest compatible demanding module is the
+physical emitter. An already materialized archive definition participates in
+the same deterministic selection. All candidates must have the identical
+revision-5 definition contract: canonical identity, checked body and private
+closure, callable ABI, effects, type/layout and sum representation,
+interactive protocol and handler/recovery facts, placement, and generated
+definition identity. Identical candidates collapse to one selected member;
+any mismatch is a hard semantic-interface error. A missing body, private home,
+or required definition contract is also a hard error. Only the selected
+ordinary symbols reach native linking; the linker never substitutes types,
+instantiates a body, repairs placement, or chooses among semantic definitions.
+
+Before any artifact-specific interface or native product is emitted, the
+compiler constructs one typed reference graph from completely checked and
+materialized IR. Roots are the selected semantic entry, explicit exports,
+`#[init]` functions, concrete `#[section]` contributions, vector tables,
+artifact-verification references, source-level address materialization, and
+every accepted `per_cpu var` initialization-template entry. Weak definitions
+and source `pub` do not create native roots. Static-library companion files
+still retain their public semantic records under the separate source-visibility
+contract; those records do not force native archive members or bodies.
+
+The graph then closes over typed direct calls and tail transfers, retained data
+and initializer references, vector slots, checked-assembly symbol/call
+contracts, callable initializers, generic materializations, and foreign imports
+used by retained Wyst subjects. A foreign definition or unresolved foreign
+reference cannot independently root Wyst code. Alignment and cache-isolation
+requirements constrain placement only after their declarations are retained;
+they do not create roots. Debug and unwind records are derived only for retained
+subjects and never keep a subject alive.
+
+Artifact-specific interfaces, native objects, archive members, and the final
+link all consume this same closure; none recovers reachability from emitted
+symbols, relocations, debug records, or archive contents. Every retained node,
+root, and edge carries a closed source-attributed reason. A canonical digest and
+deterministic added/removed node, root, and edge summary are build-session
+invalidation data, not a second semantic authority.
+
+### Foreign Inputs
+
+A foreign object or archive member can satisfy only an explicit `extern "C"`
+native import. Its machine code is opaque and accepted under the source
+author's foreign-code assertion; it cannot supply a Wyst module, type, callable
+contract, inline/generic body, generic identity, `per_cpu` object, layout fact,
+root, or checked-assembly provenance. It cannot override a canonical Wyst
+generic materialization. Semantic instantiation remains a compiler phase
+before native linking.
+
+For compiler-produced objects, each retained typed `call` has exactly one
+ordinary `R_AARCH64_CALL26` intent in its authenticated machine value range,
+and that relocation resolves to the same `SymbolId` and canonical semantic
+target. An ordinary `CALL26` with no retained direct-call authority, a missing
+call relocation, or a retargeted relocation is a compiler error. Mandatory
+inline expansions have no retained `call` and therefore no such relocation;
+their expansion record retains the callee authority instead.
+
+Foreign input is restricted to admitted symbols, sections, and mandatory
+static AArch64 relocations. GOT, PLT (including `PLT32`), TLS, dynamic,
+pointer-authentication, and vendor/platform-extension relocations are rejected.
+The Structure Protection Extension's `PATCHINST` is additionally forbidden
+because it rewrites an instruction, and `FUNCINIT64` is forbidden because it
+creates a run-time `IRELATIVE` relocation. Constructors/destructors, COMDAT,
+`SHT_GROUP`, `.gnu.linkonce.*`, merge/string sections, executable-stack
+requests, unknown processor flags, and unknown allocated sections are hard
+errors. There is no COMDAT-equivalent selection; canonical Wyst generic
+identity is the only semantic deduplication rule.
+
+Compatible `.text*`, `.rodata*`, `.data*`, and `.bss*` contributions fold into
+their Wyst classes. A custom allocated section is accepted only when the
+selected named layout declares that exact name and compatible kind. Every
+other allocated section is an orphan error. Safe non-allocated metadata is
+limited to symbol/string tables, `SHT_RELA`, `.comment`, empty
+`.note.GNU-stack`, `.ARM.attributes`, admitted DWARF, and admitted `.eh_frame`.
+
+Debug policy `none` intentionally discards structurally valid debug sections;
+`line` retains the supported DWARF 5 line subset; `full` retains that subset
+plus supported DWARF 5 type/location data. DWARF 2--4, DWARF64, split DWARF,
+GNU extensions, and unsupported forms are rejected rather than partially
+interpreted. Unwind policy `none` discards valid backtrace CFI. When unwind
+tables are requested, `.eh_frame` is accepted only for structurally validated
+backtrace CFI without personality, LSDA, language-exception semantics, or
+unknown CFI operations. `.ARM.exidx` is rejected. Debug and unwind policy never
+adds a code or storage root; their records are projections of retained subjects.
+
+### Section Ownership and Final Placement
+
+Every allocated contribution has exactly one semantic/interface owner or one
+foreign `(input ordinal, archive member key, section index)` owner.
+Contributions sort first by selected layout section order, then Wyst canonical
+owner identity or foreign owner tuple, then source declaration / ELF offset.
+Input order chooses archives and direct-object precedence but never leaks
+physical archive order or hash-table order into placement. Alignment is the
+maximum of natural, source, input-section, target, layout, and cache-isolation
+requirements. Padding is deterministic zero fill except for cataloged code NOP
+padding explicitly allowed by the checked-block rule.
+
+The selected layout alone assigns final virtual addresses, file offsets,
+memory extents, entry, permissions, and bookends. Every normalized constraint
+and all `u64` arithmetic are checked; overlap, wraparound, contradictory order,
+misalignment, permission mismatch, or orphan ownership is a hard error. No
+input section address or archive position is a placement hint.
+
+Ordinary generic demands and bodies travel through the semantic interface. The
+compiler selects canonical instantiation identity and unique definition owner
+before object emission; the native linker only resolves the resulting ordinary
+symbol. `per_cpu` entries travel as interface template records plus object
+template bytes and Wyst sidecar offset patches. Final placement assigns their
+deterministic template offsets, never process/TLS addresses, and applies only
+authenticated sidecar patches.
+
+### Relocations, Overflow, and Relaxation
+
+`design/a64-link-relocations.tsv` is the exhaustive admitted mandatory static
+LP64 AArch64 relocation catalog after the explicit GOT, PLT, TLS, dynamic,
+proxy, pointer-authentication, and platform-extension exclusions above. An
+unlisted code is rejected. `operation` defines `X` from
+ELF `S` (symbol), signed RELA `A` (always bytes), and `P` (place); page uses
+4-KiB pages and Euclidean rounding. `field_program` entries have the form
+`field@destination-bit+width=source-bit` and copy those two's-complement bits
+from `X`. The range is inclusive and independent of place/target alignments.
+`truncate` applies the specified low field bits; `checked` diagnoses every
+out-of-range or misaligned result before modifying bytes. `R_AARCH64_NONE` and
+withdrawn code 256 retain dependency edges and write no field. `ABS64` and
+`PREL64` use the AAELF64 truncating 64-bit result; an authenticated Wyst typed
+address additionally rejects a value outside its source type before it becomes
+a RELA addend.
+
+For `movw_signed_gN`, nonnegative `X` selects `MOVZ` and copies the cataloged
+field; negative `X` selects `MOVN` and copies the complement of that field.
+`movw_checked_gN` selects a valid `MOVZ`/`MOVK` form after its unsigned range
+check, while `movw_keep_gN` requires and preserves `MOVK`. Every `gN` place has
+the matching `hw = N`; a mismatch is an invalid-place failure rather than an
+opportunity to rewrite the instruction.
+
+Every relocation failure uses `E0803` and reports relocation name, input and
+owner, target, `S`, byte addend `A`, `P`, computed `X`, required inclusive
+range, place alignment, and target alignment. Invalid opcode class, target
+class, pair, sidecar authority, or unknown use is also `E0803`. No optional
+AAELF64 instruction-sequence optimization is performed.
+
+Foreign relocations never relax. Authenticated ordinary Wyst `CALL26` and
+`JUMP26` are the only veneerable relocations, and each uses its exact row in
+`design/a64-link-veneers.tsv`. The three instruction words and encoding IDs are
+validated against `design/a64-active-encoding-catalog.tsv`; the paired `ADRP`
+and `ADD` are ordinary standard relocations. Placement is the unique veneer
+slot immediately after the source text chunk. If that branch or page pair
+cannot encode, `E0601` reports the original branch and final target; no second
+veneer, literal pool, different scratch register, or alternate sequence is
+chosen.
+
+Every checked-assembly fixup is one cataloged instruction with
+`no_relaxation`. The linker patches only declared fields after opcode, operand,
+target, range, and alignment validation. It cannot rewrite the instruction,
+insert inside its checked block, redirect through a veneer, pair it with a
+synthesized instruction, or convert it to another addressing mode. Linking
+therefore cannot silently relax code, alter control flow, or change Wyst
+language semantics.
 
 ---
 
@@ -198,14 +706,14 @@ For the implemented `ET_EXEC` artifact mode, the Wyst compiler is
   [chapter-04-modules.md](chapter-04-modules.md)).
 - All cross-module symbol resolution, layout, relocation, and image
   construction happen inside that one invocation.
-- No per-module relocatable `.o` files are written to disk in the current
-  implemented mode. `wync -c` / `--emit-object` is reserved for relocatable
-  object output.
+- Canonical per-module relocatable objects are emitted and validated in memory,
+  but no `.o` files are written to disk. `wync -c` / `--emit-object` remains
+  reserved for a future public object-output policy.
 - No external `ld` is invoked.
-- No active `ar` archive or static-library companion format is defined.
 
-The output of a successful compilation is exactly one **ELF64
-little-endian AArch64 executable**.
+The output of a successful final-artifact compilation is exactly one **ELF64
+little-endian AArch64 executable**. A successful `static_library` compilation
+instead emits the specified GNU/System V archive and `.wystlib` companion pair.
 
 ```text
 wync src/boot/hello.wyst src/runtime/uart.wyst src/boot/layout.wyst -o kernel.elf
@@ -286,6 +794,7 @@ canonical names.
 | `.bss`                | Zero-initialized mutable globals                     | `ALLOC        | WRITE      | NOBITS` |
 | `.percpu`             | Immutable `per_cpu var` initialization template      | `ALLOC        | WRITE`     |
 | `.wyst.vectors.<name>` | One target-owned section per `vector_table` declaration | `ALLOC        | EXECINSTR` |
+| `.wyst.hardening`     | Enabled hardening catalog version and row bitset      | (non-`ALLOC`) |
 | `.debug_info`         | DWARF 5 compilation unit DIE tree                    | (non-`ALLOC`) |
 | `.debug_abbrev`       | DWARF 5 abbreviation tables for `.debug_info`        | (non-`ALLOC`) |
 | `.debug_line`         | DWARF 5 line number program                          | (non-`ALLOC`) |
@@ -304,6 +813,13 @@ canonical names.
 Chapter 14 §10.2. Source section and alignment attributes cannot rename or
 weaken it.
 
+`.wyst.hardening` is emitted only in a hardened final executable. Its exact
+12-byte payload is eight-byte magic `WYSTHARD`, little-endian `u16` catalog
+version, and little-endian `u16` enabled-row bitset. It is non-allocated,
+read-only metadata with alignment 2 and must exactly match the hardening
+identity authenticated by every paired Wyst interface in the link closure.
+The section is absent when hardening is disabled.
+
 `.percpu` is placed once in the image. A later runtime may copy its immutable template bytes
 to live instances, but the compiler performs no replication and the template
 is not itself live storage. `.tls` is not a Wyst section.
@@ -315,9 +831,10 @@ is not itself live storage. `.tls` is not a Wyst section.
 The `.symtab` includes one entry per:
 
 - emitted address-bearing top-level declaration (function, label, constant,
-  or ordinary mutable global) as a local semantic/debug identity, independently
-  of source `pub`. `per_cpu` entries are the local offset symbols defined by the
-  Wyst contract above.
+  or ordinary mutable global) as a semantic/debug identity, independently of
+  source `pub`. The identity is local unless another paired Wyst object needs
+  the hidden bridge defined above. `per_cpu` entries are always the local offset
+  symbols defined by the Wyst contract above.
 - each explicit `export` mapping as a distinct external alias of its local
   target, with the requested strong or weak binding.
 - Explicit typed layout symbol (`start`, `end`, `size`, or a typed numeric
@@ -326,15 +843,16 @@ The `.symtab` includes one entry per:
 - Section start symbol (synthesized: `_section.text_start`, etc., for
   debugger convenience). These are local symbols.
 - Function and label body starts (private and public alike), to enable
-  source/debug lookup. Private functions and labels get `STB_LOCAL`.
+  source/debug lookup. Private functions and labels get `STB_LOCAL` unless they
+  are compiler-private cross-object bridges.
 
 ### 4.1 Binding
 
-| Binding      | When emitted                                                 |
-| ------------ | ------------------------------------------------------------ |
-| `STB_LOCAL`  | Internal semantic/debug declarations, layout symbols, every `per_cpu` offset symbol, synthesized symbols |
-| `STB_GLOBAL` | Strong explicit `export` aliases and compiler-created initcall metadata |
-| `STB_WEAK`   | Explicit `export weak` aliases                               |
+| Binding      | When emitted                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `STB_LOCAL`  | Object-local semantic/debug declarations, layout symbols, every `per_cpu` offset symbol, synthesized symbols      |
+| `STB_GLOBAL` | Hidden cross-object Wyst bridges, strong explicit `export` aliases, and compiler-created initcall metadata       |
+| `STB_WEAK`   | Explicit `export weak` aliases                                                                                    |
 
 ### 4.2 Type
 
@@ -461,12 +979,16 @@ the source program and do not add runtime-loaded data by themselves.
 
 ## 5. Relocation Vocabulary
 
-Because the compiler is whole-program single-pass, **no relocations are
-serialized to disk**. The output ELF has no `.rela.*` sections.
+The implemented whole-program `ET_EXEC` writer serializes no relocations and
+has no `.rela.*` sections. The implemented compiler-internal `ET_REL`
+representation serializes its unresolved subset of the complete catalog below
+as `SHT_RELA`; later foreign-object linking accepts the complete catalog.
 
-The relocation types below are the **internal** alphabet used during the
-final link phase, between code generation and image write-out. They are
-enumerated here so that:
+`design/a64-link-relocations.tsv` is the exhaustive alphabet shared by internal
+whole-program patches and `ET_REL`. The table below calls out the subset the
+current Wyst backend produces most commonly; it does not narrow the catalog
+accepted from conforming static AArch64 foreign inputs. The alphabet exists so
+that:
 
 - The IR specification (Phase 5.2) can reference them precisely.
 - An external tool (linker, disassembler, debugger) that ever needs to
@@ -710,14 +1232,14 @@ documented path if needed.
 
 | Feature                                         | Boundary                 | Future path                                                                                            |
 | ----------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Per-module `.o` relocatable output              | Outside implemented base image model | `wync -c` / `--emit-object` would serialize the §5 relocation vocabulary into `.rela.*` sections |
+| Public per-module `.o` output                   | Internal producer only | `wync -c` / `--emit-object` requires an explicit output/pairing policy; the compiler already serializes and validates the §5 object in memory |
 | Dynamic linking (`ld.so`, `PT_INTERP`)          | Outside base image model | Requires GOT/PLT relocations, `R_AARCH64_GLOB_DAT`, `R_AARCH64_JUMP_SLOT`, dynamic symbol table        |
 | Position-independent executables (`ET_DYN`)     | Outside base image model | Base output lowers against absolute addresses                                                          |
 | Shared objects (`.so`)                          | Outside base image model | Same dependency on dynamic linking                                                                     |
-| COMDAT / section groups                         | Outside base image model | `#[inline]` is the only deduplication mechanism; multiply-defined exports are a hard error             |
+| COMDAT / section groups                         | Rejected by the complete boundary | Canonical Wyst generic identity is semantic deduplication; multiply-defined exports are a hard error |
 | `init_array` / `fini_array`                     | Outside base image model | Wyst has no implicit static constructors; the selected layout's semantic `entry` is the only entry point |
-| Exception unwinding (`.eh_frame`, `.ARM.exidx`) | Outside base image model | Wyst has no exceptions in the language sense; `vector_table` models hardware exception entry only      |
-| ar archives, static-library companions          | Reserved grammar; outside implemented base image model | `static_library` selection fails before output; a future producer must emit the archive and authenticated companion atomically |
+| Language exception unwinding                    | Outside base image model | Backtrace-only `.eh_frame` CFI is policy-controlled; personality/LSDA exception semantics and `.ARM.exidx` are rejected |
+| ar archives, static-library companions          | Implemented for compiler-produced Wyst objects | `static_library` emits the specified archive and content-bound `.wystlib` companion; foreign-member admission remains outside this producer |
 | Mach-O, PE, COFF output                         | Outside base image model | See §11.                                                                                               |
 
 ---

@@ -1,4 +1,5 @@
 module syntax_system
+
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
 struct Box<T: scalar> {
@@ -19,11 +20,12 @@ fn identity<T: scalar>(value: T) -> T {
 }
 
 fn touch(value: u64) -> u64 {
-  var before: u64 = STATE.load(.acquire)
+  var before = STATE.load(.acquire)
   STATE.store(value, .release)
-  var loaded: u64 = STATE.load(.acquire)
+
+  var loaded = STATE.load(.acquire)
   var result = STATE.compare_exchange(before, loaded, .acq_rel)
-  var old: u64 = STATE.fetch_add(1, .seq_cst)
+  var old = STATE.fetch_add(1, .seq_cst)
   UARTDR.store(truncate<u32>(value))
   return identity<u64>(old + result.observed)
 }

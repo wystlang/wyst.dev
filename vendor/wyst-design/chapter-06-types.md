@@ -27,10 +27,14 @@ from the scalar and aggregate rules.
 
 Wyst keeps fixed arrays (`[N]T`), slices (`[]T`), vectors (`[T:N]`),
 addresses, callable shapes, and nominal types.
-Dynamic containers use the authenticated ordinary generic declaration whose
-canonical identity is `core.collections.DynamicArray`; source must import it
-explicitly and then apply the locally bound type as `DynamicArray<T>` (or its
-import qualifier/alias). Chapter 10 defines that role and its storage contract.
+The bootstrap dynamic-container descriptor is the authenticated ordinary
+generic declaration whose canonical identity is
+`core.collections.DynamicArray`; source must import it explicitly and then
+apply the locally bound type as `DynamicArray<T>` (or its import
+qualifier/alias). It is a raw seven-word descriptor used for migration and
+foreign-layout inspection, not a compiler-provided initialization or mutation
+API. Chapter 10 defines its descriptor-only contract. The future `[?]T`
+growable-array type is a separate roadmap item.
 
 Nominal aggregate declarations are keyword-led. Generic parameter lists are
 permitted only on `struct`, `enum`, and `fn` declarations:
@@ -74,6 +78,52 @@ payload-free enum variant may use expected-type shorthand such as
 `const idle: Message = .quit`; payload variants use the enum constructor,
 for example `Message.write(packet)`.
 
+Construction of any fixed-layout aggregate deterministically initializes
+inter-field padding, trailing padding, and inactive representation bytes to
+zero before installing its logical fields. Those bytes are not logical fields
+and remain ignored by field access and value equality. An aggregate memory
+image obtained by loading or copying existing storage instead preserves its
+complete bytes, including padding, through subsequent whole-image copies and
+ABI transfer. Backend scalarization may carry such bytes as anonymous
+representation components, but it does not give them source visibility,
+addressability, an independent lifetime, or effects.
+
+### Structure layout contracts and inspection
+
+A concrete structure uses declaration field order and the selected target's
+actual type-layout rules. Each field begins at the next offset satisfying its
+effective alignment; the structure alignment is the maximum field alignment;
+and the total size is rounded up to that alignment. The useful-data extent is
+the greatest field end offset. Gaps before fields are internal padding, and the
+gap from useful-data extent to total size is trailing padding. A structure's
+fixed-array stride is its total size; a fixed-array field's element stride is
+the element type's total size.
+
+`#[fixed_layout]` is a whole-structure flag declaring that source field order
+is an authenticated external representation contract. It accepts no arguments
+and does not alter offsets, size, alignment, construction, or ABI
+classification; it prevents layout-inspection tools from recommending a field
+reorder. Use it for serialized records or another representation boundary that
+the compiler cannot infer from ordinary type use.
+
+The compiler also treats packed structures, trap frames, explicit field
+alignment, structures exposed through an `extern "C"` callable signature, and
+materialized generic structures as layout-constrained for reorder advice.
+Hardware register maps and MMIO declarations have their own fixed
+hardware-owned declaration forms and never enter ordinary-structure reorder
+analysis. A `pub struct` remains source visibility rather than a linker export,
+but layout inspection marks its memory image ABI-sensitive and does not advise
+reordering it. These constraints affect advice only: the compiler never
+silently changes source field order.
+
+For an unconstrained concrete structure, the canonical inspection product may
+compare the current layout with a deterministic candidate ordered by descending
+effective alignment, preserving source order among equal alignments. It reports
+only an exact byte-size difference under the selected target. A smaller memory
+image is not a claim of improved runtime performance. A generic declaration has
+no concrete field sizes; its materialized instantiations expose factual layout
+only and do not receive reorder recommendations.
+
 A direct `const` or `var` binding may write `[_]T` when its initializer is a
 direct array literal. The `_` infers only the fixed-array element count; the
 binding still explicitly selects fixed-array storage and element type `T`.
@@ -114,6 +164,70 @@ Revisiting the same canonical key closes a legitimate recursive cycle. A
 strictly growing instantiation chain is rejected with a deterministic
 root-to-demand trace. A compiler safety budget is a distinct resource failure
 and reports that same canonical trace; it is not the semantic termination rule.
+
+### Resource abilities and representation boundaries
+
+Ordinary Wyst values remain copyable and discardable. Resource rules are
+opt-in properties of nominal `struct` and `enum` declarations, and the common
+case adds no syntax:
+
+<!-- wyst-contract: sketch -->
+```wyst
+struct Coordinate { x: u64, y: u64 }
+
+no_copy struct Handle { raw: u64 }
+must_account struct AcceptedRequest { identity: u64 }
+must_resolve struct ProviderRequest { identity: u64 }
+opaque agent_local no_copy struct ProviderToken { raw: u64 }
+```
+
+`no_copy` removes logical copy eligibility while retaining explicit movement
+and explicit discard. `must_account` implies `no_copy` and adds a path-sensitive
+terminal obligation: every initialized value must be returned, transferred to
+an owned parameter, or explicitly abandoned with `discard(xfer value)` before
+the path leaves its scope. `must_resolve` implies `must_account` and rejects
+generic `discard`: every ordinary terminal path must return the authority,
+transfer or structurally adopt it into an owner carrying the same obligation,
+or consume it with `resolve(xfer value)` in every nominal-origin declaration
+module carried by the value. `resolve` is compiler-owned, emits no runtime
+operation, and is authorized by semantic declaration identity rather than a
+callable or type name. None of these modifiers installs a destructor, allocator
+callback, reference count, borrow count, cleanup call, or runtime flag.
+
+Abilities are structural after generic substitution. An aggregate or possible
+enum variant is copyable or discardable only when its declaration and every
+reachable component permit the operation. Its `must_resolve` origin set is the
+ordered union of all reachable nominal origins through fields, fixed arrays,
+enum alternatives, materialized outcomes, tuples, and instantiated generics.
+`agent_local` is a separate negative
+transfer property and propagates recursively through fields, arrays, enum
+payloads, and instantiated generics. Local movement never proves cross-agent
+sendability. An ordinary resource-specific consuming operation may implement a
+freeze or isolation transition and return a structurally shareable value, but
+there is no universal `freeze`, `share`, or `send` keyword and no ability may be
+invented from a function or type name.
+
+`opaque` is a representation boundary rather than a movement ability. Outside
+the declaring module, clients may name, store, pass, return, transfer, and
+borrow an opaque value according to its public callable contracts, but cannot
+construct it, access its fields, or match its variants. The declaring module
+uses the ordinary representation. Opacity, abilities, and agent locality are
+independent and are preserved in semantic interfaces.
+
+Resource states are ordinary nominal structs and enums. Generation is explicit
+data, and stale-handle validation uses ordinary visible operations such as
+`checked.generation`; the compiler creates no hidden generation counter.
+Explicit runtime-counted leases are likewise ordinary library resource types
+with visible metadata, operations, failure behavior, and cost. Wyst does not
+infer graph ownership, trace cyclic structures, or provide a separate typestate
+declaration language.
+
+A generation-checked cross-agent handoff consumes its unique owner with
+`xfer`, admits no surviving writable view or alias, authenticates the observed
+generation with `core.checked.generation`, and publishes the new owner with the
+release/acquire protocol in Chapter 9. Generation equality alone is not
+synchronization, and `xfer` alone is not publication. Use of the consumed owner
+remains the ordinary unconditional use-after-transfer error.
 
 ### Named Conversions, Addresses, and Slices
 
@@ -158,8 +272,57 @@ whose source and target types are outside its row is a compile-time error; the
 compiler never silently selects another conversion class.
 
 Raw integer construction of a callable remains a trust boundary and uses the
-separately specified `trusted_callable<T>(address)`, not `address<T>`. `checked<T>(value)` is a
-reserved spelling and is rejected until its failure model is implemented.
+separately specified `trusted_callable<T>(address)`, not `address<T>`. There is
+no flat `checked<T>(value)` conversion. Checked conversion is the qualified
+`checked.numeric<T>(value)` operation defined in Chapter 11.
+
+#### Domain quantities
+
+Exact-width integers describe representation and ABI width. Public APIs use
+them directly when the value is deliberately raw bits, an encoded field, an
+external ABI scalar, or a descriptor carrier whose interpretation is owned by
+another contract. Public APIs use nominal domain quantities when interchanging
+values whose units or roles must remain visible to type checking.
+
+The sealed `core.quantities` module supplies the current fixed-layout movable
+quantity vocabulary:
+
+| Domain | Nominal type and carrier |
+| --- | --- |
+| byte and element measures | `ByteLength { value: u64 }`, `ElementLength { value: u64 }`, `ElementCapacity { value: u64 }` |
+| indices and end-exclusive boundaries | `ElementIndex { value: u64 }`, `ElementBoundary { value: u64 }` |
+| signed displacement | `ByteOffset { value: i64 }`, `ElementOffset { value: i64 }` |
+| address and alignment | opaque `Alignment { bytes: u64 }`, `PhysicalAddress { bits: u64 }` |
+| observations and identities | `CounterSample { value: u64 }`, `TickDuration { ticks: u64 }`, `LogicalCpuId { value: u64 }`, `Generation { value: u64 }` |
+| ranges | opaque `ByteRange { lower: ByteLength, upper: ByteLength }`, opaque `ElementRange { lower: ElementBoundary, upper: ElementBoundary }` |
+| extents | opaque `ByteExtent<A: address> { base: A, length: ByteLength }`, opaque `ElementExtent<A: address> { base: A, length: ElementLength }`, opaque `PhysicalExtent { base: PhysicalAddress, length: ByteLength }` |
+
+These are distinct nominal structs, not aliases, a universal `Quantity`, or a
+machine-sized `usize`. Their carriers are fixed: nonnegative measures,
+indices, identities, samples, and generations use `u64`; signed offsets use
+`i64`; physical addresses retain exact 64-bit address bits. A range is
+end-exclusive and requires separate validation before it can be treated as a
+slice range. An extent describes the mathematical half-open interval beginning
+at its base and may validly end at exclusive address `2^64`, which has no
+one-word address representation of its own.
+
+`Alignment`, both range types, both generic extent types, and
+`PhysicalExtent` are refined values: clients cannot construct them or project
+their fields directly. Their defining `core.checked` operation authenticates
+the invariant. `core.quantities` provides pure, inline carrier projections:
+`alignment_bytes`, `byte_range_lower`, `byte_range_upper`,
+`element_range_lower`, `element_range_upper`, `byte_extent_base`,
+`byte_extent_length`, `element_extent_base`, `element_extent_length`,
+`physical_extent_base`, and `physical_extent_length`. Opacity changes neither
+layout nor ABI. All other rows remain transparent unit- or role-bearing
+carriers because every carrier bit pattern is meaningful for that type.
+
+Raw descriptor representation remains intentionally raw. In particular,
+`string.len`, `[]T.len`, and every `DynamicArray<T>` descriptor word remain
+`u64`; ABI, layout, and low-level descriptor access do not acquire nominal
+types merely because an API should use a domain quantity at a higher boundary.
+Owner-specific statuses and policy values remain nominal types in their owner
+module rather than members of `core.quantities`.
 
 #### Address types and explicit access
 
@@ -212,8 +375,11 @@ For the current AArch64 target, ordinary and volatile 16-, 32-, and 64-bit
 scalar accesses explicitly permit an unaligned address. Eight-bit access is
 naturally aligned at every byte address. MMIO access instead requires natural
 alignment for its width. The compiler rejects a provably misaligned MMIO
-access. It inserts no runtime check for a dynamically aligned address; a
-dynamically misaligned MMIO operation is a possible
+access. Ordinary compilation inserts no runtime check for a dynamic address.
+If the artifact selects `address_alignment` hardening, an asserted or unproved
+alignment obligation receives the cataloged check immediately before the
+protected access; omitted hardening preserves ordinary lowering. Without that
+selected check, a dynamically misaligned MMIO operation is a possible
 `architectural_fault_or_trap`, never compiler-exploitable undefined behavior or
 a trusted assertion. Semantic reports record the required alignment, the
 selected target's unaligned-access fact, and whether an architectural fault is
@@ -280,14 +446,19 @@ const tail: []u8 = buffer[2 ..]
 `..<` separates two present bounds. `..` denotes omitted start and/or end only
 inside this slice grammar. Slice ranges and integer-loop ranges are syntax, not
 first-class range values. The compiler evaluates the source, then a present
-start, then a present end, exactly once each from left to right. Forming the
-view performs no allocation, copy, bounds check, or memory access. Only a bound
-or ordering that is provably invalid at compile time is rejected; dynamic
-bounds remain unchecked.
+start, then a present end, exactly once each from left to right. In ordinary
+compilation, forming the view performs no allocation, copy, bounds check, or
+memory access. If the artifact selects `index_bounds` hardening, an asserted or
+unproved range obligation receives the cataloged
+`start <= end && end <= base_length` check immediately before the protected
+address calculation; the check adds no allocation, copy, or element access.
+Only a bound or ordering that is provably invalid at compile time is rejected
+unconditionally; dynamic bounds remain unchecked when this hardening row is not
+selected.
 
-Slice subscripts do not apply directly to `DynamicArray<T>`. That type's own
-operation contract may expose a slice separately, but its descriptor is not an
-array or slice source for this grammar.
+Slice subscripts do not apply directly to `DynamicArray<T>`. The bootstrap
+descriptor has no compiler-owned operation contract and is not an array or
+slice source for this grammar.
 
 An ordinary `@T` address has the sole raw-view constructor:
 
@@ -317,7 +488,37 @@ Scalar primitives are irreducible machine values. They have fixed size and
 alignment, can live in a single scalar register or scalar memory slot, and are
 the direct operands for Wyst's numeric and boolean operators.
 
-Examples:
+Every fixed-width integer type owns two immutable constants:
+
+| Member  | Meaning |
+| ------- | ------- |
+| `T.MIN` | least mathematical value representable by the concrete integer type `T` |
+| `T.MAX` | greatest mathematical value representable by the concrete integer type `T` |
+
+`T` in this table is one of `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`,
+or `i64`; source therefore writes forms such as `u8.MAX` and `i64.MIN`.
+The result has exactly the owning type rather than an untyped-integer type.
+These members are compiler-evaluated constants with no address or runtime
+storage, and are valid wherever a constant expression of that integer type is
+valid, including constant declarations, enum values, `#if`, and
+`#static_assert`. A fixed-array dimension still requires `u64`, so a bound may
+participate there only when its owning type satisfies that context (for
+example, `[u64.MIN + 255]T`; `u8.MAX` is not implicitly widened). The members
+pass through generic instantiation and public
+semantic interfaces without becoming declarations or linker symbols.
+
+The integer type spellings remain unshadowable. `MIN` and `MAX` are contextual
+members rather than reserved source words, so nominal user types may still
+declare fields or variants with those names. Type parameters do not gain
+associated-member lookup: `T.MAX` is not valid for `T: integer`; name the
+required concrete integer type. `bool`, floating-point types, `string`, and
+non-scalar built-in forms do not expose these members. The language does not
+provide parallel `BITS` or `BYTES` members because `#size_of(T)` already owns
+the byte-size query.
+
+[builtin-type-members.tsv](builtin-type-members.tsv) is the machine-readable
+authority for the complete member set, exact typed values, and evaluation
+class.
 
 ### Non-Scalar Built-In Type Forms
 
@@ -334,7 +535,7 @@ single irreducible scalar value.
 | [T:N]       | SIMD vector type                                          |
 | [N]T        | fixed-size stack array                                    |
 | []T         | slice descriptor                                          |
-| DynamicArray<T> | explicitly imported dynamic array descriptor            |
+| DynamicArray<T> | explicitly imported bootstrap raw dynamic-array descriptor |
 
 The built-in `string` type is a length-carrying byte string for UTF-8 text.
 Its `len` field is the number of bytes, not the number of Unicode scalar
@@ -638,7 +839,8 @@ type system with no implicit widening:
 ## 1.8 Compile-Time Constants
 
 Constant expressions use the arithmetic and type-conversion rules described in
-this design corpus.
+this design corpus. Concrete fixed-width integer `MIN` and `MAX` member values
+are constant-expression leaves under the scalar rules in section 1.4.
 
 Top-level compile-time constants are evaluated by dependency graph, not source
 order. A top-level constant may refer to another visible top-level constant
@@ -1075,10 +1277,10 @@ generic model. Forms such as `RingBuffer<T, Capacity>` or `Foo<T, 4>` are not
 valid generic declarations or instantiations; fixed arrays continue to use the
 dedicated `[N]T` syntax.
 
-The narrow dynamic-array initializer spelling
-`dyn_array_init<T>(arena, capacity = ..., growth = ...)` uses the same explicit
-generic type-argument spelling as generic calls. Its angle-bracket argument
-must be a type, and it does not accept compile-time values.
+The retired bootstrap spelling
+`dyn_array_init<T>(arena, capacity = ..., growth = ...)` has no special generic
+or semantic status. If a project declares an ordinary function by that name,
+it follows the same explicit type-only generic rules as every other function.
 
 ---
 
@@ -1103,13 +1305,24 @@ type, not a shadowing generic parameter. A generic declaration also may not
 repeat a type parameter name: `Pair<T, T>` is rejected because both occurrences
 would bind the same name.
 
-Type parameters are unbounded by default. A generic body may move, store, pass,
-return, take addresses of, load/store through typed memory forms such as
-`T@[addr]`, and form descriptor types over an unbounded `T`, but it may not
-assume operations or structure that are not known from the declaration. In
-particular, an unbounded `T` does not imply numeric operators, ordering, field
-access, enum tag tests, boolean conditions, casts, default construction,
-methods, or interface/trait members.
+Type parameters are unbounded by default. An unbounded parameter may appear in
+generic type declarations, retained read parameters, mutable-loan parameters,
+and representation-independent carriers such as pointers and slices. Those
+uses neither create nor transport an owned whole `T`. An unbounded parameter
+does not prove that `T` has fixed inline layout or ordinary move semantics, so
+a generic body may not accept it as an owned `var` parameter, store it inline,
+transfer it, return it by value, or construct a by-value carrier whose
+representation contains it. Those operations require an explicit bound that
+entails `fixed_layout_movable`. Logical copies, explicit discard, complete
+typed loads, and complete typed stores into caller-provided bytes require a
+bound that entails `copyable_discardable`.
+
+An unbounded `T` also does not imply numeric operators, ordering, field access,
+enum tag tests, boolean conditions, casts, default construction, methods, or
+interface/trait members. Typed-address lens construction over a symbolic
+pointee is permitted only when that pointee has a fixed-layout movable proof;
+loading or storing a complete `T` through the resulting address still requires
+the stronger copyable/discardable proof.
 
 A type parameter may carry one built-in compile-time capability bound:
 
@@ -1127,6 +1340,7 @@ GenericBound     <- 'integer'
                   / 'bitstruct'
                   / 'payload_word'
                   / 'fixed_layout_movable'
+                  / 'copyable_discardable'
 ```
 
 The bound names are recognized only in generic type-parameter bound position.
@@ -1150,10 +1364,30 @@ are valid for every concrete type in that closed family:
 | `bitstruct`        | nominal `bitstruct` types                        | whole-value equality, storage, passing, returning, and address-taking              |
 | `payload_word`     | `bool`, integer scalar types, pointer types, function-pointer types, and nominal `bitstruct` types | narrowly word-sized generic storage contracts; not the general enum capability |
 | `fixed_layout_movable` | compiler-proven fixed-layout values with ordinary move semantics | storage, passing, returning, address-taking, and inline enum payload fields |
+| `copyable_discardable` | compiler-proven fixed-layout values whose substituted structural abilities permit both copy and discard | storage, passing, returning, copying, discarding, and a complete typed store into caller-provided bytes |
 
 The built-in bound set is intentionally narrow. It is not a trait, concept,
 interface, typeclass, or structural predicate system. User-defined capability
 bounds are outside this model.
+
+`copyable_discardable` is stricter than `fixed_layout_movable`. It rejects
+`no_copy`, `must_account`, `must_resolve`, `MaybeUninit`, atomic storage, and any aggregate or
+generic instantiation that structurally contains such a component. Pointer and
+slice descriptor values satisfy the ability bound; their borrow provenance is
+still enforced independently and cannot be erased by copying bytes. The bound
+exists for ordinary generic code such as `core.storage` typed initialization,
+where writing the representation must not duplicate an affine authority or
+create a hidden terminal obligation.
+
+The closed bounds have a compile-time entailment hierarchy. Every specialized
+bound (`integer`, `unsigned_integer`, `signed_integer`, `float`, `numeric`,
+`scalar`, `address`, `bitstruct`, and `payload_word`) proves both
+`copyable_discardable` and `fixed_layout_movable` for its admitted family.
+`copyable_discardable` proves `fixed_layout_movable`; the reverse implication
+does not hold. The numeric family also retains its category entailments:
+unsigned and signed integer imply integer, integer and float imply numeric, and
+numeric implies scalar. These are compiler-owned implications, not implicit
+source bounds or a user-extensible trait relation.
 
 Generic instantiation requires explicit type arguments:
 
@@ -1173,11 +1407,13 @@ that bound at the instantiation site. For example, `add_one<bool>(true)` is
 rejected because `bool` does not satisfy `integer`.
 
 Generic enum payloads use the `fixed_layout_movable` capability. A payload
-variant that stores a type parameter directly, such as `Ok(T)`, must declare
-`T: fixed_layout_movable`. The narrower `payload_word` bound remains available
-only to APIs whose own contract genuinely requires one word; it is not an enum
-restriction. Violations are rejected at the declaration or instantiation
-boundary:
+variant whose stored representation depends on a type parameter, such as
+`Ok(T)` or `Ok(Box<T>)`, must give that parameter any explicit bound that
+entails `fixed_layout_movable`. A phantom occurrence whose carrier fields do
+not store `T` needs no such bound. The narrower `payload_word` bound remains
+available only to APIs whose own contract genuinely requires one word; it is
+not an enum restriction. Violations are rejected at the declaration or
+instantiation boundary.
 
 Generic type arguments are full types, so they may contain other instantiated
 generic types and existing type constructors:
@@ -1207,19 +1443,26 @@ structural interchangeability.
 
 Generic functions instantiate to distinct semantic function symbols by
 declaring function plus concrete type argument tuple. Two modules that call the
-same imported `swap<u64>` refer to the same canonical instantiation, but
+same imported `exchange<u64>` refer to the same canonical instantiation, but
 different generic declarations do not merge just because their instantiated
 bodies, signatures, or machine code match. A later backend or linker may fold
 identical machine code only as an invisible optimization; diagnostics, debug
 info, address identity, and symbol identity must still preserve the original
 generic declaration and type arguments.
 
+Concrete callable selectors use the same instantiation. A call to
+`exchange<u64>(...)`, `#addr_of(exchange<u64>)`, and a permitted local
+`export exchange<u64> as symbol "..."` all demand the one canonical application.
+The export form requires an explicit native alias and cannot republish an
+imported or re-exported generic. Generic structs and enums remain type
+identities and have no symbol address.
+
 Diagnostics and debug info spell generic instantiations with the declaring path
 and the canonical type-argument list, for example
-`math.swap<u64>` or `collections.Result<@u8, AllocErrorCode>`. ELF symbols for
+`math.exchange<u64>` or `collections.Result<@u8, AllocErrorCode>`. ELF symbols for
 concrete generic instantiations use the required encoding in
 [chapter-16-object-format.md §4.3](chapter-16-object-format.md#43-mangling), for
-example `swap__wg1__u64`, so tooling has one public ABI spelling while
+example `exchange__wg1__u64`, so tooling has one public ABI spelling while
 diagnostics keep the source-facing spelling.
 
 Generic aliases are not part of Wyst's generic model. A named generic type must
@@ -1320,7 +1563,7 @@ The generic design must satisfy the following constraints:
 | Generic functions, structs, and enums only                                 | Covers generic algorithms, typed containers, and `Result<T, E>`/`Option<T>`-style sum types without adding aliases or interfaces.                                                              |
 | Nominal generic type instantiations                                        | Preserves Wyst's exact type identity model; same-layout generic structs/enums do not silently substitute for one another.                                                                       |
 | Nested generic type arguments                                              | Generic containers compose without special cases; `GenericTypeArgList` accepts `Type`, not only bare names.                                                                                    |
-| Unbounded by default; closed built-in bounds only                          | Useful storage, forwarding, and container patterns do not require bounds. Numeric/address/bitstruct/payload-word helpers get explicit compile-time capability checks without a trait/interface system. |
+| Unbounded by default; closed built-in bounds only                          | Retained loans, generic declarations, and representation-independent carriers need no bound. Owned whole-value transport requires explicit movability, while numeric/address/bitstruct/payload-word helpers retain their closed compiler-owned capability checks without a trait/interface system. |
 | Monomorphization, not erasure                                              | Wyst has no runtime; type-erased generics would require a runtime dispatch mechanism (vtables, dictionaries) that does not exist.                                                               |
 | One canonical function symbol per declaration/type tuple                   | Determinism: identical (`T`, `U`, ...) tuples for the same generic function declaration must produce one semantic symbol; different declarations never merge structurally.                     |
 | Canonical instantiation key includes declaration identity plus complete type and value arguments | Termination, diagnostics, debug info, and symbol generation all need the same identity rule. Value-argument identity is reserved as an empty list until a future value-parameter feature exists. |
@@ -1429,7 +1672,7 @@ the compiler checks is the concrete source in the build input.
 | Generic structs/enums instantiate nominally                 | A type's source declaration remains part of its identity after substitution. This avoids layout-based accidental compatibility and keeps diagnostics aligned with user-written names.                                 |
 | Generic functions instantiate by declaration and type tuple | Repeated uses of `swap<u64>` share one semantic symbol, while `swap<u64>` and `exchange<u64>` remain distinct even if their code is identical. This keeps debug info, diagnostics, and address identity unsurprising. |
 | Type arguments may nest                                     | Container patterns quickly need shapes such as `Pair<Box<u64>, Error>`; allowing type arguments to be full types avoids a second generics syntax expansion later.                                            |
-| `T` is unbounded by default, with narrow built-in bounds     | Storage, movement, forwarding, and descriptor code can be useful without bounds. Numeric, scalar, address, bitstruct, and payload-word helpers get explicit compile-time capability checks without a general interface system. |
+| `T` is unbounded by default, with narrow built-in bounds     | Retained loans, generic type declarations, and representation-independent descriptor code remain useful without bounds. Inline storage, movement, forwarding by value, and aggregate construction state their required built-in ability explicitly; numeric, scalar, address, bitstruct, and payload-word helpers remain closed compiler-owned capabilities. |
 | No type-argument inference or defaults                      | Every instantiation spells its concrete type tuple. This keeps diagnostics, symbol identity, and monomorphization deterministic.                                                                                      |
 | Canonical source-facing instantiation names                 | Diagnostics and debug info need stable names that users can map back to source; `Path.Name<canonical-args>` does that without exposing backend mangling.                                                              |
 | Document non-generic idioms explicitly                      | The idioms above cover common parametric patterns that do not need the generic model.                                                                                                                                 |

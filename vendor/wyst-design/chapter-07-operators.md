@@ -789,8 +789,9 @@ Vector element-wise lowering (examples; arrangement suffix determined by type):
 ## Outcome operators
 
 Postfix `?` is the sole outcome-specific operator. It accepts only a direct
-success-plus-failure operation call in an exactly compatible enclosing
-operation and is identical to implicit success plus `forward failure`. It does
+interactive call with exactly ordinary return plus failure in an exactly
+compatible enclosing interactive function and is identical to the identity
+return path plus `forward failure`. It does
 not apply to `Result`, translate errors, forward progress/cancellation, or
 provide recovery policy. Exhaustive expression `match`, not punctuation
 unwrapping, transforms stored outcomes.

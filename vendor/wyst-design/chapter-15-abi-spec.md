@@ -31,8 +31,8 @@ Wyst supports two calling conventions:
 | AAPCS64 | `extern "C" fn(...) -> ...` | no | C interop, OS calls, foreign callbacks |
 
 The native ABI is the default. It deliberately diverges from AAPCS64 in the
-areas where AAPCS64 leaves performance on the table: struct passing,
-multi-value return, and frame pointer policy. AAPCS64 compatibility is
+areas where AAPCS64 leaves performance on the table: aggregate passing,
+wide aggregate return, and frame pointer policy. AAPCS64 compatibility is
 **opt-in** and applies exactly to the `extern "C"` callable; it does not affect
 other functions in the same module.
 
@@ -95,6 +95,33 @@ parameter's final ABI location is stack-based.
 does not turn a public function or `per_cpu` declaration into a raw
 linker-address export.
 
+Resource contracts are exact callable-identity facts even when two signatures
+have the same machine layout. A native `mut T` parameter is passed as the
+address of caller-owned initialized `T` storage; the callee's reads and writes
+operate through that address, and ordinary return leaves the same storage
+initialized. A retained read parameter that is named by a returned-view
+`from` contract also uses caller-storage address passing so the returned view
+cannot point at a callee copy. A retained read of a concrete type that has no
+by-value Native ABI classification (including `MaybeUninit`, atomic storage,
+or an aggregate that structurally contains either) also uses the address of
+authenticated caller-owned storage. This conditional indirect-read bit is part
+of direct and indirect Wyst callable identity. Other unmarked reads and `var T`
+parameters use ordinary value classification. `xfer` is source accounting and
+adds no ABI word. The C convention does not admit this Wyst-only conditional
+projection; such values cross C only through an explicit address adapter.
+
+The compiler may avoid an otherwise physical copy or keep an ordinary value in
+registers, but it may not change logical copy/move state, storage identity,
+alias conflicts, returned provenance, terminal obligations, or evaluation
+order. A direct or indirect call must match every parameter mode and result
+origin exactly; no thunk may erase or synthesize them.
+
+The AAPCS64 `extern "C"` convention admits only ordinary read parameters on
+the Wyst surface. It rejects `mut`, `var`, and by-value types whose structural
+abilities are non-copyable, non-discardable, opaque-resource dependent, or
+agent-local. Interop uses explicit addresses and an adapter-owned lifetime and
+cleanup contract when such a resource must cross C.
+
 <!-- wyst-contract: fmt -->
 ```wyst
 module abi.contract
@@ -120,9 +147,13 @@ All ARM64 general-purpose and SIMD registers fall into one of four classes under
 `x16` and `x17` are the linker scratch registers (IP0, IP1). They are caller-saved and available for compiler temporaries, but the linker may overwrite them in branch veneers. Code that uses checked `asm` blocks must not assume `x16`/`x17` survive across an active `bl`; a future checked `blr` row carries the same rule, while the selected checked-assembly pack rejects `blr` as `known_unsupported`.
 
 `v8–v15` (the lower 64 bits, i.e. `d8–d15`) are callee-saved under AAPCS64. Under the Wyst Native ABI they are **caller-saved** in full — the entire 128-bit register is clobbered. This frees the compiler from generating SIMD save/restore in prologues unless the programmer explicitly pins to those registers.
-When a Wyst function is annotated `[aapcs]`, the AAPCS64 preservation rule
-applies to that function: if it makes any returning call, including a call to a
-Wyst-native helper, it saves and restores `d8`-`d15` around its body.
+When a Wyst function is annotated `[aapcs]`, it preserves each `d8`-`d15` low
+half that it or a nested boundary may clobber. A direct AAPCS64 call already
+preserves those halves and creates no blanket save requirement. A Wyst-native
+call may clobber the full SIMD bank, so an AAPCS64 function that crosses that
+boundary preserves every `d8`-`d15` low half unless a narrower authenticated
+call contract exists. Indirect calls without such a contract are conservative
+in the same way. Upper 64-bit halves remain caller-saved under both conventions.
 
 `x30` (the link register) is callee-saved in the sense that a non-leaf function must save it before issuing any call and restore it before returning. See §A.6 (Frame Layout).
 
@@ -132,7 +163,23 @@ Wyst-native helper, it saves and restores `d8`-`d15` around its body.
 
 Arguments are processed left-to-right from the function signature.
 
-The "memory image" of a struct argument referred to throughout this section is the byte sequence produced by the layout rules in [chapter-06-types.md §1.6](chapter-06-types.md) — natural alignment, declaration field order, inter-field padding and trailing padding as specified there. `size_of` and `align_of` in this document refer to the formulas defined there. The size thresholds below (≤ 8, 9–16, > 16, ≤ 32, > 32) apply to `size_of(S)` including trailing padding.
+The "memory image" of a fixed-layout aggregate referred to throughout this
+section is the byte sequence produced by the layout rules in
+[chapter-06-types.md §1.6](chapter-06-types.md): natural alignment, declaration
+field order, exact tags and inline payloads, inter-field padding, and trailing
+padding. The classifier applies uniformly to named structures, fixed arrays,
+named tuples (including nested tuples), strings, slices, dynamic-array
+descriptors, payload-carrying enums (including nested enums), and other
+materialized fixed-layout sums. `size_of` and `align_of` refer to the formulas
+defined there, and every threshold includes trailing padding.
+
+Unsized arrays, `void`, `never`, recursive layouts without a finite concrete
+size, raw `MaybeUninit` storage, and aggregates containing atomic storage do
+not have a by-value Native ABI classification. Source checking rejects them in
+owned parameters and by-value results; native retained read and `mut` loans use
+the authenticated caller-storage projection defined above. AAPCS64
+classification remains independent and retains its own HFA/HVA and
+foreign-surface restrictions.
 
 #### Integer and Pointer Arguments
 
@@ -174,31 +221,39 @@ The first eight `f32`, `f64`, or `[T:N]` arguments are placed in `v0`–`v7` in 
 
 If more than eight floating-point or vector arguments are present, the remaining arguments are passed on the stack (see §A.5).
 
-#### Small Struct Arguments (≤ 8 bytes)
+#### Small Aggregate Arguments (≤ 8 bytes)
 
-A struct whose total size is at most 8 bytes is packed into a single integer argument register. Field bytes are packed in memory layout order, occupying the low bytes of the register:
+An aggregate whose total size is at most 8 bytes is packed into a single integer argument register. Its bytes occupy the low bytes of the register in memory-layout order:
+
+A zero-sized aggregate consumes that one classification slot but has no
+physical component to read, write, spill, or reload; the receiver ignores the
+slot contents.
 
 The register holds the struct's memory image — the same bytes that a `u64@[addr]` load of a properly aligned struct would produce. The callee unpacks fields using shifts or the normal struct field access syntax.
 
-#### Medium Struct Arguments (9–16 bytes)
+#### Medium Aggregate Arguments (9–16 bytes)
 
-A struct whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), the second holds the remaining bytes (zero-padded to 8 bytes if the struct is not a multiple of 8 bytes in size):
+An aggregate whose total size is between 9 and 16 bytes occupies two consecutive integer argument registers. The first register holds bytes 0–7 (low memory), and the second holds the remaining bytes, zero-padded when necessary:
 
-If only one integer argument register remains when a medium struct is to be passed, the struct is passed on the stack instead (see §A.5). Structs are not split across the register/stack boundary.
+If only one integer argument register remains when a medium aggregate is to be passed, the aggregate is passed on the stack instead (see §A.5). Aggregates are not split across the register/stack boundary.
 
-#### Large Struct Arguments (> 16 bytes)
+#### Large Aggregate Arguments (> 16 bytes)
 
-A struct larger than 16 bytes is not passed in registers. The caller allocates storage for the struct on its stack, copies the argument value there, and passes the address of that storage in the next available integer argument register:
+An aggregate larger than 16 bytes is not passed in registers. The caller allocates storage for its exact memory image, copies the value there, and passes the address of that storage in the next available integer argument register or integer stack slot:
 
-The callee may read the struct through the received pointer but must not write to it — the storage is owned by the caller and may alias the caller's local variable. If the callee needs to modify a copy, it must allocate its own storage.
+The callee may read the aggregate through the received pointer but must not
+write to it: the copy storage is owned by the caller for the duration of the
+call. The pointer is the argument value at the ABI boundary; it is distinct
+from any source-level alias or view carried inside the aggregate.
 
 ---
 
 ### A.3 Return Values
 
-Native Wyst functions support zero, one, or named tuple return values. AAPCS64
-interop remains narrower and rejects out-of-scope multi-value return shapes at
-the boundary.
+Native Wyst functions support zero, one, or named tuple return values. A named
+tuple is one fixed-layout aggregate memory image, not independent per-field
+machine returns. AAPCS64 interop remains narrower and rejects tuple returns at
+the foreign boundary.
 
 #### Single Integer Return
 
@@ -207,42 +262,35 @@ A single integer or pointer return value is placed in `x0`.
 Payload-less enum return values follow the same rule as their discriminator
 integer and return in `x0`.
 
-Payload-carrying enum return values use the same exact aggregate classifier as
-arguments: at most 8 bytes in `x0`, 9–16 bytes in `x0`/`x1`, and larger values
-through caller result storage addressed by `x8`. Inactive and padding bytes are
-deterministically initialized but are not active source-level fields.
+Payload-carrying enum return values use the same exact aggregate memory image
+as arguments, but the Native result ceiling is 32 bytes: successive 8-byte
+chunks use `x0`–`x3`, and larger values use caller result storage addressed by
+`x8`. Inactive and padding bytes are deterministically initialized but are not
+active source-level fields.
 
 #### Single Float or Vector Return
 
 A single `f32`, `f64`, or `[T:N]` return value is placed in `v0` (using `s0`, `d0`, or `v0` respectively).
 
-#### Multi-Value Return
+#### Aggregate Return (≤ 32 bytes)
 
-Multiple return values are distributed across registers up to the limits below. Wyst's tuple return syntax ([chapter-08-functions.md §2.2](chapter-08-functions.md)) maps directly to this:
+A fixed-layout aggregate return whose total size is at most 32 bytes is packed
+into `x0`–`x3` using successive 8-byte memory-image chunks. This includes named
+tuples, arrays, payload sums, and descriptor types. A tuple or float-only
+structure does not receive field-wise FPR classification under the Native ABI;
+its float and vector fields remain bytes in the uniform GPR memory image.
+Standalone scalar `f32`, scalar `f64`, and vector results retain the `v0` rule
+above. AAPCS64 HFA/HVA classification is unchanged.
 
-| Return type count  | Integer registers used | Float/vector registers used |
-| ------------------ | ---------------------- | --------------------------- |
-| ≤ 4 integers       | x0–x3                  | —                           |
-| ≤ 4 floats/vectors | —                      | v0–v3                       |
-| mixed              | x0–x3 (integers)       | v0–v3 (floats/vectors)      |
-
-Example:
-
-Lowering:
-
-```asm
-udiv x0, x0, x1     // q -> x0
-msub x1, x0, x1, x2 // r -> x1  (uses original a, b from x0, x1, x2... see note)
-ret
-```
-
-#### Struct Return (≤ 32 bytes)
-
-A struct return value whose total size is at most 32 bytes is packed into `x0`–`x3` using the same memory-image packing rules as struct argument passing. A float-only struct with one to four scalar `f32`/`f64` leaf fields returns those fields in declaration/layout order through `v0`–`v3`, using `sN` for `f32` fields and `dN` for `f64` fields. No indirection is introduced.
+As with arguments, a zero-sized result retains the nominal `x0`
+classification while transferring no physical component.
 
 #### Indirect Return (> 32 bytes)
 
-When the return type exceeds 32 bytes, the caller allocates storage and passes its address in `x8` (the indirect result location register). The callee writes the return value to that address and does not place any value in `x0`–`x3` for the struct fields. `x8` is not preserved across the call.
+When a fixed-layout aggregate return exceeds 32 bytes, the caller allocates
+storage and passes its address in `x8` (the indirect result location register).
+The callee writes the complete result memory image to that address and does not
+place aggregate chunks in `x0`–`x3`. `x8` is not preserved across the call.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -271,12 +319,12 @@ A **leaf function** is a function that makes no calls (no `bl`, `blr`, `svc`, or
 
 A function that calls another function must save `x30` before the call and restore it before returning, because the call instruction overwrites `x30` with the return address.
 
-For `[aapcs]` functions, the same non-leaf boundary also saves the lower
-64 bits of `v8`-`v15` (`d8`-`d15`). This is unconditional for any returning
-call because Wyst-native callees may legally clobber all SIMD registers.
-Leaf `[aapcs]` functions save only the `d8`-`d15` registers that they directly
-use or declare as clobbered. Wyst-native functions never save SIMD registers by
-convention.
+For `[aapcs]` functions, save and restore exactly the `d8`-`d15` low halves
+written by local allocation or assembly, plus those a nested Native,
+insufficiently constrained indirect, or exact checked-assembly boundary may
+clobber. A direct AAPCS64 call adds none by itself. Wyst-native functions never
+save SIMD registers by their own convention, though their callers may preserve
+values around a call according to the caller's contract.
 
 ### A.5 Stack Protocol
 
@@ -389,31 +437,37 @@ of the Wyst Native ABI.
 
 ---
 
-### A.9 Callee-Entry Location Transfers
+### A.9 Simultaneous ABI Location Transfers
 
-Argument classification determines where values exist at the instant a callee
-is entered. Register allocation independently determines the compiler home of
-each live parameter. Moving from the entry locations to those homes is one
+Every boundary between compiler homes and ABI locations is one
 **simultaneous typed transfer set** under both the Wyst Native and AAPCS64
-conventions. Source argument evaluation has already completed; transfer order
-does not alter the left-to-right evaluation rule in Chapter 7.
+conventions. This includes callee entry, outgoing direct and indirect call
+arguments, direct result production and receipt, indirect-result pointer and
+memory-image transfer, interactive terminal outcomes, notification entries,
+recovery entries and choices, explicit register placements, fixed-register
+operations, and terminal direct or indirect calls. Source argument evaluation
+has already completed; transfer planning does not alter Chapter 7's
+left-to-right evaluation rule or move work across checked assembly, MMIO,
+volatile access, traps, counter reads, or other semantic operations.
 
-Every scalar GPR, FP/SIMD, or stack component that can participate in a
-destructive location dependency enters the planner in parameter order and
-component order. Exact source/destination self-copies disappear. Every other
-planned component records its source location, destination location, register
-class, and width. Two distinct values may not claim overlapping destination
-storage.
+Terminal calls with result type `never` are tail-transfer boundaries for value
+placement: no value needed by the final transfer may be destroyed before the
+`bl` or `blr`. They retain the ordinary link call and the caller's truthful
+frame/unwind state. Frame-reusing branch tail calls are a separate feature.
 
-Register pairs, register lists, and aggregate register images whose compiler
-homes are byte-addressed storage are preserved into those homes before any
-scalar register home is changed. Their specialized pair/list/byte-image copier
-must choose scratch registers outside every live incoming source and final
-scalar home; it does not pretend an indirect aggregate pointer is the
-aggregate's value bits. This preservation stage and the scalar planner are one
-entry-transfer protocol with one liveness rule, not two competing general
-parallel-copy algorithms. Caller-owned stack inputs are consumed only after
-the register preservation stage has made their helper registers safe.
+Every scalar GPR, FP/SIMD, stack, or fixed-layout memory-image component that
+can participate in a destructive dependency enters the same planner. Exact
+source/destination self-copies disappear. Every other component records its
+source, destination, register class, width, and architectural view. Two
+distinct values may not claim overlapping destination storage.
+
+Register pairs, register lists, and aggregate memory images are decomposed into
+typed physical components without pretending an indirect aggregate pointer is
+the aggregate's value bits. Pair and chunk emission is an optimization of the
+resulting plan, not a second ordering algorithm. Caller-owned stack inputs,
+outgoing copy areas, stack arguments, and result homes participate in the same
+alias/liveness rule; any helper register is used only after its live source has
+been preserved.
 
 All architectural views of the same register alias for dependency purposes:
 
@@ -467,15 +521,16 @@ to represent both an argument and the indirect-result pointer is rejected as
 an unsatisfiable callable boundary.
 
 If the deterministic scratch lists contain no legal register, frame planning
-allocates one cycle temporary at the lowest naturally aligned unoccupied
-compiler-owned frame offset after the already ordered fixed and value slots.
-Its size and alignment are those of the widest value that must be preserved;
-one sufficiently large slot is reused by non-overlapping entry cycles. The
-slot is allocated before instruction emission, contributes to both
-`#[frame(max_bytes = ...)]` and `#[frame(max_spills = ...)]`, and appears in frame and lowering
-reports as `incoming-parallel-copy-temporary` with ABI-lowering provenance,
-the preserved class and width, and the cycle that required it. It is not a
-semantic allocation effect.
+allocates one ABI parallel-copy temporary at the lowest naturally aligned
+unoccupied compiler-owned frame offset after the already ordered fixed and
+value slots. Its size and alignment are those of the widest component that
+must be preserved anywhere in the function. That single sufficiently large
+slot is reused by non-overlapping entry, call, result, fixed-register, and
+terminal-transfer cycles. The slot is allocated before instruction emission,
+contributes to both `#[frame(max_bytes = ...)]` and
+`#[frame(max_spills = ...)]`, and appears in frame and lowering reports as
+`abi-parallel-copy-temporary` with ABI-lowering provenance and every boundary
+that required it. It is not a semantic allocation effect.
 
 Incoming stack locations remain caller-owned sources addressed relative to
 the incoming stack pointer. Frame allocation must not make them alias a
@@ -483,10 +538,10 @@ compiler-owned destination or temporary. A stack load that needs a helper
 register occurs only after every still-live entry value in that helper
 register has been preserved.
 
-The same planner is the canonical implementation surface for other
-ABI-boundary transfer sets. Callee entry is the boundary required here;
-outgoing arguments and results may add location kinds without changing these
-alias, ordering, cycle, or temporary-selection rules.
+Immutable recipes such as constants, string/slice descriptor addresses, and
+the address of caller-owned copy or result storage are materialized only after
+the plan has consumed every physical source they could overwrite. Result
+normalization likewise occurs only after the simultaneous transfer.
 
 ---
 
@@ -516,17 +571,21 @@ The `[aapcs]` attribute declares that the function conforms fully to the ARM64 P
 | ----------------------- | ------------------------------------------ | ---------------------------------------- |
 | Argument registers      | x0–x7 (int), v0–v7 (float), independent    | x0–x7 (int), v0–v7 (float), independent  |
 | v8–v15 preservation     | Caller-saved (full 128-bit)                | Callee-saved (lower 64 bits, `d8`–`d15`) |
-| Struct ≤ 8 bytes        | Single register, memory image              | Single register, memory image (same)     |
-| Struct 9–16 bytes       | Two consecutive registers                  | Two consecutive registers (same)         |
-| Struct > 16 bytes       | Caller allocates, address follows ordinary integer argument allocation | Caller allocates, address follows ordinary integer argument allocation |
-| HFA/HVA structs         | Not defined; treated as byte-image structs | Up to 4 homogeneous elements in v0–v7    |
-| Return ≤ 32 bytes (int) | x0–x3                                      | x0–x1 only                               |
+| Aggregate ≤ 8 bytes     | Single GPR, uniform memory image            | PCS classification for the foreign type  |
+| Aggregate 9–16 bytes    | Two consecutive GPRs, uniform memory image | PCS classification for the foreign type  |
+| Aggregate > 16 bytes    | Caller copy; address follows ordinary integer argument allocation | PCS classification for the foreign type |
+| HFA/HVA aggregates      | Not recognized; uniform GPR memory image   | Up to 4 homogeneous elements in v0–v7    |
+| Aggregate result ≤ 32 bytes | x0–x3, uniform memory image           | x0–x1 or HFA/HVA rules                    |
 | Indirect return pointer | x8                                         | x8 (same)                                |
 | Frame record            | Required for non-leaf; optional for leaf   | Required for non-leaf (same policy)      |
 | PAC in prologue         | Not emitted (opt-in via `#pac`)            | Not specified; platform-dependent        |
 | Variadic support        | Outside Wyst ABI model                      | Defined (AAPCS64 §6.4)                   |
 
-The most significant differences are: (1) Wyst native returns up to 4 integers in `x0`–`x3` where AAPCS64 only uses `x0`–`x1`; (2) `v8`–`v15` are caller-saved in Wyst native, eliminating SIMD callee-save overhead in hot paths; (3) HFA/HVA recognition is reserved for explicit `[aapcs]` boundaries.
+The most significant differences are: (1) Wyst Native returns up to four
+8-byte chunks of one aggregate memory image in `x0`–`x3`, while AAPCS64 uses
+its PCS classification; (2) `v8`–`v15` are caller-saved in Wyst Native,
+eliminating SIMD callee-save overhead in hot paths; and (3) HFA/HVA recognition
+is reserved for explicit AAPCS64 boundaries.
 
 ---
 
@@ -642,14 +701,13 @@ The cost is one-time per header; the result is auditable Wyst source that partic
 | **Stack arg order**              | Right-to-left (last arg pushed first)     | Right-to-left                           |
 | **Stack arg alignment**          | 8-byte slots; each arg zero/sign-extended | 8-byte slots (same)                     |
 | **Stack alignment at call site** | 16-byte                                   | 16-byte                                 |
-| **Struct ≤ 8 bytes**             | 1 integer register (memory image)         | 1 integer register (memory image)       |
-| **Struct 9–16 bytes**            | 2 consecutive integer registers           | 2 consecutive integer registers         |
-| **Struct > 16 bytes**            | Caller-allocated; address follows ordinary integer argument allocation | Caller-allocated; address follows ordinary integer argument allocation |
-| **HFA/HVA**                      | Not recognised; treated as byte struct    | Up to 4 homogeneous elements in v0–v7   |
+| **Aggregate ≤ 8 bytes**          | 1 GPR (uniform memory image)               | PCS classification                      |
+| **Aggregate 9–16 bytes**         | 2 consecutive GPRs (uniform memory image) | PCS classification                      |
+| **Aggregate > 16 bytes**         | Caller copy; address follows ordinary integer argument allocation | PCS classification                      |
+| **HFA/HVA**                      | Not recognized; uniform GPR memory image  | Up to 4 homogeneous elements in v0–v7   |
 | **Integer return (1 value)**     | x0                                        | x0                                      |
-| **Integer return (2–4 values)**  | x0–x3                                     | x0–x1 only                              |
-| **Float/vector return**          | v0–v3                                     | v0 only (v0–v1 for pairs in some cases) |
-| **Struct return ≤ 32 bytes**     | x0–x3 (packed)                            | x0–x1 (packed, ≤ 16 bytes)              |
+| **Aggregate return ≤ 32 bytes**  | x0–x3 (uniform memory image)              | PCS classification                      |
+| **Scalar float/vector return**   | v0                                        | v0                                      |
 | **Indirect return pointer**      | x8                                        | x8                                      |
 | **Caller-saved (int)**           | x0–x17                                    | x0–x17                                  |
 | **Caller-saved (float/vec)**     | v0–v31 (all)                              | v0–v7, v16–v31                          |
@@ -713,9 +771,9 @@ apply call: x0 = &transform_copy, x1 = v
 | Decision                                                    | Rationale                                                                                                                                                                                                                                                                                                                 |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `v8`–`v15` caller-saved                                     | Eliminates SIMD save/restore in non-leaf functions that use SIMD. AAPCS64 callee-saves only the lower 64 bits anyway, making `d8`–`d15` preservation a partial measure that still costs stores/loads. Making them fully caller-saved is a cleaner contract.                                                               |
-| 4 integer return registers (`x0`–`x3`)                      | Wyst multi-value return (§2.2) would otherwise require hidden struct allocation for 3- and 4-value returns. Direct register returns are zero overhead. AAPCS64's 2-register limit was designed around C's single-value return model, which Wyst does not share.                                                             |
-| Large struct argument address follows ordinary argument allocation | Both Wyst Native and `[aapcs]` calls replace large by-value aggregate arguments with a caller-owned copy pointer and allocate that pointer through the normal integer argument cursor. `x8` remains reserved for indirect _return_ pointers.                     |
-| No Native HFA/HVA rules                                     | HFA/HVA rules are reserved for explicit `[aapcs]` boundaries. Native Wyst programs pass vectors explicitly via `[T:N]` parameters; struct-wrapping a vector is a code smell, not a convention.                                                                                                                          |
+| 4 aggregate result registers (`x0`–`x3`)                    | A direct ceiling of 32 bytes avoids caller result storage for common fixed-layout tuples, arrays, sums, and structures while retaining one uniform memory-image rule.                                                                                                                                                |
+| Large aggregate argument address follows ordinary argument allocation | Both Wyst Native and AAPCS64 calls replace large by-value aggregate arguments with a caller-owned copy pointer and allocate that pointer through the convention's ordinary integer argument cursor. `x8` remains reserved for indirect _return_ pointers. |
+| No Native HFA/HVA rules                                     | HFA/HVA rules are reserved for explicit AAPCS64 boundaries. Native tuples and structures containing floating-point or vector fields use the same GPR memory-image classifier as every other fixed-layout aggregate.                                                                                                  |
 | AAPCS opt-in rather than default                            | Wyst-to-Wyst calls should not pay the cost of AAPCS64's `d8`–`d15` preservation or its limited return register set. Opt-in via `[aapcs]` makes the boundary explicit and statically checkable — you can grep for every foreign call site.                                                                                   |
 | PAC not emitted by default                                  | Wyst treats addresses as plain integers. PAC tags are stored in top address bits, which conflicts with Wyst's address arithmetic model. Opt-in `#pac` is the correct model; mandatory PAC would require a new address type.                                                                                                 |
 | No variadic convention                                      | C variadics require shadow stack space for all register arguments in AAPCS64, degrading performance for all callers of variadic functions. Wyst-native code does not need this; pointer+count is always available and more explicit.                                                                                       |
@@ -736,20 +794,23 @@ The compiler must:
   with a pointer to caller-owned copy storage, then allocate that pointer
   through the ordinary integer argument path. Do not allocate large aggregate
   arguments in `x8`; `x8` is reserved for indirect results.
-- Emit `d8`–`d15` callee-saves in every non-leaf `[aapcs]` function. A leaf
-  `[aapcs]` function emits saves only for directly used or declared-clobbered
-  `d8`–`d15` registers. Under the Wyst native ABI, no SIMD save/restore is ever
-  generated by the convention.
+- Emit only the boundary-aware `d8`–`d15` callee-saves required by §A.4 in an
+  `[aapcs]` function. Direct AAPCS64 calls add no blanket saves; a Native or
+  insufficiently constrained indirect boundary preserves all affected low
+  halves. Under the Wyst Native ABI, no SIMD save/restore is generated by the
+  convention itself.
 - Correctly handle the register/stack split for structs: a medium struct that would require two registers but only one argument register slot remains must be moved to the stack entirely. Structs are never split across the register/stack boundary.
 - Generate the frame record (`stp x29, x30, [sp, #-N]! ; mov x29, sp`) for every non-leaf function under both conventions.
 
-## Operation ABI and C profiles
+## Interactive ABI and C profiles
 
-Native operation lowering returns the exact terminal outcome enum and, only
-for effective progress, appends a hidden `noescape fn(P) -> void
-effects(ceiling)` callback. Both use ordinary aggregate ABI classification;
-large values use indirect argument/result storage. Chapter 26 defines the
+Native interactive lowering retains the direct return when there are no
+terminal offers. With terminal offers it returns the exact outcome enum. Only
+effective progress appends a hidden `noescape fn(noescape @u8, P) -> void
+effects(bound)` callback plus an opaque `noescape @u8` context. These values
+use ordinary aggregate ABI classification; large values use indirect
+argument/result storage. Chapter 26 defines the
 explicit AAPCS64 status/out and tagged/out wrapper profiles, initialization
 matrices, partial extents, callback-plus-context recovery/progress crossings,
 alignment, aliasing, ownership, and lifetime requirements. Neither C profile
-is the native operation type and neither creates ambient status.
+is the native interactive type and neither creates ambient status.

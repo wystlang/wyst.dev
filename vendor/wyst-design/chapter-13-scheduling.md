@@ -57,6 +57,13 @@ return it. Exogenous timer, interrupt, or host preemption does not add the
 effect to the interrupted operation. The effect does not describe a resumable
 frame or continuation.
 
+Held lock, interrupt-exclusion, and preemption-exclusion authority is
+strand-local proof state and may not cross an `execution_suspension` boundary.
+A guard containing a reachable suspension and a callable that attempts to
+return, transfer, or join with live exclusion state are `shared_mutation`
+boundaries. The caller must restore or release before suspension and reacquire
+after resumption. A zero-byte suspension marker does not preserve authority.
+
 Every direct, indirect, imported Wyst, or foreign call whose exact or
 conservative callable bound contains `execution_suspension` has exactly one
 typed `strand_suspension_boundary`. `effects(all)` contains the effect. The
@@ -71,6 +78,15 @@ The callable context summary authenticates the exact or conservative bound and
 its authority under the same digest as callable context provenance.
 Known-target indirect calls join those authenticated bounds and must reproduce
 their typed call-site bound.
+
+The current ordinary `fn` and `extern "C" fn` value ABIs may carry
+`execution_suspension`; that effect continues to mean a synchronous call which
+may park and later return the same retained native activation under the rules
+below. It does not authorize stackless resumption, frame copying, or a
+continuation entry. No `resumable_suspension` effect or stackless callable ABI
+exists in the current language. Spelling such an effect on an ordinary
+function value is rejected until a distinct bounded ABI, lifetime model, and
+typed IR operation are defined.
 
 If a suspending call returns, it returns to the same logical software task or
 host thread and the same retained strand. The provider may run other tasks and
@@ -128,6 +144,21 @@ revalidates it only by restoring that exact context, with same-core restoration
 additionally required for core-derived provenance or for a target that admits
 current-core or `per_cpu` state.
 
+Resource leases use their own provenance-derived stability rather than a
+source `stable` modifier. A returned `from` view is stable because its callable
+contract proves surviving caller storage; a transient projection into a native
+activation remains valid across a returning strand suspension only under this
+chapter's preserved-address and same-continuation guarantee. A lease whose
+backing is current-context-affine, reclaimable, detached, reset, or otherwise
+invalidated at the boundary is rejected. Suspension creates no lifetime
+extension, runtime pin, cross-agent sharing proof, or hidden lease metadata.
+
+`agent_local` is orthogonal to context stability: it recursively forbids a
+value from becoming another execution agent's authority, even when that value
+is locally movable or its storage address survives suspension. An ordinary
+consuming freeze/isolation operation may return a different structurally
+shareable value; the operation name alone proves nothing.
+
 ### Boundary ordering
 
 The boundary is a two-way compiler ordering dependency for observable memory,
@@ -147,6 +178,14 @@ selected deterministic scheduling profile allow it. The boundary is not
 atomic order, synchronization, a happens-before edge, a safepoint, a stack
 map, a resumable frame, a continuation, a cancellation point, or evidence that
 the callee actually parked.
+
+Cataloged source-scheduling boundaries may be stronger than a strand
+suspension boundary. In particular, `cpu.read_counter` keeps independently
+authored work on its written side of the read and invalidates local
+common-subexpression and lowering-materialization caches. This does not kill a
+true dependency: an already computed ordinary value may remain live across the
+read and be consumed afterward. Chapter 11 owns the counter's exact source and
+machine contract, including the prohibition on hidden architectural barriers.
 
 ### Authenticated provider marker
 
@@ -394,7 +433,8 @@ Separating layout from scheduling preserves two properties:
 
 Progress is serial, same-strand, unbuffered, and synchronous: reporting blocks
 until the noescape handler returns. It promises no fairness or independent
-forward progress. `report` charges `handler_invoke` plus the declared concrete
-handler ceiling. A ceiling containing `execution_suspension` creates the
-existing typed strand boundary and context-stability checks; an authenticated
-nonsuspending ceiling creates none.
+forward progress. The lexical arm's effects are inferred and attributed to the
+function containing `handle`; there is no separate invocation effect. An
+explicit ceiling or inferred arm authority containing `execution_suspension`
+creates the existing typed strand boundary and context-stability checks;
+authenticated nonsuspending authority creates none.

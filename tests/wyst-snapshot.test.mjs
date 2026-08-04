@@ -31,7 +31,7 @@ const vocabularyCatalogs = [
 ];
 const designCatalogs = [
 	...vocabularyCatalogs,
-	"c-operation-adapter-catalog.tsv",
+	"c-interactive-adapter-catalog.tsv",
 ];
 const coreFixtures = [
 	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
@@ -138,7 +138,7 @@ for (const response of responses) {
 			"spelling\tstate\n#len\timplemented\n",
 		],
 		[
-			"design/c-operation-adapter-catalog.tsv",
+			"design/c-interactive-adapter-catalog.tsv",
 			"profile\tstate\nstatus-out\timplemented\n",
 		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],

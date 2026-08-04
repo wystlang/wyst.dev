@@ -28,6 +28,7 @@ Accepted project inputs:
 wync check .
 wync check path/to/project
 wync check path/to/wyst.project
+wync check path/to/wyst.project --artifact NAME
 ```
 
 Accepted explicit root-file inputs:
@@ -54,6 +55,12 @@ Validation includes:
 - source graph parsing and semantic checking with published typed layout
   symbols available.
 
+Project check selects the same validated artifact build plan as project build.
+Without `--artifact` it uses the manifest default; `--artifact NAME` selects a
+declared alternative. For `static_library`, check validates the selected
+layout-free module/interface frontend and does not impose a final-link layout
+or entry. `--artifact` is not accepted by explicit root-file mode.
+
 Check mode does not:
 
 - lower source to IR;
@@ -73,7 +80,26 @@ Exit behavior:
 default. It also accepts `--warn-effectful-nesting`, an opt-in lint that emits
 warning `W0204` when one expression nests multiple calls, volatile memory
 accesses, atomics, or traps; the warning asks the programmer to bind those
-subexpressions to locals before combining them. JSON diagnostics are emitted to
+subexpressions to locals before combining them.
+
+`--warn-redundant-local-types` enables `W0218` when a local initializer can be
+checked without its annotation and independently produces the same local type,
+initializer facts, and expression types. The warning carries an exact quick
+fix that removes only the `: Type` text. It does not fire when the annotation
+selects literal width, overload resolution, aggregate shape, register
+placement, or another contextual typing decision.
+
+`--warn-structure-layout MINIMUM_BYTES` enables `W0217` for an unconstrained
+concrete structure whose canonical target-selected reorder candidate reduces
+total size by at least the positive integer threshold. The occurrence reports
+the structure, current and candidate sizes, exact reduction, why the threshold
+was met, and the shared exact preview action. A warning never fires for a
+zero-size benefit or a layout-constrained structure, and never presents the
+reduction as a performance guarantee. `wync lsp` accepts the same startup
+option; changing the LSP threshold requires restarting the server. CLI and LSP
+diagnostics consume the same semantic analysis and renderer.
+
+JSON diagnostics are emitted to
 stderr as one object with a deterministic `diagnostics` array, including
 non-fatal warnings when validation succeeds. The `json` payload mirrors the
 in-process diagnostic model: severity, code, message,
@@ -113,6 +139,16 @@ actions, and typed source insights. Generic prose is rendered as a
 `suggestion`; only an applicability-checked exact source edit may be called a
 `fix` or `code_action`.
 
+A checked source edit has the sole applicability value `exact`. It is one
+transaction over one or more source documents. Each document carries its
+original text, optional editor revision, and an ordered list of non-overlapping
+byte-range replacements; each replacement retains the exact text it expects to
+replace. The compiler validates every document, revision, range, and expected
+text before applying any replacement. A stale, unsupported, out-of-order,
+overlapping, missing-document, or only partially applicable transaction leaves
+all source unchanged. A successful application produces an exact inverse
+transaction.
+
 Placement failures use that same structured diagnostic. Their related labels
 retain the normalized `after` edges and fixed-address source spans, while notes
 render the causal section path, arithmetic operands, and its image-base,
@@ -141,7 +177,8 @@ Each diagnostic entry contains:
 - `data.notes`: supporting diagnostic notes.
 - `data.why` and `data.help`: canonical diagnostic-kind context when present.
 - `data.suggestions`: generic prose choices that are not edits.
-- `data.codeActions`: exact range/replacement edits with applicability data.
+- `data.codeActions`: exact source-edit transactions with document revisions,
+  ranges, expected text, replacements, and applicability data.
 - `data.sourceInsights`: typed compiler observations with `kind` and `message`.
 
 The LSP-compatible payload is driven by the same `Diagnostic` values rendered
@@ -152,12 +189,17 @@ invent diagnostics.
 
 `wync editor-catalog` emits a deterministic JSON catalog for editor adapters.
 It is intentionally a compiler-owned data surface rather than a second
-editor-local vocabulary.
+editor-local vocabulary. Its `sourceEditApplicability` field publishes the
+closed applicability vocabulary; the current and only value is `exact`.
 
 The catalog contains:
 
 - `completionItems`: keyword, directive, intrinsic, builtin type, and reserved
   register entries.
+- `builtinTypeMembers`: contextual builtin-type constants with their owner,
+  member spelling, exact result type and value, evaluation class, state, and
+  hover text. These are offered only after the matching type and dot; they are
+  not global completion items.
 - `label`: completion/hover lookup text.
 - `category`: stable Wyst category such as `keyword`, `directive`,
   `intrinsic`, `builtin-type`, or `register`.
@@ -210,39 +252,60 @@ source diagnostic when the file differs.
 Formatter canonicalization includes declaration annotations and imports:
 
 - block indentation uses two spaces per nesting level;
+- formatter-owned breakable syntax occupies at most 100 columns, including
+  indentation; an indivisible identifier, literal, comment, or target-owned
+  checked-assembly line may exceed that limit because the formatter does not
+  change its contents;
+- flat layouts are all-or-nothing: if a nested type, argument, or aggregate
+  field breaks, its enclosing layout group is re-rendered in multiline form;
+  multiline ordinary callable headers use one parameter per line, keep a
+  result type flat in its final position when it fits, put `from` and `effects`
+  on continuation lines, and place the body brace on its own line;
 - declaration attributes use the canonical `#[name]` or `#[a, b]` form
   directly above the declaration, with catalog-defined ordering for grouped
   attributes;
 - declaration-prefix modifiers, calling conventions, placements, and linkage
   remain in their canonical keyword-led positions rather than being converted
   into attributes;
-- in Wyst source, adjacent standalone module imports remain standalone and use
-  exactly one line break between declarations: the formatter inserts no blank
-  line between standalone imports, and instead places a blank line around the
-  complete import section;
+- in Wyst source, adjacent standalone module imports remain standalone and are
+  partitioned into private `core.*` imports, private project imports, and
+  public re-exports, in that order; empty groups are omitted, non-empty groups
+  have exactly one blank line between them, and module paths are sorted
+  lexicographically within each group;
 - an explicit Wyst `import (...)` or `pub import (...)` group remains grouped,
-  preserves written order, and renders one entry per line at one indentation
-  level with a comma after every entry; a public group has one leading `pub`
-  applying uniformly to all entries, while different visibilities use separate
-  groups or standalone declarations; adjacent explicit private and public
-  groups are separated by exactly one blank line, distinguishing ordinary
-  dependencies from public re-exports;
+  preserves its syntax, sorts its entries lexicographically by module path,
+  and renders one entry per line at one indentation level with a comma after
+  every entry; a public group has one leading `pub` applying uniformly to all
+  entries, while private explicit groups participate in the `core.*`-before-
+  project order and different visibilities use separate groups or standalone
+  declarations;
+- selections inside a module import are sorted lexicographically by their
+  original exported names; aliases and attached comments move with the entry
+  they describe, while linker `import symbol` declarations do not participate
+  in module-import ordering;
 - in a string-literal initializer for `[N]u8`, trailing `\0` bytes that the
   zero-fill rule would supply are omitted; leading or interior null bytes are
   preserved.
 - comma-separated lists accept one optional trailing comma. The formatter
-  omits trailing commas in single-line lists and uses a trailing comma only
-  when it renders a comma list one item per line.
+  omits trailing commas in single-line lists and uses a trailing comma when it
+  renders a comma list across multiple lines.
 
 The formatter is AST-backed:
 
 - it supports one source file at a time;
 - it renders declaration-prefix modifiers and canonical `#[...]` attributes in
   their grammar-owned positions before the declaration;
-- it preserves one intentional blank line between block statements and collapses
+- it preserves one intentional blank line between block statements, separates
+  completed control-flow blocks from following statements, starts a new
+  paragraph when straight-line execution returns to local bindings, separates
+  a cleanup `discard` run from a following terminal transition, and collapses
   larger vertical gaps to one blank line;
-- it keeps top-level constant/global facts and `#static_assert` runs dense
-  instead of inserting a blank line between each declaration;
+- it keeps one-line constant/global facts and `#static_assert` runs dense,
+  separates multiline constants from surrounding declarations and each other,
+  separates fact declarations from static assertions, and preserves one
+  intentional blank line between otherwise dense fact groups;
+- it omits redundant parentheses around conversion expressions used as postfix
+  bases, such as `relens<@T>(address).store(value)`;
 - it renders fixed byte-array string initializers in canonical unpadded form,
   while leaving `string`, non-`u8` arrays, and brace array literals unchanged;
 - it keeps layout-module placement and symbol groups dense instead of inserting
@@ -266,9 +329,9 @@ surface. `wync check` remains validation-only and does not rewrite
 source files or report style-only failures.
 
 Outcome diagnostics use the canonical typed diagnostic registry. Check mode
-rejects category conversion, first-class operations, missing/duplicate
+rejects category conversion, first-class interactive use, missing/duplicate
 handlers, mismatched forwarding, illegal `?`, nonexhaustive or mismatched
 expression matches, invalid sum payload capability, progress escape/capture,
-missing or exceeded ceilings, denied `handler_invoke`/`trap`, cleanup escape,
+invalid or exceeded handler ceilings, denied arm effects or `trap`, cleanup escape,
 terminal local borrows, and invalid C output obligations. The formatter emits
 the single Chapter 26 spelling and no compatibility alternative.

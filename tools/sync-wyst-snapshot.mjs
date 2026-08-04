@@ -43,7 +43,7 @@ const vocabularyCatalogs = [
 ];
 const designCatalogs = [
 	...vocabularyCatalogs,
-	"c-operation-adapter-catalog.tsv",
+	"c-interactive-adapter-catalog.tsv",
 ];
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",

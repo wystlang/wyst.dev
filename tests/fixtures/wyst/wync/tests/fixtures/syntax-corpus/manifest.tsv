@@ -8,6 +8,7 @@ positive	parse	grouped-module-imports	imports,grouped-imports	positive/grouped-m
 positive	parse	discard-binding-positions	bindings,discard,destructuring,match	positive/discard-binding-positions.wyst	-
 positive	parse	classifier-numeric-context	literals	positive/classifier-numeric-context.wyst	-
 positive	parse	typed-outcomes	outcomes,operations,match,effects	positive/typed-outcomes.wyst	-
+positive	parse	resource-values	resources,parameter-modes,returned-views,transfer	positive/resource-values.wyst	-
 negative	parse	malformed-attribute-group	malformed-directives,recovery	negative/malformed-attribute-group.wyst	error[E0101]|expected ']'
 negative	parse	generic-value-argument	generics	negative/generic-value-argument.wyst	error[E0101]|compile-time value generic arguments are not supported
 negative	parse	compile-time-if-missing-block	compile-time-if,malformed-directives	negative/compile-time-if-missing-block.wyst	error[E0101]|expected '{'

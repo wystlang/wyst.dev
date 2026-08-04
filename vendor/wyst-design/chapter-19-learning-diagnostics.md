@@ -42,6 +42,22 @@ One code may be shared by multiple emitters only when one subject, summary,
 explanation, and suggestion set truthfully covers all of them. Otherwise the
 registry defines separate kinds and codes.
 
+`W0217` is the opt-in structure-layout opportunity. Its occurrence-specific
+facts are the canonical current and candidate sizes, exact byte reduction,
+configured minimum, selected candidate order, and a checked preview edit. Its
+registry explanation explicitly limits the claim to memory-image size: neither
+the registry nor the occurrence may promise faster execution. Generic prose
+does not manufacture its edit; the semantic layout product supplies the same
+exact action consumed by LSP.
+
+`W0218` is the opt-in redundant-local-type opportunity. The checker evaluates
+the initializer in isolated annotated and unannotated semantic probes and
+emits the occurrence only when the inferred local type, initializer facts, and
+every recorded expression type agree. Its exact quick fix removes the
+annotation and its colon while preserving adjacent comments. Generic
+instantiations sharing one source annotation must all prove the removal before
+the warning is emitted.
+
 The naked-code diagnostic subjects are:
 
 | Code | Subject |
@@ -91,14 +107,27 @@ example, recommended manual change, or prose choice is never called a `fix` or
 
 `fix` and `code_action` are reserved for an edit that is:
 
-- bound to an exact source document and byte/UTF-16 range;
+- bound to exact source documents and byte/UTF-16 ranges;
 - backed by the semantic fact that makes the replacement valid;
 - supplied with an exact replacement string;
 - checked for applicability against the current source text; and
 - rejected when the source, range, identity, or expected text has changed.
 
-LSP `textDocument/codeAction` transports these checked edits. An editor adapter
-must not convert a suggestion into an edit by parsing prose.
+The closed applicability vocabulary contains only `exact`. An exact source edit
+is an atomic transaction over one or more documents. Documents are ordered by
+path; replacements are ordered by byte range and must not overlap. Each
+document retains the complete original source and an optional editor revision,
+and each replacement retains the exact text it expects. Before changing any
+source, the compiler validates the applicability, complete document set,
+revisions, original source, UTF-8 boundaries, range order, non-overlap, and
+expected text. Any failure rejects the whole transaction without changing any
+document. Applying a valid transaction returns an exact inverse whose expected
+text and ranges describe the edited source, so apply/invert round trips cleanly.
+
+LSP `textDocument/codeAction` transports these checked edits. Its standard
+`WorkspaceEdit.documentChanges` binds edits to document revisions, while
+structured action data retains the exact transaction including expected text.
+An editor adapter must not convert a suggestion into an edit by parsing prose.
 
 ## Structured Diagnostic Data
 
@@ -111,7 +140,8 @@ Occurrence data may add:
 - `why`: a concise reason tied to a compiler fact;
 - `help`: a concise next step;
 - `suggestions`: generic prose choices from the registry or emitter;
-- `codeActions`: checked range/replacement/applicability edits; and
+- `codeActions`: checked atomic source-edit transactions with document,
+  revision, expected-text, range, replacement, and applicability facts; and
 - `sourceInsights`: typed non-edit observations.
 
 Absent optional fields are omitted. LSP-compatible diagnostics expose the same
@@ -146,6 +176,6 @@ Tests validate:
 - identical kind metadata on text, JSON, LSP, editor, documentation, and
   standalone explanation surfaces;
 - generic suggestions never appearing as fixes or code actions;
-- checked edit range, replacement, applicability, and stale-source rejection;
-  and
+- checked edit range, ordering, non-overlap, replacement, applicability,
+  atomicity, inversion, and stale/partial-source rejection; and
 - target-capability insights not claiming unsupported performance results.

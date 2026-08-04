@@ -25,6 +25,13 @@ The memory model defines ordering for normal and volatile memory,
 acquire/release operations, atomics, barriers, agents, and happens-before.
 Its address and access dependencies are linked above.
 
+Resource movement is not synchronization. `no_copy` permits unique local
+movement, while `agent_local` recursively forbids cross-agent transfer; neither
+fact creates a happens-before edge or permits concurrent mutation. Publishing
+a structurally eligible frozen value or uniquely transferred authority still
+requires the release/acquire, atomic, exclusion, or provider protocol specified
+by this chapter. The compiler never derives sendability from nominal spelling.
+
 ## Atomic Acquire and Release Access
 
 Acquire and release ordering is part of the closed method surface of opaque
@@ -142,6 +149,156 @@ projected into target lowering by Chapter 11. Before the production multicore
 realization milestone, reachable access requires
 `#target(..., per_cpu = single_instance_tpidr_el1)` and its EL1+,
 16-byte-aligned `TPIDR_EL1` live-base contract.
+
+## Shared-access verification and exclusion authority
+
+The `shared_mutation` safety category classifies every ordinary access that
+may conflict across authenticated concurrency roots. Roots are artifact
+entries, native-exported callables, exception-vector entries, and
+target-authenticated provider entries; an ordinary call does not invent a new
+root. The analysis follows direct calls, callable aliases, synchronous
+`noescape` callbacks, branches, joins, and loops. Read/read pairs do not
+conflict; overlapping read/write and write/write byte ranges do. Distinct
+`per_cpu` instances isolate task roots on distinct cores, but `per_cpu` alone
+does not protect a task from a same-core interrupt strand.
+
+A mutable shared access is classified only when one of these exact proofs
+holds at the access site:
+
+- the operation is an atomic-matrix event with a legal order;
+- exclusive ownership or local isolation proves that no other root can name
+  the range;
+- the accessed range is guarded by one exact held lock;
+- the relevant interrupt class is masked, or authenticated preemption
+  exclusion is active;
+- an owning value was consumed by `xfer` through a generation-checked,
+  release/acquire-published transfer protocol with no live writable alias; or
+- a selected target descriptor authenticates the exact volatile/MMIO/device
+  operation as a device protocol exception.
+
+Volatile or MMIO intent, a compiler fence, a current-core base, a function
+name, and a convention are not proofs. Checked assembly contributes only
+machine facts authenticated by the active catalog; arbitrary assembly text
+cannot assert a shared-access fact. A foreign declaration that asserts a
+concurrency contract remains both a `foreign_assertion` and an unproved
+`shared_mutation` boundary.
+
+### Guard statements
+
+Guard statements attach proof authority to an exact source range without
+acquiring that authority or emitting code:
+
+<!-- wyst-contract: fmt -->
+```wyst
+guard mut queue by QUEUE_LOCK {
+  queue.tail = next
+}
+
+guard status against interrupts(.irq) {
+  consume(status)
+}
+
+guard mut current against preemption {
+  current.state = .running
+}
+```
+
+`guard storage by lock` proves read access; `guard mut storage by lock` also
+proves mutation. `against interrupts(.class)` and `against preemption` use the
+same access modes. The storage expression must retain a stable name,
+projection, index, or slice identity. Authority covers that range and its
+subprojections, not sibling or wider ranges. A pointer to the range may
+outlive the block, but the guard authority may not. Entering or leaving a guard
+is not a fence, atomic event, interrupt instruction, preemption operation, or
+runtime check; the typed semantic marker is retained through final IR
+verification and lowers to zero bytes.
+
+The exact lock must already be held and must remain held for the whole block.
+The exact interrupt class must already be masked. Interrupt exclusion is
+non-reentrant: double masking, wrong-class restoration, missing restoration,
+and access after restoration are unproved. Preemption exclusion is a separate
+target-provider authority; interrupt masking satisfies it only when the
+selected target descriptor explicitly states that equivalence. No exclusion
+authority may cross `execution_suspension`.
+
+### Callable concurrency clauses
+
+Callable types and declarations carry the authority they require or change:
+
+<!-- wyst-contract: fmt -->
+```wyst
+fn try_lock() -> bool
+acquires(QUEUE_LOCK) when result
+
+fn unlock()
+releases(QUEUE_LOCK)
+
+fn masked_work()
+under(interrupts(.irq))
+
+fn mask_irq()
+excludes(interrupts(.irq))
+
+fn unmask_irq()
+restores(interrupts(.irq))
+```
+
+`under(mechanism)` enters and returns with the same authority. `acquires(lock)`
+enters without the lock and returns holding it; `releases(lock)` enters holding
+it and returns without it. `excludes(mechanism)` and `restores(mechanism)` are
+the corresponding provider transitions for interrupt or preemption
+exclusion. A conditional acquisition is written `when result` for `bool`, or
+with an exact result-variant condition; ignoring that result does not acquire
+authority. Callable identity includes the ordered, canonical clauses, so an
+indirect callable cannot erase or strengthen them.
+
+Body-bearing Wyst functions infer exact `accesses(storage)` and
+`accesses(mut storage)` summaries from their checked bodies. Explicit
+`accesses` clauses are reserved for callable types and bodyless boundaries,
+where the assertion is auditable. Calls substitute actual arguments for
+positional parameter storage. A synchronous `noescape` callback borrows the
+caller's authority for the call only; an escaping or suspending callback
+cannot retain it. An unproved acquisition, release, mask, unmask, preemption,
+or bodyless transition is one explicit `shared_mutation` boundary rather than
+ambient authority.
+
+Lock transitions are accepted only for a closed two-state protocol on the
+exact atomic lock location. Acquisition uses an acquire, acquire-release, or
+sequentially consistent compare-exchange/exchange transition between distinct
+sentinels. Release uses release or sequentially consistent storage of the
+matching unlocked sentinel. Incompatible atomic orders, unrelated locations,
+or incompatible sentinels do not establish the transition.
+
+At control-flow joins, only authority held on every incoming edge survives.
+Unlock, transfer, or restoration ends authority immediately; later access is
+unproved. Returning, falling through, breaking, or continuing with an
+unbalanced acquired/excluded state is a leak. Analysis is deterministic and
+fail-closed: more than eight callable/pointer alias alternatives or more than
+64 interprocedural propagation rounds produces a `shared_mutation` site.
+
+### Publication and transfers
+
+Plain payload mutation may be shared only along a path where it is sequenced
+before a release (or `seq_cst`) atomic publication and the conflicting read is
+control-dependent on a matching acquire (or `seq_cst`) observation of that
+same atomic location and released value. Relaxed ordering, an acquire whose
+result is ignored, different publication locations, and incompatible
+compare-exchange orders do not prove publication. The proof is a
+happens-before proof from the memory model; a guard is never treated as a
+substitute fence.
+
+Generation-checked transfer uses ordinary visible generation data and the
+authenticated `core.checked.generation` operation. The owner is consumed with
+`xfer`, no writable alias may remain live, and publication to another agent
+still requires the release/acquire edge above. The compiler creates no hidden
+generation counter and does not infer a transfer protocol from names.
+
+The verifier feeds the existing manifest policy. `.error` rejects before
+emission, `.warning` reports while preserving byte-identical output, and an
+omitted `shared_mutation` policy preserves raw compilation. These diagnostics
+do not change §9.5: the source memory events of a program that is allowed to
+emit, including racy raw-machine behavior, remain governed by this memory
+model and the selected target rather than optimizer undefined behavior.
 
 ---
 
@@ -1516,13 +1673,64 @@ initialized. Raw-storage methods operate on the whole `MaybeUninit<T>` object.
 embedded in an aggregate, converted, relensed, or used by ordinary value
 operations. It does not initialize, read, or destroy a hidden `T`. Wyst has no
 implicit destructors or cleanup hooks for ordinary locals, so
-`MaybeUninit<T>` adds no hidden cleanup obligation.
+`MaybeUninit<T>` adds no hidden cleanup obligation. A `must_resolve` type may
+not instantiate `MaybeUninit<T>`: indeterminate reads, unchecked initialization
+assertions, byte stores, overwrite, reset, or reclamation must not manufacture
+or erase terminal authority outside the typed ownership model.
 
 Register-resident and stack-resident storage have identical source semantics.
 An explicit local `in x19` placement or allocator placement may change where
 the storage lives, but not
 whether an ordinary read is legal and not whether a raw read must be spelled
 with `.read_uninit()`.
+
+### Borrowed aggregate provenance
+
+Borrow provenance is structural and compiler-verified for every ordinary
+fixed-layout carrier, not only bare pointers and slices. Struct fields, tuple
+fields, fixed-array elements, enum variants and payload positions, branch
+values, and nested combinations retain two paths: the exact projection within
+the source storage and the exact projection within the value carrying that
+borrow. Construction prefixes the carrying path; projection, tuple
+destructuring, `match`, and direct `if value is .Variant(binding)` remove the
+corresponding component. A statically different field, fixed index, or variant
+is disjoint; a dynamic index or slice remains conservatively overlapping.
+
+The provenance follows ordinary local transfer and `var` parameter/result
+transport. It has no runtime identity field, borrow counter, tag, or checked
+operation. Callable `from` origins and semantic interfaces preserve the
+authorized source parameters; local structural paths preserve the actual
+projection. Where a separately compiled callable exposes only a whole
+parameter origin, the consumer conservatively constrains that whole parameter
+rather than guessing a narrower projection. Phi, `if`, `select`, and `match`
+joins retain every possible live origin, and a returned borrow is valid only
+when every possible origin is named by the callable's `from` contract.
+
+An exclusive carried projection conflicts with mutation, transfer,
+relocation, reset, or reclamation of overlapping source storage until its
+proven last use. Proven-disjoint sibling fields remain usable. Casting to a
+type that cannot carry a pointer, slice, or borrowed aggregate drops no usable
+borrow authority; converting an address to an integer never turns that integer
+into storage provenance.
+
+Affine aggregate envelopes may be consumed through a projected `xfer` only
+when every unselected sibling has compiler-proven discard ability. This permits
+recovery such as `xfer rejected.authority` from a typed failure record while
+rejecting a projection that would silently lose another non-discardable
+authority. Tuple destructuring likewise requires every ignored component to be
+discardable. These are compile-time resource transitions, not destructors or
+runtime cleanup. Because `must_resolve` removes discard ability structurally,
+the same rule rejects projected transfer with an obligated remainder.
+
+The `core.storage` reservation typestates apply the initialization rule to
+caller-backed bytes. An uninitialized reservation becomes initialized only by
+an exact zero fill, exact byte copy, a typed store whose `T` satisfies
+`copyable_discardable`, or an explicit programmer assertion. Commitment is a
+separate transition. A typed store must match both `#size_of(T)` and
+`#align_of(T)` and therefore cannot duplicate an affine authority into raw
+storage. `must_resolve` never satisfies this bound, so neither typed nor byte
+storage operations can hide it in unauthenticated raw bytes. Reset zeroing is sanitation of backing bytes; it does not create live
+typed values or invoke cleanup for prior occupants.
 
 ---
 

@@ -2,11 +2,13 @@ module syntax.checked_asm
 
 const ASM_ALIGNMENT: u64 = 16
 
-fn helper() {}
+fn helper() { }
 
 fn reverse(value: u64) -> u64 {
-  const reversed: u64 = asm pure(input:u64=value,)->result:u64{
-rev result, input
+  const reversed: u64 = asm pure (
+    input: u64 = value,
+  ) -> result: u64 {
+    rev result, input
   }
   return reversed
 }
@@ -18,7 +20,7 @@ fn inspect(location_address: @u64, expected: u64, desired: u64) -> u64 {
     new_value = desired,
     retry_limit: imm = 4,
     helper_symbol: symbol = syntax.checked_asm.helper,
-    scratch status: u32 in w9,
+    scratch status: u32 in x9,
   ) -> (
     observed: u64,
     exchanged_raw: u32,

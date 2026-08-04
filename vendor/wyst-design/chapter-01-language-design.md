@@ -134,10 +134,31 @@ taxonomy below. Ill-formed source that is rejected before emission is listed as
 `Defined` because the specified result is a diagnostic rather than a runtime
 instruction.
 
-This is not the same as memory safety. Wyst does not prevent invalid memory
-access. It guarantees the compiler will not exploit the possibility of such
-access to generate surprising code. The programmer retains responsibility for
-avoiding invalid operations in safety-critical paths.
+### Memory-Safety Posture
+
+These behavior guarantees are not a blanket whole-language memory-safety
+guarantee. Wyst unconditionally enforces typed access rules, initialization
+rules for ordinary local reads, affine resource states and leases, and
+statically provable memory violations. Its flow-sensitive IR analysis also
+classifies bounds, extent, alignment, initialization, and lifetime obligations
+as proved, asserted, unproved, violated, or not required.
+
+Additional protection remains explicit and layered:
+
+- checked operations return typed success or failure outcomes chosen by source;
+- artifact `safety` policy may diagnose or reject selected asserted and
+  unchecked boundaries without changing accepted machine code; and
+- artifact `hardening` policy may insert only the runtime checks selected from
+  the closed hardening catalog, with cataloged effects and terminal failure
+  paths. Omitted hardening preserves ordinary compilation.
+
+These layers do not define a comprehensive memory-safe profile. Raw-address
+assertions, foreign contracts, MMIO, and checked assembly remain auditable
+machine boundaries, and an accepted false or dynamically unproved assertion
+can still fault, trap, access the wrong storage, or violate a device protocol.
+The programmer remains responsible for every boundary the compiler has neither
+proved nor been configured to reject or harden. The compiler in turn never
+uses such a boundary as general-purpose undefined-behavior authority.
 
 ### Behavior Taxonomy
 
@@ -170,7 +191,7 @@ All trust-boundary constructs share this model:
 | Construct | Asserted fact | Compiler assumption | If the assertion is false |
 | --------- | ------------- | ------------------- | ------------------------- |
 | Raw-address assertion, including an explicit `address<@T>(raw)`, `address<@volatile T>(raw)`, or `address<@mmio T>(raw)` boundary | The raw address denotes storage suitable for the asserted address type, volatility contract, and MMIO-intent contract. | Later typed loads, stores, and address operations use the asserted address type at that use. | The specific access may fault, trap, read or write the wrong storage, or violate the device protocol; unrelated code is not deleted or reordered as UB fallout. |
-| `address<@atomic<T>>(raw)` in an executable function body | The raw address denotes exact `atomic<T>` storage with `T`'s natural alignment, atomic-capable Normal memory, and no mixed atomic/plain access. | The authenticated atomic address exposes only the closed atomic method surface. Provable misalignment and overlap with target-declared Device memory are compile-time diagnostics; an otherwise dynamic address is recorded as asserted, never proven. | A false dynamic assertion is a trusted-contract violation confined to operations through that address; no runtime check, alignment repair, ordinary access, or unrelated optimizer assumption is introduced. |
+| `address<@atomic<T>>(raw)` in an executable function body | The raw address denotes exact `atomic<T>` storage with `T`'s natural alignment, atomic-capable Normal memory, and no mixed atomic/plain access. | The authenticated atomic address exposes only the closed atomic method surface. Provable misalignment and overlap with target-declared Device memory are compile-time diagnostics; an otherwise dynamic address is recorded as asserted, never proven. | A false dynamic assertion is a trusted-contract violation confined to operations through that address; the assertion itself introduces no runtime check, alignment repair, ordinary access, or unrelated optimizer assumption. A later selected hardening check remains governed by the artifact policy. |
 | `trusted_callable<fn(args) -> ret>(addr)` or `trusted_callable<extern "C" fn(args) -> ret>(addr)` | The raw address, function signature, return type, and calling convention identify a callable function entry. | The constructed function pointer has the asserted type; calls through it use that signature and ABI. | The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses. |
 | Foreign declarations and object/header facts without a Wyst body | The linked symbol exists and obeys the declared type, calling convention, and externally documented side effects. | Calls and address-taking use the declaration as the boundary contract. | The emitted call or data reference follows the declaration and may miscommunicate with the foreign code or object. |
 | Manually stated foreign effects and library contracts not proven from a body | The named API has the stated effects, allocation behavior, storage identity, error behavior, and protocol constraints. | Diagnostics and explain reports may use the stated contract only for that API boundary. | Code at that API boundary may observe wrong effects or protocol behavior; other calls do not inherit the false fact. |
@@ -188,8 +209,14 @@ facts come from checked source structure, typed IR, target descriptors, or
 lowering artifacts. Asserted facts come from trust-boundary constructs and carry
 the source location of the assertion plus a `trustedFact` label in JSON reports.
 
-Wyst has no project or function switch that prohibits selected trust-boundary
-categories.
+Project artifacts may enable optional diagnostic-only safety categories for
+selected trust boundaries and unchecked operations. Each enabled category is
+independently `.warning` or `.error`; omission leaves that category disabled.
+The policy applies to the selected artifact's complete source closure and has
+no function-level override. Warning policies permit output, while any selected
+error prevents artifact production. These checks do not add runtime
+instrumentation, create optimizer authority, or change the machine behavior of
+accepted code. Chapter 3 defines the closed category set and manifest syntax.
 
 ### Principles
 
@@ -203,7 +230,9 @@ categories.
   or fault condition, Wyst exposes that as `Target-defined` or
   `Architectural fault or trap`.
 - **No silent compiler traps.** The compiler does not insert panic, abort, or
-  trap instructions unless the programmer explicitly requests them.
+  trap instructions unless source or the selected artifact manifest explicitly
+  requests a cataloged failure path. Artifact hardening is such an explicit
+  request; an omitted hardening policy inserts nothing.
 
 ### Operation Classification
 
@@ -245,10 +274,13 @@ Wyst removes the compiler's license to exploit unspecified states:
 - The compiler never assumes memory accesses are in-bounds
 - The compiler never transforms code based on "this is UB, so it can't happen"
 
-The tradeoff is that Wyst also does not prevent invalid memory access. It
-classifies invalid access as `Architectural fault or trap`, `Target-defined`,
-or `Trusted-contract violation` depending on the actual operation. That is a
-meaningful improvement in predictability, not a safety guarantee.
+The tradeoff is that Wyst does not prevent every invalid memory access.
+Unconditional verification, explicit checked operations, artifact safety
+policy, and artifact hardening prevent or reject particular classes; accepted
+machine boundaries remain classified as `Architectural fault or trap`,
+`Target-defined`, or `Trusted-contract violation` according to the actual
+operation. This is enforceable layered safety, not a whole-language safety
+guarantee.
 
 ### Integer Wrapping
 
@@ -942,8 +974,7 @@ Diagnostics and reports project those facts but are never proof authority.
 The complete preservation contract and reviewed growth, stack, spill,
 and duplication bounds are required in
 [chapter-17-optimization.md](chapter-17-optimization.md). Source scheduling and
-the explicit `machine`, `verified`, and `hardened` safety policies remain
-orthogonal inputs.
+optional artifact safety diagnostics remain orthogonal inputs.
 
 ### High-Level Pipeline
 
@@ -1125,10 +1156,21 @@ The performance model should remain:
 ## Typed outcome behavior taxonomy
 
 Chapter 26's four categories are disjoint: absence and stored errors are data;
-live operation failure is an exact declared synchronous transition; and traps
+live interactive failure is an exact declared synchronous terminal offer; and traps
 remain fatal behavior. Progress handlers do not catch traps, and no diagnostic,
 target fault, trusted-boundary violation, completion status, or timeout is
 silently converted among those categories.
+
+Callable behavior is equally explicit. `must_observe` is a caller-side result
+policy carried in semantic interfaces without changing ABI; `discard(value)`
+is the only statement that documents deliberate non-observation. Ordered
+side-effect-free `requires` and `ensures` clauses are enforced by the callee,
+and failed dynamic checks enter the ordinary fatal trap path. Stored isolated
+producer outcomes and causal reports are explicit fixed-layout data in
+`core.outcomes`; bounded aggregation uses caller-owned storage and never
+introduces exception objects, hidden allocation, ambient state, stack search,
+unwinding, or an assumed recovery runtime. Chapter 26 owns the exact types,
+proof rules, error precedence, and isolation boundary.
 - architecture-aware
 
 ### TMA Vocabulary

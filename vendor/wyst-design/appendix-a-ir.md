@@ -22,8 +22,9 @@ contracts it depends on are linked above.
 Chapter 8 owns the source semantics for `language.callable-storage-contracts`.
 Typed IR must preserve, without reconstruction, a callable's convention,
 ordered parameter and result types,
-each parameter's `noescape` bit and optional register placement, the optional
-scalar result placement, and whether its result is `never`. Declaration
+each parameter's read/`mut`/`var` mode, `noescape` bit, and optional register
+placement, the result's read/`mut` access, ordered returned-view origins, the
+optional scalar result placement, and whether its result is `never`. Declaration
 parameter names may remain diagnostic metadata but are excluded from the
 callable type key. `naked` is definition-lowering metadata, not a callable-type
 field. Calls are well typed only when the complete identity matches; IR has no
@@ -76,6 +77,78 @@ is a source/target diagnostic rather than malformed IR.
 Typed IR for Wyst admits no TLS storage kind, offset constant, current-instance
 operation, symbol, or relocation.
 
+## Resource State And Lease IR Contract
+
+Semantic analysis seals resource state before ordinary typed-IR construction.
+Each local binding has exact initialized/moved state at every reachable edge;
+joins are exact, and `xfer` is erased only after its source invalidation and
+left-to-right argument position have been recorded. Typed IR therefore has no
+runtime move flag, destructor, borrow counter, or transfer intrinsic.
+
+The semantic report product also retains read-only affine-verifier telemetry:
+distinct affine values created, state observations, exact-CFG joins, revisits,
+maximum worklist, maximum simultaneously active states, the callable span, and
+the source operation that established the maximum. These counters are updated
+at the verifier operations that own the facts. Report collection may not rescan
+the active-state map per operation, reconstruct work from typed IR, change the
+join algorithm, or affect accepted programs. A non-worklist verifier reports an
+exact zero maximum worklist rather than implying that a worklist existed.
+
+`ParamIr`, direct `FunctionSignature`, function-pointer `IrType`, and every
+indirect-call signature retain ordered read/`mut`/`var` modes plus result
+access and ordered `from` sources. They also retain the per-parameter
+authenticated-indirect-read bit selected after concrete structural ability
+derivation. Direct and indirect call verification requires exact equality.
+`mut`, retained returned-source reads, and reads of concrete values without a
+by-value ABI classification carry their authenticated caller-storage ABI type;
+ordinary value operations inside the callee retain the source semantic type.
+A returned source whose parameter mode is `var` remains an owned by-value ABI
+operand: `from` describes result provenance and does not silently turn
+ownership transport into a pointer loan. Mandatory inlining and optimizer
+erasure preserve the same signature fact even when no out-of-line body remains.
+A pass may not reconstruct these facts from an address-shaped ABI operand.
+
+The semantic-interface resource record retains structural copy, discard,
+agent-local, opacity, and canonical `must_resolve` origin identities;
+parameter modes; returned-view origins and access; each checked lease's exact
+source and result last use; and terminal obligations. Typed IR retains a
+canonical concrete-type-to-terminal-origin authority map plus each source
+transition's `transfer` or `resolve` kind and exact origin set. IR retains the callable subset needed after semantic sealing and
+the address/storage provenance needed for lowering. Neither representation
+uses source names to grant privilege.
+
+`swap` and `replace` lower after semantic proof to ordered loads and stores on
+same-typed, initialized, disjoint places. `replace` stores its replacement
+before exposing the loaded old value. No residual intrinsic, failure edge,
+hook, allocation, or uninitialized interval remains. Optimization may coalesce
+these operations only while preserving their storage identity, ordering, and
+resource-accounting facts.
+
+Returned views keep no runtime origin field. The callable signature and
+semantic lease summary name their exact possible parameter origins, while
+ordinary address/slice provenance identifies the actual source projection.
+Mutation, relocation, reset, reclamation, and exclusive-view conflicts are
+rejected before lowering; passes must preserve the proven last-use boundary and
+must not extend a view or backing use across an invalidator.
+
+The sealed semantic resource fact carries a source-projection path and a
+carrying-value path. Field/index/variant construction prefixes the latter;
+projection and pattern binding remove it and extend the source path when the
+source itself is projected. Struct, tuple, fixed-array, enum, `select`, `if`,
+and `match` values preserve every live fact. Statically distinct fields,
+indices, and variants are disjoint; dynamic ranges conservatively overlap.
+When an opaque callable summary exposes only a whole-parameter origin, IR keeps
+that conservative origin. No lowering may narrow it from layout or source
+spelling.
+
+An owned aggregate that is materialized to storage for field mutation retains
+that address as its current value home. Later scalar field reads address and
+load the field directly, including when a sibling contains opaque atomic
+storage; whole atomic-containing aggregates are never fabricated as movable
+loads. Returning the owned aggregate reloads its complete updated value. This
+is ordinary aggregate lowering and is required by the `core.storage` arena
+reset and detach implementation; it is not storage-specific compiler magic.
+
 ## Strand Suspension And Context-Stability IR Contract
 
 The target-neutral effect enum contains `execution_suspension` in addition to
@@ -114,6 +187,15 @@ conservative top, the exact `SuspensionEffectAuthority`, ordered parameter
 provenance, and result provenance under one digest. A known-target indirect
 call joins the decoded target bounds in closed catalog order and requires that
 join to equal its typed call-site bound before boundary analysis consumes it.
+
+`FunctionSignature` also retains the canonical authenticated direct-entry
+execution-level set. Direct-call and inline-expansion verification require
+every caller entry level to be admitted by the callee. This set is deliberately
+not copied into ordinary function-pointer identity: an indirect value supplies
+only its declared callable ABI and effect authority and cannot manufacture a
+direct entry-level proof. Optimizer-erased inline declarations retain both
+their final signature and declaration attributes under the original
+`SymbolId`.
 Missing or extra summaries, a bound/authority disagreement with the canonical
 signature and module authority map, or any noncanonical effect ordering is
 invalid IR.
@@ -376,6 +458,11 @@ indexing and `element_offset`. `byte_offset` is already byte-measured and
 never reach address IR. Once IR construction produces a byte `gep`, no lower
 pass may infer or apply another scale.
 
+A `field_addr` lens for a payload enum carries the enum's semantic payload
+size and alignment, including a multiword representative slot. Field lookup,
+aggregate layout, and the GEP verifier use that same normalized enum identity;
+none may fall back to a one-word placeholder payload layout.
+
 ### 2.3 Aggregate Types
 
 | IR type                                 | Survives until                                                  |
@@ -386,7 +473,7 @@ pass may infer or apply another scale.
 | `[N]T`                                  | Type-erasure pass; indexed access stays as `gep`                |
 | `[]T`                                   | Type-erasure pass; lowered to an address-and-length descriptor    |
 | `[T:N]`                                 | Survives end-to-end; mapped to NEON registers in regalloc       |
-| `fn(T0 [noescape] [in reg], ...) -> R [in reg] [@cc]` | Survives end-to-end with convention, per-parameter `noescape`/placement, result placement, and `never` in exact identity |
+| `fn([mut|var] T0 [noescape] [in reg], ...) -> [mut] R [from parameter(N)] [in reg] [@cc]` | Survives end-to-end with convention, parameter modes, `noescape`/placement, result access/origins/placement, and `never` in exact identity |
 
 Fixed arrays are inline storage, not pointer-plus-size descriptors. A value of
 type `[N]T` has the same source layout as `N` adjacent elements of `T`, with
@@ -402,6 +489,20 @@ seven-field descriptors matching `wyst.dynamicArrayDescriptor`: `data`,
 tag-plus-inline-payload aggregates. Aggregates preserve their source layout
 until type erasure so IR, ABI classification, debug info, and emitted data all
 agree on field order, size, alignment, and inactive bytes.
+
+For each materialized enum, module IR retains both the checked layout record
+and the declaration-resolved active payload type of every variant. The enum's
+representative storage slot is not sufficient authority for a multi-field or
+smaller active payload. Constructors, projections, verification, and reference
+execution consume the active map produced by the ordinary type-resolution
+path; no consumer reparses the layout's rendered type strings.
+
+Nominal `core.quantities` values remain ordinary fixed-layout structs in typed
+IR; their equal scalar carriers never authorize substitution between quantity
+identities. `ByteExtent<A>` and `ElementExtent<A>` retain their complete
+monomorphized address argument, including pointee lens and qualifier, until the
+ordinary aggregate/address type-erasure boundary. Raw slice, string, and
+dynamic-array descriptor length words remain `u64`.
 
 Typed data addresses carry an element lens in the IR type (`@T`,
 `@volatile T`, or `@mmio T`) until explicit address traversal has been lowered
@@ -460,7 +561,8 @@ type-declaration = visibility name type-form
 `visibility` is `pub` or absent (private; see [chapter-04-modules.md](chapter-04-modules.md)).
 In Wyst typed IR, hard facts are separate fields: definition lowering
 records `naked`; callable signatures record convention, placements,
-`noescape`, and `never`; globals record `GlobalStorage::PerCpu`; declaration
+parameter modes, `noescape`, result access/origins, and `never`; globals record
+`GlobalStorage::PerCpu`; declaration
 attributes retain only activated catalog entries. No TLS fact is legal in Wyst
 IR.
 
@@ -503,6 +605,18 @@ A function consists of:
   belongs to exactly one leaf region.
 - A **value table**: SSA values with their defining op, type, and (after
   liveness) a live range.
+- An **optimizer transformation table**: closed decision/proof identities,
+  value or block subject, target cost and tie rule, source/definition/inline
+  provenance, and before/after dependency identities for each admitted
+  function-local representation change.
+
+Transformation records are executable-IR evidence rather than progress logs.
+Their IDs are dense in admission order, all subjects and dependencies resolve
+in the final function, every cost is an admitted improvement, and the verifier
+authenticates the decision/proof/result shape. A later recorded transform or
+closed CFG fusion may consume an earlier subject; the earlier record remains
+as the historical proof chain. Unknown or mutated records fail before ABI or
+machine lowering.
 
 ### 4.1 Basic Blocks
 
@@ -1037,7 +1151,7 @@ future jump-table entry.
 Wyst source has no prefix-`%` operation namespace. Typed IR retains an
 internal operation node only after semantic analysis has attached the stable
 identity, surface, target plan, source privilege, compiler ordering, report
-identity, and exact generated target facts from
+identity, observation policy, and exact generated target facts from
 `semantic-operation-catalog.tsv`. Category aliases never enter that identity.
 Source privilege is the catalog's deliberate language-level restriction; it
 is preserved separately from the per-target privilege facts joined from the
@@ -1053,7 +1167,7 @@ generated machine authority.
 | Barrier | imported `barrier.*` category |
 | Environment | imported executable-environment services such as `semihost.call` |
 | Execution | authenticated provider-only `core.execution.suspension_point` |
-| Language | `fma`, vector operations, enum `.tag`, address methods, and `MaybeUninit<T>` operations |
+| Language | `core.checked` operations, `fma`, vector operations, enum `.tag`, address methods, and `MaybeUninit<T>` operations |
 
 Each semantic operation carries catalog identity and a generated target-fact
 set. The latter preserves every selected encoding, authority and semantic ID,
@@ -1121,6 +1235,41 @@ computes the transitive closure for every function.
 
 Passes consult these attributes; the front-end is the only thing that
 populates them.
+
+#### Authenticated checked-result control flow
+
+A source `core.checked` operation lowers before target instruction selection to
+ordinary typed comparison, integer/address arithmetic, construction, and
+finite forward control flow. It does not remain a call or opaque intrinsic.
+For a Result-returning boundary, the exact `Result<T, E>` is represented by one `Ok` construction and one
+`Error` construction joined by a phi. The function retains a
+`CheckedOperationIr` record containing the stable catalog identity, joined
+result value, unique boolean predicate, success payload, failure payload, and
+source span. `checked.align_down` and `checked.physical_align_down` accept an
+authenticated opaque `Alignment`, cannot fail, and lower directly without a
+predicate, result sum, or checked-operation record.
+
+The structural renderer emits one `checked-operation` row and explicitly
+reports `failure=Result.Error`, `hidden-allocation=false`,
+`hidden-cleanup=false`, `hidden-synchronization=false`, `hidden-retry=false`,
+and `hidden-looping=false`. The record is authentication for verified typed IR,
+not a second executable operation. Backend lowering may consume a private copy
+of a matched result into branch-local scalar payloads only after canonical IR
+verification; the canonical checked record remains available to memory-safety,
+inspection, debug, and report consumers.
+
+An authenticated `core.checked.index` `Ok(ElementIndex)` may provide a bounds
+fact only when the predicate is exactly the less-than comparison between that
+index's carrier and the same descriptor length carrier, the failure is exactly
+`IndexFailure { index, length }`, and the observed control path is the `Ok`
+path. The fact retains the checked index, exact length/descriptor identity, and
+the checked-result generation. It is SSA-local: direct copies and moves, phis
+whose incoming values resolve to the same authenticated result, and mandatory
+inlined result consumption may preserve it. Storage or aggregate projection,
+joining different checked results, descriptor or payload reconstruction,
+mutation or reassignment of either identity, generation changes, a length from
+another descriptor, and opaque out-of-line calls do not. Consumers must not
+infer the relation from carrier equality alone.
 
 ---
 
@@ -1190,8 +1339,11 @@ lowering may consume the function.
    MMIO access effect.
 10. **Complete callable identity agreement**: a `call %f, ...` must match the
     callee's convention, ordered parameter/result types, per-parameter
-    `noescape` bits and placements, scalar result placement, and `never` result
-    exactly. Declaration parameter names do not participate.
+    modes, `noescape` bits, and placements, result access and ordered origins,
+    scalar result placement, and `never` result exactly. Declaration parameter
+    names do not participate. A direct call or inline expansion additionally
+    requires the caller's authenticated entry-level set to be a subset of the
+    callee's set.
 11. **Intrinsic effect respect**: a pass that reorders any op past an `intrinsic` op without consulting the intrinsic's effect attributes is a verifier-detected bug.
 12. **Volatile store preservation**: no pass may elide, duplicate, or reorder a `store` with `volatile=true` relative to any other `volatile=true` load or store. Volatile stores are never dead-store eliminated, even if a subsequent volatile store writes the same address. This invariant is verified structurally: within any basic block, the relative order of volatile ops in IR must match the order after every pass.
 13. **Atomic ordering legality**: a `load` with `order=acquire` must not appear after any op it guards in the same basic block (i.e. no op that was below the acquire-load before a pass may appear above it after the pass). Symmetrically, a `store` with `order=release` must not appear before any op it publishes. The verifier checks this by recording pre-pass op ordering for acquire/release ops and comparing against post-pass ordering within the same block.
@@ -1331,6 +1483,62 @@ lowering may consume the function.
     authenticated non-call transfer. Standalone, missing, duplicate,
     post-transfer, separated, spoofed, or redundant-before-effect-bearing-call
     marker facts are invalid and never reach machine lowering.
+37. **Checked-operation authentication**: every `CheckedOperationIr` names one
+    active `core.checked` catalog identity and one authentic materialized
+    `core.collections.Result<T, E>`. Its recorded success and failure payloads
+    have the exact operation-specific canonical types; its result is one phi
+    with exactly one `Ok` and one `Error` predecessor; and its recorded boolean
+    predicate is the unique branch authority selecting those predecessors.
+    Duplicate records, stale identities, detached predicates, forged payloads,
+    incorrect tags, extra result branches, or a mismatched generic address
+    argument are invalid IR. Checked lowering contains no call/intrinsic and no
+    backward control edge.
+38. **Resource-transition authentication**: every consuming source `xfer`
+    retained for execution names one nonempty source binding, its exact value,
+    source span, structural source/carrying paths when present, and the closed
+    `transfer` or `resolve` kind. Ordinary transfer carries no terminal origins.
+    Resolution carries one sorted, unique, module-qualified origin set that
+    matches typed terminal authority retained by the module; it emits no
+    machine operation. Projected transfer is valid only when the verifier's
+    discarded remainder has structural discard ability. An evaluator or report
+    may not infer a transfer from a local bind, call mode, or rendered source
+    text.
+39. **Cleanup-execution exactness**: every lowered deferred cleanup records one
+    nonempty, in-range, monotonically ordered value-table interval and source
+    span. The interval is the executed cleanup body; it preserves reverse
+    cleanup order through terminal commitment and ordinary return without
+    introducing a destructor runtime.
+40. **Interactive-terminal exactness**: every constructed interactive terminal
+    outcome has one durable terminal record naming its exact kind, outcome
+    value, source span, and associated postcondition and cleanup intervals.
+    Returned outcomes evaluate their complete payload, then postconditions,
+    then construct and commit the outcome; failure and cancellation construct
+    and commit their outcome directly. Every kind runs the recorded reverse
+    cleanup sequence after commitment. Only returned outcomes carry
+    postconditions, and every concrete multi-terminal outcome carries the
+    discriminator tag required by its protocol. Inlining and optimization may
+    neither erase this record nor reorder any associated interval across the
+    recorded outcome.
+41. **Optimizer-transformation authentication**: transformation IDs are dense
+    and source ordered; decision and proof are a closed compatible pair; value
+    or block subjects, before/after dependencies, definition provenance, and
+    nested inline parent resolve; the recorded target cost improves under the
+    deterministic tie rule; and the final subject shape or later consuming
+    record agrees with the admitted result. Missing, forged, stale, unknown, or
+    non-improving records are invalid IR.
+42. **Measurement-counter scheduling exactness**: every
+    `cpu.read_counter` semantic-operation record remains one source boundary
+    through mandatory inlining and lowering. No CSE, address/literal cache, or
+    other lowering reuse spans the record. A true pre-read SSA definition may
+    remain live across it, but its defining work remains before the record.
+    The boundary creates no synchronization instruction.
+
+After final A64 text construction, each function body has one dense
+instruction-selection record per four-byte word. Reauthentication joins the
+word to the active encoding, authority, semantic, canonical-mnemonic, optional
+retained source-form, typed subject/dependencies, provenance, fixed target
+cost, and deterministic tie. This is a backend product rather than a new SSA
+operation; malformed selection evidence blocks artifact emission.
 
 A failed verifier check is a hard failure and the malformed function never
 reaches ABI lowering, register allocation, scheduling, or instruction
@@ -1523,12 +1731,19 @@ Things to notice:
 
 ## 9. The Type-Erasure Pass
 
-A single pass between scheduling and register allocation **dissolves
-aggregate types** and lowers `bitstruct` operations to typed bit-field operations. The
-pass:
+A single backend-owned pass between scheduling and register allocation
+**dissolves aggregate types** and lowers `bitstruct` operations to typed
+bit-field operations. The verified typed IR remains immutable: reference
+execution and semantic reports continue to consume it, while allocation,
+instruction selection, lowering reports, and debug locations consume the
+type-erased product plus its complete provenance map. The pass:
 
-1. Replaces every `struct`, `[]T`, `enum`, and `bitstruct` SSA value with a
-   set of scalar SSA values.
+1. Replaces every `struct`, `[]T`, descriptor, tuple, payload enum, and
+   `bitstruct` SSA value with an ordered set of scalar or `[T:N]` components.
+   Logical fields retain their source identity. Padding, inactive payload, and
+   other required memory-image bytes use anonymous representation components;
+   they are never source fields and acquire no independent address, lifetime,
+   effect, or ownership.
 2. Replaces `extract`, `aggregate`, bitstruct field-read, bitstruct
    field-write ops with sequences of `gep` + `load` / `store` + `and` /
    `or` / `shl` / `lshr` / `ubfx` / `bfi` ops.
@@ -1539,6 +1754,18 @@ pass:
    earlier.)
 5. Lowers endian-aware load/store ops to native integer load/store plus
    `byteswap` where host and requested byte order differ.
+6. Preserves the complete memory image of an aggregate obtained from memory,
+   including padding, through copies and ABI transfer. Aggregate construction
+   initializes padding and inactive bytes to zero before installing logical
+   fields. Address materialization, atomic-containing storage, and any other
+   stable-memory requirement retain one explicit addressable memory image
+   instead of manufacturing independently addressable components.
+
+Every component records its owning typed value, layout offset and width,
+logical-field path or anonymous representation role, defining source span, and
+memory-image provenance. The verifier rejects overlap, gaps in a required
+memory image, invented source fields, component lifetime outside the owning
+typed value, or a component whose class cannot carry its representation.
 
 After type erasure, the IR uses only scalar types and `[T:N]` vectors. It is
 ready for register allocation (Phase 5.3) and instruction selection.
@@ -1570,10 +1797,11 @@ identical object output.
 
 ## 11. Register Allocation
 
-The Wyst register allocator is a pass over the IR after type erasure (§9) and
-before instruction selection. Its output is the same IR with every non-void SSA
-value assigned either to a physical register home or to a deterministic
-stack-slot home.
+The Wyst register allocator is a pass over the backend type-erased product
+after §9 and before instruction selection. Its output assigns every non-void
+scalar or vector component a deterministic sequence of physical-register,
+stack-slot, or admitted rematerialized homes. Allocation ranges, rather than a
+single whole-value home, are authoritative.
 
 This section is **required**. Every Wyst-conforming compiler must implement
 this SSA-based allocator and these tie-breaks. The Reproducibility Model
@@ -1583,17 +1811,13 @@ different debug location lists.
 
 ### 11.1 Algorithm
 
-The allocator uses deterministic SSA interference coloring:
+The allocator uses deterministic fragmented SSA interference coloring:
 
 1. **Classify homes.** Scalar integer, pointer, function-pointer, bitstruct,
-   boolean, and payloadless-enum SSA values are GPR candidates. Composite
-   values (`string`, slice, dynamic array descriptor, tuple, array,
-   payload-carrying enum aggregates, and named aggregate) are stack-resident. Scalar
-   floating-point and vector SSA values are stack-resident in the current
-   AArch64 backend unless an explicit `in register` placement is present;
-   automatic
-   FPR/vector homes require call-aware range splitting and are outside the
-   current allocator pool.
+   boolean, payloadless-enum, and integer memory-image components are GPR
+   candidates. Scalar floating-point and vector components are FP/SIMD
+   candidates. Addressable aggregate memory images and values whose stable
+   stack address is required remain stack-resident.
 2. **Pre-color explicit placements.** Every `in register` value is assigned
    its fixed register. A placed value whose type cannot inhabit that register
    class is a
@@ -1606,25 +1830,33 @@ The allocator uses deterministic SSA interference coloring:
    generated live ranges, ties, fixed placements, and implicit constraints;
    the presence of `asm` does not force unrelated automatic GPR candidates to
    the stack.
-4. **Compute SSA liveness.** Ordinary operands are live at their instruction.
+4. **Compute SSA liveness and fragments.** Ordinary operands are live at their instruction.
    Terminator operands are live at the block exit. `phi` incoming operands are
    live on the predecessor edge named by the incoming pair; the `phi` result is
-   defined at the start of the successor block.
-5. **Build the interference graph.** For each definition, add an undirected
-   edge to every value live at that program point. `phi` results do not
+   defined at the start of the successor block. Split a live range wherever
+   its live or constraint set changes: definitions, last uses, CFG edges,
+   calls, semantic boundaries, fixed or tied phases, and exact clobber
+   boundaries. Each maximal unchanged segment is an allocation fragment.
+5. **Build the interference graph.** For each fragment definition or entry,
+   add an undirected edge to every fragment live at that program point. `phi` results do not
    interfere with their incoming edge values unless another ordinary liveness
    path makes them overlap.
-6. **Color each register class independently.** Run maximum-cardinality search
-   over the class-specific graph. At each MCS step, select the unnumbered value
+6. **Color each register class independently.** Reserve fixed placements,
+   checked-assembly constraints, and instruction-recipe temporaries first, then
+   run maximum-cardinality search over the class-specific fragment graph. At each MCS step, select the unnumbered fragment
    with the highest current MCS score, then higher static use weight, then
-   higher interference degree, then earlier definition position, then lower
-   `%vN`. In that order, assign the first register from the deterministic
-   preferred list (§11.2) that is not already used by an interfering colored
-   neighbor.
-7. **Spill fallback.** If no register in the class is available, assign the
-   value to stack. Explicitly placed values are never spilled.
+   higher interference degree, then earlier fragment position, lower owning
+   `%vN`, and lower component index. Prefer an adjacent fragment's legal home,
+   then the ABI and coalescing preferences, then the deterministic register
+   list (§11.2).
+7. **Spill fallback and transitions.** If no register in the class is
+   available, assign that fragment to stack. Explicitly placed values and
+   register-only constraints are never spilled. Adjacent fragments with
+   different homes receive one typed simultaneous transfer at the exact
+   boundary; CFG-edge transfers use the shared cycle-safe planner. Adjacent
+   fragments with the same home are coalesced into one reported range.
 
-The graph construction, ordering, register choice, and spill fallback above
+The fragment construction, graph construction, ordering, register choice, and spill fallback above
 define the compiler's current deterministic behavior.
 
 ### 11.2 Register Pool
@@ -1672,29 +1904,32 @@ pseudo-home. That marker means "rematerialize this constant, string/slice
 descriptor, or absolute symbol address at the use site"; it is not an
 allocatable live register and does not create an `xzr` value home.
 
-Each register bank referenced by an active checked-assembly row has a generated
-availability and interference model. FPR/vector inputs, results, and scratch
-resources therefore receive legal `vN` homes (or a hard allocation diagnostic)
-under the same complete-live-range rule as GPR resources. A bank with no active
-row remains unavailable rather than falling back to a fake GPR or stack home.
+Every `v0..v31` register is allocator-visible. Ordinary instruction recipes,
+ABI transfers, aggregate operations, and checked assembly contribute exact
+short-lived input, output, tied, early-clobber, and temporary constraints;
+`v16`, `v17`, `v18`, or `v31` are not globally hidden merely because an older
+lowering used them as conventional scratch. Each register bank referenced by
+an active checked-assembly row has the same generated availability and
+interference model. A bank with no active value or row remains unavailable
+rather than falling back to a fake class.
 
 ### 11.3 Tie-Breaking and Spill Selection
 
 Tie-breaks are part of the algorithm:
 
-- **Static use weight** is the count of SSA uses, counting ordinary operands,
+- **Static use weight** is the count of uses in a fragment, counting ordinary operands,
   `phi` incoming edge operands, and terminator operands once each.
-- **Definition position** is the index of the defining value in the function's
-  stable IR value list.
+- **Fragment position** is the stable scheduled program point at which the
+  fragment begins.
 - **Interference degree** is the number of graph neighbors after SSA liveness
   construction.
 - **MCS selection order** is descending MCS score, descending static use
   weight, descending interference degree, ascending definition position, then
   ascending `%vN`.
-- **Register choice** follows the deterministic preferred list for the value's
+- **Register choice** first preserves a legal adjacent-fragment home, then follows the deterministic preferred list for the value's
   class and call-shape (§11.2).
-- **Spill choice** is implicit: a value spills only when every register in its
-  class is already occupied by an interfering colored neighbor.
+- **Spill choice** is implicit: a fragment spills only when every register in
+  its class is unavailable or occupied by an interfering colored fragment.
 
 ### 11.4 Explicit-Placement Resolution Order
 
@@ -1721,22 +1956,25 @@ visible" stance.
 
 Spill slots are allocated in the function's frame, immediately after the
 saved-callee-saved-register area. Slot offsets are assigned in
-**first stack-home order**. A value is introduced to the spill-slot layout at
-the first program position where its allocation range is stack-resident. That
-event is recorded once per SSA value. If multiple values first become
-stack-resident at the same position, lower `%vN` IDs receive earlier slots.
+**first stack-home order**. A component is introduced to the spill-slot layout
+at the first program position where one of its allocation ranges is
+stack-resident. That event is recorded once per component, and later stack
+fragments reuse the same slot. If multiple components first become
+stack-resident at the same position, lower owning `%vN` IDs and then lower
+component indexes receive earlier slots.
 
 Slot sizes match the spilled value's type size (8 bytes for `u64`/`i64`/`@T`,
 16 bytes for vector pairs, etc.) with natural alignment.
 
 ### 11.6 Coalescing
 
-Coalescing is represented by non-interference, not by a separate destructive
-pass. If two SSA values are connected only by a `phi` edge or copy-like local
-binding and the SSA liveness graph does not give them an interference edge, the
-coloring step may assign them the same register. The allocator does not merge
-graph vertices, does not rewrite SSA, and never invalidates an explicit
-placement.
+Coalescing is represented by non-interference and home preference, not by a
+separate destructive pass. If two fragments are connected only by a `phi`
+edge, component projection/construction, ABI handoff, or copy-like local
+binding and the liveness graph does not give them an interference edge, the
+coloring step prefers the same register. Adjacent fragments of one component
+also prefer continuity. The allocator does not merge graph vertices, does not
+rewrite verified typed SSA, and never invalidates an explicit placement.
 
 ### 11.7 Interaction with checked `asm`
 
@@ -1761,42 +1999,46 @@ and CFG prove an ordinary deterministic `effects(none)` computation.
 Given identical IR input, identical `#target` declaration, and identical
 scheduling policies, the register allocator produces:
 
-- The same physical register for every SSA value.
-- The same set of spilled values.
-- The same spill slot for every spilled value.
+- The same ordered fragments and physical home for every component range.
+- The same set of spilled fragments.
+- The same spill slot for every component that spills.
 - The same register-sharing decisions for non-interfering values.
+- The same boundary transfers and generated support causes.
 
 This holds **across compiler invocations and machines running the same compiler
 source** — there is no nondeterminism from heap layout, hashtable iteration, or
 threading. The allocator is single-threaded by spec.
 
-### 11.9 Callee-Entry Transfer Planning
+### 11.9 ABI Transfer Planning
 
-Allocation homes do not change the locations in which the selected calling
-convention delivers parameters. After allocation and frame planning, the
-backend constructs one simultaneous transfer set from all live incoming ABI
-locations to their compiler homes. It must not lower that set as a
-parameter-order sequence: a home may alias another parameter's still-unread
-incoming location.
+Allocation homes do not change locations selected by a calling convention or
+an explicit callable placement. After allocation and frame planning, the
+backend constructs a simultaneous typed transfer set for every ABI boundary:
+callee entry, outgoing direct or indirect arguments, direct or indirect
+results, interactive terminal/notification/recovery entries, fixed-register
+operations, and terminal calls. It must not lower any such set in declaration,
+argument, result-field, or component order when a destination can alias a
+still-unread source.
 
 The transfer planner is shared infrastructure over typed physical locations,
 not an allocator heuristic. It normalizes architectural aliases, preserves
-repeated sources, breaks cycles deterministically, and protects the
-indirect-result state before any input register is reused. Chapter 15 defines
-the canonical ordering, scratch selection, temporary-frame fallback, and
-reporting rules. Pseudo-home 31 and other rematerialization markers are
-not physical locations and are never planner scratch registers.
+repeated sources, decomposes fixed-layout memory images, breaks swaps and
+longer cycles deterministically, and protects call targets and indirect-result
+state before any register is reused. Deferred constants and addresses are
+materialized only after physical sources have been consumed. Chapter 15
+defines the canonical ordering, scratch selection, one widest reusable
+`abi-parallel-copy-temporary` frame fallback, spill accounting, and reporting
+rules. Pseudo-home 31 and other rematerialization markers are not physical
+locations and are never planner scratch registers.
 
 ### 11.10 Out of Scope
 
-- **Live-range splitting after coloring.** The allocator either colors a value
-  for its whole SSA allocation range or assigns that value to stack.
 - **General rematerialization.** The current backend rematerializes scalar
   constants, string/slice descriptors, and absolute symbol-address expressions
   (`addr_of`, constant-address `gep`, and copy-like automatically placed locals over those
   forms). It does not perform arbitrary expression rematerialization,
   rematerialize effect-dependent values, or use rematerialization as a substitute
-  for live-range splitting.
+  for an otherwise required spill or transition.
 - **Cross-function allocation.** Each function is allocated independently.
   Whole-program allocation across `#[inline]` boundaries is implicit (inlined
   bodies are part of the caller's interval set), but no allocation flows
@@ -1883,12 +2125,36 @@ runtime facts do not add fields to the current counter-source IR record.
 
 ## Typed outcome IR
 
-An operation signature carries `OperationProtocolIr`: exact effective success,
-progress, failure, and cancellation types; progress handler effects; and one
-concrete outcome enum layout. Producer `return`/`fail`/`cancel` construct the
-terminal tag and payload before cleanup, and `report` is an indirect noescape
-call plus the authenticated suspension boundary required by its ceiling.
-`with` and `?` lower to explicit tag dispatch, exact projections, typed phis,
-and exact outer outcome construction. The verifier rejects record/layout
-disagreement, invalid tags/projections, missing effect authority, or a terminal
-return that bypasses registered cleanup.
+An interactive function signature carries `InteractiveProtocolIr`: the exact
+ordinary return, effective progress, failure, and cancellation types; the
+optional uniform handler ceiling; hidden callback/context ABI facts; and the
+concrete terminal outcome layout when terminal offers exist. Progress-only
+functions retain their ordinary direct return. Producer `return` evaluates the
+complete payload, checks postconditions, and then constructs and commits any
+terminal tag and payload. `fail` and `cancel` construct and commit their
+terminal outcome directly. Every terminal path then runs its reverse cleanup
+sequence; an ordinary noninteractive return instead runs cleanup before
+checking postconditions and returning. A durable `InteractiveTerminalIr`
+record binds the outcome to those exact intervals and survives mandatory or
+optimizer-selected expansion. `report` is an indirect noescape callback with
+opaque context plus the authenticated suspension boundary required by its
+effect authority.
+
+Each lexical arm also retains a compiler-produced semantic summary containing
+its owner, label, inferred effects, by-reference captures, active noescape
+producer leases, and control obligation. Notification handlers lower to
+deterministically named noescape entries. Captured locals reside in caller
+stack storage; the entry receives one opaque context, casts it to the generated
+capture environment, loads by-reference pointers, and flushes accepted
+mutations before returning. Hard-register captures, overlapping producer
+leases, escaping contexts, and repeatable ownership-state changes are rejected
+before IR construction.
+
+`handle` and `?` lower to explicit tag dispatch, exact projections, typed phis,
+and exact outer outcome construction. A notification entry returns only to its
+producer; a terminal branch never does. The verifier rejects record/layout
+disagreement, invalid tags/projections, missing effect authority, an indirect
+callback without lexical-handler provenance, or a terminal return that
+bypasses registered cleanup or reorders cleanup before commitment. There is no
+continuation value, dynamic handler record, unwinder, coroutine frame, or
+runtime handler search in typed IR.
