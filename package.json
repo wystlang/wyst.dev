@@ -27,7 +27,7 @@
     "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "markdown-it": "14.3.0",
+    "markdown-it": "15.0.0",
     "markdown-it-anchor": "9.2.1",
     "prismjs": "1.30.0",
     "wrangler": "4.116.0"
