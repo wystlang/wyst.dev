@@ -165,9 +165,33 @@
   }
 
   <span class="source-comment">// FR is the flag register.</span>
+  <span class="source-comment">// BUSY means the UART is still sending or receiving.</span>
   <span class="source-comment">// TXFF means the transmit FIFO is full.</span>
   <span data-token="property" data-token-modifiers="declaration">FR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readonly</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x18</span> {
+    <span data-token="property" data-token-modifiers="declaration">BUSY</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">3</span>
     <span data-token="property" data-token-modifiers="declaration">TXFF</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">5</span>
+  }
+
+  <span class="source-comment">// IBRD and FBRD hold the integer and fractional</span>
+  <span class="source-comment">// parts of the baud-rate divisor.</span>
+  <span data-token="property" data-token-modifiers="declaration">IBRD</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x24</span> {
+    <span data-token="property" data-token-modifiers="declaration">DIVINT</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u16</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">15</span>
+  }
+  <span data-token="property" data-token-modifiers="declaration">FBRD</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x28</span> {
+    <span data-token="property" data-token-modifiers="declaration">DIVFRAC</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">5</span>
+  }
+
+  <span class="source-comment">// LCR_H selects an eight-bit word and enables FIFOs.</span>
+  <span data-token="property" data-token-modifiers="declaration">LCR_H</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x2c</span> {
+    <span data-token="property" data-token-modifiers="declaration">FEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">4</span>
+    <span data-token="property" data-token-modifiers="declaration">WLEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">5</span>..=<span data-token="number">6</span>
+  }
+
+  <span class="source-comment">// CR enables the UART and its transmit and receive paths.</span>
+  <span data-token="property" data-token-modifiers="declaration">CR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x30</span> {
+    <span data-token="property" data-token-modifiers="declaration">UARTEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>
+    <span data-token="property" data-token-modifiers="declaration">TXE</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">8</span>
+    <span data-token="property" data-token-modifiers="declaration">RXE</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">9</span>
   }
 }
 
@@ -207,12 +231,41 @@
     test_exit(<span data-token="number">0x63</span>)
   }
 
+  <span data-token="function">uart_init</span>()
   <span data-token="function">uart_hello</span>()
 
   <span class="source-comment">// Bare metal has no caller to return to. `test_exit`</span>
   <span class="source-comment">// plays the role of process exit for this QEMU test:</span>
   <span class="source-comment">// report status 0, then stop the virtual machine.</span>
   test_exit(<span data-token="number">0</span>)
+}
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_init</span>() {
+  <span class="source-comment">// Disable every path before changing the configuration.</span>
+  <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
+  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
+
+  <span class="source-comment">// Finish any character left by earlier firmware, then</span>
+  <span class="source-comment">// disable the FIFOs to flush them.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">BUSY</span> {
+    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
+  }
+
+  <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
+  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
+
+  <span class="source-comment">// QEMU supplies a 24 MHz UART clock. The PL011 divisor</span>
+  <span class="source-comment">// for 115200 baud rounds to 13 + 1/64.</span>
+  <span data-token="variable">UART0</span>.<span data-token="property">IBRD</span>.<span data-token="property">write</span>(<span data-token="property">DIVINT</span> <span data-token="operator">=</span> <span data-token="number">13</span>)
+  <span data-token="variable">UART0</span>.<span data-token="property">FBRD</span>.<span data-token="property">write</span>(<span data-token="property">DIVFRAC</span> <span data-token="operator">=</span> <span data-token="number">1</span>)
+
+  <span class="source-comment">// Use 8-bit words, one stop bit, no parity, and FIFOs.</span>
+  <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">WLEN</span> <span data-token="operator">=</span> <span data-token="number">3</span>)
+  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
+
+  <span class="source-comment">// This example only transmits, so leave the receiver off.</span>
+  <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
+  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {

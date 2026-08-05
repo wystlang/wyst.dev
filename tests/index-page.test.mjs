@@ -762,7 +762,13 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"// DR is the data register.",
 		"// DATA is its eight-bit transmit payload.",
 		"// FR is the flag register.",
+		"// BUSY means the UART is still sending or receiving.",
 		"// TXFF means the transmit FIFO is full.",
+		"// parts of the baud-rate divisor.",
+		"// LCR_H selects an eight-bit word and enables FIFOs.",
+		"// CR enables the UART and its transmit and receive paths.",
+		"// Disable every path before changing the configuration.",
+		"// This example only transmits, so leave the receiver off.",
 		"// Poll for space in the transmit FIFO.",
 		"// `_` infers a fixed [6]u8 from the literal's decoded bytes.",
 		"// The array has no runtime length field or trailing NUL byte.",
@@ -779,6 +785,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 		"register_map Pl011 {",
 		"mmio UART0: Pl011 at 0x0900_0000",
 		"fn kernel_main(dtb: @u8) -> never {",
+		"fn uart_init() {",
 		'const msg: [_]u8 = "hello\\n"',
 		"for i in 0 ..< #len(msg) {",
 		"uart_write(msg[i])",
@@ -793,6 +800,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 	const declarationsInCallOrder = [
 		"pub naked fn _start(dtb: @u8 in x0) -> never {",
 		"fn kernel_main(dtb: @u8) -> never {",
+		"fn uart_init() {",
 		"fn uart_hello() {",
 		"fn uart_write(byte: u8) {",
 	];
@@ -807,9 +815,29 @@ test("homepage shows one static UART example from the real fixture", () => {
 		),
 		"the homepage should order function declarations from entry point to leaf call",
 	);
+	const uartInitSteps = [
+		"UART0.CR.write(UARTEN = false, TXE = false, RXE = false)",
+		"while UART0.FR.read().BUSY {",
+		"UART0.LCR_H.write(FEN = false)",
+		"UART0.IBRD.write(DIVINT = 13)",
+		"UART0.FBRD.write(DIVFRAC = 1)",
+		"UART0.LCR_H.write(FEN = true, WLEN = 3)",
+		"UART0.CR.write(UARTEN = true, TXE = true, RXE = false)",
+	];
+	const uartInitPositions = uartInitSteps.map((step) => homepageSource.indexOf(step));
 	assert.ok(
-		homepageSource.includes("    test_exit(0x63)\n  }\n\n  uart_hello()"),
-		"kernel_main should visually separate validation from the uart_hello call",
+		uartInitPositions.every(
+			(position, index) =>
+				position !== -1 &&
+				(index === 0 || position > uartInitPositions[index - 1]),
+		),
+		"the UART example should disable, configure, then enable its TX-only PL011",
+	);
+	assert.ok(
+		homepageSource.includes(
+			"    test_exit(0x63)\n  }\n\n  uart_init()\n  uart_hello()",
+		),
+		"kernel_main should initialize the UART before writing the message",
 	);
 	const terminal = taggedElementWithOpeningMatch(
 		sectionHtml(html, "example"),
