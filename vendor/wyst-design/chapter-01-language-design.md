@@ -378,7 +378,7 @@ Wyst `in register` clause:
 ```wyst
 var counter: u64 in x19 = 0
 
-fn _start(dtb: @u8 in x0) -> never {
+fn _start(dtb: u64 in x0) -> never {
   kernel_init(dtb)
   loop { cpu.wfe() }
 }

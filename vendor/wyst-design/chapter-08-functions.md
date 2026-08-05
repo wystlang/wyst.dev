@@ -298,6 +298,26 @@ phis, parameters, results, inlining, and serialized summaries preserve it.
 Chapter 13 owns the boundary ordering, context-stability liveness, migration,
 and retained-task/activation identity rules.
 
+A callable value's `trusts(...)` clause is a separate closed upper bound on
+transitive trusted machine boundaries. The closed categories are
+`foreign_contract`, `raw_address`, `external_storage`, `raw_callable`, and
+`assembly_contract`; `none` names the empty set and `all` names the complete
+catalog. Omitting the clause from a callable value type means `trusts(none)`.
+Bodyless and foreign declarations must publish an explicit bound when they may
+cross trust; body-bearing Wyst functions infer their exact transitive set and
+need no redundant clause. Assigning a callable to a value may widen but never
+narrow its proved trust set.
+
+Trust is structural and cannot be suppressed: a foreign declaration
+contributes `foreign_contract`, `address<@T>` contributes `raw_address`, the
+trusted external-slice constructors contribute `external_storage`,
+`trusted_callable<T>` contributes `raw_callable`, and checked assembly
+contributes `assembly_contract`. Direct calls, indirect calls, imports,
+generic instantiation, fields, aggregates, returns, and serialized interfaces
+preserve the bound. `trusts(...)` affects no register, stack, calling
+convention, or object representation and is not an artifact safety profile or
+a general trusted block.
+
 A statically resolved declaration call retains more authority than a callable
 value type: its canonical declaration identity, parameter labels, declared or
 proved effect authority, authenticated entry execution levels, `#[inline]`
@@ -543,11 +563,11 @@ fn decode(argument: u64 in x0) -> u64 in x6 {
   return argument + 1
 }
 
-fn firmware_entry(dtb: @u8 in x0) -> never {
+fn firmware_entry(dtb: u64 in x0) -> never {
   kernel_init(dtb)
 }
 
-fn kernel_init(dtb: @u8) -> never {
+fn kernel_init(dtb: u64) -> never {
   loop {
     cpu.wfe()
   }

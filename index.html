@@ -147,33 +147,34 @@
 						<!-- homepage-semantic-example:start -->
 						<pre aria-label="Wyst UART source" aria-describedby="uart-scroll-hint" tabindex="0"><code id="uart-source"><span class="source-comment">/*</span>
 <span class="source-comment block-comment-line">* QEMU `virt` is a generic virtual Arm board.</span>
-<span class="source-comment block-comment-line">* Its PL011 UART provides serial text output.</span>
+<span class="source-comment block-comment-line">* Its PL011 UART sends text to the serial output.</span>
 <span class="source-comment block-comment-line">*</span>
-<span class="source-comment block-comment-line">* UART registers are memory-mapped I/O (MMIO):</span>
-<span class="source-comment block-comment-line">* reads and writes at these addresses reach a</span>
-<span class="source-comment block-comment-line">* device rather than ordinary RAM.</span>
+<span class="source-comment block-comment-line">* Bare-metal code uses memory-mapped I/O (MMIO) to control</span>
+<span class="source-comment block-comment-line">* the UART. An MMIO address refers to a device register, not</span>
+<span class="source-comment block-comment-line">* to normal RAM. Each `.read()` or `.write()` call makes</span>
+<span class="source-comment block-comment-line">* one device access.</span>
 <span class="source-comment block-comment-line">*</span>
-<span class="source-comment block-comment-line">* A register address is UART0's base plus its</span>
-<span class="source-comment block-comment-line">* PL011 byte offset. QEMU maps UART0's base at</span>
-<span class="source-comment block-comment-line">* 0x0900_0000.</span>
+<span class="source-comment block-comment-line">* The PL011 manual gives the offset of each register from</span>
+<span class="source-comment block-comment-line">* the device base address. QEMU sets the UART0 base address</span>
+<span class="source-comment block-comment-line">* to 0x0900_0000.</span>
 <span class="source-comment block-comment-line">*/</span>
 <span data-token="keyword" data-token-modifiers="defaultLibrary">register_map</span> <span data-token="type" data-token-modifiers="declaration">Pl011</span> {
-  <span class="source-comment">// DR is the data register.</span>
-  <span class="source-comment">// DATA is its eight-bit transmit payload.</span>
+  <span class="source-comment">// A write to DATA puts one byte in the transmit FIFO.</span>
   <span data-token="property" data-token-modifiers="declaration">DR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x00</span> {
     <span data-token="property" data-token-modifiers="declaration">DATA</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">7</span>
   }
 
-  <span class="source-comment">// FR is the flag register.</span>
-  <span class="source-comment">// BUSY means the UART is still sending or receiving.</span>
-  <span class="source-comment">// TXFF means the transmit FIFO is full.</span>
+  <span class="source-comment">// FR shows the current device status. The hardware sets</span>
+  <span class="source-comment">// BUSY during a transfer. The hardware sets TXFF when the</span>
+  <span class="source-comment">// transmit FIFO is full.</span>
   <span data-token="property" data-token-modifiers="declaration">FR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readonly</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x18</span> {
     <span data-token="property" data-token-modifiers="declaration">BUSY</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">3</span>
     <span data-token="property" data-token-modifiers="declaration">TXFF</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">5</span>
   }
 
-  <span class="source-comment">// IBRD and FBRD hold the integer and fractional</span>
-  <span class="source-comment">// parts of the baud-rate divisor.</span>
+  <span class="source-comment">// Baud rate is UART clock / (16 * divisor). The PL011 uses</span>
+  <span class="source-comment">// one field for the integer and one field for the 1/64</span>
+  <span class="source-comment">// fraction.</span>
   <span data-token="property" data-token-modifiers="declaration">IBRD</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x24</span> {
     <span data-token="property" data-token-modifiers="declaration">DIVINT</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u16</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">15</span>
   }
@@ -181,13 +182,14 @@
     <span data-token="property" data-token-modifiers="declaration">DIVFRAC</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">5</span>
   }
 
-  <span class="source-comment">// LCR_H selects an eight-bit word and enables FIFOs.</span>
+  <span class="source-comment">// LCR_H controls the data format and the FIFOs.</span>
+  <span class="source-comment">// A WLEN value of 3 selects eight data bits.</span>
   <span data-token="property" data-token-modifiers="declaration">LCR_H</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x2c</span> {
     <span data-token="property" data-token-modifiers="declaration">FEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">4</span>
     <span data-token="property" data-token-modifiers="declaration">WLEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">5</span>..=<span data-token="number">6</span>
   }
 
-  <span class="source-comment">// CR enables the UART and its transmit and receive paths.</span>
+  <span class="source-comment">// CR enables the UART, the transmitter, and the receiver.</span>
   <span data-token="property" data-token-modifiers="declaration">CR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x30</span> {
     <span data-token="property" data-token-modifiers="declaration">UARTEN</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>
     <span data-token="property" data-token-modifiers="declaration">TXE</span>: <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">8</span>
@@ -195,92 +197,105 @@
   }
 }
 
+<span class="source-comment">// This declaration uses the PL011 register map for UART0 at</span>
+<span class="source-comment">// the base address that QEMU supplies.</span>
 <span data-token="keyword" data-token-modifiers="defaultLibrary">mmio</span> <span data-token="variable" data-token-modifiers="declaration readonly">UART0</span>: <span data-token="type">Pl011</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x0900_0000</span>
 
 <span class="source-comment">/*</span>
-<span class="source-comment block-comment-line">* There is no process runtime to call `main`. The</span>
-<span class="source-comment block-comment-line">* layout file, similar to a linker script, names</span>
-<span class="source-comment block-comment-line">* `_start` as the entry point. QEMU jumps here after</span>
-<span class="source-comment block-comment-line">* loading the kernel image.</span>
+<span class="source-comment block-comment-line">* No operating system calls `main`. The layout file is</span>
+<span class="source-comment block-comment-line">* similar to a linker script. The layout file defines</span>
+<span class="source-comment block-comment-line">* `_start` as the entry point. QEMU loads the image and then</span>
+<span class="source-comment block-comment-line">* starts `_start`.</span>
 <span class="source-comment block-comment-line">*</span>
-<span class="source-comment block-comment-line">* QEMU passes a device-tree blob (DTB) address in Arm</span>
-<span class="source-comment block-comment-line">* register `x0`; it describes the virtual hardware.</span>
-<span class="source-comment block-comment-line">* `naked` omits the usual function prologue because</span>
-<span class="source-comment block-comment-line">* no valid stack exists yet. `never` records that</span>
-<span class="source-comment block-comment-line">* there is no caller to return to.</span>
+<span class="source-comment block-comment-line">* The target ABI puts a DTB address in `x0`. This example</span>
+<span class="source-comment block-comment-line">* checks only that the address is not zero. The `naked`</span>
+<span class="source-comment block-comment-line">* keyword prevents a function prologue before the stack is</span>
+<span class="source-comment block-comment-line">* ready. The `never` type shows that `_start` cannot return.</span>
 <span class="source-comment block-comment-line">*/</span>
-<span class="source-comment">// Put the entry address on a 16-byte boundary.</span>
+<span class="source-comment">// Align the boot entry on a 16-byte boundary.</span>
 #[align(<span data-token="number">16</span>)]
-<span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> in x0) -&gt; never {
-  <span class="source-comment">// __stack_top is a linker-style symbol from the layout.</span>
-  <span class="source-comment">// Set the CPU stack pointer to that reserved RAM.</span>
+<span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x0) -&gt; never {
+  <span class="source-comment">// The layout defines __stack_top at the top of RAM. The</span>
+  <span class="source-comment">// stack grows down from this address. Set the Arm stack</span>
+  <span class="source-comment">// pointer before a normal function call.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
     <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
   ) {
     mov sp, stack
   }
 
-  <span class="source-comment">// The stack is ready, so ordinary function calls are safe.</span>
+  <span class="source-comment">// The stack is now ready. The code can call a normal function.</span>
   <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)
 }
 
-<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: @<span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) -&gt; never {
-  <span class="source-comment">// Production code would parse the DTB.</span>
-  <span class="source-comment">// This fixture only checks that the handoff supplied it.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@<span data-token="type" data-token-modifiers="defaultLibrary">u8</span><span data-token="operator">&gt;</span>(<span data-token="number">0</span>) {
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span>) -&gt; never {
+  <span class="source-comment">// Zero means that QEMU did not supply a DTB address. This</span>
+  <span class="source-comment">// example checks only the address. The code does not read</span>
+  <span class="source-comment">// the DTB.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="number">0</span> {
     test_exit(<span data-token="number">0x63</span>)
   }
 
   <span data-token="function">uart_init</span>()
   <span data-token="function">uart_hello</span>()
 
-  <span class="source-comment">// Bare metal has no caller to return to. `test_exit`</span>
-  <span class="source-comment">// plays the role of process exit for this QEMU test:</span>
-  <span class="source-comment">// report status 0, then stop the virtual machine.</span>
+  <span class="source-comment">// QEMU semihosting stops the test. Status zero reports</span>
+  <span class="source-comment">// success. Real firmware uses a different end operation.</span>
+  <span class="source-comment">// Real firmware can stop the CPU or start the next boot stage.</span>
   test_exit(<span data-token="number">0</span>)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_init</span>() {
-  <span class="source-comment">// Disable every path before changing the configuration.</span>
+  <span class="source-comment">// First, disable the UART. The UART does not start new</span>
+  <span class="source-comment">// transmit or receive operations during the configuration.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
 
-  <span class="source-comment">// Finish any character left by earlier firmware, then</span>
-  <span class="source-comment">// disable the FIFOs to flush them.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">BUSY</span> {
-    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
-  }
+  <span class="source-comment">// The UART completes the current byte after the code disables</span>
+  <span class="source-comment">// the UART. Read BUSY until BUSY is clear. Each loop test reads</span>
+  <span class="source-comment">// FR again. The empty loop body is intentional.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">BUSY</span> { }
 
+  <span class="source-comment">// When the code changes FIFO mode, the PL011 clears the</span>
+  <span class="source-comment">// transmit and receive FIFOs. Disable FIFO mode before the</span>
+  <span class="source-comment">// new configuration.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
 
-  <span class="source-comment">// QEMU supplies a 24 MHz UART clock. The PL011 divisor</span>
-  <span class="source-comment">// for 115200 baud rounds to 13 + 1/64.</span>
+  <span class="source-comment">// QEMU supplies a 24 MHz UART clock. The nearest PL011</span>
+  <span class="source-comment">// divisor for 115200 baud is 13 + 1/64.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">IBRD</span>.<span data-token="property">write</span>(<span data-token="property">DIVINT</span> <span data-token="operator">=</span> <span data-token="number">13</span>)
   <span data-token="variable">UART0</span>.<span data-token="property">FBRD</span>.<span data-token="property">write</span>(<span data-token="property">DIVFRAC</span> <span data-token="operator">=</span> <span data-token="number">1</span>)
 
-  <span class="source-comment">// Use 8-bit words, one stop bit, no parity, and FIFOs.</span>
+  <span class="source-comment">// Set WLEN to 3 for eight data bits. Enable FIFO mode.</span>
+  <span class="source-comment">// A zero value in the other fields selects one stop bit</span>
+  <span class="source-comment">// and no parity.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">WLEN</span> <span data-token="operator">=</span> <span data-token="number">3</span>)
 
-  <span class="source-comment">// This example only transmits, so leave the receiver off.</span>
+  <span class="source-comment">// Enable the UART and the transmitter. Keep the receiver</span>
+  <span class="source-comment">// off because this example does not read input.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {
-  <span class="source-comment">// `_` infers a fixed [6]u8 from the literal's decoded bytes.</span>
-  <span class="source-comment">// The array has no runtime length field or trailing NUL byte.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [_]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> <span data-token="string">"hello\n"</span>
+  <span class="source-comment">// The compiler calculates the fixed [14]u8 type from the</span>
+  <span class="source-comment">// string. This array does not have the final zero byte of</span>
+  <span class="source-comment">// a C string.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration">msg</span>: [_]<span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="operator">=</span> <span data-token="string">"Hello, World!\n"</span>
 
-  <span class="source-comment">// #len reads the inferred array length at compile time.</span>
+  <span class="source-comment">// #len gives the fixed array length at compile time.</span>
+  <span class="source-comment">// The loop sends the 14 bytes in the array.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">i</span> in <span data-token="number">0</span> ..&lt; <span data-token="macro" data-token-modifiers="defaultLibrary">#len</span>(<span data-token="variable">msg</span>) {
     <span data-token="function">uart_write</span>(<span data-token="variable">msg</span>[<span data-token="variable">i</span>])
   }
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
-  <span class="source-comment">// Poll for space in the transmit FIFO.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> {
-    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
-  }
+  <span class="source-comment">// This example uses a busy-wait during early boot. Read TXFF</span>
+  <span class="source-comment">// until the FIFO has space. Each loop test reads FR again.</span>
+  <span class="source-comment">// A full driver can use interrupts. The CPU can do other</span>
+  <span class="source-comment">// work while the UART FIFO is full.</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable">UART0</span>.<span data-token="property">FR</span>.<span data-token="property">read</span>().<span data-token="property">TXFF</span> { }
 
+  <span class="source-comment">// Put the byte in the transmit FIFO.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">DR</span>.<span data-token="property">write</span>(<span data-token="property">DATA</span> <span data-token="operator">=</span> <span data-token="parameter">byte</span>)
 }</code></pre>
 						<!-- homepage-semantic-example:end -->
@@ -290,7 +305,7 @@
 					</div>
 					<figcaption class="artifact-output">
 						<span>qemu / virt</span>
-						<pre aria-label="QEMU UART output"><code>hello</code></pre>
+						<pre aria-label="QEMU UART output"><code>Hello, World!</code></pre>
 					</figcaption>
 				</figure>
 			</section>

@@ -99,6 +99,8 @@ element_offset	unshadowable	core.address-operations	expression-callee	implemente
 field_addr	unshadowable	core.address-operations	expression-callee	implemented
 addr_of	unshadowable	core.address-operations	expression-callee	implemented
 trusted_callable	unshadowable	core.compiler-operations	expression-callee	implemented
+trusted_slice	unshadowable	core.compiler-operations	expression-callee	implemented
+trusted_mut_slice	unshadowable	core.compiler-operations	expression-callee	implemented
 fma	unshadowable	core.semantic-operations	expression-callee	implemented
 uninit	unshadowable	core.uninitialized-storage	expression-callee	implemented
 MaybeUninit	unshadowable	core.uninitialized-storage	type-constructor	implemented
@@ -126,6 +128,7 @@ symbol	contextual	core.layout|core.checked-assembly|core.linkage-boundaries	layo
 weak	contextual	core.linkage-boundaries	export-binding	implemented
 scratch	contextual	core.checked-assembly	asm-parameter-prefix	implemented
 effects	contextual	core.callable-contracts	callable-effect-bound	implemented
+trusts	contextual	core.callable-contracts	callable-trust-bound	implemented
 must_observe	contextual	core.callable-contracts	callable-result-policy	implemented
 requires	contextual	core.callable-contracts	callable-precondition	implemented
 ensures	contextual	core.callable-contracts	callable-postcondition	implemented
@@ -195,6 +198,7 @@ unwind	contextual	core.project-manifests	manifest-unwind-policy-clause	implement
 frame_pointers	contextual	core.project-manifests	manifest-frame-pointer-policy-clause	implemented
 safety	contextual	core.project-manifests	manifest-safety-block	implemented
 raw_address	contextual	core.project-manifests	manifest-safety-category	implemented
+external_storage	contextual	core.project-manifests	manifest-safety-category	implemented
 raw_callable	contextual	core.project-manifests	manifest-safety-category	implemented
 relensing	contextual	core.project-manifests	manifest-safety-category	implemented
 qualifier_retagging	contextual	core.project-manifests	manifest-safety-category	implemented

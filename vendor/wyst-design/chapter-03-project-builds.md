@@ -287,6 +287,7 @@ The categories are:
 | Category | Diagnosed source boundary |
 | -------- | -------------------------- |
 | `raw_address` | construction of a typed address from an integer, including atomic, volatile, and MMIO address assertions |
+| `external_storage` | `trusted_slice<T>(raw, elements = n)` and `trusted_mut_slice<T>(raw, elements = n)` assertions after their machine-checkable validation |
 | `raw_callable` | `trusted_callable<T>(raw)` construction |
 | `relensing` | explicit `relens<T>(address)` conversion |
 | `qualifier_retagging` | explicit `qualify<T>(address)` conversion, distinct from the always-available qualifier-removal warning |
@@ -363,7 +364,7 @@ target-profile product, extension set, schema version, or digest layer between
 selection and use.
 
 For `qemu-virt-aarch64-el2` and `qemu-virt-aarch64-el2-lse`, that same target
-selection requires Wyst Native at EL2, `-> never`, exactly `dtb: @u8 in x0`,
+selection requires Wyst Native at EL2, `-> never`, exactly `dtb: u64 in x0`,
 an initially uninitialized stack, and the exact checked `mov sp, stack`
 transition with its stack input in `x1`. A manifest or source register
 placement cannot override that entry shape.

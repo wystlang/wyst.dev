@@ -25,6 +25,72 @@ The memory model defines ordering for normal and volatile memory,
 acquire/release operations, atomics, barriers, agents, and happens-before.
 Its address and access dependencies are linked above.
 
+## Storage Provenance and Usable Extent
+
+An ordinary typed address or view is authority, not merely a machine address
+encoding. `@T` authorizes access to one live, aligned, initialized `T` only
+where its static storage provenance proves those facts. `[]T` authorizes
+access to exactly `.len` contiguous live, aligned, initialized elements of
+one storage identity. An empty slice may have no backing; its data bits carry
+zero usable extent and cannot be dereferenced or passed where one live `T` is
+required until a nonempty backing proof exists.
+
+Provenance is non-widening. A subslice, element address, or field address
+retains only its projected usable extent. Address arithmetic may produce bits
+outside that extent, and address equality or integer conversion may inspect
+those bits, but no load, store, read-modify-write, slice construction, returned
+view, or storage lease may consume authority outside the retained extent.
+Converting an address or descriptor field to `u64` discards provenance;
+reconstructing a typed value from those bits begins a new trusted assertion
+rather than recovering the earlier proof.
+
+Ordinary `address.slice(elements = n)` never invents storage. It succeeds only
+when the receiver retains proof for the exact requested range. Code that has
+only raw machine bits uses one of the compiler-owned, unshadowable boundaries:
+
+<!-- wyst-contract: sketch -->
+```wyst
+match trusted_slice<u32>(raw, elements = count) {
+  .Ok(words) => consume(words)
+  .Error(reason) => reject(reason)
+}
+
+match trusted_mut_slice<u32>(raw, elements = count) {
+  .Ok(words) => initialize_or_update(words)
+  .Error(reason) => reject(reason)
+}
+```
+
+Both forms evaluate `raw` and `count` once from left to right and return a
+`must_observe Result<[]T, core.checked.ExternalSliceFailure>`. The checked
+predicate accepts an empty view, and otherwise requires natural alignment and
+that `count * #size_of(T)` plus `raw` is representable without unsigned
+overflow. A constant false predicate is a compile-time error; a dynamic
+predicate is emitted as ordinary control flow and successful proof is retained
+in typed IR. No helper call, allocation, registry lookup, shadow metadata, or
+pointer rewriting occurs.
+
+The successful result is nevertheless an explicit `external_storage` trust
+boundary. `trusted_slice` asserts initialized ordinary CPU-accessible Normal
+memory with no concurrent mutation for the view lifetime.
+`trusted_mut_slice` asserts exclusive CPU access and yields an affine mutation
+authority. Neither form applies to MMIO, volatile device registers,
+atomic storage, device-owned DMA, `MaybeUninit`, or types lacking the
+`copyable_discardable` abilities. Shared results may copy while preserving
+their narrowed provenance; exclusive results move but do not copy.
+
+External views are function-scoped and cannot escape unless their lifetime is
+tied to an explicit owner or provider authority. Target/static storage can be
+permanent only through its authenticated provider contract. Layout regions
+describe placement but do not instantiate live objects or create authority.
+Provably false overlap or exclusivity assertions are rejected; a dynamically
+unknown assertion remains explicit trust and is visible in reports.
+
+This layer establishes bounds plus provenance and usable extent. It does not,
+by itself, complete Wyst's whole-language memory-safety claim: lifetime,
+initialization, aliasing, reclamation, and concurrency obligations remain
+independent gates until their compiler enforcement is complete.
+
 Resource movement is not synchronization. `no_copy` permits unique local
 movement, while `agent_local` recursively forbids cross-agent transfer; neither
 fact creates a happens-before edge or permits concurrent mutation. Publishing

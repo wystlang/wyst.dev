@@ -8,33 +8,34 @@ import core.environment { semihost }
 // homepage-example:start
 /*
 * QEMU `virt` is a generic virtual Arm board.
-* Its PL011 UART provides serial text output.
+* Its PL011 UART sends text to the serial output.
 *
-* UART registers are memory-mapped I/O (MMIO):
-* reads and writes at these addresses reach a
-* device rather than ordinary RAM.
+* Bare-metal code uses memory-mapped I/O (MMIO) to control
+* the UART. An MMIO address refers to a device register, not
+* to normal RAM. Each `.read()` or `.write()` call makes
+* one device access.
 *
-* A register address is UART0's base plus its
-* PL011 byte offset. QEMU maps UART0's base at
-* 0x0900_0000.
+* The PL011 manual gives the offset of each register from
+* the device base address. QEMU sets the UART0 base address
+* to 0x0900_0000.
 */
 register_map Pl011 {
-  // DR is the data register.
-  // DATA is its eight-bit transmit payload.
+  // A write to DATA puts one byte in the transmit FIFO.
   DR: readwrite u32 at 0x00 {
     DATA: u8 at 0..=7
   }
 
-  // FR is the flag register.
-  // BUSY means the UART is still sending or receiving.
-  // TXFF means the transmit FIFO is full.
+  // FR shows the current device status. The hardware sets
+  // BUSY during a transfer. The hardware sets TXFF when the
+  // transmit FIFO is full.
   FR: readonly u32 at 0x18 {
     BUSY: bool at 3
     TXFF: bool at 5
   }
 
-  // IBRD and FBRD hold the integer and fractional
-  // parts of the baud-rate divisor.
+  // Baud rate is UART clock / (16 * divisor). The PL011 uses
+  // one field for the integer and one field for the 1/64
+  // fraction.
   IBRD: readwrite u32 at 0x24 {
     DIVINT: u16 at 0..=15
   }
@@ -42,13 +43,14 @@ register_map Pl011 {
     DIVFRAC: u8 at 0..=5
   }
 
-  // LCR_H selects an eight-bit word and enables FIFOs.
+  // LCR_H controls the data format and the FIFOs.
+  // A WLEN value of 3 selects eight data bits.
   LCR_H: readwrite u32 at 0x2c {
     FEN: bool at 4
     WLEN: u8 at 5..=6
   }
 
-  // CR enables the UART and its transmit and receive paths.
+  // CR enables the UART, the transmitter, and the receiver.
   CR: readwrite u32 at 0x30 {
     UARTEN: bool at 0
     TXE: bool at 8
@@ -56,92 +58,105 @@ register_map Pl011 {
   }
 }
 
+// This declaration uses the PL011 register map for UART0 at
+// the base address that QEMU supplies.
 mmio UART0: Pl011 at 0x0900_0000
 
 /*
-* There is no process runtime to call `main`. The
-* layout file, similar to a linker script, names
-* `_start` as the entry point. QEMU jumps here after
-* loading the kernel image.
+* No operating system calls `main`. The layout file is
+* similar to a linker script. The layout file defines
+* `_start` as the entry point. QEMU loads the image and then
+* starts `_start`.
 *
-* QEMU passes a device-tree blob (DTB) address in Arm
-* register `x0`; it describes the virtual hardware.
-* `naked` omits the usual function prologue because
-* no valid stack exists yet. `never` records that
-* there is no caller to return to.
+* The target ABI puts a DTB address in `x0`. This example
+* checks only that the address is not zero. The `naked`
+* keyword prevents a function prologue before the stack is
+* ready. The `never` type shows that `_start` cannot return.
 */
-// Put the entry address on a 16-byte boundary.
+// Align the boot entry on a 16-byte boundary.
 #[align(16)]
-pub naked fn _start(dtb: @u8 in x0) -> never {
-  // __stack_top is a linker-style symbol from the layout.
-  // Set the CPU stack pointer to that reserved RAM.
+pub naked fn _start(dtb: u64 in x0) -> never {
+  // The layout defines __stack_top at the top of RAM. The
+  // stack grows down from this address. Set the Arm stack
+  // pointer before a normal function call.
   asm establishes stack (
     stack: u64 in x1 = __stack_top,
   ) {
     mov sp, stack
   }
 
-  // The stack is ready, so ordinary function calls are safe.
+  // The stack is now ready. The code can call a normal function.
   kernel_main(dtb)
 }
 
-fn kernel_main(dtb: @u8) -> never {
-  // Production code would parse the DTB.
-  // This fixture only checks that the handoff supplied it.
-  if dtb == address<@u8>(0) {
+fn kernel_main(dtb: u64) -> never {
+  // Zero means that QEMU did not supply a DTB address. This
+  // example checks only the address. The code does not read
+  // the DTB.
+  if dtb == 0 {
     test_exit(0x63)
   }
 
   uart_init()
   uart_hello()
 
-  // Bare metal has no caller to return to. `test_exit`
-  // plays the role of process exit for this QEMU test:
-  // report status 0, then stop the virtual machine.
+  // QEMU semihosting stops the test. Status zero reports
+  // success. Real firmware uses a different end operation.
+  // Real firmware can stop the CPU or start the next boot stage.
   test_exit(0)
 }
 
 fn uart_init() {
-  // Disable every path before changing the configuration.
+  // First, disable the UART. The UART does not start new
+  // transmit or receive operations during the configuration.
   UART0.CR.write(UARTEN = false, TXE = false, RXE = false)
 
-  // Finish any character left by earlier firmware, then
-  // disable the FIFOs to flush them.
-  while UART0.FR.read().BUSY {
-    cpu.nop()
-  }
+  // The UART completes the current byte after the code disables
+  // the UART. Read BUSY until BUSY is clear. Each loop test reads
+  // FR again. The empty loop body is intentional.
+  while UART0.FR.read().BUSY { }
 
+  // When the code changes FIFO mode, the PL011 clears the
+  // transmit and receive FIFOs. Disable FIFO mode before the
+  // new configuration.
   UART0.LCR_H.write(FEN = false)
 
-  // QEMU supplies a 24 MHz UART clock. The PL011 divisor
-  // for 115200 baud rounds to 13 + 1/64.
+  // QEMU supplies a 24 MHz UART clock. The nearest PL011
+  // divisor for 115200 baud is 13 + 1/64.
   UART0.IBRD.write(DIVINT = 13)
   UART0.FBRD.write(DIVFRAC = 1)
 
-  // Use 8-bit words, one stop bit, no parity, and FIFOs.
+  // Set WLEN to 3 for eight data bits. Enable FIFO mode.
+  // A zero value in the other fields selects one stop bit
+  // and no parity.
   UART0.LCR_H.write(FEN = true, WLEN = 3)
 
-  // This example only transmits, so leave the receiver off.
+  // Enable the UART and the transmitter. Keep the receiver
+  // off because this example does not read input.
   UART0.CR.write(UARTEN = true, TXE = true, RXE = false)
 }
 
 fn uart_hello() {
-  // `_` infers a fixed [6]u8 from the literal's decoded bytes.
-  // The array has no runtime length field or trailing NUL byte.
-  const msg: [_]u8 = "hello\n"
+  // The compiler calculates the fixed [14]u8 type from the
+  // string. This array does not have the final zero byte of
+  // a C string.
+  const msg: [_]u8 = "Hello, World!\n"
 
-  // #len reads the inferred array length at compile time.
+  // #len gives the fixed array length at compile time.
+  // The loop sends the 14 bytes in the array.
   for i in 0 ..< #len(msg) {
     uart_write(msg[i])
   }
 }
 
 fn uart_write(byte: u8) {
-  // Poll for space in the transmit FIFO.
-  while UART0.FR.read().TXFF {
-    cpu.nop()
-  }
+  // This example uses a busy-wait during early boot. Read TXFF
+  // until the FIFO has space. Each loop test reads FR again.
+  // A full driver can use interrupts. The CPU can do other
+  // work while the UART FIFO is full.
+  while UART0.FR.read().TXFF { }
 
+  // Put the byte in the transmit FIFO.
   UART0.DR.write(DATA = byte)
 }
 // homepage-example:end

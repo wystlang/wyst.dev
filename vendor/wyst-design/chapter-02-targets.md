@@ -134,7 +134,7 @@ and offer the semihost service used by `core.environment.semihost`.
 profile does not acquire LSE merely because the compiler can encode it.
 
 The EL2 profiles require a never-returning Wyst Native entry with exactly
-`dtb: @u8 in x0`, an initially uninitialized stack, and the checked
+`dtb: u64 in x0`, an initially uninitialized stack, and the checked
 `mov sp, stack` transition using `x1`.
 
 The EL3 profile requires a secure, zero-parameter, never-returning entry and the

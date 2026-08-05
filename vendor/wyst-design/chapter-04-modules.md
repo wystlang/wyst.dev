@@ -224,7 +224,7 @@ body-bearing terminal label). `qemu-virt-aarch64-el2` and
 
 <!-- wyst-contract: sketch -->
 ```wyst
-pub naked fn _start(dtb: @u8 in x0) -> never {
+pub naked fn _start(dtb: u64 in x0) -> never {
   asm establishes stack (
     stack: u64 in x1 = __stack_top,
   ) {

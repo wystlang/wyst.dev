@@ -492,20 +492,24 @@ Slice subscripts do not apply directly to `DynamicArray<T>`. The bootstrap
 descriptor has no compiler-owned operation contract and is not an array or
 slice source for this grammar.
 
-An ordinary `@T` address has the sole raw-view constructor:
+An ordinary `@T` address may form a view only from retained storage
+provenance:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-const base: @u8 = address<@u8>(0x4000)
-const raw: []u8 = base.slice(elements = 64)
-const tail_raw: []u8 = element_offset(base, 8).slice(elements = 56)
+fn tail(base: []u8) -> []u8 from base {
+  return element_offset(base.data, 8).slice(elements = base.len - 8)
+}
 ```
 
 The receiver must be ordinary, not volatile or MMIO. The `elements` label is
 mandatory and always counts `T` elements, never bytes. The count is a
 fixed-width integer and a provably negative value is rejected. The receiver
 and count are evaluated once from left to right. Construction itself performs
-no memory access or allocation.
+no memory access or allocation. It also creates no usable extent: the exact
+requested range must already be proved within the receiver's retained backing.
+Raw machine bits use `trusted_slice<T>(raw, elements = n)` or
+`trusted_mut_slice<T>(raw, elements = n)` as specified by Chapter 9.
 
 ## 1.4 Scalar Primitive Types
 
