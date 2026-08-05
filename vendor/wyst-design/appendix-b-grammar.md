@@ -138,7 +138,7 @@ AttributeArgument <- UserIdentifier '=' ConstExpr
                    / ConstExpr
 
 TopLevelDecl <- FnDecl / ConstDecl / VarDecl / PerCpuVarDecl / LabelDecl
-                / StructDecl / EnumDecl / BitstructDecl
+                / NominalScalarDecl / StructDecl / EnumDecl / BitstructDecl
                 / RegisterMapDecl / MmioDecl / SystemRegisterDecl
                 / VectorTableDecl / TrapFrameDecl
 
@@ -192,6 +192,10 @@ LayoutSectionQuery <- ('start' / 'end' / 'size')
                       '(' LayoutSectionName ','? ')'
 
 ResourceModifier <- 'no_copy' / 'must_account' / 'must_resolve' / 'opaque' / 'agent_local'
+NominalScalarDecl <- ItemPrefix 'type' UserIdentifier ':' NumericScalarType
+NumericScalarType <- UnsignedIntType / SignedIntType / FloatType
+SignedIntType <- 'i8' / 'i16' / 'i32' / 'i64'
+FloatType <- 'f32' / 'f64'
 StructDecl <- ItemPrefix ResourceModifier* 'packed'? 'struct' UserIdentifier GenericParams?
               '{' (StructField ','?)* '}'
 StructField <- UserIdentifier ':' Type

@@ -243,7 +243,6 @@
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_init</span>() {
   <span class="source-comment">// Disable every path before changing the configuration.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
-  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
 
   <span class="source-comment">// Finish any character left by earlier firmware, then</span>
   <span class="source-comment">// disable the FIFOs to flush them.</span>
@@ -252,7 +251,6 @@
   }
 
   <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
-  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
 
   <span class="source-comment">// QEMU supplies a 24 MHz UART clock. The PL011 divisor</span>
   <span class="source-comment">// for 115200 baud rounds to 13 + 1/64.</span>
@@ -261,11 +259,9 @@
 
   <span class="source-comment">// Use 8-bit words, one stop bit, no parity, and FIFOs.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">LCR_H</span>.<span data-token="property">write</span>(<span data-token="property">FEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">WLEN</span> <span data-token="operator">=</span> <span data-token="number">3</span>)
-  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
 
   <span class="source-comment">// This example only transmits, so leave the receiver off.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">CR</span>.<span data-token="property">write</span>(<span data-token="property">UARTEN</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">TXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">true</span>, <span data-token="property">RXE</span> <span data-token="operator">=</span> <span data-token="keyword" data-token-modifiers="readonly defaultLibrary">false</span>)
-  <span data-token="variable">barrier</span>.<span data-token="property">dsb</span>(.sy)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_hello</span>() {

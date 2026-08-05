@@ -169,6 +169,14 @@ For a signed integer `x`, the result is always `-(x + 1)`.
 | `%`      | modulo (truncated)  | integers         |
 | `%%`     | remainder (floored) | integers         |
 
+A nominal scalar supports the operators admitted by its numeric carrier. Both
+typed operands must have the same nominal declaration; an untyped representable
+literal may bind to that declaration. Arithmetic, bitwise, shift, unary, and
+compound-assignment results preserve the nominal type. Comparisons likewise
+require the same nominal type and produce `bool`. The compiler never mixes a
+nominal scalar with its carrier, or two nominal scalars with equal carriers,
+without the explicit `bitcast<T>` boundary specified in Chapter 6.
+
 These operators are available in runtime expressions after type checking.
 Compile-time constant folding currently covers integer arithmetic and boolean
 logic. Floating-point literal binding is supported, but floating-point
