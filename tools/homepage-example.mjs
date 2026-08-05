@@ -31,8 +31,6 @@ export const HOMEPAGE_REGION_START =
 	"<!-- homepage-semantic-example:start -->";
 export const HOMEPAGE_REGION_END = "<!-- homepage-semantic-example:end -->";
 
-const EXCERPT_START_MARKER = "// homepage-example:start";
-const EXCERPT_END_MARKER = "// homepage-example:end";
 const TOKEN_GENERATOR = "wync-lsp-semanticTokens/full";
 const LSP_HEADER_END = Buffer.from("\r\n\r\n");
 
@@ -52,48 +50,6 @@ function lineStarts(source) {
 		starts.push(offset + 1);
 	}
 	return starts;
-}
-
-function lineForOffset(starts, offset) {
-	let low = 0;
-	let high = starts.length;
-	while (low + 1 < high) {
-		const middle = Math.floor((low + high) / 2);
-		if (starts[middle] <= offset) low = middle;
-		else high = middle;
-	}
-	return low;
-}
-
-export function extractHomepageExcerpt(source) {
-	const startMarker = source.indexOf(EXCERPT_START_MARKER);
-	const endMarker = source.indexOf(EXCERPT_END_MARKER);
-	if (startMarker === -1 || endMarker === -1 || startMarker >= endMarker) {
-		throw new Error(
-			`homepage source must contain ordered ${EXCERPT_START_MARKER} and ${EXCERPT_END_MARKER} markers`,
-		);
-	}
-	if (source.indexOf(EXCERPT_START_MARKER, startMarker + 1) !== -1) {
-		throw new Error(`homepage source contains more than one ${EXCERPT_START_MARKER}`);
-	}
-	if (source.indexOf(EXCERPT_END_MARKER, endMarker + 1) !== -1) {
-		throw new Error(`homepage source contains more than one ${EXCERPT_END_MARKER}`);
-	}
-
-	const markerLineEnd = source.indexOf("\n", startMarker);
-	if (markerLineEnd === -1) throw new Error("homepage start marker has no following source line");
-	let start = markerLineEnd + 1;
-	let end = source.lastIndexOf("\n", endMarker - 1) + 1;
-	while (start < end && (source[start] === "\r" || source[start] === "\n")) start++;
-	while (end > start && (source[end - 1] === "\r" || source[end - 1] === "\n")) end--;
-
-	const starts = lineStarts(source);
-	return {
-		end,
-		start,
-		startLine: lineForOffset(starts, start),
-		text: source.slice(start, end),
-	};
 }
 
 function lspFrame(message) {
@@ -280,35 +236,20 @@ export function createHomepageSemanticArtifact({
 	sourcePath = HOMEPAGE_SOURCE_PATH,
 }) {
 	assertFullCommit(sourceCommit);
-	const excerpt = extractHomepageExcerpt(source);
 	const semanticTokens = decodeSemanticData(source, legend, data);
-	const excerptTokens = [];
-	for (const token of semanticTokens) {
-		if (token.end <= excerpt.start || token.start >= excerpt.end) continue;
-		if (token.start < excerpt.start || token.end > excerpt.end) {
-			throw new Error("semantic token crosses a homepage excerpt marker");
-		}
-		excerptTokens.push({
-			...token,
-			character: token.character,
-			line: token.line - excerpt.startLine,
-		});
-	}
 
 	return {
-		data: encodeSemanticData(excerptTokens),
-		excerpt: {
-			endMarker: EXCERPT_END_MARKER,
-			sha256: sha256(excerpt.text),
-			startMarker: EXCERPT_START_MARKER,
-			text: excerpt.text,
+		data: encodeSemanticData(semanticTokens),
+		document: {
+			sha256: sha256(source),
+			text: source,
 		},
 		generator: TOKEN_GENERATOR,
 		legend: {
 			tokenModifiers: [...legend.tokenModifiers],
 			tokenTypes: [...legend.tokenTypes],
 		},
-		schema: 1,
+		schema: 2,
 		source: {
 			gitCommit: sourceCommit?.toLowerCase() ?? null,
 			path: sourcePath,
@@ -332,7 +273,7 @@ export async function captureHomepageSemanticArtifact({
 }
 
 function validateArtifact(artifact) {
-	if (!artifact || typeof artifact !== "object" || artifact.schema !== 1) {
+	if (!artifact || typeof artifact !== "object" || artifact.schema !== 2) {
 		throw new Error("unsupported homepage semantic-token artifact");
 	}
 	if (artifact.generator !== TOKEN_GENERATOR) {
@@ -346,12 +287,11 @@ function validateArtifact(artifact) {
 		throw new Error("homepage semantic-token artifact has an invalid source hash");
 	}
 	if (
-		artifact.excerpt?.startMarker !== EXCERPT_START_MARKER ||
-		artifact.excerpt?.endMarker !== EXCERPT_END_MARKER ||
-		typeof artifact.excerpt?.text !== "string" ||
-		artifact.excerpt.sha256 !== sha256(artifact.excerpt.text)
+		typeof artifact.document?.text !== "string" ||
+		artifact.document.sha256 !== sha256(artifact.document.text) ||
+		artifact.document.sha256 !== artifact.source.sha256
 	) {
-		throw new Error("homepage semantic-token artifact has invalid excerpt metadata");
+		throw new Error("homepage semantic-token artifact has invalid document metadata");
 	}
 	for (const [name, values] of [
 		["token type", artifact.legend?.tokenTypes],
@@ -367,7 +307,7 @@ function validateArtifact(artifact) {
 	if (!Array.isArray(artifact.data)) {
 		throw new Error("homepage semantic-token artifact has no data array");
 	}
-	decodeSemanticData(artifact.excerpt.text, artifact.legend, artifact.data);
+	decodeSemanticData(artifact.document.text, artifact.legend, artifact.data);
 	return artifact;
 }
 
@@ -395,7 +335,7 @@ function commentSpans(source) {
 		}
 		if (source.startsWith("/*", offset)) {
 			const close = source.indexOf("*/", offset + 2);
-			if (close === -1) throw new Error("homepage excerpt contains an unterminated block comment");
+			if (close === -1) throw new Error("homepage source contains an unterminated block comment");
 			const end = close + 2;
 			let lineStart = offset;
 			let continuation = false;
@@ -442,7 +382,7 @@ function commentSpans(source) {
 
 function semanticSpans(artifact) {
 	return decodeSemanticData(
-		artifact.excerpt.text,
+		artifact.document.text,
 		artifact.legend,
 		artifact.data,
 	).map((token) => {
@@ -464,7 +404,7 @@ function semanticSpans(artifact) {
 
 export function renderHomepageSemanticMarkup(inputArtifact) {
 	const artifact = validateArtifact(inputArtifact);
-	const source = artifact.excerpt.text;
+	const source = artifact.document.text;
 	const spans = [...commentSpans(source), ...semanticSpans(artifact)].sort(
 		(left, right) => left.start - right.start || left.end - right.end,
 	);

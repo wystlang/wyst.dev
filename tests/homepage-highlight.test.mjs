@@ -21,7 +21,7 @@ function tokenMarkup(type, text) {
 
 test("homepage markup is generated exactly from the captured wync token stream", async () => {
 	assert.equal(updateHomepageIndex(indexHtml, artifact), indexHtml);
-	assert.equal((await verifyHomepageExample()).excerpt.sha256, artifact.excerpt.sha256);
+	assert.equal((await verifyHomepageExample()).document.sha256, artifact.document.sha256);
 	assert.equal(artifact.generator, "wync-lsp-semanticTokens/full");
 	assert.deepEqual(artifact.legend.tokenTypes, [
 		"namespace",
@@ -93,12 +93,10 @@ test("renderer keeps comments readable without inventing semantic tokens", () =>
 	assert.doesNotMatch(markup, /data-token="comment"/);
 });
 
-test("semantic-token artifact rebases the compiler stream to the marked excerpt", () => {
+test("semantic-token artifact preserves the complete source document", () => {
 	const source = [
 		"module fixture",
-		"// homepage-example:start",
 		"fn hello(value: u8) {}",
-		"// homepage-example:end",
 		"fn outside() {}",
 		"",
 	].join("\n");
@@ -107,11 +105,11 @@ test("semantic-token artifact rebases the compiler stream to the marked excerpt"
 		tokenTypes: ["keyword", "function", "parameter", "type"],
 	};
 	const inputData = [
-		2, 0, 2, 0, 0,
+		1, 0, 2, 0, 0,
 		0, 3, 5, 1, 1,
 		0, 6, 5, 2, 1,
 		0, 7, 2, 3, 0,
-		2, 0, 2, 0, 0,
+		1, 0, 2, 0, 0,
 		0, 3, 7, 1, 1,
 	];
 	const rebased = createHomepageSemanticArtifact({
@@ -120,21 +118,17 @@ test("semantic-token artifact rebases the compiler stream to the marked excerpt"
 		source,
 	});
 
-	assert.equal(rebased.excerpt.text, "fn hello(value: u8) {}");
-	assert.deepEqual(rebased.data, [
-		0, 0, 2, 0, 0,
-		0, 3, 5, 1, 1,
-		0, 6, 5, 2, 1,
-		0, 7, 2, 3, 0,
-	]);
-	assert.doesNotMatch(renderHomepageSemanticMarkup(rebased), /outside/);
+	assert.equal(rebased.document.text, source);
+	assert.deepEqual(rebased.data, inputData);
+	assert.match(renderHomepageSemanticMarkup(rebased), /module fixture/);
+	assert.match(renderHomepageSemanticMarkup(rebased), /outside/);
 });
 
-test("renderer rejects token artifacts whose excerpt bytes were edited", () => {
+test("renderer rejects token artifacts whose document bytes were edited", () => {
 	const tampered = structuredClone(artifact);
-	tampered.excerpt.text += " ";
+	tampered.document.text += " ";
 	assert.throws(
 		() => renderHomepageSemanticMarkup(tampered),
-		/invalid excerpt metadata/,
+		/invalid document metadata/,
 	);
 });

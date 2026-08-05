@@ -34,7 +34,7 @@ const coreFixturePaths = [
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
-	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
+	"wync/tests/fixtures/runtime/semihost.wyst",
 ];
 const syntaxCorpusRoot = "wync/tests/fixtures/syntax-corpus";
 const vocabularyCatalogs = [

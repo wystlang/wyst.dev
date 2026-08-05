@@ -1,12 +1,8 @@
 {
   "schema": 1,
-  "sourceCommit": "5ab0a242352a2d8a731019913957bfcb781052a0",
-  "snapshotSha256": "33fe504fc44befb88b2ed9ab81fa93936de7dd80225c76b4684bacb461ab340d",
+  "sourceCommit": "1cb3ef1cc3116c2cb60cd796ef34d96a1f7df32c",
+  "snapshotSha256": "1a691ba6ba37a000912171bdb2a7db6b58cd81fae299ce6c45be105593634923",
   "files": {
-    "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
-      "sha256": "8f3f501279b50cba0793c725e83b24cb883b6b759cf0a7be70d8b0ab182e5690",
-      "size": 354
-    },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt": {
       "sha256": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
       "size": 14
@@ -16,8 +12,12 @@
       "size": 535
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst": {
-      "sha256": "2d1f008179bbf7b234bdaa24d964c5ffe9d0a3fb05c936fc36a8ea17f4202eac",
-      "size": 4864
+      "sha256": "d943030be8e47a7920472fa422d383ccbd4d343635f8b97dcdb16ec49eac2b9a",
+      "size": 4779
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/runtime/semihost.wyst": {
+      "sha256": "9a5a989fc7a46f4e76b989d75a6fdd7825ee256d207b86e3669bfa20e3cfb1e8",
+      "size": 446
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/manifest.tsv": {
       "sha256": "881072f7ccf9d407f0bd41600f3ae5d5ff085b83f4a7ff0caf905f238195fbc4",
@@ -188,7 +188,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "6b5159997c899753bca7a4304d4855346233052d6459e25a48b91870d40410a8",
+      "sha256": "a6c11e633069c6c0be8f2cb4d057664a8777ab1a6c1f7ab1bc3f138bf33e325f",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
