@@ -160,7 +160,7 @@
 <span data-token="keyword" data-token-modifiers="defaultLibrary">register_map</span> <span data-token="type" data-token-modifiers="declaration">Pl011</span> {
   <span class="source-comment">// DR is the data register.</span>
   <span class="source-comment">// DATA is its eight-bit transmit payload.</span>
-  <span data-token="property" data-token-modifiers="declaration">DR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">writeonly</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x00</span> {
+  <span data-token="property" data-token-modifiers="declaration">DR</span>: <span data-token="keyword" data-token-modifiers="defaultLibrary">readwrite</span> <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0x00</span> {
     <span data-token="property" data-token-modifiers="declaration">DATA</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">at</span> <span data-token="number">0</span>..=<span data-token="number">7</span>
   }
 

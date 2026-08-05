@@ -21,7 +21,7 @@ import core.environment { semihost }
 register_map Pl011 {
   // DR is the data register.
   // DATA is its eight-bit transmit payload.
-  DR: writeonly u32 at 0x00 {
+  DR: readwrite u32 at 0x00 {
     DATA: u8 at 0..=7
   }
 
