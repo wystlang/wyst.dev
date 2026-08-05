@@ -25,6 +25,72 @@ The memory model defines ordering for normal and volatile memory,
 acquire/release operations, atomics, barriers, agents, and happens-before.
 Its address and access dependencies are linked above.
 
+## Storage Provenance and Usable Extent
+
+An ordinary typed address or view is authority, not merely a machine address
+encoding. `@T` authorizes access to one live, aligned, initialized `T` only
+where its static storage provenance proves those facts. `[]T` authorizes
+access to exactly `.len` contiguous live, aligned, initialized elements of
+one storage identity. An empty slice may have no backing; its data bits carry
+zero usable extent and cannot be dereferenced or passed where one live `T` is
+required until a nonempty backing proof exists.
+
+Provenance is non-widening. A subslice, element address, or field address
+retains only its projected usable extent. Address arithmetic may produce bits
+outside that extent, and address equality or integer conversion may inspect
+those bits, but no load, store, read-modify-write, slice construction, returned
+view, or storage lease may consume authority outside the retained extent.
+Converting an address or descriptor field to `u64` discards provenance;
+reconstructing a typed value from those bits begins a new trusted assertion
+rather than recovering the earlier proof.
+
+Ordinary `address.slice(elements = n)` never invents storage. It succeeds only
+when the receiver retains proof for the exact requested range. Code that has
+only raw machine bits uses one of the compiler-owned, unshadowable boundaries:
+
+<!-- wyst-contract: sketch -->
+```wyst
+match trusted_slice<u32>(raw, elements = count) {
+  .Ok(words) => consume(words)
+  .Error(reason) => reject(reason)
+}
+
+match trusted_mut_slice<u32>(raw, elements = count) {
+  .Ok(words) => initialize_or_update(words)
+  .Error(reason) => reject(reason)
+}
+```
+
+Both forms evaluate `raw` and `count` once from left to right and return a
+`must_observe Result<[]T, core.checked.ExternalSliceFailure>`. The checked
+predicate accepts an empty view, and otherwise requires natural alignment and
+that `count * #size_of(T)` plus `raw` is representable without unsigned
+overflow. A constant false predicate is a compile-time error; a dynamic
+predicate is emitted as ordinary control flow and successful proof is retained
+in typed IR. No helper call, allocation, registry lookup, shadow metadata, or
+pointer rewriting occurs.
+
+The successful result is nevertheless an explicit `external_storage` trust
+boundary. `trusted_slice` asserts initialized ordinary CPU-accessible Normal
+memory with no concurrent mutation for the view lifetime.
+`trusted_mut_slice` asserts exclusive CPU access and yields an affine mutation
+authority. Neither form applies to MMIO, volatile device registers,
+atomic storage, device-owned DMA, `MaybeUninit`, or types lacking the
+`copyable_discardable` abilities. Shared results may copy while preserving
+their narrowed provenance; exclusive results move but do not copy.
+
+External views are function-scoped and cannot escape unless their lifetime is
+tied to an explicit owner or provider authority. Target/static storage can be
+permanent only through its authenticated provider contract. Layout regions
+describe placement but do not instantiate live objects or create authority.
+Provably false overlap or exclusivity assertions are rejected; a dynamically
+unknown assertion remains explicit trust and is visible in reports.
+
+This layer establishes bounds plus provenance and usable extent. It does not,
+by itself, complete Wyst's whole-language memory-safety claim: lifetime,
+initialization, aliasing, reclamation, and concurrency obligations remain
+independent gates until their compiler enforcement is complete.
+
 Resource movement is not synchronization. `no_copy` permits unique local
 movement, while `agent_local` recursively forbids cross-agent transfer; neither
 fact creates a happens-before edge or permits concurrent mutation. Publishing
@@ -454,12 +520,14 @@ A volatile access is a **compiler barrier**. The compiler may not:
 Two volatile accesses are never reordered with respect to each other.
 A plain access may not be moved across a volatile access in either direction.
 
-**Volatility does not emit CPU memory barriers.** ARM64's weak memory model
-allows the CPU's store buffer to reorder writes to different addresses unless
-explicit barrier instructions are present. For MMIO sequences where access
-order must be observed by the device, import `core.arch.barrier` and use
-`barrier.dsb` or `barrier.dmb` between writes. See section 1.3.1 for the
-qualified barrier catalog and MMIO ordering patterns.
+**Volatility does not emit CPU memory barriers.** This is separate from the
+architectural ordering supplied by the address's memory attributes. ARM
+Device-nGnRE and Device-nGnRnE preserve program order for accesses to the same
+memory-mapped peripheral, so accesses to different registers in one such
+peripheral do not require barriers merely because their addresses differ.
+Use an explicit barrier when required ordering crosses the boundary covered by
+the Device-memory rule, or when completion rather than ordering is required.
+See section 1.3.1 for the qualified barrier catalog and MMIO ordering patterns.
 
 **Volatility and MMIO intent do not control cacheability.** Whether an address
 is cached or uncached is determined by the page-table entry for that address
@@ -703,11 +771,11 @@ memory type:
 
 #### What `@volatile` and `@mmio` Do Not Do
 
-**Volatility does not emit CPU memory barriers.** ARM64's weak memory model
-allows the CPU's store buffer to reorder writes to different addresses unless
-explicit barrier instructions are present. For MMIO initialization sequences
-where access order must be observed by the device, explicit barriers are
-required. See **MMIO Ordering** below.
+**Volatility does not emit CPU memory barriers.** Architectural ordering comes
+from the address's memory attributes: Device-nGnRE and Device-nGnRnE preserve
+program order for accesses to the same peripheral, including different
+register offsets. Use an explicit barrier only when the required relationship
+extends beyond that Device ordering. See **MMIO Ordering** below.
 
 **Volatility and MMIO intent do not control cacheability.** Whether an address
 is cached or uncached is determined by the page-table entry for that address
@@ -818,20 +886,36 @@ create a happens-before edge between agents.
 
 ### MMIO Ordering
 
-Volatility and MMIO intent alone are not sufficient for MMIO initialization
-sequences. On ARM64, the CPU store buffer may reorder stores to different addresses. A
-device that requires its configuration registers to be written in a specific
-order requires explicit barriers between those writes.
+Compiler-visible ordering and architectural Device-memory ordering are
+separate contracts. `@volatile T` and `@mmio T` preserve source event order but
+do not select the hardware memory type; page tables, firmware, or platform
+configuration must map peripheral regions as Device memory.
 
-**Incorrect** (CPU may reorder stores even though every access is volatile):
+When a peripheral is mapped as Device-nGnRE or Device-nGnRnE, accesses to that
+same memory-mapped peripheral arrive in program order. Different register
+offsets do not change that rule. A sequence such as the PL011 baud-rate update
+therefore needs no barrier between its register writes:
 
-**Correct** (barriers enforce hardware observation order):
+<!-- wyst-contract: sketch -->
+```wyst
+UART0.IBRD.write(DIVINT = 13)
+UART0.FBRD.write(DIVFRAC = 1)
+UART0.LCR_H.write(FEN = true, WLEN = 3)
+UART0.CR.write(UARTEN = true, TXE = true)
+```
 
-Use `barrier.dsb(.sy)` when you need the CPU to stall until all preceding stores
-are globally observed. Use `barrier.dmb(.sy)` when ordering is required but
-the stall is not — for example, in a sequence of independent register
-writes where ordering relative to subsequent code matters but latency
-between the writes themselves does not.
+With the Stage 1 MMU disabled, ARM64 data accesses use Device-nGnRnE, so the
+same rule covers pre-MMU boot fixtures. Device-nGnRnE also forbids early write
+acknowledgement.
+
+Use an architectural barrier when the required relationship extends beyond
+same-peripheral Device ordering. Examples include Normal-memory writes before
+an MMIO doorbell, accesses to different peripherals, communication with
+another observer, cache or TLB maintenance, and completion before reset,
+power-state transition, or suspension. `barrier.dmb(...)` orders covered
+accesses; `barrier.dsb(...)` additionally waits for covered operations to
+complete. Select the narrowest access class and shareability domain justified
+by the target rather than defaulting to `.sy`.
 
 ---
 
@@ -872,8 +956,9 @@ atomic methods.
 
 Volatile accesses remain in source event order relative to other volatile
 accesses — the compiler will not reorder them relative to each
-other. This is a **compiler scheduling** constraint only. It does not prevent
-CPU reordering at the hardware level; use `barrier.dsb` or `barrier.dmb` for that.
+other. This is a **compiler scheduling** constraint only. Architectural
+ordering comes from the mapping's memory attributes or, where those rules do
+not cover the required relationship, an explicit `barrier.dmb` or `barrier.dsb`.
 
 Atomic storage expresses acquire and release ordering through
 `.load(.acquire)` and `.store(value, .release)`.

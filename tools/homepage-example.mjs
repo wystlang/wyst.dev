@@ -14,6 +14,19 @@ export const HOMEPAGE_ARTIFACT_PATH = path.join(
 	"wyst-homepage-semantic-tokens.json",
 );
 export const HOMEPAGE_INDEX_PATH = path.join(ROOT, "index.html");
+export const HOMEPAGE_OUTPUT_PATH = path.join(
+	ROOT,
+	"tests",
+	"fixtures",
+	"wyst",
+	"wync",
+	"tests",
+	"fixtures",
+	"qemu",
+	"virt",
+	"uart-hello",
+	"expected.txt",
+);
 export const HOMEPAGE_REGION_START =
 	"<!-- homepage-semantic-example:start -->";
 export const HOMEPAGE_REGION_END = "<!-- homepage-semantic-example:end -->";
@@ -506,6 +519,26 @@ export function updateHomepageIndex(indexHtml, artifact) {
 	);
 }
 
+export function updateHomepageTerminalOutput(indexHtml, output) {
+	const open = '<pre aria-label="QEMU UART output"><code>';
+	const close = "</code></pre>";
+	const start = indexHtml.indexOf(open);
+	if (start === -1 || indexHtml.indexOf(open, start + 1) !== -1) {
+		throw new Error("index.html must contain one QEMU UART output block");
+	}
+	const contentStart = start + open.length;
+	const end = indexHtml.indexOf(close, contentStart);
+	if (end === -1) {
+		throw new Error("index.html has an unterminated QEMU UART output block");
+	}
+	const terminalOutput = output.replace(/\r\n/g, "\n").replace(/\n$/, "");
+	return (
+		indexHtml.slice(0, contentStart) +
+		escapeHtml(terminalOutput) +
+		indexHtml.slice(end)
+	);
+}
+
 export async function readHomepageSemanticArtifact(
 	artifactPath = HOMEPAGE_ARTIFACT_PATH,
 ) {
@@ -515,12 +548,17 @@ export async function readHomepageSemanticArtifact(
 export async function verifyHomepageExample({
 	artifactPath = HOMEPAGE_ARTIFACT_PATH,
 	indexPath = HOMEPAGE_INDEX_PATH,
+	outputPath = HOMEPAGE_OUTPUT_PATH,
 } = {}) {
-	const [artifact, indexHtml] = await Promise.all([
+	const [artifact, indexHtml, output] = await Promise.all([
 		readHomepageSemanticArtifact(artifactPath),
 		readFile(indexPath, "utf8"),
+		readFile(outputPath, "utf8"),
 	]);
-	const expected = updateHomepageIndex(indexHtml, artifact);
+	const expected = updateHomepageTerminalOutput(
+		updateHomepageIndex(indexHtml, artifact),
+		output,
+	);
 	if (expected !== indexHtml) {
 		throw new Error(
 			"homepage source markup differs from the compiler semantic-token artifact; run npm run sync:wyst",

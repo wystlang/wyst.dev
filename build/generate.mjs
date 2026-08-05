@@ -157,6 +157,30 @@ function resolvedFragment(file, fragment) {
 	return matches.length === 1 ? `#${matches[0]}` : `#${slug}`;
 }
 
+function pinnedRepositoryLink(href, wystSourceCommit) {
+	if (!wystSourceCommit || !href.startsWith("../")) return null;
+	const hashAt = href.indexOf("#");
+	const sourcePath = hashAt === -1 ? href : href.slice(0, hashAt);
+	const fragment = hashAt === -1 ? "" : href.slice(hashAt);
+	const repositoryPath = path.posix.normalize(
+		path.posix.join("design", sourcePath),
+	);
+	if (
+		path.posix.isAbsolute(repositoryPath) ||
+		repositoryPath === ".." ||
+		repositoryPath.startsWith("../") ||
+		!/^[\w./-]+$/.test(repositoryPath) ||
+		!/^(?:#[\w-]*)?$/.test(fragment)
+	) {
+		return null;
+	}
+	const view = sourcePath.endsWith("/") ? "tree" : "blob";
+	return (
+		`${WYST_SOURCE_URL}/${view}/${wystSourceCommit.toLowerCase()}/` +
+		`${repositoryPath.replace(/\/$/, "")}${fragment}`
+	);
+}
+
 function headingPermalink(slug, _options, state, tokenIndex) {
 	const inline = state.tokens[tokenIndex + 1];
 	const headingText = inline.children
@@ -231,6 +255,12 @@ export function makeMd({ wystSourceCommit } = {}) {
 		const hi = tok.attrIndex("href");
 		if (hi >= 0) {
 			const href = tok.attrs[hi][1];
+			const repositoryLink = pinnedRepositoryLink(href, wystSourceCommit);
+			if (repositoryLink) {
+				tok.attrs[hi][1] = repositoryLink;
+				tok.attrSet("rel", "noopener");
+				return defaultLinkOpen(tokens, i, opts, env, self);
+			}
 			if (LOCAL_DESIGN_ARTIFACTS.has(href)) {
 				tok.attrs[hi][1] = `/docs/${href}`;
 				return defaultLinkOpen(tokens, i, opts, env, self);

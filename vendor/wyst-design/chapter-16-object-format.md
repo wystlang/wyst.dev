@@ -107,7 +107,7 @@ declaration's first byte; without it, ordinary section constraints determine
 the address. The QEMU EL1 and Raspberry Pi profiles require a zero-parameter,
 unpinned Wyst Native function returning `never`, or the equivalent body-bearing
 terminal label. The two QEMU EL2 profiles instead require `pub naked`, Wyst
-Native, exactly `dtb: @u8 in x0`, `-> never`, initial EL2, and exactly one cataloged
+Native, exactly `dtb: u64 in x0`, `-> never`, initial EL2, and exactly one cataloged
 checked stack transition from a `u64` value in `x1`. These ABI, register,
 execution-level, stack-transition, and terminal checks complete before the
 writer consumes the selection.

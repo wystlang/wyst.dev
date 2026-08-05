@@ -44,6 +44,7 @@ return	reserved	core.control-flow	statement	implemented
 schedule	reserved	core.scheduling	statement	implemented
 select	reserved	core.expressions	expression	implemented
 struct	reserved	core.declarations	declaration	implemented
+type	reserved	core.nominal-scalars	declaration	implemented
 trap_frame	reserved	core.target-structural-dsls	declaration	implemented
 true	reserved	core.literals	expression	implemented
 var	reserved	core.bindings|core.resource-values	declaration|statement|parameter-mode|callable-type-parameter-mode	implemented
@@ -98,6 +99,8 @@ element_offset	unshadowable	core.address-operations	expression-callee	implemente
 field_addr	unshadowable	core.address-operations	expression-callee	implemented
 addr_of	unshadowable	core.address-operations	expression-callee	implemented
 trusted_callable	unshadowable	core.compiler-operations	expression-callee	implemented
+trusted_slice	unshadowable	core.compiler-operations	expression-callee	implemented
+trusted_mut_slice	unshadowable	core.compiler-operations	expression-callee	implemented
 fma	unshadowable	core.semantic-operations	expression-callee	implemented
 uninit	unshadowable	core.uninitialized-storage	expression-callee	implemented
 MaybeUninit	unshadowable	core.uninitialized-storage	type-constructor	implemented
@@ -125,6 +128,7 @@ symbol	contextual	core.layout|core.checked-assembly|core.linkage-boundaries	layo
 weak	contextual	core.linkage-boundaries	export-binding	implemented
 scratch	contextual	core.checked-assembly	asm-parameter-prefix	implemented
 effects	contextual	core.callable-contracts	callable-effect-bound	implemented
+trusts	contextual	core.callable-contracts	callable-trust-bound	implemented
 must_observe	contextual	core.callable-contracts	callable-result-policy	implemented
 requires	contextual	core.callable-contracts	callable-precondition	implemented
 ensures	contextual	core.callable-contracts	callable-postcondition	implemented
@@ -194,11 +198,11 @@ unwind	contextual	core.project-manifests	manifest-unwind-policy-clause	implement
 frame_pointers	contextual	core.project-manifests	manifest-frame-pointer-policy-clause	implemented
 safety	contextual	core.project-manifests	manifest-safety-block	implemented
 raw_address	contextual	core.project-manifests	manifest-safety-category	implemented
+external_storage	contextual	core.project-manifests	manifest-safety-category	implemented
 raw_callable	contextual	core.project-manifests	manifest-safety-category	implemented
 relensing	contextual	core.project-manifests	manifest-safety-category	implemented
 qualifier_retagging	contextual	core.project-manifests	manifest-safety-category	implemented
 uninitialized_access	contextual	core.project-manifests	manifest-safety-category	implemented
-unchecked_indexing	contextual	core.project-manifests	manifest-safety-category	implemented
 foreign_assertion	contextual	core.project-manifests	manifest-safety-category	implemented
 stack_contract	contextual	core.project-manifests	manifest-safety-category	implemented
 shared_mutation	contextual	core.project-manifests	manifest-safety-category	implemented

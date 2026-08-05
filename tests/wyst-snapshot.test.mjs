@@ -175,7 +175,7 @@ for (const response of responses) {
 	await write(
 		siteRoot,
 		"index.html",
-		"<!-- homepage-semantic-example:start -->\n<pre>stale</pre>\n<!-- homepage-semantic-example:end -->\n",
+		'<pre aria-label="QEMU UART output"><code>stale output</code></pre>\n<!-- homepage-semantic-example:start -->\n<pre>stale</pre>\n<!-- homepage-semantic-example:end -->\n',
 	);
 	await chmod(path.join(wystRoot, "wync", "fake-wync.mjs"), 0o755);
 
@@ -287,6 +287,10 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	assert.match(
 		homepageIndex,
 		/<span data-token="function" data-token-modifiers="declaration">main<\/span>/,
+	);
+	assert.match(
+		homepageIndex,
+		/<pre aria-label="QEMU UART output"><code>hello<\/code><\/pre>/,
 	);
 
 	const repeated = runSync(siteRoot, wystRoot);

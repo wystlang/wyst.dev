@@ -92,6 +92,19 @@ test("design catalog links use authenticated local or pinned upstream artifacts"
 	);
 });
 
+test("links outside the published design snapshot use the pinned Wyst source", () => {
+	const commit = "b".repeat(40);
+	const rendered = makeMd({ wystSourceCommit: commit }).render(
+		"[architectural decisions](../docs/adr/)\n",
+	);
+	assert.match(
+		rendered,
+		new RegExp(
+			`href="https://github\\.com/wystlang/wyst/tree/${commit}/docs/adr" rel="noopener"`,
+		),
+	);
+});
+
 test("documentation markdown permits only the intentional safe HTML subset", () => {
 	const rendered = makeMd().render(
 		'<SCRIPT type="text/javascript">alert("x")</SCRIPT>\n\ntext<br>next<IMG src=x onerror=alert(1)>\n\n<!-- wyst-contract: sketch -->\n',

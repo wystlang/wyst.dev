@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import {
 	captureHomepageSemanticArtifact,
 	updateHomepageIndex,
+	updateHomepageTerminalOutput,
 } from "./homepage-example.mjs";
 import { createWystSnapshotManifest } from "./wyst-snapshot.mjs";
 
@@ -211,9 +212,18 @@ try {
 	);
 	await writeFile(
 		stagedHomepageIndex,
-		updateHomepageIndex(
-			await readFile(homepageIndexDestination, "utf8"),
-			homepageArtifact,
+		updateHomepageTerminalOutput(
+			updateHomepageIndex(
+				await readFile(homepageIndexDestination, "utf8"),
+				homepageArtifact,
+			),
+			await readFile(
+				path.join(
+					wystRoot,
+					"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+				),
+				"utf8",
+			),
 		),
 	);
 	await createWystSnapshotManifest({

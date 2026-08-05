@@ -139,9 +139,11 @@ instruction.
 These behavior guarantees are not a blanket whole-language memory-safety
 guarantee. Wyst unconditionally enforces typed access rules, initialization
 rules for ordinary local reads, affine resource states and leases, and
-statically provable memory violations. Its flow-sensitive IR analysis also
-classifies bounds, extent, alignment, initialization, and lifetime obligations
-as proved, asserted, unproved, violated, or not required.
+statically provable memory violations. Ordinary element indexing and slice
+ranges are rejected unless flow-sensitive typed IR proves their exact bounds
+or source consumes the authenticated success of a checked operation. The
+analysis also classifies extent, alignment, initialization, and lifetime
+obligations as proved, asserted, unproved, violated, or not required.
 
 Additional protection remains explicit and layered:
 
@@ -152,7 +154,8 @@ Additional protection remains explicit and layered:
   the closed hardening catalog, with cataloged effects and terminal failure
   paths. Omitted hardening preserves ordinary compilation.
 
-These layers do not define a comprehensive memory-safe profile. Raw-address
+These rules and layers do not yet define comprehensive whole-language memory
+safety. Raw-address
 assertions, foreign contracts, MMIO, and checked assembly remain auditable
 machine boundaries, and an accepted false or dynamically unproved assertion
 can still fault, trap, access the wrong storage, or violate a device protocol.
@@ -375,7 +378,7 @@ Wyst `in register` clause:
 ```wyst
 var counter: u64 in x19 = 0
 
-fn _start(dtb: @u8 in x0) -> never {
+fn _start(dtb: u64 in x0) -> never {
   kernel_init(dtb)
   loop { cpu.wfe() }
 }

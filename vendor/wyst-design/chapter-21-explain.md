@@ -403,6 +403,13 @@ instantiation, semantic checking, IR construction, verification, and artifact
 hardening path. They stop before ABI classification or machine lowering and do
 not create the selected artifact.
 
+Callers that execute more than one function or scenario from the same artifact
+use `wync::reference_execution::prepare_project` to produce one
+`PreparedExecutionProject`, then call `execute` repeatedly. Preparation performs
+the same complete authenticated compilation once; every execution starts with
+fresh deterministic runtime state and cannot observe state from an earlier
+execution.
+
 An interactive function cannot be the execution root. It is executable only
 when called through ordinary source code whose lexical handlers, recovery
 arms, terminal commitment, and cleanup have already been lowered and verified.

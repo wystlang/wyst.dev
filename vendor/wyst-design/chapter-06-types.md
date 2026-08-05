@@ -3,7 +3,7 @@ title: "Chapter 6: Wyst Type System"
 group: chapter
 chapter: 6
 order: 6
-summary: "Scalar values, constants, conversions, addresses, arrays, slices, structs, bitstructs, and enums."
+summary: "Scalar values, nominal scalars, constants, conversions, addresses, arrays, slices, structs, bitstructs, and enums."
 ---
 
 # Chapter 6: Wyst Type System
@@ -17,7 +17,7 @@ summary: "Scalar values, constants, conversions, addresses, arrays, slices, stru
 > [chapter-09-memory-model.md](chapter-09-memory-model.md).
 
 The sections below independently specify scalars, literals, conversions,
-addresses, arrays, slices, structs, bitstructs, enums, compile-time conditions,
+addresses, nominal scalars, arrays, slices, structs, bitstructs, enums, compile-time conditions,
 and generics. Generic syntax is implemented and can be consulted separately
 from the scalar and aggregate rules.
 
@@ -36,7 +36,39 @@ foreign-layout inspection, not a compiler-provided initialization or mutation
 API. Chapter 10 defines its descriptor-only contract. The future `[?]T`
 growable-array type is a separate roadmap item.
 
-Nominal aggregate declarations are keyword-led. Generic parameter lists are
+Nominal declarations are keyword-led. A nominal scalar declares a distinct
+source type over one fixed-width numeric carrier:
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module types.scalars
+
+type ArenaSequence: u64
+type TemperatureDelta: i32
+type Scale: f32
+
+const FIRST: ArenaSequence = 1
+
+fn advance(sequence: ArenaSequence) -> ArenaSequence {
+  return sequence + 1
+}
+```
+
+The carrier is exactly one of `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`,
+`i64`, `f32`, or `f64`. `type Name: Carrier` is not an alias: two declarations
+with the same carrier remain different types and do not implicitly convert or
+mix. The nominal type has the carrier's exact size, alignment, ABI
+classification, and complete bit representation, but exposes no synthetic
+field such as `.value`.
+
+An untyped numeric literal binds contextually to a nominal scalar when its
+carrier can represent the literal. Integer nominal scalars expose compile-time
+`MIN` and `MAX` members with the nominal result type. Crossing between a
+nominal scalar and its exact carrier is explicit in either direction with
+`bitcast<T>` and emits no representation change. Other carrier pairings and
+crossings between distinct nominal declarations are rejected.
+
+Nominal aggregate declarations are also keyword-led. Generic parameter lists are
 permitted only on `struct`, `enum`, and `fn` declarations:
 
 <!-- wyst-contract: fmt -->
@@ -247,7 +279,7 @@ already typed value uses exactly one unshadowable compiler-owned operation:
 | `truncate<T>(value)` | integer source and narrower integer `T` | low `#size_of(T) * 8` bits; discarded high bits are not checked |
 | `signcast<T>(value)` | equal-width integer source and `T` with opposite signedness | identical complete bit pattern interpreted with `T`'s signedness |
 | `numeric<T>(value)` | representable untyped integer; integer identity; wider integer target with different signedness; or an explicit integer/`bool` crossing | extend a wider crossing according to the source signedness, then interpret as `T`; integer-to-`bool` is nonzero, and `bool`-to-integer is zero or one |
-| `bitcast<T>(value)` | a compiler-listed equal-representation pair, including a `bitstruct` and its exact backing integer | identical complete bit pattern, with no validation or normalization |
+| `bitcast<T>(value)` | a compiler-listed equal-representation pair, including a nominal scalar and its exact carrier or a `bitstruct` and its exact backing integer | identical complete bit pattern, with no validation or normalization |
 | `address<T>(value)` | `u64` to a data-address type, or any one-word data/callable address to `u64` | identical target-word address bits |
 | `relens<T>(value)` | data address to complete target address type `T` with the same ordinary/volatile/MMIO qualifier set and a different pointee | identical address bits with `T`'s pointee lens |
 | `qualify<T>(value)` | data address to complete target address type `T` with the same pointee and a different ordinary/volatile/MMIO qualifier set | identical address bits with `T`'s explicitly selected qualifier intent |
@@ -289,16 +321,18 @@ quantity vocabulary:
 
 | Domain | Nominal type and carrier |
 | --- | --- |
-| byte and element measures | `ByteLength { value: u64 }`, `ElementLength { value: u64 }`, `ElementCapacity { value: u64 }` |
+| byte and element measures | `type ByteLength: u64`, `type ElementLength: u64`, `type ElementCapacity: u64` |
 | indices and end-exclusive boundaries | `ElementIndex { value: u64 }`, `ElementBoundary { value: u64 }` |
-| signed displacement | `ByteOffset { value: i64 }`, `ElementOffset { value: i64 }` |
+| signed displacement | `type ByteOffset: i64`, `type ElementOffset: i64` |
 | address and alignment | opaque `Alignment { bytes: u64 }`, `PhysicalAddress { bits: u64 }` |
-| observations and identities | `CounterSample { value: u64 }`, `TickDuration { ticks: u64 }`, `LogicalCpuId { value: u64 }`, `Generation { value: u64 }` |
+| observations and identities | `CounterSample { value: u64 }`, `type TickDuration: u64`, `LogicalCpuId { value: u64 }`, `type Generation: u64` |
 | ranges | opaque `ByteRange { lower: ByteLength, upper: ByteLength }`, opaque `ElementRange { lower: ElementBoundary, upper: ElementBoundary }` |
 | extents | opaque `ByteExtent<A: address> { base: A, length: ByteLength }`, opaque `ElementExtent<A: address> { base: A, length: ElementLength }`, opaque `PhysicalExtent { base: PhysicalAddress, length: ByteLength }` |
 
-These are distinct nominal structs, not aliases, a universal `Quantity`, or a
-machine-sized `usize`. Their carriers are fixed: nonnegative measures,
+These are distinct nominal types, not aliases, a universal `Quantity`, or a
+machine-sized `usize`. The transparent measures, displacements, duration, and
+generation are nominal scalar declarations; the remaining transparent values
+are nominal structs. Their carriers are fixed: nonnegative measures,
 indices, identities, samples, and generations use `u64`; signed offsets use
 `i64`; physical addresses retain exact 64-bit address bits. A range is
 end-exclusive and requires separate validation before it can be treated as a
@@ -446,34 +480,36 @@ const tail: []u8 = buffer[2 ..]
 `..<` separates two present bounds. `..` denotes omitted start and/or end only
 inside this slice grammar. Slice ranges and integer-loop ranges are syntax, not
 first-class range values. The compiler evaluates the source, then a present
-start, then a present end, exactly once each from left to right. In ordinary
-compilation, forming the view performs no allocation, copy, bounds check, or
-memory access. If the artifact selects `index_bounds` hardening, an asserted or
-unproved range obligation receives the cataloged
-`start <= end && end <= base_length` check immediately before the protected
-address calculation; the check adds no allocation, copy, or element access.
-Only a bound or ordering that is provably invalid at compile time is rejected
-unconditionally; dynamic bounds remain unchecked when this hardening row is not
-selected.
+start, then a present end, exactly once each from left to right. Forming the
+view performs no allocation, copy, hidden bounds check, or memory access. Typed
+IR must prove `start <= end && end <= base_length` from exact dominating guards
+or from the authenticated success path of `checked.slice_range`. A provably
+invalid or unproved range is rejected unconditionally; a dynamic range must use
+the source-visible checked operation and form the view only on its success
+path.
 
 Slice subscripts do not apply directly to `DynamicArray<T>`. The bootstrap
 descriptor has no compiler-owned operation contract and is not an array or
 slice source for this grammar.
 
-An ordinary `@T` address has the sole raw-view constructor:
+An ordinary `@T` address may form a view only from retained storage
+provenance:
 
 <!-- wyst-contract: sketch -->
 ```wyst
-const base: @u8 = address<@u8>(0x4000)
-const raw: []u8 = base.slice(elements = 64)
-const tail_raw: []u8 = element_offset(base, 8).slice(elements = 56)
+fn tail(base: []u8) -> []u8 from base {
+  return element_offset(base.data, 8).slice(elements = base.len - 8)
+}
 ```
 
 The receiver must be ordinary, not volatile or MMIO. The `elements` label is
 mandatory and always counts `T` elements, never bytes. The count is a
 fixed-width integer and a provably negative value is rejected. The receiver
 and count are evaluated once from left to right. Construction itself performs
-no memory access or allocation.
+no memory access or allocation. It also creates no usable extent: the exact
+requested range must already be proved within the receiver's retained backing.
+Raw machine bits use `trusted_slice<T>(raw, elements = n)` or
+`trusted_mut_slice<T>(raw, elements = n)` as specified by Chapter 9.
 
 ## 1.4 Scalar Primitive Types
 

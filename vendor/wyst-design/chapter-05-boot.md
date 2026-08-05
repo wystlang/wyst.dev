@@ -78,7 +78,7 @@ fn uart_print(msg: string) {
   }
 }
 
-pub naked fn _start(dtb: @u8 in x0) -> never {
+pub naked fn _start(dtb: u64 in x0) -> never {
   asm establishes stack (
     stack: u64 in x1 = STACK_TOP,
   ) {
@@ -246,7 +246,7 @@ system_register ESR_EL1: readonly u64 {}
 // Published typed layout symbols such as __stack_top are available by bare name.
 // Entry point — invoked at EL2 by QEMU with DTB pointer in x0.
 // Must be naked: sp is undefined; we cannot use stack until we set it.
-pub naked fn _start(dtb: @u8 in x0) -> never {
+pub naked fn _start(dtb: u64 in x0) -> never {
   // 1. Set up an initial stack (in EL2's sp_el2, which becomes sp here).
   asm establishes stack (
     stack: u64 in x1 = __stack_top,
@@ -280,7 +280,7 @@ pub naked fn _start(dtb: @u8 in x0) -> never {
 }
 
 // EL1 entry — runs after the drop. sp now refers to sp_el1.
-fn el1_main(dtb: @u8 in x0) -> never {
+fn el1_main(dtb: u64 in x0) -> never {
   // 10. Zero BSS now that we are at EL1 with a usable stack.
   var addr: @u8 = __bss_start
   while address<u64>(addr) < address<u64>(__bss_end) {
