@@ -8,7 +8,7 @@ terminal cleanup, fatal termination, and C adapters.
 Generated hardening checks use the same terminal fatal-trap convention as
 other compiler-owned fatal failures: `x0` carries the reason and
 `BRK #0xf001` terminates the path. The closed hardening catalog assigns
-`0x8001` to `index_bounds` and `0x8002` to `address_alignment`. These paths
+`0x8002` to `address_alignment`. These paths
 provide no recovery, allocation, locking, unwinding, or invented continuation.
 
 ## 26.1 Four closed categories
@@ -467,8 +467,8 @@ delivery rather than acting as a synonym for success.
 ### 26.8.2 Bounded causal records and failure aggregation
 
 `core.outcomes` owns the additional nominal carriers
-`CausalIdentity { value: u64 }`, `CausalOrdinal { value: u64 }`,
-`StorageAddress { bits: u64 }`, and `WorkUnits { value: u64 }`. It defines
+`CausalIdentity { value: u64 }`, `type CausalOrdinal: u64`,
+`StorageAddress { bits: u64 }`, and `type WorkUnits: u64`. It defines
 `CausalId { identity: CausalIdentity, generation: Generation }`,
 `CausalRecord { identity: CausalId, parent: Option<CausalId>, stage,
 ordinal: CausalOrdinal }`, and `CausalEvent<T> { causal, payload }`.

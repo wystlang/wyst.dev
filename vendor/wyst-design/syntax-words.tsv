@@ -44,6 +44,7 @@ return	reserved	core.control-flow	statement	implemented
 schedule	reserved	core.scheduling	statement	implemented
 select	reserved	core.expressions	expression	implemented
 struct	reserved	core.declarations	declaration	implemented
+type	reserved	core.nominal-scalars	declaration	implemented
 trap_frame	reserved	core.target-structural-dsls	declaration	implemented
 true	reserved	core.literals	expression	implemented
 var	reserved	core.bindings|core.resource-values	declaration|statement|parameter-mode|callable-type-parameter-mode	implemented
@@ -198,7 +199,6 @@ raw_callable	contextual	core.project-manifests	manifest-safety-category	implemen
 relensing	contextual	core.project-manifests	manifest-safety-category	implemented
 qualifier_retagging	contextual	core.project-manifests	manifest-safety-category	implemented
 uninitialized_access	contextual	core.project-manifests	manifest-safety-category	implemented
-unchecked_indexing	contextual	core.project-manifests	manifest-safety-category	implemented
 foreign_assertion	contextual	core.project-manifests	manifest-safety-category	implemented
 stack_contract	contextual	core.project-manifests	manifest-safety-category	implemented
 shared_mutation	contextual	core.project-manifests	manifest-safety-category	implemented

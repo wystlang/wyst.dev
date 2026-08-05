@@ -121,7 +121,6 @@ project project_graph_smoke {
     unwind .tables
     frame_pointers .all
     hardening {
-      index_bounds .enabled
       address_alignment .enabled
     }
     safety {
@@ -216,22 +215,19 @@ An artifact may contain at most one `hardening` block. Its closed syntax is:
 
 ```text
 hardening {
-  index_bounds .enabled
   address_alignment .enabled
 }
 ```
 
 Each catalog row may occur at most once, and `.enabled` is the only setting.
 An omitted block, an empty block, and an omitted row are disabled. The current
-closed set is `index_bounds` and `address_alignment`; unknown rows, duplicate
-rows, and any other setting are errors. Hardening covers the artifact's
+closed set contains only `address_alignment`; unknown rows, duplicate rows,
+and any other setting are errors. Hardening covers the artifact's
 complete Wyst source and layout closure. It has no source-, module-, or
 function-level override. The selection is part of nondefault multi-owner editor
 compatibility because it changes the artifact's verified IR and effects.
 
 Hardening is applied after ordinary optimization and proof production.
-`index_bounds` guards an unproved element index with `index < length` and an
-unproved slice range with `start <= end && end <= base_length`.
 `address_alignment` guards an unproved actual read, write, or
 read-modify-write address against that operation's authenticated required
 alignment. Proved and not-required obligations are omitted, statically
@@ -259,6 +255,14 @@ sets or versions are rejected; foreign inputs remain opaque and cannot claim a
 Wyst hardening identity. When hardening is disabled, no identity metadata is
 emitted and ordinary compilation bytes remain unchanged.
 
+Index bounds are an unconditional language rule, not an artifact hardening
+choice. Every ordinary fixed-array, slice, or `DynamicArray` element index must
+be proved in bounds by flow-sensitive typed IR. Every slice range must prove
+its ordering and upper bound. A dynamic program can establish those facts with
+the exact authenticated success path of `checked.index` or
+`checked.slice_range`. An unproved ordinary access is rejected with `E0245`;
+no manifest policy can permit it or silently add a trap.
+
 ### Optional safety checking
 
 An artifact may contain at most one `safety` block. Its closed syntax is:
@@ -266,7 +270,7 @@ An artifact may contain at most one `safety` block. Its closed syntax is:
 ```text
 safety {
   raw_address .warning
-  unchecked_indexing .error
+  shared_mutation .error
 }
 ```
 
@@ -287,7 +291,6 @@ The categories are:
 | `relensing` | explicit `relens<T>(address)` conversion |
 | `qualifier_retagging` | explicit `qualify<T>(address)` conversion, distinct from the always-available qualifier-removal warning |
 | `uninitialized_access` | `read_uninit` and `assume_init`; introducing `uninit<T>()` storage is not an access |
-| `unchecked_indexing` | fixed-array, slice, or `DynamicArray` indexing without a compile-time bounds proof; statically out-of-bounds indexing remains an unconditional error and slice construction is not indexing |
 | `foreign_assertion` | bodyless foreign function or object declarations and their contracts, plus a body-bearing public `extern "C"` boundary; calls are not repeatedly diagnosed |
 | `naked` | each accepted `naked fn` or `naked label` declaration |
 | `stack_contract` | each explicit checked-assembly stack clause after its structural contract is verified |

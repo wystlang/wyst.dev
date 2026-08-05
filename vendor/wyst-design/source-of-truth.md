@@ -27,6 +27,15 @@ examples conflict, use this order:
 User-visible semantics win over an internal representation or stale test.
 Correct the lower-authority source when resolving a conflict.
 
+## Architectural Decisions
+
+Accepted records under [`../docs/adr/`](../docs/adr/) preserve the rationale
+for hard-to-reverse decisions and constrain the next coherent language change.
+They do not override an owning chapter as a description of current compiler
+behavior. When an accepted decision becomes executable semantics, update its
+owning chapters, implementation, catalogs, and regression tests together; do
+not make the manual claim behavior that the compiler does not enforce.
+
 ## Machine-Readable Catalogs
 
 Checked-in catalogs own closed vocabularies where maintaining one definition

@@ -44,6 +44,31 @@ const LOCAL_DESIGN_ARTIFACTS = new Set([
 	"syntax-words.tsv",
 ]);
 
+function pinnedWystRepositoryHref(href, commit) {
+	if (!commit) return null;
+	const match = href.match(/^(\.\.\/(?:[\w.-]+\/)*[\w.-]*)(#[\w.-]+)?$/);
+	if (!match) return null;
+
+	const repositoryPath = path.posix.normalize(
+		path.posix.join("design", match[1]),
+	);
+	if (
+		repositoryPath === "." ||
+		repositoryPath === ".." ||
+		repositoryPath.startsWith("../") ||
+		path.posix.isAbsolute(repositoryPath)
+	) {
+		return null;
+	}
+
+	const isDirectory = match[1].endsWith("/");
+	const kind = isDirectory ? "tree" : "blob";
+	const suffix = isDirectory
+		? `${repositoryPath.replace(/\/+$/, "")}/`
+		: repositoryPath;
+	return `${WYST_SOURCE_URL}/${kind}/${commit.toLowerCase()}/${suffix}${match[2] || ""}`;
+}
+
 function resolveDocsDir() {
 	const candidate = process.env.WYST_DOCS_DIR
 		? path.resolve(process.env.WYST_DOCS_DIR)
@@ -244,10 +269,17 @@ export function makeMd({ wystSourceCommit } = {}) {
 			} else if (/^#[\w-]+$/.test(href) && env?.sourceFile) {
 				tok.attrs[hi][1] = resolvedFragment(env.sourceFile, href);
 			} else {
+				const repositoryHref = pinnedWystRepositoryHref(
+					href,
+					wystSourceCommit,
+				);
 				const artifact = href.match(
 					/^(?:\.\/)?([\w.-]+\.(?:json|tsv|jsonl\.gz))$/,
 				);
-				if (artifact && wystSourceCommit) {
+				if (repositoryHref) {
+					tok.attrs[hi][1] = repositoryHref;
+					tok.attrSet("rel", "noopener");
+				} else if (artifact && wystSourceCommit) {
 					tok.attrs[hi][1] =
 						`${WYST_SOURCE_URL}/blob/${wystSourceCommit.toLowerCase()}/design/` +
 						artifact[1];

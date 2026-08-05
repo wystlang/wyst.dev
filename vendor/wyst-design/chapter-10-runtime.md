@@ -344,14 +344,13 @@ Descriptor state is read through read-only dot projections such as `arr.data`,
 assignment targets, and Wyst does not provide typed getter APIs for descriptor
 state.
 
-In ordinary compilation, `arr[i]` is direct unchecked access to initialized
-dynamic-array element storage. It lowers through the descriptor's data pointer
-and performs no hidden length or capacity check. If the artifact selects
-`index_bounds` hardening, an asserted or unproved index obligation receives the
-cataloged `i < arr.len` check immediately before the protected address
-calculation; capacity is never substituted for length. Omitted hardening
-preserves ordinary lowering. The descriptor supplies no compiler-owned access
-to capacity-only storage.
+`arr[i]` lowers directly through the descriptor's data pointer and performs no
+hidden length or capacity check. Flow-sensitive typed IR must first prove the
+exact `i < arr.len` relation; capacity is never substituted for length. A
+dynamic access can establish the relation with `checked.index` and use the
+authenticated index only on its success path. An unproved access is rejected
+unconditionally. The descriptor supplies no compiler-owned access to
+capacity-only storage.
 
 The bootstrap descriptor has no `arr[:]` or range-slicing surface and never
 binds implicitly to a `[]T`. Source that needs a slice must explicitly obtain

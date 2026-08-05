@@ -2,7 +2,7 @@ module hello
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
-import core.arch { barrier, cpu, exception }
+import core.arch { cpu, exception }
 import core.environment { semihost }
 
 // homepage-example:start
@@ -104,7 +104,6 @@ fn kernel_main(dtb: @u8) -> never {
 fn uart_init() {
   // Disable every path before changing the configuration.
   UART0.CR.write(UARTEN = false, TXE = false, RXE = false)
-  barrier.dsb(.sy)
 
   // Finish any character left by earlier firmware, then
   // disable the FIFOs to flush them.
@@ -113,7 +112,6 @@ fn uart_init() {
   }
 
   UART0.LCR_H.write(FEN = false)
-  barrier.dsb(.sy)
 
   // QEMU supplies a 24 MHz UART clock. The PL011 divisor
   // for 115200 baud rounds to 13 + 1/64.
@@ -122,11 +120,9 @@ fn uart_init() {
 
   // Use 8-bit words, one stop bit, no parity, and FIFOs.
   UART0.LCR_H.write(FEN = true, WLEN = 3)
-  barrier.dsb(.sy)
 
   // This example only transmits, so leave the receiver off.
   UART0.CR.write(UARTEN = true, TXE = true, RXE = false)
-  barrier.dsb(.sy)
 }
 
 fn uart_hello() {

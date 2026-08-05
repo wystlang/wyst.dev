@@ -74,7 +74,7 @@ test("generated heading fragments match GitHub-style source links", () => {
 test("design catalog links use authenticated local or pinned upstream artifacts", () => {
 	const commit = "a".repeat(40);
 	const rendered = makeMd({ wystSourceCommit: commit }).render(
-		"[syntax words](syntax-words.tsv) [attributes](attribute-catalog.tsv) [C interactive adapters](c-interactive-adapter-catalog.tsv) [meta operations](meta-operation-catalog.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz)\n",
+		"[syntax words](syntax-words.tsv) [attributes](attribute-catalog.tsv) [C interactive adapters](c-interactive-adapter-catalog.tsv) [meta operations](meta-operation-catalog.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz) [architectural decisions](../docs/adr/)\n",
 	);
 	for (const artifact of [
 		"attribute-catalog.tsv",
@@ -88,6 +88,12 @@ test("design catalog links use authenticated local or pinned upstream artifacts"
 		rendered,
 		new RegExp(
 			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/a64-raw-encoding-source-forms\\.jsonl\\.gz" rel="noopener"`,
+		),
+	);
+	assert.match(
+		rendered,
+		new RegExp(
+			`href="https://github\\.com/wystlang/wyst/tree/${commit}/docs/adr/" rel="noopener"`,
 		),
 	);
 });
