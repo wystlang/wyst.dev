@@ -2,10 +2,8 @@ module hello
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
-import core.arch { cpu, exception }
-import core.environment { semihost }
+import runtime.semihost { test_exit }
 
-// homepage-example:start
 /*
 * QEMU `virt` is a generic virtual Arm board.
 * Its PL011 UART sends text to the serial output.
@@ -159,4 +157,3 @@ fn uart_write(byte: u8) {
   // Put the byte in the transmit FIFO.
   UART0.DR.write(DATA = byte)
 }
-// homepage-example:end

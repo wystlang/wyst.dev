@@ -171,19 +171,8 @@ function sourceText(markup) {
 	return decodeHtml(textOutsideTags(markup)).replaceAll("\r", "").trim();
 }
 
-function homepageFixtureExcerpt(source) {
-	const startMarker = "// homepage-example:start";
-	const endMarker = "// homepage-example:end";
-	const start = source.indexOf(startMarker);
-	const end = source.indexOf(endMarker);
-	assert.notEqual(start, -1, `${UART_EXAMPLE_PATH} should mark the homepage excerpt`);
-	assert.notEqual(end, -1, `${UART_EXAMPLE_PATH} should close the homepage excerpt`);
-	assert.ok(start < end, "homepage fixture markers should be ordered");
-
-	return source
-		.slice(start + startMarker.length, end)
-		.replaceAll("\r", "")
-		.trim();
+function homepageFixtureDocument(source) {
+	return source.replaceAll("\r", "").trim();
 }
 
 function cssHexVar(name) {
@@ -693,7 +682,7 @@ test("homepage shows one static UART example from the real fixture", () => {
 	assert.equal(matches.length, 1, "the UART source example should appear once");
 
 	const example = uartExampleHtml();
-	assert.match(example, /<span>main\.wyst · part<\/span>/);
+	assert.match(example, /<span>main\.wyst · complete source<\/span>/);
 	assert.match(
 		example,
 		/<button\b(?=[^>]*class="artifact-copy")(?=[^>]*type="button")(?=[^>]*aria-label="Copy the Wyst code")(?=[^>]*aria-controls="uart-source")(?=[^>]*aria-describedby="uart-copy-status")(?=[^>]*data-copy-target="uart-source")[^>]*>\s*copy<\/button>/,
@@ -741,8 +730,8 @@ test("homepage shows one static UART example from the real fixture", () => {
 	const homepageSource = sourceText(sourceBlock.markup);
 	assert.equal(
 		homepageSource,
-		homepageFixtureExcerpt(uartFixtureSource),
-		`the homepage must be the exact marked excerpt from ${UART_EXAMPLE_PATH}`,
+		homepageFixtureDocument(uartFixtureSource),
+		`the homepage must be the complete source from ${UART_EXAMPLE_PATH}`,
 	);
 
 	for (const line of [

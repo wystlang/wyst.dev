@@ -1,8 +1,13 @@
+module runtime.semihost
+
+import core.arch { cpu }
+import core.environment { semihost }
+
 const SEMIHOST_APPLICATION_EXIT: u64 = 0x20026
 var semihost_exit_reason: u64 = SEMIHOST_APPLICATION_EXIT
 var semihost_exit_status: u64 = 1
 
-fn test_exit(code: u64) -> never {
+pub fn test_exit(code: u64) -> never {
   semihost_exit_status = code
 
   var op_code: u64 in x0 = 0x18

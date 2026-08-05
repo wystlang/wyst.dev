@@ -34,7 +34,7 @@ const designCatalogs = [
 	"c-interactive-adapter-catalog.tsv",
 ];
 const coreFixtures = [
-	"wync/tests/fixtures/common/runtime/semihost-runtime.wyst",
+	"wync/tests/fixtures/runtime/semihost.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
@@ -149,7 +149,7 @@ for (const response of responses) {
 		[coreFixtures[2], "layout fixture\n"],
 		[
 			coreFixtures[3],
-			"// homepage-example:start\nfn main() {}\n// homepage-example:end\n",
+			"module fixture\nfn main() {}\n",
 		],
 		...fakeSyntaxCorpusFixtures.map((file) => [
 			file,

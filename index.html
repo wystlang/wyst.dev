@@ -119,7 +119,7 @@
 					data-example-path="wync/tests/fixtures/qemu/virt/uart-hello/main.wyst"
 				>
 					<div class="artifact-bar">
-						<span>main.wyst · part</span>
+						<span>main.wyst · complete source</span>
 						<div class="artifact-actions">
 							<button
 								class="artifact-copy"
@@ -145,7 +145,13 @@
 					</div>
 					<div class="source-viewport">
 						<!-- homepage-semantic-example:start -->
-						<pre aria-label="Wyst UART source" aria-describedby="uart-scroll-hint" tabindex="0"><code id="uart-source"><span class="source-comment">/*</span>
+						<pre aria-label="Wyst UART source" aria-describedby="uart-scroll-hint" tabindex="0"><code id="uart-source"><span data-token="keyword" data-token-modifiers="defaultLibrary">module</span> <span data-token="namespace" data-token-modifiers="declaration">hello</span>
+
+<span data-token="macro" data-token-modifiers="defaultLibrary">#target</span>(<span data-token="property">arch</span> <span data-token="operator">=</span> arm64<span data-token="operator">-</span>v8a, <span data-token="property">cpu</span> <span data-token="operator">=</span> generic, <span data-token="property">el</span> <span data-token="operator">=</span> <span data-token="number">2</span>)
+
+<span data-token="keyword" data-token-modifiers="defaultLibrary">import</span> <span data-token="namespace">runtime</span>.<span data-token="namespace">semihost</span> { <span data-token="function">test_exit</span> }
+
+<span class="source-comment">/*</span>
 <span class="source-comment block-comment-line">* QEMU `virt` is a generic virtual Arm board.</span>
 <span class="source-comment block-comment-line">* Its PL011 UART sends text to the serial output.</span>
 <span class="source-comment block-comment-line">*</span>
@@ -233,7 +239,7 @@
   <span class="source-comment">// example checks only the address. The code does not read</span>
   <span class="source-comment">// the DTB.</span>
   <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="number">0</span> {
-    test_exit(<span data-token="number">0x63</span>)
+    <span data-token="function">test_exit</span>(<span data-token="number">0x63</span>)
   }
 
   <span data-token="function">uart_init</span>()
@@ -242,7 +248,7 @@
   <span class="source-comment">// QEMU semihosting stops the test. Status zero reports</span>
   <span class="source-comment">// success. Real firmware uses a different end operation.</span>
   <span class="source-comment">// Real firmware can stop the CPU or start the next boot stage.</span>
-  test_exit(<span data-token="number">0</span>)
+  <span data-token="function">test_exit</span>(<span data-token="number">0</span>)
 }
 
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_init</span>() {
@@ -297,7 +303,8 @@
 
   <span class="source-comment">// Put the byte in the transmit FIFO.</span>
   <span data-token="variable">UART0</span>.<span data-token="property">DR</span>.<span data-token="property">write</span>(<span data-token="property">DATA</span> <span data-token="operator">=</span> <span data-token="parameter">byte</span>)
-}</code></pre>
+}
+</code></pre>
 						<!-- homepage-semantic-example:end -->
 						<span id="uart-scroll-hint" class="source-scroll-hint"
 							>scroll for more code ↓</span
