@@ -825,6 +825,11 @@ test("homepage shows one static UART example from the real fixture", () => {
 		),
 		"the UART example should disable, configure, then enable its TX-only PL011",
 	);
+	assert.doesNotMatch(
+		homepageSource,
+		/\bbarrier\.(?:dmb|dsb)\b/,
+		"same-peripheral PL011 initialization should rely on ordered Device accesses",
+	);
 	assert.ok(
 		homepageSource.includes(
 			"    test_exit(0x63)\n  }\n\n  uart_init()\n  uart_hello()",

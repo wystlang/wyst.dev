@@ -344,13 +344,13 @@ Descriptor state is read through read-only dot projections such as `arr.data`,
 assignment targets, and Wyst does not provide typed getter APIs for descriptor
 state.
 
-`arr[i]` is not an ordinary element-access surface. Descriptor fields can be
-inspected and compared for ABI migration, but their address-shaped bits and
-length do not by themselves prove live initialized storage. A wrapper that
-authenticates one exact descriptor identity, extent, access mode, and lifetime
-may pass its `data` bits and `len` to `trusted_slice` or `trusted_mut_slice` and
-retain the resulting narrowed authority. Anonymous or manually reconstructed
-descriptor state remains unproved.
+`arr[i]` lowers directly through the descriptor's data pointer and performs no
+hidden length or capacity check. Flow-sensitive typed IR must first prove the
+exact `i < arr.len` relation; capacity is never substituted for length. A
+dynamic access can establish the relation with `checked.index` and use the
+authenticated index only on its success path. An unproved access is rejected
+unconditionally. The descriptor supplies no compiler-owned access to
+capacity-only storage.
 
 The bootstrap descriptor has no `arr[:]` or range-slicing surface and never
 binds implicitly to a `[]T`. Source that needs a slice must explicitly obtain

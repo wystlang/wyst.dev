@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "5ab0a242352a2d8a731019913957bfcb781052a0",
-  "snapshotSha256": "33fe504fc44befb88b2ed9ab81fa93936de7dd80225c76b4684bacb461ab340d",
+  "sourceCommit": "9293dba95232ac37d9c8d8782ac24c35a62cc5a6",
+  "snapshotSha256": "155c8703c51e7045c432cf5d88f4f5864a76200b2bf3d2f660dd7d9991e647f3",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/common/runtime/semihost-runtime.wyst": {
       "sha256": "8f3f501279b50cba0793c725e83b24cb883b6b759cf0a7be70d8b0ab182e5690",
@@ -16,8 +16,8 @@
       "size": 535
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/main.wyst": {
-      "sha256": "2d1f008179bbf7b234bdaa24d964c5ffe9d0a3fb05c936fc36a8ea17f4202eac",
-      "size": 4864
+      "sha256": "43b7ccec00209fd6b15ad39b143215bfb5661fe1e8cab66aaaa8459592dccf22",
+      "size": 3802
     },
     "tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus/manifest.tsv": {
       "sha256": "881072f7ccf9d407f0bd41600f3ae5d5ff085b83f4a7ff0caf905f238195fbc4",
@@ -188,7 +188,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "6b5159997c899753bca7a4304d4855346233052d6459e25a48b91870d40410a8",
+      "sha256": "9fc6347bf20a20c4c984691f108546246dbaaa1feb97a96707d480fbb8380832",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -220,7 +220,7 @@
       "size": 703
     },
     "vendor/wyst-design/chapter-01-language-design.md": {
-      "sha256": "9ee2fe589c5da10d6b9c81e70679602a04f302d23e720168d4acbadf7f3cd436",
+      "sha256": "142a67f30e58a0e1d51579593b34d09e8f73a45defc4a38c6ffeed45d243837f",
       "size": 67332
     },
     "vendor/wyst-design/chapter-02-targets.md": {
@@ -228,8 +228,8 @@
       "size": 9361
     },
     "vendor/wyst-design/chapter-03-project-builds.md": {
-      "sha256": "4140a75a382d3caab764f1e7c9675a55d6472f4726d2c9a6c868bf1fcd651472",
-      "size": 32218
+      "sha256": "c0cac778d96718d352325a2b81c8c4a9a848529a1f3bc354d885d56b1c90caa3",
+      "size": 32057
     },
     "vendor/wyst-design/chapter-04-modules.md": {
       "sha256": "8281fa9a2d3cafb23a64e786bfc517c1f12b31cd3c8422a774d4b606a44d2e0f",
@@ -240,8 +240,8 @@
       "size": 19653
     },
     "vendor/wyst-design/chapter-06-types.md": {
-      "sha256": "f18fac45f2851a10d345feba39417391ecef4d931cbb33d56ded1271a005ace7",
-      "size": 87849
+      "sha256": "088a1fdc871f1eb18db2b9b412b4430f5ffa364a8b3d0c3f69a4c1f97be038da",
+      "size": 87615
     },
     "vendor/wyst-design/chapter-07-operators.md": {
       "sha256": "350b51515e23ca721944c7f57ac7419c1df90d42187526815048e8271295eb61",
@@ -252,12 +252,12 @@
       "size": 60382
     },
     "vendor/wyst-design/chapter-09-memory-model.md": {
-      "sha256": "3fe8d424ef9cb89fd51e55fea3ddfc951fa2804b53a3b4062e9babec07eb7973",
-      "size": 96752
+      "sha256": "1f71de09503d2b38de3cef2605ed621e7ce93d331c3fbd171e459cb849172b39",
+      "size": 93229
     },
     "vendor/wyst-design/chapter-10-runtime.md": {
-      "sha256": "2ad16d80927d931da4c8e9805f5661e7b4936a6d6df9302be2c22b1e82c53912",
-      "size": 25265
+      "sha256": "5cd7e4836764140ad09ba7e268baae89babf7320bd7cf2267af2d09645b39a81",
+      "size": 25159
     },
     "vendor/wyst-design/chapter-11-intrinsics.md": {
       "sha256": "97a30e4288ed2e704c211c43762aeb7754939160187271577e04dc9288d3e8cc",
@@ -328,8 +328,8 @@
       "size": 4155
     },
     "vendor/wyst-design/syntax-words.tsv": {
-      "sha256": "73d1206e0d729761da215638946eed77889ac8592c1bf5210fb553a612d319b7",
-      "size": 22297
+      "sha256": "80005bd2c4bdfc74f7fa9441bb627cb60e531a7e6a072e44c0d522be2c408196",
+      "size": 21966
     }
   }
 }
