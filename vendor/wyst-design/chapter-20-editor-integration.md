@@ -60,7 +60,11 @@ The Zed extension should resolve the language-server binary in this order:
 ## Language Server Protocol Surface
 
 `wync lsp` starts a persistent stdio JSON-RPC server using standard
-`Content-Length` framed messages. The surface handles:
+`Content-Length` framed messages. `--warn-structure-layout MINIMUM_BYTES`
+enables the same canonical `W0217` threshold used by `wync check`; the startup
+configuration is fixed for the server lifetime.
+`--warn-redundant-local-types` likewise enables `W0218` and its exact quick fix
+for the server lifetime. The surface handles:
 
 - `initialize`: returns `serverInfo` with the name `wync` and no version or
   content identity, and advertises open/close, save,
@@ -107,14 +111,27 @@ The Zed extension should resolve the language-server binary in this order:
   member-specific named-layout payloads. Numeric literals, string literals,
   operators, enum variants, payload bindings, struct members, memory accesses,
   and target/profile arguments have focused hover payloads when the compiler
-  has stable facts for them.
+  has stable facts for them. Concrete structure hovers additionally show compact
+  canonical size, alignment, useful-data extent, structure stride, internal and
+  trailing padding, ABI/constraint status, and an exact positive-size
+  opportunity without a performance promise. Structure-field declaration and
+  reference hovers show offset, size, alignment, preceding padding, and
+  fixed-array element stride. Generic structure declarations state that layout
+  depends on concrete type arguments.
 - `textDocument/codeAction`: returns applicability-checked code actions for
   cases, including numeric literal base conversion, close-match unknown-name
   replacement, duplicate `module` declaration removal, and diagnostic-backed explicit
   cast insertion for narrow type-mismatch spans. Diagnostic-backed actions carry
   diagnostic IDs, the source document version, exact ranges, expected source
-  text, exact replacements, and applicability in action data. If any of those
-  facts is stale or ambiguous, no edit is returned.
+  text, exact replacements, and the sole applicability value `exact` in action
+  data. The standard workspace edit uses versioned `documentChanges`. If any
+  source transaction fact is stale, unsupported, overlapping, ambiguous, or
+  only partially applicable, no replacement is applied. An unconstrained
+  structure with a positive exact size reduction also offers a
+  `refactor.rewrite` preview whose reordered body comes from the canonical
+  semantic layout product. It preserves the checked source text and document
+  version and is never applied automatically; constrained and no-benefit
+  structures expose no such action.
 - `textDocument/semanticTokens/full`: returns lexer-backed semantic tokens that
   layer on top of Tree-sitter highlighting.
 - `textDocument/inlayHint` and `textDocument/signatureHelp`: use parsed function
@@ -198,13 +215,16 @@ supports local typed identities in addition to top-level symbols: parameters,
 locals, and enum-pattern bindings are renamed by symbol identity, so shadowed
 bindings in nested scopes are not edited. Ambiguous identities and conservative
 name collisions fail closed with protocol errors rather than speculative edits.
+Rename, formatting, organize-imports, and checked quick fixes are all formed
+from the compiler's shared exact source-edit model; multi-document rename is one
+ordered transaction rather than independently generated edits.
 
 Diagnostic-backed code actions expose structured action data. A narrow
 type-aware code action handles a narrow `E0213` type-mismatch case by inserting
 an explicit conversion where the compiler-visible expected type comes from a typed
 local/global/constant initializer or function return. The action data includes
 the diagnostic ID, document version, exact range, expected text, exact
-replacement, and applicability so editors can apply it without scraping
+replacement, and `exact` applicability so editors can apply it without scraping
 diagnostic messages. Generic suggestions never enter this edit path.
 
 ## Language Server Capabilities
@@ -232,6 +252,23 @@ The language-server surface includes:
 The language server must treat project membership the same way as project
 builds and checks: `wyst.project` manifests and explicit root-file mode are
 compiler contracts, not editor conventions.
+
+For a document under a project manifest, editor analysis selects from the same
+validated artifact plans as the CLI. A source or layout owned by exactly one
+artifact uses that artifact. A document owned by several artifacts uses the
+default when the default is one of its owners. Otherwise the plans may share an
+analysis only when kind, root contract, target facts, layout choice, ordered
+module/source graph, and verification demands are identical; output paths and
+debug/unwind/frame-pointer policies do not affect editor semantics. Incompatible
+nondefault owners fail closed and name the conflicting artifacts. The manifest
+document itself uses the default artifact.
+
+A `.wyst` file below a manifest but outside every artifact closure is not given
+the default artifact's target, layout, modules, or operation catalog. It remains
+in source-local syntax, formatting, lexical, and semantic analysis and receives
+a project-membership diagnostic. Navigation, completion, code actions, source
+maps, and typed indexes likewise do not borrow a project graph for an unowned or
+ambiguously owned document.
 
 ## Editor Task And Debug Capabilities
 
@@ -278,9 +315,13 @@ variable-location lists, type DIEs, or call-frame information (see
 [chapter-23-debug-info.md](chapter-23-debug-info.md)).
 
 The editor catalog, semantic tokens, hovers, Tree-sitter grammar, and generated
-editor assets share the operation/progress/failure/cancellation/defer words,
-`handler_invoke`, `fixed_layout_movable`, postfix `?`, expression `match`, and
-the qualified `trap.fatal` semantic operation from their owning catalogs.
-Operation hovers expose ordered members and the progress ceiling; fatal hover
-identifies the explicit `u16` reason. Drift tests reject catalog or
-generated-parser disagreement.
+editor assets share the `fn`/`offers`/`handler`/`terminal`/`handle`/progress/
+failure/cancellation/defer words, `must_observe`, `requires`, `ensures`,
+`reason`, `result`, `discard`, `fixed_layout_movable`, postfix `?`, expression
+`match`, and the qualified `trap.fatal` semantic operation from their owning
+catalogs.
+Interactive-function hovers expose the return, ordered offers, and optional
+uniform handler ceiling. Ordinary callable hovers retain `must_observe` in the
+result signature; typed semantic and IR facts retain contract clauses and
+explicit discard sites. Fatal hover identifies the explicit `u16` reason.
+Drift tests reject catalog or generated-parser disagreement.

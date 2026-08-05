@@ -18,9 +18,10 @@ The active operation registry is
 [`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv). Each row
 owns one stable semantic identity, source surface, compiler-internal lowering
 key, target plan, result and parameter contract, ordering contract, report
-identity, and implementation state. Target plans join the authenticated A64
-instruction, system-operation, and machine-semantics catalogs rather than
-forming a second instruction or effect table.
+identity, explicit observation policy, and implementation state. Target plans
+join the authenticated A64 instruction, system-operation, and
+machine-semantics catalogs rather than forming a second instruction or effect
+table.
 
 Atomic storage uses the closed matrix in
 [`atomic-matrix.json`](atomic-matrix.json). Its scalar elements are `bool`,
@@ -36,7 +37,7 @@ alias, while the operation's semantic identity remains unchanged:
 ```wyst
 module semantic_operations
 
-import core.arch { cpu, barrier, cache, tlb, exception, memory as mem }
+import core.arch { barrier, cache, cpu, exception, memory as mem, tlb }
 
 fn wait_for_event() {
   barrier.compiler()
@@ -116,6 +117,118 @@ bare `fma(a, b, c)` operation and generic `uninit<T>()` constructor are
 unshadowable. `addr_of(local)` is Wyst runtime address-materialization
 operation. These surfaces still carry catalog identities even though they do
 not require an architecture-category import.
+
+### Checked Core Operations
+
+The sealed `core.checked` module is the qualified namespace for explicit
+checked core operations. It is available only through one private whole-module
+import such as `import core.checked`; leaf imports and `pub import` are
+rejected. The local qualifier may not be shadowed. There is no flat
+`checked<T>(value)` operation. Nominal operand, result, and failure types come
+from `core.quantities`, `core.collections.Result`, and `core.checked`.
+
+Every checked constructor or refiner is pure `effects(none)`, evaluates its
+written operands exactly once from left to right, and returns its exact
+`must_observe Result<T, E>`. Operations whose refined input has already made a
+failure impossible return the success value directly. Failure is ordinary
+typed data: there is no trap, ambient status, exception, allocation, cleanup,
+synchronization, retry, loop, handler search, or runtime call. A result may be
+matched, explicitly discarded, returned, forwarded with exact `?`, or consumed
+by an ordinary helper such as `expect_or_trap`; leaving it unobserved is a
+source error.
+
+The active surface is:
+
+| Operation | Exact success type | Exact failure type |
+| --- | --- | --- |
+| `checked.index(index: ElementIndex, length: ElementLength)` | `ElementIndex` | `IndexFailure` |
+| `checked.range(lower: ElementBoundary, upper: ElementBoundary)` | `ElementRange` | `RangeFailure` |
+| `checked.slice_range(lower: ElementBoundary, upper: ElementBoundary, length: ElementLength)` | `ElementRange` | `SliceFailure` |
+| `checked.numeric<T>(value)` | explicit integer or `bool` target `T` | `NumericConversionFailure` |
+| `checked.byte_offset<A>(base: A, offset: ByteOffset)` | exact address type `A` | `AddressOffsetFailure` |
+| `checked.element_offset<A>(base: A, offset: ElementOffset)` | exact address type `A` | `ElementAddressOffsetFailure` |
+| `checked.physical_offset(base: PhysicalAddress, offset: ByteOffset)` | `PhysicalAddress` | `AddressOverflowFailure` |
+| `checked.alignment(bytes: ByteLength)` | `Alignment` | `AlignmentFailure` |
+| `checked.align_up(value: ByteLength, alignment: Alignment)` | `ByteLength` | `AlignOverflowFailure` |
+| `checked.align_down(value: ByteLength, alignment: Alignment)` | direct `ByteLength` | none |
+| `checked.physical_align_up(value: PhysicalAddress, alignment: Alignment)` | `PhysicalAddress` | `PhysicalAlignOverflowFailure` |
+| `checked.physical_align_down(value: PhysicalAddress, alignment: Alignment)` | direct `PhysicalAddress` | none |
+| `checked.byte_extent<A>(base: A, length: ByteLength)` | `ByteExtent<A>` | `ByteExtentFailure` |
+| `checked.element_extent<A>(base: A, length: ElementLength)` | `ElementExtent<A>` | `ElementExtentFailure` |
+| `checked.physical_extent(base: PhysicalAddress, length: ByteLength)` | `PhysicalExtent` | `ByteExtentFailure` |
+| `checked.contains_bytes<A>(extent: ByteExtent<A>, offset: ByteOffset, access: ByteLength)` | `ByteRange` | `ContainmentFailure` |
+| `checked.contains_elements<A>(extent: ElementExtent<A>, offset: ElementOffset, access: ElementLength)` | `ElementRange` | `ElementContainmentFailure` |
+| `checked.contains_physical(extent: PhysicalExtent, offset: ByteOffset, access: ByteLength)` | `ByteRange` | `ContainmentFailure` |
+| `checked.field<T>(value: T, width: u8)` | the exact integer type `T` | `FieldEncodingFailure` |
+| `checked.generation(expected: Generation, observed: Generation)` | `Generation` | `GenerationMismatch` |
+| `checked.next_generation(current: Generation)` | `Generation` | `GenerationExhausted` |
+
+An operation accepts only the nominal domains shown in this table; an equal
+carrier type is not substitutable. Operations showing `<A>` require one
+explicit complete ordinary, volatile, or MMIO address type and preserve that
+exact pointee lens and qualifier set. Operations showing `<T>` require one
+explicit complete type argument. All other checked operations reject a type
+argument.
+
+Index success requires `index.value < length.value`. Range construction is
+end-exclusive and requires `lower.value <= upper.value`. Slice-range success
+additionally requires `upper.value <= length.value`. These operations return
+nominal proof/range values; they do not access memory or form a slice. The
+verifier may consume the `Ok` value from the exact authenticated
+`checked.index` result as bounds evidence only for a descriptor carrying the
+same length identity. This relational fact binds the checked index, exact
+length, and result generation; it is not a property of the returned integer
+alone. It survives SSA-local copies and moves, joins whose incoming values all
+name the same authenticated result, and mandatory inlining such as
+`expect_or_trap`. It does not survive storage, aggregate reconstruction,
+opaque or out-of-line calls, joining different checked results, mutation or
+reassignment of either identity, descriptor reconstruction, or a generation
+transition. A new checked boundary is required after any such transition.
+
+`checked.numeric<T>` accepts only `bool` and fixed-width integer sources and
+targets. It succeeds exactly when the source's mathematical value is losslessly
+representable by `T`; integer-to-`bool` therefore accepts only zero and one,
+and `bool` converts to integer zero or one. Floating-point participation is a
+compile-time error. A constant outside the target range produces the same
+typed `Error` as a dynamic value rather than changing the operation into a
+configuration diagnostic.
+
+Checked address offsets reject mathematical results outside `0 .. 2^64-1`.
+Element offsets scale once by `#size_of(A's pointee)` in arbitrary precision;
+a zero-sized pointee produces no displacement. Typed address offsets also
+require the resulting address to satisfy the pointee's declared alignment.
+Overflow has precedence over misalignment in the failure enum. Physical
+address offsets check the same range without typed-pointee alignment.
+
+A valid `Alignment` is a nonzero power of two no greater than `2^63` and can be
+constructed outside `core.quantities` only through `checked.alignment`.
+Alignment operations therefore do not recheck that invariant. Align-up can
+still reject a result beyond `u64.MAX`; align-down cannot fail or overflow.
+Physical variants apply the same rules to address bits.
+
+Extent construction validates the mathematical exclusive end, not a wrapped
+one-word end address. `base + byte_length` or
+`base + element_length * #size_of(T)` may equal exactly `2^64`; a larger end
+fails. Zero-length extents and extents of zero-sized elements are valid.
+Containment requires a nonnegative offset no greater than the extent length and
+`access <= length - offset`; consequently a zero-length access at the exclusive
+end is valid. Success returns the corresponding end-exclusive nominal range.
+
+`checked.field<T>` accepts only an integer carrier. `width` must be a
+compile-time constant in `1 ..= bit_width(T)`; a dynamic, zero, or oversized
+width is a compile-time configuration error. At runtime, success requires the
+mathematical value to fit the selected unsigned or two's-complement signed
+field width. `checked.generation` succeeds only on equality and returns the
+observed generation. `checked.next_generation` returns `current + 1` unless
+`current` is `u64.MAX`; generation never wraps.
+
+The failure declarations in `core.checked` are the canonical minimal payloads
+for these families. They retain the operands and fixed metadata needed to
+diagnose the rejected relation, use only fixed-layout movable fields, and do
+not contain strings, allocated detail, or an open-ended status code. Adding or
+reordering a checked operation requires an atomic update to that sealed module,
+the semantic-operation catalog, typed lowering, verifier authentication,
+reports/editor facts, and focused success/failure tests.
 
 ### `MaybeUninit<T>` Whole-Object Storage
 
@@ -507,7 +620,12 @@ reorder loads or stores across a `cpu.read_counter()` call. It is also a source
 scheduling boundary. This prevents
 the compiler from moving source work outside the sampled region. It does not
 serialize execution at either hardware endpoint and does not itself establish
-a valid timing interval.
+a valid timing interval. A common-subexpression or lowering-materialization
+cache may not reuse a definition from the opposite side of the read; definitions
+on the two sides remain distinct even when their pure value is equal. A value
+genuinely computed before the read may remain live and be consumed afterward,
+but its defining work remains before the read and is not duplicated or moved.
+The boundary emits no hidden `dmb`, `dsb`, `isb`, or other synchronization.
 
 **Effect category:** `perf_counter`.
 

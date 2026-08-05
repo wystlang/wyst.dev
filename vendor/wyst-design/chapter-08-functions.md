@@ -89,6 +89,111 @@ written order, before ABI placement, so duplicate, unknown, missing, and
 positional-after-labeled arguments are errors. Public parameter names are part
 of the Wyst source interface, but not ABI or symbol identity.
 
+### Resource parameters, movement, and returned views
+
+Every parameter has one of three access/ownership modes. The mode precedes the
+parameter name; the unmarked form is the ergonomic read-only default:
+
+<!-- wyst-contract: sketch -->
+```wyst
+fn inspect(buffer: Buffer) { }
+fn append(mut buffer: Buffer) { }
+fn close(var buffer: Buffer) { discard(xfer buffer) }
+```
+
+- `buffer: T` grants read access and retains the caller's authority.
+- `mut buffer: T` is an exclusive, non-consuming mutable loan of the caller's
+  exact storage. The caller regains the same initialized authority on return.
+- `var buffer: T` gives the callee an owned mutable value. The callee must
+  account for it under the value's abilities and terminal obligation.
+
+Passing an existing non-copyable binding to `var` requires `xfer binding`.
+Passing an ordinary copyable binding without `xfer` performs a logical copy and
+leaves the source usable; the optimizer may realize that copy in registers or
+elide physical copying when observable value and storage semantics are
+unchanged. A fresh rvalue is already newly owned and needs no marker. `xfer`
+may also move a copyable binding when the author wants the source invalidated.
+
+`xfer` accepts a whole initialized local binding or a fresh value. It does not
+move out of a field, index, dereference, module global, or `per_cpu` projection.
+After transfer, an immutable binding is unavailable. A mutable local may be
+reinitialized before later use. Control-flow joins retain an initialized value
+only when every incoming reachable path has the exact same initialized state.
+Calls evaluate the callee and written arguments once, left to right; transfer
+invalidates its source when that argument is evaluated, and a later failure,
+terminal outcome, or partial-progress transition never resurrects it.
+
+For a generic parameter, these modes are capability-sensitive. The unmarked
+read mode and `mut` remain retained loans and accept an unbounded `T`; they do
+not grant ownership or permission to materialize a whole-value copy. A `var T`
+parameter requires a bound that entails `fixed_layout_movable`. Passing an
+existing read binding to an owned parameter without `xfer`, returning it as a
+new value, or otherwise making a logical duplicate requires a bound that
+entails `copyable_discardable`. By-value results likewise require movability,
+and `xfer` is the explicit source operation for a move-only generic value.
+Missing proofs are diagnosed on the generic declaration before any concrete
+instantiation is selected.
+
+The unshadowable compiler operations `swap(left, right)` and
+`replace(place, xfer replacement)` provide safe destructive update. Both
+evaluate their places in written order, require the same exact type and proven
+disjoint mutable storage, and perform no allocation, hooks, or failure. `swap`
+exchanges two initialized places. `replace` installs the valid replacement
+before returning the old initialized value. Raw extraction from
+`MaybeUninit<T>` remains the explicitly lower-level construction mechanism.
+
+`discard(expression)` is a statement-only compiler operation. It evaluates
+one value and produces no runtime operation. For a `must_account` value, the
+explicit `discard(xfer binding)` spelling acknowledges abandonment and
+discharges the terminal obligation; implicit scope loss remains an error. It
+rejects any value whose structural abilities carry a `must_resolve` origin.
+
+`resolve(xfer place)` is the distinct statement-only terminal transition for a
+`must_resolve` value. The operand must be one concrete owned place and its
+transfer must satisfy the ordinary projected-remainder accounting rule. The
+transition is accepted only when the current module declares every nominal
+terminal origin carried structurally by the operand. It invalidates the source,
+records the authenticated origin identities in semantic facts and typed IR,
+and emits no runtime instruction, destructor, callback, or name-based call.
+
+A function that returns a view tied to parameter storage declares the exact
+source after the result:
+
+<!-- wyst-contract: sketch -->
+```wyst
+fn bytes(buffer: []u8) -> []u8 from buffer { return buffer }
+fn bytes_mut(mut buffer: []u8) -> mut []u8 from buffer { return buffer }
+
+var reader: fn([]u8) -> []u8 from parameter(0) = bytes
+var writer: fn(mut []u8) -> mut []u8 from parameter(0) = bytes_mut
+```
+
+`from` is a stable provenance contract for the exact source storage identity,
+projected extent, backing lifetime, and invalidators. It adds no runtime field,
+reference count, lifetime extension, sharing proof, or claim that the returned
+value is the source authority itself. Declaration contracts use parameter
+names; callable types use `parameter(N)`. A source must be a retained read or
+`mut` parameter, never `var`, a fresh temporary, or callee frame storage. A
+mutable returned view requires a `mut` source. Multiple listed sources are
+conservative possible origins and constrain every source until the view's
+static last use.
+
+Read views may coexist. A mutable view conflicts with every overlapping read or
+mutable access, relocation, reset, replacement, reclamation, or transfer of its
+backing authority. Proven disjoint field and constant-index projections do not
+conflict. A non-copyable authority token may itself move while a read view is
+live when that movement does not relocate or invalidate the backing storage;
+the old token binding still becomes unavailable. Mutable returned views are
+non-copyable and move only with `xfer`. Leases end at static last use, not only
+at lexical scope exit.
+
+Parameter modes, returned access, and ordered origins are invariant components
+of callable identity. Indirect assignment and calls reject missing, extra, or
+mismatched components. `extern "C"` has no representation for these contracts:
+its parameters cannot use `mut` or `var`, and a type with nonordinary resource
+abilities or agent locality cannot cross that boundary by value. Explicit
+address-based C adapters remain ordinary audited foreign interfaces.
+
 `match` is exhaustive and enum-only in statement or expression position:
 
 <!-- wyst-contract: sketch -->
@@ -103,21 +208,26 @@ match message {
   .uart(value), .virtio(value) {
     trace(value)
   }
-  else {}
 }
 ```
 
 The scrutinee is evaluated once. Each arm has one or more comma-separated
 shallow `.variant`, `.variant(name)`, or `.variant(_)` patterns followed
 directly by a required brace body. Alternatives bind the same names and types;
-arms do not fall through, and `break` does not target a `match`. Without a
-final `else`, the variants must be statically exhaustive. A final explicit
-`else {}` deliberately accepts unlisted variants. In expression position each
+arms do not fall through, and `break` does not target a `match`. Every declared
+variant must be named explicitly; a final `else`, `_`, or any other catch-all
+form is rejected for an ordinary closed enum. Adding a variant therefore makes
+each affected match non-exhaustive until its policy is reconsidered. In
+expression position each
 reachable arm supplies a tail value of one exact common type; `never` is
 compatible and ownership joins are exact. A partial-match opt-out is illegal.
 There are no colon or arrow arms, wildcard arms, guards, or nested patterns. The same
 shallow pattern is available in `if value is .variant(binding) { ... }`, with
-the binding scoped to the successful branch.
+the binding scoped to the successful branch. Integer, hardware, foreign,
+storage, and wire carriers enter the closed domain through an explicit parser;
+forward-compatible residue is a declared payload variant such as
+`Unknown(raw)`, not match syntax. A future catch-all is reserved for a
+separately designed open or non-exhaustive enum kind.
 
 ## Callable Identity, Terminal Entries, and Storage Classes
 
@@ -128,12 +238,14 @@ lowering, ABI, object, IR, and grammar rules; they do not define alternate
 source semantics.
 
 The activated declaration-prefix order is exactly: one optional non-empty
-attribute group, optional `pub`, one compatible hard modifier or storage
-class, optional external convention, declaration keyword, then declaration
-name. Thus `pub naked extern "C" fn`, `pub per_cpu var`, and `pub packed
-struct` are ordered forms. `naked`, `per_cpu`, and `packed` are not attributes,
-may not be duplicated, and are accepted only on `fn`/`label`, module `var`, and
-`struct`, respectively.
+attribute group, optional `pub`, applicable resource modifiers, one compatible
+hard modifier or storage class, optional external convention, declaration
+keyword, then declaration name. Thus `pub naked extern "C" fn`, `pub per_cpu
+var`, and `pub opaque no_copy packed struct` are ordered forms. `naked`,
+`per_cpu`, `packed`, `no_copy`, `must_account`, `must_resolve`, `opaque`, and `agent_local` are
+not attributes and may not be duplicated. The resource modifiers apply only to
+ordinary `struct` and `enum`; the other modifiers retain their existing
+`fn`/`label`, module `var`, and `struct` subjects.
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -185,6 +297,15 @@ assignments must fit the destination bound, and arrays, fields, aggregates,
 phis, parameters, results, inlining, and serialized summaries preserve it.
 Chapter 13 owns the boundary ordering, context-stability liveness, migration,
 and retained-task/activation identity rules.
+
+A statically resolved declaration call retains more authority than a callable
+value type: its canonical declaration identity, parameter labels, declared or
+proved effect authority, authenticated entry execution levels, `#[inline]`
+requirement, terminality, resource modes and returned-lease origins, and any
+effective interactive protocol and recovery entries. Imports, concrete generic
+instantiation, optimization, and object production preserve that direct
+product. A compiler phase must reject disagreement; it must not widen the call
+to an opaque function value or unknown indirect target.
 
 `noescape` precedes an address parameter's type in both declarations and
 callable value types. It is invalid on a non-address parameter and is part of
@@ -245,6 +366,11 @@ call. Expansion preserves left-to-right exactly-once argument evaluation,
 control flow, effects, source/debug provenance, schedule regions, checked-asm
 authority, and explicit-register constraints. Each expansion receives
 deterministic, collision-free typed-IR identities.
+
+When universal expansion removes the out-of-line body, typed IR still retains
+the exact callable signature and declaration attributes under the callee's
+canonical symbol. This retained authority is what interface, execution-level,
+debug, and report consumers use; pruning code does not prune the contract.
 
 The attribute conflicts with `align`, `init`, and the future `frame` contract,
 and is rejected on foreign/import-only, naked, recursive, or bodyless
@@ -559,6 +685,7 @@ fn work(handler: fn(u64) -> u64) {
     var state: u64 in x0 = 0xdead
     // ... use state here ...
   }
+
   const result: u64 = handler(0)
   use(result, 0)
 }
@@ -1228,12 +1355,18 @@ This example stays within the selected checked-assembly pack. Broader local
 control-flow forms remain `known_unsupported` until a later support profile
 activates their exact parser, semantic, and allocation rows.
 
-## Live operation protocols
+## Lexical interactive functions
 
-Chapter 26 defines `operation` as a nominal non-first-class synchronous
-callable kind with canonical `success`, `progress`, `failure`, and `cancelled`
-member order. `with` consumes one root call, non-success members are handled
-exactly once, success defaults to identity, and forwarding is per-label and
-exact. Recovery is an ordinary explicitly passed `noescape` typed decision
-capability. Progress callbacks are synchronous, resume-only, zero-capture, and
-checked against the protocol's concrete effect ceiling.
+Chapter 26 defines an ordinary `fn` with optional `offers` as the sole nominal,
+non-first-class synchronous interactive callable. Its ordinary return is the
+identity path; `progress` is a synchronous notification and `failure` and
+`cancelled` occur in the explicit `terminal` group. Prefix `handle` consumes
+one direct call, every effective offer is handled exactly once, and forwarding
+is per-label and exact. A `fn` without `offers` remains non-interactive.
+
+Recovery is an ordinary explicitly passed `noescape` typed decision
+capability. Notification callbacks are synchronous and noescape, continue only
+by returning, and may capture safe lexical caller storage by reference. The
+compiler infers each arm's effects, captures, active leases, and control
+obligation. An optional uniform `handler(...)` ceiling is an API restriction,
+not a second spelling of the function's `effects(...)` contract.

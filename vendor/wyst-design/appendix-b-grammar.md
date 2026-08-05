@@ -122,7 +122,7 @@ ImportSelection <- UserIdentifier ('as' UserIdentifier)?
 
 SymbolImportDecl <- 'import' 'symbol' LinkerName 'as' UserIdentifier
                     ':' LinkerBoundaryType
-SymbolExportDecl <- 'export' 'weak'? UserIdentifier
+SymbolExportDecl <- 'export' 'weak'? UserIdentifier GenericTypeArgList?
                     ('as' 'symbol' LinkerName)?
 LinkerBoundaryType <- ExternCallableType / AddressType
 ExternCallableType <- ExternConvention 'fn' '(' CallableParamList? ')'
@@ -144,11 +144,16 @@ TopLevelDecl <- FnDecl / ConstDecl / VarDecl / PerCpuVarDecl / LabelDecl
 
 FnDecl <- ItemPrefix 'naked'? ExternConvention? 'fn' UserIdentifier
           GenericParams? '(' ParamList? ')' ('->' FunctionResult)?
-          CallableEffects? Block
+          CallableContracts? ConcurrencyClause* CallableEffects? Block
 ExternConvention <- 'extern' '"C"'
 ParamList <- Param (',' Param)* ','?
-Param <- UserIdentifier ':' 'noescape'? Type RegisterPlacement?
-FunctionResult <- NamedResultTuple / 'never' / ScalarResult
+Param <- ParamMode? UserIdentifier ':' 'noescape'? Type RegisterPlacement?
+ParamMode <- 'mut' / 'var'
+FunctionResult <- ObservationPolicy? ReturnedAccess?
+                  (NamedResultTuple / 'never' / ScalarResult)
+                  NamedReturnSources?
+ReturnedAccess <- 'mut'
+NamedReturnSources <- 'from' UserIdentifier (',' UserIdentifier)*
 ScalarResult <- Type RegisterPlacement?
 NamedResultTuple <- '(' NamedResult ',' NamedResult
                     (',' NamedResult)* ','? ')'
@@ -186,7 +191,8 @@ LayoutSymbolExpr <- ConstExpr
 LayoutSectionQuery <- ('start' / 'end' / 'size')
                       '(' LayoutSectionName ','? ')'
 
-StructDecl <- ItemPrefix 'packed'? 'struct' UserIdentifier GenericParams?
+ResourceModifier <- 'no_copy' / 'must_account' / 'must_resolve' / 'opaque' / 'agent_local'
+StructDecl <- ItemPrefix ResourceModifier* 'packed'? 'struct' UserIdentifier GenericParams?
               '{' (StructField ','?)* '}'
 StructField <- UserIdentifier ':' Type
 
@@ -201,7 +207,7 @@ VectorSlotBody <- '->' UserIdentifier / Block
 TrapFrameDecl <- ItemPrefix 'trap_frame' UserIdentifier ':' TargetProfile
                  '{' (StructField ','?)* '}'
 
-EnumDecl <- ItemPrefix 'enum' UserIdentifier GenericParams? (':' Type)?
+EnumDecl <- ItemPrefix ResourceModifier* 'enum' UserIdentifier GenericParams? (':' Type)?
             '{' (EnumVariant ','?)* '}'
 EnumVariant <- UserIdentifier ('(' Type ')')?
 
@@ -247,10 +253,29 @@ SystemRegisterEncoding
 CanonicalDecimal <- '0' / [1-9] [0-9]*
 
 CallableType <- ExternConvention? 'fn' '(' CallableParamList? ')'
-                ('->' CallableResult)? CallableEffects?
+                ('->' CallableResult)? ConcurrencyClause* CallableEffects?
 CallableParamList <- CallableParam (',' CallableParam)* ','?
-CallableParam <- 'noescape'? Type RegisterPlacement?
-CallableResult <- 'never' / ScalarResult
+CallableParam <- ParamMode? 'noescape'? Type RegisterPlacement?
+CallableResult <- ObservationPolicy? ReturnedAccess? ('never' / ScalarResult)
+                  CallableReturnSources?
+CallableReturnSources <- 'from' CallableReturnSource
+                         (',' CallableReturnSource)*
+CallableReturnSource <- 'parameter' '(' CanonicalDecimal ')'
+ObservationPolicy <- 'must_observe'
+CallableContracts <- RequiresClause* EnsuresClause*
+RequiresClause <- 'requires' '(' ContractExpr ',' 'reason' '=' ContractExpr ')'
+EnsuresClause <- 'ensures' '(' ContractExpr ',' 'reason' '=' ContractExpr ')'
+ContractExpr <- Expr
+ConcurrencyClause <- AccessesClause / UnderClause / AcquiresClause
+                   / ReleasesClause / ExcludesClause / RestoresClause
+AccessesClause <- 'accesses' '(' 'mut'? Expr ')'
+UnderClause <- 'under' '(' ConcurrencyMechanism ')'
+AcquiresClause <- 'acquires' '(' Expr ')' ('when' Expr)?
+ReleasesClause <- 'releases' '(' Expr ')'
+ExcludesClause <- 'excludes' '(' ExclusionMechanism ')'
+RestoresClause <- 'restores' '(' ExclusionMechanism ')'
+ConcurrencyMechanism <- Expr / ExclusionMechanism
+ExclusionMechanism <- 'interrupts' '(' '.' UserIdentifier ')' / 'preemption'
 CallableEffects <- 'effects' '(' ('none' / 'all' / EffectList) ')'
 RegisterPlacement <- 'in' RegisterName
 
@@ -270,6 +295,14 @@ declaration is an independent mapping, so one Wyst declaration may have
 multiple strong or weak external aliases. `pub` and `pub import` affect only
 Wyst source visibility and never add, remove, rename, or weaken an external
 symbol.
+
+When `GenericTypeArgList` is present, the export denotes exactly one concrete
+local generic function instance and the `as symbol LinkerName` branch is
+mandatory. Calls, `#addr_of(local<T, ...>)`, and exports of the same canonical
+declaration/type tuple create one demand. Imported and re-exported generic
+functions may be called or address-taken but are rejected in
+`SymbolExportDecl`; generic structs and enums are types and have no exportable
+linker address.
 
 `LayoutDecl` is valid only in the selected layout module. Until the named
 artifact manifest grammar can select one block explicitly, that selected file
@@ -310,13 +343,40 @@ ordinary constant evaluation or compile-time selection.
 
 `CallableType` is a `Type` alternative. Its parameters have no names. The fixed
 declaration-prefix order is one attribute group, `pub`, the compatible hard
-modifier or storage class, external convention, declaration keyword, then
+resource modifiers, hard modifier or storage class, external convention,
+declaration keyword, then
 name. Thus only `fn`/`label` admit `naked`, only ordinary `struct` admits
 `packed`, and only module `var` admits `per_cpu`. Reordering, duplication,
 meaningless combinations, unknown attributes, and inactive catalog rows are
 errors. Attribute groups are non-empty; flag attributes omit parentheses;
 positional arguments precede named arguments; attributes and named keys are
 unique.
+
+Resource modifiers occur after `pub` and before `packed struct` or `enum` in
+canonical order. `opaque`, `agent_local`, and at most one of `no_copy`,
+`must_account`, or `must_resolve` are emitted by the formatter;
+`must_account` semantically implies `no_copy`, and `must_resolve` implies both.
+`mut` and `var` occur before a declaration parameter name and before
+an unnamed callable parameter type. Unmarked parameters are read mode.
+Returned `mut` occurs after `->` and any `must_observe`, while `from` follows
+the complete result and optional register placement. Declaration sources are
+parameter names; callable sources are `parameter(N)` decimal indexes.
+
+Concurrency clauses occur after requires/ensures and before offers, effects,
+or the body. Body-bearing functions infer `accesses` clauses and therefore
+reject an explicit `AccessesClause`; callable types and bodyless boundaries
+use the explicit form. `guard` is contextual only at statement start, `by`
+only after its stable storage expression, and `against` only before an
+exclusion mechanism. These grammar positions do not acquire locks, mask
+interrupts, or disable preemption; Chapter 9 defines their proof-state meaning.
+
+`must_observe` is contextual only immediately after a callable result arrow.
+`requires` clauses precede `ensures` clauses, and both precede `offers` and
+`effects`; repetitions preserve source order. `reason` is the required labeled
+second contract argument, and `result` is contextual only as the compiler-owned
+postcondition binding. Chapter 26 restricts eligible declarations, result
+types, contract expressions, exact `u16` reasons, enforcement, proof, and ABI
+semantics beyond this grammar.
 
 `vector_table` and `trap_frame` are reserved declaration introducers.
 `TargetProfile` supplies only the dotted source shape; Chapter 14 owns its
@@ -381,7 +441,7 @@ the globally reserved word `device` has no active declaration production.
 The active declaration attributes are exactly `#[align(N)]`,
 `#[section("NAME")]`, `#[inline]`, `#[init(order = N)]`,
 `#[frame(...)]`, `#[deny_effects(...)]`, `#[cache_isolated]`, and
-`#[schedule(source)]`. Their subjects, signatures,
+`#[schedule(source)]`, plus the whole-structure flag `#[fixed_layout]`. Their subjects, signatures,
 conflicts, formatter order, target-fact requirements, and behavior come only
 from the declaration-attribute catalog.
 
@@ -401,8 +461,9 @@ analysis.
 An import without `as` or selections binds its final path component as the
 qualifier. Selective imports bind only selected public names. Wildcards are not
 grammar. An import group is a non-empty comma-separated list of module import
-items with one optional trailing comma. It preserves entry order and desugars
-to the same imports as standalone declarations; it creates no scope,
+items with one optional trailing comma. It desugars to the same imports as
+standalone declarations; canonical formatting orders entries by module path,
+and the group creates no scope,
 namespace, or source-graph boundary. The optional leading `pub` belongs to the
 whole declaration: on `pub import (...)` it applies public re-export visibility
 uniformly to every entry. `pub` is not part of `ImportItem`, so a group cannot
@@ -431,7 +492,7 @@ BitAndExpr <- ShiftExpr (('&^' / '&') ShiftExpr)*
 ShiftExpr <- AddExpr (('<<' / '>>') AddExpr)*
 AddExpr <- MulExpr (('+' / '-') MulExpr)*
 MulExpr <- UnaryExpr (('*' / '/' / '%%' / '%') UnaryExpr)*
-UnaryExpr <- ('+' / '-' / '~' / '!') UnaryExpr / PostfixExpr
+UnaryExpr <- ('+' / '-' / '~' / '!' / 'xfer') UnaryExpr / PostfixExpr
 PostfixExpr <- PrimaryExpr PostfixSuffix*
 PostfixSuffix
     <- '(' CallArgList? ')'
@@ -492,8 +553,9 @@ EffectName <- 'sysreg' / 'trap' / 'exception_return' / 'cache_maintenance'
 
 ```peg
 Statement <- BindingStmt / TupleAssignStmt / AssignStmt / ReturnStmt
+           / DiscardStmt / ResolveStmt
            / MatchStmt / IfStmt / WhileStmt / LoopStmt / ForStmt
-           / ScheduleStmt
+           / ScheduleStmt / GuardStmt
            / CheckedAsm
            / OtherStructuredStmt / CallStmt
 
@@ -511,25 +573,27 @@ TupleAssignStmt <- '(' AssignName ',' AssignName
 AssignName <- UserIdentifier / Discard
 
 ReturnStmt <- 'return' Expr / 'return' &'}'
+DiscardStmt <- 'discard' '(' Expr ')'
+ResolveStmt <- 'resolve' '(' 'xfer' UnaryExpr ')'
 
 WhileStmt <- 'while' Expr Block
 LoopStmt <- 'loop' Block
 ForStmt <- 'for' UserIdentifier 'in' Expr '..<' Expr Block
 ScheduleStmt <- 'schedule' 'source' Block
+GuardStmt <- 'guard' 'mut'? Expr GuardMechanism Block
+GuardMechanism <- 'by' Expr / 'against' ExclusionMechanism
 
 CallArgList <- CallArg (',' CallArg)* ','?
 CallArg <- UserIdentifier '=' Expr / Expr
 CallStmt <- CallableExpr '(' CallArgList? ')'
 
-MatchStmt <- 'match' Expr '{' MatchArm* MatchElse? '}'
-MatchExpr <- 'match' Expr '{' MatchExprArm+ MatchElseExpr? '}'
+MatchStmt <- 'match' Expr '{' MatchArm* '}'
+MatchExpr <- 'match' Expr '{' MatchExprArm+ '}'
 MatchArm <- VariantPattern (',' VariantPattern)* Block
 VariantPattern <- '.' UserIdentifier
                   ('(' PatternBinding (',' PatternBinding)* ','? ')')?
 PatternBinding <- UserIdentifier / Discard
-MatchElse <- 'else' Block
 MatchExprArm <- VariantPattern (',' VariantPattern)* ValueBlock
-MatchElseExpr <- 'else' ValueBlock
 ValueBlock <- '{' Statement* Expr '}'
 
 IsPattern <- Expr 'is' VariantPattern
@@ -551,6 +615,19 @@ compiler-operation call. Qualified compiler operations use the ordinary
 `CallableExpr` path-and-call grammar; sealed-import resolution authenticates
 their catalog identity after parsing. Unused arithmetic, aggregate, address,
 or other value expressions are invalid statements.
+`discard(Expr)` is a distinct statement production, not an ordinary call and
+not the bare `_` pattern terminal. It requires one ordinary value, evaluates
+that expression once, and leaves no runtime discard operation. Chapter 26 owns
+the required-observation rule it discharges.
+`resolve(xfer PlaceExpr)` is likewise a distinct unshadowable statement. It
+requires an explicit owned transfer and is authenticated against the closed
+terminal-origin identity set of the operand type.
+
+`xfer` is a contextual prefix expression whose admissible whole-local and fresh
+value operands are checked semantically. The unshadowable `swap` and `replace`
+spellings use the ordinary call grammar, but semantic analysis authenticates
+their exact arity, place, type, initialization, disjointness, and transfer
+contracts. No other declaration may bind those names.
 
 Positional call arguments precede labeled arguments. Labels apply only to a
 statically resolved direct Wyst declaration and are matched against its
@@ -616,9 +693,9 @@ operands, directional labels, or `{operand}` interpolation.
 
 `match` accepts enums only and evaluates the scrutinee once. Arms require brace
 bodies. A payload variant binds one name or explicitly discards it; alternatives
-in one arm bind the same names and types. `MatchElse`, when present, is final.
-Without it, arms are exhaustive. There are no colon, arrow, guard,
-nested-pattern, wildcard-arm, fallthrough, or match-expression forms.
+in one arm bind the same names and types. Every closed-enum variant is named
+explicitly. There are no `else`, colon, arrow, guard, nested-pattern,
+wildcard-arm, or fallthrough forms.
 
 ### Aggregate literals and explicit type-only generics
 
@@ -821,21 +898,30 @@ or callable/storage type exists in Wyst.
 ## Outcome and cleanup grammar
 
 ```ebnf
-operation-decl = "operation" ident generic-params? params operation-protocol effects-clause block? ;
-operation-protocol = "{" success-member progress-member? failure-member? cancelled-member? "}" ;
-success-member = "success" "(" type ")" ;
-progress-member = "progress" "(" type ")" effects-clause ;
-failure-member = "failure" "(" type ")" ;
-cancelled-member = "cancelled" "(" type ")" ;
-operation-expression = direct-call "with" "{" handler-arm+ "}" | direct-call "?" ;
-handler-arm = transition "(" binding ")" block | "forward" ("progress" | "failure" | "cancelled") ;
+interactive-function-decl = "fn" ident generic-params? params return-clause?
+                            offers-clause effects-clause? block? ;
+offers-clause = "offers" handler-ceiling? "{" notification-offer* terminal-offers? "}" ;
+handler-ceiling = "handler" "(" ("none" | "all" | effect-list) ")" ;
+notification-offer = "progress" "(" type ")" ;
+terminal-offers = "terminal" "{" failure-offer? cancelled-offer? "}" ;
+failure-offer = "failure" "(" type ")" ;
+cancelled-offer = "cancelled" "(" type ")" ;
+handle-expression = "handle" direct-call "{" notification-handler? terminal-handlers? "}"
+                  | direct-call "?" ;
+notification-handler = handler-arm("progress") ;
+terminal-handlers = "terminal" "{" handler-arm("failure")? handler-arm("cancelled")? "}" ;
+handler-arm(label) = label "(" binding ")" block | "forward" label ;
 defer-statement = "defer" block ;
-terminal-statement = "report" expression | "fail" expression | "cancel" expression ;
+notification-statement = "report" expression ;
+terminal-statement = "fail" expression | "cancel" expression ;
 match-expression = "match" expression "{" expression-match-arm+ "}" ;
 ```
 
-Members occur only in the shown canonical order. `?` is postfix punctuation
-only on a direct operation call. Expression-match arms use the existing
+Offers and handlers occur only in the shown canonical order. The ordinary
+function return is the implicit identity path and has no source handler arm.
+`offers`, `handler`, and `terminal` are contextual in their owning positions;
+`handle` is reserved. `?` is postfix punctuation only on a direct interactive
+call with exactly ordinary return plus failure. Expression-match arms use the existing
 shallow enum patterns and blocks whose final expression is the arm value.
 Fatal termination is the runtime semantic operation `trap.fatal(expression)`
 from a private whole-module `import core.trap`; it is deliberately absent from

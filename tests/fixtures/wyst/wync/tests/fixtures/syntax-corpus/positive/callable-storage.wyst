@@ -1,4 +1,5 @@
 module syntax.callable_storage
+
 import core.arch { cpu }
 
 #[schedule(source)]

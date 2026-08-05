@@ -1,12 +1,13 @@
 ---
 
-## Outcomes and operations
+## Outcomes and interactive functions
 
 DWARF materializes arbitrary enums at their exact concrete byte size and
 alignment with discriminator and payload-storage offsets derived from the same
-semantic layout facts as ABI lowering. Operation functions retain their exact
-outcome return type; progress callbacks retain payload type, noescape callable
-identity, and effect-ceiling provenance in compiler records. Generated handler
+semantic layout facts as ABI lowering. Interactive functions retain their
+ordinary return or exact terminal outcome type; progress callbacks retain
+payload type, noescape callback/context identity, and effect authority in
+compiler records. Generated handler
 entries use deterministic semantic names. No debug type implies boxing,
 unwinding, a coroutine frame, dynamic handler state, or an ambient error slot.
 title: "Chapter 23: Wyst Debug Information"
@@ -67,6 +68,16 @@ it implements only the symbol floor, notes must say
 frame unwinding data, inline expansion DIEs, watch identity, trace manifests,
 and remote trace transports are outside the source floor.
 
+The compiler-internal native `ET_REL` product always implements the symbol
+floor: deterministic function symbols carry exact section-relative starts and
+sizes. When packaged by `static_library`, `debug .line_tables` adds relocatable
+`.debug_line` and `.debug_line_str`; `debug .full` adds the complete source-floor
+section set and compile-unit, subprogram, global, and source-row records. Every
+address-bearing record uses an admitted `R_AARCH64_ABS64` relocation. This does
+not create a standalone object-file output. The final `ET_EXEC` writer remains
+responsible for applying the selected source-floor or richer policy after final
+placement.
+
 The source floor emits deterministic `.symtab`/`.strtab` function symbols and
 non-`ALLOC` DWARF sections: `.debug_line_str`, `.debug_str`, `.debug_abbrev`,
 `.debug_info`, `.debug_line`, and `.debug_aranges`. It emits one compile unit for
@@ -110,20 +121,18 @@ The current DWARF profile includes these debug sections:
 insurance for `wyst explain <addr>` and debugger PC lookups: O(log N)
 range search instead of scanning every CU's `.debug_info`.
 
-**Outside the source floor:**
-`.debug_frame` / `.eh_frame` (call-frame information / CFI),
+**Outside the source-debug floor:**
+`.debug_frame`,
 `.debug_macro`, `.debug_types` (type units / split DWARF),
 `.debug_rnglists` and `.debug_loclists` in their offset-list-header forms
 (the source-floor contract uses the inline forms in `.debug_loc`).
 
-**CFI rationale for deferral:** AAPCS-Wyst already mandates a frame
-record (`stp x29, x30, [sp, #-N]!`) in any non-leaf function (see
-[chapter-15-abi-spec.md §3.3](chapter-15-abi-spec.md)). A future debug-build
-mode will also mandate frame records in leaf functions. Backtraces can walk the
-`x29` chain directly without consulting CFI whenever those frame records are
-present. Wyst has no exceptions, so `.eh_frame` provides nothing Wyst needs.
-Leaf functions that omit the frame record are the only current case CFI would
-help. CFI may be added if optimized leaf prologues become useful.
+**Call-frame information:** `.eh_frame` is a separate artifact-unwind product,
+not source-debug information. `unwind .tables` emits deterministic AArch64 CFI
+for non-naked functions; `unwind .none` omits it. Naked functions remain
+explicit unwind gaps. Wyst has no language exceptions, personality functions,
+or LSDA. The foreign-input boundary in Chapter 16 accepts only validated
+backtrace CFI with those same restrictions and rejects `.ARM.exidx`.
 
 ---
 
@@ -136,7 +145,8 @@ does not appear in this table is a compiler bug.
 | --------------------------- | --------------------------------------------------------------------------------- |
 | `DW_TAG_compile_unit`       | Per-source-file root; one per imported module                                     |
 | `DW_TAG_subprogram`         | Function declaration (`fn name() {...}`) and `label` declarations                |
-| `DW_TAG_inlined_subroutine` | One per `#[inline]` expansion site (see §11.7)                                    |
+| `DW_TAG_call_site`          | One retained non-inlined direct call with an exact semantic callee                 |
+| `DW_TAG_inlined_subroutine` | One per inline expansion that survives to debug emission (see §11.7)              |
 | `DW_TAG_lexical_block`      | `{ ... }` block introducing new bindings                                          |
 | `DW_TAG_variable`           | Local or global named variable                                                    |
 | `DW_TAG_formal_parameter`   | Function parameter                                                                |
@@ -206,6 +216,28 @@ The emitter also records an exact fallback/interoperability string in
 the external C convention. This is the one place Wyst diverges from strict standard DWARF;
 the divergence is bounded to one attribute on one tag.
 
+**Precise direct call sites.** Under full debug policy, every retained
+non-inlined typed direct call emits one `DW_TAG_call_site` child of its caller's
+`DW_TAG_subprogram`. It carries `DW_AT_call_return_pc` as `DW_FORM_addr`,
+`DW_AT_call_origin` as a compilation-unit `DW_FORM_ref4`, and the exact
+`DW_AT_call_file`, `DW_AT_call_line`, and `DW_AT_call_column`. The return PC is
+the instruction immediately following the call's authenticated `CALL26`
+relocation. The origin references the concrete callee subprogram DIE when that
+callee is emitted in the unit. A relocatable module object whose callee is in
+another object instead emits one declaration-only `DW_TAG_subprogram` origin
+named by the canonical module-qualified semantic identity. This is not an
+imported-declaration DIE and does not create a second language lookup path.
+The owning subprogram carries `DW_AT_call_all_calls` as `DW_FORM_flag` with the
+value false. This satisfies the standard call-site ownership shape while making
+no completeness claim: this profile deliberately describes precise direct
+calls, not every indirect or checked-assembly call in the machine code.
+
+An inlined call uses its `DW_TAG_inlined_subroutine` record instead; an
+indirect call has no exact `DW_AT_call_origin` and emits no direct call-site
+DIE. Compiler-generated progress handlers are concrete subprogram entries with
+their exact generated symbols, so their address-taken callback entry remains
+debugger-visible without pretending the callback invocation is a direct call.
+
 **`#addr_of` location.** A variable declared at module scope has its
 location expressed as `DW_AT_location = DW_OP_addr <symbol>`, which the
 emitter realizes via the same `ABS64` relocation already used for data
@@ -242,7 +274,8 @@ inline in `.debug_line`.
 
 ## 11.7 Inline Expansion
 
-`#[inline]` expansions emit `DW_TAG_inlined_subroutine` DIEs. Each carries:
+Every source-mandated or compiler-selected inline expansion that survives to
+debug emission emits a `DW_TAG_inlined_subroutine` DIE. Each carries:
 
 - `DW_AT_abstract_origin` → the `DW_TAG_subprogram` DIE of the inlined
   function (which is also emitted, as a "concrete out-of-line" copy if
@@ -253,10 +286,11 @@ inline in `.debug_line`.
   source site of the call expression.
 
 This lets debuggers display "inlined from `foo()` at `bar.wyst:42`" in
-backtraces and step through inlined code as if it were called. The cost
-is one DIE per inline site. Since `#[inline]` is explicit in Wyst (see
-[§2.7.1](#)), the user knows where these appear and the count is
-bounded by the source.
+backtraces and step through inlined code as if it were called. The cost is one
+DIE per surviving inline site and is bounded by the compiler's typed-IR inline
+expansion budget. Source-mandated expansions cannot be reversed into calls;
+compiler-selected expansions retain distinct provenance and emit no inline DIE
+if a later compiler transformation reverses them before debug emission.
 
 Inlining a helper into a `vector_table` slot (see §2.7.1) emits the same DIEs;
 debuggers see the inline tree as it actually was at emission time.
@@ -278,8 +312,17 @@ Variables that move between register and stack across their lifetime get
 a `DW_AT_location` referencing a location list in `.debug_loc`. The list
 is built from the register allocator's allocation ranges (per
 [appendix-a-ir.md §11](appendix-a-ir.md)) and contains one entry per contiguous range with the
-same storage. **No `DW_OP_piece`.** A single Wyst variable is not split across
-multiple registers; location pieces are therefore outside the model.
+same storage.
+
+A source aggregate scalarized into simultaneously live components uses one
+complete deterministic location expression per range. Components appear in
+layout order and use `DW_OP_piece`; a sub-byte component uses
+`DW_OP_bit_piece`. Register, frame-relative, and unavailable pieces may be
+combined. Padding is not presented as a source field and is left unavailable
+rather than assigned invented storage. The expression must cover every
+source-visible value bit exactly once, and its piece ranges are derived from
+the allocator's final component ranges. Debug emission never creates a shadow
+stack slot or otherwise changes program allocation, frames, or instructions.
 
 Spilled values use `DW_OP_fbreg <offset>` where `<offset>` is the spill
 slot's offset from the frame pointer (`x29`). Slot offsets are

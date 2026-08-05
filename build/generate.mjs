@@ -39,7 +39,7 @@ const SITE = "https://wyst.dev";
 const WYST_SOURCE_URL = "https://github.com/wystlang/wyst";
 const LOCAL_DESIGN_ARTIFACTS = new Set([
 	"attribute-catalog.tsv",
-	"c-operation-adapter-catalog.tsv",
+	"c-interactive-adapter-catalog.tsv",
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ]);

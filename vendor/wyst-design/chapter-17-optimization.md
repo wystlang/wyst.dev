@@ -15,8 +15,22 @@ optimization mode. Compiler work may be hidden; runtime behavior may not be.
 
 The current compiler has one optimizer. Given the canonical inputs in Chapter
 1, every admitted transformation, tie, and emitted byte is reproduced exactly.
-`machine`, `verified`, and `hardened` are explicit safety policies and remain
-orthogonal to optimization.
+Optional per-category artifact safety diagnostics remain orthogonal to
+optimization and are never code-generation inputs.
+
+Explicit artifact hardening is a post-optimization transform governed by the
+closed [`hardening-catalog.tsv`](hardening-catalog.tsv). The ordinary optimizer
+may prove a catalog obligation before insertion; a proved obligation is
+omitted. Once inserted, a generated check is an indivisible scheduling barrier
+directly before its protected operation. It may not be eliminated, folded,
+moved, coalesced, or deduplicated. Checked assembly is indivisible and never
+receives instrumentation.
+
+Hardening does not widen callable contracts. A generated failure edge is the
+ordinary terminal `trap` effect, so the protected function and every retained
+source caller contract must already admit `trap`. Unsupported checks,
+unavailable operands, naked-function insertion, and incompatible target
+requirements are compile-time errors rather than approximations.
 
 ## 1. Authority and phase boundary
 
@@ -37,6 +51,16 @@ Each admitted transform records:
 Unknown decision or proof names are invalid IR. Reports project these
 authenticated records; they do not create or upgrade them.
 
+Final A64 function text carries a corresponding instruction-selection record
+for every body word. The record joins the final word to its active encoding,
+authority, and semantic identities; its canonical mnemonic; an exact retained
+source-form identity when the word came from checked or target-structural
+assembly; its typed-IR subject and dependencies; source/definition/inline
+provenance; the one-instruction/four-byte target cost; and the deterministic
+catalog-identity/source-order tie rule. Text construction reauthenticates that
+product against the active catalog. A stale word, identity, source form,
+dependency, provenance, cost, or tie is invalid compiler output.
+
 ## 2. Preservation contract
 
 Every transform preserves source-observable values, effects, effect order,
@@ -50,9 +74,10 @@ provenance, and debug meaning. In particular it preserves:
 - suspension and context-stability boundaries;
 - Native and AAPCS64 boundaries, exported symbols, address identity, and
   separate-compilation contracts;
-- operation identities, transition sets, terminal payload movement, progress
-  ceilings, recovery, and cleanup; and
-- explicit safety and hardened instrumentation selected by their catalogs.
+- interactive identities, offered protocols, terminal payload movement,
+  optional handler ceilings, recovery, and cleanup; and
+- optional safety diagnostics, which remain outside transformation and machine
+  output.
 
 Optimization never inserts hidden allocation, synchronization, retry, I/O,
 cleanup, traps, runtime fallbacks, or scalar-to-SIMD widening. It never treats
@@ -112,9 +137,25 @@ fault behavior are identical. Volatile, atomic, MMIO, barrier, checked-assembly,
 suspension, cleanup, and semantic-operation records are not reconstructed from
 instruction patterns and are not removed as pure values.
 
+Current function-local canonicalization includes typed integer and boolean
+constant folding, transparent same-type casts, unary and algebraic identities,
+constant or identical-arm selects, and identical-input phis. Integer folds use
+the language's width wrapping, defined divide/remainder-by-zero behavior, and
+modulo shift counts. Runtime floating-point operations are not folded because
+their `fp_state` effect remains observable. Distinct symbolic addresses are not
+folded unequal because final linking may alias them.
+
+Logical copy, transfer, exclusive-loan, terminal-obligation, and returned-view
+facts remain authoritative even when their physical realization disappears.
+The optimizer may keep copyable values in registers, coalesce homes, and elide
+loads, stores, or argument copies only after proving identical storage identity,
+alias behavior, last use, failure behavior, and left-to-right accounting. It may
+not turn a copy into a source-invalidating move or resurrect a transferred
+binding.
+
 ### 4.2 Scalar replacement
 
-A compiler-created operation outcome may be scalar-replaced only when every
+A compiler-created interactive outcome may be scalar-replaced only when every
 incoming value is an authenticated construction of the same canonical outcome
 type and the consumer is a compiler-origin tag or payload projection. Tag and
 payload phis use the exact predecessor edges of the original value. A missing
@@ -123,25 +164,25 @@ source projection, or incompatible layout retains the ordinary aggregate.
 
 The Native direct-result component rules remain those of Chapter 15. Narrow
 components are zero-extended, absent components are zero, and layout offsets
-remain authoritative. This is not an operation-specific ABI.
+remain authoritative. This is not an interactive-specific ABI.
 
-### 4.3 Branch and operation-tag fusion
+### 4.3 Branch and interactive-tag fusion
 
-When an internal operation is expanded into its sole typed consumer, its
-terminal transition edge may feed the consumer arm directly. Fusion requires
+When an internal interactive function is expanded into its sole typed
+consumer, its terminal offer edge may feed the consumer arm directly. Fusion requires
 the exact closed transition set, exact predecessor environment, exact payload
 type, and no intervening observable effect or cleanup. Invalid-tag edges remain
-unreachable facts. Operation identity, terminal label, payload ownership, call
+unreachable facts. Interactive identity, terminal label, payload ownership, call
 site, definition site, and nested expansion parent remain in authenticated IR
 provenance even when no tag value or dispatch instruction remains.
 
 ### 4.4 Compiler-selected internal inlining
 
 Arguments are evaluated once, left to right, before the expansion boundary.
-Parameters bind those exact values. All returns and operation terminals join
+Parameters bind those exact values. All returns and interactive terminals join
 the caller with their original cleanup depth and predecessor environment.
 Nested calls use the callee's qualified-name, semantic-type, effect-authority,
-and operation context. Cycles are detected by canonical symbol identity.
+and interactive context. Cycles are detected by canonical symbol identity.
 
 Source `#[inline]` remains a semantic mandatory-expansion contract and is
 distinguished from `internal_inline` in the expansion record. Compiler-selected
@@ -149,12 +190,23 @@ inlining is never inferred from a function name.
 
 ### 4.5 Call, frame, and unreachable-work elimination
 
-After all direct uses of an internal body expand, the emitter removes its call,
-call-preservation work, frame, and out-of-line bytes unless the symbol is
-exported, address-taken, an entry/init/verification root, or otherwise has an
-authenticated retention reason. Work made unreachable by the admitted
+After complete semantic checking and generic materialization, the artifact path
+builds the typed reference graph defined by Chapter 16 and retains exactly its
+root closure. It removes unreachable declarations, generic concrete bodies,
+foreign imports, interface records, object contributions, and archive members
+before hardening, machine lowering, object emission, and final linking. Static
+library companion files separately preserve public semantic API records without
+turning `pub` into a native-code root. Reference execution and semantic/editor
+inspection continue to consume the complete verified program.
+
+After all direct uses of an internal body expand, the emitter also removes its
+call, call-preservation work, frame, and out-of-line bytes unless the graph has
+an authenticated retention reason. Work made unreachable by an admitted
 expansion or fused terminal edge is removed in canonical block/value order.
-This rule does not authorize program-wide or cross-object dead stripping.
+Alignment and cache isolation apply only to retained declarations. Debug
+records never create reachability. Counter reads, volatile/MMIO operations,
+barriers, checked assembly, and other effects remain ordered under §2 and
+source scheduling boundaries inside every retained function.
 
 ## 5. Debug and reports
 

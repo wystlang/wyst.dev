@@ -55,9 +55,9 @@ Module imports may be written as one import group. The group contains a
 non-empty comma-separated list of ordinary import items and admits one optional
 trailing comma. It is syntax sugar only: every entry keeps the same
 whole-module, alias, selection, collision, sealed-core, and import-closure
-behavior as its standalone `import` declaration, and source order is preserved.
-Groups contain only module imports; linker `import symbol` declarations are
-independent.
+behavior as its standalone `import` declaration. Import order is not semantic;
+canonical formatting orders entries as specified below. Groups contain only
+module imports; linker `import symbol` declarations are independent.
 
 An import group is private when written as `import (...)`. A single leading
 `pub` produces `pub import (...)` and applies public re-export visibility
@@ -65,6 +65,15 @@ uniformly to every entry. An entry cannot carry its own `pub`, and one group
 cannot mix private and public imports; write separate groups or standalone
 declarations when the visibilities differ. Standalone `import path` and `pub
 import path` declarations remain valid.
+
+Canonical source partitions module imports into private `core.*` imports,
+private project imports, and public re-exports, with one blank line between
+non-empty groups. The formatter sorts full module paths lexicographically
+within each group and sorts selections by their original exported names;
+aliases and comments remain attached to the entries they describe. It does not
+convert standalone imports into explicit groups or explicit groups into
+standalone imports. Linker `import symbol` declarations are independent of
+this ordering policy.
 
 `pub` is source visibility only. A public declaration may be selected by
 another module, and `pub import` re-exports its selected public declarations to
@@ -126,10 +135,41 @@ directional declarations:
 - `export declaration` creates a strong external alias.
 - `export weak declaration` creates a weak external alias.
 - `export declaration as symbol "NAME"` selects the exact external spelling.
+- `export declaration<T, ...> as symbol "NAME"` exports one concrete local
+  generic function instance; the explicit alias is mandatory.
 
 Weak imports are rejected. One declaration may be exported repeatedly under
 independent external aliases. There is no link-name attribute, implicit export
 through `pub`, or linker effect from module imports.
+
+An unapplied generic declaration is not a value and cannot be exported. A
+concrete generic export uses the same canonical instantiation key as calls and
+`#addr_of(declaration<T, ...>)`, so all such roots share one definition. The
+generic declaration must be declared in the exporting module: imported or
+re-exported generics may be called or address-taken after normal visibility
+checking, but cannot be republished as native exports. Generic nominal types
+have no linker address and cannot appear in `export`.
+
+Compiled Wyst module imports consume the content-bound canonical binary
+semantic interface in [chapter-16-object-format.md](chapter-16-object-format.md),
+not ELF symbols as a substitute for language facts. The interface carries
+private dependencies needed by exported inline and generic bodies without
+making their source declarations public. Between paired Wyst objects, the
+compiler may use the hidden semantic-identity bridges defined by Chapter 16 to
+resolve machine references after the interface has established the language
+identity; those bridges are not native exports. Foreign native objects can
+satisfy only the explicit directional linker declarations above and cannot
+impersonate a Wyst module, generic, layout fact, `per_cpu` declaration, root,
+or checked-assembly claim.
+
+An imported declaration that resolves to one Wyst callable remains a direct
+semantic call across the interface and object boundary. The consumer retains
+the declaring module identity and exact callable, effect, entry-level, inline,
+resource, and interactive records; it may not replace a missing or
+incompatible record with an unknown indirect call. The paired object's
+ordinary `CALL26` relocation names that same canonical semantic declaration.
+Interface decoding, typed-IR reconciliation, and relocation reconciliation
+must all succeed before the object or final artifact is accepted.
 
 ## Named Layout DSL
 

@@ -9,20 +9,21 @@ summary: "Explicit allocation direction, arenas, storage contracts, dynamic arra
 # Chapter 10: Wyst Runtime And Allocation
 
 The runtime and allocation boundary is expressed through library and runtime
-contracts. Storage contracts, dynamic-array descriptors, typed handles, and
-buffer/string APIs remain ordinary explicit Wyst source calls rather than hidden
-allocation or runtime-owned containers.
+contracts. Storage contracts, the bootstrap dynamic-array descriptor, typed
+handles, and buffer/string APIs remain explicit rather than hidden allocation
+or runtime-owned containers.
 
 Allocation is described as visible storage contracts rather than hidden
 language behavior. The memory model and the storage and library contracts
 remain separate concerns.
 
-## Dynamic Container Role
+## Bootstrap Dynamic-Array Descriptor
 
-Wyst dynamic container is the ordinary explicit generic declaration with
-canonical identity `core.collections.DynamicArray`. It is not a prelude type
-and must be obtained from the sealed compiler-provided module before its local
-binding is applied as `DynamicArray<T>` (or through an import qualifier/alias):
+The ordinary explicit generic declaration with canonical identity
+`core.collections.DynamicArray` is a bootstrap descriptor retained for layout
+migration and foreign inspection. It is not a prelude type and must be obtained
+from the sealed compiler-provided module before its local binding is applied as
+`DynamicArray<T>` (or through an import qualifier/alias):
 
 <!-- wyst-contract: check-pass -->
 ```wyst
@@ -31,7 +32,7 @@ module packet.queue
 import core.collections { DynamicArray }
 
 fn process(values: @DynamicArray<u8>) {
-  // storage and growth remain explicit operations
+  // descriptor inspection is explicit
 }
 ```
 
@@ -39,29 +40,28 @@ A whole public or private `import core.collections` is also valid and exposes
 the type as `collections.DynamicArray<T>`; selective imports may use a local
 alias, and `pub import` may re-export the authenticated declaration under the
 ordinary source-visibility rules.
-`DynamicArray` has a compiler-owned declaration role, selected by its exact
+`DynamicArray` has a compiler-owned descriptor role, selected by its exact
 sealed module and declaration identity rather than by its qualified or
-unqualified spelling. The compiler validates that the bundled declaration has
-the field shape required by its implementation. A project declaration with
-the same name cannot acquire the role or replace the sealed module.
+unqualified spelling. The compiler validates the bundled declaration's field
+shape and reports descriptor annotations. A project declaration with the same
+name cannot acquire the role or replace the sealed module.
 
 In particular, ordinary functions named
 `arena_storage_init`, `byte_storage_*`, `dyn_array_*`, `typed_handle_*`,
 `buffer_*`, or `c_string_*` are ordinary typed APIs: their spelling alone
 creates no allocator, storage, movement, container, runtime, retention,
 lowering, effect, or report fact. `wync explain storage` reports compiler-owned
-`DynamicArray<T>` uses only.
+`DynamicArray<T>` descriptor uses only. The compiler recognizes no initializer
+or mutation method for it.
 
-`DynamicArray<T>` preserves the explicit
-`wyst.dynamicArrayDescriptor` storage representation and
-`wyst.dynamicArrayOperation` operation contract described below. It is
-opaque at the Wyst type surface and otherwise participates in parsing, type
-checking, explicit generic instantiation, linking, debugging, and dead-code
-elimination like ordinary bundled generic library code. Importing the type
-does not allocate, initialize, run startup code, or retain operations. Every
-stored binding still has an explicit initializer, and allocation, capacity,
-growth, failure, movement, and storage identity remain visible in the selected
-storage API.
+`DynamicArray<T>` preserves only the explicit
+`wyst.dynamicArrayDescriptor` storage representation described below. It
+participates in parsing, type checking, explicit generic instantiation,
+linking, debugging, and dead-code elimination like ordinary bundled generic
+library code. Importing, declaring, zero-initializing, projecting, indexing, or
+comparing the descriptor performs no allocation, cleanup, synchronization,
+retry, looping, storage attachment, or runtime call. Storage-owning wrapper
+APIs are ordinary source code and must make every such behavior explicit.
 
 ## Thesis
 
@@ -95,44 +95,169 @@ These facts are visible to diagnostics, examples, and `wync explain storage`.
 
 ## Storage Contracts
 
-Storage contracts are expressed as explicit standard-library-shaped API calls
-plus `wync explain storage` facts. These calls remain ordinary Wyst functions in
-source and do not become hidden language allocation:
+The sealed `core.storage` module is the canonical byte-storage surface. Its
+implementation is ordinary Wyst source in `wync/core/storage.wyst`; the
+compiler authenticates and bundles that source exactly like other sealed core
+modules. There is no arena intrinsic, allocator opcode, compiler-selected
+backing, implicit cleanup, or special lowering. Only generic ability checking,
+ordinary resource/borrow verification, checked quantity operations, and the
+semantic identities used by `wync explain storage` have compiler roles.
 
-- `arena_storage_init` names a caller-visible storage identity, capacity,
-  alignment, zero/no-zero policy, and failure policy.
-- `byte_storage_init` binds a shared byte-storage core to an explicit arena or
-  storage context with capacity, alignment, zeroing, growth, and failure facts.
-- `byte_storage_push_zero` and `byte_storage_push_nozero` keep initialized and
-  uninitialized byte ranges distinct.
-- `byte_storage_reserve` separates capacity reservation from byte
-  construction.
-- `byte_storage_reset` makes cursor reset visible and invalidates previous
-  allocations by contract.
+### Backing and providers
 
-Arena-first is not arena-only. The storage vocabulary deliberately leaves named
-space for fixed buffers, pools, per-CPU storage, DMA-coherent storage, and
-target/runtime storage sources without implementing them as hidden core
-language allocation.
+`fixed_buffer_attach(mut backing: []u8, use: StorageUse)` consumes an exclusive
+borrow of exactly the caller-provided byte slice and returns a `must_observe
+Result<FixedBuffer, FixedBufferAttachFailure> from backing`. It parses the
+complete address extent once; address-plus-length overflow returns
+`InvalidExtent` without losing the backing authority. An empty fixed buffer is
+valid. `FixedBuffer` records the exact capacity, address-derived
+`StorageIdentity`, generation, and one of these use classes:
+
+- `CallScopedScratch` for storage whose scoped work must rewind;
+- `OutputOrSubsystem` for storage that may back returned or subsystem state;
+- `Permanent` for storage whose arena cannot reset or detach.
+
+`fixed_buffer_reclassify` is an explicit consuming transition.
+`fixed_buffer_close` explicitly accounts for the wrapper; it neither releases
+nor cleans the provider's bytes. Hosted providers may acquire a slice with
+`malloc`, `mmap`, or `VirtualAlloc`, package its release ticket separately, and
+attach the slice. Kernels may use static, boot-reserved, page, per-CPU, DMA, or
+device-specific backing. Provider acquisition, release, page policy, and
+failure remain outside `core.storage`; the common seam is the exclusive slice
+plus any separate affine provider authority.
+
+Arena-first is not arena-only. `fixed_buffer_reserve` accepts a previously
+checked `ByteRange` and `Alignment` and creates a direct
+`DestinationReservation` without a ledger or allocation policy. The explicit
+typestate chain is `DestinationReservation` to `InitializedDestination` to
+`WrittenRegion`, using `destination_initialize_zero`,
+`destination_initialize_from`, `destination_initialize_value`, or the trusted
+`destination_assume_initialized`, followed by `destination_finish`. A direct
+reservation borrows its fixed buffer exclusively until its last use. The
+buffer remains a bounded destination, not an allocator.
+
+### Arena attachment and record model
+
+`arena_attach(var buffer: FixedBuffer)` transfers one whole fixed buffer into
+one monotonic `Arena`. Capacity must be at least 80 bytes and both base and
+capacity must be eight-byte aligned. Failure returns
+`ArenaAttachRejected { buffer, reason }`, preserving the authority. The arena
+keeps 208 bytes of control state in its ordinary `Arena` value and stores one
+private 80-byte record per allocation at the high end of the backing. Payload
+grows upward and records grow downward. The record carries identity,
+generation, sequence, previous cursors, payload start and length, padding,
+record offset, and one packed state word. That word uses two bits for the
+vacant/pending/live/retired lifecycle and one bit for publication; all 61
+unnamed bits are reserved and any nonzero reserved bit is corrupt metadata.
+The record is transient validation metadata, not a persistent or cross-process
+format.
+
+The control value represents pending work as the payload enum `None`,
+`Reservation(PendingReservationState)`, or `Growth(PendingGrowthState)` rather
+than as parallel booleans, kind tags, and optionally meaningful words. Private
+nominal sequence, record-offset, and checkpoint-identity types prevent those
+equal-width quantities from being interchanged accidentally. Their layouts,
+the 64-byte pending transaction, the 208-byte arena control value, and the
+80-byte backing record are source-level static assertions in
+`core.storage`.
+
+`arena_reserve` performs checked alignment and extent arithmetic and permits at
+most one pending transaction. Success returns an opaque, non-discardable
+`Reservation`; it does not establish initialized or committed bytes. The
+reservation becomes `InitializedReservation` only through
+`arena_initialize_zero`, `arena_initialize_from`,
+`arena_initialize_value<T: copyable_discardable>`, or the explicit trusted
+assertion `arena_assume_initialized`. `arena_commit` alone creates an
+`Allocation`. `arena_cancel_reservation` and `arena_cancel_initialized` visibly
+rewind a pending transaction. Zero-length requests are real sequenced records
+and still consume record metadata.
+
+The typed-value forms require the exact `#size_of(T)` and `#align_of(T)` and
+admit only compiler-proven fixed-layout values with copy and discard abilities.
+They cannot byte-copy affine authorities into untracked storage. Raw bytes
+that represent an externally defined format are parsed by that format's
+boundary after initialization; `core.storage` does not manufacture typed
+authority from arbitrary bytes.
+
+Every authenticated operation validates identity, generation, sequence,
+packed state, and the parts of the ledger that could have changed. Record
+inspection returns an ordinary aggregate whose slice and record pointer both
+carry compiler-verified provenance from the exact `arena.bytes` field; it adds
+no runtime borrow tag or second authenticated operation and does not borrow
+unrelated arena control fields. Stable raw capacity, alignment, and extent
+facts are not reparsed downstream. Rejection is typed and failure-atomic: the
+arena cursor, live bytes, and accounting state are unchanged. Where a rejected
+operation consumed an affine input, its error envelope returns that input. The
+general projected-transfer rule permits `xfer rejected.authority` only when
+every unselected sibling is discardable.
+
+### Accounting and reclamation
+
+`arena_facts` reports exact, separate extents. With `metadata` meaning private
+backing records and `control_metadata` meaning `#size_of(Arena)`, the required
+relations are:
+
+```text
+committed = live + abandoned
+consumed = committed + reserved + alignment_padding + backing_metadata
+```
+
+The report also carries exact capacity, payload cursor, high-water mark,
+identity, generation, and storage use. Control metadata is not inside capacity
+or consumed. Alignment padding is not live data; abandoned bytes remain
+committed/consumed until an allowed rewind or reset; reserved bytes are pending
+and not committed. `wync explain storage` uses authenticated
+`core.storage.*` semantic identities, never declaration spelling, and reports
+this complete vocabulary plus `hidden-allocation=false`,
+`hidden-cleanup=false`, `hidden-fallback=false`,
+`hidden-synchronization=false`, and `allocator-selection=caller-or-provider`.
+
+`arena_checkpoint`, `arena_keep_checkpoint`, and
+`arena_rewind_checkpoint` implement linked, strictly nested checkpoints.
+`arena_begin_scratch` is valid only for `CallScopedScratch` and
+`arena_finish_scratch` always rewinds the innermost scope. Pending transactions
+and changed publication counts block checkpoint completion. Output/subsystem
+and permanent arenas cannot masquerade as scratch.
+
+`arena_shrink_last` and `arena_rewind_last` accept the live token for the most
+recent allocation only. Growth of that same allocation is another explicit
+reservation/initialization/commit transaction through the
+`arena_*_growth` functions; it grows only into already supplied backing and is
+not backing growth. `arena_abandon` makes live bytes abandoned.
+`arena_publish` converts an allocation into a `PublishedRegion` and increments
+an explicit dependent count; `arena_view_published` validates it and
+`arena_retire_published` retires and abandons it. Reset, rewind, shrink, growth,
+or detach cannot invalidate a live publication silently.
+
+`arena_reset` is one logical generation transition with an explicit sanitation
+choice (`PreserveBytes` or `ZeroBacking`) and backing outcome:
+`RetainCapacity`, `ReleaseCapacity`, or `RetainUpTo(ByteLength)`. The outcome is
+respectively `Retained(Arena)`, `Released(FixedBuffer)`, or
+`Split(Arena, FixedBuffer)`; a retained capacity below the 80-byte arena
+minimum becomes a release. Reset rejects pending work, checkpoints,
+publications, permanent storage, and generation exhaustion. Successful reset
+invalidates all earlier allocations, handles, reservations, views, and
+descriptors by generation. `arena_detach` applies the same liveness rules and
+returns the full fixed buffer with the next generation. Pointer-free
+`AllocationHandle` receipts may outlive reset, but validation returns
+`StaleGeneration`; they never keep backing alive.
+
+The monotonic arena is byte storage, not a general object heap. Arbitrary
+per-object free, fixed-slot reuse, concurrent allocation, backing acquisition
+or growth, page management, fallback allocation, cleanup callbacks,
+synchronization, ambient allocator context, reference counting, and a general
+object-heap/`SlotPool` contract require separate visible APIs. No part of this
+surface chooses or calls such an API implicitly.
 
 ## Dynamic Array Descriptors
 
-`DynamicArray<T>` is a concrete descriptor type. The descriptor is storage for
-facts, not an allocation trigger: annotation-time allocation is `none`, and
-initialization uses the explicit
-`arr : DynamicArray<u8> = dyn_array_init<u8>(arena, capacity = ..., growth = ...)`
-operation. Subsequent repeated operations can use `arr.push(value)`,
-`arr.push_from_address(ptr)`, `arr.reserve(capacity = ..., growth = ...)`,
-`arr.alloc_slot()`, `arr.init_slot(slot)`, and `arr.commit_slot(slot)` on any
-assignable `DynamicArray<T>` descriptor storage path, including locals, globals, and
-aggregate fields. Temporaries and constants are not valid mutating receivers.
-
-Where labels appear (`reserve` and `dyn_array_init<T>`), they are
-load-bearing and position-independent: the compiler accepts any order of
-labeled arguments and rejects misspelled, unknown, duplicate, or missing
-required labels. The remaining dot-syntax forms take positional arguments
-only — labels on `push`, `push_from_address`, `init_slot`, or
-`commit_slot` are a compile error.
+`DynamicArray<T>` is a concrete raw descriptor type. The descriptor is storage
+for facts, not an allocation trigger. Its only compiler-provided initializer is
+the ordinary all-zero aggregate initializer accepted for this descriptor.
+`dyn_array_init<T>(...)`, `.push(...)`, `.push_from_address(...)`,
+`.reserve(...)`, `.alloc_slot()`, `.init_slot(...)`, and `.commit_slot(...)`
+have no compiler-owned syntax, typing, mutation, storage, or report semantics.
+If a project declares functions with those spellings, they are ordinary calls.
 
 The descriptor representation is public and required under
 `wyst.dynamicArrayDescriptor`. A `DynamicArray<T>` value has total size 56 bytes and alignment 8.
@@ -188,9 +313,9 @@ the descriptor.
 Other policy values are invalid descriptor state. The empty descriptor is all zero
 fields: `data = 0`, `len = 0`, `capacity = 0`, `storage_identity = 0`,
 `growth_policy = 0`, `failure_policy = 0`, and `movement_policy = 0`. It is a
-valid empty descriptor value, but indexing, slicing to nonzero length, reserve,
-push, slot allocation, and foreign inspection as live storage require
-initialization through an explicit storage contract first. Invalid descriptor
+valid empty descriptor value, but indexing or foreign inspection as live
+storage requires a descriptor supplied by an explicit external contract.
+Invalid descriptor
 state includes `len > capacity`, nonzero capacity with zero data, misaligned
 data, unknown policy values, stale storage identity, or any state produced by a
 wrapper that does not satisfy `wyst.dynamicArrayDescriptor`; using such a
@@ -213,33 +338,36 @@ persistence contract translates the fields. Foreign inspection may read and
 write the fields only when it opts into `wyst.dynamicArrayDescriptor`,
 knows the element type layout, and preserves every invariant above.
 
-The operation contract is `wyst.dynamicArrayOperation`. The generic initializer
-and descriptor methods give initialization, push-by-value, push-from-address,
-reserve-only, allocate-slot, initialize-slot, and commit-slot their checked
-semantics. Ordinary functions with similar names remain ordinary code; names do
-not grant compiler semantics.
-
 Descriptor state is read through read-only dot projections such as `arr.data`,
 `arr.len`, `arr.capacity`, `arr.storage_identity`, `arr.growth_policy`,
 `arr.failure_policy`, and `arr.movement_policy`. These projections are not
 assignment targets, and Wyst does not provide typed getter APIs for descriptor
 state.
 
-`arr[i]` is direct unchecked access to initialized dynamic-array element
-storage. It lowers through the descriptor's data pointer and performs no hidden
-length or capacity check. Access to capacity-only storage remains explicit
-through reserve and slot allocation/initialization/commit operations.
+In ordinary compilation, `arr[i]` is direct unchecked access to initialized
+dynamic-array element storage. It lowers through the descriptor's data pointer
+and performs no hidden length or capacity check. If the artifact selects
+`index_bounds` hardening, an asserted or unproved index obligation receives the
+cataloged `i < arr.len` check immediately before the protected address
+calculation; capacity is never substituted for length. Omitted hardening
+preserves ordinary lowering. The descriptor supplies no compiler-owned access
+to capacity-only storage.
 
-`arr[:]` produces a non-owning `[]T` view over initialized elements by using
-the descriptor data pointer and current length. Dynamic-array range slicing is
-unchecked; omitted end bounds use `arr.len`, not `arr.capacity`. A `DynamicArray<T>`
-never binds implicitly to a `[]T`; call and assignment sites use `arr[:]` when
-they want the initialized-element view.
+The bootstrap descriptor has no `arr[:]` or range-slicing surface and never
+binds implicitly to a `[]T`. Source that needs a slice must explicitly obtain
+one through an ordinary wrapper contract or construct a raw view from the
+descriptor's projected address and length.
 
 Same-type `DynamicArray<T>` equality compares descriptor state only: data pointer,
 length, capacity, storage identity, growth policy, failure policy, and movement
 policy. It does not compare elements, and dynamic arrays have no ordered
 comparison or integer-zero comparison.
+
+This descriptor is not the selected public growable-array surface. The future
+`[?]T` work defines affine mutation authority, storage and generation proofs,
+growth operations, and view leases before migrating users and retiring this
+bootstrap declaration. None of those future semantics is inferred from the
+current descriptor.
 
 ## Typed Handles
 

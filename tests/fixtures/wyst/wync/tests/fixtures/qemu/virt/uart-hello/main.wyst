@@ -2,7 +2,7 @@ module hello
 
 #target(arch = arm64-v8a, cpu = generic, el = 2)
 
-import core.arch { cpu, exception }
+import core.arch { barrier, cpu, exception }
 import core.environment { semihost }
 
 // homepage-example:start
@@ -21,14 +21,38 @@ import core.environment { semihost }
 register_map Pl011 {
   // DR is the data register.
   // DATA is its eight-bit transmit payload.
-  DR: writeonly u32 at 0x00 {
+  DR: readwrite u32 at 0x00 {
     DATA: u8 at 0..=7
   }
 
   // FR is the flag register.
+  // BUSY means the UART is still sending or receiving.
   // TXFF means the transmit FIFO is full.
   FR: readonly u32 at 0x18 {
+    BUSY: bool at 3
     TXFF: bool at 5
+  }
+
+  // IBRD and FBRD hold the integer and fractional
+  // parts of the baud-rate divisor.
+  IBRD: readwrite u32 at 0x24 {
+    DIVINT: u16 at 0..=15
+  }
+  FBRD: readwrite u32 at 0x28 {
+    DIVFRAC: u8 at 0..=5
+  }
+
+  // LCR_H selects an eight-bit word and enables FIFOs.
+  LCR_H: readwrite u32 at 0x2c {
+    FEN: bool at 4
+    WLEN: u8 at 5..=6
+  }
+
+  // CR enables the UART and its transmit and receive paths.
+  CR: readwrite u32 at 0x30 {
+    UARTEN: bool at 0
+    TXE: bool at 8
+    RXE: bool at 9
   }
 }
 
@@ -68,12 +92,41 @@ fn kernel_main(dtb: @u8) -> never {
     test_exit(0x63)
   }
 
+  uart_init()
   uart_hello()
 
   // Bare metal has no caller to return to. `test_exit`
   // plays the role of process exit for this QEMU test:
   // report status 0, then stop the virtual machine.
   test_exit(0)
+}
+
+fn uart_init() {
+  // Disable every path before changing the configuration.
+  UART0.CR.write(UARTEN = false, TXE = false, RXE = false)
+  barrier.dsb(.sy)
+
+  // Finish any character left by earlier firmware, then
+  // disable the FIFOs to flush them.
+  while UART0.FR.read().BUSY {
+    cpu.nop()
+  }
+
+  UART0.LCR_H.write(FEN = false)
+  barrier.dsb(.sy)
+
+  // QEMU supplies a 24 MHz UART clock. The PL011 divisor
+  // for 115200 baud rounds to 13 + 1/64.
+  UART0.IBRD.write(DIVINT = 13)
+  UART0.FBRD.write(DIVFRAC = 1)
+
+  // Use 8-bit words, one stop bit, no parity, and FIFOs.
+  UART0.LCR_H.write(FEN = true, WLEN = 3)
+  barrier.dsb(.sy)
+
+  // This example only transmits, so leave the receiver off.
+  UART0.CR.write(UARTEN = true, TXE = true, RXE = false)
+  barrier.dsb(.sy)
 }
 
 fn uart_hello() {

@@ -30,11 +30,23 @@ single machine-readable definition:
 
 - [syntax-words.tsv](syntax-words.tsv) owns source words.
 - [attribute-catalog.tsv](attribute-catalog.tsv) owns declaration attributes.
+- [builtin-type-members.tsv](builtin-type-members.tsv) owns contextual members
+  and exact typed constants of builtin types.
 - [meta-operation-catalog.tsv](meta-operation-catalog.tsv) owns compiler and
   meta operations.
-- [c-operation-adapter-catalog.tsv](c-operation-adapter-catalog.tsv) owns C
+- [hardening-catalog.tsv](hardening-catalog.tsv) owns explicit generated
+  runtime checks. It is separate from source semantic operations because
+  hardening is artifact-selected and absent from ordinary compilation.
+- [c-interactive-adapter-catalog.tsv](c-interactive-adapter-catalog.tsv) owns C
   status/out and tagged/out adapter profiles.
 - [generic-bounds.tsv](generic-bounds.tsv) owns generic capability bounds.
+- [link-format-catalog.tsv](link-format-catalog.tsv) owns the versioned static
+  link representations and their content bindings.
+- [link-interface-schema.tsv](link-interface-schema.tsv) owns canonical
+  semantic-interface record tags and required fields.
+- [a64-link-relocations.tsv](a64-link-relocations.tsv) owns the exhaustive
+  static LP64 AArch64 relocation encodings and failure behavior;
+  [a64-link-veneers.tsv](a64-link-veneers.tsv) owns every permitted veneer.
 
 Compiler-owned declaration roles are defined directly beside their
 implementation and validated against the bundled source declaration.
@@ -67,10 +79,10 @@ validators and tests protect behavior that can break the compiler.
 | 18      | [chapter-18-check-format-diagnostics.md](chapter-18-check-format-diagnostics.md) | Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor.                                 |
 | 19      | [chapter-19-learning-diagnostics.md](chapter-19-learning-diagnostics.md)         | Diagnostic explanations, learning fields, source insights, and teachable compiler feedback.                                        |
 | 20      | [chapter-20-editor-integration.md](chapter-20-editor-integration.md)             | Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries.                                    |
-| 21      | [chapter-21-explain.md](chapter-21-explain.md)                                   | Lowering, effects, and storage reports that connect source to machine behavior.                                        |
+| 21      | [chapter-21-explain.md](chapter-21-explain.md)                                   | Lowering, effects, storage, and reference-execution reports over current compiler semantics.                            |
 | 23      | [chapter-23-debug-info.md](chapter-23-debug-info.md)                             | Debug information goals, DWARF sections, DIEs, locations, and determinism.                                                         |
 | 25      | [chapter-25-compilation-phases.md](chapter-25-compilation-phases.md)             | Current compiler data flow, direct dependencies, diagnostics, reports, and timing instrumentation.                                 |
-| 26      | [chapter-26-errors-and-progress.md](chapter-26-errors-and-progress.md)           | Materialized outcomes, live operations, exact forwarding, progress, recovery, cancellation, cleanup, traps, and C adapters.         |
+| 26      | [chapter-26-errors-and-progress.md](chapter-26-errors-and-progress.md)           | Materialized outcomes, lexical interactive functions, exact forwarding, progress, recovery, cancellation, cleanup, traps, and C adapters. |
 
 ## Appendices
 

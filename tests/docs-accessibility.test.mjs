@@ -74,11 +74,11 @@ test("generated heading fragments match GitHub-style source links", () => {
 test("design catalog links use authenticated local or pinned upstream artifacts", () => {
 	const commit = "a".repeat(40);
 	const rendered = makeMd({ wystSourceCommit: commit }).render(
-		"[syntax words](syntax-words.tsv) [attributes](attribute-catalog.tsv) [C operation adapters](c-operation-adapter-catalog.tsv) [meta operations](meta-operation-catalog.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz)\n",
+		"[syntax words](syntax-words.tsv) [attributes](attribute-catalog.tsv) [C interactive adapters](c-interactive-adapter-catalog.tsv) [meta operations](meta-operation-catalog.tsv) [raw forms](a64-raw-encoding-source-forms.jsonl.gz)\n",
 	);
 	for (const artifact of [
 		"attribute-catalog.tsv",
-		"c-operation-adapter-catalog.tsv",
+		"c-interactive-adapter-catalog.tsv",
 		"meta-operation-catalog.tsv",
 		"syntax-words.tsv",
 	]) {

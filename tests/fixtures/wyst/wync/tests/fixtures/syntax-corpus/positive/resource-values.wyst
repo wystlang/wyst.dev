@@ -1,0 +1,36 @@
+module resource_values
+
+opaque agent_local must_account packed struct Handle {
+  raw: u64
+}
+
+must_resolve enum Request {
+  pending(Handle)
+  complete
+}
+
+fn bytes(buffer: []u8) -> []u8 from buffer {
+  return buffer
+}
+
+fn bytes_mut(mut buffer: []u8) -> mut []u8 from buffer {
+  return buffer
+}
+
+fn close(var value: Handle) {
+  discard(xfer value)
+}
+
+fn finish(var value: Request) {
+  resolve(xfer value)
+}
+
+var read_view: fn([]u8) -> []u8 from parameter(0) = bytes
+var write_view: fn(mut []u8) -> mut []u8 from parameter(0) = bytes_mut
+
+fn rotate(mut left: Handle, mut right: Handle, var replacement: Handle) {
+  swap(left, right)
+
+  var old = replace(left, xfer replacement)
+  close(xfer old)
+}

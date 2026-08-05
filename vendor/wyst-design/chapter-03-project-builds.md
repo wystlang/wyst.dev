@@ -15,26 +15,34 @@ outside this build surface.
 
 Project layout, source roots, target profiles, layout files, and build modes
 are specified here. Module syntax is specified in
-[chapter 4](chapter-04-modules.md). Package management, external linking, and
-incremental builds remain explicit boundaries.
+[chapter 4](chapter-04-modules.md). Package management and external linking
+remain explicit boundaries. A compiler-private cross-process cache may retain
+authenticated module products, but it is not a project input, package surface,
+or language-level import mechanism.
 
 ## Goals
 
 - Build a non-trivial multi-module kernel without custom shell glue.
 - Keep source imports semantic and module-name based.
 - Make non-source build facts explicit, deterministic, and reviewable.
-- Preserve the whole-program compiler model.
+- Preserve the whole-program compiler model for final executables while making
+  per-module library products explicit.
 
 ## Non-Goals
 
 - Package management, dependency download, lockfiles, registries, or semantic
   version solving.
-- Dynamic linking, external object linking, archive production, or partial link
-  outputs. The closed manifest grammar reserves a static-library declaration,
-  but no archive writer is active.
+- Dynamic linking, external object linking, or partial-link outputs. Static
+  libraries contain only compiler-produced Wyst objects and their authenticated
+  semantic interfaces.
 - Source globs, directory-wide implicit compilation, or filesystem paths as
   language-level import names.
 - Full target-descriptor schema.
+- Function-granular invalidation, incremental section movement or relocation,
+  veneer, debug, or unwind repair, and in-place patching of a previously
+  written final artifact. Reuse is at dependency-cycle module-component
+  granularity and final artifacts are assembled afresh through ordinary
+  deterministic placement and linking.
 
 ## Build Modes
 
@@ -112,6 +120,14 @@ project project_graph_smoke {
     debug .full
     unwind .tables
     frame_pointers .all
+    hardening {
+      index_bounds .enabled
+      address_alignment .enabled
+    }
+    safety {
+      raw_address .warning
+      privileged_operation .error
+    }
 
     verify {
       code arch.timer.tick {
@@ -155,10 +171,10 @@ contract does not install that target, a Mach-O writer, a host runner, or any
 provider semantics. Until a hosted target is cataloged, selecting it fails as
 an unknown target even though the manifest form parses and formats.
 
-The distributable-library form is also fully reserved in this grammar:
+The distributable-library form is:
 
 ```text
-static_library widgets for "macos-aarch64" {
+static_library widgets for "qemu-virt-aarch64-el2" {
   root widgets
   output "build/libwidgets.a"
   companion "build/libwidgets.wystlib"
@@ -176,8 +192,10 @@ is `executable`, `benchmark`, `fixture`, and `static_library`.
 Every artifact states one semantic root module, one output path, one mandatory
 target profile in its header, `.reproducible` profile policy, `.none`,
 `.line_tables`, or `.full` debug policy, `.none` or `.tables` unwind policy,
-and `.minimal` or `.all` frame-pointer policy. The remaining clauses are
-kind-specific:
+and `.minimal` or `.all` frame-pointer policy. An optional `safety` block
+selects diagnostic policy for individual unchecked-boundary categories. An
+optional `hardening` block selects compiler-generated runtime checks from the
+closed hardening catalog. The remaining clauses are kind-specific:
 
 - `executable`, `benchmark`, and `fixture` have an entry and exactly one layout
   clause. A target with `.artifact` ownership requires
@@ -186,21 +204,150 @@ kind-specific:
 - `static_library` has no entry or layout and requires one explicit
   `companion "PATH"`. Its `root` selects the source-module import closure.
   Source `export` declarations determine native archive exports, while `pub`
-  Wyst declarations determine the authenticated semantic interface. The kind
+  Wyst declarations determine the content-bound semantic interface. The kind
   rejects `entry`, either layout form, and `runner`. Code verification clauses
-  remain structurally valid.
+  remain structurally valid for instruction count, authenticated instruction
+  families, prologue presence, and compiler spill slots. Exact final bytes and
+  veneer counts require final placement and are rejected for this kind.
 
-Static-library archive and companion production are unavailable. Selecting a
-valid `static_library` returns one stable unavailable-feature diagnostic before
-creating an output parent, writing a temporary file, or creating or replacing
-either product. An unselected valid static-library declaration may coexist with
-a selected executable. Archive/companion emission is a later object-format
-contract, not an implicit use of the current ELF writer.
+### Optional explicit hardening
+
+An artifact may contain at most one `hardening` block. Its closed syntax is:
+
+```text
+hardening {
+  index_bounds .enabled
+  address_alignment .enabled
+}
+```
+
+Each catalog row may occur at most once, and `.enabled` is the only setting.
+An omitted block, an empty block, and an omitted row are disabled. The current
+closed set is `index_bounds` and `address_alignment`; unknown rows, duplicate
+rows, and any other setting are errors. Hardening covers the artifact's
+complete Wyst source and layout closure. It has no source-, module-, or
+function-level override. The selection is part of nondefault multi-owner editor
+compatibility because it changes the artifact's verified IR and effects.
+
+Hardening is applied after ordinary optimization and proof production.
+`index_bounds` guards an unproved element index with `index < length` and an
+unproved slice range with `start <= end && end <= base_length`.
+`address_alignment` guards an unproved actual read, write, or
+read-modify-write address against that operation's authenticated required
+alignment. Proved and not-required obligations are omitted, statically
+violated or incomplete obligations are rejected, and logical operands are
+evaluated once. The exact source obligations, generated A64 sequences, reason
+codes, failure paths, effects, target requirements, resources, and pass
+constraints are owned by
+[`hardening-catalog.tsv`](hardening-catalog.tsv).
+
+Every generated failure edge is an ordinary terminal `trap`; the protected
+function and every retained source caller contract must already admit
+`trap`. Hardening never widens a declared callable contract. It never
+instruments inside checked assembly, and an unproved selected checked-assembly
+access is rejected rather than approximated. A `naked` function is accepted
+only when its selected obligations require no generated check. Generated
+checks may use ordinary registers, allocator spills, and resulting frame
+growth, but introduce no semantic allocation, locking, recovery, or runtime
+service.
+
+The selected hardening catalog version and row bitset are authenticated in
+every Wyst semantic interface, its paired native object digest, every
+static-library companion/member pair, and final executable metadata. Every
+Wyst input in one link closure must carry the same identity. Mixed enabled
+sets or versions are rejected; foreign inputs remain opaque and cannot claim a
+Wyst hardening identity. When hardening is disabled, no identity metadata is
+emitted and ordinary compilation bytes remain unchanged.
+
+### Optional safety checking
+
+An artifact may contain at most one `safety` block. Its closed syntax is:
+
+```text
+safety {
+  raw_address .warning
+  unchecked_indexing .error
+}
+```
+
+Each category may occur at most once and independently selects `.warning` or
+`.error`. An omitted block, and an omitted category within a block, is disabled
+and preserves ordinary compilation behavior. There are no named safety
+profiles and no source-, module-, or function-level override. The selected
+policy covers the artifact's complete source and layout closure. It is also
+part of nondefault multi-owner editor compatibility; the declared default
+artifact still wins when it owns the open document.
+
+The categories are:
+
+| Category | Diagnosed source boundary |
+| -------- | -------------------------- |
+| `raw_address` | construction of a typed address from an integer, including atomic, volatile, and MMIO address assertions |
+| `raw_callable` | `trusted_callable<T>(raw)` construction |
+| `relensing` | explicit `relens<T>(address)` conversion |
+| `qualifier_retagging` | explicit `qualify<T>(address)` conversion, distinct from the always-available qualifier-removal warning |
+| `uninitialized_access` | `read_uninit` and `assume_init`; introducing `uninit<T>()` storage is not an access |
+| `unchecked_indexing` | fixed-array, slice, or `DynamicArray` indexing without a compile-time bounds proof; statically out-of-bounds indexing remains an unconditional error and slice construction is not indexing |
+| `foreign_assertion` | bodyless foreign function or object declarations and their contracts, plus a body-bearing public `extern "C"` boundary; calls are not repeatedly diagnosed |
+| `naked` | each accepted `naked fn` or `naked label` declaration |
+| `stack_contract` | each explicit checked-assembly stack clause after its structural contract is verified |
+| `shared_mutation` | conflicting ordinary cross-root access or an unproved lock, interrupt, preemption, publication, transfer, callback, foreign, or device-protocol boundary; only exact atomic, ownership/isolation, held-authority, happens-before, generation-transfer, or target-authenticated device proofs are excluded |
+| `privileged_operation` | an operation whose authenticated execution-level requirement excludes EL0, using the same facts as ordinary execution-level checking |
+
+Diagnostics are emitted at the unchecked site, sorted by source position. An
+operation belonging to multiple enabled categories produces one diagnostic
+per category; only an identical category, span, and operation is deduplicated.
+Every category has a distinct warning code and error code. Warning-only policy
+permits artifact output. If any selected site is `.error`, all selected sites
+are still reported and no artifact or static-library output pair is written.
+
+Safety checking is diagnostic-only. It adds no runtime checks or traps, does
+not weaken existing semantic, target, checked-assembly, execution-level, or IR
+verification errors, and is not code-generation input. Omitted policy and
+all-warning policy therefore produce identical artifact bytes for the same
+otherwise-identical build. Checked assembly has no manual assertion escape and
+is not itself a category: its catalog and stack proofs remain unconditional.
+Likewise, the language exposes no suspension-lifetime bypass; the existing
+context-stability verifier remains unconditional rather than becoming policy.
+
+Selecting a `static_library` compiles the root module's import closure without
+an entry or layout, emits one canonical AArch64 `ET_REL` object per source
+module, and produces the deterministic GNU/System V archive and content-bound
+`.wystlib` companion specified by Chapter 16. Compiler-private hidden bridges
+carry cross-module Wyst references; only explicit source `export` declarations
+create default-visible native archive exports. Generic-definition indexes are
+emitted when the semantic-interface producer supplies materialized generic
+definition records; generic materialization itself remains a compiler phase.
+
+Both products are staged and synchronized before installation. The companion
+is installed first and the archive is the pair's commit point. A reported
+installation failure rolls back both paths to their prior regular-file state;
+filesystem and host crashes are subject to the underlying filesystem's rename
+and durability guarantees, so this is not a claim of cross-path transactional
+atomicity.
 
 `wync build .` and `wync build path/to/wyst.project` select the declared
 default. `--artifact NAME` selects another artifact from that same manifest.
 An explicit manifest path is the boundary of a distinct project; project mode
 does not merge or inherit declarations from another manifest.
+
+After validating the closed manifest, the compiler derives one closed build
+plan for every declared artifact. A plan binds the artifact identity and kind,
+target facts, ordered source-module closure, selected layout when applicable,
+one semantic-interface and native-object product per participating compilation
+unit, archive or final-link assembly step, output paths, machine, safety, and
+hardening policies, and the ordered external-tool step list. The current compiler uses
+integrated object, archive, and linker production, so that external-tool list
+is empty; an ambient assembler or linker is not an undeclared build input.
+Interface/object pairs
+are bound by module identity and the authenticated interface digest rather than
+by incidental producer ordering.
+
+`build`, `check`, and all project inspection commands select from these same
+validated plans. Each accepts the directory or explicit manifest forms above,
+uses the default when `--artifact` is absent, and accepts `--artifact NAME` for
+an explicit selection. A command does not synthesize a reduced manifest, copy
+sources, or reinterpret artifact clauses for its own pipeline.
 
 The target profile is the sole manifest selection for target facts. It defines
 the architecture and features, entry and supported execution/security/
@@ -264,18 +411,20 @@ code math.hash<u64> { ... }
 code codec.encode<protocol.Packet, []u8> { ... }
 ```
 
-Each selector becomes an `artifact_verify` reachability root and final emitted
+Each selector becomes an `artifact_verify` reachability root and emitted-code
 verification subject. Constraints cover instruction count and authenticated
 families or exact post-relocation bytes, plus prologue presence, compiler spill
-slots, and veneers. Verification observes final code and rejects a mismatch; it
-never rewrites code to satisfy the contract.
+slots, and veneers. Verification observes emitted code and rejects a mismatch;
+it never rewrites code to satisfy the contract. Because exact bytes and veneer
+counts are final-link properties, `static_library` rejects those two clauses
+and supports the remaining four constraints on each relocatable member.
 
 Manifest members are fixed-arity contextual clauses, not generic keys or Wyst
 expressions. Clause order is insignificant to parsing; the formatter emits the
 canonical project order `source_root`, `default`, then declarations in source
 order. Within an artifact it emits `root`, `output`, the kind-specific
-`companion` or `layout`, `profile`, `debug`, `unwind`, `frame_pointers`, and
-`verify`. Unknown clauses, duplicate singleton clauses, duplicate
+`companion` or `layout`, `profile`, `debug`, `unwind`, `frame_pointers`,
+`hardening`, `safety`, and `verify`. Unknown clauses, duplicate singleton clauses, duplicate
 normalized names/selectors, missing mandatory clauses or referenced
 declarations/layouts, and product collisions are hard errors. Generic
 `name = value` entries, includes, inheritance, interpolation, environment
@@ -459,24 +608,30 @@ semantic checking.
 
 ## Whole-Program Policy
 
-The currently successful compiler path stays whole-program. It emits one final
-static ELF and does not write relocatable objects, archives, or library
-companions.
+Final linked artifact kinds stay whole-program and emit one final static ELF.
+Before final placement they emit and validate one deterministic in-memory
+native object per checked source/layout module, paired with that module's
+semantic interface. `static_library` uses the same boundary without final
+placement and writes those per-source-module objects into its archive together
+with the paired companion interfaces. Neither path activates `-c`,
+`--emit-object`, or standalone `.o` output.
 
 Reason:
 
 - The compiler already performs final placement, relocation patching, symbol
   emission, and DWARF source-floor emission as one deterministic whole-program
   operation.
-- Object output would require an explicit undefined-symbol model, serialized
-  relocations, archive/library search policy, external linker policy, and
-  partial debug-info contracts.
+- The internal object product supplies the explicit undefined-symbol model,
+  serialized relocations, interface binding, and symbol-floor code ranges.
+  Archive/library search, final external-input linking, and public partial
+  output policy remain separate capabilities.
 - The user value is removing shell glue for project builds, not becoming a
   general linker.
 
-Object-file and static-library production remain future object/linking
-milestones. The reserved static-library manifest grammar does not weaken this
-boundary.
+Writing standalone object files remains a future public artifact milestone.
+The implemented `static_library` kind packages compiler-produced Wyst objects
+and their authenticated interfaces without exposing a general object-linking
+or partial-link CLI.
 
 ## Project Graph Smoke Fixture
 
@@ -525,9 +680,13 @@ The project-build surface has stable diagnostics for:
 - target profile unknown or incompatible with a module's exact target facts;
 - selected target missing a module requirement or environment service;
 - invalid or internally inconsistent selected target policy;
-- selected static-library production being unavailable before either product
-  is created or replaced;
+- invalid or incompatible static-library archive/object/interface production,
+  or exhaustion of an explicit archive decode budget;
+- failure to stage, synchronize, install, or roll back either member of a
+  static-library output pair;
 - runner profile incompatible with the artifact's recorded executable
   environment or required-service contract;
+- enabled artifact safety categories reporting warnings or rejecting selected
+  unchecked boundaries as errors;
 - final emitted code violating an artifact verification clause;
 - object-output request.
