@@ -254,9 +254,9 @@ accepted code. Chapter 3 defines the closed category set and manifest syntax.
 | Function-pointer arithmetic, ordered comparison, memory access, or convention mismatch visible in source types | Defined | The compiler rejects the source before emission. |
 | Function pointer constructed with `trusted_callable<T>(address)` from a false address, signature, or ABI assertion | Trusted-contract violation | The call is emitted according to the trusted type; a false assertion is the program's contract violation. |
 | Ordinary read of a local before initialization | Defined | The compiler rejects the source before emission; no implicit zeroing and no implicit indeterminate value are manufactured. |
-| Explicit raw read through `MaybeUninit<T>.read_uninit()`, padding, or inactive payload bytes reached through raw memory | Indeterminate bits | The observed bits are ordinary typed values and never optimizer poison. |
-| Access-atomic data race | Target-defined | The load observes a value permitted by the ARM64 memory model for the selected memory type. |
-| Tearing data race on a non-access-atomic operation | Indeterminate bits | The observed bits may combine sub-access results and need not equal any whole value stored by an agent. |
+| Explicit raw read of unproved `MaybeUninit<T>` storage through `read_uninit()` for compiler-proved bit-total `T`, or padding or inactive payload bytes reached through raw memory | Indeterminate bits | The observed bits are ordinary typed values and never optimizer poison. |
+| Access-atomic data race admitted only through a false trusted contract or device protocol | Target-defined | Ordinary Wyst rejects the unproved race; if a trusted boundary admits it, the load observes a value permitted by the ARM64 memory model for the selected memory type. |
+| Tearing data race admitted only through a false trusted contract or device protocol | Indeterminate bits | Ordinary Wyst rejects the unproved race; if a trusted boundary admits it, the observed bits may combine sub-access results and need not equal any whole value stored by an agent. |
 | Foreign ABI mismatch that is visible in Wyst declarations or function pointer types | Defined | The compiler rejects the mismatch before emission. |
 | False foreign declaration, C header fact, object symbol assertion, or variadic ABI assertion trusted by the program | Trusted-contract violation | The emitted boundary follows the declaration the program supplied. |
 | Unsupported checked-assembly mnemonic, operand, view, placement, branch/call target, stack transition, or `pure` contract | Defined | The compiler rejects the parsed block before emission; no manual declaration can override a generated constraint. |
@@ -964,7 +964,7 @@ Indentation-based syntax may exist as optional sugar, but brace-delimited syntax
 One deterministic, target-aware, performance-first production optimizer is
 always active. It may perform hidden compiler work, including authenticated
 canonicalization, scalar replacement, propagation, branch and operation-tag
-fusion, compiler-selected internal inlining, call/frame elimination, and
+fusion after source-mandated inlining, call/frame realization, and
 removal of work those transformations make unreachable. It may not introduce
 hidden runtime behavior.
 

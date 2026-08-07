@@ -263,6 +263,17 @@ the exact authenticated success path of `checked.index` or
 `checked.slice_range`. An unproved ordinary access is rejected with `E0245`;
 no manifest policy can permit it or silently add a trap.
 
+Data-race freedom is likewise an unconditional ordinary-language rule. Every
+ordinary mutation or protocol transition that lacks exact compiler-proved
+concurrency authority is rejected with `E0249`. A `shared_mutation` manifest
+setting can audit explicit foreign, volatile/MMIO, and checked-assembly trust
+boundaries, but it cannot downgrade an unresolved ordinary access, authority
+leak, suspension crossing, or cross-root conflict.
+
+This is the required language rule. The implementation closure ledger records
+the remaining cases in which access classification is still provisional and
+therefore prevents a current memory-safety claim.
+
 ### Optional safety checking
 
 An artifact may contain at most one `safety` block. Its closed syntax is:
@@ -270,13 +281,15 @@ An artifact may contain at most one `safety` block. Its closed syntax is:
 ```text
 safety {
   raw_address .warning
-  shared_mutation .error
+  foreign_assertion .error
 }
 ```
 
 Each category may occur at most once and independently selects `.warning` or
-`.error`. An omitted block, and an omitted category within a block, is disabled
-and preserves ordinary compilation behavior. There are no named safety
+`.error` for explicit trusted boundaries. An omitted block, and an omitted
+category within a block, disables that optional audit and preserves ordinary
+compilation behavior. Unconditional language rules remain enforced regardless
+of this block. There are no named safety
 profiles and no source-, module-, or function-level override. The selected
 policy covers the artifact's complete source and layout closure. It is also
 part of nondefault multi-owner editor compatibility; the declared default
@@ -295,22 +308,27 @@ The categories are:
 | `foreign_assertion` | bodyless foreign function or object declarations and their contracts, plus a body-bearing public `extern "C"` boundary; calls are not repeatedly diagnosed |
 | `naked` | each accepted `naked fn` or `naked label` declaration |
 | `stack_contract` | each explicit checked-assembly stack clause after its structural contract is verified |
-| `shared_mutation` | conflicting ordinary cross-root access or an unproved lock, interrupt, preemption, publication, transfer, callback, foreign, or device-protocol boundary; only exact atomic, ownership/isolation, held-authority, happens-before, generation-transfer, or target-authenticated device proofs are excluded |
+| `shared_mutation` | explicit trusted foreign, volatile/MMIO, or checked-assembly concurrency boundaries after ordinary unresolved mutation and protocol failures have been rejected unconditionally with `E0249` |
 | `privileged_operation` | an operation whose authenticated execution-level requirement excludes EL0, using the same facts as ordinary execution-level checking |
 
 Diagnostics are emitted at the unchecked site, sorted by source position. An
 operation belonging to multiple enabled categories produces one diagnostic
 per category; only an identical category, span, and operation is deduplicated.
-Every category has a distinct warning code and error code. Warning-only policy
-permits artifact output. If any selected site is `.error`, all selected sites
-are still reported and no artifact or static-library output pair is written.
+Every configurable category has a distinct warning code and error code.
+Warning-only policy permits artifact output for trusted boundaries. If any
+selected trusted site is `.error`, all selected sites are still reported and
+no artifact or static-library output pair is written. A mandatory
+`shared_mutation` violation always uses `E0249`, even when the category is
+omitted or configured `.warning`.
 
-Safety checking is diagnostic-only. It adds no runtime checks or traps, does
-not weaken existing semantic, target, checked-assembly, execution-level, or IR
-verification errors, and is not code-generation input. Omitted policy and
-all-warning policy therefore produce identical artifact bytes for the same
-otherwise-identical build. Checked assembly has no manual assertion escape and
-is not itself a category: its catalog and stack proofs remain unconditional.
+Optional trusted-boundary safety checking is diagnostic-only. It adds no
+runtime checks or traps, does not weaken existing semantic, target,
+checked-assembly, execution-level, concurrency, or IR verification errors, and
+is not code-generation input. When both configurations are accepted, omitted
+policy and all-warning policy therefore produce identical artifact bytes for
+the same otherwise-identical build. Checked assembly has no manual assertion
+escape and is not itself a category: its catalog and stack proofs remain
+unconditional.
 Likewise, the language exposes no suspension-lifetime bypass; the existing
 context-stability verifier remains unconditional rather than becoming policy.
 

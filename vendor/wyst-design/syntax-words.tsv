@@ -119,7 +119,7 @@ seq_cst	contextual	core.atomic-operations	atomic-order-variant	implemented
 source	contextual	core.scheduling	schedule-policy|attribute-signature-atom	implemented
 pure	contextual	core.checked-assembly	asm-modifier	implemented
 asm	reserved	core.checked-assembly	statement|expression-prefix	implemented
-preserves	contextual	core.checked-assembly	asm-stack-contract	implemented
+preserves	contextual	core.checked-assembly|core.callable-contracts	asm-stack-contract|callable-storage-preservation	implemented
 establishes	contextual	core.checked-assembly|core.target-structural-dsls	asm-stack-contract|trap-frame-label-clause	implemented
 restores	contextual	core.checked-assembly|core.target-structural-dsls|core.concurrency-safety	asm-stack-contract|trap-frame-label-clause|callable-concurrency-transition	implemented
 stack	contextual	core.checked-assembly	asm-stack-contract-suffix	implemented
@@ -151,7 +151,7 @@ swap	unshadowable	core.resource-values	expression-callee	implemented
 replace	unshadowable	core.resource-values	expression-callee	implemented
 xfer	contextual	core.resource-values	expression-prefix	implemented
 mut	contextual	core.resource-values|core.concurrency-safety	parameter-mode|callable-type-parameter-mode|returned-view-access|concurrency-access-mode	implemented
-parameter	contextual	core.resource-values	callable-type-returned-view-source	implemented
+parameter	contextual	core.resource-values|core.uninitialized-storage	callable-type-returned-view-source|callable-type-storage-contract-subject	implemented
 no_copy	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 must_account	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 must_resolve	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
@@ -192,7 +192,10 @@ static_library	contextual	core.project-manifests	manifest-artifact-declaration	r
 root	contextual	core.project-manifests	manifest-artifact-root-clause	implemented
 output	contextual	core.project-manifests	manifest-artifact-output-clause	implemented
 companion	contextual	core.project-manifests	manifest-static-library-companion-clause	reserved
-from	contextual	core.project-manifests|core.resource-values	manifest-layout-source-marker|returned-view-source	implemented
+from	contextual	core.project-manifests|core.resource-values|core.uninitialized-storage	manifest-layout-source-marker|returned-view-source|initialized-authority-source	implemented
+initializes	contextual	core.uninitialized-storage	callable-storage-postcondition	implemented
+unchanged	contextual	core.uninitialized-storage	callable-content-preservation	implemented
+on	contextual	core.uninitialized-storage	outcome-gated-storage-postcondition	implemented
 debug	contextual	core.project-manifests	manifest-debug-policy-clause	implemented
 unwind	contextual	core.project-manifests	manifest-unwind-policy-clause	implemented
 frame_pointers	contextual	core.project-manifests	manifest-frame-pointer-policy-clause	implemented

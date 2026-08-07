@@ -218,8 +218,11 @@ realization milestone, reachable access requires
 
 ## Shared-access verification and exclusion authority
 
-The `shared_mutation` safety category classifies every ordinary access that
-may conflict across authenticated concurrency roots. Roots are artifact
+The shared-access verifier classifies every ordinary access that may conflict
+across authenticated concurrency roots. An unresolved classification is the
+unconditional language error `E0249`; `shared_mutation` policy remains only as
+an optional audit of explicit trusted foreign, volatile/MMIO, and
+checked-assembly boundaries. Roots are artifact
 entries, native-exported callables, exception-vector entries, and
 target-authenticated provider entries; an ordinary call does not invent a new
 root. The analysis follows direct calls, callable aliases, synchronous
@@ -227,6 +230,34 @@ root. The analysis follows direct calls, callable aliases, synchronous
 conflict; overlapping read/write and write/write byte ranges do. Distinct
 `per_cpu` instances isolate task roots on distinct cores, but `per_cpu` alone
 does not protect a task from a same-core interrupt strand.
+
+The analysis runs over the selected imported source closure before semantic
+interfaces are emitted. A source-module boundary therefore neither erases an
+access summary nor creates concurrency authority. The language currently has
+no interface-only ordinary source import; such a feature would require an
+authenticated access summary before it could preserve this rule.
+
+Access collection includes assignments, ordinary and byte-endian address
+loads and stores, non-temporal pair loads and stores, cache-block zeroing,
+raw-storage initialization, parameter-backed view projections, and local
+aliases carrying a callable's declared `from` origins. A returned view
+conservatively names the whole subtree of each exact source argument
+projection: access through a view from `pair.left` overlaps `pair.left` and its
+children, but not `pair.right`. That identity follows direct reads and writes,
+arguments to helper calls, concrete callable aliases, and function-pointer
+parameters whose type carries the same `from parameter(index)` result
+contract.
+
+If an ordinary address read or write has no bounded target set, the verifier
+uses wildcard storage rather than dropping the access. Wildcard storage
+overlaps every ordinary storage identity, so a cross-root read/write or
+write/write conflict rejects `E0249`. One matching exact guard authority may
+cover wildcard aliases in both roots; different authorities cannot. Addresses
+proved activation-local are excluded before wildcard classification. Volatile
+or MMIO pointer type is retained on a collected access so the verifier cannot
+silently upgrade that explicit trusted machine boundary into an
+ordinary-language violation. These are static summary facts with no runtime
+tag, borrow counter, or metadata.
 
 A mutable shared access is classified only when one of these exact proofs
 holds at the access site:
@@ -246,8 +277,9 @@ Volatile or MMIO intent, a compiler fence, a current-core base, a function
 name, and a convention are not proofs. Checked assembly contributes only
 machine facts authenticated by the active catalog; arbitrary assembly text
 cannot assert a shared-access fact. A foreign declaration that asserts a
-concurrency contract remains both a `foreign_assertion` and an unproved
-`shared_mutation` boundary.
+concurrency contract remains both a `foreign_assertion` and an explicitly
+trusted `shared_mutation` boundary. The declaration makes the assertion
+explicit; it does not turn the asserted transition into a compiler proof.
 
 ### Guard statements
 
@@ -324,9 +356,11 @@ Body-bearing Wyst functions infer exact `accesses(storage)` and
 where the assertion is auditable. Calls substitute actual arguments for
 positional parameter storage. A synchronous `noescape` callback borrows the
 caller's authority for the call only; an escaping or suspending callback
-cannot retain it. An unproved acquisition, release, mask, unmask, preemption,
-or bodyless transition is one explicit `shared_mutation` boundary rather than
-ambient authority.
+cannot retain it. An unproved body-bearing acquisition, release, mask, unmask,
+or preemption transition is rejected with `E0249`. A bodyless foreign
+transition remains an explicit `foreign_contract` trust boundary and can also
+be audited with the `shared_mutation` category; it never becomes
+compiler-proved authority.
 
 Lock transitions are accepted only for a closed two-state protocol on the
 exact atomic lock location. Acquisition uses an acquire, acquire-release, or
@@ -340,7 +374,7 @@ Unlock, transfer, or restoration ends authority immediately; later access is
 unproved. Returning, falling through, breaking, or continuing with an
 unbalanced acquired/excluded state is a leak. Analysis is deterministic and
 fail-closed: more than eight callable/pointer alias alternatives or more than
-64 interprocedural propagation rounds produces a `shared_mutation` site.
+64 interprocedural propagation rounds is rejected with `E0249`.
 
 ### Publication and transfers
 
@@ -359,12 +393,18 @@ authenticated `core.checked.generation` operation. The owner is consumed with
 still requires the release/acquire edge above. The compiler creates no hidden
 generation counter and does not infer a transfer protocol from names.
 
-The verifier feeds the existing manifest policy. `.error` rejects before
-emission, `.warning` reports while preserving byte-identical output, and an
-omitted `shared_mutation` policy preserves raw compilation. These diagnostics
-do not change §9.5: the source memory events of a program that is allowed to
-emit, including racy raw-machine behavior, remain governed by this memory
-model and the selected target rather than optimizer undefined behavior.
+The verifier rejects every unresolved ordinary site before emission. No
+manifest setting can disable or downgrade `E0249`. A `.warning` or `.error`
+`shared_mutation` setting applies only to explicit trusted machine boundaries;
+warning-only and omitted audits remain byte-identical when compilation is
+otherwise accepted. These rules do not change §9.5: memory events admitted
+through a trusted boundary remain governed by this memory model and the
+selected target rather than optimizer undefined behavior.
+
+This section defines the required closed behavior. The implementation closure
+ledger identifies provisional classifier surfaces that do not yet satisfy it;
+while any such blocker remains, the compiler does not make the safe-subset
+data-race-freedom claim.
 
 ---
 
@@ -1304,7 +1344,7 @@ that an instruction mnemonic changed.
 | Independent reads of independent writes (IRIW) | Two agents publish independent writes; two readers observe the locations in opposite orders. | Release/acquire permits the split observation when the reads synchronize only per location. `seq_cst` forbids the split observation through the global SC order. |
 | Release sequence | A release store to `flag` is followed in `mo(flag)` by a relaxed RMW that reads it; a later acquire load reads the RMW value. | The acquire synchronizes with the release-sequence head, so stale protected data is forbidden. |
 | Barrier message passing | Plain payload write, `barrier.dmb(.ishst)`, plain flag store; flag load, `barrier.dmb(.ishld)`, payload read. | If the flag load reads from the flag store and the domain covers both locations, stale payload is forbidden. Replacing the barriers with `barrier.compiler()` allows the stale payload because no inter-agent sw edge exists. |
-| Mixed atomic/plain access | One agent performs a relaxed atomic store while another performs a plain load of the same scalar location without hb. | The outcome is a data race classified as target-defined for access-atomic scalar accesses, not optimizer-undefined behavior. |
+| Mixed atomic/plain access | One agent performs a relaxed atomic store while another performs a plain load of the same scalar location without hb. | Ordinary Wyst rejects the plain side with `E0249`. If a false trusted contract admits it, the hardware outcome is target-defined for access-atomic scalar accesses rather than optimizer-undefined behavior. |
 | Compiler scheduling and aliasing | A store followed by a load is compared with a load/store reordering. | Reordering may-alias accesses is forbidden when it admits a stale-load outcome. Reordering proven disjoint accesses is allowed when the transformed outcomes are a subset of the source outcomes. |
 
 ARM64 lowering validation for these litmus tests is semantic, not mnemonic
@@ -1457,9 +1497,11 @@ because a race exists. The selected target then determines which value a racing
 access-atomic load observes. For Device memory and MMIO registers, the device
 specification also participates in the target-defined result.
 
-Programs with data races on shared mutable state are incorrect unless the race
-is the device protocol itself. Wyst makes that incorrectness traceable to the
-hardware execution rather than silently turning it into optimizer poison.
+Ordinary Wyst programs with a statically possible data race are rejected with
+`E0249`. A race can reach hardware only through a false explicit trusted
+contract or as the device protocol itself. In that case Wyst keeps the outcome
+traceable to the boundary and hardware execution rather than silently turning
+it into optimizer poison.
 
 ### Mixed Atomic and Plain Access
 
@@ -1709,16 +1751,15 @@ Memory locations not explicitly initialized contain `Indeterminate bits`:
 - Device registers contain device-specific power-on reset values.
 - Memory from an allocator contains values from its previous occupant.
 
-**The Wyst compiler does not zero-initialize local variables.** A local
-variable declared but not assigned before use is not an implicit way to observe
-its stack slot or register home. An ordinary read of a local before
-initialization is a compile-time error.
+**The Wyst compiler does not zero-initialize ordinary locals.** Every ordinary
+`const` or `var` binding requires one complete initializer, so an uninitialized
+typed local never enters scope. Omitting the initializer is invalid syntax,
+not a deferred-assignment state.
 
 <!-- wyst-contract: sketch -->
 ```wyst
-fn main() -> u64 {
-  var x: u64
-  return x // error[E0204]: local 'x' is read before it is initialized
+fn main() {
+  var x: u64 // error: ordinary binding requires an initializer
 }
 ```
 
@@ -1738,30 +1779,294 @@ fn main() -> u64 {
 
 `MaybeUninit<T>` reserves storage with the same layout, size, alignment, and
 calling-convention footprint as `T`, but it does not initialize a `T` value and
-does not imply automatic zeroing. `storage.read_uninit()` is the explicit
-indeterminate read operation; it returns a `T` value whose bits come from the
-raw storage and leaves the initialization state unchanged.
+does not imply automatic zeroing. `T` must satisfy `copyable_discardable`;
+affine and terminal values use dedicated typed resource or provider APIs.
+`storage.read_uninit()` is available only when `T` is additionally
+compiler-proved bit-total: every object-representation bit pattern must be
+valid, and the type must carry no address, view, resource, or terminal
+authority. The operation returns an ordinary `T` whose bits come from the raw
+storage and leaves the initialization state unchanged; bit-totality is derived
+structurally and cannot be asserted by source. The operation is available only
+while complete initialization is unproved. A compiler-proved or
+assertion-initialized slot rejects it and uses `read()` instead.
+Wyst does not specify the initial bit pattern, but repeated `read_uninit()`
+operations on the same slot return the same bits while no write or possible
+opaque mutation intervenes. A typed write or possible opaque mutation begins a
+new raw-storage epoch. The compiler may reuse an observed value within an epoch
+but may not substitute independently changing arbitrary values; no epoch has a
+runtime counter or tag.
+`unchanged(storage)` guarantees the exact object representation across a call
+and carries the current epoch through that boundary;
+`unchanged(storage) on .Variant` does so only on the named nominal outcome. The
+relation implies `preserves(storage)`. The reverse is false because storage may
+remain live while its contents change. A possibly mutating opaque call without
+the applicable `unchanged` guarantee begins a new epoch. The guarantee covers
+every possible writer during the call, including callbacks, agents, interrupts,
+DMA, and devices. Inference requires checked private-storage, exclusion, or
+provider facts that rule those writers out.
+For ordinary nonvolatile storage, this content fact may allow an existing load
+value to remain usable across the call. It never eliminates, merges, forwards,
+hoists, sinks, or reorders volatile, MMIO, or atomic access events. Their exact
+event counts and ordering remain governed by their access semantics even when
+the underlying object representation is proved unchanged.
+The clause is legal for volatile, MMIO, and atomic projections as a content
+fact. It neither synchronizes agents nor creates a happens-before edge.
+Compiler inference requires authenticated exclusion or provider facts proving
+that no event changes the named representation; an unverified boundary uses the
+existing explicit storage trust. Free-running counters, read-to-clear
+registers, and concurrently mutable atomics ordinarily do not qualify.
+The relation is projection-sensitive. `unchanged(packet.header)` and
+`unchanged(buffer[..<16])` carry forward only epochs proved wholly contained in
+the named projection; sibling and merely overlapping storage receive no
+content-preservation fact.
+Dynamic containment must follow from the caller's current proof facts. When it
+cannot be proved, the call remains legal but the affected observation begins a
+new epoch. No implicit runtime containment check or automatic range splitting
+occurs; source-visible control flow may first prove the necessary bounds.
+The dynamic projection itself is fixed from values at call entry. Later
+mutation of a bound operand does not retarget which bytes retain their epoch,
+and the rule retains no runtime projection descriptor.
+Bounds must be source-visible immutable values. A mutable supplied bound gains
+usable identity only after an explicit `const` snapshot; the compiler never
+creates an implicit snapshot. For fixed arrays, `[lower ..]` canonicalizes to
+`[lower ..< static_length]`. Dynamically sized storage has no canonical omitted
+end and therefore requires an explicit immutable upper bound.
+The entry projection must satisfy the ordinary static ordering and in-bounds
+proof against the source's usable extent. An invalid or unproved entry range
+rejects the call rather than being clamped, treated as empty, or guarded by an
+implicit trap. Failure to prove that some other observation is contained does
+not reject the call; it only prevents that observation from retaining its
+epoch.
+Bounds may use explicit by-value call-boundary values but cannot load through an
+address or view, access volatile or MMIO state, or invoke code. The caller must
+obtain and validate any memory-derived bound explicitly before passing it; a
+contract never hides execution to select an epoch.
+The closed canonical contract-expression subset may use pure arithmetic over
+those values. Its normalized mathematical bound must be proved representable
+and the result in bounds, and no arithmetic is emitted solely for the contract.
+The subset is affine unsigned arithmetic: addition, subtraction, and
+multiplication by compile-time constants. Dynamic multiplication, division,
+modulo, shifts, bitwise operations, and conditionals require an explicitly
+computed boundary argument instead.
+The canonical form collects coefficients and orders terms. Reordered affine
+source has one contract identity, and written evaluation order contributes no
+runtime or overflow semantics.
+Only call-entry input values select the projection. A result tag may condition
+whether its epoch survives, but result payloads cannot define or resize that
+projection after the call.
+The existing epoch continues only on a path refined to the named result
+variant. Ignoring the result, selecting another variant, or joining with a path
+that lacks the fact starts a conservative new epoch. A join preserves the old
+epoch only when every incoming path carries it; no runtime flag is added.
+When every variant of the closed result type carries the same fact, canonical
+contract normalization makes it unconditional and the epoch survives without
+result refinement.
+Separate `unchanged` projections do not combine. Even if adjacent or
+overlapping, they cannot carry the epoch of an observation spanning their
+union; a larger guarantee must name the larger projection directly.
+Body-bearing Wyst functions infer exact content preservation from their checked
+bodies. An unverified bodyless `unchanged(storage)` guarantee contributes
+`external_storage`; a foreign declaration carrying it additionally contributes
+`foreign_contract`.
 `storage.write(value)` performs one complete typed write and establishes
 compiler-proved initialization, after which `storage.read()` is valid.
 `storage.assume_init()` is the trusted assertion form when no proof is
-available. After an indeterminate read is observed, the result is an ordinary
-typed value. It is never LLVM-style poison or `undef`, and the compiler must
-not use the read as a reason to delete or invent unrelated behavior.
+available, but only when `T` carries no address, view, affine-resource, or
+terminal authority. The assertion can establish representation validity; it
+cannot manufacture provenance, extent, lifetime, access, ownership, or
+resolution authority from raw bits. Authority-bearing values require a
+dedicated trusted constructor or provider contract that establishes those
+facts. The operation contributes `initialization_assertion` to the enclosing
+callable's structural trust bound, distinct from `external_storage` and
+`foreign_contract`. It is available only while complete initialization remains
+unproved; a compiler-proved or already assertion-initialized slot rejects it
+and uses `read()` instead. After an indeterminate read is observed, the result
+is an ordinary typed value. It is never LLVM-style poison or `undef`, and the
+compiler must not use the read as a reason to delete or invent unrelated
+behavior.
 
-Initialization state is tracked for ordinary locals as a whole binding on each
-source path. Fields and array elements inherit the initialization state of
-their enclosing ordinary storage; assigning one field or element does not make
-the whole ordinary aggregate readable if the aggregate itself was never
-initialized. Raw-storage methods operate on the whole `MaybeUninit<T>` object.
+A mutable loan may establish that caller-owned `MaybeUninit<T>` contains one
+complete valid value after a call. Body-bearing Wyst functions infer this
+transition from their checked bodies only when every applicable path performs
+a complete producer write of `T`. Separate writes to every field, element, or
+byte do not combine into an initialization proof. Callable types and opaque or
+bodyless boundaries spell `initializes(storage)` for an unconditional
+transition or `initializes(storage) on .Variant` when only one nominal outcome
+establishes it. The fact follows ordinary control flow and does not add an
+initialized flag or partial-state analysis to the storage.
+
+A call whose effective contract guarantees `initializes(storage)` for the
+forwarded storage counts as a complete producer write in its caller. A
+conditional guarantee counts only on a path refined to the named result
+variant. The caller can consequently infer and republish the relation without
+callee-body inspection or partial-state tracking. Trust required by an
+unverified callee propagates into the caller's structural trust bound.
+
+`initializes(storage)` is a postcondition rather than an exact-write effect. A
+producer may perform multiple complete direct or delegated writes before the
+applicable return. The guarantee is inferred when the final state on every
+applicable path remains proved initialized and is lost if a later operation
+makes that state unknown. Replacing an initialized value ends its stored lease,
+so authority origins at the boundary are precisely the possible origins of the
+final values rather than a history of every intermediate write.
+
+The initialization postcondition applies only when control returns to the
+caller. An unconditional relation applies to each ordinary return; an
+outcome-gated relation applies to a return carrying its named nominal variant.
+A trap, divergent path, or other non-returning exit has no caller-visible
+poststate and no initialization obligation. Writes before such an exit do not
+make `read()` available on any caller path because none resumes.
+
+Storage passed to an initialization-bearing call may already be
+compiler-proved initialized. The relation guarantees the final state and may
+replace the previous value; it does not preserve that value or its authority
+origins. If an outcome-gated relation does not cover the actual returned
+variant, the entry initialization fact becomes unproved unless a separate
+applicable `unchanged(storage)` guarantee preserves the representation through
+the call. `preserves(storage)` alone is insufficient because content mutation
+remains permitted.
+
+An opaque or bodyless validator may combine
+`unchanged(storage) on .Variant` with
+`initializes(storage) on .Variant` for the exact same storage and outcome. The
+existing representation then remains byte-for-byte unchanged while that path
+authenticates it as one complete authority-free value. The combination
+contributes `initialization_assertion` and `external_storage`; a foreign
+declaration additionally contributes `foreign_contract`. It neither relaxes
+the complete-producer-write rule for checked Wyst bodies nor establishes
+address, view, resource, or terminal authority without a dedicated provider
+contract.
+
+Wyst defines no generic compiler-generated `validate_init<T>()`. Safe Wyst code
+instead observes the raw representation through a bit-total integer or byte
+array, checks the relevant source values explicitly, and constructs one
+complete ordinary `T`. This validated-reconstruction path exposes its runtime
+work and representation policy in source and never changes raw storage into a
+typed object in place.
+
+The raw-input carrier is selected before external data enters safe Wyst. There
+is no `bytes_of_uninit(slot)` or equivalent byte view, reinterpretation,
+conversion, projection, or relensing operation from `MaybeUninit<T>` to another
+representation type. Existing T-shaped raw storage remains opaque and requires
+the trusted in-place validator or dedicated provider boundary described above.
+
+Wyst exposes no generic `zeroed<T>()` or `MaybeUninit<T>.zero()` operation that
+establishes typed initialization and derives no property meaning that all-zero
+bits are valid for `T`. Source constructs a complete zero-valued `T` through
+ordinary typed syntax, which the compiler may lower to bulk zero fill when
+equivalent. Raw zeroing applies only to explicit bit-total byte storage and
+does not authenticate another representation type.
+
+`MaybeUninit<T>` is activation-local. `uninit<T>()` may create only a
+function-local binding, whose address may be lent but cannot outlive that
+activation. Module and per-CPU storage, aggregate fields and elements, by-value
+parameters, and results cannot contain it. Persistent raw input uses an
+explicitly initialized bit-total byte carrier; persistent late initialization
+uses a dedicated typed provider protocol. Wyst therefore needs neither
+cross-function initialization typestate nor a runtime initialized flag.
+
+Every address loan from activation-local `MaybeUninit<T>` is bounded by one
+synchronous borrowing call. A callback, interrupt, other execution agent, DMA
+engine, or device may access the slot only when the callable proves that all
+such access is complete and no address is retained at return. A producer handle
+cannot carry the address into a later call. Truly asynchronous work uses
+persistent bit-total byte storage and an explicit typed completion resource or
+provider protocol instead. This rule prevents both cross-agent races and
+use-after-return without a runtime loan record.
+
+A source-visible suspension may retain a `MaybeUninit<T>` local when no address
+or producer loan is outstanding. The slot remains dormant in the exact
+preserved activation, and each resume point retains the static initialization
+proof appropriate to its incoming paths. The slot cannot transfer to another
+activation and receives no runtime initialized flag. Suspension with a live
+loan is rejected. Exogenous interrupt or scheduler preemption follows the same
+dormancy rule: the handler or another strand cannot access the saved slot.
+
+Initialization facts join by intersection. Storage is compiler-proved
+initialized after a control-flow merge only when every reachable incoming path
+proves complete initialization. If any incoming path lacks the fact, complete
+initialization is unproved after the merge: `read()` is unavailable, while a
+new complete producer write or source-visible refinement of the distinguishing
+outcome may re-establish it. This is a static proof state, not a claim that the
+bytes were never initialized and not a runtime maybe-initialized flag.
+
+When all incoming paths prove initialization, the joined storage remains
+initialized. If they stored authority with different backing sources, the
+joined origin set is the union of all possible incoming origins. The stored
+lease and each later `read()` conservatively retain that complete set, so every
+possible source remains constrained until the corresponding static lease ends.
+The storage gains no runtime origin tag or discriminator.
+
+A compiler-authenticated Wyst implementation contributes no trust merely for
+establishing initialization. An opaque or bodyless `initializes(storage)` claim
+contributes `initialization_assertion`; a foreign declaration carrying that
+claim contributes both `foreign_contract` and `initialization_assertion`.
+Such a generic opaque claim is sufficient only for authority-free `T`.
+
+A compiler-authenticated Wyst body may initialize copyable address or view
+authority by storing an already-valid value and preserving its proved
+provenance and lease relations through the storage. An opaque producer cannot
+establish those relations merely by writing address-shaped bits and declaring
+`initializes(storage)`. It requires a dedicated provider contract that names
+the authority's source, extent, lifetime, and access facts. The canonical form
+is `initializes(out) from buffer`, or
+`initializes(out) from buffer on .Variant` when both initialization and origin
+depend on one nominal outcome. The stored authority inherits the named source's
+constraints; no lifetime is extended and no metadata is added. Multiple
+comma-separated origins follow the returned-view rule: every listed source is
+a conservative possible origin and remains constrained.
+
+At an unverified boundary this combined contract contributes
+`initialization_assertion` for the complete valid value and `external_storage`
+for its asserted provenance, extent, lifetime, and access relation. A foreign
+declaration additionally contributes `foreign_contract`. A
+compiler-authenticated Wyst body contributes no trust for a proved
+initialization and origin relation.
+
+Whole-object initialization is value-complete: every logical field, enum tag,
+and active payload must be valid. Padding and inactive payload bytes may remain
+indeterminate when an opaque or foreign producer does not write them. Native
+Wyst aggregate construction still zeroes those bytes deterministically.
+Ordinary typed operations ignore them; explicit raw observation yields
+ordinary indeterminate bits and never compiler poison or `undef`.
+
+When initialized raw storage contains copyable address or view authority, the
+slot itself retains a static lease on every possible origin. Reclamation,
+relocation, or another invalidator of any possible backing source is rejected
+while the slot may still be read. That stored lease ends at its path-sensitive
+last possible read, on a replacing `write(value)`, or when opaque mutation makes
+the initialized value unavailable. Each successful `read()` copy carries its
+own ordinary lease, which may outlast a later overwrite of the slot. These facts
+add no runtime fields, tags, counters, or calls.
+
+An ordinary aggregate initializer commits one complete value; no partially
+initialized ordinary binding becomes source-visible while its fields or
+elements are evaluated. Raw-storage methods operate on the whole
+`MaybeUninit<T>` object. Byte, field, element, and other projection writes do
+not publish typed subvalues or accumulate compiler-only initialization bits.
+Projection writes alone leave the storage raw until one authenticated
+whole-object transition establishes the complete `T`.
+
+Wyst currently provides no incremental fixed-array builder or partially
+initialized array view. Fixed arrays are produced by complete ordinary
+initializers or whole-object producer transitions. Wyst rejects repeated control
+flow that attempts to convert element-by-element raw writes into a new fixed-array
+value. Repeated control flow may mutate an array after a complete initialized
+value exists. A future loop-driven array-construction expression is a separate
+language decision; it must expose only the completed array and cannot
+retroactively add partial state to `MaybeUninit<T>` or hidden initialization
+metadata.
 
 `MaybeUninit<T>` is non-copyable and cannot be passed or returned by value,
 embedded in an aggregate, converted, relensed, or used by ordinary value
-operations. It does not initialize, read, or destroy a hidden `T`. Wyst has no
-implicit destructors or cleanup hooks for ordinary locals, so
-`MaybeUninit<T>` adds no hidden cleanup obligation. A `must_resolve` type may
-not instantiate `MaybeUninit<T>`: indeterminate reads, unchecked initialization
-assertions, byte stores, overwrite, reset, or reclamation must not manufacture
-or erase terminal authority outside the typed ownership model.
+operations. Its `copyable_discardable` element bound excludes `no_copy`,
+`must_account`, and `must_resolve` values. Once initialized, `read()` returns a
+non-consuming copy and leaves the storage initialized. `write(value)` is valid
+in either state and leaves compiler-proved initialized storage; when replacing
+an initialized value, the prior copy is simply discarded. It does not
+initialize, read, or destroy a hidden `T`, and Wyst has no implicit destructors
+or cleanup hooks. Generic raw storage therefore needs no move-aware `take()` or
+`replace()` protocol and cannot hide an affine or terminal obligation.
 
 Register-resident and stack-resident storage have identical source semantics.
 An explicit local `in x19` placement or allocator placement may change where

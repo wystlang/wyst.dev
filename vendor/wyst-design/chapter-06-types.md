@@ -120,6 +120,41 @@ ABI transfer. Backend scalarization may carry such bytes as anonymous
 representation components, but it does not give them source visibility,
 addressability, an independent lifetime, or effects.
 
+A value is complete when every logical field, enum tag, and active payload is
+valid. Padding and inactive payload bytes are not logical initialization
+requirements and may remain indeterminate in a value loaded from opaque or
+foreign storage. Such a value is valid for ordinary typed use; raw observation
+of those representation-only bytes yields ordinary indeterminate bits, never
+optimizer poison. Native Wyst construction retains the stronger deterministic
+zeroing rule above.
+
+Wyst has no generic compiler-generated `validate_init<T>()` operation for
+turning an arbitrary object representation into a typed value. Safe code reads
+raw input through a bit-total carrier such as an integer or fixed byte array,
+validates its source values explicitly, and then uses ordinary constructors to
+produce one complete `T`. This validated reconstruction keeps representation
+policy and runtime validation work visible in source.
+
+The bit-total raw-input carrier is chosen before external bits arrive. Safe
+Wyst provides no byte view, reinterpretation, conversion, projection, or
+relensing operation that exposes a `MaybeUninit<T>` representation through a
+different type. T-shaped raw storage therefore remains opaque and crosses into
+typed use only through a complete producer, an explicit trusted validator, or
+a dedicated authority provider.
+
+There is likewise no generic `zeroed<T>()`, `MaybeUninit<T>.zero()`, or derived
+zero-validity property. A program constructs a complete zero-valued `T` through
+its ordinary initializer or constructor, after which lowering may use bulk zero
+fill when representation-equivalent. Zero-filled raw byte storage never
+establishes validity for a different type.
+
+`MaybeUninit<T>` is valid only as a function-local binding created by
+`uninit<T>()`. It cannot appear in module or per-CPU storage, aggregate fields or
+elements, by-value parameters, or results. A local may lend its address to a
+callee under the ordinary activation lifetime, but neither the slot nor that
+address may escape the activation. Persistent raw input uses explicit bit-total
+byte storage; persistent late initialization uses a dedicated typed provider.
+
 ### Structure layout contracts and inspection
 
 A concrete structure uses declaration field order and the selected target's
@@ -163,6 +198,10 @@ A direct byte-string literal similarly infers `[_]u8` from its decoded byte
 count. Inference produces an ordinary concrete `[N]T` before semantic layout:
 `_` is not a runtime length, a wildcard type, or valid in fields, parameters,
 returns, nested type positions, or bindings initialized from another value.
+Every Wyst fixed-array initializer is a complete expression. Repeated control
+flow cannot progressively publish a new array from element writes. This
+restriction does not affect loops that mutate an array after a complete
+initializer or whole-object producer has established its value.
 
 <!-- wyst-contract: check-pass -->
 ```wyst

@@ -235,7 +235,8 @@ reports/editor facts, and focused success/failure tests.
 `MaybeUninit<T>` is opaque storage with exactly `T`'s size, alignment, storage
 class, and calling-convention footprint, but it does not contain a
 compiler-proved initialized `T` until a complete write establishes that fact.
-The complete Wyst surface is:
+`T` must satisfy `copyable_discardable`; affine and terminal values use
+dedicated typed resource or provider APIs. The complete Wyst surface is:
 
 <!-- wyst-contract: sketch -->
 ```wyst
@@ -246,34 +247,129 @@ fn example(value: u64) -> u64 {
   const raw: u64 = slot.read_uninit()
   slot.write(value)
   const proven: u64 = slot.read()
-  const asserted: u64 = slot.assume_init()
   const slot_address: @MaybeUninit<u64> = addr_of(slot)
-  return raw + proven + asserted
+  return raw + proven
 }
 ```
 
 `uninit<T>()` reserves storage without zeroing, writing, allocating, or
 inventing initialization. `slot.write(value)` evaluates `value` once, performs
-one complete typed write, and establishes compiler-proved initialization.
-`slot.read()` performs one non-consuming typed read and is valid only when
-every incoming control-flow path proves complete initialization.
+one complete typed write, and establishes compiler-proved initialization. It
+is valid in either raw-storage state; replacing initialized contents discards
+the prior copy without cleanup. `slot.read()` performs one non-consuming typed
+read, leaves the storage initialized, and is valid only when every incoming
+control-flow path proves complete initialization. The element bound makes both
+operations incapable of duplicating or abandoning affine or terminal
+authority, so generic raw storage has no `take()` or `replace()` protocol.
 
-`slot.read_uninit()` is valid in every initialization state. It performs one
-explicit indeterminate-bit observation, returns an ordinary `T`, leaves the
-state unchanged, and is represented distinctly in typed IR; its result is
-never compiler `poison` or `undef`. `slot.assume_init()` performs a typed read,
-records a trusted initialization assertion, and makes later evidence
-assertion-derived. A false assertion is a confined contract violation, not
-permission for unrelated optimizer assumptions.
+`slot.read_uninit()` is valid only while complete initialization is unproved
+and `T` is compiler-proved bit-total: every object-representation bit pattern
+is valid, and the type carries no address, view, resource, or terminal
+authority. The property is structural and cannot be asserted by source. The
+operation performs one explicit indeterminate-bit observation, returns an
+ordinary `T`, leaves the state unchanged, and is represented distinctly in
+typed IR; its result is never compiler `poison` or `undef`. A compiler-proved
+or assertion-initialized slot rejects it and uses `read()` instead.
+The initial bits are unspecified but stable: repeated `read_uninit()` calls on
+the same slot return the same pattern until a write or possible opaque mutation
+begins a new raw-storage epoch. This permits value reuse but creates no runtime
+epoch field, counter, or check.
+`slot.assume_init()` performs a typed read, records a trusted initialization
+assertion, and makes later evidence assertion-derived. It is available only
+when `T` carries no address, view,
+affine-resource, or terminal authority: representation validity alone cannot
+manufacture provenance, extent, lifetime, access, ownership, or resolution
+authority from raw bits. Authority-bearing values instead require a dedicated
+trusted constructor or provider contract that establishes the relevant facts.
+The operation contributes `initialization_assertion`, rather than
+`external_storage` or `foreign_contract`, to the enclosing callable's
+structural trust bound. It is legal only when complete initialization is
+unproved; a compiler-proved or already assertion-initialized slot rejects the
+operation and uses `read()` instead. A false assertion is a confined contract
+violation, not permission for unrelated optimizer assumptions.
 
 `MaybeUninit<T>` is non-copyable and cannot be passed or returned by value,
 embedded in an aggregate, converted, relensed, or used by ordinary value
 operations. Wyst tracks initialization at whole-object granularity only.
+Byte, field, element, and other projection writes neither publish typed
+subvalues nor accumulate hidden initialization bits. Projection writes alone
+leave the storage raw until one complete authenticated producer transition;
+Wyst currently defines no incremental fixed-array builder. Wyst rejects repeated
+control flow that attempts to turn element-by-element raw writes into a new
+fixed-array value, while allowing repeated mutation after a complete array
+value exists.
 `addr_of(slot)` yields `@MaybeUninit<T>` without reading it; that address has no
 ordinary `.load()`, `.store()`, conversion, or relensing surface. A verified
-complete producer write may establish initialized state. Foreign or opaque
-mutation otherwise makes the state unknown, and the documented success path
-must use `assume_init()` when no proof is available.
+complete producer write may establish initialized state; separate projection
+writes never combine into that proof. A call carrying an applicable
+`initializes(slot)` guarantee counts as a complete producer write; an
+outcome-gated guarantee counts only on its refined result path. The relation is
+a postcondition, not an exact-write count: multiple complete writes are valid
+when the slot remains proved initialized at the applicable return. Each
+replacement ends the stored lease for the previous value. The relation imposes
+no obligation on traps, divergence, or other exits that never return control to
+the caller. A slot may enter the call already initialized; the relation may
+replace its value and does not preserve its prior contents or origins. On a
+returned variant without an applicable initialization guarantee, prior
+initialization becomes unproved unless a separate `unchanged(slot)` guarantee
+applies; `preserves(slot)` alone is insufficient. An opaque or bodyless
+validator may combine `unchanged(slot) on .Variant` with
+`initializes(slot) on .Variant` for the same outcome, authenticating an
+unchanged authority-free representation in place. The pair contributes
+`initialization_assertion` and `external_storage`, plus `foreign_contract` for
+a foreign declaration; it cannot authenticate authority without a dedicated
+provider contract. There is no generic `validate_init<T>()` intrinsic. Safe
+Wyst code uses bit-total raw observations, explicit value checks, and ordinary
+complete construction instead. Safe Wyst also exposes no `bytes_of_uninit`,
+byte view, reinterpretation, projection, conversion, or relensing operation for
+`MaybeUninit<T>`; a bit-total carrier must be selected before external bits
+arrive. There is also no generic `zeroed<T>()` or `MaybeUninit<T>.zero()`
+intrinsic; complete typed zero values use ordinary construction, while raw
+zeroing remains byte-storage work. `uninit<T>()` may create only a
+function-local `MaybeUninit<T>` binding. The slot may be lent by address within
+that activation but cannot appear in module, per-CPU, aggregate, parameter, or
+result storage and cannot escape. Such a loan is synchronous: every callback,
+agent, interrupt, DMA, or device access must end before the borrowing call
+returns, and no handle may retain the address. Asynchronous work uses persistent
+byte storage and a typed completion provider instead. A source-visible
+suspension may retain the local slot only with no outstanding loan; the exact
+preserved activation and each resume point carry its static state without a
+runtime flag. At a control-flow join, initialized-state operations remain
+available only when
+every reachable incoming path proves complete initialization. Otherwise
+`read()` is unavailable until source refines the distinguishing outcome or
+performs another complete producer write; no runtime flag records the path.
+When every path proves initialization but stores authority from different
+sources, the slot remains initialized with the union of all possible origins.
+The slot and later reads constrain every such source through static leases; no
+runtime origin discriminator is added.
+Foreign or opaque mutation otherwise makes the state unknown. For
+authority-free `T`, a documented success path may use `assume_init()` when no
+proof is available; authority-bearing `T` must use a dedicated provider
+contract. Likewise, an opaque or bodyless `initializes(storage)` claim alone
+cannot establish address or view authority; the provider spells
+`initializes(out) from source`, or adds `on .Variant` when
+the initialization and origin are conditional. The initialized authority
+inherits the source's extent, lifetime, invalidators, and access relations. A
+compiler-authenticated Wyst write of an already-valid copyable authority may
+preserve those relations without trust or runtime metadata. At an unverified
+boundary the combined contract contributes `initialization_assertion` and
+`external_storage`; a foreign declaration additionally contributes
+`foreign_contract`.
+
+An initialization transition is value-complete rather than necessarily
+byte-total. Every logical field, enum tag, and active payload must be valid;
+padding and inactive payload bytes may remain indeterminate after an opaque or
+foreign producer. Native Wyst construction still zeroes those bytes. Ordinary
+typed use ignores them, while explicit raw observation yields indeterminate
+bits rather than compiler poison or `undef`.
+
+An initialized slot containing copyable address or view authority retains a
+static lease on every possible backing source until its path-sensitive last
+possible read, a replacing write, or loss of initialized availability. A
+`read()` result receives an independent copy of the lease; overwriting the slot
+does not invalidate that result. The compiler emits no lease metadata or
+runtime operation.
 
 ## Hardware Register Declarations and Access
 

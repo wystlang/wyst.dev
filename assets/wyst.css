@@ -373,6 +373,16 @@ body.docs header.site .wrap {
 	max-width: 100%;
 }
 
+@media (min-width: 1281px) {
+	.home-split {
+		grid-template-columns: minmax(300px, 28rem) max-content;
+	}
+
+	.source-artifact {
+		width: 48rem;
+	}
+}
+
 .source-viewport {
 	--source-scroll-cue-opacity: 1;
 
