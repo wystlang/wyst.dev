@@ -5,35 +5,38 @@ module hello
 import runtime.semihost { test_exit }
 
 /*
-* QEMU `virt` is a generic virtual Arm board.
-* Its PL011 UART sends text to the serial output.
+* QEMU `virt` is a virtual Arm board. It includes a PL011 UART.
+* The UART sends bytes to the serial console.
 *
-* Bare-metal code uses memory-mapped I/O (MMIO) to control
-* the UART. An MMIO address refers to a device register, not
-* to normal RAM. Each `.read()` or `.write()` call makes
-* one device access.
+* This bare-metal program has no operating system.
+* It controls the UART through memory-mapped input/output (MMIO).
 *
-* The PL011 manual gives the offset of each register from
-* the device base address. QEMU sets the UART0 base address
-* to 0x0900_0000.
+* MMIO maps each device register to a fixed memory address.
+* A load reads a device register. A store writes a device register.
+* These addresses do not refer to normal RAM.
+* Each `.read()` call performs one load. Each `.write()` call performs one store.
+*
+* The PL011 specification defines each register offset.
+* QEMU puts UART0 at base address 0x0900_0000.
+* The code adds each offset to this base address.
 */
 register_map Pl011 {
-  // A write to DATA puts one byte in the transmit FIFO.
+  // A write to DATA adds one byte to the transmit FIFO.
   DR: readwrite u32 at 0x00 {
     DATA: u8 at 0..=7
   }
 
-  // FR shows the current device status. The hardware sets
-  // BUSY during a transfer. The hardware sets TXFF when the
-  // transmit FIFO is full.
+  // FR contains the UART status bits.
+  // The UART sets BUSY during a transfer.
+  // The UART sets TXFF when the transmit FIFO is full.
   FR: readonly u32 at 0x18 {
     BUSY: bool at 3
     TXFF: bool at 5
   }
 
-  // Baud rate is UART clock / (16 * divisor). The PL011 uses
-  // one field for the integer and one field for the 1/64
-  // fraction.
+  // IBRD and FBRD set the baud-rate divisor.
+  // IBRD contains the whole-number part.
+  // FBRD contains the part in units of 1/64.
   IBRD: readwrite u32 at 0x24 {
     DIVINT: u16 at 0..=15
   }
@@ -41,14 +44,14 @@ register_map Pl011 {
     DIVFRAC: u8 at 0..=5
   }
 
-  // LCR_H controls the data format and the FIFOs.
-  // A WLEN value of 3 selects eight data bits.
+  // LCR_H sets the data format and the FIFO mode.
+  // WLEN = 3 selects eight data bits for each character.
   LCR_H: readwrite u32 at 0x2c {
     FEN: bool at 4
     WLEN: u8 at 5..=6
   }
 
-  // CR enables the UART, the transmitter, and the receiver.
+  // CR controls the UART, the transmitter, and the receiver.
   CR: readwrite u32 at 0x30 {
     UARTEN: bool at 0
     TXE: bool at 8
@@ -56,41 +59,45 @@ register_map Pl011 {
   }
 }
 
-// This declaration uses the PL011 register map for UART0 at
-// the base address that QEMU supplies.
+// UART0 uses the Pl011 register map.
+// QEMU supplies its base address.
 mmio UART0: Pl011 at 0x0900_0000
 
 /*
-* No operating system calls `main`. The layout file is
-* similar to a linker script. The layout file defines
-* `_start` as the entry point. QEMU loads the image and then
-* starts `_start`.
+* An operating system loads a normal application.
+* The language runtime then calls `main`.
+* This bare-metal program has no operating system or language runtime.
 *
-* The target ABI puts a DTB address in `x0`. This example
-* checks only that the address is not zero. The `naked`
-* keyword prevents a function prologue before the stack is
-* ready. The `never` type shows that `_start` cannot return.
+* QEMU loads the program into RAM, then sets the CPU program counter to
+* the `_start` address.
+*
+* QEMU puts the Device Tree Blob (DTB) address in register `x0`.
+* The DTB describes the virtual hardware.
+* This fixture only verifies that the address is not zero.
+*
+* The compiler does not add a function prologue to a `naked` function.
+* Thus, `_start` can set the stack pointer before a normal function call.
+* The `never` return type states that control cannot return from `_start`.
 */
-// Align the boot entry on a 16-byte boundary.
+// This attribute aligns the boot entry to a 16-byte boundary.
 #[align(16)]
 pub naked fn _start(dtb: u64 in x0) -> never {
-  // The layout defines __stack_top at the top of RAM. The
-  // stack grows down from this address. Set the Arm stack
-  // pointer before a normal function call.
+  // The layout defines __stack_top at the top of RAM.
+  // The Arm stack grows toward lower addresses.
+  // This assembly puts __stack_top in the stack pointer `sp`.
   asm establishes stack (
     stack: u64 in x1 = __stack_top,
   ) {
     mov sp, stack
   }
 
-  // The stack is now ready. The code can call a normal function.
+  // The code can call a normal function after it sets the stack pointer.
   kernel_main(dtb)
 }
 
 fn kernel_main(dtb: u64) -> never {
-  // Zero means that QEMU did not supply a DTB address. This
-  // example checks only the address. The code does not read
-  // the DTB.
+  // A zero DTB address means that QEMU did not supply hardware data.
+  // This fixture checks only the address. It does not read the DTB.
   if dtb == 0 {
     test_exit(0x63)
   }
@@ -98,62 +105,62 @@ fn kernel_main(dtb: u64) -> never {
   uart_init()
   uart_hello()
 
-  // QEMU semihosting stops the test. Status zero reports
-  // success. Real firmware uses a different end operation.
-  // Real firmware can stop the CPU or start the next boot stage.
+  // Semihosting asks QEMU to provide a host service.
+  // test_exit stops the virtual machine. Status zero reports success.
   test_exit(0)
 }
 
 fn uart_init() {
-  // First, disable the UART. The UART does not start new
-  // transmit or receive operations during the configuration.
+  // This write disables the UART before configuration.
   UART0.CR.write(UARTEN = false, TXE = false, RXE = false)
 
-  // The UART completes the current byte after the code disables
-  // the UART. Read BUSY until BUSY is clear. Each loop test reads
-  // FR again. The empty loop body is intentional.
+  // The UART can continue the current byte transfer after the first write.
+  // Each loop test reads FR from the device again.
+  // The loop stops after the UART clears BUSY.
   while UART0.FR.read().BUSY { }
 
-  // When the code changes FIFO mode, the PL011 clears the
-  // transmit and receive FIFOs. Disable FIFO mode before the
-  // new configuration.
+  // A change to the FIFO mode clears the transmit and receive FIFOs.
+  // This write disables the FIFO before the new configuration.
   UART0.LCR_H.write(FEN = false)
 
-  // QEMU supplies a 24 MHz UART clock. The nearest PL011
-  // divisor for 115200 baud is 13 + 1/64.
+  // QEMU supplies a 24 MHz UART clock.
+  // The divisor 13 + 1/64 gives a baud rate near 115200.
   UART0.IBRD.write(DIVINT = 13)
   UART0.FBRD.write(DIVFRAC = 1)
 
-  // Set WLEN to 3 for eight data bits. Enable FIFO mode.
-  // A zero value in the other fields selects one stop bit
-  // and no parity.
+  // WLEN = 3 selects eight data bits. FEN = true enables the FIFO.
+  // The other fields stay zero. Zero selects one stop bit and no parity.
   UART0.LCR_H.write(FEN = true, WLEN = 3)
 
-  // Enable the UART and the transmitter. Keep the receiver
-  // off because this example does not read input.
+  // This write enables the UART and the transmitter.
+  // It keeps the receiver off because this example does not read input.
   UART0.CR.write(UARTEN = true, TXE = true, RXE = false)
 }
 
 fn uart_hello() {
-  // The compiler calculates the fixed [14]u8 type from the
-  // string. This array does not have the final zero byte of
-  // a C string.
+  // The compiler calculates the fixed [14]u8 type from the string literal.
+  // Wyst does not add the final zero byte that a C string has.
   const msg: [_]u8 = "Hello, World!\n"
 
-  // #len gives the fixed array length at compile time.
-  // The loop sends the 14 bytes in the array.
-  for i in 0 ..< #len(msg) {
-    uart_write(msg[i])
+  // Direct iteration reads each array value in source order.
+  // The fixed array gives the compiler an iteration count of 14.
+  // #[unroll] requires the compiler to emit one loop body for each byte.
+  // The compiler reports an error if it cannot find a fixed count.
+  #[unroll]
+  for byte in msg {
+    uart_write(byte)
   }
 }
 
+// #[inline] requires the compiler to replace each call with the uart_write body.
+#[inline]
 fn uart_write(byte: u8) {
-  // This example uses a busy-wait during early boot. Read TXFF
-  // until the FIFO has space. Each loop test reads FR again.
-  // A full driver can use interrupts. The CPU can do other
-  // work while the UART FIFO is full.
+  // TXFF is true when the transmit FIFO has no free space.
+  // Each loop test reads FR from the device again.
+  // This simple driver waits until the FIFO has space.
+  // A full driver can use an interrupt and let the CPU do other work.
   while UART0.FR.read().TXFF { }
 
-  // Put the byte in the transmit FIFO.
+  // A write to DR adds the byte to the transmit FIFO.
   UART0.DR.write(DATA = byte)
 }

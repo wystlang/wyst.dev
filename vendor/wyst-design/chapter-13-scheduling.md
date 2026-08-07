@@ -60,9 +60,9 @@ frame or continuation.
 Held lock, interrupt-exclusion, and preemption-exclusion authority is
 strand-local proof state and may not cross an `execution_suspension` boundary.
 A guard containing a reachable suspension and a callable that attempts to
-return, transfer, or join with live exclusion state are `shared_mutation`
-boundaries. The caller must restore or release before suspension and reacquire
-after resumption. A zero-byte suspension marker does not preserve authority.
+return, transfer, or join with live exclusion state are rejected with `E0249`.
+The caller must restore or release before suspension and reacquire after
+resumption. A zero-byte suspension marker does not preserve authority.
 
 Every direct, indirect, imported Wyst, or foreign call whose exact or
 conservative callable bound contains `execution_suspension` has exactly one
@@ -158,6 +158,20 @@ value from becoming another execution agent's authority, even when that value
 is locally movable or its storage address survives suspension. An ordinary
 consuming freeze/isolation operation may return a different structurally
 shareable value; the operation name alone proves nothing.
+
+Activation-local `MaybeUninit<T>` is stricter than ordinary preserved frame
+storage. Its address may be lent only to one synchronous call that proves every
+callback, interrupt, agent, DMA, or device access has ended before return. It
+cannot be retained in a suspended producer or completion handle. Asynchronous
+operations use persistent byte storage owned by an explicit typed completion
+resource or provider instead.
+
+With no outstanding address or producer loan, a source-visible suspension may
+retain a `MaybeUninit<T>` local as dormant storage in the exact activation. Each
+resume point has its own compiler-known initialization state, so no runtime tag
+is added. The slot cannot transfer to another activation. Suspension is rejected
+while a loan is live; exogenous preemption may only leave the slot inaccessible
+in the exact saved activation.
 
 ### Boundary ordering
 

@@ -442,8 +442,10 @@ read policy, then write policy, with at most one of each class. Reserved regions
 have no source field name or accessor. `access(...)` is not a production and
 the globally reserved word `device` has no active declaration production.
 
-The active declaration attributes are exactly `#[align(N)]`,
-`#[section("NAME")]`, `#[inline]`, `#[init(order = N)]`,
+The active declaration and statement attributes are exactly `#[align(N)]`,
+`#[section("NAME")]`, `#[inline]`, `#[unroll]`,
+`#[unroll(iterations = N, max_iterations = M)]`,
+`#[unroll(factor = N, remainder = .guarded|.scalar|.reject)]`, `#[init(order = N)]`,
 `#[frame(...)]`, `#[deny_effects(...)]`, `#[cache_isolated]`, and
 `#[schedule(source)]`, plus the whole-structure flag `#[fixed_layout]`. Their subjects, signatures,
 conflicts, formatter order, target-fact requirements, and behavior come only
@@ -580,9 +582,15 @@ ReturnStmt <- 'return' Expr / 'return' &'}'
 DiscardStmt <- 'discard' '(' Expr ')'
 ResolveStmt <- 'resolve' '(' 'xfer' UnaryExpr ')'
 
-WhileStmt <- 'while' Expr Block
-LoopStmt <- 'loop' Block
-ForStmt <- 'for' UserIdentifier 'in' Expr '..<' Expr Block
+WhileStmt <- UnrollAttribute? 'while' Expr Block
+LoopStmt <- UnrollAttribute? 'loop' Block
+ForStmt <- UnrollAttribute? 'for' UserIdentifier 'in' Expr '..<' Expr Block
+         / UnrollAttribute 'for' UserIdentifier 'in' Expr Block
+UnrollAttribute <- '#[' 'unroll' UnrollArguments? ']'
+UnrollArguments <- '(' UnrollArgument (',' UnrollArgument)* ','? ')'
+UnrollArgument <- 'iterations' '=' Expr / 'max_iterations' '=' Expr
+                / 'factor' '=' Expr / 'remainder' '=' UnrollRemainder
+UnrollRemainder <- '.guarded' / '.scalar' / '.reject'
 ScheduleStmt <- 'schedule' 'source' Block
 GuardStmt <- 'guard' 'mut'? Expr GuardMechanism Block
 GuardMechanism <- 'by' Expr / 'against' ExclusionMechanism

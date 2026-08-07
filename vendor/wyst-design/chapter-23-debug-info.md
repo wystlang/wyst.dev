@@ -274,8 +274,8 @@ inline in `.debug_line`.
 
 ## 11.7 Inline Expansion
 
-Every source-mandated or compiler-selected inline expansion that survives to
-debug emission emits a `DW_TAG_inlined_subroutine` DIE. Each carries:
+Every source-mandated inline expansion that survives to debug emission emits a
+`DW_TAG_inlined_subroutine` DIE. Each carries:
 
 - `DW_AT_abstract_origin` → the `DW_TAG_subprogram` DIE of the inlined
   function (which is also emitted, as a "concrete out-of-line" copy if
@@ -288,9 +288,7 @@ debug emission emits a `DW_TAG_inlined_subroutine` DIE. Each carries:
 This lets debuggers display "inlined from `foo()` at `bar.wyst:42`" in
 backtraces and step through inlined code as if it were called. The cost is one
 DIE per surviving inline site and is bounded by the compiler's typed-IR inline
-expansion budget. Source-mandated expansions cannot be reversed into calls;
-compiler-selected expansions retain distinct provenance and emit no inline DIE
-if a later compiler transformation reverses them before debug emission.
+expansion budget. Source-mandated expansions cannot be reversed into calls.
 
 Inlining a helper into a `vector_table` slot (see §2.7.1) emits the same DIEs;
 debuggers see the inline tree as it actually was at emission time.

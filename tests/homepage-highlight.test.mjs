@@ -57,12 +57,12 @@ test("homepage keeps the compiler's semantic distinctions", () => {
 		["property", "write"],
 		["variable", "UART0"],
 		["variable", "msg"],
-		["variable", "i"],
+		["variable", "byte"],
 		["parameter", "byte"],
 		["function", "_start"],
 		["function", "kernel_main"],
 		["function", "uart_write"],
-		["macro", "#len"],
+		["macro", "unroll"],
 	]) {
 		assert.match(markup, tokenMarkup(type, token), `${token} should be ${type}`);
 	}

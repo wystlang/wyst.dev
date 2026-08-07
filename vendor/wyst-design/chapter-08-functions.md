@@ -48,6 +48,10 @@ only when its initializer determines one unambiguous type. A local `const` may
 hold a runtime result. Module `const` initializers remain constant-phase;
 module `var` initializers must be statically representable constants or
 relocations. Neither form implies zero initialization or hidden startup code.
+`uninit<T>()` is not a legal module `const`, module `var`, or `per_cpu var`
+initializer: `MaybeUninit<T>` is confined to a function activation. Persistent
+late initialization uses an explicit typed provider protocol rather than
+global initialization typestate.
 
 <!-- wyst-contract: fmt -->
 ```wyst
@@ -178,6 +182,226 @@ mutable returned view requires a `mut` source. Multiple listed sources are
 conservative possible origins and constrain every source until the view's
 static last use.
 
+The same `from` vocabulary ties authority written into caller-owned raw storage
+to its backing source. `initializes(out) from buffer` establishes the complete
+initialized value and records `buffer` as its authority origin;
+`initializes(out) from buffer on .Ok` makes both relations conditional on the
+named nominal outcome. The initialized value inherits the source's lifetime,
+extent, invalidators, and access ceiling. The clause grants no ownership,
+extends no lifetime, and adds no runtime field. As with a returned view,
+comma-separated sources are conservative possible origins and constrain every
+listed source.
+
+A body-bearing Wyst function infers `initializes(out)` only when every path for
+which the relation applies performs a complete producer write of `T`. Separate
+writes to all fields, elements, or bytes never combine into that proof. Opaque
+and bodyless contracts assert the completed boundary state instead of exposing
+the producer's internal write sequence.
+
+An address loan of activation-local `MaybeUninit<T>` is synchronous and
+non-retaining. A callable may coordinate callbacks, interrupts, other agents,
+DMA, or devices internally only when its effective contract proves that every
+external access to the slot has ended before return. It cannot return a handle
+that retains the address. Asynchronous work instead uses persistent bit-total
+byte storage governed by a typed completion resource or provider.
+
+A call whose effective contract guarantees `initializes(out)` for forwarded
+storage is itself a complete producer write for caller inference. An
+outcome-gated guarantee counts only after control flow refines the result to the
+named variant. A wrapper may therefore infer and republish the relation without
+inspecting the callee body; any trust required by an unverified callee remains
+in the wrapper's structural trust bound.
+
+`initializes(out)` describes the state at the applicable return boundary, not
+the number of writes performed. A body may make multiple complete direct or
+delegated writes. Inference succeeds when the final state on every applicable
+path remains proved initialized; a later operation that makes the state unknown
+prevents the guarantee. Each complete replacement ends the stored lease for the
+prior value, so the published origin relation contains only origins possible at
+the boundary.
+
+The relation applies only on a returning edge: an ordinary return for an
+unconditional guarantee, or the named nominal result variant for an
+outcome-gated guarantee. Traps, divergence, and other non-returning exits have
+no caller-visible poststate and therefore need not establish initialization.
+Writes performed before such an exit authenticate no later caller operation
+because no caller continuation exists.
+
+The forwarded `MaybeUninit<T>` may enter the call with complete initialization
+either proved or unproved. `initializes(out)` guarantees an initialized final
+state but does not preserve an existing value or its authority origins. When an
+outcome-gated relation does not apply to the returned variant, prior
+initialization becomes unproved unless a separate applicable `unchanged(out)`
+guarantee preserves the representation. `preserves(out)` alone keeps the
+storage live but permits mutation and therefore cannot retain initialization.
+
+An opaque or bodyless validator may attach both `unchanged(out) on .Ok` and
+`initializes(out) on .Ok` to the same storage and outcome. The pair means that
+the existing representation is unchanged and, on `.Ok`, authenticated as one
+complete authority-free value. It contributes `initialization_assertion` and
+`external_storage`, plus `foreign_contract` for a foreign declaration. This
+does not let a checked Wyst body infer initialization from fieldwise or bytewise
+validation, and it cannot establish authority without a dedicated provider
+contract.
+
+Initialization facts join by intersection. A control-flow merge retains
+`initializes(out)` only when every reachable incoming path carries it. If any
+path lacks the fact, complete initialization is unproved after the merge and an
+ordinary `read()` is rejected unless source first refines the distinguishing
+outcome or performs another complete producer write. No runtime state or flag
+records which path occurred.
+
+When all reachable incoming paths prove initialization, the merged storage
+remains initialized. If initialized authority on those paths has different
+backing sources, the merged origin relation is their conservative union. The
+slot and any later read retain every possible origin and constrain every named
+source through their ordinary static leases; no runtime origin tag selects one.
+
+Callable content preservation is distinct from storage preservation.
+`preserves(storage)` keeps identity, generation, and extent valid while
+allowing sequenced content changes. `unchanged(storage)` additionally
+guarantees the exact object representation across the call and implies the
+corresponding `preserves` relation. Either clause may add `on .Variant` to make
+the guarantee conditional on one nominal outcome. Body-bearing Wyst functions
+infer both relations; callable types and opaque or bodyless boundaries spell
+them explicitly. Content preservation covers every possible writer during the
+call, including callbacks, agents, interrupts, DMA, and devices. Inference
+therefore requires checked private-storage, exclusion, or provider facts that
+rule those writers out. Neither clause adds runtime metadata.
+
+A `mut` parameter or an `accesses(mut parameter(index))` clause is a possible
+writer to that argument's storage. When it overlaps a live shared returned
+view, an unconditional `preserves` or `unchanged` guarantee for that exact
+parameter keeps the view usable after the call; a guarantee for another
+parameter does not. Neither guarantee permits overlap with a live exclusive
+view. An outcome-gated guarantee cannot justify an unconditional continuation:
+the corresponding fact becomes usable only after refinement to its named
+variant.
+
+A possible writer with only outcome-gated preservation makes each overlapping
+shared view unavailable in the call's common poststate. Refinement to a named
+outcome restores exactly the views whose every overlapping parameter is
+preserved by that outcome. Control-flow joins retain availability only when
+every falling predecessor restores it; therefore an exhaustive match whose
+every outcome preserves the same storage may use the view after the join. The
+state is compiler-only and introduces no validity flag or runtime branch.
+
+Storage identities used by a conditional call are evaluated once, after its
+arguments are checked and before call effects are applied. The compiler retains
+canonical call-entry targets, raw-storage identity, and authority-origin leases
+rather than reinterpreting the argument expressions when the result is refined
+later. Reassigning a pointer local after the call therefore cannot retarget an
+`initializes`, `preserves`, or `unchanged` fact. Whole-object initialization is
+transported only for one exact, non-projected local target; an address with
+multiple or nonlocal alternatives conveys no whole-object initialization fact.
+This frozen record is compiler-only and has no runtime descriptor.
+
+The nominal result may be retained and refined later. At the conditional call,
+the compiler assigns each unavailable view a fresh generation token and saves
+that token together with the view's complete conservative backing-source set.
+A later matching refinement restores the view only when its token is still
+exact. Assignment, transfer, replacement, swap, address-based writes,
+raw-storage producers, and non-preserving mutable call effects advance only
+tokens whose backing targets overlap the mutation. Equal projection prefixes
+overlap by containment; distinct roots, struct fields, and constant indices are
+disjoint. Dynamic or unrepresentable targets fail closed. Every possible
+backing origin participates, so mutation of any alternative source invalidates
+the token. Non-pure checked assembly and environment exception boundaries are
+wildcard invalidators, while a preserving call is not an invalidator.
+Control-flow joins retain a token only when every falling predecessor carries
+the same token; otherwise the join receives a fresh, nonmatching token. Direct
+address expressions participate through their resolved call-entry target, so
+`addr_of(local)` cannot bypass view invalidation merely because it is computed
+syntax. The tokens, target sets, and frozen arguments remain semantic facts
+only and are never emitted in the program representation.
+
+For ordinary nonvolatile storage, an applicable `unchanged` fact may justify
+reusing a previously loaded value across the call. It does not permit a
+volatile, MMIO, or atomic access to be erased, merged, hoisted, sunk,
+substituted, or reordered; the access type's observable-event and ordering
+rules remain independently binding.
+An `unchanged` clause is nevertheless legal for volatile, MMIO, and atomic
+projections as a content guarantee. It provides no synchronization or
+happens-before edge. Body inference requires authenticated exclusion or
+provider facts that rule out every change to the selected representation;
+otherwise an unverified boundary carries the existing explicit storage trust.
+Free-running counters, read-to-clear registers, and concurrently mutable
+atomics ordinarily fail that requirement.
+
+Both relations are projection-sensitive. For example,
+`unchanged(packet.header)` and `unchanged(buffer[..<16])` preserve exact content
+only for observations proved wholly contained in the named projection. They do
+not preserve or freeze sibling fields, disjoint ranges, or observations that
+merely overlap the projection.
+For dynamic ranges, containment must follow from facts available at the call
+site. If it does not, the call is still legal but the affected observation
+loses its content fact and raw-storage epoch. The compiler inserts no runtime
+containment check and does not split ranges automatically; explicit control
+flow may refine the bounds before the call.
+Each dynamic contract projection is fixed from values at call entry. Later
+mutation of a parameter or other bound operand cannot retarget it. Contract
+expressions therefore denote boundary projections, not live expressions, and
+require no runtime projection descriptor.
+A boundary operand must nevertheless have source-visible immutable identity: a
+read parameter, pattern binding, loop index, or `const` local. When a value
+arrives through a mutable parameter or local, source must first copy it into a
+`const` and use that same frozen name for validation, checked operations, and
+the call. The compiler does not invent a hidden snapshot, because doing so
+would conceal which program value selects the contract projection.
+Forming an entry projection uses the ordinary range-view rule: its bounds must
+be statically proved ordered and within the source's retained usable extent.
+Dynamic source may establish that proof through the authenticated success path
+of `checked.slice_range`. An invalid or unproved projection rejects the call;
+the compiler does not clamp it, substitute an empty range, or insert a trap.
+This is distinct from failure to prove that a separate observation is
+contained, which leaves the call legal but transports no content fact.
+Projection bounds may refer to explicit by-value parameters and their by-value
+subobjects. A contract expression cannot dereference an address or view, load
+volatile or MMIO state, or invoke a callable. Code that obtains a bound from
+memory must load it explicitly, validate it, and pass the scalar boundary value;
+the contract itself performs no hidden execution.
+The closed canonical contract-expression subset permits pure arithmetic over
+those boundary values. Thus `buffer[offset..<offset + count]` is expressible
+without a redundant end parameter when the call proves the normalized
+mathematical bound representable and the result in bounds. No operation is
+emitted solely to evaluate a contract expression.
+The subset contains unsigned boundary values and literals combined by addition,
+subtraction, and multiplication by compile-time constants. It excludes dynamic
+multiplication, division, modulo, shifts, bitwise operations, and conditionals.
+An API needing an excluded calculation accepts its result as another explicit
+boundary value.
+For fixed-array storage, an omitted range end is canonical shorthand for the
+array's exact static length. For a `[4]T` parameter, `buffer[offset ..]` and
+`buffer[offset ..< 4]` therefore have one callable identity. Open-ended
+contracts are unavailable for slices and
+other dynamically sized storage because no static end exists to place in the
+callable identity; pass an explicit immutable end instead.
+Canonicalization collects affine coefficients and orders terms by boundary
+identity, then the constant. Consequently `offset + count` and
+`count + offset` identify the same projection. This is a fixed language rule,
+not arbitrary proof equivalence; because a contract expression does not
+execute, its written evaluation order has no runtime or overflow behavior.
+Projection bounds refer only to call-entry input values. `on .Variant` may make
+the guarantee conditional on a result tag, but result payloads cannot define,
+resize, or retarget the entry projection. An API needing a variable post-call
+region accepts its boundary as input or returns a nominal outcome or view that
+exposes the region explicitly; callable identity gains no dependent
+postcondition over result values.
+An outcome-gated preservation fact is introduced only on a control-flow path
+refined to the named nominal result variant. Ignoring the result or selecting a
+different variant introduces no fact. A join retains it only when every
+incoming path carries the same fact; otherwise the meet drops it. This is
+compile-time path state and adds no runtime flag.
+If every variant of the closed nominal result type carries the same canonical
+guarantee for the same projection, the callable summary replaces those clauses
+with one unconditional guarantee. This normalization applies equally to
+inferred bodies, explicit declarations, imports, and callable types; it does
+not combine different storage projections.
+Distinct content-preservation clauses remain independent. The compiler does
+not union adjacent or overlapping projections to retain a larger observation;
+the callable must publish an `unchanged` guarantee for that larger projection
+explicitly.
+
 Read views may coexist. A mutable view conflicts with every overlapping read or
 mutable access, relocation, reset, replacement, reclamation, or transfer of its
 backing authority. Proven disjoint field and constant-index projections do not
@@ -193,6 +417,22 @@ mismatched components. `extern "C"` has no representation for these contracts:
 its parameters cannot use `mut` or `var`, and a type with nonordinary resource
 abilities or agent locality cannot cross that boundary by value. Explicit
 address-based C adapters remain ordinary audited foreign interfaces.
+
+Storage- and content-preservation guarantees are unordered semantic sets in
+callable identity. Their written order carries no behavior and cannot
+distinguish otherwise identical callable types. Ordered returned-view origins
+remain ordered because they identify parameter positions and conservative
+authority sources rather than independent guarantees.
+An exact duplicate preservation clause is rejected as redundant source rather
+than silently deduplicated or interpreted as emphasis. Typed IR, imported
+interfaces, and serialized summaries carry the canonical set and must reject a
+noncanonical repeated entry.
+Each projection in that set has a fixed language-defined canonical form.
+Specified syntactic sugar normalizes before identity comparison, but the
+compiler does not use arbitrary proof equivalence to equate dynamic bound
+expressions. Callable identity, duplicate detection, imports, and serialized
+summaries must therefore agree independently of optimization or theorem-prover
+strength.
 
 `match` is exhaustive and enum-only in statement or expression position:
 
@@ -300,23 +540,35 @@ and retained-task/activation identity rules.
 
 A callable value's `trusts(...)` clause is a separate closed upper bound on
 transitive trusted machine boundaries. The closed categories are
-`foreign_contract`, `raw_address`, `external_storage`, `raw_callable`, and
-`assembly_contract`; `none` names the empty set and `all` names the complete
-catalog. Omitting the clause from a callable value type means `trusts(none)`.
-Bodyless and foreign declarations must publish an explicit bound when they may
-cross trust; body-bearing Wyst functions infer their exact transitive set and
-need no redundant clause. Assigning a callable to a value may widen but never
-narrow its proved trust set.
+`foreign_contract`, `raw_address`, `external_storage`,
+`initialization_assertion`, `raw_callable`, and `assembly_contract`; `none`
+names the empty set and `all` names the complete catalog. Omitting the clause
+from a callable value type means `trusts(none)`. Bodyless and foreign
+declarations must publish an explicit bound when they may cross trust;
+body-bearing Wyst functions infer their exact transitive set and need no
+redundant clause. Assigning a callable to a value may widen but never narrow its
+proved trust set.
 
 Trust is structural and cannot be suppressed: a foreign declaration
 contributes `foreign_contract`, `address<@T>` contributes `raw_address`, the
 trusted external-slice constructors contribute `external_storage`,
-`trusted_callable<T>` contributes `raw_callable`, and checked assembly
-contributes `assembly_contract`. Direct calls, indirect calls, imports,
-generic instantiation, fields, aggregates, returns, and serialized interfaces
-preserve the bound. `trusts(...)` affects no register, stack, calling
-convention, or object representation and is not an artifact safety profile or
-a general trusted block.
+`MaybeUninit<T>.assume_init()` and an unverified bodyless `initializes(storage)`
+claim contribute `initialization_assertion`, `trusted_callable<T>` contributes
+`raw_callable`, and checked assembly contributes `assembly_contract`. A
+foreign declaration contributes `foreign_contract` independently of any
+additional initialization assertion. A generic unverified initialization claim
+applies only to authority-free element types; authority-bearing results require
+a dedicated provider contract carrying the relevant provenance relations. An
+unverified `initializes(out) from source` contract contributes both
+`initialization_assertion` and `external_storage`; a foreign declaration adds
+`foreign_contract`. An unverified `unchanged(storage)` contract contributes
+`external_storage`, and likewise adds `foreign_contract` when foreign.
+Compiler-authenticated Wyst bodies contribute none for the corresponding
+proved relations. Direct calls, indirect calls, imports, generic instantiation,
+fields, aggregates, returns, and serialized interfaces preserve the bound.
+`trusts(...)` affects no register, stack, calling convention, or object
+representation and is not an artifact safety profile or a general trusted
+block.
 
 A statically resolved declaration call retains more authority than a callable
 value type: its canonical declaration identity, parameter labels, declared or
