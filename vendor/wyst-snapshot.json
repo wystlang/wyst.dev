@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "ae56bc6a38f51701e1a87a5ff686fbde27bc6dac",
-  "snapshotSha256": "d5a3f6f67901066b553e4f9c858c255fde94a22dd4b736940b8550e5209d97dd",
+  "sourceCommit": "00b6573132fedeac06e0d2bebb385c38656f9d1b",
+  "snapshotSha256": "3949cdca778b563d342041409a8c0d1b3cc83f917388bf3b9ce45ec00a3573ea",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt": {
       "sha256": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
@@ -188,7 +188,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "a9f3d9a6e7935daa49cefb4721493bdc4a3b3ec1d2a9c748544ca47c2facb285",
+      "sha256": "e80e40c7db9bba5926ed3d26431e5e53c7253f2d1e9dc06453473cbb8f5c4007",
       "size": 41
     },
     "vendor/wyst-design/README.md": {

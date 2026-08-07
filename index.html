@@ -294,7 +294,7 @@
   <span class="source-comment">// #[unroll] requires the compiler to emit one loop body for each byte.</span>
   <span class="source-comment">// The compiler reports an error if it cannot find a fixed count.</span>
   #[<span data-token="macro" data-token-modifiers="defaultLibrary">unroll</span>]
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">byte</span> in <span data-token="variable">msg</span> {
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">for</span> <span data-token="variable" data-token-modifiers="declaration">byte</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">in</span> <span data-token="variable">msg</span> {
     <span data-token="function">uart_write</span>(<span data-token="variable">byte</span>)
   }
 }
