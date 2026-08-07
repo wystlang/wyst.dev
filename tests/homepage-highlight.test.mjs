@@ -63,6 +63,7 @@ test("homepage keeps the compiler's semantic distinctions", () => {
 		["function", "kernel_main"],
 		["function", "uart_write"],
 		["macro", "unroll"],
+		["keyword", "in"],
 	]) {
 		assert.match(markup, tokenMarkup(type, token), `${token} should be ${type}`);
 	}
