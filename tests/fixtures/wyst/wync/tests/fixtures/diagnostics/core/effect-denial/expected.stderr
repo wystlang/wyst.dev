@@ -1,0 +1,6 @@
+error[E0233]: effect 'interrupt_mask' is denied in function 'on_key_press'
+  --> <fixture>/src/keyboard_isr.wyst:10:3
+   |
+10 |   cpu.unmask(.irq)
+   |   ^^^^^^^^^^^^^^^^ cpu.unmask introduces denied effect 'interrupt_mask'
+  note: deny_effects declared at byte 99

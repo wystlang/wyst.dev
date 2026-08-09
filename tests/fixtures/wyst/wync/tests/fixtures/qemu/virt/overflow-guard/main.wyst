@@ -1,0 +1,56 @@
+module boot.overflow_guard
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+import core.arch { cpu }
+
+import runtime.semihost { test_exit }
+
+const UART0_BASE: u64 = 0x0900_0000
+const UARTDR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x00)
+const UARTFR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x18)
+const TXFF: u32 = 0x20
+
+pub naked fn _start(dtb: u64 in x0) -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+
+  kernel_main(dtb)
+}
+
+fn uart_write(byte: u8) {
+  while UARTFR.load() & TXFF != 0 {
+    cpu.nop()
+  }
+
+  UARTDR.store(widen<u32>(byte))
+}
+
+// Fixed-width signed arithmetic wraps modulo 2^width. The comparison must see
+// the wrapped i32 result instead of treating signed overflow as impossible.
+fn is_at_max(x: i32) -> bool {
+  return x + 1 < x
+}
+
+fn kernel_main(dtb: u64) -> never {
+  if dtb == 0 {
+    test_exit(0x63)
+  }
+
+  if !is_at_max(0x7FFF_FFFF) {
+    test_exit(0x63)
+  }
+
+  uart_write('w')
+  uart_write('r')
+  uart_write('a')
+  uart_write('p')
+  uart_write('p')
+  uart_write('e')
+  uart_write('d')
+  uart_write('\n')
+  test_exit(0)
+}

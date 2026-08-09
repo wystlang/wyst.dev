@@ -1,0 +1,22 @@
+module keyboard_isr
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+import core.arch { cpu }
+
+#[deny_effects(interrupt_mask)]
+fn on_key_press(scancode: u8) -> u8 {
+  // This handler is not allowed to change the interrupt mask.
+  cpu.unmask(.irq)
+  return scancode
+}
+
+pub naked fn _start(dtb: u64 in x0) -> never {
+  asm establishes stack (
+    stack: u64 in x1 = __stack_top,
+  ) {
+    mov sp, stack
+  }
+
+  loop { }
+}

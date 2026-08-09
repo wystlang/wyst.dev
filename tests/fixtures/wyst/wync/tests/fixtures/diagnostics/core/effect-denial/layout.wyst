@@ -1,0 +1,7 @@
+module layout
+
+layout kernel {
+  entry keyboard_isr._start at 0x4008_0000
+  section ".text": code align 16
+  pub symbol __stack_top: u64 = 0x4010_0000
+}

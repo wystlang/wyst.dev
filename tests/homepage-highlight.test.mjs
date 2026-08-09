@@ -3,13 +3,14 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
 	createHomepageSemanticArtifact,
-	readHomepageSemanticArtifact,
+	readHomepageSemanticArtifacts,
 	renderHomepageSemanticMarkup,
 	updateHomepageIndex,
 	verifyHomepageExample,
 } from "../tools/homepage-example.mjs";
 
-const artifact = await readHomepageSemanticArtifact();
+const artifacts = await readHomepageSemanticArtifacts();
+const artifact = artifacts.uart;
 const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
 
@@ -20,9 +21,15 @@ function tokenMarkup(type, text) {
 }
 
 test("homepage markup is generated exactly from the captured wync token stream", async () => {
-	assert.equal(updateHomepageIndex(indexHtml, artifact), indexHtml);
-	assert.equal((await verifyHomepageExample()).document.sha256, artifact.document.sha256);
-	assert.equal(artifact.generator, "wync-lsp-semanticTokens/full");
+	assert.equal(updateHomepageIndex(indexHtml, artifacts), indexHtml);
+	const verified = await verifyHomepageExample();
+	for (const [id, exampleArtifact] of Object.entries(artifacts)) {
+		assert.equal(
+			verified[id].document.sha256,
+			exampleArtifact.document.sha256,
+		);
+		assert.equal(exampleArtifact.generator, "wync-lsp-semanticTokens/full");
+	}
 	assert.deepEqual(artifact.legend.tokenTypes, [
 		"namespace",
 		"type",

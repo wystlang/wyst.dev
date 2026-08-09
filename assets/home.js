@@ -4,6 +4,9 @@
 	const SCROLL_CUE_DISTANCE = 96;
 	const SCROLL_CUE_STEPS = 8;
 	const buttons = [...document.querySelectorAll("[data-copy-target]")];
+	const tabs = [
+		...document.querySelectorAll('[role="tab"][data-example-tab]'),
+	];
 	const sourcePanes = [
 		...document.querySelectorAll(".source-viewport > pre"),
 	];
@@ -32,6 +35,48 @@
 		window.addEventListener("resize", updateSourceScrollCues);
 		window.addEventListener("load", updateSourceScrollCues, { once: true });
 		updateSourceScrollCues();
+	}
+
+	function activateTab(tab, focus = false) {
+		for (const candidate of tabs) {
+			const selected = candidate === tab;
+			candidate.setAttribute("aria-selected", String(selected));
+			candidate.tabIndex = selected ? 0 : -1;
+			const panel = document.getElementById(
+				candidate.getAttribute("aria-controls") ?? "",
+			);
+			if (panel) panel.hidden = !selected;
+		}
+
+		const panel = document.getElementById(tab.getAttribute("aria-controls") ?? "");
+		const pane = panel?.querySelector(".source-viewport > pre");
+		if (pane) updateSourceScrollCue(pane);
+		if (focus) tab.focus();
+	}
+
+	for (const [index, tab] of tabs.entries()) {
+		tab.addEventListener("click", () => activateTab(tab));
+		tab.addEventListener("keydown", (event) => {
+			let nextIndex;
+			switch (event.key) {
+				case "ArrowLeft":
+					nextIndex = (index - 1 + tabs.length) % tabs.length;
+					break;
+				case "ArrowRight":
+					nextIndex = (index + 1) % tabs.length;
+					break;
+				case "Home":
+					nextIndex = 0;
+					break;
+				case "End":
+					nextIndex = tabs.length - 1;
+					break;
+				default:
+					return;
+			}
+			event.preventDefault();
+			activateTab(tabs[nextIndex], true);
+		});
 	}
 
 	function legacyCopy(text) {
