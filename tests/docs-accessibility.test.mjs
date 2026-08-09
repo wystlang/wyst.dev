@@ -159,6 +159,7 @@ test("mobile Contents is an ARIA disclosure backed by an external script", () =>
 	assert.match(page, /<aside id="doc-sidebar" class="doc-sidebar"/);
 	assert.match(page, /<script src="\/assets\/docs\.js" defer><\/script>/);
 	assert.doesNotMatch(page, /<script>(?:.|\n)*doc-sidebar-toggle/);
+	assert.doesNotMatch(page, /class="ver"|>v0\.9</);
 });
 
 test("reference navigation groups topics by subject without a reading sequence", () => {

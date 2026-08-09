@@ -3,7 +3,6 @@
 // system from /assets/wyst.css.
 
 export const GITHUB_URL = "https://github.com/wystlang/wyst.dev";
-const VERSION = "v0.9";
 
 export function escapeHtml(s) {
 	return String(s)
@@ -68,7 +67,6 @@ function header(active = "") {
 					alt=""
 					aria-hidden="true"
 				/>
-				<span class="ver">${VERSION}</span>
 			</a>
 			<nav class="nav-links" aria-label="Primary">
 				${link("/docs/", "reference", "docs")}
