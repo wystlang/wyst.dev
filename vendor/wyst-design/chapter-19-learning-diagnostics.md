@@ -42,6 +42,28 @@ One code may be shared by multiple emitters only when one subject, summary,
 explanation, and suggestion set truthfully covers all of them. Otherwise the
 registry defines separate kinds and codes.
 
+Storage-proof diagnostics name the failed proof question rather than implying
+a protocol failure. `preserves(P)` means retained usable identity, generation,
+lifetime, extent, and authority for the canonical projection; `unchanged(P)`
+adds observable representation and raw-storage epoch. Outcome-gated facts are
+callable postconditions available only after matching nominal refinement. A
+diagnostic must not describe a result variant as a message or an ordinary call
+or branch as communication, and its remediation must not invent ownership
+transfer, synchronization, publication, progress, delivery, deadlock freedom,
+fairness, or protocol completion.
+
+`E0253` is the storage-preservation proof-failure subject. Its structured
+questions cover projection containment, ordered in-extent bounds, stable or
+explicit call-entry boundaries, outcome and saved-result identity, exact
+backing identity, dependent-view generation, and the implemented exact-whole
+raw-storage epoch. An occurrence renders the required and available canonical
+identities, the relevant result variant, invalidation cause and source span,
+and a source-visible remediation. It does not claim that raw storage was never
+initialized when the actual failure is a lost callable postcondition.
+`E0204` remains exclusively local read before initialization, while `E0229`
+continues to describe resource, callable, and ABI shape errors; neither code is
+used as a container for storage-proof questions.
+
 `W0217` is the opt-in structure-layout opportunity. Its occurrence-specific
 facts are the canonical current and candidate sizes, exact byte reduction,
 configured minimum, selected candidate order, and a checked preview edit. Its

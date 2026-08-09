@@ -13,7 +13,8 @@ summary: "Expression syntax, arithmetic, comparison, casts, precedence, and bran
 > **Canonical scope.** This document is the canonical reference for operator
 > set, precedence, and arithmetic semantics (overflow, division, shift,
 > floating-point). Type conversions and the rules for crossing types under
-> operators (mixed-signedness, mixed-width, address arithmetic) live in
+> operators (mixed-signedness and mixed-width) plus typed-address derivation
+> and numeric address-conversion rules live in
 > [chapter-06-types.md §1.4.1](chapter-06-types.md). The operator-with-ARM64-lowering summary
 > table at [chapter-06-types.md §1.12](chapter-06-types.md) points back here for full
 > semantics.

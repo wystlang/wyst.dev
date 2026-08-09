@@ -15,7 +15,7 @@ notation and remains the arithmetic remainder operator where expression
 grammar permits it; neither use creates a source operation namespace.
 
 The active operation registry is
-[`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv). Each row
+[`semantic-operation-catalog.tsv`](catalogs/language/semantic-operation-catalog.tsv). Each row
 owns one stable semantic identity, source surface, compiler-internal lowering
 key, target plan, result and parameter contract, ordering contract, report
 identity, explicit observation policy, and implementation state. Target plans
@@ -24,7 +24,7 @@ machine-semantics catalogs rather than forming a second instruction or effect
 table.
 
 Atomic storage uses the closed matrix in
-[`atomic-matrix.json`](atomic-matrix.json). Its scalar elements are `bool`,
+[`atomic-matrix.json`](catalogs/language/atomic-matrix.json). Its scalar elements are `bool`,
 `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, and `i64`, plus admitted
 one-word address values. The matrix owns method arity, legal orders, results,
 and lowering.
@@ -77,6 +77,17 @@ a hard target-compatibility error during compilation.
 On A64, `semihost.call` places its two `u64` arguments in `x0` and `x1`, emits
 `hlt #0xf000`, and returns `x0`. It remains distinct from
 `exception.hlt(0xf000)`, which has no semihost ABI meaning.
+The numeric operation and parameter do not provide compiler-provable memory
+authority. Each source-visible `semihost.call` is therefore an explicit
+`environment_contract` trust boundary: the programmer asserts that those
+values authorize every host address, extent, alignment, initialization,
+mutation, ordering, ownership, completion, and lifetime obligation exercised
+until the synchronous call returns or traps. The compiler invalidates
+unpreserved storage facts at the boundary, records the assertion in explain
+reports, and propagates the trust through direct calls, callable values,
+imports, and semantic interfaces. A missing, unknown, or incompatible trust
+entry in the environment-service catalog rejects the service; numeric
+operation values never silently imply a narrower contract.
 
 The provider-facing sealed `core.execution` namespace instead uses one private
 direct whole-module import and exposes only
@@ -94,7 +105,7 @@ contains the effect use their ordinary pre-transfer boundary and no marker.
 The target-neutral fatal boundary is another sealed whole-module semantic
 operation:
 
-<!-- wyst-contract: valid -->
+<!-- wyst-contract: check-pass -->
 ```wyst
 import core.trap
 

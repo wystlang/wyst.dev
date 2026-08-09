@@ -126,19 +126,19 @@ for (const response of responses) {
 		["design/README.md", "# Wyst design\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
 		[
-			"design/syntax-words.tsv",
+			"design/catalogs/language/syntax-words.tsv",
 			"// wyst.syntaxWords.v0.9\nfn\treserved\tcore.declarations\tdeclaration\timplemented\n",
 		],
 		[
-			"design/attribute-catalog.tsv",
+			"design/catalogs/language/attribute-catalog.tsv",
 			"name\tstate\nalign\tactive\n",
 		],
 		[
-			"design/meta-operation-catalog.tsv",
+			"design/catalogs/language/meta-operation-catalog.tsv",
 			"spelling\tstate\n#len\timplemented\n",
 		],
 		[
-			"design/c-interactive-adapter-catalog.tsv",
+			"design/catalogs/language/c-interactive-adapter-catalog.tsv",
 			"profile\tstate\nstatus-out\timplemented\n",
 		],
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],

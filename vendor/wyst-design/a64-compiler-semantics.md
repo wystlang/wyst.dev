@@ -10,15 +10,15 @@ summary: "Authenticated register, state, memory, control, privilege, effect, and
 This document is the required human-readable contract for
 `targets.a64-compiler-semantic-catalog`. The machine-readable authorities are:
 
-- [`a64-instruction-semantics.tsv`](a64-instruction-semantics.tsv);
-- [`a64-state-semantics.tsv`](a64-state-semantics.tsv);
-- [`a64-structural-semantics.tsv`](a64-structural-semantics.tsv);
-- [`a64-support-policy.json`](a64-support-policy.json), the current activation
-  policy, and [`a64-support-rows.tsv`](a64-support-rows.tsv), its generated
+- [`a64-instruction-semantics.tsv`](catalogs/aarch64/generated/a64-instruction-semantics.tsv);
+- [`a64-state-semantics.tsv`](catalogs/aarch64/source/a64-state-semantics.tsv);
+- [`a64-structural-semantics.tsv`](catalogs/aarch64/source/a64-structural-semantics.tsv);
+- [`a64-support-policy.json`](catalogs/aarch64/source/a64-support-policy.json), the current activation
+  policy, and [`a64-support-rows.tsv`](catalogs/aarch64/generated/a64-support-rows.tsv), its generated
   support table;
-- [`a64-encoding-catalog.tsv`](a64-encoding-catalog.tsv), the exact active
+- [`a64-encoding-catalog.tsv`](catalogs/aarch64/generated/a64-encoding-catalog.tsv), the exact active
   checked-assembly source-form catalog, and generated
-  [`a64-active-encoding-catalog.tsv`](a64-active-encoding-catalog.tsv), the
+  [`a64-active-encoding-catalog.tsv`](catalogs/aarch64/generated/a64-active-encoding-catalog.tsv), the
   shared active encoder/decoder/fixup index.
 
 When support changes, update the source catalogs, regenerate the derived tables

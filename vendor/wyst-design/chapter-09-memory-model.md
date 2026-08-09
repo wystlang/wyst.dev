@@ -117,7 +117,7 @@ after evaluating the receiver and value once in source order. Ordinary,
 volatile, and MMIO addresses do not gain atomic ordering and cannot implicitly
 convert to `@atomic<T>`. The exact element/method/order matrix,
 compare-exchange failure orders, ARM64 mapping, and removal table are generated
-from [`atomic-matrix.json`](atomic-matrix.json). That matrix is the sole
+from [`atomic-matrix.json`](catalogs/language/atomic-matrix.json). That matrix is the sole
 authority for atomic storage types, methods, orders, result shapes, and
 lowering.
 
@@ -401,10 +401,10 @@ otherwise accepted. These rules do not change §9.5: memory events admitted
 through a trusted boundary remain governed by this memory model and the
 selected target rather than optimizer undefined behavior.
 
-This section defines the required closed behavior. The implementation closure
-ledger identifies provisional classifier surfaces that do not yet satisfy it;
-while any such blocker remains, the compiler does not make the safe-subset
-data-race-freedom claim.
+This section defines the closed behavior. Exhaustive compiler classifications,
+behavior tests, and the release corpus enforce it together. Any unclassified
+memory-capable identity or failing invariant withdraws the safe-subset
+data-race-freedom claim until the implementation and tests agree again.
 
 ---
 
@@ -642,7 +642,7 @@ contract. The qualifier `@mmio T` marks the same access contract plus programmer
 intent that the numeric address denotes an MMIO register or region. Every load
 or store through either qualified address is a compiler barrier (see section
 1.3.1). Only access through `@mmio T` introduces the `mmio` effect. Qualifiers
-propagate through address arithmetic:
+propagate through the named address-derivation operations:
 
 There is no implicit conversion among `@T`, `@volatile T`, and `@mmio T` in any
 direction. Stripping volatility or MMIO intent requires an explicit
@@ -686,7 +686,8 @@ Struct stride is the total size of the struct (sum of field sizes including padd
 Vector addresses follow the same model — stride equals the total vector size.
 
 The element type records the intended access type. Array and slice indexing
-syntax is a separate operation; `@T` address arithmetic uses element offsets:
+syntax is a separate operation; `@T` traversal uses `element_offset` or another
+unit-explicit named derivation:
 
 ### MMIO Example
 
@@ -704,7 +705,7 @@ This syntax unifies:
 - MMIO
 - volatile memory
 - typed access
-- pointer arithmetic
+- unit-explicit typed-address derivation
 
 without introducing separate pointer semantics or named address spaces.
 
@@ -770,17 +771,20 @@ optimize the access away.
 
 #### Propagation
 
-Volatility propagates through address arithmetic. If `p : @volatile u32`, then
-`p + 4` is `@volatile u32` at element offset 4, which means byte address
-`p + 16`. Use `p + 1` for the next `u32` element, or cast through `@volatile u8`
-when a byte view is needed. Any access through the derived address is a
-compiler barrier:
+Volatility propagates through the named address-derivation operations. If
+`p : @volatile u32`, then `element_offset(p, 4)` is `@volatile u32` at element
+offset 4, which means byte address `address<u64>(p) + 16`. Use
+`element_offset(p, 1)` for the next `u32` element, or `byte_offset(p, count)`
+when the movement is measured in bytes. Any access through the derived address
+is a compiler barrier. Typed addresses support none of `+`, `-`, `+=`, or
+`-=`; Chapter 6 owns the closed source operation set.
 
-Volatility and MMIO intent are properties of the static result type of the
-arithmetic expression. If an integer operand was produced from an address with
-the named `address<u64>(source)` conversion, the source address's qualifiers must match the result address
-qualifiers. Mixed-qualifier address arithmetic is rejected unless the source
-first casts one address to the intended qualifier:
+Volatility and MMIO intent are properties of the static result type of each
+named derivation. If an integer operand was produced from an address with the
+named `address<u64>(source)` conversion, the source address's qualifiers must
+match any other address-derived integer operand. Mixed-qualifier arithmetic on
+integer address encodings is rejected unless the source first converts one
+address to the intended qualifier:
 
 There is no implicit conversion among `@T`, `@volatile T`, and `@mmio T` in any
 direction. To strip volatility or MMIO intent use an explicit `qualify<T>`
@@ -956,6 +960,44 @@ power-state transition, or suspension. `barrier.dmb(...)` orders covered
 accesses; `barrier.dsb(...)` additionally waits for covered operations to
 complete. Select the narrowest access class and shareability domain justified
 by the target rather than defaulting to `.sy`.
+
+### Selected Platform Trust and Exclusions
+
+Target-neutral semantic checking does not invent a platform mapping. Safe
+selected artifacts instead require one exact finite platform-memory descriptor.
+Every declared MMIO register and every raw `@mmio T` constant access must fit
+exactly one descriptor range, one peripheral binding, and one admitted CPU
+register cell at the complete access width and natural alignment. A broad
+`#target(..., device_memory = ...)` range and the `@mmio` qualifier do not grant
+that authority. Dynamic raw MMIO bits, overflow, range gaps, overlapping
+mappings, unknown cells, and qualifier erasure fail closed. The admitted access
+adds the source-visible `platform_contract` trust category, which is preserved
+through direct and indirect calls, imports, semantic interfaces, and reports.
+
+The current finite descriptors admit CPU register cells only. DMA-control,
+device-owned transfer-submission, and other general peripheral cells are
+excluded from safe selected artifacts. A `CompletionProviderDescriptor` reports
+storage-identity, extent, alignment, ownership, publication, completion,
+lifetime, generation, reset, invalidation, and cache-coherency metadata, but it
+is non-authoritative: no source operation or typed-IR memory operation consumes
+those strings. Its safe memory surface is exactly
+`excluded_no_typed_submission_api`, malformed or stale schemas reject, and the
+metadata cannot authorize MMIO, DMA, initialization, or ownership transfer.
+Asynchronous device/DMA transfer remains excluded until a typed submission and
+completion resource is defined.
+
+The same selected descriptor is a finite trusted boundary for every admitted
+cache clean, invalidate, clean-invalidate, zero, instruction-cache publication
+operation, every cataloged TLB invalidation identity, and every writable
+translation-regime system-register identity. Missing platform authority rejects
+the selected artifact, and every admitted operation contributes
+`platform_contract` trust. The descriptor's range, CPU/provider ownership,
+publication, barrier, invalidation, and completion fields are asserted platform
+obligations, not compiler proofs of a runtime sequence or hardware behavior.
+Source must still spell the required page-table writes, cache maintenance,
+barriers, TLBI operations, instruction synchronization, and ownership handoff;
+the checker does not infer that a correct protocol was executed merely because
+the descriptor contains a protocol string.
 
 ---
 
@@ -1795,15 +1837,26 @@ opaque mutation intervenes. A typed write or possible opaque mutation begins a
 new raw-storage epoch. The compiler may reuse an observed value within an epoch
 but may not substitute independently changing arbitrary values; no epoch has a
 runtime counter or tag.
-`unchanged(storage)` guarantees the exact object representation across a call
-and carries the current epoch through that boundary;
-`unchanged(storage) on .Variant` does so only on the named nominal outcome. The
-relation implies `preserves(storage)`. The reverse is false because storage may
-remain live while its contents change. A possibly mutating opaque call without
-the applicable `unchanged` guarantee begins a new epoch. The guarantee covers
-every possible writer during the call, including callbacks, agents, interrupts,
-DMA, and devices. Inference requires checked private-storage, exclusion, or
-provider facts that rule those writers out.
+For an exact projection `P`, `preserves(P)` retains usable storage identity,
+generation, lifetime, extent, and access authority while permitting its bytes
+to change. `unchanged(P)` implies `preserves(P)` and additionally retains the
+observable object representation and relevant raw-storage epoch. With
+`on .Variant`, either callable postcondition becomes available only after
+refinement to the matching nominal result variant.
+
+Neither guarantee proves ownership transfer, synchronization, publication,
+progress, delivery, deadlock freedom, fairness, or protocol completion. A
+result variant is ordinary returned nominal data, not an implicit protocol
+message. Ordinary calls and branches never become communication, and no
+guarantee synthesizes serialization, buffering, retry, or remote execution.
+
+A possibly mutating opaque call without the applicable `unchanged` guarantee
+begins a new epoch. The guarantee covers every possible writer during the call,
+including callbacks, agents, interrupts, DMA, and devices. Checked bodies infer
+it from typed state at every normal return only when private-storage,
+exclusion, or provider facts rule those writers out. Direct, delegated,
+indirect, imported, and recursive producers compose through the same
+least-fixed-point summaries.
 For ordinary nonvolatile storage, this content fact may allow an existing load
 value to remain usable across the call. It never eliminates, merges, forwards,
 hoists, sinks, or reorders volatile, MMIO, or atomic access events. Their exact
@@ -1861,13 +1914,39 @@ epoch only when every incoming path carries it; no runtime flag is added.
 When every variant of the closed result type carries the same fact, canonical
 contract normalization makes it unconditional and the epoch survives without
 result refinement.
+
+The semantic checker keeps structured storage-proof explanation records for
+accepted call boundaries. A record identifies the callable, canonical
+projection and call-entry substitution, bounds-proof origin, dependent view,
+outcome, generation, raw-storage epoch relation, availability, and the source
+span and cause of any later invalidation. Static bounds, dominating-guard
+bounds, and authenticated checked-range bounds remain distinct origins. Exact
+projected raw-storage epochs propagate through containment and overlap rules;
+sibling projections remain independent, while wildcard or overlapping writes
+invalidate them.
+These records do not enter callable identity, typed IR, ABI or pointer layout,
+runtime state, allocation, control flow, or machine instructions.
+
+Rejected storage proofs use `E0253`, not the ordinary uninitialized-local
+diagnostic. The diagnostic selects a structured proof question and reports the
+source identities that answered it: required and available projections,
+immutable call-entry boundaries, matching nominal result, saved result,
+dependent-view generation, exact backing target, or implemented whole
+raw-storage epoch. A later assignment, address write, raw-storage write,
+non-preserving call, transfer, replacement, checked-assembly boundary,
+environment boundary, result reassignment, or divergent join is reported as
+the invalidating source event when known. Remediation is source-visible and
+compile-time; it never inserts a hidden range check, snapshot, descriptor,
+copy, synchronization operation, or runtime epoch test.
+
 Separate `unchanged` projections do not combine. Even if adjacent or
 overlapping, they cannot carry the epoch of an observation spanning their
 union; a larger guarantee must name the larger projection directly.
-Body-bearing Wyst functions infer exact content preservation from their checked
-bodies. An unverified bodyless `unchanged(storage)` guarantee contributes
-`external_storage`; a foreign declaration carrying it additionally contributes
-`foreign_contract`.
+Checked Wyst bodies infer exact content preservation from typed snapshots on
+every normal return and authenticate any explicit body clause against the
+inferred summary. An unverified bodyless `unchanged(storage)` guarantee
+contributes `external_storage`; a
+foreign declaration carrying it additionally contributes `foreign_contract`.
 `storage.write(value)` performs one complete typed write and establishes
 compiler-proved initialization, after which `storage.read()` is valid.
 `storage.assume_init()` is the trusted assertion form when no proof is

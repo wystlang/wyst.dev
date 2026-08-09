@@ -43,10 +43,18 @@ const LOCAL_DESIGN_ARTIFACTS = new Set([
 	"meta-operation-catalog.tsv",
 	"syntax-words.tsv",
 ]);
+const LOCAL_DESIGN_ARTIFACT_LINKS = new Map(
+	[...LOCAL_DESIGN_ARTIFACTS].flatMap((artifact) => [
+		[artifact, artifact],
+		[`catalogs/language/${artifact}`, artifact],
+	]),
+);
 
 function pinnedWystRepositoryHref(href, commit) {
 	if (!commit) return null;
-	const match = href.match(/^(\.\.\/(?:[\w.-]+\/)*[\w.-]*)(#[\w.-]+)?$/);
+	const match = href.match(
+		/^((?:\.\.?\/)?(?:[\w.-]+\/)*[\w.-]*)(#[\w.-]+)?$/,
+	);
 	if (!match) return null;
 
 	const repositoryPath = path.posix.normalize(
@@ -256,8 +264,9 @@ export function makeMd({ wystSourceCommit } = {}) {
 		const hi = tok.attrIndex("href");
 		if (hi >= 0) {
 			const href = tok.attrs[hi][1];
-			if (LOCAL_DESIGN_ARTIFACTS.has(href)) {
-				tok.attrs[hi][1] = `/docs/${href}`;
+			const localArtifact = LOCAL_DESIGN_ARTIFACT_LINKS.get(href);
+			if (localArtifact) {
+				tok.attrs[hi][1] = `/docs/${localArtifact}`;
 				return defaultLinkOpen(tokens, i, opts, env, self);
 			}
 			const m = href.match(/^(?:\.\/)?([\w.-]+\.md)(#[^)\s]*)?$/);

@@ -235,7 +235,7 @@ violated or incomplete obligations are rejected, and logical operands are
 evaluated once. The exact source obligations, generated A64 sequences, reason
 codes, failure paths, effects, target requirements, resources, and pass
 constraints are owned by
-[`hardening-catalog.tsv`](hardening-catalog.tsv).
+[`hardening-catalog.tsv`](catalogs/language/hardening-catalog.tsv).
 
 Every generated failure edge is an ordinary terminal `trap`; the protected
 function and every retained source caller contract must already admit
@@ -270,9 +270,8 @@ setting can audit explicit foreign, volatile/MMIO, and checked-assembly trust
 boundaries, but it cannot downgrade an unresolved ordinary access, authority
 leak, suspension crossing, or cross-root conflict.
 
-This is the required language rule. The implementation closure ledger records
-the remaining cases in which access classification is still provisional and
-therefore prevents a current memory-safety claim.
+This is the required language rule. Exhaustive compiler tests reject any new
+access form until its concurrency and memory-safety behavior is classified.
 
 ### Optional safety checking
 

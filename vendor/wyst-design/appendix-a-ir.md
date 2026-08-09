@@ -238,7 +238,14 @@ source spellings while preserving each explicit semantic choice:
   address calculation is element-scaled exactly once. Raw
   `address.slice(elements = count)` emits the same descriptor from an ordinary
   address and the mandatory element count. Descriptor construction itself has
-  no load, store, allocation, copy, or runtime bounds-check op.
+  no load, store, allocation, copy, or runtime bounds-check op. Every such
+  descriptor construction nevertheless carries a typed-IR authority
+  obligation for `count * #size_of(T)` bytes. Bounds and usable extent must fit
+  the input address's retained provenance, and the input alignment,
+  initialization, and lifetime facts must satisfy the complete view. A
+  successful checked external-slice operation supplies its cataloged explicit
+  assertion; ordinary descriptor construction may only narrow existing facts
+  and never replace them with facts derived from the requested length.
 - Every named conversion becomes `cast` with the exact named conversion kind.
   `saturate` is a same-signedness integer narrowing clamp;
   `truncate_bits` keeps a compile-time-validated low-bit width and returns the
@@ -1184,6 +1191,23 @@ record. IR verification and backend admission rederive the record from that
 module selection, so an absent, moved, unknown, duplicate, multiple, or stale
 descriptor/profile binding fails closed.
 
+Selected-artifact platform authority is retained independently of those target
+facts. Typed IR accepts a raw or declared MMIO assertion only when the selected
+execution environment resolves the complete access to one exact finite
+platform range, peripheral binding, and CPU-register cell; the witness carries
+the range and cell identities. A broad target Device-memory range is placement
+metadata and is never an alternative MMIO authority. Cache/TLB maintenance and
+translation-regime writes retain their exact catalog identities while their
+callable summaries and semantic interfaces carry `platform_contract` trust.
+Removing that trust or replacing an exact MMIO identity is invalid.
+
+Completion-provider lifecycle descriptors are report metadata only. Typed IR
+defines no submission, ownership-transfer, generation, completion, reset, DMA,
+or external-device memory operation that consumes them, so they cannot create a
+pointer proof, initialization proof, lease, or memory authority. Until such a
+typed operation and verifier protocol exists, the safe source/IR surface is
+explicitly excluded.
+
 | Attribute  | Values                                                  |
 | ---------- | ------------------------------------------------------- |
 | `fence`    | `none` / `compiler` / `mem(domain)` / `full`            |
@@ -1228,6 +1252,55 @@ counts, register-class pressure, veneers, code size, and caller-owned aggregate
 copies are not IR effect categories. They are backend facts checked and reported
 by ABI, lowering, and object-report surfaces after lowering.
 
+#### Backend translation and final memory witnesses
+
+The ARM64 backend consumes a private IR clone. Any change to that clone,
+including checked-result scalarization or instruction scheduling, must rerun
+the structural verifier and the complete memory-safety hard gate before ABI or
+instruction lowering. The backend gate rejects both unproved required memory
+facts and unproved indexing facts; a pass cannot rely on an earlier report or
+on the absence of a particular checked operation.
+
+Backend type erasure is an authenticated decomposition, not permission to
+forget source identity. Every recursive component retains its canonical source
+owner and root type, field/component path, primitive type, byte offset and
+extent, alignment, role, padding state, lifetime, and provenance. Verification
+independently reconstructs the canonical decomposition and requires exact
+coverage without gaps, overlaps, substituted siblings, or reparented
+components before register allocation may consume it.
+
+Every emitted A64 memory-semantic word has exactly one retained
+`MemoryLoweringWitness`. After text layout, relocations, and final patching, the
+backend decodes the final words again and requires exact equality with the
+retained transcript. An IR-owned access or prefetch witness binds the final
+base register and immediate or register offset to the canonical IR address
+graph. It also records the exact byte chunks and order, read/write/RMW/hint
+direction, alignment, endian conversion, volatile and MMIO identity, and
+atomic ordering. Aggregate and pair accesses must cover the language extent in
+ascending byte order; scalar accesses have exactly one event; LL/SC and LSE
+forms must realize the same authenticated atomic contract. Big-endian accesses
+also require the exact byte-order reversal in the access's final instruction
+range.
+
+Checked assembly memory is reconciled one-for-one, in source order, against
+the typed instruction body and allocation block, including semantic identity,
+base, displacement, width, direction, alignment, and body range. Compiler-owned
+SP-relative frame, spill, save, and ABI memory is accounted for separately
+against exact frame components. Compiler-owned non-SP ABI and aggregate-copy
+memory carries a pre-emission authority tying its decoded base and event offset
+to one typed root, finite extent, and alignment. Missing, extra, multiply owned,
+or value-materialization memory instructions are rejected.
+
+Loop stack bases, global-base reuse, register-offset addressing, hardware-map
+bases, aggregate copies, atomics, endian lowering, and prefetch hints all enter
+the same witness path; an optimization does not create a second validation
+route. Differential lowering compares source-stable symbolic memory events:
+function and source occurrence, normalized address graph, byte chunk offset and
+width, direction and order, endian, volatile/MMIO, and atomic identity.
+Physical registers, code offsets, encoding IDs, and address-materialization
+strategy remain per-leg facts proved by the final-word validator, while
+compiler-support memory is retained as a separate per-leg transcript.
+
 Effects propagate through the call graph automatically during semantic
 analysis (see [chapter-01-language-design.md](chapter-01-language-design.md) Effect System).
 The `effect` attribute on intrinsic ops is the leaf source; the compiler
@@ -1239,8 +1312,9 @@ populates them.
 #### Authenticated checked-result control flow
 
 A source `core.checked` operation lowers before target instruction selection to
-ordinary typed comparison, integer/address arithmetic, construction, and
-finite forward control flow. It does not remain a call or opaque intrinsic.
+ordinary typed comparison, integer arithmetic, unit-explicit address
+derivation, construction, and finite forward control flow. It does not remain
+a call or opaque intrinsic.
 For a Result-returning boundary, the exact `Result<T, E>` is represented by one `Ok` construction and one
 `Error` construction joined by a phi. The function retains a
 `CheckedOperationIr` record containing the stable catalog identity, joined

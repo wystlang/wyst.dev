@@ -257,17 +257,43 @@ backing sources, the merged origin relation is their conservative union. The
 slot and any later read retain every possible origin and constrain every named
 source through their ordinary static leases; no runtime origin tag selects one.
 
-Callable content preservation is distinct from storage preservation.
-`preserves(storage)` keeps identity, generation, and extent valid while
-allowing sequenced content changes. `unchanged(storage)` additionally
-guarantees the exact object representation across the call and implies the
-corresponding `preserves` relation. Either clause may add `on .Variant` to make
-the guarantee conditional on one nominal outcome. Body-bearing Wyst functions
-infer both relations; callable types and opaque or bodyless boundaries spell
-them explicitly. Content preservation covers every possible writer during the
-call, including callbacks, agents, interrupts, DMA, and devices. Inference
-therefore requires checked private-storage, exclusion, or provider facts that
-rule those writers out. Neither clause adds runtime metadata.
+Deferred storage effects are registered without executing their typed state
+transition. Every lexical exit applies pending cleanups in runtime LIFO order,
+including fallthrough, return, break, and continue; nested scopes unwind from
+inner to outer. A later cleanup writer can therefore invalidate an earlier
+lexical initialization, and complete replacement origins come from the final
+cleanup writer rather than registration order.
+
+An activation-local raw-storage address is also a typed local provenance fact.
+It propagates through assignment and aggregate or control-flow alternatives.
+If any such address remains live after a call whose effective effect bound may
+include `execution_suspension`, the call is rejected; an address dead before
+the call or freshly reacquired after it remains valid.
+
+Callable content preservation is distinct from storage preservation. For an
+exact projection `P`, `preserves(P)` retains usable storage identity,
+generation, lifetime, extent, and access authority while allowing sequenced
+content changes. `unchanged(P)` implies `preserves(P)` and additionally retains
+the observable object representation and relevant raw-storage epoch. Either
+clause may add `on .Variant`; that callable postcondition becomes available
+only after refinement to the matching nominal result variant.
+
+Neither guarantee proves ownership transfer, synchronization, publication,
+progress, delivery, deadlock freedom, fairness, or protocol completion. A
+result variant is ordinary returned nominal data, not an implicit protocol
+message. Ordinary calls and branches never become communication, and no
+guarantee synthesizes serialization, buffering, retry, or remote execution.
+
+Content preservation covers every possible writer during the call, including
+callbacks, agents, interrupts, DMA, and devices. The language requires checked
+bodies to infer these relations from typed per-normal-exit snapshots only when
+every overlapping writer is excluded or carries the required exact guarantee.
+Each snapshot retains the nominal result outcome, exact projected target,
+replacement origins, content/identity mutation set, and raw-storage epoch.
+Joins intersect guarantees, union every representable origin alternative, and
+choose a fresh epoch when incoming generations differ. Callable types and
+opaque or bodyless boundaries spell their asserted guarantees explicitly.
+Neither clause adds runtime metadata.
 
 A `mut` parameter or an `accesses(mut parameter(index))` clause is a possible
 writer to that argument's storage. When it overlaps a live shared returned
@@ -291,10 +317,48 @@ arguments are checked and before call effects are applied. The compiler retains
 canonical call-entry targets, raw-storage identity, and authority-origin leases
 rather than reinterpreting the argument expressions when the result is refined
 later. Reassigning a pointer local after the call therefore cannot retarget an
-`initializes`, `preserves`, or `unchanged` fact. Whole-object initialization is
-transported only for one exact, non-projected local target; an address with
-multiple or nonlocal alternatives conveys no whole-object initialization fact.
-This frozen record is compiler-only and has no runtime descriptor.
+`initializes`, `preserves`, or `unchanged` fact. Initialization is transported
+for one exact frozen target, including a representable projection; an address
+with multiple or nonlocal alternatives conveys no definite initialization
+fact. Reading a complete `MaybeUninit<T>` still requires the exact whole-object
+target rather than a collection of separately initialized projections. This
+frozen record is compiler-only and has no runtime descriptor.
+
+The semantic checker retains a structured explanation record for each accepted
+storage-preservation proof. It names the direct callable or canonical indirect
+signature, guarantee and optional result variant, canonical contract
+projection, frozen call-entry targets and affine substitutions, bounds-proof
+origin, dependent view, generation relation, and exact projected raw-storage
+epoch relation. Outcome
+refinement, result reassignment, mutation, and divergent control-flow joins
+append availability events with their source span and invalidation cause. These
+records are compiler-only report input: they are absent from callable identity,
+typed IR, ABI and pointer layout, runtime state, allocation, and emitted
+instructions.
+
+When one of these requirements cannot be proved, `E0253` names the exact
+storage-proof question that failed: projection containment, ordered in-extent
+bounds, stable call-entry boundary identity, an explicit dynamic end, matching
+nominal outcome, saved-result identity, frozen call-entry identity,
+unambiguous backing identity, current dependent-view generation, or current
+exact raw-storage epoch. The occurrence includes the source-visible dependent
+view, required and available canonical projections, nominal outcome,
+invalidation cause, and originating span when those facts exist. Its help asks
+source to preserve a containing projection, introduce and consistently use an
+explicit immutable boundary, refine the matching result, or recreate a view;
+the compiler never proposes a hidden snapshot, runtime validity check, copy,
+synchronization operation, or message. `E0204` remains the distinct ordinary
+local-read-before-initialization subject.
+
+The conformance suite treats these decisions as one typed pairwise matrix. Its
+cases name the canonical projection, guarantee, optional outcome gate, direct
+or indirect call shape, perturbation, expected availability or proof question,
+and runtime expectation. Coverage assertions close every dimension and
+required guarantee/gate pair without pretending to test an unmaintainable
+Cartesian product. Projected `unchanged` proofs retain the exact
+subobject epoch; sibling writes leave it unchanged, overlapping or wildcard
+writes advance it, and joins preserve it only when all incoming generations
+agree.
 
 The nominal result may be retained and refined later. At the conditional call,
 the compiler assigns each unavailable view a fresh generation token and saves
@@ -540,18 +604,22 @@ and retained-task/activation identity rules.
 
 A callable value's `trusts(...)` clause is a separate closed upper bound on
 transitive trusted machine boundaries. The closed categories are
-`foreign_contract`, `raw_address`, `external_storage`,
-`initialization_assertion`, `raw_callable`, and `assembly_contract`; `none`
-names the empty set and `all` names the complete catalog. Omitting the clause
-from a callable value type means `trusts(none)`. Bodyless and foreign
-declarations must publish an explicit bound when they may cross trust;
+`foreign_contract`, `environment_contract`, `platform_contract`, `raw_address`,
+`external_storage`, `initialization_assertion`, `raw_callable`, and
+`assembly_contract`; `none` names the empty set and `all` names the complete
+catalog. Omitting the clause from a callable value type means `trusts(none)`.
+Bodyless and foreign declarations must publish an explicit bound when they may cross trust;
 body-bearing Wyst functions infer their exact transitive set and need no
 redundant clause. Assigning a callable to a value may widen but never narrow its
 proved trust set.
 
 Trust is structural and cannot be suppressed: a foreign declaration
-contributes `foreign_contract`, `address<@T>` contributes `raw_address`, the
-trusted external-slice constructors contribute `external_storage`,
+contributes `foreign_contract`, an authenticated executable-environment call
+contributes `environment_contract`, and every selected-artifact MMIO access,
+cache/TLB maintenance operation, or translation-regime system-register write
+authenticated by the finite platform-memory descriptor contributes
+`platform_contract`. `address<@T>` contributes `raw_address`, the trusted
+external-slice constructors contribute `external_storage`,
 `MaybeUninit<T>.assume_init()` and an unverified bodyless `initializes(storage)`
 claim contribute `initialization_assertion`, `trusted_callable<T>` contributes
 `raw_callable`, and checked assembly contributes `assembly_contract`. A

@@ -30,8 +30,8 @@ revision.
 > | Struct, bitstruct, enum layout             | [chapter-06-types.md §1.6, §1.6.1, §1.6.3](chapter-06-types.md)    |
 > | Memory model (ordering, races)             | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
 > | Volatility, MMIO intent, atomic acquire/release methods | [chapter-09-memory-model.md](chapter-09-memory-model.md)           |
-> | Semantic operations                        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv) |
-> | Typed atomic storage, methods, and orders  | [atomic-matrix.json](atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
+> | Semantic operations                        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md); [semantic-operation-catalog.tsv](catalogs/language/semantic-operation-catalog.tsv) |
+> | Typed atomic storage, methods, and orders  | [atomic-matrix.json](catalogs/language/atomic-matrix.json); [chapter-11-intrinsics.md §1.3.2](chapter-11-intrinsics.md) |
 > | System register access                     | [chapter-11-intrinsics.md §1.3.3](chapter-11-intrinsics.md)        |
 > | Trap / cache / TLB / CPU operations        | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                |
 > | Per-CPU storage; no TLS surface            | [chapter-11-intrinsics.md §1.3.7](chapter-11-intrinsics.md)        |
@@ -136,14 +136,14 @@ instruction.
 
 ### Memory-Safety Posture
 
-These behavior guarantees are not a blanket whole-language memory-safety
-guarantee. Wyst unconditionally enforces typed access rules, initialization
-rules for ordinary local reads, affine resource states and leases, and
-statically provable memory violations. Ordinary element indexing and slice
-ranges are rejected unless flow-sensitive typed IR proves their exact bounds
-or source consumes the authenticated success of a checked operation. The
-analysis also classifies extent, alignment, initialization, and lifetime
-obligations as proved, asserted, unproved, violated, or not required.
+These behavior guarantees are not themselves the memory-safety proof. Wyst's
+closed safe subset is reachable code with structural trust `none` and no
+unresolved safety site. For that subset, typed access, initialization,
+lifetime, aliasing, ownership, and data-race rules are unconditional. Ordinary
+element indexing and slice ranges are rejected unless flow-sensitive typed IR
+proves their exact bounds or source consumes the authenticated success of a
+checked operation. Every required extent, alignment, initialization, and
+lifetime obligation is proved or the artifact is rejected.
 
 Additional protection remains explicit and layered:
 
@@ -154,14 +154,13 @@ Additional protection remains explicit and layered:
   the closed hardening catalog, with cataloged effects and terminal failure
   paths. Omitted hardening preserves ordinary compilation.
 
-These rules and layers do not yet define comprehensive whole-language memory
-safety. Raw-address
-assertions, foreign contracts, MMIO, and checked assembly remain auditable
-machine boundaries, and an accepted false or dynamically unproved assertion
-can still fault, trap, access the wrong storage, or violate a device protocol.
-The programmer remains responsible for every boundary the compiler has neither
-proved nor been configured to reject or harden. The compiler in turn never
-uses such a boundary as general-purpose undefined-behavior authority.
+Exhaustive surface-classification tests, the verified-IR gate, final decoded
+memory transcript, and release corpus jointly defend the safe-subset claim.
+Raw-address assertions, foreign and provider contracts, MMIO, cache and
+translation maintenance, naked code, and checked assembly remain auditable
+machine boundaries. A false trusted assertion can still fault, trap, access
+the wrong storage, or violate a device protocol, but cannot silently enter the
+safe subset or become general-purpose undefined-behavior authority.
 
 ### Behavior Taxonomy
 
@@ -197,6 +196,7 @@ All trust-boundary constructs share this model:
 | `address<@atomic<T>>(raw)` in an executable function body | The raw address denotes exact `atomic<T>` storage with `T`'s natural alignment, atomic-capable Normal memory, and no mixed atomic/plain access. | The authenticated atomic address exposes only the closed atomic method surface. Provable misalignment and overlap with target-declared Device memory are compile-time diagnostics; an otherwise dynamic address is recorded as asserted, never proven. | A false dynamic assertion is a trusted-contract violation confined to operations through that address; the assertion itself introduces no runtime check, alignment repair, ordinary access, or unrelated optimizer assumption. A later selected hardening check remains governed by the artifact policy. |
 | `trusted_callable<fn(args) -> ret>(addr)` or `trusted_callable<extern "C" fn(args) -> ret>(addr)` | The raw address, function signature, return type, and calling convention identify a callable function entry. | The constructed function pointer has the asserted type; calls through it use that signature and ABI. | The indirect call may branch to the wrong address or interpret registers/stack incorrectly; the false assertion is confined to that constructed pointer and its uses. |
 | Foreign declarations and object/header facts without a Wyst body | The linked symbol exists and obeys the declared type, calling convention, and externally documented side effects. | Calls and address-taking use the declaration as the boundary contract. | The emitted call or data reference follows the declaration and may miscommunicate with the foreign code or object. |
+| Authenticated executable-environment calls such as `semihost.call(operation, parameter)` | The operation and parameter authorize the selected environment service's synchronous host interaction, including every address, extent, alignment, initialization, mutation, ordering, ownership, completion, and lifetime obligation that the opaque service may exercise before return or trap. | The compiler emits only the catalog-authenticated service ABI and conservatively invalidates unpreserved storage facts; it does not infer a memory contract from the numeric operation or parameter. | The environment call may inspect or mutate unintended storage, observe invalid input, violate a host protocol, or outlive an invalid pointee; the violation remains localized to this explicit boundary and its structurally propagated `environment_contract` trust. |
 | Manually stated foreign effects and library contracts not proven from a body | The named API has the stated effects, allocation behavior, storage identity, error behavior, and protocol constraints. | Diagnostics and explain reports may use the stated contract only for that API boundary. | Code at that API boundary may observe wrong effects or protocol behavior; other calls do not inherit the false fact. |
 | Checked-assembly signature operands, symbol references, and stack transitions | Each operand and symbol has the stated type and identity, and an explicit stack clause requests the stated complete transition. | The parsed instruction rows derive register, memory, control-flow, and effect facts; allocation and stack verification consume those facts. | An unresolved or incompatible fact is rejected; no manual clobber, effect, constraint, or purity assertion can override the generated model. |
 | ABI overrides such as `extern "C"` functions and function-pointer types | The boundary obeys the selected ABI's register, stack, parameter, return, and ownership rules. | Calls, prologues, epilogues, and function-pointer signatures are lowered for the asserted ABI. | The call boundary may pass or receive values incorrectly; no unrelated optimizer assumption is created. |

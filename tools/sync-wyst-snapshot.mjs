@@ -45,10 +45,13 @@ const vocabularyCatalogs = [
 const designCatalogs = [
 	...vocabularyCatalogs,
 	"c-interactive-adapter-catalog.tsv",
-];
+].map((destination) => ({
+	destination,
+	source: `design/catalogs/language/${destination}`,
+}));
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
-	...designCatalogs.map((file) => `:(top,literal)design/${file}`),
+	...designCatalogs.map(({ source }) => `:(top,literal)${source}`),
 	":(top,literal)wync/Cargo.lock",
 	":(top,literal)wync/Cargo.toml",
 	":(top,glob)wync/core/**/*.wyst",
@@ -123,21 +126,16 @@ const wystRoot = await resolveWystRoot();
 const designFileNames = (await readdir(path.join(wystRoot, "design"), {
 	withFileTypes: true,
 }))
-	.filter(
-		(entry) =>
-			entry.isFile() &&
-			(entry.name.endsWith(".md") ||
-				designCatalogs.includes(entry.name)),
-	)
+	.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
 	.map((entry) => entry.name)
 	.sort();
 
-for (const requiredDesignFile of [
-	"README.md",
-	...designCatalogs,
-]) {
-	if (!designFileNames.includes(requiredDesignFile)) {
-		throw new Error(`Missing Wyst design input: design/${requiredDesignFile}`);
+if (!designFileNames.includes("README.md")) {
+	throw new Error("Missing Wyst design input: design/README.md");
+}
+for (const { source } of designCatalogs) {
+	if (!(await isFile(path.join(wystRoot, source)))) {
+		throw new Error(`Missing Wyst design input: ${source}`);
 	}
 }
 
@@ -193,6 +191,12 @@ try {
 		await copyFile(
 			path.join(wystRoot, "design", file),
 			path.join(stagedDesign, file),
+		);
+	}
+	for (const { destination, source } of designCatalogs) {
+		await copyFile(
+			path.join(wystRoot, source),
+			path.join(stagedDesign, destination),
 		);
 	}
 	await writeFile(path.join(stagedDesign, ".source-commit"), `${sourceCommit}\n`);

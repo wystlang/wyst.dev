@@ -20,38 +20,39 @@ manual, grammar, catalogs, implementation, and tests are resolved. When the
 language changes, update the affected implementation, documentation, and useful
 regression tests together.
 
+## Directory Layout
+
+The `design/` root is intentionally human-readable:
+
+- `chapter-*.md` and `appendix-*.md` are the language and compiler manual;
+- [source-of-truth.md](source-of-truth.md) explains authority and conflict
+  resolution;
+- [a64-compiler-semantics.md](a64-compiler-semantics.md) is the readable ARM64
+  compiler contract;
+- [generated-atomic-matrix.md](generated-atomic-matrix.md) is a generated but
+  readable reference;
+- [`catalogs/`](catalogs/README.md) contains compiler-consumed TSV and JSON
+  data, separated into language catalogs and ARM64 source/generated data; and
+- [`upstream/`](upstream/) contains pinned third-party source archives and
+  their provenance notes.
+
+If a file defines a machine vocabulary or generated table, it belongs under
+`catalogs/`, not beside the manual. Tests should prove compiler behavior rather
+than add audit ledgers to this directory.
+
 ## Authority
 
 [source-of-truth.md](source-of-truth.md) is the starting point for current
 language semantics and conflict resolution.
 
-Checked-in catalogs own closed vocabularies where the compiler benefits from a
-single machine-readable definition:
-
-- [syntax-words.tsv](syntax-words.tsv) owns source words.
-- [attribute-catalog.tsv](attribute-catalog.tsv) owns declaration attributes.
-- [builtin-type-members.tsv](builtin-type-members.tsv) owns contextual members
-  and exact typed constants of builtin types.
-- [meta-operation-catalog.tsv](meta-operation-catalog.tsv) owns compiler and
-  meta operations.
-- [hardening-catalog.tsv](hardening-catalog.tsv) owns explicit generated
-  runtime checks. It is separate from source semantic operations because
-  hardening is artifact-selected and absent from ordinary compilation.
-- [c-interactive-adapter-catalog.tsv](c-interactive-adapter-catalog.tsv) owns C
-  status/out and tagged/out adapter profiles.
-- [generic-bounds.tsv](generic-bounds.tsv) owns generic capability bounds.
-- [link-format-catalog.tsv](link-format-catalog.tsv) owns the versioned static
-  link representations and their content bindings.
-- [link-interface-schema.tsv](link-interface-schema.tsv) owns canonical
-  semantic-interface record tags and required fields.
-- [a64-link-relocations.tsv](a64-link-relocations.tsv) owns the exhaustive
-  static LP64 AArch64 relocation encodings and failure behavior;
-  [a64-link-veneers.tsv](a64-link-veneers.tsv) owns every permitted veneer.
+Checked-in [machine-readable catalogs](catalogs/README.md) own closed
+vocabularies where the compiler benefits from one definition. Their directory
+README identifies which files are authored inputs and which are generated.
 
 Compiler-owned declaration roles are defined directly beside their
 implementation and validated against the bundled source declaration.
 
-The A64 catalogs and generated tables are compiler inputs for instruction
+The ARM64 catalogs and generated tables are compiler inputs for instruction
 selection, encoding, decoding, checked assembly, and target behavior. Their
 validators and tests protect behavior that can break the compiler.
 
@@ -91,3 +92,4 @@ validators and tests protect behavior that can break the compiler.
 | A        | [appendix-a-ir.md](appendix-a-ir.md)                                       | Compiler IR, SSA, effect representation, verifier invariants, register allocation, and lowering internals. |
 | B        | [appendix-b-grammar.md](appendix-b-grammar.md)                             | Formal grammar, lexical rules, parsing forms, and reserved syntax.                                         |
 | C        | [appendix-c-doc-example-contracts.md](appendix-c-doc-example-contracts.md) | Documentation example categories and required example conventions.                                        |
+| D        | [appendix-d-storage-preservation-examples.md](appendix-d-storage-preservation-examples.md) | Executable examples of current storage-preservation proofs and their boundaries.                            |

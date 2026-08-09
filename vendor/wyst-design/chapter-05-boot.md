@@ -57,8 +57,8 @@ import core.arch { cpu }
 target(arch = arm64-v8a, cpu = generic, el = 2)
 
 const UART0_BASE: u64 = 0x09_00_00_00
-const UARTDR: @volatile u32 = UART0_BASE + 0x00
-const UARTFR: @volatile u32 = UART0_BASE + 0x18
+const UARTDR: @volatile u32 = address<@volatile u32>(UART0_BASE + 0x00)
+const UARTFR: @volatile u32 = address<@volatile u32>(UART0_BASE + 0x18)
 const TXFF: u32 = 1 << 5
 const STACK_TOP: u64 = 0x4010_0000
 
