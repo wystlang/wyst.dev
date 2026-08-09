@@ -269,9 +269,9 @@ test("shared headers keep only Reference and Source", () => {
 test("homepage metadata states the current project value without a release claim", () => {
 	const title = textContent(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? "");
 	const description =
-		"Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost.";
+		"Wyst is an experimental ARM64 language and compiler exploring readable low-level code without hiding machine behavior or cost.";
 	const socialDescription =
-		"Wyst is an experimental ARM64 language and compiler. Its low-level code is easy to read and shows machine behavior and cost.";
+		"Wyst is an experimental ARM64 language and compiler exploring readable low-level code without hiding machine behavior or cost.";
 	const socialAlt =
 		"The image shows the Wyst wordmark and Wyst source code for a UART.";
 
@@ -375,14 +375,19 @@ test("homepage keeps the preferred personal introduction concise", () => {
 		["pre-1.0", /\bpre-1\.0\b/i],
 		["ARM64 only", /\bARM64 only\b/i],
 		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
-		["not memory-safe", /\bnot memory-safe\b/i],
+		["memory-safety scope", /\bmemory safety not guaranteed\b/i],
 		[
 			"name pronunciation and meaning",
-			/pronunciation: “wist” name source: a word for “to know”/i,
+			/“Wyst” is pronounced “\s*wist\s*,” an old word meaning “to know\.”/i,
 		],
 	]) {
 		assert.match(projectMeta, pattern, `the metadata should say ${fact}`);
 	}
+	assert.match(
+		html,
+		/<span><b>“Wyst”<\/b> is pronounced “<b>wist<\/b>,” an old word meaning “to know\.”<\/span>/,
+		"the pronunciation and name origin should share one metadata item",
+	);
 	assert.match(
 		siteCss,
 		/\.project-meta > span \+ span::before\s*\{(?=[^}]*margin-right:\s*1ch;)[^}]*content:\s*"·";/s,
