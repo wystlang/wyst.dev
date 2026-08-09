@@ -13,9 +13,10 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+	HOMEPAGE_EXAMPLES,
 	captureHomepageSemanticArtifact,
 	updateHomepageIndex,
-	updateHomepageTerminalOutput,
+	updateHomepageOutputs,
 } from "./homepage-example.mjs";
 import { createWystSnapshotManifest } from "./wyst-snapshot.mjs";
 
@@ -23,17 +24,19 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDestination = path.join(root, "vendor", "wyst-design");
 const fixtureDestination = path.join(root, "tests", "fixtures", "wyst");
 const snapshotDestination = path.join(root, "vendor", "wyst-snapshot.json");
-const homepageArtifactDestination = path.join(
-	root,
-	"vendor",
-	"wyst-homepage-semantic-tokens.json",
-);
 const homepageIndexDestination = path.join(root, "index.html");
 
 const coreFixturePaths = [
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/layout.wyst",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/wyst.project",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/layout.wyst",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
 	"wync/tests/fixtures/runtime/semihost.wyst",
 ];
 const syntaxCorpusRoot = "wync/tests/fixtures/syntax-corpus";
@@ -179,9 +182,11 @@ const stagingRoot = await mkdtemp(path.join(root, ".wyst-snapshot-sync-"));
 const stagedDesign = path.join(stagingRoot, "wyst-design");
 const stagedFixtures = path.join(stagingRoot, "fixtures");
 const stagedManifest = path.join(stagingRoot, "wyst-snapshot.json");
-const stagedHomepageArtifact = path.join(
-	stagingRoot,
-	"wyst-homepage-semantic-tokens.json",
+const stagedHomepageArtifacts = Object.fromEntries(
+	Object.entries(HOMEPAGE_EXAMPLES).map(([id, example]) => [
+		id,
+		path.join(stagingRoot, path.basename(example.artifactPath)),
+	]),
 );
 const stagedHomepageIndex = path.join(stagingRoot, "index.html");
 
@@ -206,28 +211,39 @@ try {
 		await mkdir(path.dirname(destination), { recursive: true });
 		await copyFile(path.join(wystRoot, relativePath), destination);
 	}
-	const homepageArtifact = await captureHomepageSemanticArtifact({
-		sourceCommit,
-		wystRoot,
-	});
-	await writeFile(
-		stagedHomepageArtifact,
-		`${JSON.stringify(homepageArtifact, null, 2)}\n`,
+	const homepageArtifactEntries = await Promise.all(
+		Object.entries(HOMEPAGE_EXAMPLES).map(async ([id, example]) => [
+			id,
+			await captureHomepageSemanticArtifact({
+				sourceCommit,
+				sourcePath: example.sourcePath,
+				wystRoot,
+			}),
+		]),
+	);
+	const homepageArtifacts = Object.fromEntries(homepageArtifactEntries);
+	await Promise.all(
+		homepageArtifactEntries.map(([id, artifact]) =>
+			writeFile(
+				stagedHomepageArtifacts[id],
+				`${JSON.stringify(artifact, null, 2)}\n`,
+			),
+		),
+	);
+	const homepageOutputEntries = await Promise.all(
+		Object.entries(HOMEPAGE_EXAMPLES).map(async ([id, example]) => [
+			id,
+			await readFile(path.join(wystRoot, example.outputSourcePath), "utf8"),
+		]),
 	);
 	await writeFile(
 		stagedHomepageIndex,
-		updateHomepageTerminalOutput(
+		updateHomepageOutputs(
 			updateHomepageIndex(
 				await readFile(homepageIndexDestination, "utf8"),
-				homepageArtifact,
+				homepageArtifacts,
 			),
-			await readFile(
-				path.join(
-					wystRoot,
-					"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
-				),
-				"utf8",
-			),
+			Object.fromEntries(homepageOutputEntries),
 		),
 	);
 	await createWystSnapshotManifest({
@@ -244,7 +260,9 @@ try {
 	await rename(stagedDesign, designDestination);
 	await rename(stagedFixtures, fixtureDestination);
 	await rename(stagedManifest, snapshotDestination);
-	await rename(stagedHomepageArtifact, homepageArtifactDestination);
+	for (const [id, example] of Object.entries(HOMEPAGE_EXAMPLES)) {
+		await rename(stagedHomepageArtifacts[id], example.artifactPath);
+	}
 	await rename(stagedHomepageIndex, homepageIndexDestination);
 } finally {
 	await rm(stagingRoot, { recursive: true, force: true });

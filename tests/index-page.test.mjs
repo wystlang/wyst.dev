@@ -6,6 +6,12 @@ const SITE_SOURCE_URL = "https://github.com/wystlang/wyst.dev";
 const UART_EXAMPLE_PATH =
 	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst";
 const UART_SOURCE_URL = `${SITE_SOURCE_URL}/blob/main/tests/fixtures/wyst/${UART_EXAMPLE_PATH}`;
+const OVERFLOW_EXAMPLE_PATH =
+	"wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst";
+const OVERFLOW_SOURCE_URL = `${SITE_SOURCE_URL}/blob/main/tests/fixtures/wyst/${OVERFLOW_EXAMPLE_PATH}`;
+const EFFECTS_EXAMPLE_PATH =
+	"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst";
+const EFFECTS_SOURCE_URL = `${SITE_SOURCE_URL}/blob/main/tests/fixtures/wyst/${EFFECTS_EXAMPLE_PATH}`;
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const docsIndexHtml = await readFile(
@@ -44,6 +50,28 @@ const uartFixtureSource = await readFile(
 const uartExpectedOutput = await readFile(
 	new URL(
 		"./fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+		import.meta.url,
+	),
+	"utf8",
+);
+const overflowFixtureSource = await readFile(
+	new URL(`./fixtures/wyst/${OVERFLOW_EXAMPLE_PATH}`, import.meta.url),
+	"utf8",
+);
+const overflowExpectedOutput = await readFile(
+	new URL(
+		"./fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
+		import.meta.url,
+	),
+	"utf8",
+);
+const effectsFixtureSource = await readFile(
+	new URL(`./fixtures/wyst/${EFFECTS_EXAMPLE_PATH}`, import.meta.url),
+	"utf8",
+);
+const effectsExpectedOutput = await readFile(
+	new URL(
+		"./fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
 		import.meta.url,
 	),
 	"utf8",
@@ -162,12 +190,25 @@ function taggedElementWithOpeningMatch(pageHtml, openingPattern, message) {
 	return pageHtml.slice(start, end + endTag.length);
 }
 
-function uartExampleHtml() {
-	return taggedElementWithOpeningMatch(
-		html,
-		/<([a-z][\w-]*)\b(?=[^>]*\bdata-example-source="uart-hello")(?=[^>]*\bdata-example-path="wync\/tests\/fixtures\/qemu\/virt\/uart-hello\/main\.wyst")[^>]*>/i,
-		"missing provenance-marked uart-hello example",
+function examplePanelHtml(id) {
+	const opening = html.match(
+		new RegExp(`<div\\b(?=[^>]*\\bid="${id}-panel")[^>]*>`, "i"),
 	);
+	assert.ok(opening, `missing ${id} example panel`);
+	const start = opening.index;
+	const nextMarker =
+		id === "uart"
+			? 'id="overflow-panel"'
+			: id === "overflow"
+				? 'id="effects-panel"'
+				: '<figcaption class="visually-hidden">';
+	const end = html.indexOf(nextMarker, start + opening[0].length);
+	assert.notEqual(end, -1, `missing end marker for ${id} example panel`);
+	return html.slice(start, end);
+}
+
+function uartExampleHtml() {
+	return examplePanelHtml("uart");
 }
 
 function sourceLines(markup) {
@@ -320,6 +361,7 @@ test("homepage keeps the preferred personal introduction concise", () => {
 		],
 		["conformance evidence", /\bConformance tests\b/i],
 		["determinism evidence", /\bbyte-identical kernel builds\b/i],
+		["reproducible artifacts", /\bidentical inputs produce byte-identical artifacts\b/i],
 		["fuzz evidence", /\bfuzz tests\b/i],
 		["runtime evidence", /\bQEMU fixtures\b/i],
 	]) {
@@ -339,8 +381,8 @@ test("homepage keeps the preferred personal introduction concise", () => {
 		}
 	}
 	assert.ok(
-		introText.split(/\s+/).filter(Boolean).length <= 75,
-		"the complete introduction should stay at or under 75 words",
+		introText.split(/\s+/).filter(Boolean).length <= 90,
+		"the complete introduction should stay at or under 90 words",
 	);
 	assert.doesNotMatch(
 		introText,
@@ -873,6 +915,91 @@ test("homepage shows one static UART example from the real fixture", () => {
 	);
 });
 
+test("homepage tabs expose verified overflow and effect examples", () => {
+	const exampleSection = sectionHtml(html, "example");
+	assert.match(
+		exampleSection,
+		/<div\b(?=[^>]*class="artifact-tabs")(?=[^>]*role="tablist")(?=[^>]*aria-label="Wyst examples")[^>]*>/,
+	);
+	const tabLabels = [
+		...exampleSection.matchAll(
+			/<button\b(?=[^>]*role="tab")(?=[^>]*data-example-tab="([^"]+)")[^>]*>([^<]+)<\/button>/g,
+		),
+	].map(([, id, label]) => [id, label.trim()]);
+	assert.deepEqual(tabLabels, [
+		["uart", "uart"],
+		["overflow", "overflow"],
+		["effects", "effects"],
+	]);
+	assert.match(
+		exampleSection,
+		/<button\b(?=[^>]*id="uart-tab")(?=[^>]*aria-selected="true")(?=[^>]*aria-controls="uart-panel")[^>]*>/,
+	);
+	for (const id of ["overflow", "effects"]) {
+		assert.match(
+			exampleSection,
+			new RegExp(
+				`<button\\b(?=[^>]*id="${id}-tab")(?=[^>]*aria-selected="false")(?=[^>]*aria-controls="${id}-panel")(?=[^>]*tabindex="-1")[^>]*>`,
+			),
+		);
+		assert.match(
+			examplePanelHtml(id),
+			new RegExp(`role="tabpanel"[\\s\\S]*?aria-labelledby="${id}-tab"`),
+		);
+	}
+
+	for (const [id, sourceId, fixtureSource, expectedOutput, sourceUrl] of [
+		[
+			"overflow",
+			"overflow-source",
+			overflowFixtureSource,
+			overflowExpectedOutput,
+			OVERFLOW_SOURCE_URL,
+		],
+		[
+			"effects",
+			"effects-source",
+			effectsFixtureSource,
+			effectsExpectedOutput,
+			EFFECTS_SOURCE_URL,
+		],
+	]) {
+		const panel = examplePanelHtml(id);
+		const sourceMatch = panel.match(
+			new RegExp(`<code id="${sourceId}">([\\s\\S]*?)<\\/code>`),
+		);
+		assert.ok(sourceMatch, `${id} source block should exist`);
+		assert.equal(
+			sourceText(sourceMatch[1]),
+			homepageFixtureDocument(fixtureSource),
+			`${id} should publish its complete compiler fixture`,
+		);
+		assert.ok(
+			anchors(panel).some(({ href }) => href === sourceUrl),
+			`${id} should link to its versioned site fixture`,
+		);
+		const outputMatch = panel.match(
+			new RegExp(`<code id="${id}-output">([\\s\\S]*?)<\\/code>`),
+		);
+		assert.ok(outputMatch, `${id} output block should exist`);
+		assert.equal(
+			decodeHtml(textOutsideTags(outputMatch[1])).trim(),
+			expectedOutput.trim(),
+			`${id} output should match the compiler-owned snapshot`,
+		);
+	}
+
+	assert.match(
+		examplePanelHtml("overflow"),
+		/<span data-token="function" data-token-modifiers="declaration">is_at_max<\/span>/,
+	);
+	assert.match(
+		examplePanelHtml("effects"),
+		/#\[deny_effects\(interrupt_mask\)\]/,
+	);
+	assert.match(effectsExpectedOutput, /error\[E0233\]: effect 'interrupt_mask' is denied/);
+});
+
 test("marketing funnel furniture is absent", () => {
 	for (const id of ["philosophy", "examples", "not", "faq"]) {
 		assert.doesNotMatch(html, new RegExp(`\\bid="${id}"`, "i"));
@@ -899,8 +1026,8 @@ test("marketing funnel furniture is absent", () => {
 
 	assert.equal(
 		[...html.matchAll(/<button\b/gi)].length,
-		1,
-		"the source copy control should be the homepage's only button",
+		6,
+		"the homepage should contain three tabs and three source-copy controls",
 	);
 	assert.doesNotMatch(html, /role="button"|aria-expanded=/i);
 	assert.doesNotMatch(html, /data-code="compare-|\bsum_to\b|Side by side/i);

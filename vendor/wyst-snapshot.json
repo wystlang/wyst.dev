@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "sourceCommit": "e3cddc792dd03f12b9d863b7d19af5e99f7c197a",
-  "snapshotSha256": "343ec4deca6c6dddf5d030e00cd597126e9b452b0c822caa603cc6b550fa48ee",
+  "sourceCommit": "c1d4ca227f1507e1c7c26be974fa27a65f2143cb",
+  "snapshotSha256": "bfee3c65067351f18dc4edb0e85e715e915e30212e33f1c38b38cf0c70dc3a91",
   "files": {
+    "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
+      "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
+      "size": 265
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/layout.wyst": {
+      "sha256": "33deaf3e1432036511c4e1b780bb65c67f9e9b6eabe9cf3022384d9d5c79a628",
+      "size": 153
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst": {
+      "sha256": "23fb967543e5f19942c357ddca793f0cc8aabae6da8204df20a3dd730082b074",
+      "size": 421
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/wyst.project": {
+      "sha256": "d2ad952158ace8bf9570ebdebf571d1345e4a3a7fb2e655caef99c0ad1d174f3",
+      "size": 322
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt": {
+      "sha256": "4babbd9bb9f3dd54793008e43f57474c631256db602b01e7f6eb248e99054f93",
+      "size": 8
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/layout.wyst": {
+      "sha256": "25b7ac8634ca50a173d096554b346dd7b6ebea0484f903cc64c07bfee3fff0f9",
+      "size": 549
+    },
+    "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst": {
+      "sha256": "18f30f6c08a047d36800cbd2061fdd248d6b4de0dddfa25a466b67592b773570",
+      "size": 1112
+    },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt": {
       "sha256": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
       "size": 14
@@ -188,7 +216,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "bb935b6b226283c2a3221946e3903403bb6a31d606d5896061945a4e680a75f4",
+      "sha256": "4fb34804cd0dda46b6993b224d74ad312776213ab0ccbd406e84e949aef0832e",
       "size": 41
     },
     "vendor/wyst-design/README.md": {

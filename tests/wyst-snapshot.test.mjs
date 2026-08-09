@@ -34,6 +34,13 @@ const designCatalogs = [
 	"c-interactive-adapter-catalog.tsv",
 ];
 const coreFixtures = [
+	"wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/layout.wyst",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
+	"wync/tests/fixtures/diagnostics/core/effect-denial/wyst.project",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/layout.wyst",
+	"wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
 	"wync/tests/fixtures/runtime/semihost.wyst",
 	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
 	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
@@ -144,13 +151,22 @@ for (const response of responses) {
 		["wync/Cargo.toml", "[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n"],
 		["wync/fuzz/fuzz_targets/parse.rs", "fn original() {}\n"],
 		["wync/src/main.rs", "fn compiler() {}\n"],
-		[coreFixtures[0], "# semihost runtime\n"],
-		[coreFixtures[1], "hello\n"],
-		[coreFixtures[2], "layout fixture\n"],
-		[
-			coreFixtures[3],
-			"module fixture\nfn main() {}\n",
-		],
+		...coreFixtures.map((file) => [
+			file,
+			file.endsWith("expected.stderr")
+				? "error[E0233]: denied effect\n"
+				: file.endsWith("expected.txt")
+					? file.includes("overflow-guard")
+						? "wrapped\n"
+						: "hello\n"
+					: file.endsWith("main.wyst") || file.endsWith("keyboard_isr.wyst")
+						? "module fixture\nfn main() {}\n"
+						: file.endsWith("wyst.project")
+							? "project fixture\n"
+							: file.endsWith("semihost.wyst")
+								? "# semihost runtime\n"
+								: "layout fixture\n",
+		]),
 		...fakeSyntaxCorpusFixtures.map((file) => [
 			file,
 			file.endsWith("manifest.tsv")
@@ -175,7 +191,21 @@ for (const response of responses) {
 	await write(
 		siteRoot,
 		"index.html",
-		'<pre aria-label="QEMU UART output"><code>stale output</code></pre>\n<!-- homepage-semantic-example:start -->\n<pre>stale</pre>\n<!-- homepage-semantic-example:end -->\n',
+		[
+			'<pre aria-label="QEMU UART output"><code id="uart-output">stale output</code></pre>',
+			"<!-- homepage-semantic-example:start -->",
+			"<pre>stale</pre>",
+			"<!-- homepage-semantic-example:end -->",
+			'<pre aria-label="QEMU overflow output"><code id="overflow-output">stale output</code></pre>',
+			"<!-- homepage-overflow-semantic-example:start -->",
+			"<pre>stale</pre>",
+			"<!-- homepage-overflow-semantic-example:end -->",
+			'<pre aria-label="wync diagnostic"><code id="effects-output">stale output</code></pre>',
+			"<!-- homepage-effects-semantic-example:start -->",
+			"<pre>stale</pre>",
+			"<!-- homepage-effects-semantic-example:end -->",
+			"",
+		].join("\n"),
 	);
 	await chmod(path.join(wystRoot, "wync", "fake-wync.mjs"), 0o755);
 
@@ -253,16 +283,19 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	const { siteRoot, wystRoot } = await makeWystRepo(t);
 	const result = runSync(siteRoot, wystRoot);
 	assert.equal(result.status, 0, result.stderr || result.stdout);
-	const [manifestText, homepageTokenText, homepageIndex] = await Promise.all([
+	const [manifestText, homepageTokenTexts, homepageIndex] = await Promise.all([
 		readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
-		readFile(
-			path.join(siteRoot, "vendor", "wyst-homepage-semantic-tokens.json"),
-			"utf8",
+		Promise.all(
+			[
+				"wyst-homepage-semantic-tokens.json",
+				"wyst-homepage-overflow-semantic-tokens.json",
+				"wyst-homepage-effects-semantic-tokens.json",
+			].map((file) => readFile(path.join(siteRoot, "vendor", file), "utf8")),
 		),
 		readFile(path.join(siteRoot, "index.html"), "utf8"),
 	]);
 	const manifest = JSON.parse(manifestText);
-	const homepageTokens = JSON.parse(homepageTokenText);
+	const homepageTokens = homepageTokenTexts.map((text) => JSON.parse(text));
 	assert.equal(manifest.schema, 1);
 	assert.equal(manifest.sourceCommit, git(wystRoot, ["rev-parse", "HEAD"]).stdout.trim());
 	assert.match(manifest.snapshotSha256, /^[0-9a-f]{64}$/);
@@ -278,8 +311,10 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
 	}
-	assert.equal(homepageTokens.source.gitCommit, manifest.sourceCommit);
-	assert.equal(homepageTokens.generator, "wync-lsp-semanticTokens/full");
+	for (const tokens of homepageTokens) {
+		assert.equal(tokens.source.gitCommit, manifest.sourceCommit);
+		assert.equal(tokens.generator, "wync-lsp-semanticTokens/full");
+	}
 	assert.match(
 		homepageIndex,
 		/<span data-token="keyword" data-token-modifiers="defaultLibrary">fn<\/span>/,
@@ -290,8 +325,10 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	);
 	assert.match(
 		homepageIndex,
-		/<pre aria-label="QEMU UART output"><code>hello<\/code><\/pre>/,
+		/<pre aria-label="QEMU UART output"><code id="uart-output">hello<\/code><\/pre>/,
 	);
+	assert.match(homepageIndex, /<code id="overflow-output">wrapped<\/code>/);
+	assert.match(homepageIndex, /<code id="effects-output">error\[E0233\]: denied effect<\/code>/);
 
 	const repeated = runSync(siteRoot, wystRoot);
 	assert.equal(repeated.status, 0, repeated.stderr || repeated.stdout);
@@ -299,12 +336,15 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 		await readFile(path.join(siteRoot, "vendor", "wyst-snapshot.json"), "utf8"),
 		manifestText,
 	);
-	assert.equal(
-		await readFile(
-			path.join(siteRoot, "vendor", "wyst-homepage-semantic-tokens.json"),
-			"utf8",
+	assert.deepEqual(
+		await Promise.all(
+			[
+				"wyst-homepage-semantic-tokens.json",
+				"wyst-homepage-overflow-semantic-tokens.json",
+				"wyst-homepage-effects-semantic-tokens.json",
+			].map((file) => readFile(path.join(siteRoot, "vendor", file), "utf8")),
 		),
-		homepageTokenText,
+		homepageTokenTexts,
 	);
 	assert.equal(await readFile(path.join(siteRoot, "index.html"), "utf8"), homepageIndex);
 });

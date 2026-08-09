@@ -219,7 +219,7 @@ const PAGE_AUDIT = String.raw`(() => {
 			};
 		});
 	const smallTargets = [...document.querySelectorAll(
-		"header.site a, .doc-sidebar-toggle, .artifact-bar :is(a, button), footer.site a",
+		"header.site a, .doc-sidebar-toggle, .artifact-tabs button, .artifact-bar :is(a, button), footer.site a",
 	)]
 		.filter(visible)
 		.map((element) => {
@@ -437,6 +437,65 @@ async function keyboardFocusAudit(client) {
 		}))()`,
 	);
 	return { firstFocus, activation };
+}
+
+async function homepageTabsAudit(client) {
+	return evaluate(
+		client,
+		String.raw`(() => {
+			const failures = [];
+			const tabs = [...document.querySelectorAll('[role="tab"][data-example-tab]')];
+			const labels = tabs.map((tab) => tab.textContent.trim());
+			if (JSON.stringify(labels) !== JSON.stringify(["uart", "overflow", "effects"])) {
+				failures.push("unexpected tab labels " + JSON.stringify(labels));
+				return failures;
+			}
+			const state = () => tabs.map((tab) => {
+				const panel = document.getElementById(tab.getAttribute("aria-controls"));
+				return {
+					selected: tab.getAttribute("aria-selected"),
+					tabIndex: tab.tabIndex,
+					panelHidden: panel?.hidden,
+				};
+			});
+			const expected = (selected) => tabs.map((_tab, index) => ({
+				selected: String(index === selected),
+				tabIndex: index === selected ? 0 : -1,
+				panelHidden: index !== selected,
+			}));
+			if (JSON.stringify(state()) !== JSON.stringify(expected(0))) {
+				failures.push("invalid initial state " + JSON.stringify(state()));
+			}
+
+			const right = new KeyboardEvent("keydown", {
+				bubbles: true,
+				cancelable: true,
+				key: "ArrowRight",
+			});
+			tabs[0].dispatchEvent(right);
+			if (!right.defaultPrevented || document.activeElement !== tabs[1] ||
+				JSON.stringify(state()) !== JSON.stringify(expected(1))) {
+				failures.push("ArrowRight did not select overflow " + JSON.stringify(state()));
+			}
+
+			const end = new KeyboardEvent("keydown", {
+				bubbles: true,
+				cancelable: true,
+				key: "End",
+			});
+			tabs[1].dispatchEvent(end);
+			if (!end.defaultPrevented || document.activeElement !== tabs[2] ||
+				JSON.stringify(state()) !== JSON.stringify(expected(2))) {
+				failures.push("End did not select effects " + JSON.stringify(state()));
+			}
+
+			tabs[0].click();
+			if (JSON.stringify(state()) !== JSON.stringify(expected(0))) {
+				failures.push("click did not restore UART " + JSON.stringify(state()));
+			}
+			return failures;
+		})()`,
+	);
 }
 
 const debugPort = await freePort();
@@ -718,6 +777,12 @@ try {
 			}
 			if (keyboard.activation.hash !== "#main" || !keyboard.activation.targetExists) {
 				failures.push(`${label} Skip to content does not activate #main: ${JSON.stringify(keyboard.activation)}`);
+			}
+			if (route === "/") {
+				const tabFailures = await homepageTabsAudit(client);
+				for (const failure of tabFailures) {
+					failures.push(`${label} homepage tabs: ${failure}`);
+				}
 			}
 		}
 	}

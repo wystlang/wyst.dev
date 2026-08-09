@@ -88,6 +88,7 @@ function copyFixture({ clipboard, execCommand = () => false } = {}) {
 		},
 		querySelectorAll(selector) {
 			if (selector === "[data-copy-target]") return [button];
+			if (selector === '[role="tab"][data-example-tab]') return [];
 			if (selector === ".source-viewport > pre") return [pane];
 			assert.fail(`unexpected selector: ${selector}`);
 		},

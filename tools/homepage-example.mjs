@@ -6,30 +6,78 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export const HOMEPAGE_SOURCE_PATH =
-	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst";
-export const HOMEPAGE_ARTIFACT_PATH = path.join(
-	ROOT,
-	"vendor",
-	"wyst-homepage-semantic-tokens.json",
-);
 export const HOMEPAGE_INDEX_PATH = path.join(ROOT, "index.html");
-export const HOMEPAGE_OUTPUT_PATH = path.join(
-	ROOT,
-	"tests",
-	"fixtures",
-	"wyst",
-	"wync",
-	"tests",
-	"fixtures",
-	"qemu",
-	"virt",
-	"uart-hello",
-	"expected.txt",
-);
-export const HOMEPAGE_REGION_START =
-	"<!-- homepage-semantic-example:start -->";
-export const HOMEPAGE_REGION_END = "<!-- homepage-semantic-example:end -->";
+
+function fixturePath(relativePath) {
+	return path.join(ROOT, "tests", "fixtures", "wyst", ...relativePath.split("/"));
+}
+
+export const HOMEPAGE_EXAMPLES = Object.freeze({
+	uart: Object.freeze({
+		artifactPath: path.join(
+			ROOT,
+			"vendor",
+			"wyst-homepage-semantic-tokens.json",
+		),
+		outputCodeId: "uart-output",
+		outputSourcePath:
+			"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+		outputPath: fixturePath(
+			"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
+		),
+		regionEnd: "<!-- homepage-semantic-example:end -->",
+		regionStart: "<!-- homepage-semantic-example:start -->",
+		scrollHintId: "uart-scroll-hint",
+		sourceAriaLabel: "Wyst UART source",
+		sourceCodeId: "uart-source",
+		sourcePath: "wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
+	}),
+	overflow: Object.freeze({
+		artifactPath: path.join(
+			ROOT,
+			"vendor",
+			"wyst-homepage-overflow-semantic-tokens.json",
+		),
+		outputCodeId: "overflow-output",
+		outputSourcePath:
+			"wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
+		outputPath: fixturePath(
+			"wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
+		),
+		regionEnd: "<!-- homepage-overflow-semantic-example:end -->",
+		regionStart: "<!-- homepage-overflow-semantic-example:start -->",
+		scrollHintId: "overflow-scroll-hint",
+		sourceAriaLabel: "Wyst overflow source",
+		sourceCodeId: "overflow-source",
+		sourcePath: "wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
+	}),
+	effects: Object.freeze({
+		artifactPath: path.join(
+			ROOT,
+			"vendor",
+			"wyst-homepage-effects-semantic-tokens.json",
+		),
+		outputCodeId: "effects-output",
+		outputSourcePath:
+			"wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
+		outputPath: fixturePath(
+			"wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
+		),
+		regionEnd: "<!-- homepage-effects-semantic-example:end -->",
+		regionStart: "<!-- homepage-effects-semantic-example:start -->",
+		scrollHintId: "effects-scroll-hint",
+		sourceAriaLabel: "Wyst denied-effects source",
+		sourceCodeId: "effects-source",
+		sourcePath:
+			"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
+	}),
+});
+
+export const HOMEPAGE_SOURCE_PATH = HOMEPAGE_EXAMPLES.uart.sourcePath;
+export const HOMEPAGE_ARTIFACT_PATH = HOMEPAGE_EXAMPLES.uart.artifactPath;
+export const HOMEPAGE_OUTPUT_PATH = HOMEPAGE_EXAMPLES.uart.outputPath;
+export const HOMEPAGE_REGION_START = HOMEPAGE_EXAMPLES.uart.regionStart;
+export const HOMEPAGE_REGION_END = HOMEPAGE_EXAMPLES.uart.regionEnd;
 
 const TOKEN_GENERATOR = "wync-lsp-semanticTokens/full";
 const LSP_HEADER_END = Buffer.from("\r\n\r\n");
@@ -260,26 +308,33 @@ export function createHomepageSemanticArtifact({
 
 export async function captureHomepageSemanticArtifact({
 	sourceCommit = null,
+	sourcePath = HOMEPAGE_SOURCE_PATH,
 	wystRoot,
 }) {
-	const sourcePath = path.join(wystRoot, ...HOMEPAGE_SOURCE_PATH.split("/"));
-	const source = await readFile(sourcePath, "utf8");
-	const capture = runWyncLsp({ source, sourcePath, wystRoot });
+	const absoluteSourcePath = path.join(wystRoot, ...sourcePath.split("/"));
+	const source = await readFile(absoluteSourcePath, "utf8");
+	const capture = runWyncLsp({ source, sourcePath: absoluteSourcePath, wystRoot });
 	return createHomepageSemanticArtifact({
 		...capture,
 		source,
 		sourceCommit,
+		sourcePath,
 	});
 }
 
-function validateArtifact(artifact) {
+function validateArtifact(artifact, expectedSourcePath) {
 	if (!artifact || typeof artifact !== "object" || artifact.schema !== 2) {
 		throw new Error("unsupported homepage semantic-token artifact");
 	}
 	if (artifact.generator !== TOKEN_GENERATOR) {
 		throw new Error("homepage semantic-token artifact has an unexpected generator");
 	}
-	if (artifact.source?.path !== HOMEPAGE_SOURCE_PATH) {
+	if (
+		typeof artifact.source?.path !== "string" ||
+		!artifact.source.path.endsWith(".wyst") ||
+		artifact.source.path.includes("..") ||
+		(expectedSourcePath && artifact.source.path !== expectedSourcePath)
+	) {
 		throw new Error("homepage semantic-token artifact names the wrong source fixture");
 	}
 	assertFullCommit(artifact.source?.gitCommit);
@@ -427,23 +482,30 @@ export function renderHomepageSemanticMarkup(inputArtifact) {
 	return output + escapeHtml(source.slice(offset));
 }
 
-export function generatedHomepageRegion(markup) {
-	return `<pre aria-label="Wyst UART source" aria-describedby="uart-scroll-hint" tabindex="0"><code id="uart-source">${markup}</code></pre>`;
+export function generatedHomepageRegion(
+	markup,
+	example = HOMEPAGE_EXAMPLES.uart,
+) {
+	return `<pre aria-label="${example.sourceAriaLabel}" aria-describedby="${example.scrollHintId}" tabindex="0"><code id="${example.sourceCodeId}">${markup}</code></pre>`;
 }
 
-function replaceGeneratedRegion(indexHtml, region) {
-	const start = indexHtml.indexOf(HOMEPAGE_REGION_START);
-	const end = indexHtml.indexOf(HOMEPAGE_REGION_END);
+function replaceGeneratedRegion(indexHtml, region, example) {
+	const start = indexHtml.indexOf(example.regionStart);
+	const end = indexHtml.indexOf(example.regionEnd);
 	if (start === -1 || end === -1 || start >= end) {
-		throw new Error("index.html has no ordered homepage semantic-example region");
+		throw new Error(
+			`index.html has no ordered homepage ${example.sourceCodeId} semantic-example region`,
+		);
 	}
 	if (
-		indexHtml.indexOf(HOMEPAGE_REGION_START, start + 1) !== -1 ||
-		indexHtml.indexOf(HOMEPAGE_REGION_END, end + 1) !== -1
+		indexHtml.indexOf(example.regionStart, start + 1) !== -1 ||
+		indexHtml.indexOf(example.regionEnd, end + 1) !== -1
 	) {
-		throw new Error("index.html has more than one homepage semantic-example region");
+		throw new Error(
+			`index.html has more than one homepage ${example.sourceCodeId} semantic-example region`,
+		);
 	}
-	const startEnd = start + HOMEPAGE_REGION_START.length;
+	const startEnd = start + example.regionStart.length;
 	const indentation = indexHtml.slice(indexHtml.lastIndexOf("\n", start) + 1, start);
 	return (
 		indexHtml.slice(0, startEnd) +
@@ -452,24 +514,37 @@ function replaceGeneratedRegion(indexHtml, region) {
 	);
 }
 
-export function updateHomepageIndex(indexHtml, artifact) {
-	return replaceGeneratedRegion(
-		indexHtml,
-		generatedHomepageRegion(renderHomepageSemanticMarkup(artifact)),
-	);
+export function updateHomepageIndex(indexHtml, artifactOrArtifacts) {
+	const artifacts = artifactOrArtifacts?.schema
+		? { uart: artifactOrArtifacts }
+		: artifactOrArtifacts;
+	let updated = indexHtml;
+	for (const [id, artifact] of Object.entries(artifacts ?? {})) {
+		const example = HOMEPAGE_EXAMPLES[id];
+		if (!example) throw new Error(`unknown homepage example '${id}'`);
+		validateArtifact(artifact, example.sourcePath);
+		updated = replaceGeneratedRegion(
+			updated,
+			generatedHomepageRegion(renderHomepageSemanticMarkup(artifact), example),
+			example,
+		);
+	}
+	return updated;
 }
 
-export function updateHomepageTerminalOutput(indexHtml, output) {
-	const open = '<pre aria-label="QEMU UART output"><code>';
+function replaceHomepageOutput(indexHtml, output, example) {
+	const open = `<code id="${example.outputCodeId}">`;
 	const close = "</code></pre>";
 	const start = indexHtml.indexOf(open);
 	if (start === -1 || indexHtml.indexOf(open, start + 1) !== -1) {
-		throw new Error("index.html must contain one QEMU UART output block");
+		throw new Error(
+			`index.html must contain one ${example.outputCodeId} output block`,
+		);
 	}
 	const contentStart = start + open.length;
 	const end = indexHtml.indexOf(close, contentStart);
 	if (end === -1) {
-		throw new Error("index.html has an unterminated QEMU UART output block");
+		throw new Error(`index.html has an unterminated ${example.outputCodeId} block`);
 	}
 	const terminalOutput = output.replace(/\r\n/g, "\n").replace(/\n$/, "");
 	return (
@@ -479,44 +554,85 @@ export function updateHomepageTerminalOutput(indexHtml, output) {
 	);
 }
 
+export function updateHomepageOutputs(indexHtml, outputs) {
+	let updated = indexHtml;
+	for (const [id, output] of Object.entries(outputs ?? {})) {
+		const example = HOMEPAGE_EXAMPLES[id];
+		if (!example) throw new Error(`unknown homepage example '${id}'`);
+		updated = replaceHomepageOutput(updated, output, example);
+	}
+	return updated;
+}
+
+export function updateHomepageTerminalOutput(indexHtml, output) {
+	return replaceHomepageOutput(indexHtml, output, HOMEPAGE_EXAMPLES.uart);
+}
+
 export async function readHomepageSemanticArtifact(
 	artifactPath = HOMEPAGE_ARTIFACT_PATH,
+	sourcePath = HOMEPAGE_SOURCE_PATH,
 ) {
-	return validateArtifact(JSON.parse(await readFile(artifactPath, "utf8")));
+	return validateArtifact(
+		JSON.parse(await readFile(artifactPath, "utf8")),
+		sourcePath,
+	);
+}
+
+export async function readHomepageSemanticArtifacts() {
+	return Object.fromEntries(
+		await Promise.all(
+			Object.entries(HOMEPAGE_EXAMPLES).map(async ([id, example]) => [
+				id,
+				await readHomepageSemanticArtifact(
+					example.artifactPath,
+					example.sourcePath,
+				),
+			]),
+		),
+	);
 }
 
 export async function verifyHomepageExample({
-	artifactPath = HOMEPAGE_ARTIFACT_PATH,
 	indexPath = HOMEPAGE_INDEX_PATH,
-	outputPath = HOMEPAGE_OUTPUT_PATH,
 } = {}) {
-	const [artifact, indexHtml, output] = await Promise.all([
-		readHomepageSemanticArtifact(artifactPath),
+	const [artifacts, indexHtml, outputEntries] = await Promise.all([
+		readHomepageSemanticArtifacts(),
 		readFile(indexPath, "utf8"),
-		readFile(outputPath, "utf8"),
+		Promise.all(
+			Object.entries(HOMEPAGE_EXAMPLES).map(async ([id, example]) => [
+				id,
+				await readFile(example.outputPath, "utf8"),
+			]),
+		),
 	]);
-	const expected = updateHomepageTerminalOutput(
-		updateHomepageIndex(indexHtml, artifact),
-		output,
+	const expected = updateHomepageOutputs(
+		updateHomepageIndex(indexHtml, artifacts),
+		Object.fromEntries(outputEntries),
 	);
 	if (expected !== indexHtml) {
 		throw new Error(
-			"homepage source markup differs from the compiler semantic-token artifact; run npm run sync:wyst",
+			"homepage examples differ from their compiler artifacts; run npm run sync:wyst",
 		);
 	}
-	return artifact;
+	return artifacts;
 }
 
 export async function writeHomepageExample({
 	artifact,
-	artifactPath = HOMEPAGE_ARTIFACT_PATH,
+	id = "uart",
+	artifactPath,
 	indexPath = HOMEPAGE_INDEX_PATH,
 }) {
-	validateArtifact(artifact);
+	const example = HOMEPAGE_EXAMPLES[id];
+	if (!example) throw new Error(`unknown homepage example '${id}'`);
+	validateArtifact(artifact, example.sourcePath);
 	const indexHtml = await readFile(indexPath, "utf8");
 	await Promise.all([
-		writeFile(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`),
-		writeFile(indexPath, updateHomepageIndex(indexHtml, artifact)),
+		writeFile(
+			artifactPath ?? example.artifactPath,
+			`${JSON.stringify(artifact, null, 2)}\n`,
+		),
+		writeFile(indexPath, updateHomepageIndex(indexHtml, { [id]: artifact })),
 	]);
 }
 
@@ -528,5 +644,5 @@ if (
 		throw new Error("usage: node tools/homepage-example.mjs --check");
 	}
 	await verifyHomepageExample();
-	console.log("homepage semantic highlighting matches the captured wync token stream");
+	console.log("homepage examples match their captured wync artifacts");
 }
