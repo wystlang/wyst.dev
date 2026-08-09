@@ -120,6 +120,13 @@ test("feature tabs render only their verified source ranges", () => {
 	assert.match(effectsSource, /^#\[deny_effects\(interrupt_mask\)\]/);
 	assert.match(effectsSource, /cpu\.unmask\(\.irq\)/);
 	assert.doesNotMatch(effectsSource, /#target|_start|establishes stack/);
+	assert.match(
+		renderHomepageSemanticMarkup(
+			artifacts.effects,
+			HOMEPAGE_EXAMPLES.effects.sourceLineRange,
+		),
+		tokenMarkup("macro", "deny_effects"),
+	);
 });
 
 test("semantic-token artifact preserves the complete source document", () => {

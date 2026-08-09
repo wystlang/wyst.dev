@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "48d763d93df7ef96a56c50aa754cf7ef6d05c712",
-  "snapshotSha256": "f8f461d2a72184757beca156a03ae1feef7df64af4242da6f74d23f736cf78a4",
+  "sourceCommit": "5112d8c7376f032af20ca96c1a177d9d2084189d",
+  "snapshotSha256": "49a49192d23fb9879bd430cfc475afe81c9fba840d57601c83b9e385fb733743",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -216,7 +216,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "0d3306d76d3c444ecab1024f0bb2a0c740d316103d2f82dad811b115f773f370",
+      "sha256": "c442aa7bb279ee1602451ec0661cce817c78f675ed0c88767e11cb41aefa22f4",
       "size": 41
     },
     "vendor/wyst-design/README.md": {

@@ -1006,7 +1006,7 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 	assert.doesNotMatch(examplePanelHtml("overflow"), /UART|uart_write|_start/);
 	assert.match(
 		examplePanelHtml("effects"),
-		/#\[deny_effects\(interrupt_mask\)\]/,
+		/#\[<span data-token="macro" data-token-modifiers="defaultLibrary">deny_effects<\/span>\(interrupt_mask\)\]/,
 	);
 	assert.match(examplePanelHtml("effects"), /keyboard_isr\.wyst · rejected excerpt/);
 	assert.doesNotMatch(examplePanelHtml("effects"), /#target|_start|establishes stack/);
