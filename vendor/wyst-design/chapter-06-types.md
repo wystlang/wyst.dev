@@ -218,7 +218,7 @@ arguments are full types that may nest. Wyst has no generic inference,
 defaults, value parameters, aliases, user-defined bounds, traits, or turbofish.
 Bounds come only from the closed compiler-defined capability catalog. Built-in
 or duplicate parameter names and incorrect arity are errors.
-[The generic-bounds registry](generic-bounds.tsv) is the
+[The generic-bounds registry](catalogs/language/generic-bounds.tsv) is the
 machine-readable authority for every active bound's spelling, subject set,
 capability contract, and enum-payload eligibility; adding a bound requires one
 complete atomic registry row.
@@ -591,7 +591,7 @@ non-scalar built-in forms do not expose these members. The language does not
 provide parallel `BITS` or `BYTES` members because `#size_of(T)` already owns
 the byte-size query.
 
-[builtin-type-members.tsv](builtin-type-members.tsv) is the machine-readable
+[builtin-type-members.tsv](catalogs/language/builtin-type-members.tsv) is the machine-readable
 authority for the complete member set, exact typed values, and evaluation
 class.
 
@@ -1720,11 +1720,12 @@ bitstruct FsrEl1: u32 { ... }   // 32-bit fault status image
 #### `@T` for Pointer-Parametric Code
 
 Since `@T` is structurally a tagged 64-bit address (see §1.4.1) and
-arithmetic on it is element-scaled, address-walking code can be written over
+`element_offset` scales by its lens, address-walking code can be written over
 the _bit width_ of the access by passing the address with the intended lens:
 
-The "type-parametric" axis here collapses to "typed address arithmetic plus
-explicit access width," which is enough for most low-level kernel work.
+The "type-parametric" axis here collapses to "unit-explicit typed-address
+derivation plus explicit access width," which is enough for most low-level
+kernel work.
 
 #### External Code Generation
 

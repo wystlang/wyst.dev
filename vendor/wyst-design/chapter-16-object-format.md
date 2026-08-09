@@ -268,8 +268,8 @@ digest mismatch is corruption and a hard error.
 
 ### Canonical Semantic Interface
 
-The interface begins with the eight bytes `WYSTIF 00 05`, followed by the raw
-32-byte SHA-256 of the exact `design/link-interface-schema.tsv` bytes, then the
+The interface begins with the eight bytes `WYSTIF 00 06`, followed by the raw
+32-byte SHA-256 of the exact `design/catalogs/language/link-interface-schema.tsv` bytes, then the
 record count as the shortest unsigned LEB128 encoding of a `u64`. Each record
 is encoded as:
 
@@ -312,7 +312,7 @@ contracts, roots, and diagnostic locations. Adding or changing a record
 changes the schema digest and requires an explicit schema revision. The
 interface never serializes compiler-private backend IR.
 
-`design/link-interface-schema.tsv` is also the machine-readable revision-5
+`design/catalogs/language/link-interface-schema.tsv` is also the machine-readable revision-7
 field-shape authority. Its `field_shapes` column has one shape for each
 `required_fields` entry. The primitive shapes are `bool`, `u64`, `i64`,
 `bytes`, `text`, and the closed semantic shapes named by the catalog.
@@ -323,13 +323,18 @@ sequence. `visibility` admits only `public` and `interface_private`.
 drive prefixes, backslashes, empty components, and `.` / `..`, and
 `source_span` carries only normalized byte offsets. An incompatible field
 shape or meaning change requires a new magic/schema revision, not merely a new
-digest under revision 5. Revision-1, revision-2, revision-3, and revision-4 interface bytes are rejected rather than
+digest under revision 7. Revision-1 through revision-6 interface bytes are rejected rather than
 upgraded implicitly: these products are compiler-internal and every paired
 object/interface or archive/bundle set must be rebuilt atomically.
 
-The revision-5 `callable_contract` record has the exact ordered fields
+The revision-7 `callable_contract` record has the exact ordered fields
 `calling_convention`, `parameters`, `result`, `effects`, `registers`,
-`ownership`, and `entry_levels`. `entry_levels` is the canonical ordered set of
+`ownership`, `entry_levels`, `trust`, and `concurrency`. `trust` is the canonical ordered set
+of structural trusted-boundary categories and is independently reconciled
+with typed IR at every cross-module direct call. `concurrency` is the mandatory,
+canonical, lexically ordered set of structural concurrency and storage-guarantee
+clauses; consumers reconcile it with verified direct and indirect callable IR
+and reject missing, malformed, strengthened, or erased facts. `entry_levels` is the canonical ordered set of
 authenticated direct-entry exception levels; it is not part of ordinary
 function-pointer identity. Decoding validates each callable against its
 effect, resource, inline, protocol, and interactive-ABI record family,
@@ -340,7 +345,7 @@ with this decoded family. Missing, stale, or wider data is malformed rather
 than permission to lower an indirect call.
 
 An interface with enabled explicit hardening appends exactly 44 bytes after
-the canonical revision-5 record stream: eight-byte magic
+the canonical revision-7 record stream: eight-byte magic
 `WYSTH 00 01 00`, little-endian `u16` hardening-catalog version,
 little-endian `u16` enabled-row bitset, and SHA-256 of the complete interface
 through the bitset. The trailer is absent when hardening is disabled. Unknown
@@ -374,7 +379,7 @@ imported concrete definition at that immediate boundary. Public re-export
 aliases canonicalize to the original declaring identity before the demand key
 is formed. Mandatory
 inline bodies remain available for normal expansion. `resource_contract` and
-`resumable_frame` are losslessly supported revision-5 records, and a producer
+`resumable_frame` are losslessly supported revision-7 records, and a producer
 emits them only from authenticated source semantics.
 
 Each function's `resource_contract` records ordered parameter modes and
@@ -414,7 +419,7 @@ A native object has `ELFCLASS64`, `ELFDATA2LSB`, `EV_CURRENT`,
 and a complete section-header table. It uses `Elf64_Sym` and `Elf64_Rela`;
 `SHT_REL` is rejected because all addends are explicit signed byte counts.
 Wyst producers emit only relocation codes in
-`design/a64-link-relocations.tsv`.
+`design/catalogs/aarch64/source/a64-link-relocations.tsv`.
 
 Content sections occur in this order: `.text` family, `.rodata` family,
 `.data` family, `.bss` family, `.percpu`, then exact layout-declared custom
@@ -539,7 +544,7 @@ For each key, a direct semantic home may emit the definition. If that home is
 not a direct compiler input, the smallest compatible demanding module is the
 physical emitter. An already materialized archive definition participates in
 the same deterministic selection. All candidates must have the identical
-revision-5 definition contract: canonical identity, checked body and private
+revision-7 definition contract: canonical identity, checked body and private
 closure, callable ABI, effects, type/layout and sum representation,
 interactive protocol and handler/recovery facts, placement, and generated
 definition identity. Identical candidates collapse to one selected member;
@@ -648,7 +653,7 @@ authenticated sidecar patches.
 
 ### Relocations, Overflow, and Relaxation
 
-`design/a64-link-relocations.tsv` is the exhaustive admitted mandatory static
+`design/catalogs/aarch64/source/a64-link-relocations.tsv` is the exhaustive admitted mandatory static
 LP64 AArch64 relocation catalog after the explicit GOT, PLT, TLS, dynamic,
 proxy, pointer-authentication, and platform-extension exclusions above. An
 unlisted code is rejected. `operation` defines `X` from
@@ -678,8 +683,8 @@ AAELF64 instruction-sequence optimization is performed.
 
 Foreign relocations never relax. Authenticated ordinary Wyst `CALL26` and
 `JUMP26` are the only veneerable relocations, and each uses its exact row in
-`design/a64-link-veneers.tsv`. The three instruction words and encoding IDs are
-validated against `design/a64-active-encoding-catalog.tsv`; the paired `ADRP`
+`design/catalogs/aarch64/source/a64-link-veneers.tsv`. The three instruction words and encoding IDs are
+validated against `design/catalogs/aarch64/generated/a64-active-encoding-catalog.tsv`; the paired `ADRP`
 and `ADD` are ordinary standard relocations. Placement is the unique veneer
 slot immediately after the source text chunk. If that branch or page pair
 cannot encode, `E0601` reports the original branch and final target; no second
@@ -984,7 +989,7 @@ has no `.rela.*` sections. The implemented compiler-internal `ET_REL`
 representation serializes its unresolved subset of the complete catalog below
 as `SHT_RELA`; later foreign-object linking accepts the complete catalog.
 
-`design/a64-link-relocations.tsv` is the exhaustive alphabet shared by internal
+`design/catalogs/aarch64/source/a64-link-relocations.tsv` is the exhaustive alphabet shared by internal
 whole-program patches and `ET_REL`. The table below calls out the subset the
 current Wyst backend produces most commonly; it does not narrow the catalog
 accepted from conforming static AArch64 foreign inputs. The alphabet exists so
@@ -1111,7 +1116,7 @@ with explicit `u64` arithmetic before casting back to the desired address type.
 **Consequence:** Wyst does not have the C/C++ problem of "is this pointer a
 relocatable symbol reference or an integer?" For address expressions, the
 syntax tells the compiler whether it is materializing a symbol-sourced address
-or ordinary address arithmetic. Direct calls, direct symbol branches, object
+or a unit-explicit typed-address derivation. Direct calls, direct symbol branches, object
 references, veneers, future jump tables, and address-bearing instructions are
 separate relocation origins with separate patch records.
 

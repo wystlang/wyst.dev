@@ -58,11 +58,11 @@ reserved syntax vocabulary.
 
 This section is the Wyst grammar authority for the
 foundational declaration and expression surface. The
-[syntax-word catalog](syntax-words.tsv) is the sole keyword, contextual-word,
+[syntax-word catalog](catalogs/language/syntax-words.tsv) is the sole keyword, contextual-word,
 and unshadowable-name table; this appendix does not maintain a second word
-list. The closed [meta-operation catalog](meta-operation-catalog.tsv) owns the
+list. The closed [meta-operation catalog](catalogs/language/meta-operation-catalog.tsv) owns the
 exact 15 active `#` forms and their phase/type/target/relocation contracts. The
-[declaration-attribute catalog](attribute-catalog.tsv) likewise owns
+[declaration-attribute catalog](catalogs/language/attribute-catalog.tsv) likewise owns
 attribute activation and signatures.
 Project manifests use the Chapter 13 artifact `verify code` grammar; that
 manifest-only clause is not a source declaration.
@@ -758,7 +758,7 @@ call production. `cpu.wfe()`, `cache.data.zero_block(address)`, an aliased
 `mem.load_pair_non_temporal(address)`, and `semihost.call(operation, parameter)`
 all parse through the ordinary qualified-path, postfix, and call productions.
 Semantic import resolution authenticates the category binding and looks up the
-stable identity in [`semantic-operation-catalog.tsv`](semantic-operation-catalog.tsv).
+stable identity in [`semantic-operation-catalog.tsv`](catalogs/language/semantic-operation-catalog.tsv).
 An alias changes only the compile-time namespace binding, never that identity.
 
 The following productions are compiler-owned expression forms once their
@@ -874,7 +874,7 @@ declared access.
 
 `AtomicStorageType`, `AtomicConstructor`, `AtomicMethodName`, method arities,
 element classes, result types, and each method's legal `AtomicOrder` subset are
-generated from [`atomic-matrix.json`](atomic-matrix.json); the compact
+generated from [`atomic-matrix.json`](catalogs/language/atomic-matrix.json); the compact
 productions above show their lexical shape, not a second semantic table.
 `atomic<T>(value)` requires exactly one explicit element type and one
 positional value and is consumed only as the direct initializer of new atomic

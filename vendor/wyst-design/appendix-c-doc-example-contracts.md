@@ -23,7 +23,7 @@ Use these contract modes:
 - `<!-- wyst-contract: fmt -->`: the block is a complete source file and must already be
   in canonical `wync fmt` form.
 - `<!-- wyst-contract: check-pass -->`: the block is a complete source file and must
-  pass `wync check` with the documented default layout.
+  pass `wync check` with the default documentation check profile defined below.
 - `<!-- wyst-contract: check-fail -->`: the block is a complete source file and must
   fail `wync check` with a diagnostic.
 - `<!-- wyst-contract: future -->`: the block shows planned
@@ -44,6 +44,14 @@ outside the checker. Sketches still use accepted source spellings. Use `future`
 only for syntax marked as planned in
 [source-of-truth.md](source-of-truth.md).
 
+The default documentation check profile extracts one complete source block as
+the sole root of a generated `static_library` project for
+`qemu-virt-aarch64-el2`. The artifact uses `debug .none`, `unwind .none`, and
+`frame_pointers .minimal`. A static-library check has no named layout or
+firmware entry, so examples are checked exactly as written without an injected
+`_start`. A chapter may define a different explicit profile immediately before
+a block when target- or layout-specific behavior is the subject.
+
 ## Checked Examples
 
 This formatting example is a language contract:
@@ -62,8 +70,8 @@ fn _start() -> never {
 }
 ```
 
-This source is expected to pass frontend checking with the default documentation
-layout:
+This source is expected to pass frontend checking with the default
+documentation check profile:
 
 <!-- wyst-contract: check-pass -->
 ```wyst

@@ -20,7 +20,7 @@ Optional per-category artifact safety diagnostics remain orthogonal to
 optimization and are never code-generation inputs.
 
 Explicit artifact hardening is a post-optimization transform governed by the
-closed [`hardening-catalog.tsv`](hardening-catalog.tsv). The ordinary optimizer
+closed [`hardening-catalog.tsv`](catalogs/language/hardening-catalog.tsv). The ordinary optimizer
 may prove a catalog obligation before insertion; a proved obligation is
 omitted. Once inserted, a generated check is an indivisible scheduling barrier
 directly before its protected operation. It may not be eliminated, folded,
@@ -75,6 +75,9 @@ provenance, and debug meaning. In particular it preserves:
 - suspension and context-stability boundaries;
 - Native and AAPCS64 boundaries, exported symbols, address identity, and
   separate-compilation contracts;
+- canonical storage projections and every authenticated `preserves` or
+  `unchanged` postcondition, including generation, lifetime, usable extent,
+  access authority, observable representation, and raw-storage epochs;
 - interactive identities, offered protocols, terminal payload movement,
   optional handler ceilings, recovery, and cleanup; and
 - optional safety diagnostics, which remain outside transformation and machine
@@ -83,7 +86,33 @@ provenance, and debug meaning. In particular it preserves:
 Optimization never inserts hidden allocation, synchronization, retry, I/O,
 cleanup, traps, runtime fallbacks, or scalar-to-SIMD widening. It never treats
 absence of compiler-exploitable undefined behavior as permission to invent a
-value or erase an observable event.
+value or erase an observable event. It also never turns an ordinary call,
+branch, result variant, or storage postcondition into communication,
+serialization, buffering, publication, or protocol progress.
+
+For example, optimization must retain the same accepted storage proof without
+adding a runtime representation for that proof:
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module optimizer_storage_preservation
+
+struct Buffer { bytes: [2]u8 }
+
+fn bytes(buffer: Buffer) -> []u8 from buffer {
+  return buffer.bytes[..]
+}
+
+extern "C" fn inspect(buffer: Buffer)
+accesses(mut buffer)
+preserves(buffer)
+
+fn first(buffer: Buffer) -> u8 {
+  const view = bytes(buffer)
+  inspect(buffer)
+  return view[0]
+}
+```
 
 ## 3. Cost model and deterministic ties
 
@@ -128,6 +157,7 @@ production pipeline.
 not an optimizer mode. The bare spelling requests complete expansion of the
 authenticated iteration space:
 
+<!-- wyst-contract: sketch -->
 ```wyst
 const msg: [_]u8 = "Hello, World!\n"
 
@@ -146,6 +176,7 @@ value behavior. A slice descriptor with only a runtime length is rejected.
 
 A constant end-exclusive integer range is also eligible:
 
+<!-- wyst-contract: sketch -->
 ```wyst
 #[unroll]
 for index in 2 ..< 5 {
@@ -160,6 +191,7 @@ An ordinary range with no attribute remains an ordinary runtime loop.
 The optional `iterations` and `max_iterations` arguments are proof constraints,
 not heuristic controls:
 
+<!-- wyst-contract: sketch -->
 ```wyst
 #[unroll(iterations = 3, max_iterations = 4)]
 for index in 2 ..< 5 {
@@ -182,6 +214,7 @@ complete-expansion contract.
 An explicit factor requests partial unrolling without asking the compiler to
 choose a factor or remainder strategy:
 
+<!-- wyst-contract: sketch -->
 ```wyst
 #[unroll(factor = 4, remainder = .guarded)]
 for byte in view {

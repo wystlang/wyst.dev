@@ -170,7 +170,7 @@ documented local development path.
 ## Authenticated A64 Source Domains
 
 Editor-facing checked-assembly facts come from
-`design/a64-support-source-domains.json`.
+`design/catalogs/aarch64/generated/a64-support-source-domains.json`.
 That generated artifact is the exact join of active `source_form` support rows
 with the encoding catalog; editor code must not reconstruct a mnemonic-only or
 hand-maintained operand list. The current matrix contains 20 source forms: 13

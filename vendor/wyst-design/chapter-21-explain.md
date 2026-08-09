@@ -83,7 +83,8 @@ rendering failures receive the same check.
 
 ## Lowering Report
 
-`wync explain lowering <project-dir|path/to/wyst.project> [--artifact NAME] --function <name>`
+`wync explain lowering <project-dir|path/to/wyst.project> [--artifact NAME]
+[--function <name>] [--format text|json]`
 emits the current lowering report. It consumes the source map, verified typed
 IR, callable ABI classification and obligations, machine
 image, register-allocation facts, final frame/resource facts, relocation facts,
@@ -209,9 +210,10 @@ performance require separate performance work.
 
 ## Effects Report
 
-`wync explain effects <project-dir|path/to/wyst.project> [--artifact NAME]` emits the current
-effects report. An optional `--function <name>` filter narrows the view without
-changing the underlying compiler facts.
+`wync explain effects <project-dir|path/to/wyst.project> [--artifact NAME]
+[--function <name>] [--format text|json]` emits the current effects report. An
+optional `--function <name>` filter narrows the view without changing the
+underlying compiler facts.
 
 The report consumes the semantic analyzer's current-build per-function and
 per-site effect-authority product. It does not infer effects by walking raw AST
@@ -253,8 +255,8 @@ size, veneers, or caller-owned aggregate copies as semantic effects.
 
 ## Storage Report
 
-`wync explain storage <project-dir|path/to/wyst.project> [--artifact NAME]` emits the current
-storage report. It consumes the selected, instantiated program and the
+`wync explain storage <project-dir|path/to/wyst.project> [--artifact NAME]
+[--format text|json]` emits the current storage report. It consumes the selected, instantiated program and the
 declaration-role and sealed-core registries. The report publishes active roles
 and authenticated ordinary-library operations with their current semantics.
 Authenticated `DynamicArray<T>` descriptor annotations and compiler-owned
@@ -273,11 +275,49 @@ sealed semantic identity; a source lookalike remains ordinary unreported code.
 The report also states that allocation, cleanup, fallback, and synchronization
 are not hidden and that allocator/provider selection remains caller-visible.
 
+When accepted call-site storage-preservation proofs exist, the same report
+adds a deterministic `storagePreservationProofs` section. Each row projects the
+semantic checker record for the canonical contract projection, direct callable
+identity or canonical indirect signature, `preserves` or `unchanged`, required
+nominal result outcome, frozen call-entry targets and immutable boundary
+substitutions, static/guard/checked-range bounds origin, dependent view and
+backing targets, availability, generation, applicable raw-storage epoch, and
+any later invalidation cause, location, and source-visible remediation. Text
+and JSON use project-relative source locations and canonical semantic
+identities; declaration spelling and compiler addresses never determine row
+identity. The section is omitted when the checked program has no such facts,
+preserving the provider-free report shape.
+
+Every storage-preservation row states `runtime-work=none` in text and
+`runtimeWork: "none"` in JSON. This is a semantic fact that the proof itself
+adds no descriptor, validity bit, generation or epoch field, allocation,
+branch, or instruction. It is not a machine-cost estimate; `explain lowering`
+and backend evidence remain the authority for emitted code.
+
+The storage-proof conformance matrix checks the semantic fact and rendered
+canonical projection together for representative whole, field, fixed-index,
+fixed-range, affine, authenticated checked-range, and canonical open-range
+cases. The same matrix verifies that deleting explanation-only proof records
+does not change the typed IR or optimizer input. Report rendering therefore
+explains the checker decision but cannot authorize, weaken, or add lowering.
+Projected raw-storage epochs remain explicitly tagged to `TEMP-04`; the report
+must not infer a current projected epoch merely because `unchanged(P)` was
+accepted as a callable content guarantee.
+
 The report does not introduce allocation semantics, implicit conversions,
 hidden checks, cleanup, copying, retention, lowering, or report-local API
 authority. Text and JSON distinguish compiler-proved sealed-role facts from
 ordinary code and expose the unknown, duplicate, stale, unavailable,
 mismatched, and unauthorized claim dispositions.
+
+Storage guarantees remain callable postconditions in every report. A reported
+`preserves(P)` fact does not imply unchanged bytes, while `unchanged(P)` also
+retains observable representation and the relevant raw-storage epoch. Neither
+fact is a protocol operation or proof of ownership transfer, synchronization,
+publication, progress, delivery, deadlock freedom, fairness, or completion. A
+reported result variant is ordinary nominal data rather than an implicit
+message, and report construction never reclassifies calls or branches as
+communication.
 
 ## Structure Layout Report
 

@@ -445,6 +445,7 @@ already committed work.
 The sealed, provider-neutral `core.outcomes` namespace defines the stored
 terminal envelope:
 
+<!-- wyst-contract: sketch -->
 ```wyst
 pub enum TerminalOutcome<R: fixed_layout_movable, F: fixed_layout_movable, C: fixed_layout_movable>: u8 {
   Returned(R)

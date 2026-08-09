@@ -41,27 +41,27 @@ not make the manual claim behavior that the compiler does not enforce.
 Checked-in catalogs own closed vocabularies where maintaining one definition
 prevents compiler and tooling drift:
 
-- [syntax-words.tsv](syntax-words.tsv) owns source words.
-- [meta-operation-catalog.tsv](meta-operation-catalog.tsv) owns meta operations.
-- [attribute-catalog.tsv](attribute-catalog.tsv) owns declaration attributes.
-- [builtin-type-members.tsv](builtin-type-members.tsv) owns contextual members
+- [syntax-words.tsv](catalogs/language/syntax-words.tsv) owns source words.
+- [meta-operation-catalog.tsv](catalogs/language/meta-operation-catalog.tsv) owns meta operations.
+- [attribute-catalog.tsv](catalogs/language/attribute-catalog.tsv) owns declaration attributes.
+- [builtin-type-members.tsv](catalogs/language/builtin-type-members.tsv) owns contextual members
   of builtin types, including their exact typed compile-time values.
-- [semantic-operation-catalog.tsv](semantic-operation-catalog.tsv) owns
+- [semantic-operation-catalog.tsv](catalogs/language/semantic-operation-catalog.tsv) owns
   qualified semantic operations.
-- [hardening-catalog.tsv](hardening-catalog.tsv) owns the closed set of
+- [hardening-catalog.tsv](catalogs/language/hardening-catalog.tsv) owns the closed set of
   artifact-selected generated checks, source obligations, failure paths,
   target sequences, and compiler constraints.
-- [generic-bounds.tsv](generic-bounds.tsv) owns generic capabilities.
-- [sealed-core.tsv](sealed-core.tsv) owns compiler-bundled `core` namespaces,
+- [generic-bounds.tsv](catalogs/language/generic-bounds.tsv) owns generic capabilities.
+- [sealed-core.tsv](catalogs/language/sealed-core.tsv) owns compiler-bundled `core` namespaces,
   their public declaration surfaces, source modules, and operation-contract
   identities.
-- [atomic-matrix.json](atomic-matrix.json) owns supported atomic combinations.
-- [link-format-catalog.tsv](link-format-catalog.tsv) owns the versioned static
+- [atomic-matrix.json](catalogs/language/atomic-matrix.json) owns supported atomic combinations.
+- [link-format-catalog.tsv](catalogs/language/link-format-catalog.tsv) owns the versioned static
   link representations and content bindings.
-- [link-interface-schema.tsv](link-interface-schema.tsv) owns canonical
+- [link-interface-schema.tsv](catalogs/language/link-interface-schema.tsv) owns canonical
   semantic-interface records.
-- [a64-link-relocations.tsv](a64-link-relocations.tsv) and
-  [a64-link-veneers.tsv](a64-link-veneers.tsv) own the accepted static AArch64
+- [a64-link-relocations.tsv](catalogs/aarch64/source/a64-link-relocations.tsv) and
+  [a64-link-veneers.tsv](catalogs/aarch64/source/a64-link-veneers.tsv) own the accepted static AArch64
   relocation behavior and every permitted veneer recipe.
 
 Compiler-owned declaration roles live directly beside their implementation and
