@@ -92,11 +92,13 @@ independently authenticate the commit attribution.
 
 The same sync asks that commit's `wync lsp` server for
 `textDocument/semanticTokens/full` on each homepage source, records the returned
-legends and token data in `vendor/wyst-homepage*-semantic-tokens.json`, and
-regenerates the marked UART, overflow, and denied-effects regions in
-`index.html`. The normal site build fails if generated markup or published
-outputs are edited independently, so the examples cannot drift back to
-handwritten highlighting or diagnostics.
+legends, complete source documents, and token data in
+`vendor/wyst-homepage*-semantic-tokens.json`, and regenerates the marked UART,
+overflow, and denied-effects regions in `index.html`. UART publishes its full
+fixture; the other tabs publish configured, feature-relevant line ranges from
+their full verified fixtures. The normal site build fails if generated markup
+or published outputs are edited independently, so the examples cannot drift
+back to handwritten highlighting or diagnostics.
 
 Refresh the snapshots from a sibling `../wyst` checkout or `WYST_REPO_DIR`:
 

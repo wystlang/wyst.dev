@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+	HOMEPAGE_EXAMPLES,
 	createHomepageSemanticArtifact,
+	homepageExampleSource,
 	readHomepageSemanticArtifacts,
 	renderHomepageSemanticMarkup,
 	updateHomepageIndex,
@@ -99,6 +101,25 @@ test("renderer keeps comments readable without inventing semantic tokens", () =>
 		/<span class="source-comment block-comment-line">\* QEMU `virt`/,
 	);
 	assert.doesNotMatch(markup, /data-token="comment"/);
+});
+
+test("feature tabs render only their verified source ranges", () => {
+	const overflowSource = homepageExampleSource(
+		artifacts.overflow,
+		HOMEPAGE_EXAMPLES.overflow.sourceLineRange,
+	);
+	assert.match(overflowSource, /^\/\/ Fixed-width signed arithmetic wraps/);
+	assert.match(overflowSource, /fn is_at_max/);
+	assert.match(overflowSource, /report_wrapped\(\)/);
+	assert.doesNotMatch(overflowSource, /UART|uart_write|_start/);
+
+	const effectsSource = homepageExampleSource(
+		artifacts.effects,
+		HOMEPAGE_EXAMPLES.effects.sourceLineRange,
+	);
+	assert.match(effectsSource, /^#\[deny_effects\(interrupt_mask\)\]/);
+	assert.match(effectsSource, /cpu\.unmask\(\.irq\)/);
+	assert.doesNotMatch(effectsSource, /#target|_start|establishes stack/);
 });
 
 test("semantic-token artifact preserves the complete source document", () => {

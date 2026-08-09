@@ -49,6 +49,7 @@ export const HOMEPAGE_EXAMPLES = Object.freeze({
 		scrollHintId: "overflow-scroll-hint",
 		sourceAriaLabel: "Wyst overflow source",
 		sourceCodeId: "overflow-source",
+		sourceLineRange: Object.freeze([48, 60]),
 		sourcePath: "wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
 	}),
 	effects: Object.freeze({
@@ -68,6 +69,7 @@ export const HOMEPAGE_EXAMPLES = Object.freeze({
 		scrollHintId: "effects-scroll-hint",
 		sourceAriaLabel: "Wyst denied-effects source",
 		sourceCodeId: "effects-source",
+		sourceLineRange: Object.freeze([7, 12]),
 		sourcePath:
 			"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
 	}),
@@ -457,13 +459,54 @@ function semanticSpans(artifact) {
 	});
 }
 
-export function renderHomepageSemanticMarkup(inputArtifact) {
+function sourceRangeOffsets(source, sourceLineRange) {
+	if (sourceLineRange === undefined) return { end: source.length, start: 0 };
+	if (
+		!Array.isArray(sourceLineRange) ||
+		sourceLineRange.length !== 2 ||
+		sourceLineRange.some((line) => !Number.isSafeInteger(line) || line < 1) ||
+		sourceLineRange[0] > sourceLineRange[1]
+	) {
+		throw new Error("homepage source line range must be two ordered positive integers");
+	}
+	const starts = lineStarts(source);
+	const lineCount = source.endsWith("\n") ? starts.length - 1 : starts.length;
+	const [startLine, endLine] = sourceLineRange;
+	if (endLine > lineCount) {
+		throw new Error("homepage source line range exceeds its source fixture");
+	}
+	return {
+		end: endLine < starts.length ? starts[endLine] : source.length,
+		start: starts[startLine - 1],
+	};
+}
+
+export function homepageExampleSource(inputArtifact, sourceLineRange) {
+	const artifact = validateArtifact(inputArtifact);
+	const { end, start } = sourceRangeOffsets(
+		artifact.document.text,
+		sourceLineRange,
+	);
+	return artifact.document.text.slice(start, end);
+}
+
+export function renderHomepageSemanticMarkup(inputArtifact, sourceLineRange) {
 	const artifact = validateArtifact(inputArtifact);
 	const source = artifact.document.text;
-	const spans = [...commentSpans(source), ...semanticSpans(artifact)].sort(
-		(left, right) => left.start - right.start || left.end - right.end,
-	);
-	let offset = 0;
+	const range = sourceRangeOffsets(source, sourceLineRange);
+	const spans = [...commentSpans(source), ...semanticSpans(artifact)]
+		.sort((left, right) => left.start - right.start || left.end - right.end)
+		.filter((span) => {
+			const overlaps = span.end > range.start && span.start < range.end;
+			if (
+				overlaps &&
+				(span.start < range.start || span.end > range.end)
+			) {
+				throw new Error("homepage source line range splits a highlight span");
+			}
+			return overlaps;
+		});
+	let offset = range.start;
 	let output = "";
 	for (const span of spans) {
 		if (span.start < offset) throw new Error("homepage highlight spans overlap");
@@ -479,7 +522,7 @@ export function renderHomepageSemanticMarkup(inputArtifact) {
 		}
 		offset = span.end;
 	}
-	return output + escapeHtml(source.slice(offset));
+	return output + escapeHtml(source.slice(offset, range.end));
 }
 
 export function generatedHomepageRegion(
@@ -525,7 +568,10 @@ export function updateHomepageIndex(indexHtml, artifactOrArtifacts) {
 		validateArtifact(artifact, example.sourcePath);
 		updated = replaceGeneratedRegion(
 			updated,
-			generatedHomepageRegion(renderHomepageSemanticMarkup(artifact), example),
+			generatedHomepageRegion(
+				renderHomepageSemanticMarkup(artifact, example.sourceLineRange),
+				example,
+			),
 			example,
 		);
 	}

@@ -128,6 +128,16 @@ for (const response of responses) {
   process.stdout.write(\`Content-Length: \${Buffer.byteLength(body)}\\r\\n\\r\\n\${body}\`);
 }
 `;
+	const paddedFixtureSource = (lineCount) =>
+		[
+			"module fixture",
+			"fn main() {}",
+			...Array.from(
+				{ length: lineCount - 2 },
+				(_value, index) => `// fixture line ${index + 3}`,
+			),
+			"",
+		].join("\n");
 
 	const inputs = [
 		["design/README.md", "# Wyst design\n"],
@@ -160,7 +170,11 @@ for (const response of responses) {
 						? "wrapped\n"
 						: "hello\n"
 					: file.endsWith("main.wyst") || file.endsWith("keyboard_isr.wyst")
-						? "module fixture\nfn main() {}\n"
+						? file.includes("overflow-guard")
+							? paddedFixtureSource(60)
+							: file.includes("effect-denial")
+								? paddedFixtureSource(12)
+								: "module fixture\nfn main() {}\n"
 						: file.endsWith("wyst.project")
 							? "project fixture\n"
 							: file.endsWith("semihost.wyst")
