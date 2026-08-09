@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "c1d4ca227f1507e1c7c26be974fa27a65f2143cb",
-  "snapshotSha256": "bfee3c65067351f18dc4edb0e85e715e915e30212e33f1c38b38cf0c70dc3a91",
+  "sourceCommit": "bec94409771a0c4b800b79d16ca44e0f7887fbb1",
+  "snapshotSha256": "d6deb29cf8f985480855b7ba9f7ab9e1fac1299bc23cf9c200ef6de44f0c746a",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -28,8 +28,8 @@
       "size": 549
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst": {
-      "sha256": "18f30f6c08a047d36800cbd2061fdd248d6b4de0dddfa25a466b67592b773570",
-      "size": 1112
+      "sha256": "62afc3eb07e8c6c989e2ad81110fc81198966dacc465f297b6cdc52280f5d708",
+      "size": 1296
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt": {
       "sha256": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
@@ -216,7 +216,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "4fb34804cd0dda46b6993b224d74ad312776213ab0ccbd406e84e949aef0832e",
+      "sha256": "8fc8398c726fbe1f6c6527efa644a32f69d32a83432641944bf1c9145c607d31",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -328,16 +328,16 @@
       "size": 9501
     },
     "vendor/wyst-design/outcomes-and-progress.md": {
-      "sha256": "d8c44f2e7df4c0b68da7f410490c88222f7067dbc336c8d3a6f2609dd667e416",
-      "size": 6658
+      "sha256": "5166c49c132d482320b9ac55e01c030bf99d097354a01eb055ac9a847157c15b",
+      "size": 7031
     },
     "vendor/wyst-design/project-builds.md": {
       "sha256": "8f657bd25367e57186006db5962ae1d651b29d270bbbe3a7bca440b89e85a810",
       "size": 8084
     },
     "vendor/wyst-design/scheduling-and-suspension.md": {
-      "sha256": "92d42e86ef1a601ddc322274f1ecc53880530ceafce4f3f28c0dc85feced3f21",
-      "size": 3619
+      "sha256": "6339ccd8128b4605a908058c3f10431205b575d66603ee5c0df92a0a1c88d2ab",
+      "size": 4095
     },
     "vendor/wyst-design/semantic-operations.md": {
       "sha256": "d4993325d24f0a66c2b2d97b83b70d6896f863cc169663880f2f4d85261296c0",

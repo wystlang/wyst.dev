@@ -12,6 +12,14 @@ Wyst has two compiler scheduling modes: `Standard` and `Source`.
 The modes control instruction reordering.
 They do not create a runtime scheduler.
 
+Compiler scheduling order, execution-strand order, and cross-agent memory
+publication are separate contracts. Compiler scheduling constrains motion of
+emitted operations. An execution strand describes one sequential control-flow
+instance. Cross-agent publication comes only from the atomic operations and
+explicit barriers in [Memory Model](memory-model.md). Source order, strand
+sequencing, or a suspension marker does not by itself publish memory between
+execution agents.
+
 ## Standard Scheduling
 
 Ordinary code uses `Standard` mode.

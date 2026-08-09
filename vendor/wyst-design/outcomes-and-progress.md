@@ -119,6 +119,12 @@ The operation adds no effect beyond the call's effects.
 
 ## Progress
 
+In this topic, progress is a synchronous nonterminal notification from the
+current invocation. The source form `forward progress` forwards that
+notification; it does not name a liveness property. Execution progress would
+describe whether execution eventually reaches another work or terminal event;
+the progress protocol supplies no such scheduling or liveness guarantee.
+
 `report value` calls the progress handler synchronously.
 The producer continues only after the handler returns.
 

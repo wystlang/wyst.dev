@@ -227,6 +227,15 @@ function homepageFixtureDocument(source) {
 	return source.replaceAll("\r", "").trim();
 }
 
+function fixtureLineRange(source, startLine, endLine) {
+	return source
+		.replaceAll("\r", "")
+		.split("\n")
+		.slice(startLine - 1, endLine)
+		.join("\n")
+		.trim();
+}
+
 function cssHexVar(name) {
 	const match = siteCss.match(
 		new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*(#[0-9a-f]{6});`, "i"),
@@ -948,18 +957,18 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		);
 	}
 
-	for (const [id, sourceId, fixtureSource, expectedOutput, sourceUrl] of [
+	for (const [id, sourceId, expectedSource, expectedOutput, sourceUrl] of [
 		[
 			"overflow",
 			"overflow-source",
-			overflowFixtureSource,
+			fixtureLineRange(overflowFixtureSource, 48, 62),
 			overflowExpectedOutput,
 			OVERFLOW_SOURCE_URL,
 		],
 		[
 			"effects",
 			"effects-source",
-			effectsFixtureSource,
+			fixtureLineRange(effectsFixtureSource, 7, 12),
 			effectsExpectedOutput,
 			EFFECTS_SOURCE_URL,
 		],
@@ -971,8 +980,8 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		assert.ok(sourceMatch, `${id} source block should exist`);
 		assert.equal(
 			sourceText(sourceMatch[1]),
-			homepageFixtureDocument(fixtureSource),
-			`${id} should publish its complete compiler fixture`,
+			expectedSource,
+			`${id} should publish its feature-relevant verified excerpt`,
 		);
 		assert.ok(
 			anchors(panel).some(({ href }) => href === sourceUrl),
@@ -993,10 +1002,18 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		examplePanelHtml("overflow"),
 		/<span data-token="function" data-token-modifiers="declaration">is_at_max<\/span>/,
 	);
+	assert.match(examplePanelHtml("overflow"), /main\.wyst · verified excerpt/);
+	assert.match(examplePanelHtml("overflow"), /C makes signed overflow undefined/);
+	assert.match(examplePanelHtml("overflow"), /Wyst's defined i32 wrapping is safer/);
+	assert.match(examplePanelHtml("overflow"), /optimization level must preserve/);
+	assert.match(examplePanelHtml("overflow"), /overflow check silently disappears/);
+	assert.doesNotMatch(examplePanelHtml("overflow"), /UART|uart_write|_start/);
 	assert.match(
 		examplePanelHtml("effects"),
-		/#\[deny_effects\(interrupt_mask\)\]/,
+		/#\[<span data-token="macro" data-token-modifiers="defaultLibrary">deny_effects<\/span>\(interrupt_mask\)\]/,
 	);
+	assert.match(examplePanelHtml("effects"), /keyboard_isr\.wyst · rejected excerpt/);
+	assert.doesNotMatch(examplePanelHtml("effects"), /#target|_start|establishes stack/);
 	assert.match(effectsExpectedOutput, /error\[E0233\]: effect 'interrupt_mask' is denied/);
 });
 

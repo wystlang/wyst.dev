@@ -18,7 +18,11 @@ pub naked fn _start(dtb: u64 in x0) -> never {
     mov sp, stack
   }
 
-  kernel_main(dtb)
+  if dtb == 0 {
+    test_exit(0x63)
+  }
+
+  kernel_main()
 }
 
 fn uart_write(byte: u8) {
@@ -29,21 +33,7 @@ fn uart_write(byte: u8) {
   UARTDR.store(widen<u32>(byte))
 }
 
-// Fixed-width signed arithmetic wraps modulo 2^width. The comparison must see
-// the wrapped i32 result instead of treating signed overflow as impossible.
-fn is_at_max(x: i32) -> bool {
-  return x + 1 < x
-}
-
-fn kernel_main(dtb: u64) -> never {
-  if dtb == 0 {
-    test_exit(0x63)
-  }
-
-  if !is_at_max(0x7FFF_FFFF) {
-    test_exit(0x63)
-  }
-
+fn report_wrapped() -> never {
   uart_write('w')
   uart_write('r')
   uart_write('a')
@@ -53,4 +43,20 @@ fn kernel_main(dtb: u64) -> never {
   uart_write('d')
   uart_write('\n')
   test_exit(0)
+}
+
+// C makes signed overflow undefined, so its compilers may assume x + 1 >= x
+// and discard this guard. Wyst's defined i32 wrapping is safer: every
+// optimization level must preserve the guard's intended behavior, avoiding
+// the class of security bugs where an overflow check silently disappears.
+fn is_at_max(x: i32) -> bool {
+  return x + 1 < x
+}
+
+fn kernel_main() -> never {
+  if is_at_max(0x7FFF_FFFF) {
+    report_wrapped()
+  }
+
+  test_exit(0x63)
 }

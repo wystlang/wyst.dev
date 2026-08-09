@@ -75,7 +75,12 @@
     3,
     2,
     0,
-    3,
+    2,
+    2,
+    12,
+    11,
+    4,
+    1,
     0,
     2,
     7,
@@ -209,7 +214,7 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "c1d4ca227f1507e1c7c26be974fa27a65f2143cb",
+    "gitCommit": "bec94409771a0c4b800b79d16ca44e0f7887fbb1",
     "path": "wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
     "sha256": "23fb967543e5f19942c357ddca793f0cc8aabae6da8204df20a3dd730082b074"
   }

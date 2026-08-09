@@ -264,7 +264,7 @@
 <span class="source-comment block-comment-line">* The `never` return type states that control cannot return from `_start`.</span>
 <span class="source-comment block-comment-line">*/</span>
 <span class="source-comment">// This attribute aligns the boot entry to a 16-byte boundary.</span>
-#[align(<span data-token="number">16</span>)]
+#[<span data-token="macro" data-token-modifiers="defaultLibrary">align</span>(<span data-token="number">16</span>)]
 <span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x0) -&gt; never {
   <span class="source-comment">// The layout defines __stack_top at the top of RAM.</span>
   <span class="source-comment">// The Arm stack grows toward lower addresses.</span>
@@ -369,7 +369,7 @@
 						hidden
 					>
 						<div class="artifact-bar">
-							<span>main.wyst · complete source</span>
+							<span>main.wyst · verified excerpt</span>
 							<div class="artifact-actions">
 								<button
 									class="artifact-copy"
@@ -382,7 +382,7 @@
 								<a
 									href="https://github.com/wystlang/wyst.dev/blob/main/tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst"
 									rel="noopener"
-									>source ↗</a
+									>full source ↗</a
 								>
 							</div>
 							<span
@@ -395,61 +395,20 @@
 						</div>
 						<div class="source-viewport">
 							<!-- homepage-overflow-semantic-example:start -->
-							<pre aria-label="Wyst overflow source" aria-describedby="overflow-scroll-hint" tabindex="0"><code id="overflow-source"><span data-token="keyword" data-token-modifiers="defaultLibrary">module</span> <span data-token="namespace" data-token-modifiers="declaration">boot</span>.<span data-token="namespace" data-token-modifiers="declaration">overflow_guard</span>
-
-<span data-token="macro" data-token-modifiers="defaultLibrary">#target</span>(<span data-token="property">arch</span> <span data-token="operator">=</span> arm64<span data-token="operator">-</span>v8a, <span data-token="property">cpu</span> <span data-token="operator">=</span> generic, <span data-token="property">el</span> <span data-token="operator">=</span> <span data-token="number">2</span>)
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">import</span> <span data-token="namespace">core</span>.<span data-token="namespace">arch</span> { <span data-token="function">cpu</span> }
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">import</span> <span data-token="namespace">runtime</span>.<span data-token="namespace">semihost</span> { <span data-token="function">test_exit</span> }
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration readonly">UART0_BASE</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> <span data-token="operator">=</span> <span data-token="number">0x0900_0000</span>
-<span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration readonly">UARTDR</span>: @mmio <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="operator">=</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@mmio <span data-token="type" data-token-modifiers="defaultLibrary">u32</span><span data-token="operator">&gt;</span>(<span data-token="variable" data-token-modifiers="readonly">UART0_BASE</span> <span data-token="operator">+</span> <span data-token="number">0x00</span>)
-<span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration readonly">UARTFR</span>: @mmio <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="operator">=</span> <span data-token="function" data-token-modifiers="defaultLibrary">address</span><span data-token="operator">&lt;</span>@mmio <span data-token="type" data-token-modifiers="defaultLibrary">u32</span><span data-token="operator">&gt;</span>(<span data-token="variable" data-token-modifiers="readonly">UART0_BASE</span> <span data-token="operator">+</span> <span data-token="number">0x18</span>)
-<span data-token="keyword" data-token-modifiers="defaultLibrary">const</span> <span data-token="variable" data-token-modifiers="declaration readonly">TXFF</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u32</span> <span data-token="operator">=</span> <span data-token="number">0x20</span>
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x0) -&gt; never {
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
-    <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
-  ) {
-    mov sp, stack
-  }
-
-  <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)
-}
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">uart_write</span>(<span data-token="parameter" data-token-modifiers="declaration">byte</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) {
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">while</span> <span data-token="variable" data-token-modifiers="readonly">UARTFR</span>.<span data-token="function" data-token-modifiers="defaultLibrary">load</span>() <span data-token="operator">&amp;</span> <span data-token="variable" data-token-modifiers="readonly">TXFF</span> <span data-token="operator">!=</span> <span data-token="number">0</span> {
-    <span data-token="variable">cpu</span>.<span data-token="property">nop</span>()
-  }
-
-  <span data-token="variable" data-token-modifiers="readonly">UARTDR</span>.<span data-token="function" data-token-modifiers="defaultLibrary">store</span>(<span data-token="function" data-token-modifiers="defaultLibrary">widen</span><span data-token="operator">&lt;</span><span data-token="type" data-token-modifiers="defaultLibrary">u32</span><span data-token="operator">&gt;</span>(<span data-token="parameter">byte</span>))
-}
-
-<span class="source-comment">// Fixed-width signed arithmetic wraps modulo 2^width. The comparison must see</span>
-<span class="source-comment">// the wrapped i32 result instead of treating signed overflow as impossible.</span>
+							<pre aria-label="Wyst overflow source" aria-describedby="overflow-scroll-hint" tabindex="0"><code id="overflow-source"><span class="source-comment">// C makes signed overflow undefined, so its compilers may assume x + 1 &gt;= x</span>
+<span class="source-comment">// and discard this guard. Wyst's defined i32 wrapping is safer: every</span>
+<span class="source-comment">// optimization level must preserve the guard's intended behavior, avoiding</span>
+<span class="source-comment">// the class of security bugs where an overflow check silently disappears.</span>
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">is_at_max</span>(<span data-token="parameter" data-token-modifiers="declaration">x</span>: <span data-token="type" data-token-modifiers="defaultLibrary">i32</span>) -&gt; <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> {
   <span data-token="keyword" data-token-modifiers="defaultLibrary">return</span> <span data-token="parameter">x</span> <span data-token="operator">+</span> <span data-token="number">1</span> <span data-token="operator">&lt;</span> <span data-token="parameter">x</span>
 }
 
-<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span>) -&gt; never {
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="parameter">dtb</span> <span data-token="operator">==</span> <span data-token="number">0</span> {
-    <span data-token="function">test_exit</span>(<span data-token="number">0x63</span>)
+<span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">kernel_main</span>() -&gt; never {
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="function">is_at_max</span>(<span data-token="number">0x7FFF_FFFF</span>) {
+    <span data-token="function">report_wrapped</span>()
   }
 
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">if</span> <span data-token="operator">!</span><span data-token="function">is_at_max</span>(<span data-token="number">0x7FFF_FFFF</span>) {
-    <span data-token="function">test_exit</span>(<span data-token="number">0x63</span>)
-  }
-
-  <span data-token="function">uart_write</span>(<span data-token="string">'w'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'r'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'a'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'p'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'p'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'e'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'d'</span>)
-  <span data-token="function">uart_write</span>(<span data-token="string">'\n'</span>)
-  <span data-token="function">test_exit</span>(<span data-token="number">0</span>)
+  <span data-token="function">test_exit</span>(<span data-token="number">0x63</span>)
 }
 </code></pre>
 							<!-- homepage-overflow-semantic-example:end -->
@@ -472,7 +431,7 @@
 						hidden
 					>
 						<div class="artifact-bar">
-							<span>keyboard_isr.wyst · expected failure</span>
+							<span>keyboard_isr.wyst · rejected excerpt</span>
 							<div class="artifact-actions">
 								<button
 									class="artifact-copy"
@@ -485,7 +444,7 @@
 								<a
 									href="https://github.com/wystlang/wyst.dev/blob/main/tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst"
 									rel="noopener"
-									>source ↗</a
+									>full source ↗</a
 								>
 							</div>
 							<span
@@ -498,27 +457,11 @@
 						</div>
 						<div class="source-viewport">
 							<!-- homepage-effects-semantic-example:start -->
-							<pre aria-label="Wyst denied-effects source" aria-describedby="effects-scroll-hint" tabindex="0"><code id="effects-source"><span data-token="keyword" data-token-modifiers="defaultLibrary">module</span> <span data-token="namespace" data-token-modifiers="declaration">keyboard_isr</span>
-
-<span data-token="macro" data-token-modifiers="defaultLibrary">#target</span>(<span data-token="property">arch</span> <span data-token="operator">=</span> arm64<span data-token="operator">-</span>v8a, <span data-token="property">cpu</span> <span data-token="operator">=</span> generic, <span data-token="property">el</span> <span data-token="operator">=</span> <span data-token="number">2</span>)
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">import</span> <span data-token="namespace">core</span>.<span data-token="namespace">arch</span> { <span data-token="function">cpu</span> }
-
-#[deny_effects(interrupt_mask)]
+							<pre aria-label="Wyst denied-effects source" aria-describedby="effects-scroll-hint" tabindex="0"><code id="effects-source">#[<span data-token="macro" data-token-modifiers="defaultLibrary">deny_effects</span>(interrupt_mask)]
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">on_key_press</span>(<span data-token="parameter" data-token-modifiers="declaration">scancode</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u8</span>) -&gt; <span data-token="type" data-token-modifiers="defaultLibrary">u8</span> {
   <span class="source-comment">// This handler is not allowed to change the interrupt mask.</span>
   <span data-token="variable">cpu</span>.<span data-token="property">unmask</span>(.irq)
   <span data-token="keyword" data-token-modifiers="defaultLibrary">return</span> <span data-token="parameter">scancode</span>
-}
-
-<span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x0) -&gt; never {
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
-    <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
-  ) {
-    mov sp, stack
-  }
-
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">loop</span> { }
 }
 </code></pre>
 							<!-- homepage-effects-semantic-example:end -->
