@@ -109,8 +109,9 @@ test("feature tabs render only their verified source ranges", () => {
 		HOMEPAGE_EXAMPLES.overflow.sourceLineRange,
 	);
 	assert.match(overflowSource, /^\/\/ C makes signed overflow undefined/);
-	assert.match(overflowSource, /optimize away this check/);
-	assert.match(overflowSource, /Wyst defines i32 addition to wrap/);
+	assert.match(overflowSource, /Wyst's defined i32 wrapping is safer/);
+	assert.match(overflowSource, /every\n\/\/ optimization level must preserve/);
+	assert.match(overflowSource, /security bugs where an overflow check silently disappears/);
 	assert.match(overflowSource, /fn is_at_max/);
 	assert.match(overflowSource, /report_wrapped\(\)/);
 	assert.doesNotMatch(overflowSource, /UART|uart_write|_start/);

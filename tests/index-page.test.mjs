@@ -961,7 +961,7 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		[
 			"overflow",
 			"overflow-source",
-			fixtureLineRange(overflowFixtureSource, 48, 61),
+			fixtureLineRange(overflowFixtureSource, 48, 62),
 			overflowExpectedOutput,
 			OVERFLOW_SOURCE_URL,
 		],
@@ -1004,8 +1004,9 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 	);
 	assert.match(examplePanelHtml("overflow"), /main\.wyst · verified excerpt/);
 	assert.match(examplePanelHtml("overflow"), /C makes signed overflow undefined/);
-	assert.match(examplePanelHtml("overflow"), /optimize away this check/);
-	assert.match(examplePanelHtml("overflow"), /Wyst defines i32 addition to wrap/);
+	assert.match(examplePanelHtml("overflow"), /Wyst's defined i32 wrapping is safer/);
+	assert.match(examplePanelHtml("overflow"), /optimization level must preserve/);
+	assert.match(examplePanelHtml("overflow"), /overflow check silently disappears/);
 	assert.doesNotMatch(examplePanelHtml("overflow"), /UART|uart_write|_start/);
 	assert.match(
 		examplePanelHtml("effects"),

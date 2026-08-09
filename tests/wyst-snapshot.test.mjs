@@ -171,7 +171,7 @@ for (const response of responses) {
 						: "hello\n"
 					: file.endsWith("main.wyst") || file.endsWith("keyboard_isr.wyst")
 						? file.includes("overflow-guard")
-							? paddedFixtureSource(61)
+							? paddedFixtureSource(62)
 							: file.includes("effect-denial")
 								? paddedFixtureSource(12)
 								: "module fixture\nfn main() {}\n"

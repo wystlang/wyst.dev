@@ -396,8 +396,9 @@
 						<div class="source-viewport">
 							<!-- homepage-overflow-semantic-example:start -->
 							<pre aria-label="Wyst overflow source" aria-describedby="overflow-scroll-hint" tabindex="0"><code id="overflow-source"><span class="source-comment">// C makes signed overflow undefined, so its compilers may assume x + 1 &gt;= x</span>
-<span class="source-comment">// and optimize away this check. Wyst defines i32 addition to wrap, so the</span>
-<span class="source-comment">// comparison must observe the wrapped value and evaluate true at i32.max.</span>
+<span class="source-comment">// and discard this guard. Wyst's defined i32 wrapping is safer: every</span>
+<span class="source-comment">// optimization level must preserve the guard's intended behavior, avoiding</span>
+<span class="source-comment">// the class of security bugs where an overflow check silently disappears.</span>
 <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">is_at_max</span>(<span data-token="parameter" data-token-modifiers="declaration">x</span>: <span data-token="type" data-token-modifiers="defaultLibrary">i32</span>) -&gt; <span data-token="type" data-token-modifiers="defaultLibrary">bool</span> {
   <span data-token="keyword" data-token-modifiers="defaultLibrary">return</span> <span data-token="parameter">x</span> <span data-token="operator">+</span> <span data-token="number">1</span> <span data-token="operator">&lt;</span> <span data-token="parameter">x</span>
 }

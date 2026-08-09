@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "89e812c2eb86db201bd04922fadcd50b1b914959",
-  "snapshotSha256": "1622991fb16c93e361ebf5c1f0b0225e28c8533db0cc15cb34a2d306f546a757",
+  "sourceCommit": "bec94409771a0c4b800b79d16ca44e0f7887fbb1",
+  "snapshotSha256": "d6deb29cf8f985480855b7ba9f7ab9e1fac1299bc23cf9c200ef6de44f0c746a",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -28,8 +28,8 @@
       "size": 549
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst": {
-      "sha256": "d4efba4a9fee8ac7d31b9caf3202f61960536e54f540fe757d76677edf12ce4a",
-      "size": 1224
+      "sha256": "62afc3eb07e8c6c989e2ad81110fc81198966dacc465f297b6cdc52280f5d708",
+      "size": 1296
     },
     "tests/fixtures/wyst/wync/tests/fixtures/qemu/virt/uart-hello/expected.txt": {
       "sha256": "c98c24b677eff44860afea6f493bbaec5bb1c4cbb209c6fc2bbb47f66ff2ad31",
@@ -216,7 +216,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "11293a0ef3a0072fd842b01375c63af608351db4240d173d628483f7f32579dc",
+      "sha256": "8fc8398c726fbe1f6c6527efa644a32f69d32a83432641944bf1c9145c607d31",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
