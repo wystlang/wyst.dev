@@ -1,11 +1,11 @@
 ---
-title: "Wyst Source Of Truth"
+title: "Wyst Source of Truth"
 group: manual
 order: 0
-summary: "Current design authority and conflict resolution."
+summary: "Design authority and conflict resolution."
 ---
 
-# Wyst Source Of Truth
+# Wyst Source of Truth
 
 Wyst is a hobby language under active development. The compiler is whatever the
 current source builds, and the documentation describes that source. The
@@ -18,11 +18,13 @@ records, and release metadata do not belong in the compiler or manual.
 When required prose, grammar, IR documentation, ABI rules, object schemas, or
 examples conflict, use this order:
 
-1. The owning design chapter for the user-visible rule.
-2. Appendix B for lexical grammar, parseability, and disambiguation.
-3. Chapter 15 for ABI behavior and Chapter 16 for emitted artifacts.
-4. Appendix A for compiler-internal IR shape and verifier invariants.
-5. Tests and examples as evidence of current behavior.
+1. The owning reference topic for the user-visible rule.
+2. [Formal Grammar](formal-grammar.md) for lexical grammar, parseability, and disambiguation.
+3. [ABI Specification](abi.md) for ABI behavior and
+   [Artifact and Object Formats](artifact-and-object-formats.md) for emitted artifacts.
+4. [Intermediate Representation](intermediate-representation.md) for compiler-internal
+   IR shape and verifier invariants.
+5. Tests and examples as evidence of compiler behavior.
 
 User-visible semantics win over an internal representation or stale test.
 Correct the lower-authority source when resolving a conflict.
@@ -31,9 +33,9 @@ Correct the lower-authority source when resolving a conflict.
 
 Accepted records under [`../docs/adr/`](../docs/adr/) preserve the rationale
 for hard-to-reverse decisions and constrain the next coherent language change.
-They do not override an owning chapter as a description of current compiler
+They do not override an owning reference topic as a description of compiler
 behavior. When an accepted decision becomes executable semantics, update its
-owning chapters, implementation, catalogs, and regression tests together; do
+owning reference topics, implementation, catalogs, and regression tests together; do
 not make the manual claim behavior that the compiler does not enforce.
 
 ## Machine-Readable Catalogs
@@ -71,12 +73,18 @@ The A64 data files are offline compiler inputs for instruction selection,
 encoding, decoding, checked assembly, and target behavior. Generated copies
 must remain reproducible from the inputs they replace.
 
+[A64 Compiler-Semantic Catalog](a64-compiler-semantics.md) is the readable index
+for those compiler-consumed ARM64 tables.
+
 ## Change Process
 
 Make a language change across the implementation and the documentation that
 describes current behavior. Update regression tests whose expectations changed
 intentionally, and retain or add focused tests that catch plausible unrelated
 breakage.
+
+[Documentation Example Contracts](documentation-examples.md) defines the markers
+and executable checks used by reference examples.
 
 Delete replaced parsers, aliases, adapters, schema readers, ABI paths, fixtures,
 and diagnostics unless the current design still uses them.

@@ -16,10 +16,21 @@ const docsSourceOfTruthHtml = await readFile(
 	new URL("../dist/docs/source-of-truth/index.html", import.meta.url),
 	"utf8",
 );
-const docsTypesHtml = await readFile(
-	new URL("../dist/docs/chapter-06-types/index.html", import.meta.url),
-	"utf8",
-);
+async function readFirst(paths) {
+	for (const candidate of paths) {
+		try {
+			return await readFile(new URL(candidate, import.meta.url), "utf8");
+		} catch (error) {
+			if (error?.code !== "ENOENT") throw error;
+		}
+	}
+	throw new Error(`none of the expected files exist: ${paths.join(", ")}`);
+}
+
+const docsTypesHtml = await readFirst([
+	"../dist/docs/type-system/index.html",
+	"../dist/docs/chapter-06-types/index.html",
+]);
 const notFoundHtml = await readFile(
 	new URL("../dist/404.html", import.meta.url),
 	"utf8",
@@ -411,23 +422,23 @@ test("homepage links plainly to the source and reference", () => {
 
 test("documentation is a lookup reference rather than a tutorial path", () => {
 	const indexText = textContent(docsIndexHtml);
-	assert.match(indexText, /organized for lookup by topic/i);
-	assert.match(indexText, /not as a tutorial/i);
+	assert.match(indexText, /organized (?:for lookup by topic|by subject for direct lookup)/i);
+	assert.match(indexText, /not (?:as )?a tutorial/i);
 	assert.doesNotMatch(
 		indexText,
 		/read the chapters in order|learning Wyst for the first time/i,
 	);
-	assert.match(docsIndexHtml, /<h2>Topics<\/h2>/);
+	assert.match(docsIndexHtml, /<h2>(?:Topics|Language)<\/h2>/);
 	assert.match(
 		docsIndexHtml,
-		/<a class="doc-index-card" href="\/docs\/chapter-01-language-design\/">\s*<h3>/,
+		/<a class="doc-index-card" href="\/docs\/(?:language-overview|chapter-01-language-design)\/">\s*<h3>/,
 		"reference topics should be named rather than presented as numbered steps",
 	);
 	assert.match(docsTypesHtml, /<h1>Type System<\/h1>/);
 	assert.doesNotMatch(
 		docsTypesHtml,
 		/>Chapter 6<|<h1>Chapter 6:/,
-		"website headings should use topic names while source metadata keeps stable chapter numbers",
+		"website headings should use unnumbered topic names",
 	);
 	assert.match(
 		docsSourceOfTruthHtml,

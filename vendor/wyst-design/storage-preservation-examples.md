@@ -1,18 +1,15 @@
 ---
-title: "Appendix D: Storage-Preservation Examples"
+title: "Storage-Preservation Examples"
 group: appendix
-appendix: "D"
-order: 28
+order: 720
 summary: "Executable accepted, rejected, explained, and zero-runtime storage-preservation examples."
 ---
 
-# Appendix D: Storage-Preservation Examples
+# Storage-Preservation Examples
 
-These seven examples are documentation contracts. Their complete Wyst source
-files run through the public project `wync check` path; the report examples also
-run through `wync explain storage`. Output blocks retain the stable facts that
-the integrity test verifies rather than unstable temporary paths and source
-coordinates.
+The documentation test runs these seven examples through project `wync check`.
+The test also runs the report examples through `wync explain storage`.
+The output excerpts omit temporary paths and source coordinates.
 
 Storage guarantees are compile-time callable postconditions. They do not create
 ownership transfer, synchronization, publication, progress, delivery,
@@ -22,8 +19,6 @@ the proof itself; source-authored guards, checked operations, and calls retain
 their ordinary cost.
 
 ## 1. Accepted Preserved Projection
-
-Implementation status: implemented.
 
 The dependent view is backed by `pair.left`, exactly the projection retained by
 the callable. `preserves` keeps its usable storage identity but does not promise
@@ -64,8 +59,6 @@ The proof adds no runtime work. The authored external call remains an ordinary
 call; no communication or synchronization is synthesized.
 
 ## 2. Outcome-Gated Saved-Result Refinement
-
-Implementation status: implemented.
 
 The call makes `view` unavailable until the saved result is refined to
 `.Kept`. Refining another result or reassigning `status` would not establish the
@@ -111,8 +104,6 @@ message receive.
 
 ## 3. An Overlapping Possible Write Is Rejected
 
-Implementation status: implemented.
-
 The callable may write the whole `Pair`, but its guarantee covers only `left`.
 The possible write to `right` overlaps the live view and therefore invalidates
 it.
@@ -148,8 +139,6 @@ Compilation rejects the source before artifact output, so this failed proof has
 no runtime or lowering cost.
 
 ## 4. Mutable Boundary Rejected and Explicitly Repaired
-
-Implementation status: implemented.
 
 A mutable parameter cannot be the stable identity of a call-entry range. The
 compiler rejects it and names the source-visible repair; it never invents a
@@ -213,8 +202,6 @@ descriptor, borrow state, copy, or synchronization.
 
 ## 5. Canonical Open Fixed-Array Range
 
-Implementation status: implemented.
-
 For the `[4]u8` field, `parameter(0).bytes[parameter(1) ..]` and
 `parameter(0).bytes[parameter(1) ..< 4]` are one callable identity. Dynamically
 sized storage must instead supply an explicit immutable end.
@@ -247,8 +234,6 @@ The static end is canonical compiler identity, not a runtime projection
 descriptor.
 
 ## 6. Matching `wync explain storage` Output
-
-Implementation status: implemented.
 
 This direct call produces one accepted whole-parameter preservation event.
 
@@ -288,8 +273,6 @@ enforcement. It does not authorize the call or infer a guarantee from spelling.
 
 ## 7. Explicit Zero-Runtime Accounting
 
-Implementation status: implemented.
-
 The source retains a whole-parameter dependent view across an authored external
 call. The preservation proof contributes no extra runtime representation or
 operation.
@@ -325,11 +308,8 @@ synthesized communication or synchronization operations added: 0
 IR and optimizer-input delta after removing explanation-only proof records: 0
 ```
 
-The storage report establishes `runtime-work=none`; the proof matrix separately
-compares typed IR and optimizer input with explanation-only records removed.
-Machine cost remains the authority of lowering/backend evidence rather than the
-storage report.
+The storage report establishes `runtime-work=none` for the preservation proof.
+It does not state the machine cost of the authored call.
 
-These examples illustrate the call-site model; they are not a substitute for
-the compiler's exhaustive lifetime, cross-interface, invalidation, and
-raw-storage tests.
+These examples show the call-site rules.
+They do not define all lifetime, invalidation, or raw-storage behavior.

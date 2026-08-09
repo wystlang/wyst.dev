@@ -155,7 +155,7 @@ function githubSlugify(value) {
 }
 
 // ---- markdown-it setup -----------------------------------------------------
-const fileToUrl = new Map(); // "chapter-07-operators.md" -> "/docs/chapter-07-operators/"
+const fileToUrl = new Map(); // "operators-and-evaluation.md" -> "/docs/operators-and-evaluation/"
 const fileToFragments = new Map();
 
 function fragmentIdsFor(markdown) {
@@ -415,6 +415,7 @@ export function generateDocs({
 			title,
 			navTitle: navTitleFrom(title),
 			group: data.group || (isIndex ? "manual" : "chapter"),
+			section: data.section || "",
 			order: typeof data.order === "number" ? data.order : 999,
 			chapter: data.chapter,
 			appendix: data.appendix,
@@ -425,7 +426,7 @@ export function generateDocs({
 	fileToUrl.set("README.md", "/docs/");
 
 	pages.sort((a, b) => a.order - b.order);
-	const navModel = pages.filter((p) => !p.isIndex);
+	const navModel = pages.filter((p) => !p.isIndex && p.group !== "contributor");
 
 	const md = makeMd({ wystSourceCommit });
 	const outDir = path.join(OUTPUT, "docs");
@@ -449,12 +450,12 @@ export function generateDocs({
 		if (page.isIndex) {
 			const intro = body.split(/^##\s+/m)[0];
 			const html = docIndexPage({
-				title: "Language Reference · Wyst",
+				title: "Language and Compiler Reference · Wyst",
 				description:
-					"The canonical Wyst language and compiler design reference.",
+					"The Wyst source language, target, compiler, artifact, and tooling reference.",
 				canonical: SITE + page.url,
 				navModel,
-				h1: "Reference Manual",
+				h1: "Wyst Language and Compiler Reference",
 				introHtml: md.render(intro),
 			});
 			fs.writeFileSync(path.join(outDir, "index.html"), html);
@@ -467,13 +468,23 @@ export function generateDocs({
 		const articleHtml = md.renderer.render(tokens, md.options, env);
 		const tocHtml = buildToc(tokens);
 
-		const eyebrow = page.isIndex
-			? "Reference"
-			: page.chapter
-				? ""
-				: page.appendix
-					? `Appendix ${page.appendix}`
-					: "Reference";
+		const sectionEyebrows = {
+			language: "Language reference",
+			"memory-machine": "Memory and machine programming",
+			"projects-targets": "Projects and targets",
+			"binary-interfaces": "Binary interfaces",
+			compiler: "Compiler reference",
+			tools: "Tool reference",
+		};
+		const eyebrow = page.group === "appendix"
+			? "Appendix"
+			: page.group === "reference"
+				? sectionEyebrows[page.section] || "Reference"
+				: page.chapter
+					? ""
+					: page.appendix
+						? `Appendix ${page.appendix}`
+						: "Reference";
 
 		const html = docPage({
 			title: `${page.navTitle} · Wyst`,
