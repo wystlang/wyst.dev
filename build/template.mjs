@@ -87,22 +87,45 @@ function footer() {
 	</footer>`;
 }
 
-function sidebar(navModel, currentUrl) {
-	const groups = [
-		["Topics", navModel.filter((d) => d.group === "chapter")],
-		["Appendices", navModel.filter((d) => d.group === "appendix")],
-		["Manuals", navModel.filter((d) => d.group === "manual")],
+const REFERENCE_SECTIONS = [
+	["Language", "language"],
+	["Memory and machine programming", "memory-machine"],
+	["Projects and targets", "projects-targets"],
+	["Binary interfaces", "binary-interfaces"],
+	["Compiler", "compiler"],
+	["Tools", "tools"],
+];
+
+function referenceGroups(navModel) {
+	const hasSubjectReference = navModel.some((item) => item.group === "reference");
+	if (!hasSubjectReference) {
+		return [
+			["Topics", navModel.filter((item) => item.group === "chapter")],
+			["Appendices", navModel.filter((item) => item.group === "appendix")],
+			["Manuals", navModel.filter((item) => item.group === "manual")],
+		];
+	}
+
+	return [
+		...REFERENCE_SECTIONS.map(([label, section]) => [
+			label,
+			navModel.filter(
+				(item) => item.group === "reference" && item.section === section,
+			),
+		]),
+		["Appendices", navModel.filter((item) => item.group === "appendix")],
 	];
+}
+
+function sidebar(navModel, currentUrl) {
+	const groups = referenceGroups(navModel);
 	const sections = groups
 		.filter(([, items]) => items.length)
 		.map(([label, items]) => {
 			const lis = items
 				.map((d) => {
 					const cur = d.url === currentUrl ? ' aria-current="page"' : "";
-					const num = d.appendix
-						? `<span class="doc-nav-num">${d.appendix}</span>`
-						: "";
-					return `<li><a href="${d.url}"${cur}>${num}<span>${escapeHtml(d.navTitle)}</span></a></li>`;
+					return `<li><a href="${d.url}"${cur}><span>${escapeHtml(d.navTitle)}</span></a></li>`;
 				})
 				.join("\n\t\t\t\t\t");
 			return `<div class="doc-nav-group">
@@ -114,7 +137,7 @@ function sidebar(navModel, currentUrl) {
 		})
 		.join("\n\t\t\t");
 	return `<aside id="doc-sidebar" class="doc-sidebar" aria-label="Documentation">
-			<a class="doc-sidebar-home" href="/docs/"${currentUrl === "/docs/" ? ' aria-current="page"' : ""}>Reference Manual</a>
+			<a class="doc-sidebar-home" href="/docs/"${currentUrl === "/docs/" ? ' aria-current="page"' : ""}>Language and Compiler Reference</a>
 			${sections}
 		</aside>`;
 }
@@ -176,7 +199,7 @@ ${articleHtml}
 	return shell({ title, description, canonical, bodyClass: "docs", body });
 }
 
-// The documentation home: a lookup grid grouped by topics and appendices.
+// The documentation home: a lookup grid grouped by reference subject.
 export function docIndexPage({
 	title,
 	description,
@@ -186,9 +209,7 @@ export function docIndexPage({
 	introHtml,
 }) {
 	const card = (d) => {
-		const num = d.appendix || "";
-		const badge = num ? `\n\t\t\t\t\t\t<span class="num">${num}</span>` : "";
-		return `<a class="doc-index-card" href="${d.url}">${badge}
+		return `<a class="doc-index-card" href="${d.url}">
 						<h3>${escapeHtml(d.navTitle)}</h3>
 						${d.summary ? `<p>${escapeHtml(d.summary)}</p>` : ""}
 					</a>`;
@@ -202,18 +223,14 @@ export function docIndexPage({
 					</div>
 				</section>`
 			: "";
-	const chapters = navModel.filter((d) => d.group === "chapter");
-	const appendices = navModel.filter((d) => d.group === "appendix");
-	const manuals = navModel.filter((d) => d.group === "manual");
+	const groups = referenceGroups(navModel);
 	const body = `		<main id="main" class="doc-index">
 			<div class="wrap">
 				<header class="doc-index-head">
 					<h1>${escapeHtml(h1)}</h1>
 					${introHtml ? `<div class="doc-index-lede">${introHtml}</div>` : ""}
 				</header>
-				${group("Topics", chapters)}
-				${group("Appendices", appendices)}
-				${group("Manuals", manuals)}
+				${groups.map(([label, items]) => group(label, items)).join("\n\t\t\t\t")}
 			</div>
 		</main>`;
 	return shell({ title, description, canonical, bodyClass: "docs", body });

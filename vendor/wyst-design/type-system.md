@@ -1,0 +1,417 @@
+---
+title: "Type System"
+group: reference
+section: language
+order: 120
+summary: "Primitive types, typed addresses, containers, declarations, generics, and explicit conversions."
+---
+
+# Type System
+
+> **Canonical scope.** This reference defines the Wyst type forms and explicit conversions.
+> [Operators and Evaluation](operators-and-evaluation.md) defines operators.
+> [Functions and Control Flow](functions-and-control-flow.md) defines callable contracts.
+> [Memory Model](memory-model.md) defines memory access.
+
+Wyst uses static types. A declaration gives each stored value a complete type.
+
+The compiler does not apply general implicit conversions. Numeric literals can bind to an expected compatible type.
+
+## Primitive types
+
+Wyst provides these primitive value types:
+
+| Type | Meaning | Size | Alignment |
+|---|---|---:|---:|
+| `bool` | Boolean value | 1 byte | 1 byte |
+| `u8`, `u16`, `u32`, `u64` | Unsigned integer | 1, 2, 4, or 8 bytes | Same as size |
+| `i8`, `i16`, `i32`, `i64` | Signed integer | 1, 2, 4, or 8 bytes | Same as size |
+| `f32`, `f64` | Floating-point value | 4 or 8 bytes | Same as size |
+| `string` | Byte-string descriptor | 16 bytes | 8 bytes |
+
+An integer literal has no concrete type before contextual binding.
+
+An unbound integer expression defaults to `i64`. Its value must fit in `i64`.
+
+An unbound floating-point expression defaults to `f64`.
+
+Integer literals can use decimal, binary, octal, or hexadecimal notation.
+
+The prefixes are `0b`, `0o`, and `0x`. An underscore can separate digits.
+
+Floating-point literals use decimal notation. They can include a decimal point or an exponent.
+
+Character literals contain one byte. Use an escape for a non-ASCII byte.
+
+## Built-in type forms
+
+| Form | Name | Description |
+|---|---|---|
+| `@T` | typed address | Address with an element lens of `T` |
+| `@volatile T` | volatile typed address | Typed address for volatile access |
+| `@mmio T` | MMIO typed address | Volatile typed address with MMIO intent |
+| `[N]T` | fixed array | `N` adjacent values of type `T` |
+| `[T:N]` | vector | `N` SIMD lanes of type `T` |
+| `[]T` | slice | Descriptor for a contiguous view of `T` values |
+| `fn(...) -> T` | function pointer | Native callable value |
+| `extern "C" fn(...) -> T` | C function pointer | C callable value |
+| `(name: T, other: U)` | named tuple | Named multi-result value |
+
+`never` is valid only as a callable result type. It has no stored value.
+
+See [Functions and Control Flow](functions-and-control-flow.md) for callable parameters, results, effects, and trust bounds.
+
+### Typed addresses
+
+A typed address records an element lens and access qualifiers.
+
+`@mmio T` also has volatile access semantics.
+
+Typed addresses occupy eight bytes and have eight-byte alignment.
+
+The `+` and `-` operators do not accept typed addresses.
+
+Use `byte_offset`, `element_offset`, or `field_addr` for address derivation.
+
+Use `relens<T>` to change only the element lens.
+
+Use `qualify<T>` to change only the volatile or MMIO qualifiers.
+
+One conversion cannot change the lens and qualifiers together.
+
+Memory operations and address validity rules are in [Memory Model](memory-model.md).
+
+### Fixed arrays
+
+`[N]T` contains exactly `N` adjacent elements of type `T`.
+
+Its alignment is the element alignment. Its size is `N` times the element size.
+
+The length must be a compile-time value.
+
+The compiler accepts `[_]T` only on a direct `const` or `var` binding.
+
+The initializer must be a direct array literal.
+
+For `[_]u8`, the initializer can also be a byte-string literal.
+
+In these positions, `_` means the initializer element count.
+
+An index expression reads or writes one element. A slice expression creates a slice view.
+
+The slice forms are `values[..]`, `values[..<end]`, `values[start..]`, and `values[start..<end]`.
+
+### Vectors
+
+`[T:N]` contains `N` SIMD lanes of the same primitive numeric type.
+
+The complete vector size must be 8 or 16 bytes. The vector alignment is 16 bytes.
+
+The compiler accepts these integer shapes:
+
+- `[u8:8]`, `[i8:8]`, `[u8:16]`, and `[i8:16]`
+- `[u16:4]`, `[i16:4]`, `[u16:8]`, and `[i16:8]`
+- `[u32:2]`, `[i32:2]`, `[u32:4]`, and `[i32:4]`
+- `[u64:2]` and `[i64:2]`
+
+The compiler accepts `[f32:2]`, `[f32:4]`, and `[f64:2]`.
+
+See [SIMD](simd.md) for vector operations and lowering.
+
+### Slices
+
+`[]T` is a two-word descriptor. It does not own its elements.
+
+The `data` field has type `@T`. The `len` field has type `u64`.
+
+The `data` field starts at byte 0. The `len` field starts at byte 8.
+
+A slice has size 16 and alignment 8.
+
+Indexing accesses one element. Slicing creates another view.
+
+Slice equality compares the `data` and `len` fields. It does not compare elements.
+
+See [Memory Model](memory-model.md) for bounds and access rules.
+
+### Strings
+
+`string` is a two-word byte descriptor.
+
+The `data` field has type `@u8`. The `len` field has type `u64`.
+
+A string literal produces a `string` value unless an array context applies.
+
+A string literal can initialize `[N]u8`. The compiler rejects more than `N` decoded bytes.
+
+The compiler fills unused array bytes with zero.
+
+`[_]u8` infers the decoded byte count from the string literal.
+
+### DynamicArray descriptor
+
+`DynamicArray<T>` denotes the descriptor declared by `core.collections.DynamicArray`.
+
+Source must import that declaration before use.
+
+Direct indexing and slicing do not accept a `DynamicArray` descriptor.
+
+The descriptor does not convert implicitly to a slice.
+
+See [Storage and Allocation](storage-and-allocation.md#dynamicarray-descriptor) for its layout and runtime contract.
+
+## Nominal scalar types
+
+`type Name: Carrier` declares a distinct nominal scalar type.
+
+The carrier must be a primitive integer or floating-point type.
+
+The nominal type has the carrier size, alignment, and representation.
+
+Two declarations with the same carrier still define different types.
+
+An integer nominal scalar provides `MIN` and `MAX` compile-time members.
+
+A compatible numeric literal can bind directly to a nominal scalar.
+
+Operators preserve the nominal type. They do not mix different nominal types.
+
+Use `bitcast<T>` to cross between a nominal scalar and its exact carrier.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module manual.nominal_types
+
+type Sequence: u64
+
+const FIRST: Sequence = 1
+
+fn next(value: Sequence) -> Sequence {
+  return value + 1
+}
+```
+
+## Struct types
+
+`struct` declares named fields in declaration order.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module manual.struct_types
+
+struct Pair<T: copyable_discardable> {
+  left: T
+  right: T
+}
+
+fn duplicate(value: u64) -> Pair<u64> {
+  return {left = value, right = value}
+}
+```
+
+A struct literal needs an expected struct type.
+
+The literal must initialize every field exactly once.
+
+The written field order can differ from the declaration order.
+
+The compiler evaluates field expressions once, in written order.
+
+The layout follows declaration order. Normal structs include required field padding.
+
+`#[align(N)]` on a field increases that field's required alignment.
+
+`packed struct` removes field padding and sets struct alignment to one byte.
+
+A packed struct cannot contain atomic storage requiring greater alignment.
+
+## Enum types
+
+`enum` declares at least one variant. A variant can have a payload.
+
+An optional unsigned integer after `:` sets the tag type.
+
+Without it, the compiler selects the smallest unsigned primitive that fits all tags.
+
+Implicit tag values start at zero and increase by one.
+
+Explicit tag values must be nonnegative, unique, and representable by the tag type.
+
+A payload must have fixed layout and ordinary move semantics.
+
+Use `Name.Variant` for a payload-free variant.
+
+Use `Name.Variant(arguments)` for a payload variant.
+
+Use `.Variant` when an enum type is already expected.
+
+The `.tag` projection reads the runtime tag.
+
+`#tag_of(Name.Variant)` returns the compile-time tag value.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module manual.enum_types
+
+enum Reply: u8 {
+  ready = 1
+  value(u64) = 2
+}
+
+const READY: Reply = Reply.ready
+
+fn wrap(value: u64) -> Reply {
+  return Reply.value(value)
+}
+```
+
+## Bitstruct types
+
+`bitstruct` declares named fields within an unsigned integer backing type.
+
+The backing type must be `u8`, `u16`, `u32`, or `u64`.
+
+A field can use `bool`, an integer type, or a payload-free enum type.
+
+`at N` assigns one bit. Only a `bool` field can use this form.
+
+`at A..=B` assigns an inclusive bit range.
+
+Field ranges must be compile-time values, disjoint, and inside the backing width.
+
+An enum field must define every bit pattern available in its range.
+
+A literal must initialize every declared field exactly once.
+
+Unassigned backing bits are zero after construction.
+
+A field write must fit its assigned width. Use `truncate_bits` for explicit truncation.
+
+Use `bitcast<T>` to cross between a bitstruct and its exact backing type.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module manual.bitstruct_types
+
+bitstruct Control: u32 {
+  enabled: bool at 0
+  count: u8 at 8..=10
+}
+
+const RESET: Control = {enabled = true, count = 5}
+```
+
+## Resource modifiers
+
+A struct or enum can declare `no_copy`, `must_account`, or `must_resolve`.
+
+`no_copy` disables implicit copies. Use `xfer` for an explicit transfer.
+
+`must_account` also requires each live value to leave every path through an explicit terminal action.
+
+Transfer, return, structural adoption, or `discard(xfer value)` can satisfy that obligation.
+
+`must_resolve` also rejects `discard`. Use `resolve(xfer value)` in the declaration's module.
+
+`opaque` prevents other modules from constructing values or accessing internal fields and variants.
+
+`agent_local` propagates a restriction on cross-agent transfer.
+
+The resource properties propagate through fields, enum payloads, and fixed arrays.
+
+See [Functions and Control Flow](functions-and-control-flow.md) for parameter and result transfer rules.
+
+## Storage wrapper types
+
+`MaybeUninit<T>` reserves storage with the size and alignment of `T`.
+
+It does not provide an ordinary value of `T` before initialization is proven.
+
+Use the initialization operations in [Semantic Operations and Hardware Declarations](semantic-operations.md).
+
+`atomic<T>` reserves atomic storage with the element's size and alignment.
+
+Atomic operations require supported element types, orders, and natural alignment.
+
+Compare-exchange operations return the value named `observed` with a success result.
+
+See [Memory Model](memory-model.md#atomic-storage) for the atomic operation contracts.
+
+## Generic declarations
+
+Functions, structs, and enums can declare type parameters.
+
+Each type parameter can have one optional built-in bound.
+
+Generic applications must provide every type argument explicitly.
+
+Wyst does not infer type arguments. It does not provide default type arguments.
+
+The closed bound set is:
+
+| Bound | Admitted types |
+|---|---|
+| `integer` | Primitive integer types |
+| `unsigned_integer` | Primitive unsigned integer types |
+| `signed_integer` | Primitive signed integer types |
+| `float` | Primitive floating-point types |
+| `numeric` | Primitive integer or floating-point types |
+| `scalar` | `bool` or a primitive numeric type |
+| `address` | Typed addresses or function pointers |
+| `bitstruct` | Declared bitstruct types |
+| `payload_word` | `bool`, primitive integers, addresses, function pointers, or bitstructs |
+| `fixed_layout_movable` | Fixed-layout values with ordinary move semantics |
+| `copyable_discardable` | Fixed-layout values that permit copying and discarding |
+
+All listed bounds prove fixed layout and ordinary move semantics.
+
+All except `fixed_layout_movable` also prove copying and discarding.
+
+## Explicit conversions
+
+Write a conversion as `name<Target>(value)`.
+
+The conversion name must match the source and target categories.
+
+| Conversion | Rule |
+|---|---|
+| `widen<T>` | Convert to a wider integer with the same signedness |
+| `truncate<T>` | Convert to a narrower integer |
+| `signcast<T>` | Change signedness without changing width |
+| `numeric<T>` | Perform an integer conversion not covered above, or convert between integers and `bool` |
+| `bitcast<T>` | Cross an exact nominal carrier or bitstruct backing boundary |
+| `floatcast<T>` | Convert between integer and floating-point categories, or between float widths |
+| `saturate<T>` | Clamp during same-signedness integer narrowing |
+| `address<T>` | Cross between `u64` and a typed address, or convert an address to `u64` |
+| `relens<T>` | Change only a typed address element lens |
+| `qualify<T>` | Change only typed address qualifiers |
+
+`address<T>` also accepts a representable untyped integer when `T` is a typed address.
+
+It converts a function pointer to `u64`. It does not create a function pointer.
+
+Use `trusted_callable<T>` to create a function pointer from an integer.
+
+`saturate<T>` accepts only concrete integer source and target types.
+
+It requires a narrower target with the same signedness.
+
+The compiler rejects identity conversions and conversion-category mismatches.
+
+## Compile-time type queries
+
+`#size_of(T)` returns the type size in bytes.
+
+`#align_of(T)` returns the type alignment in bytes.
+
+`#field_offset(T, field)` returns a declared field offset in bytes.
+
+These queries require a complete compile-time layout.
+
+`#static_assert(condition, "message")` requires a compile-time `bool` value.
+
+The compiler reports the supplied message when the condition is false.
+
+`#if` selects one compile-time branch. The compiler checks only the selected branch.
+
+An expression-form `#if` requires `else`. Each branch must contain one expression.

@@ -363,6 +363,25 @@ async function auditPublicReferences(publicRoot) {
 }
 
 async function auditCssReferences(publicRoot, files) {
+	const optionalPrismTokens = new Set([
+		"address-qualifier",
+		"boolean",
+		"builtin",
+		"class-name",
+		"comment",
+		"constant",
+		"directive",
+		"function",
+		"keyword",
+		"macro",
+		"number",
+		"operator",
+		"parameter",
+		"punctuation",
+		"string",
+		"type",
+		"variable",
+	]);
 	const sourceFiles = files.filter(
 		(file) => file.endsWith(".html") || file.endsWith(".js"),
 	);
@@ -394,7 +413,10 @@ async function auditCssReferences(publicRoot, files) {
 				classes.add(match[1]);
 			}
 		}
-		const unused = [...classes].filter((className) => !usedClasses.has(className));
+		const unused = [...classes].filter(
+			(className) =>
+				!usedClasses.has(className) && !optionalPrismTokens.has(className),
+		);
 		if (unused.length) failures.push(`${filename}: ${unused.sort().join(", ")}`);
 	}
 

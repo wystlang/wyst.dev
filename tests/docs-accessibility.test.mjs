@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 import { buildToc, makeMd } from "../build/generate.mjs";
-import { docPage } from "../build/template.mjs";
+import { docIndexPage, docPage } from "../build/template.mjs";
 
 const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
 const docsScript = await readFile(new URL("../assets/docs.js", import.meta.url), "utf8");
@@ -74,7 +74,7 @@ test("generated heading fragments match GitHub-style source links", () => {
 test("design catalog links use authenticated local or pinned upstream artifacts", () => {
 	const commit = "a".repeat(40);
 	const rendered = makeMd({ wystSourceCommit: commit }).render(
-		"[syntax words](catalogs/language/syntax-words.tsv) [attributes](catalogs/language/attribute-catalog.tsv) [C interactive adapters](catalogs/language/c-interactive-adapter-catalog.tsv) [meta operations](catalogs/language/meta-operation-catalog.tsv) [raw forms](catalogs/aarch64/generated/a64-raw-encoding-source-forms.jsonl.gz) [catalog index](catalogs/README.md) [architectural decisions](../docs/adr/)\n",
+		"[syntax words](catalogs/language/syntax-words.tsv) [attributes](catalogs/language/attribute-catalog.tsv) [C interactive adapters](catalogs/language/c-interactive-adapter-catalog.tsv) [meta operations](catalogs/language/meta-operation-catalog.tsv) [semantic operations](catalogs/language/semantic-operation-catalog.tsv) [raw forms](catalogs/aarch64/generated/a64-raw-encoding-source-forms.jsonl.gz) [catalog index](catalogs/README.md) [architectural decisions](../docs/adr/)\n",
 	);
 	for (const artifact of [
 		"attribute-catalog.tsv",
@@ -94,6 +94,12 @@ test("design catalog links use authenticated local or pinned upstream artifacts"
 		rendered,
 		new RegExp(
 			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/catalogs/README\\.md" rel="noopener"`,
+		),
+	);
+	assert.match(
+		rendered,
+		new RegExp(
+			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/catalogs/language/semantic-operation-catalog\\.tsv" rel="noopener"`,
 		),
 	);
 	assert.match(
@@ -155,20 +161,64 @@ test("mobile Contents is an ARIA disclosure backed by an external script", () =>
 	assert.doesNotMatch(page, /<script>(?:.|\n)*doc-sidebar-toggle/);
 });
 
+test("reference navigation groups topics by subject without a reading sequence", () => {
+	const page = docIndexPage({
+		title: "Language and Compiler Reference · Wyst",
+		description: "Wyst reference",
+		canonical: "https://wyst.dev/docs/",
+		h1: "Wyst Language and Compiler Reference",
+		introHtml: "<p>Lookup by subject.</p>",
+		navModel: [
+			{
+				group: "reference",
+				section: "language",
+				navTitle: "Type System",
+				url: "/docs/type-system/",
+				summary: "Types.",
+			},
+			{
+				group: "reference",
+				section: "tools",
+				navTitle: "Editor Integration",
+				url: "/docs/editor-integration/",
+				summary: "Editors.",
+			},
+			{
+				group: "appendix",
+				navTitle: "Formal Grammar",
+				url: "/docs/formal-grammar/",
+				summary: "Grammar.",
+			},
+			{
+				group: "contributor",
+				navTitle: "Documentation Example Contracts",
+				url: "/docs/documentation-examples/",
+				summary: "Contributor rules.",
+			},
+		],
+	});
+
+	assert.match(page, /<h2>Language<\/h2>/);
+	assert.match(page, /<h2>Tools<\/h2>/);
+	assert.match(page, /<h2>Appendices<\/h2>/);
+	assert.match(page, /href="\/docs\/type-system\/"/);
+	assert.doesNotMatch(page, /<h2>Topics<\/h2>|Documentation Example Contracts/);
+});
+
 test("documentation pages emit page-specific social metadata", () => {
 	const page = docPage({
 		title: "Memory Model · Wyst",
 		description: "Wyst memory ordering and effects.",
-		canonical: "https://wyst.dev/docs/chapter-09-memory-model/",
+		canonical: "https://wyst.dev/docs/memory-model/",
 		navModel: [],
-		current: { url: "/docs/chapter-09-memory-model/", h1: "Memory Model" },
+		current: { url: "/docs/memory-model/", h1: "Memory Model" },
 		eyebrow: "Reference",
 		articleHtml: "<p>Test</p>",
 		tocHtml: "",
 	});
 	assert.match(
 		page,
-		/<meta property="og:url" content="https:\/\/wyst\.dev\/docs\/chapter-09-memory-model\/" \/>/,
+		/<meta property="og:url" content="https:\/\/wyst\.dev\/docs\/memory-model\/" \/>/,
 	);
 	assert.match(page, /<meta property="og:title" content="Memory Model · Wyst" \/>/);
 	assert.match(

@@ -105,18 +105,6 @@ body.docs footer.site .wrap {
 	color: var(--text);
 }
 
-.doc-nav-num {
-	min-width: 1.4em;
-	flex: none;
-	color: var(--muted);
-	font-size: var(--text-2xs);
-	text-align: right;
-}
-
-.doc-sidebar li a[aria-current="page"] .doc-nav-num {
-	color: var(--accent);
-}
-
 .doc-article {
 	min-width: 0;
 }
@@ -478,12 +466,6 @@ body.docs footer.site .wrap {
 	color: var(--reference);
 	text-decoration: underline;
 	text-underline-offset: 0.18em;
-}
-
-.doc-index-card .num {
-	color: var(--accent);
-	font-family: var(--mono);
-	font-size: var(--text-xs);
 }
 
 .doc-index-card h3 {

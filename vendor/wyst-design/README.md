@@ -1,95 +1,107 @@
 ---
-title: "Wyst Language Reference Manual"
+title: "Wyst Language and Compiler Reference"
 group: manual
 order: 0
 ---
 
-# Wyst Language Reference Manual
+# Wyst Language and Compiler Reference
 
-This is the current Wyst language and compiler design reference. It is organized
-for lookup by topic, not as a tutorial or a sequence to read from front to back.
+This reference describes the source language, target contracts, artifact formats,
+compiler behavior, and developer tools supported by Wyst. It is organized by
+subject for direct lookup. It is not a tutorial, tour, or sequential course, and
+readers do not need to read the topics from beginning to end.
 
-Wyst is a hobby language under active development. The compiler is whatever the
-current source builds, and this manual describes that source. There is no
-language or compiler version and no backwards-compatibility promise. Git keeps
-history; the manual does not preserve superseded designs or migration paths.
+Each topic owns one compiler-facing contract and links to adjacent contracts when
+needed. [Source of Truth](source-of-truth.md) explains how conflicts among the
+reference, grammar, catalogs, implementation, and tests are resolved.
 
-Each topic describes the language or compiler contract at the design level.
-[source-of-truth.md](source-of-truth.md) explains how conflicts between the
-manual, grammar, catalogs, implementation, and tests are resolved. When the
-language changes, update the affected implementation, documentation, and useful
-regression tests together.
+## Language
 
-## Directory Layout
+- [Language Overview](language-overview.md) maps the source language and compiler.
+- [Modules and Symbol Boundaries](modules-and-symbol-boundaries.md) defines module
+  identity, imports, visibility, and native symbol boundaries.
+- [Type System](type-system.md) defines values, storage types, aggregates, generics,
+  abilities, and conversions.
+- [Operators and Evaluation](operators-and-evaluation.md) defines expression order,
+  operator typing, precedence, and arithmetic results.
+- [Functions and Control Flow](functions-and-control-flow.md) defines callable forms,
+  statements, labels, register placement, and inline helpers.
+- [Outcomes, Progress, and Terminal Control](outcomes-and-progress.md) defines stored
+  outcomes, interactive calls, progress, forwarding, and cleanup.
 
-The `design/` root is intentionally human-readable:
+## Memory and Machine Programming
 
-- `chapter-*.md` and `appendix-*.md` are the language and compiler manual;
-- [source-of-truth.md](source-of-truth.md) explains authority and conflict
-  resolution;
-- [a64-compiler-semantics.md](a64-compiler-semantics.md) is the readable ARM64
-  compiler contract;
-- [generated-atomic-matrix.md](generated-atomic-matrix.md) is a generated but
-  readable reference;
-- [`catalogs/`](catalogs/README.md) contains compiler-consumed TSV and JSON
-  data, separated into language catalogs and ARM64 source/generated data; and
-- [`upstream/`](upstream/) contains pinned third-party source archives and
-  their provenance notes.
+- [Memory Model](memory-model.md) defines typed memory proof, volatile and MMIO
+  access, atomics, ordering, and barriers.
+- [Storage and Allocation](storage-and-allocation.md) defines caller-owned storage,
+  sealed storage transitions, and the `DynamicArray` descriptor.
+- [Semantic Operations and Hardware Declarations](semantic-operations.md) defines
+  compiler-authenticated operations, hardware declarations, and target services.
+- [SIMD](simd.md) defines admitted vector shapes and vector operations.
+- [Scheduling and Suspension](scheduling-and-suspension.md) defines compiler
+  scheduling regions and suspension boundaries.
+- [Checked Assembly](checked-assembly.md) defines typed assembly binders, admitted
+  AArch64 source forms, effects, and control transfer.
 
-If a file defines a machine vocabulary or generated table, it belongs under
-`catalogs/`, not beside the manual. Tests should prove compiler behavior rather
-than add audit ledgers to this directory.
+## Projects and Targets
 
-## Authority
+- [Target Profiles and Requirements](target-profiles.md) defines built-in profiles,
+  source requirements, capabilities, and execution-environment facts.
+- [Project Builds](project-builds.md) defines manifests, source closure, artifacts,
+  and output paths.
+- [Named Layouts and Placement](named-layouts-and-placement.md) defines regions,
+  sections, placement attributes, layout symbols, and per-CPU templates.
+- [Entry Contracts](entry-contracts.md) defines compiler-validated entry selection,
+  firmware parameter schemas, and stack transitions.
 
-[source-of-truth.md](source-of-truth.md) is the starting point for current
-language semantics and conflict resolution.
+## Binary Interfaces
 
-Checked-in [machine-readable catalogs](catalogs/README.md) own closed
-vocabularies where the compiler benefits from one definition. Their directory
-README identifies which files are authored inputs and which are generated.
+- [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md)
+  defines the target-owned vector-table and trap-frame contracts.
+- [ABI Specification](abi.md) defines Native and supported AAPCS64 callable
+  boundaries.
+- [Artifact and Object Formats](artifact-and-object-formats.md) defines static ELF
+  executables, static libraries, sections, symbols, and relocations.
 
-Compiler-owned declaration roles are defined directly beside their
-implementation and validated against the bundled source declaration.
+## Compiler
 
-The ARM64 catalogs and generated tables are compiler inputs for instruction
-selection, encoding, decoding, checked assembly, and target behavior. Their
-validators and tests protect behavior that can break the compiler.
+- [Compiler Pipeline](compiler-pipeline.md) defines the source-to-artifact and
+  source-to-report flows.
+- [Optimization and Hardening](optimization-and-hardening.md) defines admitted IR
+  transformations, required expansion, scheduling, and hardening.
+- [Debug and Unwind Information](debug-and-unwind.md) defines debug policies, DWARF
+  output, value locations, line tables, and unwind metadata.
 
-## Table of Contents
+## Tools
 
-| Chapter | File                                                                             | Purpose                                                                                                                            |
-| ------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 1       | [chapter-01-language-design.md](chapter-01-language-design.md)                   | Language principles, no compiler-exploitable UB, effect system, and compiler philosophy.                                 |
-| 2       | [chapter-02-targets.md](chapter-02-targets.md)                                   | Target facts, execution environments, and why runnability is explicit.                                                             |
-| 3       | [chapter-03-project-builds.md](chapter-03-project-builds.md)                     | Project layout, manifests, source discovery, target selection, and build modes.                                                    |
-| 4       | [chapter-04-modules.md](chapter-04-modules.md)                                   | Modules, imports, visibility, source references, and layout/module boundaries.                                                     |
-| 5       | [chapter-05-boot.md](chapter-05-boot.md)                                         | First runnable program shape, boot entry assumptions, and early runtime setup.                                                     |
-| 6       | [chapter-06-types.md](chapter-06-types.md)                                       | Scalar values, constants, conversions, addresses, arrays, slices, structs, bitstructs, and enums.                                  |
-| 7       | [chapter-07-operators.md](chapter-07-operators.md)                               | Expression syntax, arithmetic, comparison, casts, precedence, and branchless selection.                                            |
-| 8       | [chapter-08-functions.md](chapter-08-functions.md)                               | Declarations, functions, parameters, returns, control flow, labels, inline helpers, register pinning, and assembly escape hatches. |
-| 9       | [chapter-09-memory-model.md](chapter-09-memory-model.md)                         | Normal memory, volatile memory, atomics, barriers, ordering, agents, and happens-before.                                           |
-| 10      | [chapter-10-runtime.md](chapter-10-runtime.md)                                   | Explicit allocation direction, arenas, storage contracts, dynamic arrays, handles, buffers, and runtime boundaries.                |
-| 11      | [chapter-11-intrinsics.md](chapter-11-intrinsics.md)                             | Runtime primitives for atomics, sysregs, traps, cache/TLB maintenance, CPU hints, counters, and target hooks.                      |
-| 12      | [chapter-12-simd.md](chapter-12-simd.md)                                         | Explicit vector types, lane operations, vector loads/stores, and non-autovectorization policy.                                     |
-| 13      | [chapter-13-scheduling.md](chapter-13-scheduling.md)                             | The standard scheduling policy and explicit source-order compiler boundaries.                                                       |
-| 14      | [chapter-14-exception-vectors.md](chapter-14-exception-vectors.md)               | Alignment, exception vectors, vector slots, and checked trap-frame ABI basics.                                                     |
-| 15      | [chapter-15-abi-spec.md](chapter-15-abi-spec.md)                                 | Native ABI, AAPCS64 interop, argument/return classification, stack protocol, and register ownership.                               |
-| 16      | [chapter-16-object-format.md](chapter-16-object-format.md)                       | Emitted artifacts, ELF sections, symbols, relocations, deterministic output, and object-format boundaries.                         |
-| 17      | [chapter-17-optimization.md](chapter-17-optimization.md)                         | Universal deterministic optimization, proofs, costs, and the boundary between compiler work and runtime behavior.           |
-| 18      | [chapter-18-check-format-diagnostics.md](chapter-18-check-format-diagnostics.md) | Check mode, formatter behavior, diagnostic formats, editor catalog, and syntax highlighting floor.                                 |
-| 19      | [chapter-19-learning-diagnostics.md](chapter-19-learning-diagnostics.md)         | Diagnostic explanations, learning fields, source insights, and teachable compiler feedback.                                        |
-| 20      | [chapter-20-editor-integration.md](chapter-20-editor-integration.md)             | Editor/LSP behavior, language-server capabilities, task templates, and debug launch boundaries.                                    |
-| 21      | [chapter-21-explain.md](chapter-21-explain.md)                                   | Lowering, effects, storage, and reference-execution reports over current compiler semantics.                            |
-| 23      | [chapter-23-debug-info.md](chapter-23-debug-info.md)                             | Debug information goals, DWARF sections, DIEs, locations, and determinism.                                                         |
-| 25      | [chapter-25-compilation-phases.md](chapter-25-compilation-phases.md)             | Current compiler data flow, direct dependencies, diagnostics, reports, and timing instrumentation.                                 |
-| 26      | [chapter-26-errors-and-progress.md](chapter-26-errors-and-progress.md)           | Materialized outcomes, lexical interactive functions, exact forwarding, progress, recovery, cancellation, cleanup, traps, and C adapters. |
+- [Check, Format, and Diagnostics](check-format-and-diagnostics.md) defines command
+  behavior, diagnostic formats, warnings, and exit status.
+- [Diagnostic Explanations and Source Actions](diagnostic-explanations.md) defines
+  diagnostic metadata, explanations, suggestions, and source insights.
+- [Editor Integration](editor-integration.md) defines the language server,
+  Tree-sitter assets, and Zed integration.
+- [Compiler Inspection Reports](inspection-reports.md) defines lowering, effects,
+  storage, layout, resource, and reference-execution reports.
 
 ## Appendices
 
-| Appendix | File                                                                       | Purpose                                                                                                    |
-| -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| A        | [appendix-a-ir.md](appendix-a-ir.md)                                       | Compiler IR, SSA, effect representation, verifier invariants, register allocation, and lowering internals. |
-| B        | [appendix-b-grammar.md](appendix-b-grammar.md)                             | Formal grammar, lexical rules, parsing forms, and reserved syntax.                                         |
-| C        | [appendix-c-doc-example-contracts.md](appendix-c-doc-example-contracts.md) | Documentation example categories and required example conventions.                                        |
-| D        | [appendix-d-storage-preservation-examples.md](appendix-d-storage-preservation-examples.md) | Executable examples of current storage-preservation proofs and their boundaries.                            |
+- [Formal Grammar](formal-grammar.md) provides the lexical and grammar summary.
+- [Intermediate Representation](intermediate-representation.md) describes typed IR,
+  semantic records, verifier invariants, and rendering.
+- [Storage-Preservation Examples](storage-preservation-examples.md) provides
+  executable accepted and rejected proof examples.
+
+## Reference Maintenance
+
+The top-level Markdown files above form the reader-facing reference.
+[Documentation Example Contracts](documentation-examples.md) is a contributor guide
+for checked code blocks and is not part of the reader sequence.
+
+Machine-readable vocabularies belong under [`catalogs/`](catalogs/README.md).
+[A64 Compiler-Semantic Catalog](a64-compiler-semantics.md) and
+[Generated Atomic Matrix](generated-atomic-matrix.md) are readable views of
+compiler-owned data. Pinned third-party inputs and provenance notes live under
+[`upstream/`](upstream/).
+
+When the language changes, update the owning compiler behavior, reference topic,
+catalog when applicable, and regression tests together.
