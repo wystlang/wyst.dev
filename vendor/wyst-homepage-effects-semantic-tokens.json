@@ -214,7 +214,7 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "5112d8c7376f032af20ca96c1a177d9d2084189d",
+    "gitCommit": "89e812c2eb86db201bd04922fadcd50b1b914959",
     "path": "wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
     "sha256": "23fb967543e5f19942c357ddca793f0cc8aabae6da8204df20a3dd730082b074"
   }

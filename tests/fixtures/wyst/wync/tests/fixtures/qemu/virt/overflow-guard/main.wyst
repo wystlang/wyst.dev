@@ -45,8 +45,9 @@ fn report_wrapped() -> never {
   test_exit(0)
 }
 
-// Fixed-width signed arithmetic wraps modulo 2^width. The comparison must see
-// the wrapped i32 result instead of treating signed overflow as impossible.
+// C makes signed overflow undefined, so its compilers may assume x + 1 >= x
+// and optimize away this check. Wyst defines i32 addition to wrap, so the
+// comparison must observe the wrapped value and evaluate true at i32.max.
 fn is_at_max(x: i32) -> bool {
   return x + 1 < x
 }
