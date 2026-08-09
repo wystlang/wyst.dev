@@ -193,14 +193,6 @@ body.docs header.site .wrap {
 	height: 30px;
 }
 
-.brand .ver {
-	color: var(--muted);
-	font-family: var(--mono);
-	font-size: var(--text-2xs);
-	font-weight: 400;
-	letter-spacing: 0;
-}
-
 .nav-links {
 	display: flex;
 	align-items: center;
@@ -730,10 +722,6 @@ footer.site {
 }
 
 @media (max-width: 470px) {
-	.brand .ver {
-		display: none;
-	}
-
 	.nav-links {
 		gap: var(--space-sm);
 	}

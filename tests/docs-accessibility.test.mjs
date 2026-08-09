@@ -159,6 +159,51 @@ test("mobile Contents is an ARIA disclosure backed by an external script", () =>
 	assert.match(page, /<aside id="doc-sidebar" class="doc-sidebar"/);
 	assert.match(page, /<script src="\/assets\/docs\.js" defer><\/script>/);
 	assert.doesNotMatch(page, /<script>(?:.|\n)*doc-sidebar-toggle/);
+	assert.doesNotMatch(page, /class="ver"|>v0\.9</);
+});
+
+test("reference navigation groups topics by subject without a reading sequence", () => {
+	const page = docIndexPage({
+		title: "Language and Compiler Reference · Wyst",
+		description: "Wyst reference",
+		canonical: "https://wyst.dev/docs/",
+		h1: "Wyst Language and Compiler Reference",
+		introHtml: "<p>Lookup by subject.</p>",
+		navModel: [
+			{
+				group: "reference",
+				section: "language",
+				navTitle: "Type System",
+				url: "/docs/type-system/",
+				summary: "Types.",
+			},
+			{
+				group: "reference",
+				section: "tools",
+				navTitle: "Editor Integration",
+				url: "/docs/editor-integration/",
+				summary: "Editors.",
+			},
+			{
+				group: "appendix",
+				navTitle: "Formal Grammar",
+				url: "/docs/formal-grammar/",
+				summary: "Grammar.",
+			},
+			{
+				group: "contributor",
+				navTitle: "Documentation Example Contracts",
+				url: "/docs/documentation-examples/",
+				summary: "Contributor rules.",
+			},
+		],
+	});
+
+	assert.match(page, /<h2>Language<\/h2>/);
+	assert.match(page, /<h2>Tools<\/h2>/);
+	assert.match(page, /<h2>Appendices<\/h2>/);
+	assert.match(page, /href="\/docs\/type-system\/"/);
+	assert.doesNotMatch(page, /<h2>Topics<\/h2>|Documentation Example Contracts/);
 });
 
 test("reference navigation groups topics by subject without a reading sequence", () => {
