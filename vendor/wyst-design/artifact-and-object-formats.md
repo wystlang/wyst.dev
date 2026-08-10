@@ -15,6 +15,7 @@ The compiler produces two binary artifact forms:
 
 The compiler does not provide a standalone object-output command.
 It does not produce shared objects or position-independent executables.
+It can export a final Wync ELF executable as a flat binary.
 
 Type layout is in [Type System](type-system.md).
 Module linkage is in [Modules and Symbol Boundaries](modules-and-symbol-boundaries.md).
@@ -50,6 +51,26 @@ Debug, symbol, and string tables are not loaded.
 
 The final executable contains no relocation section.
 The compiler resolves all final addresses before it writes the file.
+
+### Flat binary export
+
+Use the narrow binary exporter when a firmware or emulator requires the
+loadable bytes without an ELF container:
+
+```text
+wync objcopy --output-target binary build/kernel.elf build/kernel.Image
+```
+
+The input must be a final little-endian AArch64 ELF executable produced under
+the Wync static layout contract. The exporter orders `PT_LOAD` segments by
+physical address, copies their file-backed bytes, and writes zero bytes for
+address gaps. It does not write memory-only tails such as `.bss`.
+
+The exporter rejects malformed headers, non-load program headers, overlapping
+load ranges, different virtual and physical load addresses, invalid alignment,
+out-of-range file extents, and output larger than the artifact-size limit. It
+does not provide section selection, symbol editing, format conversion, or the
+other features of a general `objcopy` tool.
 
 ### Static-library artifacts
 

@@ -1,44 +1,18 @@
-import { readFileSync } from "node:fs";
+import {
+	activeWystSyntaxWords,
+	compilerAttributePatterns,
+	compilerOperationSpellings,
+	wystAttributes,
+	wystSyntaxWords,
+} from "./wyst-highlight-catalog.mjs";
+import { COMPILER_DIRECTIVE_CATEGORY } from "./wyst-highlight-policy.mjs";
 
-// Prism is used only by the Node documentation build. Its vocabulary comes
-// from the same checked-in syntax-word catalog as the compiler and editor
-// grammar; this module deliberately owns no second list of Wyst words.
-const SYNTAX_WORD_CATALOG = new URL(
-	"../vendor/wyst-design/syntax-words.tsv",
-	import.meta.url,
-);
-const ACTIVE_STATES = new Set(["implemented", "implemented-normative"]);
+// Prism remains the safe lexical renderer for documentation fragments. Word
+// ownership and compiler-directive styling come from the shared policy used by
+// the homepage semantic-token renderer.
+export { wystAttributes, wystSyntaxWords };
 
-function parseSyntaxWords(text) {
-	return text
-		.split("\n")
-		.filter((line) => line !== "" && !line.startsWith("//"))
-		.map((line) => {
-			const fields = line.split("\t");
-			if (fields.length !== 5) {
-				throw new Error(`invalid Wyst syntax-word catalog row: ${line}`);
-			}
-			const [spelling, classification, owner, legalPositions, state] = fields;
-			if (!spelling || !classification || !owner || !legalPositions || !state) {
-				throw new Error(`invalid Wyst syntax-word catalog row: ${line}`);
-			}
-			return {
-				classification,
-				legalPositions: legalPositions.split("|"),
-				owner: owner.split("|"),
-				spelling,
-				state,
-			};
-		});
-}
-
-export const wystSyntaxWords = Object.freeze(
-	parseSyntaxWords(readFileSync(SYNTAX_WORD_CATALOG, "utf8")).map(Object.freeze),
-);
-
-const activeWords = wystSyntaxWords.filter((word) =>
-	ACTIVE_STATES.has(word.state),
-);
+const activeWords = activeWystSyntaxWords;
 
 function spellings(predicate) {
 	return activeWords.filter(predicate).map((word) => word.spelling);
@@ -69,12 +43,7 @@ function activeAlternatives(values, role) {
 	return alternatives(values);
 }
 
-const HASH_OPERATIONS = alternatives(
-	spellings(
-		(word) =>
-			word.classification === "unshadowable" && word.spelling.startsWith("#"),
-	),
-);
+const HASH_OPERATIONS = alternatives(compilerOperationSpellings);
 const RESERVED_WORDS = spellings(
 	(word) =>
 		word.classification === "reserved" &&
@@ -135,6 +104,40 @@ export function registerWyst(Prism) {
 			{ pattern: /\/\/.*/, greedy: true },
 			{ pattern: /\/\*[\s\S]*?\*\//, greedy: true },
 		],
+		"attribute-group": {
+			pattern: compilerAttributePatterns.group,
+			greedy: true,
+			inside: {
+				comment: [
+					{ pattern: /\/\/.*/, greedy: true },
+					{ pattern: /\/\*[\s\S]*?\*\//, greedy: true },
+				],
+				string: {
+					pattern: /"""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"/,
+					greedy: true,
+				},
+				char: {
+					pattern:
+						/'(?:\\x[0-9A-Fa-f]{2}|\\['\\ntr0]|[\x00-\x09\x0B\x0C\x0E-\x26\x28-\x5B\x5D-\x7F])'/,
+					greedy: true,
+				},
+				"attribute-group-punctuation": {
+					pattern: compilerAttributePatterns.punctuation,
+					alias: COMPILER_DIRECTIVE_CATEGORY,
+				},
+				"attribute-name": {
+					pattern: compilerAttributePatterns.name,
+					alias: COMPILER_DIRECTIVE_CATEGORY,
+				},
+				boolean: /\b(?:false|true)\b/,
+				number: {
+					pattern:
+						/\b(?:0[xX][0-9A-Fa-f](?:_?[0-9A-Fa-f])*|0[bB][01](?:_?[01])*|0[oO][0-7](?:_?[0-7])*|[0-9](?:_?[0-9])*(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?)\b/,
+				},
+				punctuation: /[(),]/,
+				operator: /[-+*/%&|^~!<>=]|[@?:]/,
+			},
+		},
 		string: {
 			pattern: /"""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"/,
 			greedy: true,
@@ -160,7 +163,7 @@ export function registerWyst(Prism) {
 		],
 		directive: {
 			pattern: DIRECTIVE_PATTERN,
-			alias: "macro",
+			alias: COMPILER_DIRECTIVE_CATEGORY,
 		},
 		"address-qualifier": {
 			pattern: POINTER_QUALIFIER_PATTERN,

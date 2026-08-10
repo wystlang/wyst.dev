@@ -142,15 +142,34 @@ A successful check can write enabled warnings to stderr.
 
 ## Format Mode
 
-`wync fmt` formats exactly one file.
-Without `--check`, it rewrites the input file in place:
+`wync fmt` accepts exactly one file, directory, or project input.
+Without `--check`, it rewrites noncanonical inputs in place:
 
 ```sh
 wync fmt src/boot.wyst
+wync fmt src
+wync fmt .
 wync fmt path/to/wyst.project
 ```
 
-The command writes the file only when the canonical text differs.
+Input selection follows these rules:
+
+- A Wyst source file formats only that file.
+- A directory containing `wyst.project` formats the project manifest, every
+  regular `.wyst` file recursively under each declared `source_root`, and every
+  artifact-owned layout referenced by the manifest.
+- A `wyst.project` input formats that project using the same rules as its
+  containing directory.
+- Any other directory formats every regular `.wyst` file below it recursively.
+
+Recursive discovery does not follow symlinked files or directories. Project
+formatting includes source files that are not reachable from a declared
+artifact so that the complete source tree remains canonical. Declared outputs
+and companion products are excluded even when their filenames end in `.wyst`.
+Duplicate paths are formatted once. The manifest is processed first; all other
+inputs use normalized path order.
+
+The command writes each file only when its canonical text differs.
 It does not print the formatted text to stdout.
 
 Use `--check` to test the file without changing it:
@@ -158,15 +177,21 @@ Use `--check` to test the file without changing it:
 ```sh
 wync fmt src/boot.wyst --check
 wync fmt --check src/boot.wyst
+wync fmt . --check
 ```
 
-The check succeeds when the file is canonical.
-It exits with status `1` and a diagnostic when the file differs.
+The check succeeds when every selected input is canonical. It exits with
+status `1` and reports every selected input that cannot be formatted or differs
+from canonical text. It never rewrites inputs.
+
+Without `--check`, discovery, reading, parsing, and formatting complete for the
+entire selected set before any file is rewritten. A failure during those phases
+leaves every selected file unchanged.
 
 For a file named `wyst.project`, the command uses the manifest parser and formatter.
-For other files, the command uses the Wyst source parser and AST formatter.
+For `.wyst` files, the command uses the Wyst source parser and AST formatter.
 Source formatting does not run semantic checking.
-It does not require a layout file.
+Formatting a standalone source or non-project directory does not require a layout file.
 
 The source formatter applies these principal rules:
 

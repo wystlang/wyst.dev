@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "bec94409771a0c4b800b79d16ca44e0f7887fbb1",
-  "snapshotSha256": "d6deb29cf8f985480855b7ba9f7ab9e1fac1299bc23cf9c200ef6de44f0c746a",
+  "sourceCommit": "c7eb88a0c8dc464ef8bcdefbcafe11cc21092c93",
+  "snapshotSha256": "684c6cbe4e13eacdc372f3154c54697ed578e27400b521829bac32d83d3e207c",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -216,7 +216,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "8fc8398c726fbe1f6c6527efa644a32f69d32a83432641944bf1c9145c607d31",
+      "sha256": "519aee26952b87b6ce49a5756dd3d6e0feddc182e6cef63b7ee1fce32ab44d3d",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -232,8 +232,8 @@
       "size": 8648
     },
     "vendor/wyst-design/artifact-and-object-formats.md": {
-      "sha256": "328f0a462388c7c48a0865381b6c8e5d779491f8b4c3724ed555a2bbd4b8f566",
-      "size": 8368
+      "sha256": "b1e0a0326abdf53d49ce17b4d2360d486441d623de649da585a3a723654a4db7",
+      "size": 9305
     },
     "vendor/wyst-design/attribute-catalog.tsv": {
       "sha256": "a1358b535d8ffe183fd6aeee0c2bf8b642b230250758d474df618146902244de",
@@ -244,12 +244,12 @@
       "size": 685
     },
     "vendor/wyst-design/check-format-and-diagnostics.md": {
-      "sha256": "ce3e9840a7f521af5b7003c67f56b8182ce3c91499307deb8109a01a0a2c47eb",
-      "size": 6276
+      "sha256": "35bbd0b15c870adeee2fea9b6aa1ef37c2a8541630160843932d5b8524e1ed88",
+      "size": 7583
     },
     "vendor/wyst-design/checked-assembly.md": {
-      "sha256": "7287e3d201a6263c4635718b57a9eda16baf39906bef1cf3f2538e9ec6d520ba",
-      "size": 2105
+      "sha256": "d86c6aea2e20e87a1db9bb25dbaa89940abab3c84dcf30a5b5735639784ef704",
+      "size": 2686
     },
     "vendor/wyst-design/compiler-pipeline.md": {
       "sha256": "1416fa714c97d9d78c0a3424900c2d55a58372b1a5a3355065e88aac6d8a2566",
@@ -280,8 +280,8 @@
       "size": 6481
     },
     "vendor/wyst-design/formal-grammar.md": {
-      "sha256": "3fdf94abb2108b6fc1c44f15bb09a887b98553bb0b89cc13c7101ca7a7f1a191",
-      "size": 19105
+      "sha256": "a5817832d30a4bcf2ca848d4c3d9237cd5fb2cb8d62e957c86c4305906066a98",
+      "size": 19198
     },
     "vendor/wyst-design/functions-and-control-flow.md": {
       "sha256": "6527e3c11f4fcd643634af33f9ea7b228ba2d60657dbef404da1217b2548333d",
@@ -308,16 +308,16 @@
       "size": 6950
     },
     "vendor/wyst-design/meta-operation-catalog.tsv": {
-      "sha256": "1c7250cc96f17e41fec6c7263af8713d0c144367841acf005dee6e8f5975f34b",
-      "size": 3057
+      "sha256": "edecda7eea17da355d4f0e0c4154bf6590b21144381351c23d34d22292b072ba",
+      "size": 3276
     },
     "vendor/wyst-design/modules-and-symbol-boundaries.md": {
-      "sha256": "981000b3ec513f9273fa26a04987761fb72fe833f36e2db6b590e04d2b07c0f9",
-      "size": 4774
+      "sha256": "6238fbc0e59a96336105c75fb82dcd751a535a5c2db3695338b5a0a74d4cbc6e",
+      "size": 5177
     },
     "vendor/wyst-design/named-layouts-and-placement.md": {
-      "sha256": "6b8371dcfaf07dfa7cf7ce21c37fafb97ebd79393ee78021203f14bc6b920a2f",
-      "size": 8336
+      "sha256": "b57a2d5aaa709236a86fc25d10b125f433b4c6ef985fd855d3bbdf0b7856c4d0",
+      "size": 8832
     },
     "vendor/wyst-design/operators-and-evaluation.md": {
       "sha256": "f42a1a09ee802ce36dee119df192bc0ba9fa9c4cc8724a5b93cc14f9d6f243f7",
@@ -332,8 +332,8 @@
       "size": 7031
     },
     "vendor/wyst-design/project-builds.md": {
-      "sha256": "8f657bd25367e57186006db5962ae1d651b29d270bbbe3a7bca440b89e85a810",
-      "size": 8084
+      "sha256": "e2d6d8084a25d9c7f62d5737806e3137fab5b4f57959dedd5dd7af267d9b4809",
+      "size": 8403
     },
     "vendor/wyst-design/scheduling-and-suspension.md": {
       "sha256": "6339ccd8128b4605a908058c3f10431205b575d66603ee5c0df92a0a1c88d2ab",
@@ -360,8 +360,8 @@
       "size": 8101
     },
     "vendor/wyst-design/syntax-words.tsv": {
-      "sha256": "3af0efc6ff1054566baa23daad0bc835a10bbef912a9cb077cd23bf66deec5bc",
-      "size": 22745
+      "sha256": "aa673d62104ed75449c038d2032099062b477959744cbcdf8c3e7376b0ebd2bb",
+      "size": 22814
     },
     "vendor/wyst-design/target-profiles.md": {
       "sha256": "1b39ba79fe8e5c321eb2e8e4ad937e321af10f12cd74689964fc1b39cb8091b9",

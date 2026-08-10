@@ -259,6 +259,16 @@ It also writes the required `.wystlib` semantic-interface companion.
 The archive and companion form one output pair.
 The compiler does not expose a general external-object linker through `wync build`.
 
+`wync build` does not add a flat binary as a project output. Run the separate
+binary export after a successful executable build when a loader needs it:
+
+```text
+wync objcopy --output-target binary build/kernel.elf build/kernel.Image
+```
+
+The ELF remains the primary artifact and the source of the exported load
+bytes.
+
 ## Build Failures
 
 The compiler stops artifact production for invalid project input.
