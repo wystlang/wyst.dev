@@ -90,79 +90,12 @@ const attributeNames = alternatives(
 	"compiler-attribute",
 );
 
-// Prism consumes these safe lexical projections. The semantic homepage uses
-// the delimiter-aware scanner in wyst-highlight-policy.mjs.
-function matchCompilerAttributeGroup(source, startIndex = 0) {
-	const start = source.indexOf("#[", startIndex);
-	if (start < 0) {
-		return null;
-	}
-
-	let index = start + 2;
-	while (index < source.length) {
-		if (source.startsWith("/*", index)) {
-			const end = source.indexOf("*/", index + 2);
-			if (end < 0) {
-				return null;
-			}
-			index = end + 2;
-			continue;
-		}
-		if (source.startsWith('"""', index)) {
-			const end = source.indexOf('"""', index + 3);
-			if (end < 0) {
-				return null;
-			}
-			index = end + 3;
-			continue;
-		}
-		if (source[index] === '"') {
-			index += 1;
-			while (index < source.length) {
-				if (source[index] === "\\") {
-					index += 2;
-					continue;
-				}
-				if (source[index] === '"') {
-					index += 1;
-					break;
-				}
-				if (source[index] === "\n") {
-					return null;
-				}
-				index += 1;
-			}
-			continue;
-		}
-		if (source[index] === "'") {
-			index += 1;
-			while (index < source.length) {
-				if (source[index] === "\\") {
-					index += 2;
-					continue;
-				}
-				if (source[index] === "'") {
-					index += 1;
-					break;
-				}
-				if (source[index] === "\n") {
-					return null;
-				}
-				index += 1;
-			}
-			continue;
-		}
-		if (source[index] === "]") {
-			return { index: start, 0: source.slice(start, index + 1) };
-		}
-		index += 1;
-	}
-
-	return null;
-}
-
+// Prism requires a RegExp here. Each repeated branch starts with a disjoint
+// character class, keeping failed matches linear while allowing `]` inside a
+// quoted attribute argument. The semantic homepage uses the delimiter-aware
+// scanner in wyst-highlight-policy.mjs.
 export const compilerAttributePatterns = Object.freeze({
-	group: { exec: (source) => matchCompilerAttributeGroup(source) },
+	group: /#\[(?:[^"\]\r\n]|"(?:\\[^\r\n]|[^"\\\r\n])*")*\]/,
 	name: new RegExp(`\\b(?:${attributeNames})\\b`),
 	punctuation: new RegExp(
 		`^#\\[|,(?=\\s*(?:${attributeNames})\\b)|\\]$`,

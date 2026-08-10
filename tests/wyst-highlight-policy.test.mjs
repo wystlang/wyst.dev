@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+	compilerAttributePatterns,
 	compilerAttributeSpellings,
 	compilerOperationSpellings,
 } from "../build/wyst-highlight-catalog.mjs";
@@ -48,4 +49,11 @@ test("shared policy colors only grouped attribute punctuation", () => {
 		),
 		[],
 	);
+});
+
+test("Prism's attribute-group projection remains a nonempty RegExp", () => {
+	assert.ok(compilerAttributePatterns.group instanceof RegExp);
+	assert.equal(compilerAttributePatterns.group.exec("as"), null);
+	const source = '#[section(".image]header"), align(4)]';
+	assert.equal(compilerAttributePatterns.group.exec(source)?.[0], source);
 });
