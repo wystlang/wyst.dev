@@ -94,7 +94,7 @@ const attributeNames = alternatives(
 // the delimiter-aware scanner in wyst-highlight-policy.mjs.
 export const compilerAttributePatterns = Object.freeze({
 	group:
-		/#\[(?:\/\*[\s\S]*?\*\/|"""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|[^\]"'])*\]/,
+		/#\[(?:\/\*[\s\S]*?\*\/|"""(?:[^"]|"(?!"")|""(?!""))*"""|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|[^\]"'])*\]/,
 	name: new RegExp(`\\b(?:${attributeNames})\\b`),
 	punctuation: new RegExp(
 		`^#\\[|,(?=\\s*(?:${attributeNames})\\b)|\\]$`,
