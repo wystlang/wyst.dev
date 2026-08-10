@@ -270,6 +270,7 @@ core	unshadowable	core.packages	module-root	implemented
 #field_offset	unshadowable	core.meta-operations	expression	implemented
 #if	unshadowable	core.meta-operations	declaration|expression|statement	implemented
 #len	unshadowable	core.meta-operations	expression	implemented
+#link_value	unshadowable	core.meta-operations	expression	implemented
 #percpu_offset_of	unshadowable	core.meta-operations	expression	implemented
 #requires	unshadowable	core.meta-operations	declaration	implemented
 #size_of	unshadowable	core.meta-operations	expression	implemented

@@ -3,6 +3,11 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+	COMPILER_DIRECTIVE_CATEGORY,
+	COMPILER_DIRECTIVE_MODIFIERS,
+	compilerAttributePunctuationSpans,
+} from "../build/wyst-highlight-policy.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -375,8 +380,9 @@ function escapeHtml(value) {
 		.replaceAll(">", "&gt;");
 }
 
-// LSP semantic tokens intentionally omit trivia. Comments get one presentation
-// class here; language-bearing categories still come only from the wync stream.
+// LSP semantic tokens intentionally omit trivia. The renderer adds presentation
+// spans for comments and compiler-owned grouped-attribute punctuation; names and
+// other language-bearing categories still come from the wync stream.
 function commentSpans(source) {
 	const spans = [];
 	for (let offset = 0; offset < source.length; ) {
@@ -494,7 +500,15 @@ export function renderHomepageSemanticMarkup(inputArtifact, sourceLineRange) {
 	const artifact = validateArtifact(inputArtifact);
 	const source = artifact.document.text;
 	const range = sourceRangeOffsets(source, sourceLineRange);
-	const spans = [...commentSpans(source), ...semanticSpans(artifact)]
+	const spans = [
+		...commentSpans(source),
+		...compilerAttributePunctuationSpans(source).map((span) => ({
+			...span,
+			modifiers: [...COMPILER_DIRECTIVE_MODIFIERS],
+			type: COMPILER_DIRECTIVE_CATEGORY,
+		})),
+		...semanticSpans(artifact),
+	]
 		.sort((left, right) => left.start - right.start || left.end - right.end)
 		.filter((span) => {
 			const overlaps = span.end > range.start && span.start < range.end;

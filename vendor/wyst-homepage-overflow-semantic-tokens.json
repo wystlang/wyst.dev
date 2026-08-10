@@ -674,7 +674,7 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "bec94409771a0c4b800b79d16ca44e0f7887fbb1",
+    "gitCommit": "c7eb88a0c8dc464ef8bcdefbcafe11cc21092c93",
     "path": "wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
     "sha256": "62afc3eb07e8c6c989e2ad81110fc81198966dacc465f297b6cdc52280f5d708"
   }

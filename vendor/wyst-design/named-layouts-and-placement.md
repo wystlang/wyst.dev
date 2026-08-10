@@ -143,6 +143,19 @@ The compiler also reserves its bare name across the artifact.
 
 `pub symbol` does not create a native export.
 
+A typed static initializer can use `#link_value(NAME)` to store the final value
+of a public, placement-owned `u64` layout symbol. The result also has type
+`u64`:
+
+<!-- wyst-contract: fmt -->
+```wyst
+const IMAGE_SIZE: u64 = #link_value(__image_size)
+```
+
+The final linker resolves the value after it places all sections. The operation
+is valid only in a constant context. It rejects private or placement-independent
+layout symbols, address-typed layout symbols, and ordinary source declarations.
+
 ## Source Placement Attributes
 
 ### `#[align(N)]`

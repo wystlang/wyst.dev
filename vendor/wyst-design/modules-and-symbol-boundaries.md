@@ -52,12 +52,18 @@ Wyst supports whole-module imports and selective imports:
 ```wyst
 module application
 
+import core.arch { cpu }
+
 import drivers.uart
 import platform.clock as clock
 import platform.time { Instant, now as current_time }
 
 pub import public.errors { Error }
 ```
+
+The formatter orders module imports into private `core.*`, private project, and
+public re-export sections. It separates each non-empty section with one blank
+line and sorts module paths within each section.
 
 A whole-module import uses the final path component as its qualifier.
 For example, `import drivers.uart` provides `uart.NAME`.
@@ -67,6 +73,10 @@ A whole-module alias cannot have a selection list.
 
 A selective import adds named public declarations to bare scope.
 Each selection can have an alias.
+
+Import scope belongs to the module part that declares it.
+Every semantic pass, including transitive effect inference, resolves names in
+that exact part's import scope.
 
 Selection lists must not be empty.
 Wildcard imports are not supported.

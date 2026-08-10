@@ -428,6 +428,7 @@ MetaExpr <- '#addr_of' '(' Expr ','? ')'
           / '#dedent' MultilineString
           / '#field_offset' '(' Type ',' UserName ','? ')'
           / '#len' '(' Expr ','? ')'
+          / '#link_value' '(' Expr ','? ')'
           / '#percpu_offset_of' '(' Expr ','? ')'
           / '#size_of' '(' Type ','? ')'
           / '#tag_of' '(' Expr ','? ')'
@@ -474,7 +475,7 @@ The target instruction catalog defines `AsmPhysicalLine`.
 
 ## Meta-operations
 
-The current language has 14 `#` meta-operations.
+The current language has 15 `#` meta-operations.
 
 | Operation | Current source form |
 | --- | --- |
@@ -486,6 +487,7 @@ The current language has 14 `#` meta-operations.
 | `#field_offset` | `#field_offset(Type, field)` |
 | `#if` | compile-time item, statement, or expression selection |
 | `#len` | `#len(expression)` |
+| `#link_value` | `#link_value(layout_symbol)` |
 | `#percpu_offset_of` | `#percpu_offset_of(expression)` |
 | `#requires` | module target requirement declaration |
 | `#size_of` | `#size_of(Type)` |

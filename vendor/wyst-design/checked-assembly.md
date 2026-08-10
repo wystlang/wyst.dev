@@ -60,5 +60,16 @@ A statement-only block must have a reachable normal exit.
 A value block must establish each result on every normal exit.
 An `asm -> never` block must not have a reachable normal exit.
 
+An external `b` is a typed tail transfer. Its symbol binder must name a
+function that returns `never`. The assembly signature must bind every target
+parameter to its exact ABI register. The branch does not create call-clobber
+writes and has no normal successor.
+
+A tail transfer before stack establishment can target only a naked function.
+This rule lets an image-header entry branch to the real naked entry without
+inventing a usable incoming stack. A returning target, data symbol, code label,
+missing register binder, nonzero addend, or non-naked pre-stack target is an
+error.
+
 The final instruction or local-label line must end with a newline before `}`.
 The checker validates local branches, register use, instruction effects, and control transfer.

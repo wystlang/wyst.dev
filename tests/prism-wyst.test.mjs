@@ -6,6 +6,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
 	registerWyst,
+	wystAttributes,
 	wystSyntaxWords,
 } from "../build/prism-wyst.mjs";
 
@@ -15,6 +16,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const corpusRoot = path.join(
 	root,
 	"tests/fixtures/wyst/wync/tests/fixtures/syntax-corpus",
+);
+const compilerDirectiveCases = JSON.parse(
+	await readFile(
+		new URL("./fixtures/highlighting/compiler-directives.json", import.meta.url),
+		"utf8",
+	),
 );
 
 registerWyst(Prism);
@@ -96,6 +103,39 @@ test("character highlighting follows Wyst byte-literal escapes", () => {
 	assert.ok(
 		!output.includes('<span class="token char">\'é\'</span>'),
 		"non-ASCII source text is not a valid Wyst character literal",
+	);
+});
+
+test("grouped compiler attributes share the compiler-operation color", () => {
+	const output = highlight(
+		`${compilerDirectiveCases.groupedAttributes}\n${compilerDirectiveCases.nestedArguments}`,
+	);
+
+	for (const token of ["align", "section", "unroll"]) {
+		assert.ok(
+			output.includes(`<span class="token attribute-name macro">${token}</span>`),
+			`${token} should use the compiler-operation color`,
+		);
+	}
+	assert.equal(
+		(output.match(/class="token attribute-group-punctuation macro"/g) ?? [])
+			.length,
+		5,
+		"two openers, two closers, and the grouped separator should use the compiler-operation color",
+	);
+	assert.ok(output.includes('<span class="token number">4</span>'));
+	assert.ok(
+		output.includes(
+			'<span class="token string">".image.header.code"</span>',
+		),
+	);
+	assert.ok(
+		output.includes('<span class="token punctuation">,</span>'),
+		"the comma inside unroll arguments should remain ordinary punctuation",
+	);
+	assert.ok(
+		wystAttributes.every((attribute) => active(attribute)),
+		"the published attribute catalog should contain only active attributes",
 	);
 });
 
