@@ -67,9 +67,8 @@ behavior; architecture, feature, execution-level, security, virtualization,
 streaming, and state gates; effects and authority requirements; determinism,
 fault, target-defined, and deprecation facts.
 
-`none` is an explicit fact. Empty fields, wildcards, `unknown`, and manual
-clobber, effect, or purity assertions are invalid. Operand- or target-dependent
-facts use a named `formula:` expression. A formula must retain its precise
+`none` is an explicit fact. Empty fields, wildcards, and `unknown` are invalid.
+Operand- or target-dependent facts use a named `formula:` expression. A formula must retain its precise
 dependency; it cannot be replaced with a generic memory or effect bit. Every
 formula used by the current admitted rows is executed into an operand- and
 target-resolved contract before checked-assembly consumers see register, state,
@@ -95,7 +94,7 @@ their own official identity and semantic row. MRS and MSR retain
 selected-system-register formulas for privilege, security, state, ordering,
 effect, fault, and target-defined behavior. RET and ERET record terminal
 control transfer and their architectural fault boundary. NOP is mechanically
-pure-eligible; the other current rows are not.
+eligible for effect-free assembly; the other current rows are not.
 
 Sixteen-byte pair atomic or exclusive rows, when admitted by the authority,
 must describe one 16-byte atomic memory range, require 16-byte alignment and an
@@ -117,12 +116,11 @@ Class coverage is independent of instruction coverage. A state-class record
 does not admit an encoding that lacks its own complete instruction-semantic
 row.
 
-## Derived purity and execution tests
+## Derived effect-free eligibility and execution tests
 
-Pure eligibility is not an editable catalog field. The compiler derives it
-only for deterministic fallthrough computations with no memory, implicit or
-target-owned state, effects, authority, fault/trap, target-defined behavior,
-stack transition, or region escape. A manual purity assertion is invalid.
+Effect-free eligibility is derived only for deterministic fallthrough
+computations with no memory, implicit or target-owned state, effects, authority,
+fault/trap, target-defined behavior, stack transition, or region escape.
 
 The QEMU fixtures exercise instruction results, state transitions, and the trap
 frame. When the compiler or language semantics change intentionally, update the
@@ -162,7 +160,11 @@ free tuple, own a second permission/effect table, or construct assembly text.
 For checked assembly, `AsmBodyIr::Catalog` transports parsed catalog
 instructions, typed operands, labels, fixups, stable identities, spelling, and
 source spans across the IR boundary. The backend consumes those typed items and
-does not reparse assembly body text. The regressions
+does not reparse assembly body text. The semantic pass also derives purity,
+machine effects, clobbers, control flow, and ordinary stack preservation from
+those rows; source does not restate them. `retained` is only an occurrence
+retention requirement, while stack and trap-frame transitions are compiler-owned
+first-class statements. The regressions
 `backend::tests::inline_asm_ops::checked_asm_ir_carries_typed_identity_and_symbolic_gpr_to_emission`
 and
 `backend::tests::inline_asm_ops::checked_asm_ir_carries_typed_local_labels_and_fixups_to_emission`

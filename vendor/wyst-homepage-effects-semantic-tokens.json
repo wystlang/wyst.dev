@@ -156,39 +156,24 @@
     1,
     4,
     1,
-    2,
-    3,
-    7,
-    4,
-    1,
-    4,
+    12,
     5,
     4,
     1,
     0,
-    7,
-    3,
-    1,
-    4,
-    0,
-    10,
-    1,
-    10,
-    0,
-    0,
-    2,
+    11,
     11,
     3,
     2,
-    5,
+    2,
     2,
     4,
     7,
     4
   ],
   "document": {
-    "sha256": "23fb967543e5f19942c357ddca793f0cc8aabae6da8204df20a3dd730082b074",
-    "text": "module keyboard_isr\n\n#target(arch = arm64-v8a, cpu = generic, el = 2)\n\nimport core.arch { cpu }\n\n#[deny_effects(interrupt_mask)]\nfn on_key_press(scancode: u8) -> u8 {\n  // This handler is not allowed to change the interrupt mask.\n  cpu.unmask(.irq)\n  return scancode\n}\n\npub naked fn _start(dtb: u64 in x0) -> never {\n  asm establishes stack (\n    stack: u64 in x1 = __stack_top,\n  ) {\n    mov sp, stack\n  }\n\n  loop { }\n}\n"
+    "sha256": "55537c50bb7ba15a9c5131f7d5f1ec6d9d3c1af0208f934d4a6b74d712939775",
+    "text": "module keyboard_isr\n\n#target(arch = arm64-v8a, cpu = generic, el = 2)\n\nimport core.arch { cpu }\n\n#[deny_effects(interrupt_mask)]\nfn on_key_press(scancode: u8) -> u8 {\n  // This handler is not allowed to change the interrupt mask.\n  cpu.unmask(.irq)\n  return scancode\n}\n\npub naked fn _start(dtb: u64 in x0) -> never {\n  establish stack from __stack_top\n\n  loop { }\n}\n"
   },
   "generator": "wync-lsp-semanticTokens/full",
   "legend": {
@@ -214,8 +199,8 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "c7eb88a0c8dc464ef8bcdefbcafe11cc21092c93",
+    "gitCommit": "355289e3c90db77beb994053e4bf83225d9824d4",
     "path": "wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
-    "sha256": "23fb967543e5f19942c357ddca793f0cc8aabae6da8204df20a3dd730082b074"
+    "sha256": "55537c50bb7ba15a9c5131f7d5f1ec6d9d3c1af0208f934d4a6b74d712939775"
   }
 }

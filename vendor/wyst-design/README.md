@@ -41,7 +41,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
 - [Scheduling and Suspension](scheduling-and-suspension.md) defines compiler
   scheduling regions and suspension boundaries.
 - [Checked Assembly](checked-assembly.md) defines typed assembly binders, admitted
-  AArch64 source forms, effects, and control transfer.
+  AArch64 source forms, inferred machine behavior, retention, alignment, and
+  control transfer.
 
 ## Projects and Targets
 

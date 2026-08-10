@@ -291,31 +291,16 @@
     1,
     4,
     1,
-    2,
-    3,
-    7,
-    4,
-    1,
-    4,
+    12,
     5,
     4,
     1,
     0,
-    7,
-    3,
-    1,
-    4,
-    0,
-    10,
-    1,
-    10,
-    0,
-    0,
-    2,
+    11,
     11,
     3,
     2,
-    5,
+    2,
     2,
     2,
     7,
@@ -647,8 +632,8 @@
     0
   ],
   "document": {
-    "sha256": "62afc3eb07e8c6c989e2ad81110fc81198966dacc465f297b6cdc52280f5d708",
-    "text": "module boot.overflow_guard\n\n#target(arch = arm64-v8a, cpu = generic, el = 2)\n\nimport core.arch { cpu }\n\nimport runtime.semihost { test_exit }\n\nconst UART0_BASE: u64 = 0x0900_0000\nconst UARTDR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x00)\nconst UARTFR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x18)\nconst TXFF: u32 = 0x20\n\npub naked fn _start(dtb: u64 in x0) -> never {\n  asm establishes stack (\n    stack: u64 in x1 = __stack_top,\n  ) {\n    mov sp, stack\n  }\n\n  if dtb == 0 {\n    test_exit(0x63)\n  }\n\n  kernel_main()\n}\n\nfn uart_write(byte: u8) {\n  while UARTFR.load() & TXFF != 0 {\n    cpu.nop()\n  }\n\n  UARTDR.store(widen<u32>(byte))\n}\n\nfn report_wrapped() -> never {\n  uart_write('w')\n  uart_write('r')\n  uart_write('a')\n  uart_write('p')\n  uart_write('p')\n  uart_write('e')\n  uart_write('d')\n  uart_write('\\n')\n  test_exit(0)\n}\n\n// C makes signed overflow undefined, so its compilers may assume x + 1 >= x\n// and discard this guard. Wyst's defined i32 wrapping is safer: every\n// optimization level must preserve the guard's intended behavior, avoiding\n// the class of security bugs where an overflow check silently disappears.\nfn is_at_max(x: i32) -> bool {\n  return x + 1 < x\n}\n\nfn kernel_main() -> never {\n  if is_at_max(0x7FFF_FFFF) {\n    report_wrapped()\n  }\n\n  test_exit(0x63)\n}\n"
+    "sha256": "6e096037f3689aa5a63aada3b56e6eb98f1f3aeb99604c57195c6649eb879c6d",
+    "text": "module boot.overflow_guard\n\n#target(arch = arm64-v8a, cpu = generic, el = 2)\n\nimport core.arch { cpu }\n\nimport runtime.semihost { test_exit }\n\nconst UART0_BASE: u64 = 0x0900_0000\nconst UARTDR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x00)\nconst UARTFR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x18)\nconst TXFF: u32 = 0x20\n\npub naked fn _start(dtb: u64 in x0) -> never {\n  establish stack from __stack_top\n\n  if dtb == 0 {\n    test_exit(0x63)\n  }\n\n  kernel_main()\n}\n\nfn uart_write(byte: u8) {\n  while UARTFR.load() & TXFF != 0 {\n    cpu.nop()\n  }\n\n  UARTDR.store(widen<u32>(byte))\n}\n\nfn report_wrapped() -> never {\n  uart_write('w')\n  uart_write('r')\n  uart_write('a')\n  uart_write('p')\n  uart_write('p')\n  uart_write('e')\n  uart_write('d')\n  uart_write('\\n')\n  test_exit(0)\n}\n\n// C makes signed overflow undefined, so its compilers may assume x + 1 >= x\n// and discard this guard. Wyst's defined i32 wrapping is safer: every\n// optimization level must preserve the guard's intended behavior, avoiding\n// the class of security bugs where an overflow check silently disappears.\nfn is_at_max(x: i32) -> bool {\n  return x + 1 < x\n}\n\nfn kernel_main() -> never {\n  if is_at_max(0x7FFF_FFFF) {\n    report_wrapped()\n  }\n\n  test_exit(0x63)\n}\n"
   },
   "generator": "wync-lsp-semanticTokens/full",
   "legend": {
@@ -674,8 +659,8 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "c7eb88a0c8dc464ef8bcdefbcafe11cc21092c93",
+    "gitCommit": "355289e3c90db77beb994053e4bf83225d9824d4",
     "path": "wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
-    "sha256": "62afc3eb07e8c6c989e2ad81110fc81198966dacc465f297b6cdc52280f5d708"
+    "sha256": "6e096037f3689aa5a63aada3b56e6eb98f1f3aeb99604c57195c6649eb879c6d"
   }
 }

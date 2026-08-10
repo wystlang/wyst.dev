@@ -12,11 +12,7 @@ fn on_key_press(scancode: u8) -> u8 {
 }
 
 pub naked fn _start(dtb: u64 in x0) -> never {
-  asm establishes stack (
-    stack: u64 in x1 = __stack_top,
-  ) {
-    mov sp, stack
-  }
+  establish stack from __stack_top
 
   loop { }
 }

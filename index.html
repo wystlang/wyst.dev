@@ -269,11 +269,7 @@
   <span class="source-comment">// The layout defines __stack_top at the top of RAM.</span>
   <span class="source-comment">// The Arm stack grows toward lower addresses.</span>
   <span class="source-comment">// This assembly puts __stack_top in the stack pointer `sp`.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">asm</span> establishes stack (
-    <span data-token="parameter" data-token-modifiers="declaration">stack</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x1 <span data-token="operator">=</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>,
-  ) {
-    mov sp, stack
-  }
+  establish <span data-token="parameter" data-token-modifiers="declaration">stack</span> from <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>
 
   <span class="source-comment">// The code can call a normal function after it sets the stack pointer.</span>
   <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)

@@ -54,7 +54,7 @@ export const HOMEPAGE_EXAMPLES = Object.freeze({
 		scrollHintId: "overflow-scroll-hint",
 		sourceAriaLabel: "Wyst overflow source",
 		sourceCodeId: "overflow-source",
-		sourceLineRange: Object.freeze([48, 62]),
+		sourceLineRange: Object.freeze([44, 58]),
 		sourcePath: "wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
 	}),
 	effects: Object.freeze({

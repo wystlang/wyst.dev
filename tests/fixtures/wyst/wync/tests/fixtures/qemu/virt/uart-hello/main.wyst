@@ -85,11 +85,7 @@ pub naked fn _start(dtb: u64 in x0) -> never {
   // The layout defines __stack_top at the top of RAM.
   // The Arm stack grows toward lower addresses.
   // This assembly puts __stack_top in the stack pointer `sp`.
-  asm establishes stack (
-    stack: u64 in x1 = __stack_top,
-  ) {
-    mov sp, stack
-  }
+  establish stack from __stack_top
 
   // The code can call a normal function after it sets the stack pointer.
   kernel_main(dtb)
