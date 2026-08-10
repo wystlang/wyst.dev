@@ -24,6 +24,11 @@ const fixtureDir = path.join(root, "tests", "fixtures", "wyst");
 const syncScript = path.join(root, "tools", "sync-wyst-snapshot.mjs");
 const snapshotScript = path.join(root, "tools", "wyst-snapshot.mjs");
 const homepageExampleScript = path.join(root, "tools", "homepage-example.mjs");
+const highlightPolicyScript = path.join(
+	root,
+	"build",
+	"wyst-highlight-policy.mjs",
+);
 const vocabularyCatalogs = [
 	"attribute-catalog.tsv",
 	"meta-operation-catalog.tsv",
@@ -196,11 +201,16 @@ for (const response of responses) {
 	];
 	await Promise.all(inputs.map(([file, contents]) => write(wystRoot, file, contents)));
 	await mkdir(path.join(siteRoot, "tools"), { recursive: true });
+	await mkdir(path.join(siteRoot, "build"), { recursive: true });
 	await copyFile(syncScript, path.join(siteRoot, "tools", "sync-wyst-snapshot.mjs"));
 	await copyFile(snapshotScript, path.join(siteRoot, "tools", "wyst-snapshot.mjs"));
 	await copyFile(
 		homepageExampleScript,
 		path.join(siteRoot, "tools", "homepage-example.mjs"),
+	);
+	await copyFile(
+		highlightPolicyScript,
+		path.join(siteRoot, "build", "wyst-highlight-policy.mjs"),
 	);
 	await write(
 		siteRoot,

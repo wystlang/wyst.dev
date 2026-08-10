@@ -15,6 +15,12 @@ const artifacts = await readHomepageSemanticArtifacts();
 const artifact = artifacts.uart;
 const indexHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const siteCss = await readFile(new URL("../assets/wyst.css", import.meta.url), "utf8");
+const compilerDirectiveCases = JSON.parse(
+	await readFile(
+		new URL("./fixtures/highlighting/compiler-directives.json", import.meta.url),
+		"utf8",
+	),
+);
 
 function tokenMarkup(type, text) {
 	return new RegExp(
@@ -101,6 +107,29 @@ test("renderer keeps comments readable without inventing semantic tokens", () =>
 		/<span class="source-comment block-comment-line">\* QEMU `virt`/,
 	);
 	assert.doesNotMatch(markup, /data-token="comment"/);
+});
+
+test("renderer colors grouped attribute punctuation without coloring arguments", () => {
+	const source = `${compilerDirectiveCases.groupedAttributes}\n`;
+	const grouped = createHomepageSemanticArtifact({
+		data: [
+			0, 2, 5, 0, 1,
+			0, 6, 1, 1, 0,
+			0, 4, 7, 0, 1,
+			0, 8, 20, 2, 0,
+		],
+		legend: {
+			tokenModifiers: ["defaultLibrary"],
+			tokenTypes: ["macro", "number", "string"],
+		},
+		source,
+	});
+	const markup = renderHomepageSemanticMarkup(grouped);
+
+	assert.equal(
+		markup,
+		'<span data-token="macro" data-token-modifiers="defaultLibrary">#[</span><span data-token="macro" data-token-modifiers="defaultLibrary">align</span>(<span data-token="number">4</span>)<span data-token="macro" data-token-modifiers="defaultLibrary">,</span> <span data-token="macro" data-token-modifiers="defaultLibrary">section</span>(<span data-token="string">".image.header.code"</span>)<span data-token="macro" data-token-modifiers="defaultLibrary">]</span>\n',
+	);
 });
 
 test("feature tabs render only their verified source ranges", () => {

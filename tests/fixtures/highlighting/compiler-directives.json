@@ -1,0 +1,4 @@
+{
+  "groupedAttributes": "#[align(4), section(\".image.header.code\")]",
+  "nestedArguments": "#[unroll(factor = 2, remainder = .guarded)]"
+}
