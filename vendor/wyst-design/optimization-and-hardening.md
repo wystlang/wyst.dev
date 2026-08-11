@@ -25,7 +25,7 @@ The optimizer preserves these operations and boundaries:
 - volatile and MMIO access;
 - atomic operations and orderings;
 - barriers;
-- checked assembly;
+- effectful or `retained` checked assembly;
 - calls and declared clobbers;
 - traps and possible faults;
 - cleanup and terminal control flow;
@@ -34,7 +34,9 @@ The optimizer preserves these operations and boundaries:
 - explicit register placement;
 - exported and address-taken identity.
 
-The optimizer does not treat an effectful operation as a pure instruction.
+The optimizer may treat a value-producing checked-assembly block as effect-free
+only when semantic checking derived that fact from every reachable instruction
+row. It does not classify an effectful operation as effect-free.
 It does not reconstruct a semantic operation from an instruction pattern.
 
 ## 2. Current typed-IR transformations

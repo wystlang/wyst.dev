@@ -52,14 +52,15 @@ The selected root must contain exactly one compiler-authorized stack transition.
 The transition has this exact source shape:
 
 ```text
-asm establishes stack (stack: u64 in x1 = VALUE) { mov sp, stack }
+establish stack from VALUE
 ```
 
-The transition has one `u64` input named `stack` in `x1`.
-The assembly body contains only `mov sp, stack`.
-The transition does not return a value and does not terminate control flow.
+`VALUE` must have type `u64`. The compiler lowers it through the profile-owned
+input placement and exact stack-pointer write. The transition does not return a
+value and does not terminate control flow.
 
-The compiler rejects `asm establishes stack` when the selected profile provides no entry transition.
+The compiler rejects `establish stack from VALUE` when the selected profile
+provides no entry transition.
 Trap-frame entry clauses use separate rules.
 See [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md).
 
@@ -79,11 +80,7 @@ import core.arch { cpu }
 const STACK_TOP: u64 = 0x4010_0000
 
 pub naked fn _start(dtb: u64 in x0) -> never {
-  asm establishes stack (
-    stack: u64 in x1 = STACK_TOP,
-  ) {
-    mov sp, stack
-  }
+  establish stack from STACK_TOP
 
   loop {
     cpu.wfe()
@@ -114,11 +111,7 @@ import core.arch { cpu }
 const STACK_TOP: u64 = 0x4010_0000
 
 pub naked fn _start() -> never {
-  asm establishes stack (
-    stack: u64 in x1 = STACK_TOP,
-  ) {
-    mov sp, stack
-  }
+  establish stack from STACK_TOP
 
   loop {
     cpu.wfe()

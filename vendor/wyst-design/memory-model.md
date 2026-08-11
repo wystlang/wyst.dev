@@ -40,7 +40,7 @@ Different operations require different facts:
 | read | all five dimensions |
 | write | bounds, usable extent, alignment, lifetime |
 | read-modify-write | all five dimensions |
-| checked assembly memory use | facts declared by the assembly contract |
+| checked assembly memory use | facts derived from authenticated instruction rows and typed binders |
 
 A write does not require the previous value to be initialized.
 A read-modify-write reads the previous value and therefore requires initialization.

@@ -328,7 +328,11 @@ Statement <- LocalDecl / TupleLocal / TupleAssignment / Assignment / IfStmt / Wh
            / 'break' / 'continue' / DeferStmt / ReturnStmt
            / 'report' Expr / 'fail' Expr / 'cancel' Expr
            / 'goto' UserName / DiscardStmt / ResolveStmt
-           / CheckedAsm / StaticAssertStmt / CompileIfStmt / Expr
+           / CheckedAsm / StackTransition / FrameTransition
+           / StaticAssertStmt / CompileIfStmt / Expr
+
+StackTransition <- 'establish' 'stack' 'from' Expr
+FrameTransition <- 'establish' 'frame' / 'restore' 'frame'
 
 LocalDecl <- ('const' / 'var') UserName TypeAnnotation?
              RegisterPlacement? '=' Expr
@@ -447,11 +451,10 @@ Positional call arguments must precede labeled arguments.
 ## Checked assembly
 
 ```peg
-CheckedAsm <- 'asm' AsmModifiers? AsmParameters? AsmResult? AsmBody
+CheckedAsm <- 'asm' 'retained'? AsmAlign? AsmParameters? AsmResult? AsmBody
 CheckedAsmExpr <- CheckedAsm  // requires AsmResult
 
-AsmModifiers <- 'pure'? ('align' Expr)? AsmStackClause?
-AsmStackClause <- ('preserves' / 'establishes' / 'restores') 'stack'
+AsmAlign <- '#[' 'align' '(' Expr ')' ']'
 
 AsmParameters <- '(' List(AsmParameter) ')'
 AsmParameter <- AsmInput / AsmImmediate / AsmSymbol / AsmScratch

@@ -1,7 +1,7 @@
 module semicolon_checked_asm
 
 fn invalid() {
-    asm {
+    asm retained {
         nop;
     }
 }
