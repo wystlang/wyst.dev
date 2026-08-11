@@ -268,7 +268,7 @@
 <span data-token="keyword" data-token-modifiers="defaultLibrary">pub</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">naked</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">fn</span> <span data-token="function" data-token-modifiers="declaration">_start</span>(<span data-token="parameter" data-token-modifiers="declaration">dtb</span>: <span data-token="type" data-token-modifiers="defaultLibrary">u64</span> in x0) -&gt; never {
   <span class="source-comment">// The layout defines __stack_top at the top of RAM.</span>
   <span class="source-comment">// The Arm stack grows toward lower addresses.</span>
-  <span class="source-comment">// This assembly puts __stack_top in the stack pointer `sp`.</span>
+  <span class="source-comment">// This transition sets the stack pointer `sp` to `__stack_top`.</span>
   establish <span data-token="parameter" data-token-modifiers="declaration">stack</span> from <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>
 
   <span class="source-comment">// The code can call a normal function after it sets the stack pointer.</span>
