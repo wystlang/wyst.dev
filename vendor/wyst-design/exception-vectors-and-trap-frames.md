@@ -166,9 +166,7 @@ An entry label uses this clause:
 
 ```text
 naked label trap_entry establishes frame: @TrapFrame {
-  asm establishes stack {
-    // The exact profile-owned save sequence is required here.
-  }
+  establish frame
 
   handle_trap(frame)
   goto trap_restore
@@ -179,8 +177,8 @@ naked label trap_entry establishes frame: @TrapFrame {
 `T` must be an admitted `trap_frame` type.
 The clause creates one immutable `noescape @T` binding.
 
-The first statement must be a nonempty `asm establishes stack` block.
-The block must equal the complete target-owned save sequence.
+The first statement must be `establish frame`.
+The compiler expands it to the complete target-owned save sequence.
 The sequence saves `x0` through `x30`, `ELR_ELx`, `SPSR_ELx`, and the interrupted
 stack pointer.
 The selected entry level determines the `ELR_ELx` and `SPSR_ELx` registers.
@@ -196,15 +194,13 @@ A restore label uses this clause:
 
 ```text
 naked label trap_restore restores TrapFrame {
-  asm restores stack -> never {
-    // The exact profile-owned restore sequence is required here.
-  }
+  restore frame
 }
 ```
 
 `restores T` is valid only on a `naked label`.
-The first statement must be a nonempty `asm restores stack -> never` block.
-The block must equal the complete target-owned restore sequence.
+The first statement must be the terminal `restore frame` operation.
+The compiler expands it to the complete target-owned restore sequence.
 The sequence restores the saved state and ends with `eret`.
 The block has no normal exit.
 

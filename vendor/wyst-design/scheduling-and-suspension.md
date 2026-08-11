@@ -32,7 +32,7 @@ These operations are scheduling barriers:
 - loads and stores;
 - atomics;
 - system-register operations;
-- most checked assembly;
+- effectful or `retained` checked assembly;
 - hardening operations;
 - effect boundaries; and
 - phi operations.

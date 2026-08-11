@@ -12,11 +12,7 @@ const UARTFR: @mmio u32 = address<@mmio u32>(UART0_BASE + 0x18)
 const TXFF: u32 = 0x20
 
 pub naked fn _start(dtb: u64 in x0) -> never {
-  asm establishes stack (
-    stack: u64 in x1 = __stack_top,
-  ) {
-    mov sp, stack
-  }
+  establish stack from __stack_top
 
   if dtb == 0 {
     test_exit(0x63)

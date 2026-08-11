@@ -961,7 +961,7 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		[
 			"overflow",
 			"overflow-source",
-			fixtureLineRange(overflowFixtureSource, 48, 62),
+			fixtureLineRange(overflowFixtureSource, 44, 58),
 			overflowExpectedOutput,
 			OVERFLOW_SOURCE_URL,
 		],
@@ -1013,7 +1013,7 @@ test("homepage tabs expose verified overflow and effect examples", () => {
 		/<span data-token="macro" data-token-modifiers="defaultLibrary">#\[<\/span><span data-token="macro" data-token-modifiers="defaultLibrary">deny_effects<\/span>\(interrupt_mask\)<span data-token="macro" data-token-modifiers="defaultLibrary">\]<\/span>/,
 	);
 	assert.match(examplePanelHtml("effects"), /keyboard_isr\.wyst · rejected excerpt/);
-	assert.doesNotMatch(examplePanelHtml("effects"), /#target|_start|establishes stack/);
+	assert.doesNotMatch(examplePanelHtml("effects"), /#target|_start|establish stack from/);
 	assert.match(effectsExpectedOutput, /error\[E0233\]: effect 'interrupt_mask' is denied/);
 });
 
