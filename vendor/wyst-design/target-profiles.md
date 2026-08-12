@@ -82,6 +82,13 @@ The compiler does not merge different declarations.
 Address qualifiers do not configure hardware memory attributes.
 See [Memory Model](memory-model.md) for address and MMIO rules.
 
+Each placed register-map instance retains the target requirements and exact
+platform-mapping identity that authenticated its declaration. Combining target
+requirements during project construction must preserve every possible
+placement origin. A final artifact rejects an imported or selected instance
+whose origin is incompatible with the chosen profile; equal numeric bases do
+not make two platform mappings interchangeable.
+
 ## Built-In Target Profiles
 
 The compiler accepts only the five profile names in this table.

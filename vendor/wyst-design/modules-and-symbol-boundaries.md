@@ -87,6 +87,12 @@ It also rejects missing modules and non-public selections.
 Import names must not collide with declarations, namespaces, or other imports.
 Published layout symbols also reserve their bare names.
 
+A public `register_map` can be imported as a nominal type and hardware schema.
+A public placed register-map `mmio` declaration can be imported as a value of
+that type. Its semantic module interface retains the exact map identity,
+placement origin, and target requirements. Importing a private placement is rejected;
+importing a public placement does not convert it to raw address authority.
+
 ### Import Groups
 
 Parentheses group module imports:
@@ -141,6 +147,16 @@ Re-exported names must not collide.
 
 `pub` affects only Wyst source visibility.
 It does not create a native linker symbol.
+
+Static interfaces share the top-level declaration namespace with nominal
+types. Their operations occupy a namespace owned by the interface. Imports,
+aliases, and public re-exports use the ordinary declaration rules.
+
+A static-interface implementation is declared only in its subject type's
+owning module and has no `pub` modifier. Cross-module consumption is derived
+from public interface and subject visibility. Import scope never changes which
+implementation a concrete subject selects. See [Interfaces and
+Implementations](interfaces-and-implementations.md).
 
 ## Native Symbol Boundaries
 

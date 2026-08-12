@@ -38,8 +38,10 @@ An `extern "C" fn` declaration can omit its body.
 A bodyless native `fn` is an error.
 
 A function can have type parameters.
-Each type parameter can have one active built-in bound.
-[Type System](type-system.md) defines these bounds.
+Each type parameter can have one active built-in bound or static-interface
+constraint. [Type System](type-system.md) defines built-in bounds.
+[Interfaces and Implementations](interfaces-and-implementations.md) defines
+static-interface requirements and qualified calls.
 
 A declaration parameter has this order:
 
@@ -51,6 +53,11 @@ The unmarked parameter mode is read access.
 `mut` gives an exclusive mutable loan.
 `var` passes an owned mutable value.
 `noescape` applies to the parameter type after the colon.
+It accepts address, slice, and callable-capability parameters.
+The callee cannot retain that authority, and can forward it only to another
+matching `noescape` parameter of a direct call. Returning it requires an
+explicit `from parameter_name` result contract, which transfers the source
+lifetime to the caller-visible result.
 
 A function can return no value, one value, `never`, or named multiple values.
 A named result tuple has at least two fields.
@@ -66,9 +73,14 @@ Use `mut` before a result type for a mutable returned view.
 Use `from parameter_name` after the result to identify returned-view sources.
 Callable types use `from parameter(index)` instead.
 
-Function contracts use `requires(condition, reason = u16_expression)` and
-`ensures(condition, reason = u16_expression)`.
-The reason expression must have exactly type `u16`.
+Function contracts use proof-required `requires(condition)`, runtime-checked
+`requires(condition, reason = u16_expression)`, and runtime-checked
+`ensures(condition, reason = u16_expression)`. A reasonless precondition must be
+proved at every direct call, contributes no runtime work or trap effect, and
+makes the function direct-call only. The compiler can discharge it from
+constants, exact slice lengths, and dominating affine comparisons over
+immutable call arguments. A reason-bearing clause retains the existing runtime
+fatal-trap behavior, and its reason expression must have exactly type `u16`.
 All `requires` clauses must precede all `ensures` clauses.
 These clauses require a body-bearing, non-`naked` Wyst function.
 
@@ -84,6 +96,17 @@ A direct Wyst call can use parameter names as labels.
 Positional arguments must precede labeled arguments.
 Each required parameter must receive exactly one argument.
 An indirect call accepts positional arguments only.
+
+A static-interface call uses the positional
+`Interface.operation(subject, arguments...)` form. It is authenticated against
+the interface requirement inside the generic body and becomes an ordinary
+direct call during concrete materialization. Static interfaces do not add
+receiver-dot lookup or an indirect-call form.
+
+A direct generic function call can omit its complete type-argument list when
+the declared parameter shapes and statically known argument types determine
+every argument uniquely. Generic type constructors remain explicit, and
+inference never works backward from the expected result type.
 
 Use `xfer value` to transfer an owned value.
 Resource transfer rules are in [Type System](type-system.md).
@@ -136,7 +159,7 @@ Its index is immutable.
 Its bounds must have one compatible integer type.
 
 Direct array or slice iteration requires `#[unroll]`.
-Loop expansion rules are in [Optimization and Hardening](optimization-and-hardening.md).
+Loop expansion rules are in [Optimization](optimization.md).
 
 `break` and `continue` apply to the nearest enclosing loop.
 A `for` loop can execute zero times.
@@ -171,6 +194,24 @@ fn read(message: Message) -> u64 {
 
 One arm can list multiple variants before its body.
 All listed variants must bind compatible payloads.
+A statement-match arm with no work lists only its variant patterns. This is an
+explicit no-op arm; do not add an empty block.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module functions.no_op_match
+
+enum State { idle ready }
+
+fn begin() { }
+
+fn observe(state: State) {
+  match state {
+    .idle
+    .ready { begin() }
+  }
+}
+```
 
 Use `value is .variant(binding)` for one variant test.
 An `if` condition can use this form directly.

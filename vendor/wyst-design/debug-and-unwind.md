@@ -79,6 +79,8 @@ Full debug information can describe these entities:
 Debug layout uses the same size, alignment, field offsets, and variant layout
 as ABI lowering.
 Debug types do not change the runtime representation.
+An exact-width integer debug type reports its source bit width and its rounded
+1-, 2-, 4-, or 8-byte storage size.
 
 An `extern "C"` callable uses the Wyst AAPCS64 calling-convention value.
 A Native callable uses `DW_CC_normal`.

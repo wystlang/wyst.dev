@@ -88,6 +88,19 @@ Artifact construction requires an exact selected-platform mapping for MMIO.
 A constant raw MMIO address must identify a known mapped cell or range.
 A dynamic raw MMIO address has no transported mapping identity and is rejected.
 
+A register-map instance transports authenticated mapping identity as a typed
+value. Its runtime base address is accompanied in compiler semantics by a
+nonempty set of placed-declaration origins. Each register access must fit the
+schema and every possible origin's selected-platform mapping. Copying,
+aggregate storage, generic materialization, imports, and control-flow joins
+preserve that evidence; a join takes the union of its inputs' origins.
+
+Observing or reproducing the base-address bits does not reproduce placement
+authority. Address construction, qualification, relensing, numeric conversion,
+bitcasting, foreign input, and ordinary literals cannot create a register-map
+instance. An incompatible target cannot consume an imported origin even when
+its numeric address happens to match.
+
 Volatile and MMIO access do not provide atomicity or synchronization.
 They do not configure caches, translation, shareability, or DMA ownership.
 Use explicit semantic operations for those protocols.

@@ -114,15 +114,13 @@ Matching primitive numeric values and nominal numeric values support all six ope
 
 Matching typed addresses support all six operators.
 
-`bool`, function pointers, slices, `DynamicArray` descriptor values, and enums support only `==` and `!=`.
+`bool`, function pointers, slices, and enums support only `==` and `!=`.
 
 Function pointer equality requires matching callable types.
 
 A function pointer can compare with literal `0` by equality only.
 
 Slice equality compares `data` and `len`. It does not compare referenced elements.
-
-`DynamicArray` equality compares all seven descriptor fields.
 
 Enum equality compares tags. For matching payload tags, it also compares the active payload.
 
@@ -160,11 +158,11 @@ For `left %% 0`, the result is `left`.
 
 The minimum signed value floored-modulo `-1` returns zero.
 
-Scalar shift counts are reduced modulo the operation width.
+Scalar shift counts are reduced modulo the AArch64 operation width.
 
-The operation width is 32 bits for 8-, 16-, and 32-bit operands.
-
-The operation width is 64 bits for 64-bit operands.
+The operation width is 32 bits for integer value widths through 32 bits and 64
+bits for value widths from 33 through 64 bits. The result is then normalized
+back to the left operand's exact value width.
 
 ## Floating-point results
 

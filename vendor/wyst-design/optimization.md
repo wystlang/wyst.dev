@@ -1,12 +1,12 @@
 ---
-title: "Optimization and Hardening"
+title: "Optimization"
 group: reference
 section: compiler
 order: 510
 summary: "The fixed optimizer, source-required expansion, scheduling, and AArch64 instruction selection."
 ---
 
-# Optimization and Hardening
+# Optimization
 
 The compiler has one production optimization pipeline.
 The pipeline is always active.
@@ -250,16 +250,7 @@ The scheduler does not use processor latency, profile data, or host timing.
 
 [Scheduling and Suspension](scheduling-and-suspension.md) defines the scheduling barriers.
 
-## 8. Hardening
-
-Artifact hardening runs after ordinary optimization.
-The current hardening operation checks address alignment.
-
-An inserted hardening check is a scheduling barrier.
-The optimizer does not move, combine, or remove an inserted check.
-Checked assembly does not receive hardening instrumentation.
-
-## 9. Current limits
+## 8. Current limits
 
 The compiler does not implement these general optimization systems:
 

@@ -118,7 +118,7 @@ const responses = [
       capabilities: {
         semanticTokensProvider: {
           legend: {
-            tokenTypes: ["namespace", "type", "function", "variable", "parameter", "property", "enumMember", "keyword", "number", "string", "operator", "macro"],
+            tokenTypes: ["namespace", "type", "function", "variable", "parameter", "property", "enumMember", "keyword", "number", "string", "operator", "macro", "typeParameter"],
             tokenModifiers: ["declaration", "readonly", "defaultLibrary"]
           }
         }

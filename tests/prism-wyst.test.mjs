@@ -97,6 +97,70 @@ dyn_array_init<Box<u8>>()`);
 	);
 });
 
+test("static interfaces use structural documentation colors", () => {
+	const output = highlight(`pub interface Terminal: copyable_discardable {
+  write_byte: fn(Self, u8) -> must_observe bool accesses(mut parameter(0))
+    effects(mmio, volatile_access) trusts(platform_contract)
+}
+struct Binding { value: u8 }
+fn write_byte<T: Terminal>(binding: T, byte: u8) -> must_observe bool { return true }
+impl Terminal for Binding { write_byte = write_byte }`);
+
+	for (const keyword of ["interface", "impl"]) {
+		assert.match(
+			output,
+			new RegExp(
+				`<span class="token static-interface-keyword keyword">${keyword}</span>`,
+			),
+			`${keyword} should use the declaration-keyword color`,
+		);
+	}
+	for (const type of ["Terminal", "Binding"]) {
+		assert.match(
+			output,
+			new RegExp(`<span class="token class-name type">${type}</span>`),
+			`${type} should use the nominal-type color`,
+		);
+	}
+	assert.ok(
+		output.includes('<span class="token builtin type">Self</span>'),
+		"Self should use the compiler-owned type color",
+	);
+	assert.ok(
+		output.includes('<span class="token type-parameter">T</span>'),
+		"a declared generic parameter should use the type-parameter color",
+	);
+	assert.ok(
+		output.includes(
+			'<span class="token generic-bound keyword">copyable_discardable</span>',
+		),
+		"the carrier ability should use the compiler-owned bound color",
+	);
+	for (const keyword of [
+		"accesses",
+		"mut",
+		"effects",
+		"trusts",
+		"must_observe",
+	]) {
+		assert.match(
+			output,
+			new RegExp(`token [^\"]*keyword[^\"]*\">${keyword}</span>`),
+			`${keyword} should use a contract-keyword color`,
+		);
+	}
+	for (const atom of ["mmio", "volatile_access", "platform_contract"]) {
+		assert.ok(
+			output.includes(`<span class="token contract-atom constant">${atom}</span>`),
+			`${atom} should use a contract-atom color`,
+		);
+	}
+	assert.ok(
+		output.includes('<span class="token keyword">fn</span>'),
+		"fn in a callable requirement should remain a keyword",
+	);
+});
+
 test("character highlighting follows Wyst byte-literal escapes", () => {
 	const output = highlight(`'h' '\\n' '\\'' '\\\\' '\\x48' 'é'`);
 	assert.equal((output.match(/class="token char"/g) ?? []).length, 5);

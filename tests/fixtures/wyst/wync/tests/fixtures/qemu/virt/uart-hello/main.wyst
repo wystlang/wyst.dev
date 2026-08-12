@@ -41,14 +41,14 @@ register_map Pl011 {
     DIVINT: u16 at 0..=15
   }
   FBRD: readwrite u32 at 0x28 {
-    DIVFRAC: u8 at 0..=5
+    DIVFRAC: u6 at 0..=5
   }
 
   // LCR_H sets the data format and the FIFO mode.
   // WLEN = 3 selects eight data bits for each character.
   LCR_H: readwrite u32 at 0x2c {
     FEN: bool at 4
-    WLEN: u8 at 5..=6
+    WLEN: u2 at 5..=6
   }
 
   // CR controls the UART, the transmitter, and the receiver.

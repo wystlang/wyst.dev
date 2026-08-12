@@ -24,12 +24,27 @@ Wyst provides these primitive value types:
 | Type | Meaning | Size | Alignment |
 |---|---|---:|---:|
 | `bool` | Boolean value | 1 byte | 1 byte |
-| `u8`, `u16`, `u32`, `u64` | Unsigned integer | 1, 2, 4, or 8 bytes | Same as size |
-| `i8`, `i16`, `i32`, `i64` | Signed integer | 1, 2, 4, or 8 bytes | Same as size |
+| `u1` through `u64` | Unsigned integer with the named value width | 1, 2, 4, or 8 bytes | Same as size |
+| `i2` through `i64` | Signed two's-complement integer with the named value width | 1, 2, 4, or 8 bytes | Same as size |
 | `f32`, `f64` | Floating-point value | 4 or 8 bytes | Same as size |
 | `string` | Byte-string descriptor | 16 bytes | 8 bytes |
 
 An integer literal has no concrete type before contextual binding.
+
+The digits in an integer type name are its exact value width. Spellings are
+canonical decimal without leading zeroes. `u0`, `i0`, `i1`, widths above 64,
+and spellings such as `u06` are invalid. `bool` and `u1` are distinct types:
+`bool` supports logical operations, while `u1` is an integer with values 0 and
+1. Use `numeric<T>` to convert between them.
+
+Standalone exact-width integers use the smallest 1-, 2-, 4-, or 8-byte storage
+carrier that can hold the value width. For example, `u6` has size and alignment
+1, `i17` has size and alignment 4, and `u33` has size and alignment 8. Structs
+and arrays use those rounded layouts; they do not implicitly bit-pack adjacent
+integer values. In memory and constant data, unused carrier bits are zero for
+unsigned types and sign extension for signed types.
+
+Every integer type provides exact typed `MIN` and `MAX` compile-time members.
 
 An unbound integer expression defaults to `i64`. Its value must fit in `i64`.
 
@@ -97,6 +112,12 @@ For `[_]u8`, the initializer can also be a byte-string literal.
 
 In these positions, `_` means the initializer element count.
 
+`[value; N]` is a fixed-array repeat literal. `N` must be a compile-time
+`u64`, must match the contextual fixed-array length, and currently cannot
+exceed 1,048,576 elements. The compiler evaluates `value` once and copies it
+into all `N` elements, so the element type must be copyable. Repeat syntax does
+not construct SIMD vectors.
+
 An index expression reads or writes one element. A slice expression creates a slice view.
 
 The slice forms are `values[..]`, `values[..<end]`, `values[start..]`, and `values[start..<end]`.
@@ -147,18 +168,6 @@ A string literal can initialize `[N]u8`. The compiler rejects more than `N` deco
 The compiler fills unused array bytes with zero.
 
 `[_]u8` infers the decoded byte count from the string literal.
-
-### DynamicArray descriptor
-
-`DynamicArray<T>` denotes the descriptor declared by `core.collections.DynamicArray`.
-
-Source must import that declaration before use.
-
-Direct indexing and slicing do not accept a `DynamicArray` descriptor.
-
-The descriptor does not convert implicitly to a slice.
-
-See [Storage and Allocation](storage-and-allocation.md#dynamicarray-descriptor) for its layout and runtime contract.
 
 ## Nominal scalar types
 
@@ -271,7 +280,7 @@ fn wrap(value: u64) -> Reply {
 
 The backing type must be `u8`, `u16`, `u32`, or `u64`.
 
-A field can use `bool`, an integer type, or a payload-free enum type.
+A field can use `bool`, an exact-width integer type, or a payload-free enum type.
 
 `at N` assigns one bit. Only a `bool` field can use this form.
 
@@ -279,13 +288,18 @@ A field can use `bool`, an integer type, or a payload-free enum type.
 
 Field ranges must be compile-time values, disjoint, and inside the backing width.
 
+An integer field's type width must equal its declared bit width. A payload-free
+enum field's tag width must equal its declared bit width. This makes reads and
+writes use the field's exact type without an implicit narrowing boundary.
+
 An enum field must define every bit pattern available in its range.
 
 A literal must initialize every declared field exactly once.
 
 Unassigned backing bits are zero after construction.
 
-A field write must fit its assigned width. Use `truncate_bits` for explicit truncation.
+A field write must have the field's exact type, or be a literal representable by
+that type. Convert a wider runtime value explicitly with `truncate<FieldType>`.
 
 Use `bitcast<T>` to cross between a bitstruct and its exact backing type.
 
@@ -295,11 +309,43 @@ module manual.bitstruct_types
 
 bitstruct Control: u32 {
   enabled: bool at 0
-  count: u8 at 8..=10
+  count: u3 at 8..=10
 }
 
 const RESET: Control = {enabled = true, count = 5}
 ```
+
+## Register-map instance types
+
+`register_map Name` declares a nominal type for authenticated placements of
+one MMIO register schema. A placed register-map `mmio` declaration denotes a
+value of that type; the type does not denote one ambient placement.
+
+A register-map instance value has size eight and alignment eight. Its runtime
+representation is the selected base address. The compiler separately retains
+the finite set of authenticated placement origins that may have produced the
+value. This authority is semantic evidence and adds no runtime tag or hidden
+storage.
+
+Register-map instance values have fixed layout and ordinary move, copy, and
+discard abilities. They can be used as Native-ABI parameters and results and
+stored in locals, module storage, arrays, tuples, structs, and enums whose
+ordinary ability rules admit them. They can satisfy
+`fixed_layout_movable` and `copyable_discardable` generic bounds. Passing or
+copying one retains the caller's authority; it does not transfer exclusive
+ownership of the complete peripheral.
+
+Register-map instance types provide no arithmetic, ordering, equality, numeric
+conversion, address conversion, struct literal, or bitcast construction. A
+value can originate only from an authenticated placed declaration or from
+another value that already carries a matching origin. Consequently, an
+integer, typed address, scalar `mmio` declaration, or incompatible register-map
+instance cannot become one of these values.
+
+Register-map instance values are Wyst semantic capabilities. They cannot cross
+an `extern "C"` boundary or an untyped native symbol boundary. Public Wyst
+declarations preserve their nominal map identity, placement origins, and
+target requirements through semantic module interfaces and static linking.
 
 ## Resource modifiers
 
@@ -341,11 +387,22 @@ See [Memory Model](memory-model.md#atomic-storage) for the atomic operation cont
 
 Functions, structs, and enums can declare type parameters.
 
-Each type parameter can have one optional built-in bound.
+Each type parameter can have one optional constraint: either one built-in bound
+or one static interface. Static interfaces and their carrier-ability rule are
+defined in [Interfaces and Implementations](interfaces-and-implementations.md).
 
-Generic applications must provide every type argument explicitly.
+Generic type applications and explicit function applications must provide every
+type argument. A direct generic function call may omit the entire list when
+every type argument is uniquely recoverable by structurally matching the
+call's statically known argument types against the function's parameter types.
+Matching follows direct type-parameter occurrences and occurrences nested in
+nominal generic carriers, pointers, fixed arrays, slices,
+tuples, and vectors. Callable-signature inference is not part of this rule.
 
-Wyst does not infer type arguments. It does not provide default type arguments.
+Inference does not use a call's result context, guess types for uncontextualized
+literals, derive types from bounds, accept partial type-argument lists, or
+provide default type arguments. If argument types do not determine one complete
+list, write that list explicitly.
 
 The closed bound set is:
 
@@ -366,6 +423,16 @@ The closed bound set is:
 All listed bounds prove fixed layout and ordinary move semantics.
 
 All except `fixed_layout_movable` also prove copying and discarding.
+
+Register-map instance values satisfy `fixed_layout_movable` and
+`copyable_discardable`. A generic parameter constrained only by either bound
+can carry such a value, but cannot project registers because the bound does not
+identify a register-map schema.
+
+A static-interface constraint is nominal and entails the interface's one
+built-in carrier ability. It does not add an interface value type or allow a
+user implementation to prove a built-in ability. Constraint intersections and
+interface inheritance are not supported.
 
 ## Explicit conversions
 

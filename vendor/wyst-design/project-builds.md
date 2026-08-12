@@ -117,13 +117,11 @@ Artifact names must be unique within the project.
 
 ### Artifact Kinds
 
-The manifest accepts four artifact kinds:
+The manifest accepts two artifact kinds:
 
 | Kind | Primary output | Additional required clause |
 | --- | --- | --- |
 | `executable` | final static ELF | `layout NAME from "PATH"` |
-| `benchmark` | final static ELF | `layout NAME from "PATH"` |
-| `fixture` | final static ELF | `layout NAME from "PATH"` |
 | `static_library` | GNU archive | `companion "PATH"` |
 
 Every artifact requires these clauses:
@@ -137,19 +135,12 @@ Every artifact requires these clauses:
 The artifact header requires one installed target profile.
 The selected profile supplies target facts for the complete artifact.
 
-All installed target profiles have artifact-owned layout.
-Therefore, each final static ELF requires `layout NAME from "PATH"`.
-
-The grammar also recognizes `layout .environment`.
-No installed target profile accepts that form.
+Each final static ELF requires `layout NAME from "PATH"`.
 
 A `static_library` requires `companion "PATH"`.
 It rejects `layout`, `entry`, and `runner` clauses.
 
-### Optional Artifact Policy
-
-An artifact can contain one `hardening` block.
-The block accepts only `address_alignment .enabled`.
+### Artifact Safety Policy
 
 An artifact can contain one `safety` block.
 Each selected category takes `.warning` or `.error`.
@@ -168,7 +159,7 @@ The accepted safety categories are:
 - `shared_mutation`;
 - `privileged_operation`.
 
-Omitted hardening and safety entries do not select a policy.
+Omitted safety entries do not select a policy.
 Duplicate blocks or duplicate entries are errors.
 
 The language reference topics define the effects of these policies.
@@ -245,16 +236,21 @@ It visits imported modules in first-encounter breadth-first order.
 A `verify` selector also creates a source-discovery root.
 Modules named by its concrete type arguments also enter discovery.
 
+For `wync explain execution`, a module-qualified `--function` selector creates
+an inspection-only source-discovery root for its declaration module. This lets
+reference execution select a pure contract without adding an artificial import
+to the artifact root. An unqualified selector searches only the artifact's
+ordinary module closure.
+
 ## Artifact Production
 
-`executable`, `benchmark`, and `fixture` use the same final-link pipeline.
-The pipeline writes one static AArch64 ELF file.
+`executable` writes one static AArch64 ELF file through the final-link pipeline.
 
-The compiler builds one native object and semantic interface for each module.
+The compiler builds one native object and semantic module interface for each module.
 These module products remain internal during a final artifact build.
 
 `static_library` writes a deterministic GNU archive of Wyst native objects.
-It also writes the required `.wystlib` semantic-interface companion.
+It also writes the required `.wystlib` semantic-module-interface companion.
 
 The archive and companion form one output pair.
 The compiler does not expose a general external-object linker through `wync build`.

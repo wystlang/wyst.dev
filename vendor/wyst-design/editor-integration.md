@@ -123,6 +123,11 @@ Navigation uses typed symbol identities for supported declarations and local bin
 Rename does not change a shadowed binding with a different identity.
 Import document links use project module facts when a project is available.
 
+Static interfaces and their operations have distinct typed symbol identities.
+Definition, references, rename, hover, completion, semantic tokens, inlay hints,
+and signature help follow interface constraints, implementation mappings, and
+qualified operation calls without treating an operation as a struct field.
+
 ## Protocol Limits
 
 The server rejects an LSP message body larger than 67,108,864 bytes.
@@ -156,6 +161,11 @@ Use settings such as these:
 
 ```json
 {
+  "languages": {
+    "Wyst": {
+      "semantic_tokens": "combined"
+    }
+  },
   "lsp": {
     "wync": {
       "binary": {
@@ -165,6 +175,10 @@ Use settings such as these:
   }
 }
 ```
+
+Use `combined` semantic tokens so Zed keeps syntax highlighting and applies
+compiler-known symbol roles. Restart the Wyst language server after this
+setting changes.
 
 When `binary.arguments` is absent or empty, the extension passes `lsp`.
 The extension also passes configured binary environment variables.

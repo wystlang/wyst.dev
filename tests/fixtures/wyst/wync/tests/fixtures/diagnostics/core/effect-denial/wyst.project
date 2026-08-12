@@ -2,7 +2,7 @@ project "diagnostics-effect-denial" {
   source_root "src"
   default "diagnostics-effect-denial"
 
-  fixture "diagnostics-effect-denial" for "qemu-virt-aarch64-el2" {
+  executable "diagnostics-effect-denial" for "qemu-virt-aarch64-el2" {
     root keyboard_isr
     output "build/kernel.elf"
     layout kernel from "layout.wyst"

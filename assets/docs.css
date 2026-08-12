@@ -337,6 +337,11 @@ body.docs footer.site .wrap {
 	font-weight: 550;
 }
 
+.wyst-code .token.type-parameter {
+	color: var(--syn-type-param);
+	font-weight: 550;
+}
+
 .wyst-code .token.number {
 	color: var(--syn-num);
 	font-weight: 550;

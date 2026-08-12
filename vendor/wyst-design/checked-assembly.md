@@ -103,6 +103,10 @@ A typed result creates a fresh value.
 Parenthesized results require at least two values.
 Use `-> never` when the body has no normal exit.
 
+Checked-assembly integer binders currently accept only the native widths
+`u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, and `i64`. Convert an exact-width
+integer before entering assembly and normalize it explicitly after leaving.
+
 A statement-only block must have a reachable normal exit.
 A statement-only block whose reachable instructions are effect-free must use
 `retained`.
