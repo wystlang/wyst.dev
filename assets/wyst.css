@@ -23,6 +23,7 @@
 	--syn-comment: #9BA8B8;
 	--syn-kw: #DDA0FF;
 	--syn-type: #67DAF0;
+	--syn-type-param: #93A4FF;
 	--syn-num: #F4D06F;
 	--syn-const: #F4D06F;
 	--syn-op: #C5CEDA;
@@ -232,6 +233,11 @@ body.docs header.site .wrap {
 [data-token="namespace"],
 [data-token="type"] {
 	color: var(--syn-type);
+	font-weight: 550;
+}
+
+[data-token="typeParameter"] {
+	color: var(--syn-type-param);
 	font-weight: 550;
 }
 

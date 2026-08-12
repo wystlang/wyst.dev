@@ -58,12 +58,17 @@ const BUILTIN_TYPES = alternatives(
 		(word) =>
 			word.classification === "unshadowable" &&
 			word.legalPositions.some((position) =>
-				["return-type", "type", "type-constructor"].includes(position),
+				[
+					"interface-requirement-type",
+					"return-type",
+					"type",
+					"type-constructor",
+				].includes(position),
 			),
 	),
 );
 const TYPE_DECLARATION_WORDS = activeAlternatives(
-	["bitstruct", "enum", "register_map", "struct", "trap_frame"],
+	["bitstruct", "enum", "interface", "register_map", "struct", "trap_frame"],
 	"type declaration",
 );
 const VARIABLE_DECLARATION_WORDS = activeAlternatives(
@@ -147,19 +152,125 @@ export function registerWyst(Prism) {
 				/'(?:\\x[0-9A-Fa-f]{2}|\\['\\ntr0]|[\x00-\x09\x0B\x0C\x0E-\x26\x28-\x5B\x5D-\x7F])'/,
 			greedy: true,
 		},
-		"class-name": {
-			pattern: TYPE_DECLARATION_PATTERN,
-			lookbehind: true,
-			alias: "type",
+		"static-interface-header": [
+			{
+				pattern:
+					/\binterface\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*[A-Za-z_][A-Za-z0-9_]*/,
+				inside: {
+					"class-name": {
+						pattern: /(^interface\s+)[A-Za-z_][A-Za-z0-9_]*/,
+						lookbehind: true,
+						alias: "type",
+					},
+					"generic-bound": {
+						pattern: /[A-Za-z_][A-Za-z0-9_]*$/,
+						alias: "keyword",
+					},
+					"static-interface-keyword": {
+						pattern: /^interface\b/,
+						alias: "keyword",
+					},
+					operator: /:/,
+				},
+			},
+			{
+				pattern:
+					/\bimpl\s+[A-Za-z_][A-Za-z0-9_]*\s+for\s+[A-Za-z_][A-Za-z0-9_]*(?=\s*\{)/,
+				inside: {
+					"class-name": [
+						{
+							pattern: /(^impl\s+)[A-Za-z_][A-Za-z0-9_]*/,
+							lookbehind: true,
+							alias: "type",
+						},
+						{
+							pattern: /(\bfor\s+)[A-Za-z_][A-Za-z0-9_]*$/,
+							lookbehind: true,
+							alias: "type",
+						},
+					],
+					"static-interface-keyword": {
+						pattern: /\b(?:impl|for)\b/,
+						alias: "keyword",
+					},
+				},
+			},
+		],
+		"callable-contract-clause": [
+			{
+				pattern:
+					/\b(?:effects|trusts)\s*\(\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*\s*,?\s*\)/,
+				inside: {
+					"contract-atom": {
+						pattern: /\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*\()/,
+						alias: "constant",
+					},
+					"contract-keyword": {
+						pattern: /^\s*(?:effects|trusts)\b/,
+						alias: "keyword",
+					},
+					punctuation: /[(),]/,
+				},
+			},
+			{
+				pattern:
+					/\baccesses\s*\(\s*(?:(?:read|mut)\s+)?parameter\s*\(\s*[0-9]+\s*\)\s*\)/,
+				inside: {
+					"contract-keyword": {
+						pattern: /\b(?:accesses|mut|read)\b/,
+						alias: "keyword",
+					},
+					"contract-source": {
+						pattern: /\bparameter\b/,
+						alias: "function",
+					},
+					number: /\b[0-9]+\b/,
+					punctuation: /[()]/,
+				},
+			},
+		],
+		"result-policy": {
+			pattern: /\bmust_observe\b(?=\s+[A-Za-z_][A-Za-z0-9_]*)/,
+			alias: "keyword",
 		},
+		"type-parameter": {
+			pattern:
+				/(\b(?:enum|fn|struct|type)\s+[A-Za-z_][A-Za-z0-9_]*\s*<\s*)[A-Za-z_][A-Za-z0-9_]*(?=\s*(?::|[,>]))/,
+			lookbehind: true,
+		},
+		"class-name": [
+			{
+				pattern: TYPE_DECLARATION_PATTERN,
+				lookbehind: true,
+				alias: "type",
+			},
+			{
+				pattern: /(\bimpl\s+)[A-Za-z_][A-Za-z0-9_]*/,
+				lookbehind: true,
+				alias: "type",
+			},
+			{
+				pattern:
+					/(\bimpl\s+[A-Za-z_][A-Za-z0-9_]*\s+for\s+)[A-Za-z_][A-Za-z0-9_]*/,
+				lookbehind: true,
+				alias: "type",
+			},
+			{
+				pattern:
+					/(\b[A-Za-z_][A-Za-z0-9_]*\s*:\s*)[A-Z][A-Za-z0-9_]*/,
+				lookbehind: true,
+				alias: "type",
+			},
+		],
 		function: [
 			{
 				pattern: /(\bfn\s+)[A-Za-z_][A-Za-z0-9_]*/,
 				lookbehind: true,
 			},
+			/\b[A-Za-z_][A-Za-z0-9_]*(?=\s*:\s*fn\s*\()/,
 			// Canonical calls and method calls exclude sigil-prefixed names and a
 			// dotted expression whose head is the reserved alias word.
-			/(?<![#%])(?<!as\.)\b[A-Za-z_][A-Za-z0-9_]*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?\()/,
+			/(?<![#%])(?<!as\.)\b(?!fn\b)[A-Za-z_][A-Za-z0-9_]*(?=\s*(?:<(?:[^<>\n]|<[^<>\n]*>)*>\s*)?\()/,
 		],
 		directive: {
 			pattern: DIRECTIVE_PATTERN,

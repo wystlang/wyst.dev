@@ -51,6 +51,7 @@ test("homepage markup is generated exactly from the captured wync token stream",
 		"string",
 		"operator",
 		"macro",
+		"typeParameter",
 	]);
 	assert.deepEqual(artifact.legend.tokenModifiers, [
 		"declaration",
@@ -68,8 +69,8 @@ test("homepage keeps the compiler's semantic distinctions", () => {
 		["property", "FR"],
 		["property", "DATA"],
 		["property", "TXFF"],
-		["property", "read"],
-		["property", "write"],
+		["function", "read"],
+		["function", "write"],
 		["variable", "UART0"],
 		["variable", "msg"],
 		["variable", "byte"],

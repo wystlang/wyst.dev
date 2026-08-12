@@ -54,7 +54,7 @@ Explicit mode does not accept `--artifact`.
 - It checks the selected layout for explicit and final-link requests.
 - It checks a static-library source graph without a final-link layout.
 - It parses, normalizes, instantiates, and checks the source graph.
-- It creates semantic interfaces in memory.
+- It creates semantic module interfaces in memory.
 - It creates verified IR when an indexing proof requires memory-safety analysis.
 
 The command does not perform machine lowering.

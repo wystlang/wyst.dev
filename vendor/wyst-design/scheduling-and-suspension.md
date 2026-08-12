@@ -33,7 +33,6 @@ These operations are scheduling barriers:
 - atomics;
 - system-register operations;
 - effectful or `retained` checked assembly;
-- hardening operations;
 - effect boundaries; and
 - phi operations.
 

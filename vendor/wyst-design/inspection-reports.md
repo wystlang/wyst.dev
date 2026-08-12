@@ -58,6 +58,8 @@ Object reports use object-local offsets and relocation records.
 Final addresses are unavailable for these object reports.
 
 The report does not provide hardware timing, cache state, branch prediction, or measured performance.
+For closed final artifacts, its call facts distinguish source-indirect calls
+that were statically bound from indirect transfers that remain at runtime.
 
 ## Effects Report
 
@@ -90,7 +92,7 @@ wync explain storage PROJECT \
 ```
 
 The report includes the selected target, source graph, and compiler storage vocabulary.
-It lists authenticated `core.storage` operations and compiler-owned `DynamicArray` descriptor facts.
+It lists authenticated `core.storage` operations.
 It can also list accepted storage-preservation proof facts.
 
 The report does not infer storage meaning from an ordinary function name.
@@ -131,7 +133,7 @@ The report applies to the complete selected artifact.
 
 It includes these principal groups:
 
-- semantic interfaces;
+- semantic module interfaces;
 - the artifact reference graph;
 - resumable and affine-verifier facts;
 - stack roots; and
@@ -155,6 +157,9 @@ wync explain execution PROJECT \
 The command compiles and authenticates verified typed IR.
 It then executes the named function in deterministic reference state.
 It does not execute lowered machine code.
+
+A module-qualified function name also participates in source discovery. Use
+that form when the function's module is not imported by the artifact root.
 
 The report includes the completion class, return value, step count, and trace events.
 It also includes consumed environment events, generic instances, and reference addresses.

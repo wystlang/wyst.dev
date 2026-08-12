@@ -48,11 +48,10 @@ prevents compiler and tooling drift:
 - [attribute-catalog.tsv](catalogs/language/attribute-catalog.tsv) owns declaration attributes.
 - [builtin-type-members.tsv](catalogs/language/builtin-type-members.tsv) owns contextual members
   of builtin types, including their exact typed compile-time values.
+- [integer-type-families.tsv](catalogs/language/integer-type-families.tsv) owns primitive integer
+  spelling prefixes, signedness, and supported value-width ranges.
 - [semantic-operation-catalog.tsv](catalogs/language/semantic-operation-catalog.tsv) owns
   qualified semantic operations.
-- [hardening-catalog.tsv](catalogs/language/hardening-catalog.tsv) owns the closed set of
-  artifact-selected generated checks, source obligations, failure paths,
-  target sequences, and compiler constraints.
 - [generic-bounds.tsv](catalogs/language/generic-bounds.tsv) owns generic capabilities.
 - [sealed-core.tsv](catalogs/language/sealed-core.tsv) owns compiler-bundled `core` namespaces,
   their public declaration surfaces, source modules, and operation-contract
@@ -61,7 +60,7 @@ prevents compiler and tooling drift:
 - [link-format-catalog.tsv](catalogs/language/link-format-catalog.tsv) owns the versioned static
   link representations and content bindings.
 - [link-interface-schema.tsv](catalogs/language/link-interface-schema.tsv) owns canonical
-  semantic-interface records.
+  semantic-module-interface records.
 - [a64-link-relocations.tsv](catalogs/aarch64/source/a64-link-relocations.tsv) and
   [a64-link-veneers.tsv](catalogs/aarch64/source/a64-link-veneers.tsv) own the accepted static AArch64
   relocation behavior and every permitted veneer recipe.

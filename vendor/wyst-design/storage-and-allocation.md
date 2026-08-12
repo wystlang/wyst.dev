@@ -3,7 +3,7 @@ title: "Storage and Allocation"
 group: reference
 section: memory-machine
 order: 210
-summary: "Explicit caller-owned storage, sealed core storage transitions, and the DynamicArray descriptor."
+summary: "Explicit caller-owned storage and sealed core storage transitions."
 ---
 
 # Storage and Allocation
@@ -11,7 +11,7 @@ summary: "Explicit caller-owned storage, sealed core storage transitions, and th
 Wyst has no implicit allocator, garbage collector, or container runtime.
 Storage behavior comes from explicit source operations and selected target contracts.
 
-This reference describes the bundled `core.storage` module and `DynamicArray<T>` descriptor.
+This reference describes the bundled `core.storage` module.
 [Memory Model](memory-model.md) defines typed memory proof.
 [Semantic Operations and Hardware Declarations](semantic-operations.md) defines uninitialized storage boundaries.
 
@@ -119,56 +119,6 @@ Rejection values recover the authority needed for retry, cancellation, or closur
 
 The compiler checks the source transition types.
 It does not infer an arena transaction from an unrelated function name.
-
-## DynamicArray descriptor
-
-`DynamicArray<T>` is the exact sealed `core.collections.DynamicArray` declaration.
-A user declaration with the same name does not receive this compiler role.
-
-The descriptor has this fixed layout on the current target:
-
-| Offset | Field | Type |
-| ---: | --- | --- |
-| 0 | `data` | `@T` |
-| 8 | `len` | `u64` |
-| 16 | `capacity` | `u64` |
-| 24 | `storage_identity` | `u64` |
-| 32 | `growth_policy` | `u64` |
-| 40 | `failure_policy` | `u64` |
-| 48 | `movement_policy` | `u64` |
-
-The total size is 56 bytes.
-The alignment is 8 bytes.
-The fields are read-only through a descriptor value.
-
-A zero constant can initialize the complete descriptor.
-Equality and inequality require the same element type.
-They compare all seven fields.
-Ordered comparisons are not available.
-
-The compiler does not provide direct indexing or slicing on this descriptor.
-It does not convert the descriptor implicitly to `[]T`.
-It does not provide built-in initialization, growth, push, pop, or destruction methods.
-
-Source can create a view explicitly from the authenticated fields:
-
-<!-- wyst-contract: check-pass -->
-```wyst
-module runtime.dynamic_array
-
-import core.collections { DynamicArray }
-
-fn view(values: DynamicArray<u8>) -> []u8 {
-  return values.data.slice(elements = values.len)
-}
-```
-
-The typed memory proof recognizes the exact `data` and `len` relationship.
-It still rejects an unproved byte-count overflow or invalid element extent.
-
-The three policy fields are descriptor integers.
-The compiler does not assign allocator behavior to their numeric values.
-Source-visible container code must interpret them.
 
 ## External boundaries
 

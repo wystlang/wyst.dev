@@ -28,8 +28,7 @@ Debug sections are in [Debug and Unwind Information](debug-and-unwind.md).
 
 ### Executable artifacts
 
-The `executable`, `benchmark`, and `fixture` manifest forms produce one static
-ELF executable.
+The `executable` manifest form produces one static ELF executable.
 The selected layout supplies the entry and allocated-section placement.
 
 The final executable has these ELF properties:
@@ -77,7 +76,7 @@ other features of a general `objcopy` tool.
 `static_library` produces two files:
 
 - a deterministic GNU archive;
-- a Wyst semantic companion file.
+- a Wyst semantic-module-interface companion file.
 
 The manifest must give both output paths.
 A static library does not accept an entry, runner, or layout clause.
@@ -94,15 +93,25 @@ static_library widgets for "qemu-virt-aarch64-el2" {
 ```
 
 Each archive member is an AArch64 ELF relocatable object.
-The companion file stores the matching Wyst semantic interfaces and indexes.
-The compiler pairs each object with one interface digest.
+The companion file stores the matching Wyst semantic module interfaces and
+indexes. The compiler pairs each object with one semantic module interface
+digest.
 
 The archive contains indexes for these identities:
 
 - module;
 - declaration;
 - generic definition;
+- static interface;
 - native symbol.
+
+The WYSTIF schema carries public static-interface declarations, complete
+operation contracts, subject-owned implementation mappings, hidden mapped
+targets, typed generic constraints, and selected-implementation dependency
+digests. The WYSTLIB companion indexes those records so a consumer can
+authenticate and materialize generic code without producer source. A
+source-language static interface remains a frontend constraint; neither file
+defines a runtime interface object.
 
 Member names use the module name plus `.o`.
 The compiler sorts members before it writes the archive.
@@ -128,7 +137,6 @@ The compiler uses these built-in allocated sections:
 
 These compiler-owned sections are not allocated:
 
-- `.wyst.hardening`, when hardening is enabled;
 - selected `.debug_*` sections;
 - `.eh_frame`, when unwind tables are enabled;
 - `.symtab`;
@@ -186,7 +194,7 @@ The writer does not use extended section numbering.
 
 Each relocatable object also contains:
 
-- `.wyst.interface`, with the 32-byte interface digest;
+- `.wyst.interface`, with the 32-byte semantic module interface digest;
 - `.wyst.reloc`, with Wyst relocation records;
 - `.symtab` and `.strtab`;
 - `.shstrtab`.
@@ -239,8 +247,8 @@ It rejects a relocation that cannot fit its encoded field.
 ## Link boundary
 
 The executable build checks each compiler-produced object and its semantic
-interface before final placement.
-It requires one compatible target and hardening identity across the closure.
+module interface before final placement.
+It requires one compatible target across the closure.
 
 Symbol resolution uses these rules:
 

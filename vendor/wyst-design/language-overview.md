@@ -38,6 +38,7 @@ Wyst provides these main declaration groups:
 | --- | --- | --- |
 | Values and storage | `const`, `var`, arrays, slices, addresses, and aggregates | [Type System](type-system.md) |
 | Named types | nominal scalars, `struct`, `bitstruct`, and `enum` | [Type System](type-system.md) |
+| Static abstractions | `interface`, `impl`, and interface-constrained generics | [Interfaces and Implementations](interfaces-and-implementations.md) |
 | Code | `fn`, `label`, `inline fn`, and external declarations | [Functions and Control Flow](functions-and-control-flow.md) |
 | Hardware | `system_register`, `register_map`, and `mmio` | [Semantic Operations and Hardware Declarations](semantic-operations.md) |
 | Target structures | `vector_table` and `trap_frame` | [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md) |
@@ -99,7 +100,7 @@ See [ABI Specification](abi.md).
 
 Project builds select an artifact kind and layout.
 Executable, benchmark, and fixture builds emit static AArch64 ELF files.
-Static-library builds emit archives and companion interface files.
+Static-library builds emit archives and semantic-module-interface companion files.
 See [Artifact and Object Formats](artifact-and-object-formats.md).
 
 Built-in target profiles are a closed compiler-owned set.
@@ -112,7 +113,7 @@ The compiler processes source through parsing, semantic analysis, typed IR, veri
 [Compiler Pipeline](compiler-pipeline.md) describes this flow.
 
 [Intermediate Representation](intermediate-representation.md) defines typed IR structures.
-[Optimization and Hardening](optimization-and-hardening.md) defines optimization behavior.
+[Optimization](optimization.md) defines optimization behavior.
 
 Compiler inspection reports expose selected lowering and semantic facts.
 See [Compiler Inspection Reports](inspection-reports.md).

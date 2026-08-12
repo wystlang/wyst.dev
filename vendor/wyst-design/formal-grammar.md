@@ -87,6 +87,7 @@ CompilationUnit <- Item*
 Item <- ModuleDecl / TargetDecl / RequiresDecl / StaticAssertItem
       / CompileIfItem / ImportDecl / SymbolImport / SymbolExport
       / FunctionDecl / ConstDecl / VarDecl / PerCpuDecl / LabelDecl
+      / InterfaceDecl / ImplDecl
       / TypeDecl / StructDecl / EnumDecl / BitstructDecl
       / RegisterMapDecl / MmioDecl / SystemRegisterDecl
       / VectorTableDecl / TrapFrameDecl / LayoutDecl
@@ -123,8 +124,20 @@ Attribute      <- UserName / UserName '(' List(AttributeArg) ')'
 AttributeArg   <- UserName '=' Expr / Expr
 
 GenericParams <- '<' List(GenericParam) '>'
-GenericParam  <- UserName (':' GenericBound)?
+GenericParam  <- UserName (':' GenericConstraint)?
+GenericConstraint <- GenericBound / InterfacePath
 TypeArguments <- '<' List(Type) '>'
+
+InterfacePath <- UserName ('.' UserName)*
+InterfaceDecl <- 'pub'? 'interface' UserName ':' GenericBound
+                 '{' InterfaceOperation* '}'
+InterfaceOperation <- UserName ':' InterfaceRequirement
+InterfaceRequirement <- 'fn' '(' 'Self' (',' List(CallableParam))? ')'
+                        CallableResult? ConcurrencyClause*
+                        EffectClause? TrustClause?
+ImplDecl <- 'impl' InterfacePath 'for' QualifiedType
+            '{' ImplBinding* '}'
+ImplBinding <- UserName '=' InterfacePath
 
 FunctionDecl <- AttributeGroup? 'pub'? 'naked'? ExternConvention?
                 'fn' UserName GenericParams? Parameters FunctionResult?
@@ -146,7 +159,7 @@ ReturnSources <- 'from' UserName (',' UserName)*
 RegisterPlacement <- 'in' Register
 
 ContractClause <- RequiresClause / EnsuresClause
-RequiresClause <- 'requires' '(' Expr ',' 'reason' '=' Expr ')'
+RequiresClause <- 'requires' '(' Expr (',' 'reason' '=' Expr)? ')'
 EnsuresClause  <- 'ensures' '(' Expr ',' 'reason' '=' Expr ')'
 
 EffectClause <- 'effects' '(' BoundNames ')'
@@ -184,6 +197,15 @@ BitstructField <- UserName ':' Type 'at' Expr ('..=' Expr)?
 
 The attribute catalog defines active attributes, subjects, arguments, and conflicts.
 A declaration accepts at most one leading attribute group.
+
+`InterfaceDecl` and `ImplDecl` do not accept attributes. `ImplDecl` does not
+accept `pub`, generic parameters, inline method bodies, or compound subject
+types. `Self` is a contextual compiler binder valid exactly as parameter 0 of
+an interface requirement; it is not part of the ordinary `Type` production.
+Each generic parameter has at most one constraint.
+
+The complete nominal-resolution, conformance, and erasure rules are in
+[Interfaces and Implementations](interfaces-and-implementations.md).
 
 A native function requires a body.
 An `extern "C" fn` can omit its body.
@@ -288,6 +310,13 @@ Catalog-named system registers require a field block.
 Encoded system registers can omit an empty field block.
 Hardware semantics are in [Semantic Operations and Hardware Declarations](semantic-operations.md).
 
+`RegisterMapDecl` introduces its `UserName` into both the nominal type namespace
+and the hardware-schema namespace. In `MmioDecl`, a `MmioTarget` resolving to a
+register-map name declares a placed value of that nominal type; a target
+beginning with `HardwareAccess` declares the existing scalar hardware object.
+No additional expression production is required because placed declarations
+are `NameExpr` values and register access uses ordinary `FieldSuffix` syntax.
+
 ## Types
 
 ```peg
@@ -351,7 +380,7 @@ ForStmt   <- AttributeGroup? 'for' UserName 'in'
              (Expr '..<' Expr / Expr) Block
 
 MatchStmt <- 'match' Expr '{' MatchArm* '}'
-MatchArm  <- List(VariantPattern) Block
+MatchArm  <- List(VariantPattern) Block?
 VariantPattern <- '.' UserName ('(' List(Binding)? ')')?
 
 GuardStmt <- 'guard' 'mut'? Expr
@@ -406,7 +435,7 @@ DotName <- '.' UserName
 NameExpr <- NameLike ('.' UserName)*
 DirectCall <- NameExpr TypeArguments? CallSuffix
 TupleExpr <- '(' Expr ',' List(Expr) ')'
-ArrayLiteral <- '[' List(Expr)? ']'
+ArrayLiteral <- '[' (Expr ';' Expr / List(Expr))? ']'
 StructLiteral <- '{' List(FieldInit)? '}'
 FieldInit <- UserName '=' Expr
 

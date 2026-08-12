@@ -43,11 +43,15 @@ It does not change the result ABI.
 
 A body-bearing Wyst function can declare `requires` and `ensures` clauses.
 The contract expressions must use the compiler's restricted, effect-free expression set.
-Each clause has an exact `u16` trap reason.
+A reasonless `requires(condition)` clause is a compile-time call-entry proof
+obligation. It emits no check, has no trap reason, and is permitted only on a
+direct-call-only function. Constants, exact slice lengths, and dominating
+immutable affine comparisons can establish the obligation.
 
-`requires` clauses run before body effects.
+Reason-bearing `requires` clauses run before body effects.
 `ensures` clauses run on each returned path.
 An `ensures` expression can use the compiler-owned `result` binding.
+Every runtime clause has an exact `u16` trap reason.
 
 A failed runtime contract enters the compiler's fatal-trap path.
 It does not unwind into an interactive handler.

@@ -22,6 +22,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
   identity, imports, visibility, and native symbol boundaries.
 - [Type System](type-system.md) defines values, storage types, aggregates, generics,
   abilities, and conversions.
+- [Interfaces and Implementations](interfaces-and-implementations.md) defines
+  nominal compile-time operation constraints, explicit conformance, and erasure.
 - [Operators and Evaluation](operators-and-evaluation.md) defines expression order,
   operator typing, precedence, and arithmetic results.
 - [Functions and Control Flow](functions-and-control-flow.md) defines callable forms,
@@ -33,8 +35,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
 
 - [Memory Model](memory-model.md) defines typed memory proof, volatile and MMIO
   access, atomics, ordering, and barriers.
-- [Storage and Allocation](storage-and-allocation.md) defines caller-owned storage,
-  sealed storage transitions, and the `DynamicArray` descriptor.
+- [Storage and Allocation](storage-and-allocation.md) defines caller-owned storage
+  and sealed storage transitions.
 - [Semantic Operations and Hardware Declarations](semantic-operations.md) defines
   compiler-authenticated operations, hardware declarations, and target services.
 - [SIMD](simd.md) defines admitted vector shapes and vector operations.
@@ -68,8 +70,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
 
 - [Compiler Pipeline](compiler-pipeline.md) defines the source-to-artifact and
   source-to-report flows.
-- [Optimization and Hardening](optimization-and-hardening.md) defines admitted IR
-  transformations, required expansion, scheduling, and hardening.
+- [Optimization](optimization.md) defines admitted IR transformations, required
+  expansion, and scheduling.
 - [Debug and Unwind Information](debug-and-unwind.md) defines debug policies, DWARF
   output, value locations, line tables, and unwind metadata.
 

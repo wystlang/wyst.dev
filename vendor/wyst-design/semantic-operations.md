@@ -151,18 +151,25 @@ See [Scheduling and Suspension](scheduling-and-suspension.md) for suspension rul
 
 ## MMIO register declarations
 
-`register_map` defines reusable MMIO register structure.
-`mmio` places a register map or one scalar register at a constant address.
+`register_map` defines a reusable MMIO register schema and a nominal instance
+type. A register-map `mmio` declaration authenticates one static placement and
+denotes a first-class value of that type. A scalar `mmio` declaration remains a
+non-first-class hardware object. System-register declarations also remain
+non-first-class. This feature adds no interface, closure, dynamic-dispatch, or
+complete device-model facility.
 
 Register backings are `u8`, `u16`, `u32`, or `u64`.
 Each register is `readonly`, `writeonly`, or `readwrite`.
 Fields can narrow that access mode.
+A field uses `bool`, an exact-width integer type, or a complete payload-free
+enum whose tag width equals the field range width. Register backings remain
+restricted to the native unsigned widths.
 
 Artifact construction requires an exact mapping in the selected platform contract.
 The mapping covers the range, register cell, width, and peripheral identity.
 Dynamic raw MMIO addresses do not satisfy this contract.
 
-<!-- wyst-contract: check-pass -->
+<!-- wyst-contract: fmt -->
 ```wyst
 module operations.uart
 
@@ -175,11 +182,34 @@ register_map Pl011 {
 }
 
 mmio UART0: Pl011 at 0x0900_0000
+mmio UART1: Pl011 at 0x0901_0000
 
-fn send(value: u8) {
-  UART0.DR.write(DATA = value)
+fn send(device: Pl011, value: u8) {
+  device.DR.write(DATA = value)
+}
+
+fn send_primary(value: u8) {
+  send(UART0, value)
 }
 ```
+
+A register access receiver can be a placed declaration or any expression of
+the exact register-map instance type. The receiver is evaluated exactly once.
+Its placement-origin set must be nonempty, every possible origin must name the
+same map type, and every origin must be compatible with the selected target
+profile. Register identity, offset, backing width, and access policy still come
+from the nominal register-map schema.
+
+Locals, parameters, results, aggregate fields, concrete generic substitutions,
+imports, and control-flow joins preserve placement authority. A join between
+`UART0` and `UART1` has both origins and selects the runtime base carried by the
+value. Register projection from an unconstrained generic value is invalid even
+when its bound permits storing the value.
+
+No integer, typed address, pointer, cast, bitcast, ordinary aggregate literal,
+or scalar `mmio` object can construct a register-map instance. Runtime hardware
+discovery requires a separate trusted refinement boundary and is not provided
+by these static placements.
 
 `.read()` performs one full-width volatile read.
 It returns a nominal snapshot for a mapped register.
@@ -200,6 +230,10 @@ Hardware action fields describe the written action mask, not the resulting devic
 Each declared MMIO read or write is verified against its exact volatile access.
 No operation adds a retry or architectural barrier.
 See [Memory Model](memory-model.md#volatile-and-mmio-access) for ordering limits.
+
+Placed MMIO instance authority covers register access only. It does not imply
+interrupt, clock, reset, DMA, lifetime-management, isolation, or exclusive
+device-ownership authority.
 
 ## System register declarations
 

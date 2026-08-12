@@ -20,6 +20,11 @@ The calling convention is part of a function type.
 Native and `extern "C"` function pointers are different types.
 The compiler rejects an implicit conversion between them.
 
+Static interfaces do not define a calling convention or machine ABI entity.
+Their qualified calls are erased to ordinary direct Native calls before typed
+IR and ABI classification. They add no witness, vtable, metadata argument, or
+hidden context. See [Interfaces and Implementations](interfaces-and-implementations.md).
+
 ## 1. Callable identity
 
 A normal function uses the Native convention.
@@ -105,7 +110,14 @@ The upper 64 bits of those registers are not preserved.
 
 The Native ABI assigns integer-like values to `x0` through `x7`.
 Integer-like values include integers, booleans, bitfields, addresses, and
-function pointers.
+function pointers. A register-map instance is also integer-like for the Native
+ABI: its one runtime word is passed in a general register while its placement
+authority remains compiler-only semantic evidence.
+
+An integer whose value width is at most 32 bits uses a 32-bit GPR view; a wider
+integer uses a 64-bit GPR view. At every Native call boundary, unused GPR bits
+are zero for unsigned integers and sign extension for signed integers. This
+normalization also applies to Native integer results.
 
 The Native ABI assigns scalar floating-point and supported SIMD values to
 `v0` through `v7`.
@@ -140,11 +152,14 @@ The Native ABI classifies a fixed-layout aggregate result by size:
 A payload-free enum uses one general register.
 Other Native enum values use their fixed aggregate layout.
 
+A register-map instance result uses `x0`. Register-map instances are not
+admitted by the AAPCS64 type surface because a C boundary cannot transport
+their authenticated placement origins.
+
 ### 4.3 Native aggregate types
 
 The Native ABI can lower fixed-layout Wyst aggregates.
-These aggregates include named structs, tuples, arrays, strings, slices, and
-`DynamicArray` descriptor values when their boundary representation has a fixed layout.
+These aggregates include named structs, tuples, arrays, strings, and slices.
 
 `MaybeUninit<T>` and `atomic<T>` are storage types.
 The compiler rejects them as ordinary ABI values.
@@ -154,14 +169,18 @@ The compiler rejects them as ordinary ABI values.
 The compiler implements an AAPCS64 subset for `extern "C"` callables.
 The source signature can use these types:
 
-- booleans and integers;
+- booleans and native-width `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, and `i64` integers;
 - scalar `f32` and `f64` values;
 - addresses and function pointers;
 - named structs with a fixed layout.
 
-The compiler rejects arrays, tuples, strings, slices, `DynamicArray` descriptor values, enums,
+The compiler rejects arrays, tuples, strings, slices, enums,
 `MaybeUninit<T>`, and `atomic<T>` as direct AAPCS64 source values.
 Use an address or a supported named struct for those boundaries.
+
+The compiler rejects every other exact-width integer at an AAPCS64 boundary,
+including one nested in a supported named struct. This restriction avoids
+inventing a C representation for types that C and AAPCS64 do not name.
 
 ### 5.1 Scalar and composite arguments
 

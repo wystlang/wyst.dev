@@ -1,9 +1,8 @@
 // spelling	classification	owner	legal_positions	state
 as	reserved	core.imports|core.linkage-boundaries	import-alias|linkage-alias	implemented
 bitstruct	reserved	core.bitstruct|core.generic-bounds	declaration|generic-bound	implemented
-register_map	contextual	core.hardware-registers	declaration	implemented
+register_map	contextual	core.hardware-registers|core.nominal-types	declaration|nominal-type-declaration	implemented
 system_register	contextual	core.hardware-registers	declaration	implemented
-device	reserved	future.hardware-device-model	future-declaration	reserved
 break	reserved	core.control-flow	statement	implemented
 cancel	reserved	core.outcome-protocols	statement	implemented
 cancelled	reserved	core.outcome-protocols	terminal-offer|terminal-handler-arm	implemented
@@ -24,6 +23,8 @@ goto	reserved	core.control-flow	statement	implemented
 handle	reserved	core.outcome-protocols	expression	implemented
 if	reserved	core.control-flow	expression|statement	implemented
 import	reserved	core.modules|core.linkage-boundaries	declaration	implemented
+impl	contextual	core.static-interfaces	declaration	implemented
+interface	contextual	core.static-interfaces	declaration	implemented
 is	reserved	core.enum-patterns	expression|if-condition	implemented
 label	reserved	core.declarations	declaration	implemented
 loop	reserved	core.control-flow	statement	implemented
@@ -31,6 +32,7 @@ match	reserved	core.enum-patterns	expression|statement	implemented
 module	reserved	core.modules	declaration	implemented
 naked	reserved	core.callable-contracts|core.project-manifests	declaration-prefix|manifest-safety-category	implemented
 never	unshadowable	core.callable-contracts	return-type	implemented
+Self	unshadowable	core.static-interfaces	interface-requirement-type	implemented
 noescape	contextual	core.callable-contracts	declaration-parameter-type-prefix|callable-type-parameter-type-prefix	implemented
 offers	contextual	core.outcome-protocols	function-interactive-contract	implemented
 handler	contextual	core.outcome-protocols	function-interactive-contract	implemented
@@ -189,8 +191,6 @@ project	contextual	core.project-manifests	manifest-project-declaration	implement
 source_root	contextual	core.project-manifests	manifest-source-root-clause	implemented
 default	contextual	core.project-manifests	manifest-default-clause	implemented
 executable	contextual	core.project-manifests	manifest-artifact-declaration	implemented
-benchmark	contextual	core.project-manifests	manifest-artifact-declaration	implemented
-fixture	contextual	core.project-manifests	manifest-artifact-declaration	implemented
 static_library	contextual	core.project-manifests	manifest-artifact-declaration	reserved
 root	contextual	core.project-manifests	manifest-artifact-root-clause	implemented
 output	contextual	core.project-manifests	manifest-artifact-output-clause	implemented

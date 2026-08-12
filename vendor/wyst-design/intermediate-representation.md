@@ -15,6 +15,12 @@ For the compiler pipeline, see [Compiler Pipeline](compiler-pipeline.md).
 For source types and memory rules, see [Type System](type-system.md) and
 [Memory Model](memory-model.md).
 
+Static interfaces are frontend constraints, not IR entities. Concrete generic
+materialization selects each implementation and rewrites every qualified
+operation call to an ordinary direct call before IR construction. `ModuleIr`
+therefore has no static-interface type, value, witness, metadata argument, or
+call operation. See [Interfaces and Implementations](interfaces-and-implementations.md).
+
 ## IR lifecycle
 
 The compiler builds IR from one instantiated source tree and its checked
@@ -27,14 +33,14 @@ checked source + checked layout + target facts
     -> ModuleIr
     -> structural verification + memory analysis
     -> VerifiedIr
-    -> artifact reachability and optional hardening
+    -> artifact reachability
     -> type-layout facts + callable ABI facts
     -> AArch64TextImage
     -> native objects and ELF artifact
 ```
 
-Artifact reachability and hardening verify the IR again after they change the
-module. They also recompute the memory-safety report.
+Artifact reachability verifies the IR again after it changes the module.
+It also recomputes the memory-safety report.
 
 ## Stable identifiers
 
@@ -64,7 +70,7 @@ valid in another function.
 | Linkage | Internal and external functions, external globals, imports, exports, and symbol resolutions |
 | Code and data | Functions, globals, strings, exception vectors, and init calls |
 | Callable facts | Checked signatures, attributes, effect-bound authority, context summaries, and inline identities |
-| Artifact facts | Verification roots, required services, optional hardening selection, and retained generic instances |
+| Artifact facts | Verification roots, required services, and retained generic instances |
 | Semantic records | Terminal-type, hardware-object, suspension, handler, and operation records |
 
 The symbol table stores the source name, the module-qualified semantic name,
@@ -90,13 +96,18 @@ Each value has one `IrType`. The active type forms are:
 | `Array` | Element type and known or symbolic length |
 | `Vector` | Element type and known or symbolic lane count |
 | `Slice` | Element type |
-| `DynamicArray` | Element type |
 | `MaybeUninit` | Contained type |
 | `Atomic` | Atomic element type |
 | `Tuple` | Named fields and their types |
 | `Enum` | Nominal name, variants, tag type, and payload layout |
 | `Bitfield` | Nominal name and backing type |
 | `Named` | A retained nominal type name |
+
+`Int` retains every source value width from `u1` through `u64` and `i2` through
+`i64`; it does not round the width to a native type. Layout queries separately
+select the smallest 8-, 16-, 32-, or 64-bit storage carrier. A typed bitfield
+integer carrier must have exactly the field width, so `BitfieldInsert` requires
+ordinary IR type identity rather than a separate low-bit range proof.
 
 An array length is `Known(u64)` or `Symbolic(String)`. A function-pointer type
 also stores parameter modes, `noescape` flags, register pins, and indirect-read
@@ -182,12 +193,11 @@ The active value operations are grouped below.
 | Definitions and scalar work | Parameters, local binds, constants, symbol references, unary operations, binary operations, select, phi, casts, and bit truncation |
 | Initialization | Indeterminate reads, typed writes to `MaybeUninit` storage, and zero initialization |
 | Memory | Load, store, endian load, endian store, address-of, stack address, trap-frame address, per-instance address or offset, and typed address calculation |
-| Descriptors and aggregates | Slice construction, slice fields, dynamic-array fields, tuple, array, vector, and structure construction, and field projection |
+| Descriptors and aggregates | Slice construction, slice fields, tuple, array, vector, and structure construction, and field projection |
 | Nominal values | Bitfield extract or insert, enum construction or projection, and field offsets |
 | Calls and boundaries | Direct calls, indirect calls, intrinsics, and strand-suspension boundaries |
 | Target operations | System-register reads and writes, checked assembly, and checked-assembly result projection |
 | Atomics | Load, store, compare-exchange, fetch arithmetic, fetch bitwise work, exchange, bit set, and bit clear |
-| Artifact guards | Generated hardening checks |
 
 `Noop` is an ordinary zero-work value. `Unsupported` is a construction marker
 for an unsupported operation. The verifier rejects it before code generation.
@@ -230,6 +240,14 @@ The active terminators are:
 | `Return` | Return no value or one value |
 | `Unreachable` | End a path that cannot continue |
 
+Lowering an exhaustive enum match uses one covered arm as the default
+destination, so an `N`-variant enum needs at most `N - 1` tag tests. A no-op arm
+whose outer binding environment is unchanged transfers directly to the join;
+it does not retain a jump-only runtime block. Branch lowering represents a
+logical negation by exchanging its successor edges instead of materializing an
+intermediate boolean. Source exhaustiveness remains a semantic-checking rule
+and is not weakened by these representation choices.
+
 The verifier checks all block and symbol targets. It also checks the branch
 condition, switch selector, return type, code kind, and never-returning
 contract.
@@ -256,8 +274,7 @@ Function records include:
 - Trusted external slices and indexing obligations.
 - Resource transitions, explicit discards, and cleanup execution ranges.
 - Interactive terminal commitments and callable contract checks.
-- Inline expansion, concurrency guard, suspension-boundary, and hardening
-  records.
+- Inline expansion, concurrency guard, and suspension-boundary records.
 - Authenticated optimizer transformation records for changes already made to
   the value graph.
 
@@ -280,8 +297,8 @@ The structural verifier checks these areas:
 - Value operands, result types, aggregate fields, calls, and terminators.
 - Structural SSA, source schedule facts, register-pin conflicts, and naked
   function restrictions.
-- Semantic operation, checked operation, hardware access, suspension,
-  concurrency, and hardening records.
+- Semantic operation, checked operation, hardware access, suspension, and
+  concurrency records.
 - Exception vectors, init calls, required services, and artifact roots.
 
 The memory report classifies each typed memory obligation. A classification
@@ -340,5 +357,6 @@ the selected build target. It then produces `Aarch64TextImage`.
 artifact policies.
 
 Native-object and ELF assembly occur after this boundary. These products can
-use the verified IR, machine image, layout, placement, interface, and artifact
-policy products. They do not change the meaning of the typed IR.
+use the verified IR, machine image, layout, placement, semantic module
+interface, and artifact policy products. They do not change the meaning of the
+typed IR.
