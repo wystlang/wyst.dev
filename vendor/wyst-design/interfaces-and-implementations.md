@@ -68,15 +68,15 @@ module drivers.pl011.terminal
 import kernel.terminal { Terminal }
 
 opaque struct Binding {
-  address: u64
+  base: u64
 }
 
 fn initialize_terminal(binding: Binding) -> must_observe bool {
-  return binding.address != 0
+  return binding.base != 0
 }
 
 fn write_terminal_byte(binding: Binding, byte: u8) -> must_observe bool {
-  return binding.address != 0 && byte != 0
+  return binding.base != 0 && byte != 0
 }
 
 impl Terminal for Binding {
@@ -117,7 +117,10 @@ module kernel.output
 
 import kernel.terminal { Terminal }
 
-pub fn emit<T: Terminal>(terminal: T, byte: u8) -> must_observe bool
+pub fn emit<T: Terminal>(
+  terminal: T,
+  byte: u8,
+) -> must_observe bool
   effects(mmio, volatile_access)
   trusts(platform_contract)
 {
@@ -204,7 +207,7 @@ instance identity remains the declaration plus concrete type arguments because
 global coherence makes those arguments select exactly one implementation; the
 selected implementation digest is still a materialization dependency.
 
-## Version 1 boundaries
+## Current static-interface boundary
 
 Static interfaces do not add interface values, dynamic dispatch, methods,
 structural conformance, default implementations, inline implementation bodies,
@@ -212,5 +215,5 @@ associated items, inheritance, multiple constraints, generic interfaces or
 operations, generic implementations, derivation, operator overloading, or
 implementation specialization.
 
-Each of those features requires an independent design and implementation. None
-is implied by the `interface` or `impl` syntax described here.
+None of those features is implied by the `interface` or `impl` syntax described
+here.

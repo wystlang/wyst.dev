@@ -459,6 +459,7 @@ MetaExpr <- '#addr_of' '(' Expr ','? ')'
           / '#align_of' '(' Type ','? ')'
           / '#cache_line_width' '(' ')'
           / '#dedent' MultilineString
+          / '#eval' '(' DirectCall ','? ')'
           / '#field_offset' '(' Type ',' UserName ','? ')'
           / '#len' '(' Expr ','? ')'
           / '#link_value' '(' Expr ','? ')'
@@ -507,7 +508,7 @@ The target instruction catalog defines `AsmPhysicalLine`.
 
 ## Meta-operations
 
-The current language has 15 `#` meta-operations.
+The current `#` meta-operations are listed in the meta-operation catalog.
 
 | Operation | Current source form |
 | --- | --- |
@@ -516,6 +517,7 @@ The current language has 15 `#` meta-operations.
 | `#cache_line_width` | `#cache_line_width()` |
 | `#dedent` | `#dedent` followed by one multiline string |
 | `#else` | paired branch marker for `#if` |
+| `#eval` | required evaluation of a direct zero-argument function call |
 | `#field_offset` | `#field_offset(Type, field)` |
 | `#if` | compile-time item, statement, or expression selection |
 | `#len` | `#len(expression)` |

@@ -65,6 +65,8 @@ qualify	unshadowable	core.conversions	expression-callee	implemented
 floatcast	unshadowable	core.conversions	expression-callee	implemented
 saturate	unshadowable	core.conversions	expression-callee	implemented
 truncate_bits	unshadowable	core.conversions	expression-callee	implemented
+leading_zeros	unshadowable	core.numeric-operations	expression-callee	implemented
+mul_wide	unshadowable	core.numeric-operations	expression-callee	implemented
 checked	unshadowable	core.checked	qualified-operation-namespace	implemented
 integer	contextual	core.generic-bounds	generic-bound	implemented
 unsigned_integer	contextual	core.generic-bounds	generic-bound	implemented
@@ -103,6 +105,7 @@ addr_of	unshadowable	core.address-operations	expression-callee	implemented
 trusted_callable	unshadowable	core.compiler-operations	expression-callee	implemented
 trusted_slice	unshadowable	core.compiler-operations	expression-callee	implemented
 trusted_mut_slice	unshadowable	core.compiler-operations	expression-callee	implemented
+float_bits	unshadowable	core.semantic-operations	expression-callee	implemented
 fma	unshadowable	core.semantic-operations	expression-callee	implemented
 uninit	unshadowable	core.uninitialized-storage	expression-callee	implemented
 MaybeUninit	unshadowable	core.uninitialized-storage	type-constructor	implemented
@@ -191,10 +194,10 @@ project	contextual	core.project-manifests	manifest-project-declaration	implement
 source_root	contextual	core.project-manifests	manifest-source-root-clause	implemented
 default	contextual	core.project-manifests	manifest-default-clause	implemented
 executable	contextual	core.project-manifests	manifest-artifact-declaration	implemented
-static_library	contextual	core.project-manifests	manifest-artifact-declaration	reserved
+static_library	contextual	core.project-manifests	manifest-artifact-declaration	implemented
 root	contextual	core.project-manifests	manifest-artifact-root-clause	implemented
 output	contextual	core.project-manifests	manifest-artifact-output-clause	implemented
-companion	contextual	core.project-manifests	manifest-static-library-companion-clause	reserved
+companion	contextual	core.project-manifests	manifest-static-library-companion-clause	implemented
 from	contextual	core.project-manifests|core.resource-values|core.uninitialized-storage|core.checked-assembly	manifest-layout-source-marker|returned-view-source|initialized-authority-source|stack-transition	implemented
 initializes	contextual	core.uninitialized-storage	callable-storage-postcondition	implemented
 unchanged	contextual	core.uninitialized-storage	callable-content-preservation	implemented
@@ -270,6 +273,7 @@ core	unshadowable	core.packages	module-root	implemented
 #cache_line_width	unshadowable	core.meta-operations	expression	implemented
 #dedent	unshadowable	core.meta-operations	expression	implemented
 #else	unshadowable	core.meta-operations	compile-time-branch	implemented
+#eval	unshadowable	core.meta-operations	module-const-initializer	implemented
 #field_offset	unshadowable	core.meta-operations	expression	implemented
 #if	unshadowable	core.meta-operations	declaration|expression|statement	implemented
 #len	unshadowable	core.meta-operations	expression	implemented

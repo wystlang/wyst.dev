@@ -1,4 +1,0 @@
-module syntax_future_attrs
-
-#weak
-fn weak_default() { }

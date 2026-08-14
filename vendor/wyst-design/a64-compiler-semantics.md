@@ -73,15 +73,15 @@ dependency; it cannot be replaced with a generic memory or effect bit. Every
 formula used by the current admitted rows is executed into an operand- and
 target-resolved contract before checked-assembly consumers see register, state,
 ordering, effect, authority, determinism, or target-defined facts. The original
-expression remains attached only as provenance. All 309 ordinary-lowering and
+expression remains attached only as provenance. All 314 ordinary-lowering and
 architecture-operation encodings now use this active semantic set and the
 generated encoding authority.
 
-The focused semantic catalog contains 309 exact rows. Its general-purpose
+The focused semantic catalog contains 314 exact rows. Its general-purpose
 checked-assembly view contains 13 source forms: ADRP, NOP, YIELD, WFE, WFI, SEV,
 SEVL, RET, B, BL, ERET,
 MRS, and MSR, against exactly 4,331 current A64 instruction forms (4,349 raw
-forms minus 18 authenticated future-only exclusions). Generic HINT with its
+forms minus 18 authenticated non-current exclusions). Generic HINT with its
 seven-bit immediate is
 recognized but known unsupported. The compiler rejects `hint #imm` fail-closed
 before checked IR because immediates outside `#0` through `#5` overlap
@@ -140,15 +140,15 @@ gates rather than inheriting them from source placement.
 ## Consumers
 
 The support catalog is the sole support-disposition authority. The generated
-active catalog is the shared machine authority for the 309 ordinary-lowering
-and architecture-operation encodings; its current index contains 301 generated
+active catalog is the shared machine authority for the 314 ordinary-lowering
+and architecture-operation encodings; its current index contains 307 generated
 operand decoders and 10 generated fixup programs, three transported as typed
 checked-assembly fixups. Production encoders use
 `instruction_catalog::encode_active_fields`, final emission and placement
 patches authenticate the selected active word, and generated SYS/PSTATE tables
 own their finite semantic domains. The proof
 `encoding::ordinary_selector_set_exactly_covers_every_active_encoding` checks
-that ordinary selectors cover exactly the 309 active rows.
+that ordinary selectors cover exactly the 314 active rows.
 
 ARM64 `system_register` declarations consume the same generated register and
 MRS/MSR identities plus their selected-system-register semantic formulas. A

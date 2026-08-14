@@ -22,6 +22,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
   identity, imports, visibility, and native symbol boundaries.
 - [Type System](type-system.md) defines values, storage types, aggregates, generics,
   abilities, and conversions.
+- [Bundled Core Library](core-library.md) defines the current sealed modules and
+  their public API.
 - [Interfaces and Implementations](interfaces-and-implementations.md) defines
   nominal compile-time operation constraints, explicit conformance, and erasure.
 - [Operators and Evaluation](operators-and-evaluation.md) defines expression order,

@@ -65,6 +65,7 @@ npm run audit:external     # external links (scheduled; intentionally not a PR g
 npm run audit:dependencies # high/critical npm advisories (scheduled)
 npm run verify:build       # build identity and byte hashes
 npm run verify:determinism # two isolated builds must match exactly
+npm run verify:wyst-source # compare the snapshot with a local Wyst checkout
 npm run validate:assets    # Cloudflare limits, config, paths, headers, and HTML
 npm run deploy:dry-run     # validate the Wrangler upload without credentials
 npm run check              # all of the above, beginning with a clean build
@@ -104,6 +105,7 @@ Refresh the snapshots from a sibling `../wyst` checkout or `WYST_REPO_DIR`:
 
 ```sh
 npm run sync:wyst
+npm run verify:wyst-source
 npm run check
 git add index.html vendor/wyst-design vendor/wyst-snapshot.json \
   vendor/wyst-homepage*-semantic-tokens.json tests/fixtures/wyst

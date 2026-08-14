@@ -14,7 +14,6 @@ negative	parse	generic-value-argument	generics	negative/generic-value-argument.w
 negative	parse	compile-time-if-missing-block	compile-time-if,malformed-directives	negative/compile-time-if-missing-block.wyst	error[E0101]|expected '{'
 negative	parse	weak-import	linker-boundaries,imports	negative/weak-import.wyst	error[E0101]|weak symbol imports are not supported
 negative	parse	per-entry-public-grouped-module-import	imports,grouped-imports	negative/per-entry-public-grouped-module-import.wyst	error[E0101]|import group entries cannot have individual 'pub' modifiers
-negative	parse	future-symbol-attributes	-	negative/future-symbol-attributes.wyst	error[E0110]|unknown directive
 negative	check	atomic-order-spelling	atomic-orders	negative/atomic-order-spelling.wyst	invalid memory order '.acqrel'
 negative	check	nested-is-pattern	is	negative/nested-is-pattern.wyst	expected match payload binding
 negative	parse	unshadowable-module-component	bindings,identifiers,unshadowable	negative/unshadowable-module-component.wyst	error[E0101]|module component|unshadowable

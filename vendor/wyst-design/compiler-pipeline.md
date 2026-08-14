@@ -25,7 +25,8 @@ command arguments
   -> layout semantic checking for a final-link artifact
   -> source semantic checking, with selected layout facts when present
   -> semantic module interface generation
-  -> typed IR construction and verification
+  -> provisional typed IR construction and verification when #eval is present
+  -> deterministic #eval execution, constant injection, and final IR verification when required
   -> artifact reachability
   -> concrete type layout
   -> callable ABI classification
@@ -60,6 +61,9 @@ The checked layout keeps its tree, semantic facts, and layout facts together.
 
 IR construction consumes these checked products.
 IR verification checks structural rules and memory-safety facts.
+When the source contains `#eval`, the compiler verifies provisional IR, runs
+each eligible target through reference execution, injects the results, and
+verifies final IR. Provisional proof products do not enter the final artifact.
 The artifact path then retains reachable declarations.
 
 The backend computes concrete type layouts and callable ABI facts.
@@ -75,7 +79,8 @@ These paths do not invoke an external linker or archive tool.
 `wync check` uses the manifest, source graph, normalization, and semantic-checking stages.
 It also creates semantic module interfaces in memory.
 
-The checker creates verified IR only when indexing requires a memory-safety proof.
+The checker creates verified IR when indexing requires a memory-safety proof or
+when a source contains `#eval`.
 It does not enter type layout, ABI, machine lowering, object emission, or final assembly.
 See [Check, Format, and Diagnostics](check-format-and-diagnostics.md).
 
