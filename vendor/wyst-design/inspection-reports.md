@@ -167,6 +167,8 @@ Runtime completions are report results, including traps, faults, resource exhaus
 
 The scenario is a version `1` JSON object.
 It can provide arguments, memory, indeterminate bytes, environment results, and execution limits.
+It can set `recordTrace` to `false` for a corpus that does not inspect events.
+The default is `true`.
 
 The default execution limits are:
 
@@ -182,3 +184,7 @@ It rejects JSON nesting after 128 levels.
 
 Checked assembly has no reference-execution instruction semantics.
 An execution that reaches them completes as `unsupported`.
+
+`#eval` uses the same verified-IR execution semantics with empty scenario
+state and trace recording disabled. It uses the default step, call-depth, and
+memory limits. Only a normal returned closed value can become constant data.

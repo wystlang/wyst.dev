@@ -71,6 +71,10 @@ The optimizer can remove these identity forms:
 The optimizer does not fold runtime floating-point arithmetic.
 Floating-point state remains observable.
 
+`#eval` is not optimizer constant folding. It is a source-required compilation
+stage that executes an eligible function through verified IR or rejects the
+build. It has no profitability choice and no runtime fallback.
+
 Equal symbolic addresses can compare equal at compile time.
 Different symbolic addresses do not compare unequal at compile time.
 Final placement can give different symbols the same address.
@@ -250,20 +254,11 @@ The scheduler does not use processor latency, profile data, or host timing.
 
 [Scheduling and Suspension](scheduling-and-suspension.md) defines the scheduling barriers.
 
-## 8. Current limits
+## 8. Transformation boundary
 
-The compiler does not implement these general optimization systems:
-
-- heuristic inlining;
-- heuristic unrolling;
-- global value numbering;
-- general common-subexpression elimination;
-- loop-invariant code motion;
-- automatic vectorization;
-- profile-guided optimization;
-- selectable speed or size levels;
-- latency-based global scheduling;
-- globally optimal register allocation.
+The transformations and required expansions in this chapter are the complete
+optimization surface. The compiler does not infer an additional transformation
+from source shape.
 
 Register allocation and ABI transfer rules are in [ABI Specification](abi.md)
 and [Intermediate Representation](intermediate-representation.md).

@@ -50,6 +50,9 @@ It tracks at most eight pointer alternatives at one merge.
 It performs at most 64 interprocedural rounds.
 An exceeded limit rejects artifact construction.
 
+The separate concurrency summary visits at most 1024 instantiated bodies per
+root. An exceeded limit also rejects artifact construction.
+
 The proof does not add dynamic checks.
 It does not treat an unproved fact as optimizer permission.
 It does not prove device protocols, DMA ownership, or complete concurrency protocols.

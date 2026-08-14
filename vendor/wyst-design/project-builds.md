@@ -233,6 +233,16 @@ The compiler rejects symlinked Wyst source files.
 The compiler orders part files by normalized path.
 It visits imported modules in first-encounter breadth-first order.
 
+Compiler-bundled core modules use an explicit source-part catalog instead of
+project discovery. Put implementation parts in folders such as
+`wync/core/fmt/integer.wyst`. Do not encode part names in dotted filenames such
+as `fmt.integer.wyst`. A folder can organize source parts that still declare
+the same module. Name each part for the declarations that it owns, such as
+`collections/option.wyst` or `storage/arena.wyst`. Do not use a repeated module
+name or a generic `helpers.wyst` leaf. Only canonical Wyst files below this
+compiler checkout's `wync/core` directory receive sealed-core editor and
+formatter authority.
+
 A `verify` selector also creates a source-discovery root.
 Modules named by its concrete type arguments also enter discovery.
 

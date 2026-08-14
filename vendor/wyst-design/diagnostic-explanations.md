@@ -41,9 +41,6 @@ The current compiler can emit these warning codes:
 W0202-W0210, W0212-W0219
 ```
 
-`E0303`, `E0304`, `E0308`, and `W0211` are reserved.
-The compiler does not emit or explain reserved codes.
-
 ## Standalone Explanations
 
 Use `wync explain` with one active code:
@@ -55,7 +52,7 @@ wync explain W0204
 
 The command writes the explanation to stdout.
 The output contains the title, summary, explanation, help, and suggestions.
-An unknown, malformed, or reserved code causes a diagnostic and exit status `1`.
+An unknown or malformed code causes a diagnostic and exit status `1`.
 
 ## Occurrence Details
 

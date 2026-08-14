@@ -53,7 +53,6 @@ Wyst supports whole-module imports and selective imports:
 module application
 
 import core.arch { cpu }
-
 import drivers.uart
 import platform.clock as clock
 import platform.time { Instant, now as current_time }

@@ -420,6 +420,10 @@ The closed bound set is:
 | `fixed_layout_movable` | Fixed-layout values with ordinary move semantics |
 | `copyable_discardable` | Fixed-layout values that permit copying and discarding |
 
+The `integer`, `unsigned_integer`, and `signed_integer` bounds guarantee
+`T.MIN` and `T.MAX`. Each member is a compile-time constant with exact type
+`T`. Other bounds and unbound type parameters do not provide these members.
+
 All listed bounds prove fixed layout and ordinary move semantics.
 
 All except `fixed_layout_movable` also prove copying and discarding.
@@ -463,9 +467,12 @@ Use `trusted_callable<T>` to create a function pointer from an integer.
 
 It requires a narrower target with the same signedness.
 
-The compiler rejects identity conversions and conversion-category mismatches.
+The compiler rejects identity conversions and conversion-category mismatches. A
+checked generic integer conversion can become an identity after specialization.
+The compiler erases that specialized conversion. It still checks the category
+of each nonidentity specialization.
 
-## Compile-time type queries
+## Compile-time queries and required evaluation
 
 `#size_of(T)` returns the type size in bytes.
 
@@ -482,3 +489,37 @@ The compiler reports the supplied message when the condition is false.
 `#if` selects one compile-time branch. The compiler checks only the selected branch.
 
 An expression-form `#if` requires `else`. Each branch must contain one expression.
+
+`#eval(function())` requires the compiler to execute an ordinary Wyst function
+and materialize its result as an immutable module constant. The constant must
+have an explicit type. The call must be direct, have no arguments, and appear
+as the complete initializer.
+
+The selected function must have an executable verified-IR body, an empty
+effect bound and proof, `trusts(none)`, and no interactive protocol. Its result
+must contain only closed value data. Integers, Booleans, floats, fixed arrays,
+vectors, tuples, ordinary structs, nominal scalars, and bitstructs are
+closed value data when their elements are also closed. Addresses, strings,
+slices, function pointers, register maps, atomic storage, and `MaybeUninit`
+are not valid results.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module generated_table
+
+fn make_table() -> [4]u32 effects(none) {
+  return [3, 5, 8, 13]
+}
+
+const TABLE: [4]u32 = #eval(make_table())
+```
+
+The compiler first verifies provisional IR, executes the selected function in
+deterministic reference state, rebuilds IR with the returned constant, and
+verifies the final IR. It then executes the function again. The two results
+must match. This check rejects dependencies between `#eval` constants.
+
+Any non-return completion, unsupported operation, resource-limit failure, or
+materialization failure is a compile error. The compiler never emits the call
+as runtime work. A `#eval` result is not available to earlier `#if`, type-layout,
+or `#static_assert` evaluation.

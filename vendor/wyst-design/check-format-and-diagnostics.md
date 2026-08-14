@@ -16,6 +16,29 @@ Diagnostic explanations are in
 Language-server behavior is in
 [Editor Integration](editor-integration.md).
 
+## Current command inventory
+
+The compiler accepts these command forms:
+
+- `build` checks and emits one selected artifact.
+- `check` validates one selected artifact without machine output.
+- `explain` renders one diagnostic explanation or one inspection report.
+- `fmt` formats Wyst source and project manifests.
+- `editor-catalog` emits current compiler-owned editor data.
+- `lsp` starts the language server.
+- `gen-c-decls` converts supported C declarations into one Wyst module.
+- `gen-interactive-c-header` emits C adapters for declared interactive Wyst callables.
+- `objcopy` writes the flat binary image of a supported ELF artifact.
+- `disasm` prints authenticated AArch64 disassembly from a Wyst ELF artifact.
+- `--emit-ir` checks one source input and prints its verified IR.
+
+`gen-c-decls` accepts an input C declaration file, a Wyst module name, the
+`aarch64-aapcs64-lp64` target, an output path, and optional excluded symbols.
+`gen-interactive-c-header` accepts Wyst source, an adapter catalog, the same C
+target, and an output path. [ABI Specification](abi.md) defines the admitted C
+types. [Outcomes, Progress, and Terminal Control](outcomes-and-progress.md)
+defines interactive adapter behavior.
+
 ## Check Mode
 
 Use project mode to check one artifact from a `wyst.project` file:

@@ -81,6 +81,44 @@ Source must match, return, or explicitly discard the result as its type permits.
 Successful operations retain their checked facts in typed IR.
 They do not start an allocator or consult a runtime registry.
 
+## Float bit extraction
+
+`float_bits(value)` returns the exact IEEE 754 encoding of one scalar float.
+It maps `f32` to `u32` and `f64` to `u64`.
+
+The operation preserves the sign, subnormal encodings, infinity encodings, NaN
+payloads, and negative zero. It does not do floating-point arithmetic and does
+not read or write `FPCR` or `FPSR`.
+
+On AArch64, the operation requires enabled FP/SIMD register access and uses one
+authenticated scalar `FMOV` from the FP/SIMD register bank to a general-purpose
+register.
+
+## Leading-zero count
+
+`leading_zeros(value)` accepts one typed integer and returns `u8`. The operation
+counts zero bits from the top of the integer's declared width. Zero returns the
+declared width. A signed negative value returns zero because its declared sign
+bit is set.
+
+The operation does not use the rounded storage carrier as the value width. For
+example, `leading_zeros` returns 17 for a zero `u17`, not 32.
+
+On AArch64, native widths use one authenticated `CLZ`. Other widths use an
+authenticated scalar sequence that isolates the declared bits, executes `CLZ`,
+and subtracts the carrier padding. The sequence does not call a helper.
+
+## Unsigned wide multiplication
+
+`mul_wide(left, right)` accepts two `u64` values. It returns the complete
+unsigned product as `(low: u64, high: u64)`. Wyst does not expose a public
+`u128` type for this operation.
+
+The operation is effect-free. Constant evaluation and reference execution use
+the same two-word result contract. On AArch64, one authenticated `MUL` produces
+the low word and one authenticated `UMULH` produces the high word. The sequence
+does not call a helper.
+
 The `trusted_slice<T>` and `trusted_mut_slice<T>` forms accept raw address bits and an element count.
 They return a `must_observe Result`.
 Success is an explicit external-storage trust boundary.
@@ -182,6 +220,7 @@ register_map Pl011 {
 }
 
 mmio UART0: Pl011 at 0x0900_0000
+
 mmio UART1: Pl011 at 0x0901_0000
 
 fn send(device: Pl011, value: u8) {
