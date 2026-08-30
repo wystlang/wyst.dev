@@ -46,7 +46,7 @@ static-interface requirements and qualified calls.
 A declaration parameter has this order:
 
 ```text
-mut|var? name: noescape? Type in Register?
+comptime? mut|var? name: noescape? Type ...? in Register?
 ```
 
 The unmarked parameter mode is read access.
@@ -58,6 +58,11 @@ The callee cannot retain that authority, and can forward it only to another
 matching `noescape` parameter of a direct call. Returning it requires an
 explicit `from parameter_name` result contract, which transfers the source
 lifetime to the caller-visible result.
+
+`comptime` marks a read-only parameter that must be a closed compile-time
+value. It has no runtime representation or ABI position. A final `...` marks a
+value parameter pack. A pack is read-only and expands to fixed runtime
+parameters during staged specialization.
 
 A function can return no value, one value, `never`, or named multiple values.
 A named result tuple has at least two fields.
@@ -72,6 +77,30 @@ Use `must_observe` before a value result to require observation.
 Use `mut` before a result type for a mutable returned view.
 Use `from parameter_name` after the result to identify returned-view sources.
 Callable types use `from parameter(index)` instead.
+
+Append `on .Variant` to make the returned-view relation conditional on one
+nominal enum outcome. The variant must have exactly one direct payload. That
+payload receives the declared storage relation:
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module returned_payload_lease
+
+import core.collections { Result }
+import core.storage { Arena, ArenaFailure }
+
+fn allocate(mut arena: Arena) -> Result<@u64, ArenaFailure>
+  from arena on .Ok
+{
+  loop { }
+}
+```
+
+The relation exists only after control flow refines the result to `.Ok`. The
+`.Error` value carries no view from `arena`. Stored `?` forwarding preserves
+this distinction: it returns `.Error` without a view and unwraps the qualified
+payload on success. A callable type spells the same relation as
+`from parameter(0) on .Ok`.
 
 Function contracts use proof-required `requires(condition)`, runtime-checked
 `requires(condition, reason = u16_expression)`, and runtime-checked
@@ -93,7 +122,9 @@ The compiler evaluates the callee first.
 It then evaluates arguments from left to right.
 
 A direct Wyst call can use parameter names as labels.
-Positional arguments must precede labeled arguments.
+For an ordinary call, positional arguments must precede labeled arguments.
+The call checker enforces this rule. A call to a function with a final value
+pack can put pack labels and unlabeled pack arguments in either order.
 Each required parameter must receive exactly one argument.
 An indirect call accepts positional arguments only.
 
@@ -103,10 +134,48 @@ the interface requirement inside the generic body and becomes an ordinary
 direct call during concrete materialization. Static interfaces do not add
 receiver-dot lookup or an indirect-call form.
 
+A nominal operation declaration uses `fn Owner.operation(...)`. Its identity
+contains the declaring module, the exact local nominal owner, and the operation
+leaf. The owner must be concrete, nongeneric, and declared in the same module.
+An operation with an explicit parameter-zero `self: Owner` is receiver-enabled.
+An operation without `self` is associated only.
+
+For an exact nominal receiver, `value.operation(arguments...)` elaborates to
+`Owner.operation(value, arguments...)` before typed IR. The receiver is
+evaluated once and before the remaining arguments. `mut self` needs an
+addressable mutable place. `var self` needs explicit transfer with
+`(xfer value).operation(...)`. Transfer is invalid for a retained `mut self`
+receiver. Lookup does not apply autoref, autoderef, conversion, reborrow,
+interface search, extension lookup, or overload resolution.
+
 A direct generic function call can omit its complete type-argument list when
 the declared parameter shapes and statically known argument types determine
 every argument uniquely. Generic type constructors remain explicit, and
 inference never works backward from the expected result type.
+
+### Staged scan materialization
+
+A call to the exact authenticated `core.scan.read` declaration is a closed
+staged materialization. The compiler evaluates the named-tuple type and
+template during specialization, validates their scan schema, and replaces the
+call with one fixed typed function. This mechanism does not apply to a user
+function with the same name and does not create a general reflection, macro,
+or return-pack facility.
+
+The call keeps ordinary evaluation order. Its input expression is evaluated
+exactly once. The compile-time template has no runtime evaluation or ABI
+position. The specialized body processes literals and captures from left to
+right. It reports the first failure, does not advance a cursor on a failed
+operation, requires complete input consumption, and constructs the result
+tuple only after every step succeeds.
+
+One materialization identity contains the authenticated declaration identity,
+complete concrete tuple type, exact template bytes, and materializer version.
+The current scan grammar has no target-dependent behavior beyond the concrete
+field types, so no additional target property changes this identity. WYSTIF
+records the same concrete type and value arguments for source-less checking.
+The runtime body has no template parser, field-name table, capture descriptor,
+allocation, or indirect parser dispatch.
 
 Use `xfer value` to transfer an owned value.
 Resource transfer rules are in [Type System](type-system.md).
@@ -152,7 +221,89 @@ An `else` statement body must use braces.
 Write `else { if ... }` for a nested conditional.
 
 An `if` expression requires both branches.
-The branches must produce compatible values.
+Each live branch must end with one compatible value.
+A branch can instead end with a `never` expression or a valid `return`, `fail`,
+`cancel`, `break`, `continue`, or `goto` transfer. `goto` remains valid only in
+a label or exception-vector entry.
+The terminal branch supplies no stored value and does not enter the live join.
+
+A bare final boolean `if` or final `match` is the value of its containing
+expression branch.
+Before the final value, an expression branch can contain declarations, calls,
+directives, static assertions, non-local assignments, and acyclic statement
+`if` or `match` control. It cannot contain a loop or `defer`, and it cannot
+reassign a local from outside the expression branch.
+Nested setup control can update a local declared in the expression branch.
+
+Resource, loan, typed-storage, and terminal-obligation checks apply to each
+path. Only live paths supply state and values to the expression join.
+
+## Stored Result forwarding
+
+Postfix `?` on an authentic `core.collections.Result<T, InnerError>` creates
+two checked paths. `.Ok(value)` continues the expression with `value`. An
+`.Error` returns from the lexical callable as
+`Result<U, OuterError>.Error(...)`.
+
+The inner error passes unchanged when both error types are equal. Otherwise,
+`OuterError` must be an enum with exactly one direct
+`Variant(from InnerError)` declaration. The compiler performs one enum wrapping
+step. It does not search transitively or call conversion code. `embed<T>(value)`
+uses the same direct relation and rejects equal source and target types.
+
+The error path uses ordinary lexical return processing. It runs deferred
+cleanup and checks postconditions, storage outcomes, returned views, stack
+addresses, concurrency state, and resource obligations. A stored
+resource-bearing local requires `xfer`, for example `(xfer pending)?`. A `?`
+inside deferred cleanup or a resume-only handler is invalid.
+
+## Stored Option forwarding
+
+Postfix `?` on an authentic `core.collections.Option<T>` creates two checked
+paths. `.Some(value)` continues the expression with `value`. `.None` returns
+`core.collections.Option<U>.None` from the lexical function. `T` and `U` can
+be different. The compiler authenticates the exact bundled Option declaration
+and variants. A same-shaped enum does not participate.
+
+The operand is evaluated once. The absence path uses ordinary lexical return
+processing, including cleanup, postconditions, storage outcomes, returned
+views, concurrency state, and resource obligations. A stored affine Option
+requires explicit transfer, for example `(xfer pending)?`. The form is invalid
+inside deferred cleanup or a resume-only handler. Wyst does not define general
+`Try`, Option `else`, `orelse`, or an implicit conversion between Option and
+Result.
+
+## Forwarding checked subscripts
+
+An inner `?` in `values[?index]` checks the captured array or slice length and
+forwards `core.checked.IndexFailure` through the same lexical Result path as a
+stored postfix `?`. Checked slice forms forward `core.checked.SliceFailure`:
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module functions.forward_checked_slices
+
+import core.checked
+import core.collections { Result }
+
+fn combined_length(values: []u64, lower: u64, upper: u64)
+    -> Result<u64, checked.SliceFailure> {
+  const middle = values[?lower..<upper]
+  const tail = values[?lower..]
+  const head = values[?..<upper]
+  return .Ok(middle.len + tail.len + head.len)
+}
+```
+
+The lexical Result error type must be exact or declare one direct
+`Variant(from E)` wrapper. Cleanup, postconditions, storage outcomes, returned
+views, concurrency state, and resource obligations use the stored Result
+forwarding rules. On success, an index denotes the ordinary element place and
+a range denotes an ordinary slice. `results[?index]?` first forwards the bounds
+failure and then forwards the selected stored Result error.
+
+Use `core.checked.index` or `core.checked.slice_range` when the caller must
+recover locally or retain a reusable proof.
 
 An integer `for` loop uses the end-exclusive `..<` spelling.
 Its index is immutable.
@@ -338,10 +489,13 @@ The protocol can contain `progress`, `failure`, and `cancelled` payload types.
 Use `handle call() { ... }` to handle all offered outcomes.
 Use `forward progress`, `forward failure`, or `forward cancelled` for exact forwarding.
 
-The postfix `?` form is active exact failure forwarding.
-Its operand must be a direct interactive call.
+The postfix `?` form on a direct interactive call has precedence and is exact
+failure forwarding.
 The enclosing interactive function must offer the exact same failure type.
 The form cannot forward progress or cancellation.
+This path does not convert to or from a stored `Result.Error` value. If the
+returned payload is a stored `Result`, a second `?` can process it, as in
+`(call()?)?`.
 
 <!-- wyst-contract: check-pass -->
 ```wyst

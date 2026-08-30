@@ -45,6 +45,13 @@ Different operations require different facts:
 A write does not require the previous value to be initialized.
 A read-modify-write reads the previous value and therefore requires initialization.
 
+A forwarding checked subscript authenticates only the bounds dimension. Its
+success path uses the exact captured base descriptor and the authenticated
+index or range from `core.checked`. Usable extent, alignment, initialization,
+lifetime, access authority, aliasing, and concurrency remain separate proof
+obligations. Its failure path forms no typed address and performs no memory
+operation.
+
 The analysis is flow-sensitive and interprocedural.
 It tracks at most eight pointer alternatives at one merge.
 It performs at most 64 interprocedural rounds.
@@ -72,6 +79,37 @@ The resulting access must still pass typed memory proof.
 Raw integer conversion does not restore earlier authority.
 Raw address construction is an explicit assertion boundary.
 See [Type System](type-system.md#explicit-conversions) for the source forms.
+
+An outcome-qualified returned-view relation attaches authority only to the
+selected enum payload. For example, `from arena on .Ok` lets the `.Ok` payload
+retain the Arena storage identity and lifetime. The `.Error` outcome has no
+such authority. WYSTIF transports this relation for calls compiled without the
+producer source.
+
+`core.text.from_bytes` preserves the exact source byte-slice provenance on
+`.Ok`; validation does not copy or allocate. A checked string slice narrows
+that authority to its selected byte range after bounds and UTF-8 boundary
+checks. A failed validation or slice creates no string view.
+
+`ScanCursor` retains a view of its input and an offset. `remaining` and
+`take_until` return narrowed views of the same input. A staged `scan.read`
+success can contain string captures from its input, so
+`Result<Record, ScanFailure> from input on .Ok` carries those leases. Its error
+outcome carries no input view. Cursor mutation changes only the offset and does
+not extend the input lifetime or create storage authority.
+
+`core.fmt.cursor_written_string` validates the written prefix and returns a
+view of the cursor backing storage on `.Ok`. Existing invalidation rules for
+the mutable backing storage remain in force. The view has no copy, allocation,
+or hidden ownership transfer.
+
+Direct Arena allocations return ordinary typed addresses. A later load or
+store performs no hidden generation, sequence, or bounds check. The compiler
+invalidates those addresses after a successful reset, after a checkpoint
+rewind that reclaims their allocation, and after detach, reattachment, or
+backing-authority transfer. It preserves an older address across a rewind to a
+later checkpoint and preserves all addresses when reset or rewind returns an
+error. See [Storage and Allocation](storage-and-allocation.md).
 
 ## Volatile and MMIO access
 

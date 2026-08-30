@@ -66,7 +66,7 @@ valid in another function.
 | Source identity | Source path, size, line count, module name, and source-section ownership |
 | Target facts | Authenticated AArch64 target, target features, cache-line width, entry contract, measurement counter, execution environment, device-memory ranges, and per-CPU contract |
 | Layout facts | Selected layout identity, entry, image base, regions, sections, and layout constants |
-| Type facts | Structure and bitstructure layouts, nominal scalar carriers, enum representations, and materialized sum facts |
+| Type facts | Structure and bitstructure layouts, nominal carrier layouts, enum representations, and materialized sum facts |
 | Linkage | Internal and external functions, external globals, imports, exports, and symbol resolutions |
 | Code and data | Functions, globals, strings, exception vectors, and init calls |
 | Callable facts | Checked signatures, attributes, effect-bound authority, context summaries, and inline identities |

@@ -128,7 +128,7 @@ wync explain resources PROJECT \
   [--format text|json]
 ```
 
-The JSON schema name is `wync.explain.resources.v1`.
+The JSON schema name is `wync.explain.resources.v2`.
 The report applies to the complete selected artifact.
 
 It includes these principal groups:
@@ -137,7 +137,37 @@ It includes these principal groups:
 - the artifact reference graph;
 - resumable and affine-verifier facts;
 - stack roots; and
-- per-function IR, ABI, frame, allocation, instruction, and expansion counts.
+- the active closed optimizer policy and pass order; and
+- per-function IR, ABI, frame, allocation, instruction, proof, call, phi, and
+  expansion counts.
+
+The post-optimization census uses these definitions:
+
+- `blocks` is the complete typed-IR block count.
+- `reachableBlocks` is the control-flow-reachable block count.
+- `values` is the complete typed-IR value count.
+- `liveValues` counts every value whose post-optimization kind is not `Noop`.
+- `noOpValues` is the remaining value count.
+- Direct calls, indirect calls, and phi values count live values of that kind.
+- `memoryProofObligations` counts classified memory operations.
+- `memoryProofRequirements` counts their required bounds, extent, alignment,
+  initialization, and lifetime dimensions.
+- `indexBoundsObligations` counts retained logical index obligations.
+- `inlineExpansions` counts source-mandated inline-expansion records.
+
+The census status is `exact` for a function with typed IR. A target-generated
+function with no typed IR has `not_applicable` status and no zero-valued
+substitute census.
+
+The report gives exact emitted text words and bytes. Each optimizer record has
+its admitted before and after target cost. Each inline expansion has exact
+exclusive and inclusive emitted bytes when machine attribution is available.
+The report does not sum these values into an invented whole-program saving.
+It marks a missing nonexpanded product as an unavailable counterfactual.
+
+Text and JSON output use project-relative paths. The resource report must be
+identical after a rebuild and from a different checkout path when all inputs
+are identical.
 
 The report distinguishes retained and eliminated artifact work.
 It does not provide hardware timing, cache state, branch prediction, or counterfactual inline estimates.
@@ -169,6 +199,15 @@ The scenario is a version `1` JSON object.
 It can provide arguments, memory, indeterminate bytes, environment results, and execution limits.
 It can set `recordTrace` to `false` for a corpus that does not inspect events.
 The default is `true`.
+
+The optional `volatileReads` array scripts authenticated volatile loads. Each
+record has an `address`, a typed `result`, and an optional positive `repeat`
+count. The default repeat count is `1`. The executor checks the record order,
+address, and result type. It does not expand repeated records or change memory.
+The addressed memory must still be mapped and initialized. If `volatileReads`
+is absent, volatile loads use memory. If it is present, an unexpected,
+exhausted, or unused record completes as `environment-unavailable`. The report
+gives the consumed and total scripted read counts.
 
 The default execution limits are:
 

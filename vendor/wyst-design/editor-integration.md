@@ -80,9 +80,27 @@ Call hierarchy contains resolved direct function calls only.
 
 ## Diagnostics
 
-`didOpen` and `didSave` schedule an immediate check.
-`didChange` applies full or incremental changes and uses a 120 millisecond debounce.
-A newer live check replaces an older pending check for the same URI.
+`didOpen` schedules an editor-scoped check after 75 milliseconds so syntax and
+completion requests can run first.
+`didChange` applies full or incremental changes and uses a 150 millisecond debounce.
+An editor-scoped project check analyzes the edited module and its transitive imports.
+It reuses the selected project plan, checked layout, and unchanged semantic work.
+`didSave` schedules an immediate complete project check.
+A newer live check cancels an older pending or running check for the same URI.
+The server does not publish a completed check when a newer edit supersedes it.
+
+An open document retains one immutable, versioned source snapshot. Editor
+requests share its text and line index. An edit invalidates only transient
+analysis for that document; save and watched-file events invalidate project-wide
+state. Source-graph construction shares parsed modules with the editor index so
+successful parses are not repeated within one request.
+
+Incremental semantic checking records reusable results by module. A changed
+module is checked again while unchanged imported modules reuse their function
+checks. A changed provider invalidates its transitive importers. Project-wide
+validation still runs when it is required for cross-module correctness. A
+superseded live check polls its cancellation token between compiler phases and
+source items, then stops without caching or publishing its partial result.
 
 `didClose` cancels pending checks and publishes an empty diagnostic array.
 Watched-file changes recheck all open documents.
@@ -115,6 +133,9 @@ It also contains checked A64 source-form facts used by editor features.
 
 The LSP combines this catalog with facts from the current document graph.
 Completion can include parameters, locals, declarations, project modules, and typed fields.
+During an edit, completion reuses the last stable project source graph and replaces
+the changed source in that graph. A save or watched-file change invalidates the
+stable graph.
 
 Hover can describe catalog items, declarations, parameters, locals, literals, operators, and typed fields.
 It can also describe target facts, layout facts, and checked assembly facts.
@@ -127,6 +148,10 @@ Static interfaces and their operations have distinct typed symbol identities.
 Definition, references, rename, hover, completion, semantic tokens, inlay hints,
 and signature help follow interface constraints, implementation mappings, and
 qualified operation calls without treating an operation as a struct field.
+
+Staged function signatures preserve `comptime`, type-pack, and value-pack
+markers. Signature help treats every argument after the fixed prefix as an
+element of the final value pack.
 
 ## Protocol Limits
 
@@ -169,7 +194,7 @@ Use settings such as these:
   "lsp": {
     "wync": {
       "binary": {
-        "path": "/absolute/path/to/wync/target/debug/wync"
+        "path": "/absolute/path/to/wync/target/release/wync"
       }
     }
   }
@@ -179,6 +204,11 @@ Use settings such as these:
 Use `combined` semantic tokens so Zed keeps syntax highlighting and applies
 compiler-known symbol roles. Restart the Wyst language server after this
 setting changes.
+
+For a changed document, semantic-token requests use the current source lexer
+and parser without rebuilding the project index. This keeps highlighting
+responsive for incomplete text. A clean document collects declarations from
+reachable imports and resolves references only for the requested file.
 
 When `binary.arguments` is absent or empty, the extension passes `lsp`.
 The extension also passes configured binary environment variables.

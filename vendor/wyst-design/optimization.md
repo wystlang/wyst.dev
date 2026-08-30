@@ -51,7 +51,20 @@ The production optimizer has this closed transformation set:
 | `fold_phi` | All non-self inputs are the same typed value. |
 | `scalar_replace_interactive_outcome` | A compiler-created outcome phi has compatible scalar components. |
 | `fuse_interactive_tag_dispatch` | A closed constant-tag dispatch has exclusive predecessor edges. |
+| `canonicalize_bounded_countdown` | A closed unsigned countdown loop has the complete proof in section 2.4. |
 | `elide_dead_fixed_array` | A compiler-created fixed-array realization is pure and unused. |
+
+The closed policy identity is `wync.optimizer.closed.v2`. The function-local
+pass order is:
+
+1. `scalar_replace_interactive_outcomes`;
+2. `fuse_interactive_tag_dispatches`;
+3. `canonicalize_bounded_countdown`; and
+4. `canonicalize_function`.
+
+The compiler lowers generated progress handlers after the first two passes and
+before countdown and local-value canonicalization. It does not select a pass
+from source shape, a command option, profile data, or host timing.
 
 ### 2.1 Constant and identity folding
 
@@ -100,6 +113,49 @@ Mandatory value expansion can leave an unused fixed-array construction.
 The optimizer removes that construction only when it is pure and unused.
 The optimizer does not apply general dead-code elimination to other values.
 
+### 2.4 Bounded countdown loops
+
+`canonicalize_bounded_countdown` changes one closed unsigned countdown-loop
+form. The source can use `loop` or `while`. The pass reads typed IR and does not
+read source names, source line layout, device types, MMIO addresses, field
+offsets, or one specific initial value.
+
+The pass applies only when all these conditions are true:
+
+- The counter has an unsigned integer type and a positive constant initial
+  value.
+- The loop has one counter phi. Its continuing edge subtracts the typed value
+  one, exactly once.
+- The timeout test is `counter <= 1` before the subtraction.
+- The poll-success exit returns `true` before the subtraction.
+- The exhausted exit returns `false`.
+- No other operation can observe the counter, the subtraction, or their
+  intermediate values.
+- The candidate has closed predecessors and no other reachable control path.
+- The candidate contains no call, possible trap, cleanup, barrier, atomic
+  operation, checked assembly, scheduled operation, or effect other than the
+  admitted poll load.
+- The poll block contains only admitted pure operations and no more than one
+  volatile load.
+- The candidate does not change source authority, protected control, resource
+  obligations, integer width, or integer wrapping rules.
+
+If one condition is false or cannot be proved, the pass keeps the original
+CFG. The decision is deterministic. It does not use a cost heuristic, profile
+data, or host state.
+
+The new CFG keeps the poll block and its volatile load in the same execution
+position. The pass does not add, remove, copy, speculate, or move a volatile or
+MMIO access. Each attempt has the same access count and order. The continuing
+path subtracts one and tests the new counter against zero. Both exits join and
+return `counter != 0`.
+
+The transformation record states the complete proof and the exact local target
+cost. For AArch64, ordinary instruction selection can use `subs` with `b.ne`,
+or `sub` with `cbnz`, for the post-subtraction zero test. It can use one compare
+with zero and one `cset` at the common return. This instruction selection does
+not add authority to the typed-IR transformation.
+
 ## 3. Source-required inlining
 
 `#[inline]` requires expansion at each admitted direct call.
@@ -136,6 +192,24 @@ It reports an error when the expansion budget is exhausted.
 
 An address-taken or exported inline function can retain an out-of-line body.
 Inlining does not remove a required callable identity.
+
+### 3.1 Cost evidence
+
+`wync explain resources` reports the active policy, pass order, and closed
+transformation set. It also reports the post-optimization block and value
+census, calls, phis, memory-proof obligations, and mandatory expansions for
+each emitted function.
+
+Emitted text size is exact for the built artifact. An optimizer transformation
+record has an exact local before and after target cost. An inline expansion has
+exact exclusive and inclusive emitted bytes when the backend can attribute its
+instructions.
+
+The compiler does not build an alternate nonexpanded artifact for this report.
+It therefore reports inline growth as unknown and does not claim a
+counterfactual saving. Resource report tests compare direct and factored source
+forms by their real typed IR and emitted text. They also require exact output
+after a rebuild and from a different checkout path.
 
 ## 4. Source-required unrolling
 
@@ -219,7 +293,7 @@ Debug information does not create a reachability root.
 An export, entry, initcall, address use, or other retained reference can create
 a root or edge.
 
-Reachability is separate from the seven typed-IR transformations in Section 2.
+Reachability is separate from the eight typed-IR transformations in Section 2.
 
 ## 6. AArch64 instruction selection
 
@@ -232,12 +306,19 @@ Instruction selection can use these local forms when their conditions hold:
 - register-offset byte loads;
 - paired callee-register saves and restores;
 - direct call-result register coalescing;
+- cyclic-CFG successor fallthrough layout;
 - zero-register stores;
 - shorter constant materialization.
 
 These forms are local backend choices.
 They do not add general common-subexpression elimination or loop transforms.
 The backend keeps the ordinary form when a condition does not hold.
+
+For a cyclic CFG, the backend emits a deterministic successor trace. It keeps
+an unvisited branch successor adjacent when possible. The adjacent edge needs
+no unconditional branch. This layout does not change typed IR, phi inputs,
+effects, or source authority. An acyclic CFG keeps source block order unless a
+required inline expansion already changed its control flow.
 
 The backend can create an ordinary call or branch veneer when
 [Artifact and Object Formats](artifact-and-object-formats.md)

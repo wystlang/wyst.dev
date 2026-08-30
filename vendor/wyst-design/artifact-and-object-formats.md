@@ -113,6 +113,20 @@ authenticate and materialize generic code without producer source. A
 source-language static interface remains a frontend constraint; neither file
 defines a runtime interface object.
 
+The current schema is WYSTIF revision 12. A nominal operation is encoded as a
+structural declaration relation: the module declaration identity, the exact
+owner declaration identity, the operation leaf, and the canonical
+`module.Owner.leaf` identity. Generic definition and archive declaration
+indexes use the same identity. Import aliases are source spellings and are not
+stored as canonical authority. A consumer rejects a missing, inconsistent, or
+noncanonical operation relation.
+
+Callable and resource contracts also carry returned-view relations. Each
+relation records its source parameter and, when conditional, its nominal
+outcome and direct payload path. A consumer validates the relation against the
+result enum before it uses the metadata. These fields have no machine ABI
+representation.
+
 Member names use the module name plus `.o`.
 The compiler sorts members before it writes the archive.
 The compiler rejects duplicate normalized member names.

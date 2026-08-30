@@ -54,8 +54,9 @@ prevents compiler and tooling drift:
   qualified semantic operations.
 - [generic-bounds.tsv](catalogs/language/generic-bounds.tsv) owns generic capabilities.
 - [sealed-core.tsv](catalogs/language/sealed-core.tsv) owns compiler-bundled `core` namespaces,
-  their public declaration surfaces, source modules, and operation-contract
-  identities.
+  their public declaration surfaces, versioned surface digests, source modules,
+  and operation-contract identities. The compiler requires an exact catalog and
+  public-source bijection before binding.
 - [atomic-matrix.json](catalogs/language/atomic-matrix.json) owns supported atomic combinations.
 - [link-format-catalog.tsv](catalogs/language/link-format-catalog.tsv) owns the versioned static
   link representations and content bindings.

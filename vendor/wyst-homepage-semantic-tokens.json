@@ -535,11 +535,6 @@
     4,
     7,
     4,
-    0,
-    5,
-    11,
-    3,
-    2,
     3,
     2,
     11,
@@ -1090,7 +1085,7 @@
   },
   "schema": 2,
   "source": {
-    "gitCommit": "31bcd7fb7b289f9352194993433215e1b55c2158",
+    "gitCommit": "4466a2d867602a2da8b998a26ac58e45702b18aa",
     "path": "wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
     "sha256": "c308cdf1491170e61d803bd2458b938797daa4538d1d9176904a5f560a349408"
   }

@@ -42,15 +42,15 @@ Its functions are ordinary checked Wyst functions.
 They do not name a hidden host runtime.
 
 The module accepts caller-supplied `[]u8` backing.
-`fixed_buffer_attach` validates the backing extent and creates a `FixedBuffer` authority.
+`FixedBuffer.attach` validates the backing extent and creates a `FixedBuffer` authority.
 
-The storage authority records explicit facts:
+Storage authorities record explicit facts:
 
 - storage identity
 - generation
 - intended storage use
 - capacity and cursor
-- live, consumed, abandoned, reserved, and committed byte counts
+- live and consumed byte counts
 - alignment and metadata byte counts
 - high-water usage
 
@@ -74,40 +74,99 @@ FixedBuffer + DestinationReservation
   -> FixedBuffer + view or closed region
 ```
 
-`fixed_buffer_reserve` validates the requested range and alignment.
+`FixedBuffer.reserve` validates the requested range and alignment.
 Initialization can zero bytes, copy bytes, or write one typed value.
-The trusted initialization operation records a programmer assertion.
+`DestinationReservation.initialize_value` writes one typed value. The trusted
+initialization operation records a programmer assertion.
 
-`destination_finish` creates a `WrittenRegion` only from initialized storage.
-The caller can view that region or close it.
+`InitializedDestination.finish` creates a `WrittenRegion` only from initialized storage.
+`WrittenRegion.view` returns its initialized view. The caller can also close
+the region.
 After closing every region, the caller can reclassify or close the owning buffer.
 
 ### Arena transitions
 
-`arena_attach` converts a `FixedBuffer` into an `Arena` when its checks pass.
-The arena owns the buffer authority and maintains explicit accounting state.
+`arena_incarnation_assert_fresh` converts a provider value into an affine
+attachment token. The caller asserts that the provider will not repeat that
+value for the backing. The assertion carries `external_storage` trust through
+direct calls, indirect calls, and semantic interfaces. Exhaustion retires the
+backing. `Arena.attach` consumes the token and an authenticated `FixedBuffer`.
+The arena owns the complete backing and maintains explicit accounting state.
 
-A normal allocation uses these authority states:
+A direct typed allocation is one atomic transition:
 
 ```text
-Arena + Reservation
-  -> Arena + InitializedReservation
-  -> Arena + Allocation
+Arena + initialization input
+  -> Arena + @T
 ```
 
-The API also provides explicit operations for:
+`Arena.allocate_value<T>` returns `Result<@T, ArenaFailure> from arena on .Ok`.
+It performs all fallible arithmetic, capacity, bounds, and alignment checks
+before it updates the Arena control state. The successful path then performs
+one complete typed store before it returns. The direct path does not create an
+allocation record and does not perform a generation or bounds check on each
+later load or store. Every typed failure leaves payload bytes, cursors, and
+accounting unchanged.
 
-- cancellation
-- allocation views and handles
-- publication and retirement
-- checkpoints and rewind
-- scratch scopes
-- last-allocation shrink or rewind
-- allocation growth
-- arena reset, detach, and abandonment
+Durable typed access is a separate recorded transition.
+`arena_allocate_region_value<T>` returns `ArenaRegion<T>`. The type argument is
+phantom and does not change the 56-byte handle representation. `arena_view<T>`
+validates identity, generation, incarnation, sequence, metadata location,
+payload bounds, exact type size, and alignment before it returns `@T`.
+
+Byte allocations use `ArenaByteRegion`. `arena_allocate_zero` and
+`arena_allocate_from` return this byte-specific handle, and
+`arena_view_bytes` validates it before it returns `[]u8`. A typed region cannot
+be passed to the byte-view operation, and user code does not use `relens` to
+recover a type that was known at allocation.
+
+Each durable allocation uses one 8-byte sequence record at the high end of the
+backing. Direct typed allocations are record-free. Payload grows from the low
+end. Allocation rejects a request if the payload and durable metadata ranges
+would overlap. `ArenaFacts` reports exact capacity, cursor, live, consumed,
+alignment-padding, high-water, backing-metadata, and control-metadata values.
+
+Compiler-produced AArch64 measurements are 112 bytes for `Arena`, 8 bytes for
+`ArenaIncarnation`, 56 bytes for `ArenaRegion<T>`, 56 bytes for
+`ArenaByteRegion`, 72 bytes for `Checkpoint`, and 8 bytes for a direct `@u64`.
+A durable allocation record is 8 bytes; a direct allocation adds no metadata.
+A 4 KiB backing can hold 256 aligned recorded 8-byte allocations or 512 direct
+aligned 8-byte allocations.
+
+The API provides explicit operations for:
+
+- `Arena.checkpoint` and `Arena.rewind`
+- reset with byte preservation or full-backing zero sanitation
+- full-backing `Arena.detach`
+- explicit `Arena.abandon_storage`
+
+Checkpoints are last-in, first-out. Keep and rewind reject a token that is not
+the innermost token, and the rejection returns token authority. A rewind
+restores allocation state but preserves the high-water value and the monotonic
+sequence source. `CallScopedScratch` rejects checkpoint keep, so scratch work
+must rewind. `Permanent` storage rejects reset and detach.
+
+Reset advances the generation and retains the complete backing. Detach
+advances the generation and returns the complete `FixedBuffer`. Reattachment
+requires a fresh external incarnation. Active checkpoints reject reset and
+detach. Zero sanitation overwrites the complete backing and does not preserve
+private lifecycle bytes.
+
+Direct views carry compiler-only Arena chronology. Another allocation,
+checkpoint creation, checkpoint keep, or validation preserves an existing
+view. A successful rewind invalidates only direct views allocated after the
+selected checkpoint; older direct views remain usable. A successful reset,
+detach, reattachment, or transfer of the Arena authority invalidates all
+dependent direct views. A failed reset or rewind preserves them. These rules
+add no pointer tag, borrow counter, allocation registry, or runtime validity
+check.
+
+The Arena does not provide suspended transactions, publication, growth,
+last-allocation mutation, or an independent scratch hierarchy.
 
 The exact transition surface is defined by the sealed module.
 See its [storage protocol index](catalogs/language/core-storage-protocols.tsv) for names and signatures.
+The migrated transition declarations have no flat-name aliases.
 
 ### Accounting and failure
 
