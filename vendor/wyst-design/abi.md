@@ -25,6 +25,12 @@ Their qualified calls are erased to ordinary direct Native calls before typed
 IR and ABI classification. They add no witness, vtable, metadata argument, or
 hidden context. See [Interfaces and Implementations](interfaces-and-implementations.md).
 
+Returned-view source relations are also proof-only metadata. A relation such
+as `from arena on .Ok` does not add a pointer tag, result field, hidden
+argument, or runtime check. The WYSTIF callable and resource contracts retain
+the source parameter, nominal outcome, and direct payload path for separate
+compilation. Native ABI classification uses only the declared result type.
+
 ## 1. Callable identity
 
 A normal function uses the Native convention.
@@ -151,6 +157,10 @@ The Native ABI classifies a fixed-layout aggregate result by size:
 
 A payload-free enum uses one general register.
 Other Native enum values use their fixed aggregate layout.
+
+An outcome-qualified returned view uses the ordinary enum layout. Refining the
+enum selects compiler proof metadata for its payload; it does not change the
+payload representation or add a validity test.
 
 A register-map instance result uses `x0`. Register-map instances are not
 admitted by the AAPCS64 type surface because a C boundary cannot transport

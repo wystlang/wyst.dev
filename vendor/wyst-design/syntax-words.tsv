@@ -1,5 +1,18 @@
 // spelling	classification	owner	legal_positions	state
 as	reserved	core.imports|core.linkage-boundaries	import-alias|linkage-alias	implemented
+B	contextual	core.byte-quantities	byte-quantity-unit	implemented
+kB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+MB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+GB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+TB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+PB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+EB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+KiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+MiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+GiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+TiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+PiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+EiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
 bitstruct	reserved	core.bitstruct|core.generic-bounds	declaration|generic-bound	implemented
 register_map	contextual	core.hardware-registers|core.nominal-types	declaration|nominal-type-declaration	implemented
 system_register	contextual	core.hardware-registers	declaration	implemented
@@ -7,6 +20,7 @@ break	reserved	core.control-flow	statement	implemented
 cancel	reserved	core.outcome-protocols	statement	implemented
 cancelled	reserved	core.outcome-protocols	terminal-offer|terminal-handler-arm	implemented
 const	reserved	core.bindings	declaration|statement	implemented
+comptime	contextual	core.staged-specialization	parameter-prefix|local-prefix	implemented
 continue	reserved	core.control-flow	statement	implemented
 defer	reserved	core.outcome-protocols	statement	implemented
 else	reserved	core.control-flow	if-branch	implemented
@@ -53,9 +67,10 @@ var	reserved	core.bindings|core.resource-values	declaration|statement|parameter-
 vector_table	reserved	core.target-structural-dsls	declaration	implemented
 while	reserved	core.control-flow	statement	implemented
 widen	unshadowable	core.conversions	expression-callee	implemented
+embed	unshadowable	core.enum-types	expression-callee	implemented
 truncate	unshadowable	core.conversions	expression-callee	implemented
 signcast	unshadowable	core.conversions	expression-callee	implemented
-numeric	unshadowable	core.conversions|core.generic-bounds	expression-callee|generic-bound	implemented
+numeric	unshadowable	core.conversions|core.generic-bounds|core.nominal-scalars	expression-callee|generic-bound|type-modifier	implemented
 bitcast	unshadowable	core.conversions	expression-callee	implemented
 address	unshadowable	core.conversions|core.generic-bounds	expression-callee|generic-bound	implemented
 start	unshadowable	core.layout	layout-symbol-expression-callee	implemented
@@ -163,7 +178,7 @@ parameter	contextual	core.resource-values|core.uninitialized-storage	callable-ty
 no_copy	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 must_account	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 must_resolve	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
-opaque	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
+opaque	contextual	core.resource-values|core.nominal-scalars	struct-modifier|type-modifier|enum-modifier	implemented
 agent_local	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 align	contextual	core.layout|core.checked-assembly|declaration.attributes	layout-section-alignment|asm-attribute|attribute-name	implemented
 none	contextual	core.callable-contracts|core.project-manifests	effect-bound-empty|manifest-policy-variant	implemented
@@ -198,7 +213,7 @@ static_library	contextual	core.project-manifests	manifest-artifact-declaration	i
 root	contextual	core.project-manifests	manifest-artifact-root-clause	implemented
 output	contextual	core.project-manifests	manifest-artifact-output-clause	implemented
 companion	contextual	core.project-manifests	manifest-static-library-companion-clause	implemented
-from	contextual	core.project-manifests|core.resource-values|core.uninitialized-storage|core.checked-assembly	manifest-layout-source-marker|returned-view-source|initialized-authority-source|stack-transition	implemented
+from	contextual	core.project-manifests|core.resource-values|core.uninitialized-storage|core.checked-assembly|core.enum-types	manifest-layout-source-marker|returned-view-source|initialized-authority-source|stack-transition|enum-forwarding-payload	implemented
 initializes	contextual	core.uninitialized-storage	callable-storage-postcondition	implemented
 unchanged	contextual	core.uninitialized-storage	callable-content-preservation	implemented
 on	contextual	core.uninitialized-storage	outcome-gated-storage-postcondition	implemented
@@ -276,11 +291,18 @@ core	unshadowable	core.packages	module-root	implemented
 #eval	unshadowable	core.meta-operations	module-const-initializer	implemented
 #field_offset	unshadowable	core.meta-operations	expression	implemented
 #if	unshadowable	core.meta-operations	declaration|expression|statement	implemented
+#index_of	unshadowable	core.meta-operations	expression	implemented
+#label_of	unshadowable	core.meta-operations	expression	implemented
 #len	unshadowable	core.meta-operations	expression	implemented
 #link_value	unshadowable	core.meta-operations	expression	implemented
 #percpu_offset_of	unshadowable	core.meta-operations	expression	implemented
+#pack_label_count	unshadowable	core.meta-operations	expression	implemented
+#pack_len	unshadowable	core.meta-operations	expression	implemented
 #requires	unshadowable	core.meta-operations	declaration	implemented
 #size_of	unshadowable	core.meta-operations	expression	implemented
+#satisfies	unshadowable	core.meta-operations	expression	implemented
 #static_assert	unshadowable	core.meta-operations	declaration|statement	implemented
 #tag_of	unshadowable	core.meta-operations	expression	implemented
 #target	unshadowable	core.meta-operations	declaration	implemented
+#type_name	unshadowable	core.meta-operations	expression	implemented
+#type_of	unshadowable	core.meta-operations	expression	implemented

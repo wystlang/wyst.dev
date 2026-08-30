@@ -21,7 +21,9 @@ command arguments
   -> source graph discovery
   -> per-file loading and parsing
   -> top-level compile-time selection and normalization
-  -> generic and statement instantiation
+  -> generic demand discovery
+  -> staged specialization and pack expansion
+  -> ordinary statement compile-time selection
   -> layout semantic checking for a final-link artifact
   -> source semantic checking, with selected layout facts when present
   -> semantic module interface generation
@@ -45,8 +47,10 @@ A mapped source joins these files for diagnostics and reports.
 The frontend does not reparse mapped source as one source file.
 
 Normalization performs top-level compile-time selection and source-shape normalization.
-Instantiation expands concrete generics and compile-time statements.
-Semantic checking consumes only the instantiated tree.
+Staged specialization expands concrete generics, compile-time parameters, and
+heterogeneous packs before ordinary statement selection. Semantic checking
+consumes only the elaborated tree. No pack, compile-time parameter, pack query,
+or staged local can reach semantic checking or typed IR.
 
 Before concrete generic expansion, the compiler authenticates each generic body
 against its built-in or static-interface constraints. During expansion, a
@@ -122,6 +126,10 @@ Generic materialization has these limits per module:
 - 64 active instantiation trace entries;
 - 64 nested generic type nodes; and
 - 4,096 bytes in one generated symbol name.
+
+Staged evaluation also has deterministic limits for work, recursion, template
+bytes, pack length, and emitted statements. It is effect-free and has no host
+file, environment, network, target-memory, address, or allocation authority.
 
 A zero-padded fixed `[N]u8` string initializer has a 1,048,576-byte materialization limit.
 A fixed-array repeat literal has a 1,048,576-element expansion limit.

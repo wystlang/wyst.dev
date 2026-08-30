@@ -81,6 +81,37 @@ Source must match, return, or explicitly discard the result as its type permits.
 Successful operations retain their checked facts in typed IR.
 They do not start an allocator or consult a runtime registry.
 
+Forwarding checked subscript syntax lowers through the existing
+`core.checked.index` or `core.checked.slice_range` identity. It does not add a
+runtime helper or catalog operation. The inner `?` forwards the authentic
+failure through the lexical Result; direct calls to these operations remain
+available for local recovery and reusable proofs.
+
+`core.checked.validated_string(bytes)` is a compiler-owned construction
+operation for authenticated sealed-core source. It accepts a `[]u8` view only
+after ordinary core code has validated the full view as UTF-8. The operation
+preserves the exact address, length, and provenance. It does not repeat the
+check, copy bytes, or allocate storage. User source cannot call this operation,
+and the verifier accepts it only with its cataloged origin and `string` result.
+
+## Staged scan materialization
+
+`core.scan.read<T>(source, template)` is a closed compiler-materialized generic
+declaration. It is not a runtime format parser and it is not an open semantic
+operation. The compiler accepts only a compile-time template and a fixed-layout
+named tuple result type. It validates the complete schema before it generates a
+typed sequence of cursor operations.
+
+The materialization identity includes the exact template bytes, result type,
+and materializer version. This identity is part of the semantic interface, so
+separate modules reuse the same materialization and stale interface data cannot
+silently select different generated code.
+
+The generated function evaluates `source` once, processes fields in tuple
+declaration order, constructs the result in one local, and returns success only
+after full input consumption. A failed parse returns an error without exposing
+a partial result.
+
 ## Float bit extraction
 
 `float_bits(value)` returns the exact IEEE 754 encoding of one scalar float.
@@ -324,6 +355,9 @@ It emits no architectural barrier and does not read the counter frequency.
 
 Two results are raw counter samples.
 The operation does not define elapsed time, seconds, endpoint comparability, or serialization.
+
+`cpu.read_stack_pointer()` returns one numeric snapshot of the current stack
+pointer. It does not change the stack or create memory authority.
 
 Direct `per_cpu` access requires `per_cpu = single_instance_tpidr_el1`.
 Each access reads the `per_cpu` live base from `TPIDR_EL1` again.

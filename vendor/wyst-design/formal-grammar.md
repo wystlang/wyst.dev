@@ -48,6 +48,10 @@ Integer     <- HexInt / OctalInt / BinaryInt / DecimalInt
 
 Exponent    <- [eE] [+-]? DecimalInt
 Float       <- DecimalInt '.' DecimalInt Exponent? / DecimalInt Exponent
+ByteUnit    <- 'B' / 'kB' / 'MB' / 'GB' / 'TB' / 'PB' / 'EB'
+             / 'KiB' / 'MiB' / 'GiB' / 'TiB' / 'PiB' / 'EiB'
+HorizontalSpace <- [ \t]
+ByteQuantity <- (Integer / DecimalInt '.' DecimalInt) HorizontalSpace+ ByteUnit
 String      <- a current single-line or multiline string literal
 Char        <- a current byte character literal
 NameLike    <- UserName / a contextual name accepted in this position
@@ -60,7 +64,10 @@ Range       <- '..<' / '..=' / '..'
 Identifiers are case-sensitive ASCII.
 String and comment contents can contain UTF-8.
 Floating-point literals use decimal digits, a decimal point, or a decimal exponent.
-The compiler rejects hexadecimal floating-point literals and numeric suffixes.
+Byte quantities use an integer in any supported base or a decimal fraction.
+They require horizontal whitespace before a case-sensitive byte unit.
+They do not accept exponent notation or attached numeric suffixes.
+The compiler rejects hexadecimal floating-point literals and other numeric suffixes.
 The syntax-word catalog defines reserved and contextual words.
 The compiler rejects `;` and `$` in source.
 
@@ -124,7 +131,7 @@ Attribute      <- UserName / UserName '(' List(AttributeArg) ')'
 AttributeArg   <- UserName '=' Expr / Expr
 
 GenericParams <- '<' List(GenericParam) '>'
-GenericParam  <- UserName (':' GenericConstraint)?
+GenericParam  <- UserName '...'? (':' GenericConstraint)?
 GenericConstraint <- GenericBound / InterfacePath
 TypeArguments <- '<' List(Type) '>'
 
@@ -140,14 +147,15 @@ ImplDecl <- 'impl' InterfacePath 'for' QualifiedType
 ImplBinding <- UserName '=' InterfacePath
 
 FunctionDecl <- AttributeGroup? 'pub'? 'naked'? ExternConvention?
-                'fn' UserName GenericParams? Parameters FunctionResult?
+                'fn' FunctionName GenericParams? Parameters FunctionResult?
                 ContractClause* ConcurrencyClause* InteractiveProtocol?
                 EffectClause? TrustClause? FunctionBody?
+FunctionName <- UserName / UserName '.' UserName
 ExternConvention <- 'extern' '"C"'
 FunctionBody <- Block
 
 Parameters <- '(' List(Parameter)? ')'
-Parameter  <- ParamMode? UserName ':' 'noescape'? Type RegisterPlacement?
+Parameter  <- 'comptime'? ParamMode? UserName ':' 'noescape'? Type '...'? RegisterPlacement?
 ParamMode  <- 'mut' / 'var'
 
 FunctionResult <- '->' Observation? ReturnMode? ResultType
@@ -155,7 +163,8 @@ FunctionResult <- '->' Observation? ReturnMode? ResultType
 Observation <- 'must_observe'
 ReturnMode  <- 'mut'
 ResultType  <- Type / 'never'
-ReturnSources <- 'from' UserName (',' UserName)*
+ReturnSources <- 'from' UserName (',' UserName)* ReturnSourceOutcome?
+ReturnSourceOutcome <- 'on' '.' UserName
 RegisterPlacement <- 'in' Register
 
 ContractClause <- RequiresClause / EnsuresClause
@@ -177,7 +186,8 @@ LabelDecl <- AttributeGroup? 'pub'? 'naked'? 'label' UserName
 TrapFrameLabelClause <- 'establishes' UserName ':' '@' UserName
                       / 'restores' UserName
 
-TypeDecl <- AttributeGroup? 'pub'? 'type' UserName ':' Type
+TypeDecl <- AttributeGroup? 'pub'? TypeModifier* 'type' UserName ':' Type
+TypeModifier <- 'numeric' / 'opaque'
 ResourceModifier <- 'no_copy' / 'must_account' / 'must_resolve'
                   / 'opaque' / 'agent_local'
 StructDecl <- AttributeGroup? 'pub'? ResourceModifier* 'packed'?
@@ -188,7 +198,8 @@ Field      <- UserName ':' Type
 EnumDecl <- AttributeGroup? 'pub'? ResourceModifier* 'enum' UserName
             GenericParams? (':' Type)? EnumBody
 EnumBody  <- '{' (EnumVariant ','?)* '}'
-EnumVariant <- UserName ('(' List(Type)? ')')? ('=' Expr)?
+EnumVariant <- UserName EnumPayload? ('=' Expr)?
+EnumPayload <- '(' (('from' Type) / List(Type))? ')'
 
 BitstructDecl <- AttributeGroup? 'pub'? 'bitstruct' UserName
                  ':' Type '{' (BitstructField ','?)* '}'
@@ -229,16 +240,29 @@ TerminalHandlers <- 'terminal' '{'
 HandlerArm(L) <- L '(' Binding ')' Block / 'forward' L
 Binding <- UserName / Discard
 
-ExactForwardExpr <- DirectCall '?'
+ForwardExpr <- PrefixExpr (TypeArguments / CallSuffix / IndexSuffix /
+                           SliceSuffix / ForwardCheckedIndexSuffix /
+                           ForwardCheckedSliceSuffix / FieldSuffix)* '?'
 ```
 
 Offers use canonical `progress`, then `terminal` order.
 Terminal offers use canonical `failure`, then `cancelled` order.
 The terminal group must not be empty.
 
-`?` is active syntax.
-Semantic checking limits `?` to exact failure forwarding.
+`?` is active syntax. A direct interactive call uses exact interactive failure
+forwarding. Every other operand must be an authentic stored
+`core.collections.Result<T, E>` or `core.collections.Option<T>`. Result
+forwarding uses exact error identity or one direct `Variant(from E)` declaration
+on the lexical Result error type. Option `.Some` continues with its payload;
+Option `.None` returns the lexical authentic `Option<U>.None`.
 [Outcomes, Progress, and Terminal Control](outcomes-and-progress.md) defines the protocol.
+
+In `fn Owner.operation`, both names are identifiers, not a dotted identifier.
+The owner must be a local concrete nongeneric nominal declaration. Parameter
+zero named `self` enables receiver syntax only when its explicit type is the
+exact owner. Associated-only operations have no receiver syntax. The operation
+leaf cannot collide with an owner member or the reserved leaves `load`,
+`store`, `slice`, `write`, and `len`.
 
 ## Target structures
 
@@ -340,7 +364,7 @@ CallableParam <- ParamMode? 'noescape'? Type RegisterPlacement?
 CallableResult <- '->' Observation? ReturnMode? ResultType
                   RegisterPlacement? CallableReturnSources?
 CallableReturnSources <- 'from' CallableReturnSource
-                         (',' CallableReturnSource)*
+                         (',' CallableReturnSource)* ReturnSourceOutcome?
 CallableReturnSource <- 'parameter' '(' DecimalInt ')'
 ```
 
@@ -440,11 +464,14 @@ StructLiteral <- '{' List(FieldInit)? '}'
 FieldInit <- UserName '=' Expr
 
 Postfix <- TypeArguments / CallSuffix / IndexSuffix / SliceSuffix
+         / ForwardCheckedIndexSuffix / ForwardCheckedSliceSuffix
          / FieldSuffix / ExactForwardSuffix
 CallSuffix <- '(' List(CallArg)? ')'
 CallArg <- Expr / UserName '=' Expr
 IndexSuffix <- '[' Expr ']'
 SliceSuffix <- '[' (Expr? '..<' Expr / Expr? '..') ']'
+ForwardCheckedIndexSuffix <- '[' '?' Expr ']'
+ForwardCheckedSliceSuffix <- '[' '?' (Expr? '..<' Expr / Expr '..') ']'
 FieldSuffix <- '.' UserName
 ExactForwardSuffix <- '?'
 
@@ -473,6 +500,12 @@ BinaryOperator <- '||' / '&&' / '==' / '!=' / '<' / '<=' / '>' / '>='
                / '|' / '^' / '&' / '&^' / '<<' / '>>'
                / '+' / '-' / '*' / '/' / '%' / '%%'
 ```
+
+In an `IfExpr` or `MatchExpr` value block, a final boolean `IfStmt` with an
+`else` body is a nested `IfExpr`. A final `MatchStmt` is a nested `MatchExpr`.
+A final `never` expression or valid `return`, `fail`, `cancel`, `break`,
+`continue`, or `goto` statement is a terminal value path. `goto` requires a
+label or exception-vector context.
 
 [Operators and Evaluation](operators-and-evaluation.md) defines precedence, types, and evaluation order.
 Comparisons do not chain without parentheses.

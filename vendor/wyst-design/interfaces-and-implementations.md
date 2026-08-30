@@ -91,7 +91,7 @@ is an ordinary declaration identity, not a function-pointer expression or
 runtime value.
 
 The subject must be one concrete, nongeneric Wyst struct, opaque struct, enum,
-or nominal scalar. Primitive, tuple, array, callable, address, register-map,
+or nominal carrier. Primitive, tuple, array, callable, address, register-map,
 and generic-application subjects are not admitted.
 
 The implementation must be declared in the subject type's owning module. There
@@ -198,6 +198,10 @@ compiled module. It is distinct from a source-language static interface.
 WYSTIF records carry public static-interface identities, carrier abilities,
 ordered callable requirements, implementation mappings and conformance,
 generic interface constraints, hidden mapping targets, and semantic digests.
+Revision 12 also carries each public nominal operation as a structural module,
+owner declaration, leaf, and canonical identity. This record authenticates
+associated and receiver calls without making the operation a static-interface
+requirement.
 The `.wystlib` companion indexes interface providers and transports the paired
 module products used for source-less generic materialization.
 
@@ -214,6 +218,10 @@ structural conformance, default implementations, inline implementation bodies,
 associated items, inheritance, multiple constraints, generic interfaces or
 operations, generic implementations, derivation, operator overloading, or
 implementation specialization.
+
+Nominal receiver lookup does not search static interfaces. Generic and
+interface-parameter receivers must use the explicit
+`Interface.operation(subject, ...)` form authorized by a generic constraint.
 
 None of those features is implied by the `interface` or `impl` syntax described
 here.

@@ -29,6 +29,12 @@ Wyst evaluates expression components in source order.
 - A compound assignment evaluates its target once.
 - A branch evaluates its condition before the selected path.
 
+A forwarding checked subscript evaluates its base, then its written bounds from
+left to right, and then checks the captured descriptor. It evaluates each part
+once. On success, projection continues with the authenticated index or range.
+On failure, it forms no address, performs no memory access, skips an assignment
+value, and returns through stored Result forwarding and its cleanup path.
+
 `&&` and `||` are exceptions to unconditional right-operand evaluation.
 
 `&&` evaluates the right operand only when the left operand is `true`.
@@ -41,7 +47,7 @@ Concrete binary operands normally need the same type.
 
 A representable numeric literal can bind to the other operand's concrete numeric type.
 
-The same rule applies to a numeric nominal scalar.
+The same rule applies to a numeric nominal type.
 
 The compiler rejects implicit mixed-width and mixed-signedness arithmetic.
 
@@ -73,7 +79,10 @@ Therefore, negating the minimum signed integer returns the same bit pattern.
 | `+`, `-`, `*`, `/` | Matching floating-point operands | Operand type |
 | `%`, `%%` | Matching integer operands | Operand type |
 
-Matching numeric nominal scalars use the carrier operations and preserve the nominal type.
+Matching numeric nominal types use the carrier operations and preserve the nominal type.
+
+Plain nominal carriers do not support arithmetic, bitwise, shift, or unary
+numeric operators.
 
 Typed addresses do not accept `+` or `-`.
 
@@ -110,7 +119,9 @@ Both operators use the short-circuit rules in [Evaluation order](#evaluation-ord
 
 The comparison operators are `==`, `!=`, `<`, `<=`, `>`, and `>=`.
 
-Matching primitive numeric values and nominal numeric values support all six operators.
+Matching primitive numeric values and numeric nominal values support all six operators.
+
+Matching plain nominal carriers support only `==` and `!=`.
 
 Matching typed addresses support all six operators.
 
@@ -214,11 +225,13 @@ The table runs from lowest precedence to highest precedence.
 | 8 | `+`, `-` | Left |
 | 9 | `*`, `/`, `%`, `%%` | Left |
 | 10 | Prefix `+`, `-`, `!`, `~`, `xfer` | Prefix |
-| 11 | Call, index, slice, field, postfix `?` | Postfix |
+| 11 | Call, index, slice, forwarding checked subscript, field, postfix `?` | Postfix |
 
 Parentheses override these grouping rules.
 
 Postfix `?` forwards an exact outcome failure. See [Outcomes, Progress, and Terminal Control](outcomes-and-progress.md).
+An inner `?` in `values[?index]` or a checked slice is part of the subscript.
+It checks bounds and forwards a stored `IndexFailure` or `SliceFailure`.
 
 ## Compound assignment
 
@@ -262,7 +275,7 @@ The condition must have type `bool`.
 
 Both result arms must bind to one common supported type.
 
-Supported results are `bool`, integers, floats, nominal scalars, typed addresses, and function pointers.
+Supported results are `bool`, integers, floats, nominal carriers, typed addresses, and function pointers.
 
 `select` then returns the true or false arm according to the condition.
 

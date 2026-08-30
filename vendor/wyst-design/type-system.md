@@ -27,7 +27,7 @@ Wyst provides these primitive value types:
 | `u1` through `u64` | Unsigned integer with the named value width | 1, 2, 4, or 8 bytes | Same as size |
 | `i2` through `i64` | Signed two's-complement integer with the named value width | 1, 2, 4, or 8 bytes | Same as size |
 | `f32`, `f64` | Floating-point value | 4 or 8 bytes | Same as size |
-| `string` | Byte-string descriptor | 16 bytes | 8 bytes |
+| `string` | Valid UTF-8 view descriptor | 16 bytes | 8 bytes |
 
 An integer literal has no concrete type before contextual binding.
 
@@ -46,7 +46,9 @@ unsigned types and sign extension for signed types.
 
 Every integer type provides exact typed `MIN` and `MAX` compile-time members.
 
-An unbound integer expression defaults to `i64`. Its value must fit in `i64`.
+An unbound integer expression defaults to `i64`. A nonnegative value that fits
+in `u64` but not `i64` keeps its 64-bit pattern, becomes the corresponding
+negative `i64` value, and emits W0202. Every other value must fit in `i64`.
 
 An unbound floating-point expression defaults to `f64`.
 
@@ -57,6 +59,33 @@ The prefixes are `0b`, `0o`, and `0x`. An underscore can separate digits.
 Floating-point literals use decimal notation. They can include a decimal point or an exponent.
 
 Character literals contain one byte. Use an escape for a non-ASCII byte.
+
+## Byte quantities
+
+A byte quantity is an exact compile-time value with type `ByteLength`.
+It has a number followed by one case-sensitive unit with a space or tab between them.
+
+| Units | Multipliers |
+|---|---:|
+| `B`, `kB`, `MB`, `GB`, `TB`, `PB`, `EB` | 1 and powers of 1,000 |
+| `KiB`, `MiB`, `GiB`, `TiB`, `PiB`, `EiB` | Powers of 1,024 |
+
+An integer magnitude can use decimal, binary, octal, or hexadecimal notation.
+A fractional magnitude must use decimal notation and must equal a whole number of bytes.
+For example, `1.5 MiB`, `1.234 MB`, and `0x10 MiB` are valid.
+`1.234 MiB` is invalid because it does not equal a whole number of bytes.
+Exponent notation is not valid before a byte unit.
+
+The unit is contextual. A unit spelling can remain an identifier where it does not
+follow a number. Wyst has no unit aliases and no bit units. `KB` is invalid.
+
+Byte quantities are valid where the language contract measures bytes. These positions
+include `ByteLength` constants and constant arithmetic, fixed `u8` array lengths,
+layout region sizes and alignments, declaration and field alignment attributes, and
+`#[frame(max_bytes = ...)]`. They are not general integer values. An address, an index,
+a `u64` value, a non-`u8` array length, and `#[frame(max_spills = ...)]` do not accept a
+byte quantity. `#size_of` returns `ByteLength`, and `#align_of` returns
+`Alignment`.
 
 ## Built-in type forms
 
@@ -73,6 +102,12 @@ Character literals contain one byte. Use an escape for a non-ASCII byte.
 | `(name: T, other: U)` | named tuple | Named multi-result value |
 
 `never` is valid only as a callable result type. It has no stored value.
+A value result permits terminal and diverging paths, but each normal return
+must supply the declared value. A `never` result promises that no normal return
+is possible.
+A valid `return`, `fail`, `cancel`, `break`, `continue`, or context-valid `goto` path in a value
+expression is terminal. It is compatible with each live result type. It
+supplies no value, resource state, or typed-storage state to the live join.
 
 See [Functions and Control Flow](functions-and-control-flow.md) for callable parameters, results, effects, and trust bounds.
 
@@ -96,9 +131,16 @@ One conversion cannot change the lens and qualifiers together.
 
 Memory operations and address validity rules are in [Memory Model](memory-model.md).
 
+A callable can return an address or slice payload whose storage authority
+comes from one parameter. The `from source on .Variant` contract makes that
+relation available only after nominal enum refinement. It changes no stored
+type layout. [Functions and Control Flow](functions-and-control-flow.md)
+defines the source form.
+
 ### Fixed arrays
 
 `[N]T` contains exactly `N` adjacent elements of type `T`.
+`N` can be a byte quantity only when `T` is `u8`.
 
 Its alignment is the element alignment. Its size is `N` times the element size.
 
@@ -151,17 +193,34 @@ A slice has size 16 and alignment 8.
 
 Indexing accesses one element. Slicing creates another view.
 
+`values[?index]` is a forwarding checked subscript. For fixed arrays and
+slices, it accepts an unsigned primitive index, a contextual nonnegative
+literal, or the corresponding nominal index type. It checks the captured
+length and forwards `core.checked.IndexFailure` through the lexical authentic
+`Result`. Its success value has the same element place type and access
+authority as `values[index]`.
+
+`values[?lower..<upper]`, `values[?lower..]`, and `values[?..<upper]` check a
+captured fixed-array or slice descriptor and forward
+`core.checked.SliceFailure`. Their success value is `[]T` with provenance from
+the captured base. The bound types follow the checked-index rules. Wyst does
+not provide `values[?..]` or a trapping subscript shorthand.
+
 Slice equality compares the `data` and `len` fields. It does not compare elements.
 
 See [Memory Model](memory-model.md) for bounds and access rules.
 
 ### Strings
 
-`string` is a two-word byte descriptor.
+`string` is a two-word read-only view descriptor whose complete byte range is
+valid UTF-8. Raw or externally supplied bytes remain `[]u8` until
+`core.text.from_bytes` validates them. Safe public source has no unchecked
+byte-to-string constructor.
 
 The `data` field has type `@u8`. The `len` field has type `u64`.
 
 A string literal produces a `string` value unless an array context applies.
+The compiler rejects a literal whose decoded bytes are not valid UTF-8.
 
 A string literal can initialize `[N]u8`. The compiler rejects more than `N` decoded bytes.
 
@@ -169,34 +228,89 @@ The compiler fills unused array bytes with zero.
 
 `[_]u8` infers the decoded byte count from the string literal.
 
-## Nominal scalar types
+`value[?lower..<upper]`, `value[?lower..]`, and `value[?..<upper]` use byte
+offsets. They check range order, byte bounds, and both UTF-8 boundaries before
+they return a `string` view from `value`. They forward
+`core.text.TextSliceFailure` through the lexical authentic `Result`. A UTF-8
+boundary is byte offset zero, the string byte length, or the first byte of one
+encoded Unicode scalar value.
 
-`type Name: Carrier` declares a distinct nominal scalar type.
+Wyst does not provide `string[?index]` or `string[?..]`. One byte is not
+generally one character, and this revision does not define scalar-value or
+grapheme indexing.
+
+### Staged scan result types
+
+The exact bundled `core.scan.read` declaration has a closed compiler rule. Its
+type argument must be a concrete named tuple with at least two fields. Every
+field label must be unique, every field must be fixed-layout movable, and every
+field type must have one supported built-in scan parser. This rule is not a
+reusable generic bound and does not add a `named_tuple` capability.
+
+The compile-time template must capture every tuple field exactly once. The
+field type and optional specifier select the parser. Schema errors are
+compile-time diagnostics. A successful `Result` carries string-field
+provenance from the input.
+
+## Nominal carrier types
+
+`type Name: Carrier` declares a distinct nominal carrier type.
+
+## Nominal operation owners
+
+`fn Owner.operation(...)` associates one operation leaf with one exact nominal
+type identity. Valid owners are local concrete nongeneric structs, enums,
+nominal carrier types, bitstructs, and register-map types. An imported type,
+type alias, primitive, address, generic owner instance, or static-interface
+parameter cannot own a declaration. A public operation cannot expose a private
+owner.
+
+Parameter zero named `self` must have the explicit exact owner type. Its normal
+parameter mode defines receiver behavior. Read `self` retains a readable
+value, `mut self` needs an addressable mutable place, and `var self` consumes an
+explicitly transferred value. Receiver lookup uses the static nominal identity
+only. It does not change references, dereference addresses, convert values, or
+select an interface implementation.
 
 The carrier must be a primitive integer or floating-point type.
 
-The nominal type has the carrier size, alignment, and representation.
+The nominal type has the exact carrier size, alignment, and representation. It
+does not add a field or an aggregate layer.
 
 Two declarations with the same carrier still define different types.
 
-An integer nominal scalar provides `MIN` and `MAX` compile-time members.
+Plain nominal carriers support `==` and `!=` between values of the same type.
+They do not bind numeric literals implicitly. They do not provide arithmetic,
+bitwise, shift, ordering, unary numeric, `MIN`, or `MAX` operations.
 
-A compatible numeric literal can bind directly to a nominal scalar.
+`numeric type Name: Carrier` opts in to the carrier's numeric operations,
+literal binding, and compile-time limits. Each operation preserves the nominal
+type. Operations do not mix different nominal types.
 
-Operators preserve the nominal type. They do not mix different nominal types.
+Use `bitcast<T>` to cross explicitly between a nominal type and its exact
+carrier. `opaque type` prevents this representation crossing outside the
+declaring module. The declaring module can publish named construction and
+projection functions when callers need controlled access.
 
-Use `bitcast<T>` to cross between a nominal scalar and its exact carrier.
+`opaque numeric type` combines controlled representation access with numeric
+behavior.
 
 <!-- wyst-contract: check-pass -->
 ```wyst
 module manual.nominal_types
 
 type Sequence: u64
+numeric type Distance: u64
 
-const FIRST: Sequence = 1
+const FIRST: Sequence = bitcast<Sequence>(numeric<u64>(1))
+const ONE_METER: Distance = 1
 
-fn next(value: Sequence) -> Sequence {
-  return value + 1
+fn same(left: Sequence, right: Sequence) -> bool {
+  return left == right
+}
+
+fn add(left: Distance, right: Distance) -> Distance {
+  return left + right
 }
 ```
 
@@ -248,11 +362,26 @@ Explicit tag values must be nonnegative, unique, and representable by the tag ty
 
 A payload must have fixed layout and ordinary move semantics.
 
+`Variant(from Source)` declares one direct forwarding relation from `Source`
+to the containing enum. A marked variant has exactly one inhabited,
+fixed-layout movable payload. One concrete source type can name at most one
+marked variant. Generic enums are checked again after substitution, so a
+materialization that makes two source types equal is invalid.
+
+The marker does not change layout, ABI, effects, trust, or abilities. It is
+public semantic metadata for a public non-opaque enum. An opaque enum exposes
+the relation only in its owner module. Forwarding does not follow a chain of
+marked variants.
+
 Use `Name.Variant` for a payload-free variant.
 
 Use `Name.Variant(arguments)` for a payload variant.
 
 Use `.Variant` when an enum type is already expected.
+
+Expected typing also applies to payload constructors such as `.Ok(value)` and
+`.Error(.Read(problem))`. A payload constructor without a complete expected
+enum type is invalid.
 
 The `.tag` projection reads the runtime tag.
 
@@ -385,11 +514,18 @@ See [Memory Model](memory-model.md#atomic-storage) for the atomic operation cont
 
 ## Generic declarations
 
-Functions, structs, and enums can declare type parameters.
+Functions, structs, and enums can declare type parameters. A function can
+declare one final heterogeneous type pack with `Name...`; structs and enums
+cannot declare packs.
 
 Each type parameter can have one optional constraint: either one built-in bound
 or one static interface. Static interfaces and their carrier-ability rule are
 defined in [Interfaces and Implementations](interfaces-and-implementations.md).
+
+Associate a type pack with the final value parameter `args: Args...`. Pack
+arguments evaluate exactly once from left to right. Bare identifiers carry
+their source name as an optional compile-time label; `label = expression`
+supplies an explicit label. Packs and labels have no runtime representation.
 
 Generic type applications and explicit function applications must provide every
 type argument. A direct generic function call may omit the entire list when
@@ -398,6 +534,9 @@ call's statically known argument types against the function's parameter types.
 Matching follows direct type-parameter occurrences and occurrences nested in
 nominal generic carriers, pointers, fixed arrays, slices,
 tuples, and vectors. Callable-signature inference is not part of this rule.
+
+The compiler infers the complete type pack from the associated final value
+pack. Explicit type-pack applications are not supported.
 
 Inference does not use a call's result context, guess types for uncontextualized
 literals, derive types from bounds, accept partial type-argument lists, or
@@ -408,21 +547,23 @@ The closed bound set is:
 
 | Bound | Admitted types |
 |---|---|
-| `integer` | Primitive integer types |
-| `unsigned_integer` | Primitive unsigned integer types |
-| `signed_integer` | Primitive signed integer types |
-| `float` | Primitive floating-point types |
-| `numeric` | Primitive integer or floating-point types |
-| `scalar` | `bool` or a primitive numeric type |
+| `integer` | Primitive integers and integer-backed numeric nominal types |
+| `unsigned_integer` | Primitive unsigned integers and unsigned-integer-backed numeric nominal types |
+| `signed_integer` | Primitive signed integers and signed-integer-backed numeric nominal types |
+| `float` | Primitive floats and float-backed numeric nominal types |
+| `numeric` | Primitive numeric types and numeric nominal types |
+| `scalar` | `bool`, primitive numeric types, or nominal carrier types |
 | `address` | Typed addresses or function pointers |
 | `bitstruct` | Declared bitstruct types |
-| `payload_word` | `bool`, primitive integers, addresses, function pointers, or bitstructs |
+| `payload_word` | `bool`, primitive integers, integer-backed nominal carriers, addresses, function pointers, or bitstructs |
 | `fixed_layout_movable` | Fixed-layout values with ordinary move semantics |
 | `copyable_discardable` | Fixed-layout values that permit copying and discarding |
 
 The `integer`, `unsigned_integer`, and `signed_integer` bounds guarantee
 `T.MIN` and `T.MAX`. Each member is a compile-time constant with exact type
-`T`. Other bounds and unbound type parameters do not provide these members.
+`T`. A nominal type satisfies these bounds only when it has the `numeric`
+modifier. Other bounds and unbound type parameters do not provide these
+members.
 
 All listed bounds prove fixed layout and ordinary move semantics.
 
@@ -450,7 +591,7 @@ The conversion name must match the source and target categories.
 | `truncate<T>` | Convert to a narrower integer |
 | `signcast<T>` | Change signedness without changing width |
 | `numeric<T>` | Perform an integer conversion not covered above, or convert between integers and `bool` |
-| `bitcast<T>` | Cross an exact nominal carrier or bitstruct backing boundary |
+| `bitcast<T>` | Cross an exposed exact nominal carrier or bitstruct backing boundary |
 | `floatcast<T>` | Convert between integer and floating-point categories, or between float widths |
 | `saturate<T>` | Clamp during same-signedness integer narrowing |
 | `address<T>` | Cross between `u64` and a typed address, or convert an address to `u64` |
@@ -467,20 +608,28 @@ Use `trusted_callable<T>` to create a function pointer from an integer.
 
 It requires a narrower target with the same signedness.
 
-The compiler rejects identity conversions and conversion-category mismatches. A
-checked generic integer conversion can become an identity after specialization.
+The compiler rejects identity conversions and conversion-category mismatches.
+
+A module cannot use `bitcast` to cross an opaque nominal carrier boundary that
+another module owns.
+
+A checked generic integer conversion can become an identity after specialization.
 The compiler erases that specialized conversion. It still checks the category
 of each nonidentity specialization.
 
 ## Compile-time queries and required evaluation
 
-`#size_of(T)` returns the type size in bytes.
+`#size_of(T)` returns the type size as `core.quantities.ByteLength`.
 
-`#align_of(T)` returns the type alignment in bytes.
+`#align_of(T)` returns the type alignment as `core.quantities.Alignment`.
 
-`#field_offset(T, field)` returns a declared field offset in bytes.
+`#field_offset(T, field)` returns a declared field offset as
+`core.quantities.ByteOffset`.
 
-These queries require a complete compile-time layout.
+These queries require a complete compile-time layout and remain compile-time
+constants. Use `alignment_bytes` and explicit representation conversions when
+raw integer or ABI arithmetic is required. The domain types add no runtime
+wrapper.
 
 `#static_assert(condition, "message")` requires a compile-time `bool` value.
 
@@ -498,7 +647,7 @@ as the complete initializer.
 The selected function must have an executable verified-IR body, an empty
 effect bound and proof, `trusts(none)`, and no interactive protocol. Its result
 must contain only closed value data. Integers, Booleans, floats, fixed arrays,
-vectors, tuples, ordinary structs, nominal scalars, and bitstructs are
+vectors, tuples, ordinary structs, nominal carriers, and bitstructs are
 closed value data when their elements are also closed. Addresses, strings,
 slices, function pointers, register maps, atomic storage, and `MaybeUninit`
 are not valid results.

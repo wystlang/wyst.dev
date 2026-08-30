@@ -263,6 +263,13 @@ These module products remain internal during a final artifact build.
 It also writes the required `.wystlib` semantic-module-interface companion.
 
 The archive and companion form one output pair.
+
+The current semantic-interface encoding is WYSTIF revision 12. A revision 12
+declaration record can carry an optional nominal-operation identity with the
+declaring module, exact owner declaration, leaf, and canonical
+`module.Owner.leaf` spelling. Generic operation definitions and demanded
+instances keep that identity through source-less materialization. Other
+WYSTIF revisions are rejected rather than interpreted with missing facts.
 The compiler does not expose a general external-object linker through `wync build`.
 
 `wync build` does not add a flat binary as a project output. Run the separate

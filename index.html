@@ -269,7 +269,7 @@
   <span class="source-comment">// The layout defines __stack_top at the top of RAM.</span>
   <span class="source-comment">// The Arm stack grows toward lower addresses.</span>
   <span class="source-comment">// This transition sets the stack pointer `sp` to `__stack_top`.</span>
-  <span data-token="keyword" data-token-modifiers="defaultLibrary">establish</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">stack</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">from</span> <span data-token="variable" data-token-modifiers="readonly">__stack_top</span>
+  <span data-token="keyword" data-token-modifiers="defaultLibrary">establish</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">stack</span> <span data-token="keyword" data-token-modifiers="defaultLibrary">from</span> __stack_top
 
   <span class="source-comment">// The code can call a normal function after it sets the stack pointer.</span>
   <span data-token="function">kernel_main</span>(<span data-token="parameter">dtb</span>)

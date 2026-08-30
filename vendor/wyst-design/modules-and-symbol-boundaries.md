@@ -73,6 +73,13 @@ A whole-module alias cannot have a selection list.
 A selective import adds named public declarations to bare scope.
 Each selection can have an alias.
 
+Importing a public nominal owner also makes its public owner-qualified
+operations available through the imported owner spelling. For example,
+`import storage { Arena as Work }` permits `Work.attach(...)` and receiver
+lookup on values whose canonical type is `storage.Arena`. The alias does not
+change the canonical operation identity. An operation is not an independent
+bare selection.
+
 Import scope belongs to the module part that declares it.
 Every semantic pass, including transitive effect inference, resolves names in
 that exact part's import scope.
@@ -138,8 +145,15 @@ Importing the service does not create that target capability.
 `pub` makes a declaration visible to importing Wyst modules.
 A private declaration remains inside its declaring module.
 
+A public owner-qualified operation requires a public owner. Private operations
+remain callable only in the declaring module.
+
 `pub import` re-exports public declarations.
 A selective re-export can change the exposed name.
+
+Re-exporting a nominal owner also re-exports its public operations. The
+re-export preserves the declaring module, owner, and leaf identity. A consumer
+cannot add an operation to the imported or re-exported owner.
 
 A whole-module re-export exposes all public members of the imported module.
 Re-exported names must not collide.

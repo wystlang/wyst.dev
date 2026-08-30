@@ -37,7 +37,7 @@ Wyst provides these main declaration groups:
 | Group | Forms | Owning reference |
 | --- | --- | --- |
 | Values and storage | `const`, `var`, arrays, slices, addresses, and aggregates | [Type System](type-system.md) |
-| Named types | nominal scalars, `struct`, `bitstruct`, and `enum` | [Type System](type-system.md) |
+| Named types | nominal carriers, `struct`, `bitstruct`, and `enum` | [Type System](type-system.md) |
 | Static abstractions | `interface`, `impl`, and interface-constrained generics | [Interfaces and Implementations](interfaces-and-implementations.md) |
 | Code | `fn`, `label`, `inline fn`, and external declarations | [Functions and Control Flow](functions-and-control-flow.md) |
 | Hardware | `system_register`, `register_map`, and `mmio` | [Semantic Operations and Hardware Declarations](semantic-operations.md) |
