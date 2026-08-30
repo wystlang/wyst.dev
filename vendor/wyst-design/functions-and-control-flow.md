@@ -67,6 +67,12 @@ parameters during staged specialization.
 A function can return no value, one value, `never`, or named multiple values.
 A named result tuple has at least two fields.
 
+A value result constrains every normal return to supply that value type. It
+does not guarantee that the function returns normally. A value-returning
+function can diverge or use another terminal transfer on some or all paths.
+The compiler warns when a body-bearing value-returning function has no normal
+value-return path.
+
 ```text
 fn split(value: u64) -> (high: u64, low: u64) { ... }
 ```
@@ -371,6 +377,8 @@ An `if` condition can use this form directly.
 
 `never` states that a callable does not return normally.
 Every reachable path in a `never` function must terminate or diverge.
+Use `never` instead of a value result when normal return is intentionally
+impossible. This declaration lets callers treat the call as terminal.
 
 A `label` is a top-level architectural control entry.
 A label has no parameters and no result.

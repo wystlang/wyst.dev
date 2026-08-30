@@ -91,6 +91,10 @@ Parse errors and many later failures stop the current check.
 ## Check Warnings
 
 Warnings do not cause failure when the check has no error.
+`W0220` is enabled by default. It reports a body-bearing value-returning
+function that has no normal value-return path. The function remains type-safe
+because terminal paths supply no incompatible value.
+
 The following options enable additional warnings:
 
 - `--warn-effectful-nesting` enables `W0204`.

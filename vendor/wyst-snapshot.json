@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "4466a2d867602a2da8b998a26ac58e45702b18aa",
-  "snapshotSha256": "cede57580bbe311dff2ca09e52fc47bfb1e688494a3a8e07dec7673bee44dc51",
+  "sourceCommit": "c5cf4d8420293f4952877b5c0869817eda8f4fbf",
+  "snapshotSha256": "c721fcbf74ff34c7d718777323d09f582016d012366b3fa5a185fa4e6cf4c5c4",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -212,7 +212,7 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "f828766836f55f6a46a0425d72221f75ab2f83a6b63c68d1dc7ec035b0f8a5e8",
+      "sha256": "243bcfd8751ee74f9aaa37df2a17a0bd2a5ef96dab1deac9f480c211e443939c",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
@@ -240,8 +240,8 @@
       "size": 685
     },
     "vendor/wyst-design/check-format-and-diagnostics.md": {
-      "sha256": "323894e5578cf5d2ef6f4674fa959d57cc05b213d51f9d44a8274dc414f02ca1",
-      "size": 8800
+      "sha256": "0d29d0d6aab17dc62a0a605b0f7f49af041f33267f5ef780d8be70926f59ea0d",
+      "size": 9005
     },
     "vendor/wyst-design/checked-assembly.md": {
       "sha256": "3ee7c207af5c5c4ed9cdb5084d5c795a40ef9cda22b0d1d18dc41f442001b00e",
@@ -260,7 +260,7 @@
       "size": 7773
     },
     "vendor/wyst-design/diagnostic-explanations.md": {
-      "sha256": "9254207447d7b9b9c985be72eaf70ec09a2a81270b7cc2e8897e10245657176a",
+      "sha256": "b2c4bdca20d273747b1f448188019fea81631ad35bd64ca4120346f9a112db69",
       "size": 3387
     },
     "vendor/wyst-design/documentation-examples.md": {
@@ -284,8 +284,8 @@
       "size": 23192
     },
     "vendor/wyst-design/functions-and-control-flow.md": {
-      "sha256": "a36a75a97bece5765b16e6dd8a4d9910ffcde7f6459c95612b006d08327733f4",
-      "size": 19571
+      "sha256": "5546fee765b21a3769b92ee00e9beb453fed544e81f327bf790b63c30f254f74",
+      "size": 20038
     },
     "vendor/wyst-design/generated-atomic-matrix.md": {
       "sha256": "50847884365469a6925a3eb682fe74b57259d96b636fd3574bed79253099e5cc",
@@ -372,8 +372,8 @@
       "size": 6798
     },
     "vendor/wyst-design/type-system.md": {
-      "sha256": "a6e94d9ff36cc7a4b15169604d88ef9a168782a24d071d326192a820630bdc94",
-      "size": 27802
+      "sha256": "e9db52b534542936e6a05803ac35d31ef97279e293d276441e07c8b00c77fd52",
+      "size": 27971
     }
   }
 }

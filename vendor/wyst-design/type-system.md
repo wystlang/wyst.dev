@@ -102,6 +102,9 @@ byte quantity. `#size_of` returns `ByteLength`, and `#align_of` returns
 | `(name: T, other: U)` | named tuple | Named multi-result value |
 
 `never` is valid only as a callable result type. It has no stored value.
+A value result permits terminal and diverging paths, but each normal return
+must supply the declared value. A `never` result promises that no normal return
+is possible.
 A valid `return`, `fail`, `cancel`, `break`, `continue`, or context-valid `goto` path in a value
 expression is terminal. It is compatible with each live result type. It
 supplies no value, resource state, or typed-storage state to the live join.

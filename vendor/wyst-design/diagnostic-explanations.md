@@ -38,7 +38,7 @@ E1000, E1003
 The current compiler can emit these warning codes:
 
 ```text
-W0202-W0210, W0212-W0219
+W0202-W0210, W0212-W0220
 ```
 
 ## Standalone Explanations
