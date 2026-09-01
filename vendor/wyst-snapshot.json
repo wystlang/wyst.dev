@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceCommit": "c5cf4d8420293f4952877b5c0869817eda8f4fbf",
-  "snapshotSha256": "c721fcbf74ff34c7d718777323d09f582016d012366b3fa5a185fa4e6cf4c5c4",
+  "sourceCommit": "c6c9f020049611eee0b3abe69c4124dfd5826b0b",
+  "snapshotSha256": "f8f12cb27e520642fe585fbf6d3ba63b87f70a6694efb209a962dbe40e6f82a2",
   "files": {
     "tests/fixtures/wyst/wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr": {
       "sha256": "83799d487b4b7848259d5fb3e2a572ef51e3599b52a3b3df71099ce308af467c",
@@ -212,12 +212,12 @@
       "size": 911
     },
     "vendor/wyst-design/.source-commit": {
-      "sha256": "243bcfd8751ee74f9aaa37df2a17a0bd2a5ef96dab1deac9f480c211e443939c",
+      "sha256": "f7aece362ac9a8a3af761e03216b0588939312021da66310ecc0243917b193ff",
       "size": 41
     },
     "vendor/wyst-design/README.md": {
-      "sha256": "bdfafa42d5ae5b67b2c9218a0bac251d976fc684e0cd9f0be67b568f4f16ccc2",
-      "size": 5527
+      "sha256": "b4a5a43ef28ee0ee62c33fd9de938d4e83cd04dda36a26b031e2920c731d8336",
+      "size": 5663
     },
     "vendor/wyst-design/a64-compiler-semantics.md": {
       "sha256": "e98de39ac7abc7653bb763bc73930be96ec1ce3d444da2703472a3bb4e78acda",
@@ -239,6 +239,10 @@
       "sha256": "a9aa93fd73c033924f2b98d41cacc5318a3529e8fe6853cad46de278b3695bcb",
       "size": 685
     },
+    "vendor/wyst-design/cheat-sheet.md": {
+      "sha256": "bd4d8eaad12aa6d04a26d63ee500228dc52dd02a84e38118e2e3e5f687ecf805",
+      "size": 8382
+    },
     "vendor/wyst-design/check-format-and-diagnostics.md": {
       "sha256": "0d29d0d6aab17dc62a0a605b0f7f49af041f33267f5ef780d8be70926f59ea0d",
       "size": 9005
@@ -252,8 +256,8 @@
       "size": 6472
     },
     "vendor/wyst-design/core-library.md": {
-      "sha256": "e1c00d73778581cf5f2a938c21808fc284bfdd520ab607de91f9ff715d03deed",
-      "size": 11039
+      "sha256": "fb5db9ebff6cdd095b4dc43c51476ecc2a6ac3120927e05761af92958df1f802",
+      "size": 11146
     },
     "vendor/wyst-design/debug-and-unwind.md": {
       "sha256": "656b8b5978bf1d1efbf56f428a1fbec837a4e3abc421d94156047721edb776d5",
@@ -280,12 +284,12 @@
       "size": 6301
     },
     "vendor/wyst-design/formal-grammar.md": {
-      "sha256": "4fe6d3a064890c853044a2682f5e3bfa8d797351ee5492a7a3b8ca6a7be6997e",
-      "size": 23192
+      "sha256": "013b551093e54427161cd206ed6a4a11b66eeaebeb3bd1afe3db725ce5bc9f4e",
+      "size": 23566
     },
     "vendor/wyst-design/functions-and-control-flow.md": {
-      "sha256": "5546fee765b21a3769b92ee00e9beb453fed544e81f327bf790b63c30f254f74",
-      "size": 20038
+      "sha256": "fea4186118de3a4b3e0ad9543541a2625a8caa9e43bab9827bc385db09b3db3f",
+      "size": 20287
     },
     "vendor/wyst-design/generated-atomic-matrix.md": {
       "sha256": "50847884365469a6925a3eb682fe74b57259d96b636fd3574bed79253099e5cc",
@@ -308,8 +312,8 @@
       "size": 5963
     },
     "vendor/wyst-design/memory-model.md": {
-      "sha256": "6343761f677782920652df5d3fd59d2b486f536ca8f23abe5f033b7174e5848e",
-      "size": 10124
+      "sha256": "617fbabd94c578efbfc6510010166354ec11e93751908f3cec6d8c6eb70e8c80",
+      "size": 11044
     },
     "vendor/wyst-design/meta-operation-catalog.tsv": {
       "sha256": "a9d0bd62977a960bf36bdf44feb99db49887a17002df76186f967e9a0744eec2",
@@ -344,8 +348,8 @@
       "size": 4090
     },
     "vendor/wyst-design/semantic-operations.md": {
-      "sha256": "c83ea0e7b44de7c42c66dcbecf6651466187b4a28c0ea9782dd9e96b05b5c5c2",
-      "size": 15082
+      "sha256": "b592c5a78bd6d9a9ef6c70b1417acf8ec6a9e360dbe76d55019facbc367d12ae",
+      "size": 16456
     },
     "vendor/wyst-design/simd.md": {
       "sha256": "a95c7124db140040703dafc524fe5f49aedd4ecc80e86ec43c787a9d20b6baa4",
@@ -356,24 +360,24 @@
       "size": 4884
     },
     "vendor/wyst-design/storage-and-allocation.md": {
-      "sha256": "1eebe80aa510d8aba40ed15baceb730c468267460a27b60f9b80f1a76d9290a3",
-      "size": 8050
+      "sha256": "051f85e52850f33e8f1ad917f435f050acf1646de09f330a23a9dca39e6eed66",
+      "size": 8380
     },
     "vendor/wyst-design/storage-preservation-examples.md": {
       "sha256": "a8eb3bd0a0f896ebf7f08ba747cf256ff4a15b1567b6a5b0dc769c1807d85785",
       "size": 8101
     },
     "vendor/wyst-design/syntax-words.tsv": {
-      "sha256": "fbc0a7653546056be6d3ddee7579fa5450997dbdd98e12989996e17fbf6bcbc9",
-      "size": 24891
+      "sha256": "4a5074abc89aec2becd43f399fdfc8d60230bb55e6ef49415155b245b4f4b3a6",
+      "size": 25162
     },
     "vendor/wyst-design/target-profiles.md": {
       "sha256": "99442629083b922cbcdd6ee4a33f398c8bb045ea94ce51e538e365e42cfcef5d",
       "size": 6798
     },
     "vendor/wyst-design/type-system.md": {
-      "sha256": "e9db52b534542936e6a05803ac35d31ef97279e293d276441e07c8b00c77fd52",
-      "size": 27971
+      "sha256": "d2da3b8fff4171ccb4ea40fc4579cf8d7e0e9a275e1f344cf2ccaacbac826423",
+      "size": 29647
     }
   }
 }

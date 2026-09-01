@@ -74,10 +74,14 @@ FixedBuffer + DestinationReservation
   -> FixedBuffer + view or closed region
 ```
 
-`FixedBuffer.reserve` validates the requested range and alignment.
+`FixedBuffer.reserve` accepts raw `offset` and `length` coordinates. It checks
+`offset <= capacity` and `length <= capacity - offset`, so the bounds check
+does not add the coordinates. It checks alignment at the selected address and
+returns a reservation from the exact buffer.
 Initialization can zero bytes, copy bytes, or write one typed value.
-`DestinationReservation.initialize_value` writes one typed value. The trusted
-initialization operation records a programmer assertion.
+`DestinationReservation.initialize_value` validates the exact destination size
+and alignment before it writes one typed value. The trusted initialization
+operation records a programmer assertion.
 
 `InitializedDestination.finish` creates a `WrittenRegion` only from initialized storage.
 `WrittenRegion.view` returns its initialized view. The caller can also close
@@ -102,8 +106,9 @@ Arena + initialization input
 
 `Arena.allocate_value<T>` returns `Result<@T, ArenaFailure> from arena on .Ok`.
 It performs all fallible arithmetic, capacity, bounds, and alignment checks
-before it updates the Arena control state. The successful path then performs
-one complete typed store before it returns. The direct path does not create an
+before it updates the Arena control state. The successful path validates one
+exact typed destination, performs one complete typed store, and then updates
+the Arena control state. The direct path does not create an
 allocation record and does not perform a generation or bounds check on each
 later load or store. Every typed failure leaves payload bytes, cursors, and
 accounting unchanged.

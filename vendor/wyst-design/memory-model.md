@@ -52,6 +52,12 @@ lifetime, access authority, aliasing, and concurrency remain separate proof
 obligations. Its failure path forms no typed address and performs no memory
 operation.
 
+`core.checked.element` and `core.checked.subslice` are ordinary generic
+wrappers over the forwarding checked forms. They accept raw coordinates and
+return the selected place or slice from the exact captured source on `.Ok`.
+They evaluate each argument once. Equal lengths do not let one source use the
+authority of another source. Their failure paths form no place or slice.
+
 The analysis is flow-sensitive and interprocedural.
 It tracks at most eight pointer alternatives at one merge.
 It performs at most 64 interprocedural rounds.
@@ -98,10 +104,19 @@ success can contain string captures from its input, so
 outcome carries no input view. Cursor mutation changes only the offset and does
 not extend the input lifetime or create storage authority.
 
-`core.fmt.cursor_written_string` validates the written prefix and returns a
-view of the cursor backing storage on `.Ok`. Existing invalidation rules for
-the mutable backing storage remain in force. The view has no copy, allocation,
-or hidden ownership transfer.
+`core.fmt.cursor_written_bytes` returns the exact written prefix of the cursor
+backing storage. `core.fmt.cursor_written_string` validates the same prefix and
+returns a string view on `.Ok`. Existing invalidation rules for the mutable
+backing storage remain in force. These views have no copy, allocation, or
+hidden ownership transfer.
+
+`core.checked.exact_place<T>` accepts one mutable `[]u8` source. It checks the
+exact size and natural alignment before it returns an opaque destination on
+`.Ok`. The destination is not an initialized `@T`. Only
+`exact_place_initialize` consumes it and performs the typed store. A wrong
+extent or misaligned source forms no typed place and performs no memory
+operation. Equal size, equal address bits, or initialized bytes do not transfer
+authority from another source.
 
 Direct Arena allocations return ordinary typed addresses. A later load or
 store performs no hidden generation, sequence, or bounds check. The compiler
