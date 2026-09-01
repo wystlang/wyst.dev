@@ -13,6 +13,10 @@ GiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
 TiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
 PiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
 EiB	contextual	core.byte-quantities	byte-quantity-unit	implemented
+Hz	contextual	core.frequency-quantities	frequency-unit	implemented
+kHz	contextual	core.frequency-quantities	frequency-unit	implemented
+MHz	contextual	core.frequency-quantities	frequency-unit	implemented
+GHz	contextual	core.frequency-quantities	frequency-unit	implemented
 bitstruct	reserved	core.bitstruct|core.generic-bounds	declaration|generic-bound	implemented
 register_map	contextual	core.hardware-registers|core.nominal-types	declaration|nominal-type-declaration	implemented
 system_register	contextual	core.hardware-registers	declaration	implemented

@@ -17,6 +17,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
 
 ## Language
 
+- [Wyst Cheat Sheet](cheat-sheet.md) gives a quick, task-oriented guide to
+  source, types, control flow, projects, and compiler tools.
 - [Language Overview](language-overview.md) maps the source language and compiler.
 - [Modules and Symbol Boundaries](modules-and-symbol-boundaries.md) defines module
   identity, imports, visibility, and native symbol boundaries.

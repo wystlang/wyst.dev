@@ -309,7 +309,10 @@ a range denotes an ordinary slice. `results[?index]?` first forwards the bounds
 failure and then forwards the selected stored Result error.
 
 Use `core.checked.index` or `core.checked.slice_range` when the caller must
-recover locally or retain a reusable proof.
+recover locally or retain a reusable scalar proof. Use
+`core.checked.element<T>` or `core.checked.subslice<T>` for local recovery that
+must return the place or view from the checked source. These wrappers evaluate
+the source and coordinates once and retain the exact source relation on `.Ok`.
 
 An integer `for` loop uses the end-exclusive `..<` spelling.
 Its index is immutable.

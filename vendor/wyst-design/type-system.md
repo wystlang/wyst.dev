@@ -63,7 +63,7 @@ Character literals contain one byte. Use an escape for a non-ASCII byte.
 ## Byte quantities
 
 A byte quantity is an exact compile-time value with type `ByteLength`.
-It has a number followed by one case-sensitive unit with a space or tab between them.
+It has a number with one case-sensitive unit attached to it.
 
 | Units | Multipliers |
 |---|---:|
@@ -72,9 +72,13 @@ It has a number followed by one case-sensitive unit with a space or tab between 
 
 An integer magnitude can use decimal, binary, octal, or hexadecimal notation.
 A fractional magnitude must use decimal notation and must equal a whole number of bytes.
-For example, `1.5 MiB`, `1.234 MB`, and `0x10 MiB` are valid.
-`1.234 MiB` is invalid because it does not equal a whole number of bytes.
+For example, `1.5MiB`, `1.234MB`, and `0x10MiB` are valid.
+`1.234MiB` is invalid because it does not equal a whole number of bytes.
 Exponent notation is not valid before a byte unit.
+
+The lexer uses the longest valid numeric token. For example, `0x10B` is one
+hexadecimal integer, not a byte quantity. Use a decimal magnitude or a unit
+that does not continue the hexadecimal token.
 
 The unit is contextual. A unit spelling can remain an identifier where it does not
 follow a number. Wyst has no unit aliases and no bit units. `KB` is invalid.
@@ -86,6 +90,27 @@ layout region sizes and alignments, declaration and field alignment attributes, 
 a `u64` value, a non-`u8` array length, and `#[frame(max_spills = ...)]` do not accept a
 byte quantity. `#size_of` returns `ByteLength`, and `#align_of` returns
 `Alignment`.
+
+## Frequencies
+
+A frequency is an exact compile-time value with type `Frequency`. It has a
+number with one case-sensitive unit attached to it.
+
+| Units | Multipliers |
+|---|---:|
+| `Hz`, `kHz`, `MHz`, `GHz` | 1 and powers of 1,000 |
+
+An integer magnitude can use decimal, binary, octal, or hexadecimal notation.
+A fractional magnitude must use decimal notation and must equal a whole number
+of hertz. For example, `24MHz`, `62.5MHz`, and `0x10MHz` are valid. `0.1Hz` is
+invalid. Exponent notation is not valid before a frequency unit.
+
+The unit is contextual. A unit spelling can remain an identifier where it does
+not follow a number. Wyst has no frequency-unit aliases.
+
+Frequency literals bind only to `Frequency`. They do not bind to an integer or
+another numeric nominal type. Use an explicit representation crossing for a
+hardware interface that stores a frequency as an integer.
 
 ## Built-in type forms
 
@@ -155,7 +180,8 @@ For `[_]u8`, the initializer can also be a byte-string literal.
 In these positions, `_` means the initializer element count.
 
 `[value; N]` is a fixed-array repeat literal. `N` must be a compile-time
-`u64`, must match the contextual fixed-array length, and currently cannot
+`u64`. It can be a `ByteLength` only when the contextual element type is `u8`.
+The count must match the contextual fixed-array length and currently cannot
 exceed 1,048,576 elements. The compiler evaluates `value` once and copies it
 into all `N` elements, so the element type must be copyable. Repeat syntax does
 not construct SIMD vectors.
@@ -185,6 +211,11 @@ See [SIMD](simd.md) for vector operations and lowering.
 
 `[]T` is a two-word descriptor. It does not own its elements.
 
+A slice is a positional view of one exact backing-storage range. Its validity
+proves access to that range, not collection membership or logical element
+identity. After a storage-preserving sequenced edit changes the range's
+contents, a later slice read observes the new contents at the same positions.
+
 The `data` field has type `@T`. The `len` field has type `u64`.
 
 The `data` field starts at byte 0. The `len` field starts at byte 8.
@@ -205,6 +236,10 @@ captured fixed-array or slice descriptor and forward
 `core.checked.SliceFailure`. Their success value is `[]T` with provenance from
 the captured base. The bound types follow the checked-index rules. Wyst does
 not provide `values[?..]` or a trapping subscript shorthand.
+
+The sealed `core.checked.element<T>` and `core.checked.subslice<T>` functions
+expose the same checked behavior for callers that match the `Result` locally.
+Their success payload keeps the exact source provenance and access authority.
 
 Slice equality compares the `data` and `len` fields. It does not compare elements.
 

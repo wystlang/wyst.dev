@@ -65,14 +65,15 @@ The sealed `core.checked` namespace provides checked construction and conversion
 
 The current families cover:
 
-- indexes and ranges
+- scalar indexes and ranges, and source-consuming element and slice wrappers
 - numeric conversion
 - byte, element, and physical-address offsets
-- alignment
+- byte-length, raw-address-bit, and physical-address alignment
 - byte, element, and physical extents
 - containment
 - field encodings
 - generation values
+- exact typed destinations for initialization
 
 A fallible checked operation returns a typed `Result`.
 Most such results use `must_observe`.
@@ -86,6 +87,23 @@ Forwarding checked subscript syntax lowers through the existing
 runtime helper or catalog operation. The inner `?` forwards the authentic
 failure through the lexical Result; direct calls to these operations remain
 available for local recovery and reusable proofs.
+
+`core.checked.element<T>` and `core.checked.subslice<T>` are sealed generic
+Wyst wrappers over this syntax. Each success payload retains the exact source
+relation. These wrappers add only the bounds fact supplied by the checked
+subscript.
+
+`core.checked.address_align_up(value_bits, alignment)` aligns raw ordinary
+address bits. It rejects addition overflow and returns raw `u64` bits. It does
+not create a typed address, a physical address, or storage authority. The
+`Alignment` input comes from its existing checked construction boundary.
+
+`core.checked.exact_place<T>` checks that a mutable byte slice has exactly
+`#size_of(T)` bytes and meets `#align_of(T)`. Success returns an opaque
+destination from the exact source. It does not assert that the bytes already
+contain a valid `T`. `exact_place_initialize` consumes the destination and
+stores one `T`. Failure distinguishes wrong extent from misalignment and forms
+no typed place.
 
 `core.checked.validated_string(bytes)` is a compiler-owned construction
 operation for authenticated sealed-core source. It accepts a `[]u8` view only
@@ -349,12 +367,16 @@ The A64 lowering emits `brk #0xf001`.
 `cpu.read_counter()` requires one selected measurement-counter descriptor.
 The built-in A64 targets select `a64-generic-virtual-counter`.
 
-The operation reads `CNTVCT_EL0` once and returns `u64`.
+The operation reads `CNTVCT_EL0` once and returns `CounterSample`.
 It is a compiler memory fence and source scheduling boundary.
 It emits no architectural barrier and does not read the counter frequency.
 
-Two results are raw counter samples.
-The operation does not define elapsed time, seconds, endpoint comparability, or serialization.
+`cpu.counter_elapsed(before, after)` accepts two `CounterSample` values and
+returns `TickDuration`. It computes `after - before` modulo 2^64. This rule
+preserves one counter wrap. The caller must ensure that the interval does not
+span more than one complete 64-bit period and that both endpoints are
+comparable. `CounterSample` is not generally numeric. Neither operation
+defines seconds or serialization.
 
 `cpu.read_stack_pointer()` returns one numeric snapshot of the current stack
 pointer. It does not change the stack or create memory authority.

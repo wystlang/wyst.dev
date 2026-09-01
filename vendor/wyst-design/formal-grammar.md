@@ -50,8 +50,9 @@ Exponent    <- [eE] [+-]? DecimalInt
 Float       <- DecimalInt '.' DecimalInt Exponent? / DecimalInt Exponent
 ByteUnit    <- 'B' / 'kB' / 'MB' / 'GB' / 'TB' / 'PB' / 'EB'
              / 'KiB' / 'MiB' / 'GiB' / 'TiB' / 'PiB' / 'EiB'
-HorizontalSpace <- [ \t]
-ByteQuantity <- (Integer / DecimalInt '.' DecimalInt) HorizontalSpace+ ByteUnit
+ByteQuantity <- (Integer / DecimalInt '.' DecimalInt) ByteUnit
+FrequencyUnit <- 'Hz' / 'kHz' / 'MHz' / 'GHz'
+FrequencyQuantity <- (Integer / DecimalInt '.' DecimalInt) FrequencyUnit
 String      <- a current single-line or multiline string literal
 Char        <- a current byte character literal
 NameLike    <- UserName / a contextual name accepted in this position
@@ -64,10 +65,16 @@ Range       <- '..<' / '..=' / '..'
 Identifiers are case-sensitive ASCII.
 String and comment contents can contain UTF-8.
 Floating-point literals use decimal digits, a decimal point, or a decimal exponent.
-Byte quantities use an integer in any supported base or a decimal fraction.
-They require horizontal whitespace before a case-sensitive byte unit.
-They do not accept exponent notation or attached numeric suffixes.
+Exact quantities use an integer in any supported base or a decimal fraction.
+They attach one case-sensitive unit directly to the magnitude.
+They do not accept exponent notation or whitespace before the unit. A byte
+quantity must equal a whole number of bytes. A frequency must equal a whole
+number of hertz.
 The compiler rejects hexadecimal floating-point literals and other numeric suffixes.
+
+Numeric tokens use the longest valid match. Thus, `0x10B` is the hexadecimal
+integer `267`, not the byte quantity `16B`. Use a decimal magnitude or a unit
+that does not continue the hexadecimal token.
 The syntax-word catalog defines reserved and contextual words.
 The compiler rejects `;` and `$` in source.
 

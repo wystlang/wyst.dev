@@ -88,7 +88,7 @@ failure aggregation, and exact failure details.
 
 The public numeric quantity types are:
 
-- `ByteLength`, `ElementLength`, `ElementCapacity`, `ByteOffset`,
+- `ByteLength`, `Frequency`, `ElementLength`, `ElementCapacity`, `ByteOffset`,
   `ElementOffset`, and `TickDuration`.
 
 These types bind literals and provide the numeric operations of their carriers.
@@ -191,11 +191,13 @@ padding.
 
 The public cursor functions are `cursor`, `cursor_written`, `cursor_remaining`,
 `cursor_checkpoint`, `cursor_rollback`, `cursor_append_ascii`,
-`cursor_append_literal`, `cursor_append_integer`, and `cursor_written_string`.
+`cursor_append_literal`, `cursor_append_integer`, `cursor_written_bytes`, and
+`cursor_written_string`.
 Append operations return the total written byte length. They leave the cursor
-within its attached capacity and do not allocate. `cursor_written_string`
-validates the written byte range as UTF-8 and returns a view of the cursor
-backing storage.
+within its attached capacity and do not allocate. `cursor_written_bytes`
+returns the exact written prefix of the cursor backing storage.
+`cursor_written_string` validates the same prefix as UTF-8 and returns a view
+of the same storage.
 
 `write<Args...>` accepts a compile-time template and a final heterogeneous
 value pack. It supports strings, integers, Booleans, ordinary and volatile
