@@ -48,27 +48,27 @@ Use a `text` fence for incomplete syntax fragments.
 ## Test enforcement
 
 The documentation contract test scans top-level Markdown files in `design/`.
-It enforces these rules:
+It first enforces these structural rules:
 
 - Each `wyst` fence has an immediately preceding recognized marker.
 - Each marker has the exact comment shape.
 - Each reader-facing reference topic with Wyst blocks has one checked marker.
 - A checked marker is `fmt`, `check-pass`, or `check-fail`.
 
-The general scan does not run the compiler on reference blocks.
-It does not run the formatter on `fmt` blocks.
-It does not verify a diagnostic for general `check-fail` blocks.
+The test then executes every contract. For `fmt`, it writes the block to a
+temporary source file and requires `wync fmt --check` to succeed. For
+`check-pass` and `check-fail`, it creates a temporary static-library project
+for `qemu-virt-aarch64-el2` and runs `wync check`. A `check-pass` block must
+succeed. A `check-fail` block must fail and emit an error diagnostic.
 
 The storage-preservation example test has additional executable checks.
 It requires seven numbered examples.
 It permits only `check-pass` and `check-fail` blocks in that file.
 
-For each storage-preservation block, the test creates a temporary static-library project.
-The generated project uses `qemu-virt-aarch64-el2`.
-It uses `debug .none`, `unwind .none`, and `frame_pointers .minimal`.
+For each storage-preservation block, the test uses the same temporary-project
+profile. It uses `debug .none`, `unwind .none`, and `frame_pointers .minimal`.
 
-The test runs `wync check` on each generated project.
-It also checks selected diagnostics and storage reports.
+The test also checks selected diagnostics and storage reports.
 
 ## Author validation
 

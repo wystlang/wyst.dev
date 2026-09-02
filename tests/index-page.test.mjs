@@ -423,10 +423,13 @@ test("homepage keeps the preferred personal introduction concise", () => {
 		),
 	);
 	for (const [fact, pattern] of [
-		["pre-1.0", /\bpre-1\.0\b/i],
+		["unversioned status", /\bunversioned\b/i],
 		["ARM64 only", /\bARM64 only\b/i],
 		["Rust bootstrap", /\bRust bootstrap compiler\b/i],
-		["memory-safety scope", /\bmemory safety not guaranteed\b/i],
+		[
+			"memory-safety scope",
+			/\bmemory-safe subset with explicit trusted boundaries\b/i,
+		],
 		[
 			"name pronunciation and meaning",
 			/“Wyst” is pronounced “\s*wist\s*,” an old word meaning “to know\.”/i,

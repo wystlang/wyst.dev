@@ -18,40 +18,23 @@ import {
 	updateHomepageIndex,
 	updateHomepageOutputs,
 } from "./homepage-example.mjs";
+import {
+	coreFixturePaths,
+	designCatalogs,
+	publicReferencePaths,
+	referenceDestination as referenceSnapshotPath,
+	syntaxCorpusRoot,
+	walkFiles,
+} from "./wyst-snapshot-inputs.mjs";
 import { createWystSnapshotManifest } from "./wyst-snapshot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDestination = path.join(root, "vendor", "wyst-design");
+const referenceDestination = path.join(root, "vendor", "wyst-reference");
 const fixtureDestination = path.join(root, "tests", "fixtures", "wyst");
 const snapshotDestination = path.join(root, "vendor", "wyst-snapshot.json");
 const homepageIndexDestination = path.join(root, "index.html");
 
-const coreFixturePaths = [
-	"wync/tests/fixtures/qemu/virt/uart-hello/main.wyst",
-	"wync/tests/fixtures/qemu/virt/uart-hello/layout.wyst",
-	"wync/tests/fixtures/qemu/virt/uart-hello/expected.txt",
-	"wync/tests/fixtures/qemu/virt/overflow-guard/main.wyst",
-	"wync/tests/fixtures/qemu/virt/overflow-guard/layout.wyst",
-	"wync/tests/fixtures/qemu/virt/overflow-guard/expected.txt",
-	"wync/tests/fixtures/diagnostics/core/effect-denial/wyst.project",
-	"wync/tests/fixtures/diagnostics/core/effect-denial/layout.wyst",
-	"wync/tests/fixtures/diagnostics/core/effect-denial/src/keyboard_isr.wyst",
-	"wync/tests/fixtures/diagnostics/core/effect-denial/expected.stderr",
-	"wync/tests/fixtures/runtime/semihost.wyst",
-];
-const syntaxCorpusRoot = "wync/tests/fixtures/syntax-corpus";
-const vocabularyCatalogs = [
-	"attribute-catalog.tsv",
-	"meta-operation-catalog.tsv",
-	"syntax-words.tsv",
-];
-const designCatalogs = [
-	...vocabularyCatalogs,
-	"c-interactive-adapter-catalog.tsv",
-].map((destination) => ({
-	destination,
-	source: `design/catalogs/language/${destination}`,
-}));
 const snapshotPathspecs = [
 	":(top,glob)design/*.md",
 	...designCatalogs.map(({ source }) => `:(top,literal)${source}`),
@@ -81,25 +64,6 @@ async function isWystRoot(dir) {
 		(await isFile(path.join(dir, "design", "README.md"))) &&
 		(await isFile(path.join(dir, "wync", "Cargo.toml")))
 	);
-}
-
-async function walkFiles(directory, relativeDirectory = "") {
-	const entries = await readdir(path.join(directory, relativeDirectory), {
-		withFileTypes: true,
-	});
-	entries.sort((left, right) =>
-		left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
-	);
-	const files = [];
-	for (const entry of entries) {
-		const relative = relativeDirectory
-			? path.posix.join(relativeDirectory, entry.name)
-			: entry.name;
-		if (entry.isDirectory()) files.push(...(await walkFiles(directory, relative)));
-		else if (entry.isFile()) files.push(relative);
-		else throw new Error(`unsupported Wyst syntax-corpus entry: ${relative}`);
-	}
-	return files;
 }
 
 async function resolveWystRoot() {
@@ -150,8 +114,9 @@ const fixturePaths = [
 	...coreFixturePaths,
 	...syntaxCorpusFiles.map((file) => path.posix.join(syntaxCorpusRoot, file)),
 ].sort();
+const referencePaths = await publicReferencePaths(wystRoot, designFileNames);
 
-for (const relativePath of fixturePaths) {
+for (const relativePath of [...fixturePaths, ...referencePaths]) {
 	if (!(await isFile(path.join(wystRoot, relativePath)))) {
 		throw new Error(`Missing Wyst snapshot input: ${relativePath}`);
 	}
@@ -165,7 +130,8 @@ const dirtyInputs = git(wystRoot, [
 	"--short",
 	"--untracked-files=all",
 	"--",
-	...snapshotPathspecs,
+		...snapshotPathspecs,
+		...referencePaths.map((file) => `:(top,literal)${file}`),
 ]);
 if (dirtyInputs) {
 	throw new Error(
@@ -180,6 +146,7 @@ if (!/^[0-9a-f]{40,64}$/i.test(sourceCommit)) {
 
 const stagingRoot = await mkdtemp(path.join(root, ".wyst-snapshot-sync-"));
 const stagedDesign = path.join(stagingRoot, "wyst-design");
+const stagedReference = path.join(stagingRoot, "wyst-reference");
 const stagedFixtures = path.join(stagingRoot, "fixtures");
 const stagedManifest = path.join(stagingRoot, "wyst-snapshot.json");
 const stagedHomepageArtifacts = Object.fromEntries(
@@ -205,6 +172,13 @@ try {
 		);
 	}
 	await writeFile(path.join(stagedDesign, ".source-commit"), `${sourceCommit}\n`);
+	await mkdir(stagedReference, { recursive: true });
+	for (const source of referencePaths) {
+		const relative = referenceSnapshotPath(source);
+		const destination = path.join(stagedReference, relative);
+		await mkdir(path.dirname(destination), { recursive: true });
+		await copyFile(path.join(wystRoot, source), destination);
+	}
 
 	for (const relativePath of fixturePaths) {
 		const destination = path.join(stagedFixtures, relativePath);
@@ -248,16 +222,20 @@ try {
 	);
 	await createWystSnapshotManifest({
 		designDir: stagedDesign,
+		referenceDir: stagedReference,
 		fixtureDir: stagedFixtures,
 		destination: stagedManifest,
 		sourceCommit,
 	});
 
 	await mkdir(path.dirname(designDestination), { recursive: true });
+	await mkdir(path.dirname(referenceDestination), { recursive: true });
 	await mkdir(path.dirname(fixtureDestination), { recursive: true });
 	await rm(designDestination, { recursive: true, force: true });
+	await rm(referenceDestination, { recursive: true, force: true });
 	await rm(fixtureDestination, { recursive: true, force: true });
 	await rename(stagedDesign, designDestination);
+	await rename(stagedReference, referenceDestination);
 	await rename(stagedFixtures, fixtureDestination);
 	await rename(stagedManifest, snapshotDestination);
 	for (const [id, example] of Object.entries(HOMEPAGE_EXAMPLES)) {
@@ -269,5 +247,5 @@ try {
 }
 
 console.log(
-	`Synced Wyst design, ${fixturePaths.length} test fixtures, and homepage semantic tokens from ${sourceCommit}`,
+	`Synced Wyst design, ${referencePaths.length} public references, ${fixturePaths.length} test fixtures, and homepage semantic tokens from ${sourceCommit}`,
 );

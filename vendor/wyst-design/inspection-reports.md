@@ -125,21 +125,45 @@ Use this command:
 ```sh
 wync explain resources PROJECT \
   [--artifact NAME] \
+  [--function NAME] \
   [--format text|json]
 ```
 
 The JSON schema name is `wync.explain.resources.v2`.
 The report applies to the complete selected artifact.
+`--function` adds one exact named, body-bearing function as a stack-analysis
+root. It does not filter the report or replace the artifact's other roots.
 
 It includes these principal groups:
 
 - semantic module interfaces;
 - the artifact reference graph;
 - resumable and affine-verifier facts;
-- stack roots; and
+- stack roots;
 - the active closed optimizer policy and pass order; and
 - per-function IR, ABI, frame, allocation, instruction, proof, call, phi, and
   expansion counts.
+
+The stack-root set contains each function retained for one or more of these
+reasons:
+
+- the selected semantic entry;
+- the function requested by `--function`;
+- an explicit native export;
+- an initializer order;
+- an explicit section contribution;
+- artifact verification;
+- an exception-vector slot.
+
+One function appears once with all applicable reasons. `--function` must
+resolve to one exact function in the selected artifact and that function must
+have a body. The command reports an error otherwise.
+
+The text `selected-status` field and JSON `stackRoots.selectedStatus` field
+describe only the artifact's selected semantic entry. The value is `available`
+when that entry resolves to a callable, `unknown` when the entry does not
+resolve to a callable, and `unavailable` when the artifact kind has no selected
+semantic entry. A requested function does not change this status.
 
 The post-optimization census uses these definitions:
 

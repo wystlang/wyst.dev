@@ -304,7 +304,7 @@ export function registerWyst(Prism) {
 				/\b(?:0[xX][0-9A-Fa-f](?:_?[0-9A-Fa-f])*|0[bB][01](?:_?[01])*|0[oO][0-7](?:_?[0-7])*|[0-9](?:_?[0-9])*(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?)\b/,
 		},
 		parameter: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*:\s*(?!:|=))/,
-		// Longest spellings first. Only the final v0.9 separator, postfix, and
+		// Longest spellings first. Only the current separator, postfix, and
 		// statement-boundary vocabulary is present.
 		punctuation: /\.\.<|\.\.=|\.\.|[{}[\](),.]/,
 		operator:

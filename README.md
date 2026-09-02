@@ -19,6 +19,7 @@ ignored `dist/` directory:
 index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
+vendor/wyst-reference/     Snapshot-bound catalogs and architectural decisions
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
 vendor/wyst-homepage*-semantic-tokens.json
                            Compiler-produced token streams for homepage examples
@@ -68,7 +69,7 @@ npm run verify:determinism # two isolated builds must match exactly
 npm run verify:wyst-source # compare the snapshot with a local Wyst checkout
 npm run validate:assets    # Cloudflare limits, config, paths, headers, and HTML
 npm run deploy:dry-run     # validate the Wrangler upload without credentials
-npm run check              # all of the above, beginning with a clean build
+npm run check              # build, unit, artifact, asset, local/browser, determinism, and deploy gates
 ```
 
 The tracked pre-commit hook runs only the fast tests when relevant files are
@@ -78,9 +79,12 @@ activates it through `core.hooksPath`; CI remains authoritative.
 ## Imported Wyst snapshots
 
 The compiler repository remains the source of truth for the language design.
-This public repository includes only the publication inputs, the homepage and
-runtime fixture files, and the shared positive/negative syntax corpus required
-to build and test the site. The vendored `syntax-words.tsv`,
+This public repository includes the reference topics, their linked catalogs and
+architectural decisions, the homepage and runtime fixture files, and the shared
+positive/negative syntax corpus required to build and test the site. The
+snapshot-bound files under `vendor/wyst-reference/` make every catalog and ADR
+link in the public manual available without access to the private upstream
+repository. The vendored `syntax-words.tsv`,
 `attribute-catalog.tsv`, and `meta-operation-catalog.tsv` are the complete
 public editor vocabulary inputs. `syntax-words.tsv` drives documentation
 highlighting, so Prism does not maintain a parallel keyword or
@@ -107,7 +111,8 @@ Refresh the snapshots from a sibling `../wyst` checkout or `WYST_REPO_DIR`:
 npm run sync:wyst
 npm run verify:wyst-source
 npm run check
-git add index.html vendor/wyst-design vendor/wyst-snapshot.json \
+git add index.html vendor/wyst-design vendor/wyst-reference \
+  vendor/wyst-snapshot.json \
   vendor/wyst-homepage*-semantic-tokens.json tests/fixtures/wyst
 ```
 

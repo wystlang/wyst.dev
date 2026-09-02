@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
-import { buildToc, makeMd } from "../build/generate.mjs";
+import { buildToc, makeMd, sourcePageTitle } from "../build/generate.mjs";
 import { docIndexPage, docPage } from "../build/template.mjs";
 
 const docsCss = await readFile(new URL("../assets/docs.css", import.meta.url), "utf8");
@@ -71,7 +71,7 @@ test("generated heading fragments match GitHub-style source links", () => {
 	);
 });
 
-test("design catalog links use authenticated local or pinned upstream artifacts", () => {
+test("design catalog and ADR links stay within the public reference", () => {
 	const commit = "a".repeat(40);
 	const rendered = makeMd({ wystSourceCommit: commit }).render(
 		"[syntax words](catalogs/language/syntax-words.tsv) [attributes](catalogs/language/attribute-catalog.tsv) [C interactive adapters](catalogs/language/c-interactive-adapter-catalog.tsv) [meta operations](catalogs/language/meta-operation-catalog.tsv) [semantic operations](catalogs/language/semantic-operation-catalog.tsv) [raw forms](catalogs/aarch64/generated/a64-raw-encoding-source-forms.jsonl.gz) [catalog index](catalogs/README.md) [architectural decisions](../docs/adr/)\n",
@@ -82,31 +82,28 @@ test("design catalog links use authenticated local or pinned upstream artifacts"
 		"meta-operation-catalog.tsv",
 		"syntax-words.tsv",
 	]) {
-		assert.match(rendered, new RegExp(`href="/docs/${artifact.replace(".", "\\.")}"`));
+		assert.match(
+			rendered,
+			new RegExp(
+				`href="/docs/catalogs/language/${artifact.replace(".", "\\.")}"`,
+			),
+		);
 	}
-	assert.match(
-		rendered,
-		new RegExp(
-			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/catalogs/aarch64/generated/a64-raw-encoding-source-forms\\.jsonl\\.gz" rel="noopener"`,
+	assert.match(rendered, /href="\/docs\/catalogs\/aarch64\/generated\/a64-raw-encoding-source-forms\.jsonl\.gz"/);
+	assert.match(rendered, /href="\/docs\/catalogs\/README\.md"/);
+	assert.match(rendered, /href="\/docs\/catalogs\/language\/semantic-operation-catalog\.tsv"/);
+	assert.match(rendered, /href="\/docs\/adr\/"/);
+	assert.doesNotMatch(rendered, /github\.com\/wystlang\/wyst/);
+});
+
+test("generated topics use their H1 for page and social titles", () => {
+	assert.equal(
+		sourcePageTitle(
+			{},
+			"<!-- generated -->\n# Wyst atomic matrix\n\nGenerated content.\n",
+			"generated-atomic-matrix",
 		),
-	);
-	assert.match(
-		rendered,
-		new RegExp(
-			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/catalogs/README\\.md" rel="noopener"`,
-		),
-	);
-	assert.match(
-		rendered,
-		new RegExp(
-			`href="https://github\\.com/wystlang/wyst/blob/${commit}/design/catalogs/language/semantic-operation-catalog\\.tsv" rel="noopener"`,
-		),
-	);
-	assert.match(
-		rendered,
-		new RegExp(
-			`href="https://github\\.com/wystlang/wyst/tree/${commit}/docs/adr/" rel="noopener"`,
-		),
+		"Wyst atomic matrix",
 	);
 });
 

@@ -78,7 +78,8 @@ Explicit mode does not accept `--artifact`.
 - It checks a static-library source graph without a final-link layout.
 - It parses, normalizes, instantiates, and checks the source graph.
 - It creates semantic module interfaces in memory.
-- It creates verified IR when an indexing proof requires memory-safety analysis.
+- It creates verified IR when an indexing proof requires memory-safety analysis
+  or `#eval` requires deterministic compile-time execution.
 
 The command does not perform machine lowering.
 The command does not create native objects, archives, or an ELF file.

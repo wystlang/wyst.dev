@@ -1,0 +1,3 @@
+// prefix	signed	minimum_bits	maximum_bits	state
+u	false	1	64	implemented
+i	true	2	64	implemented
