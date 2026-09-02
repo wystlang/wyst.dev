@@ -36,7 +36,7 @@ registerWyst(Prism);
 
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 const SITE = "https://wyst.dev";
-const WYST_SOURCE_URL = "https://github.com/wystlang/wyst";
+const PUBLIC_REFERENCE = path.join(ROOT, "vendor", "wyst-reference");
 const LOCAL_DESIGN_ARTIFACTS = new Set([
 	"attribute-catalog.tsv",
 	"c-interactive-adapter-catalog.tsv",
@@ -50,31 +50,13 @@ const LOCAL_DESIGN_ARTIFACT_LINKS = new Map(
 	]),
 );
 
-function pinnedWystRepositoryHref(href, commit) {
-	if (!commit) return null;
-	const match = href.match(
-		/^((?:\.\.?\/)?(?:[\w.-]+\/)*[\w.-]*)(#[\w.-]+)?$/,
-	);
-	if (!match) return null;
-
-	const repositoryPath = path.posix.normalize(
-		path.posix.join("design", match[1]),
-	);
-	if (
-		repositoryPath === "." ||
-		repositoryPath === ".." ||
-		repositoryPath.startsWith("../") ||
-		path.posix.isAbsolute(repositoryPath)
-	) {
-		return null;
+function publicReferenceHref(href) {
+	if (href === "../docs/adr/") return "/docs/adr/";
+	if (href === "catalogs/README.md") return "/docs/catalogs/README.md";
+	if (/^catalogs\/[\w./-]+\.(?:json|tsv|jsonl\.gz)$/.test(href)) {
+		return `/docs/${href}`;
 	}
-
-	const isDirectory = match[1].endsWith("/");
-	const kind = isDirectory ? "tree" : "blob";
-	const suffix = isDirectory
-		? `${repositoryPath.replace(/\/+$/, "")}/`
-		: repositoryPath;
-	return `${WYST_SOURCE_URL}/${kind}/${commit.toLowerCase()}/${suffix}${match[2] || ""}`;
+	return null;
 }
 
 function resolveDocsDir() {
@@ -140,6 +122,11 @@ function navTitleFrom(title) {
 		.replace(/^(?:Chapter \d+|Appendix [A-Z]):\s*/, "")
 		.replace(/^Wyst\s+/, "")
 		.trim();
+}
+
+export function sourcePageTitle(data, body, stem) {
+	const sourceH1 = body.match(/^\s*#\s+(.+?)\s*$/m)?.[1]?.trim();
+	return data.title || sourceH1 || stem;
 }
 
 // Match the fragments readers get when viewing the Markdown on GitHub. This
@@ -264,12 +251,19 @@ export function makeMd({ wystSourceCommit } = {}) {
 		const hi = tok.attrIndex("href");
 		if (hi >= 0) {
 			const href = tok.attrs[hi][1];
+			const publicHref = publicReferenceHref(href);
+			if (publicHref) {
+				tok.attrs[hi][1] = publicHref;
+				return defaultLinkOpen(tokens, i, opts, env, self);
+			}
 			const localArtifact = LOCAL_DESIGN_ARTIFACT_LINKS.get(href);
 			if (localArtifact) {
 				tok.attrs[hi][1] = `/docs/${localArtifact}`;
 				return defaultLinkOpen(tokens, i, opts, env, self);
 			}
-			const m = href.match(/^(?:\.\/)?([\w.-]+\.md)(#[^)\s]*)?$/);
+			const m = href.match(
+				/^(?:\.\/|\.\.\/\.\.\/design\/)?([\w.-]+\.md)(#[^)\s]*)?$/,
+			);
 			if (m) {
 				const target = fileToUrl.get(m[1]);
 				if (target) {
@@ -277,23 +271,6 @@ export function makeMd({ wystSourceCommit } = {}) {
 				}
 			} else if (/^#[\w-]+$/.test(href) && env?.sourceFile) {
 				tok.attrs[hi][1] = resolvedFragment(env.sourceFile, href);
-			} else {
-				const repositoryHref = pinnedWystRepositoryHref(
-					href,
-					wystSourceCommit,
-				);
-				const artifact = href.match(
-					/^(?:\.\/)?([\w.-]+\.(?:json|tsv|jsonl\.gz))$/,
-				);
-				if (repositoryHref) {
-					tok.attrs[hi][1] = repositoryHref;
-					tok.attrSet("rel", "noopener");
-				} else if (artifact && wystSourceCommit) {
-					tok.attrs[hi][1] =
-						`${WYST_SOURCE_URL}/blob/${wystSourceCommit.toLowerCase()}/design/` +
-						artifact[1];
-					tok.attrSet("rel", "noopener");
-				}
 			}
 		}
 		return defaultLinkOpen(tokens, i, opts, env, self);
@@ -375,8 +352,87 @@ export function buildToc(tokens) {
 }
 
 // ---------------------------------------------------------------------------
+function copyTree(source, destination) {
+	fs.mkdirSync(destination, { recursive: true });
+	const entries = fs
+		.readdirSync(source, { withFileTypes: true })
+		.sort((left, right) =>
+			left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+		);
+	for (const entry of entries) {
+		const sourcePath = path.join(source, entry.name);
+		const destinationPath = path.join(destination, entry.name);
+		if (entry.isDirectory()) copyTree(sourcePath, destinationPath);
+		else if (entry.isFile()) fs.copyFileSync(sourcePath, destinationPath);
+		else throw new Error(`unsupported public reference entry: ${sourcePath}`);
+	}
+}
+
+function generatePublicReferencePages({ md, navModel, outDir, referenceDir }) {
+	const adrSourceDir = path.join(referenceDir, "docs", "adr");
+	const adrs = fs
+		.readdirSync(adrSourceDir, { withFileTypes: true })
+		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+		.map((entry) => {
+			const source = fs.readFileSync(path.join(adrSourceDir, entry.name), "utf8");
+			const { body } = parseFrontmatter(source);
+			const h1 = body.match(/^\s*#\s+(.+?)\s*$/m)?.[1]?.trim();
+			if (!h1) throw new Error(`architectural decision has no H1: ${entry.name}`);
+			return { body, h1, stem: entry.name.replace(/\.md$/, "") };
+		})
+		.sort((left, right) =>
+			left.stem < right.stem ? -1 : left.stem > right.stem ? 1 : 0,
+		);
+	const adrIndexCurrent = {
+		url: "/docs/adr/",
+		h1: "Architectural Decisions",
+		summary: "Accepted records that constrain future Wyst language changes.",
+	};
+	const adrList = adrs
+		.map((adr) => `- [${adr.h1}](/docs/adr/${adr.stem}/)`)
+		.join("\n");
+	const adrOutDir = path.join(outDir, "adr");
+	fs.mkdirSync(adrOutDir, { recursive: true });
+	fs.writeFileSync(
+		path.join(adrOutDir, "index.html"),
+		docPage({
+			title: "Architectural Decisions · Wyst",
+			description: adrIndexCurrent.summary,
+			canonical: `${SITE}${adrIndexCurrent.url}`,
+			navModel,
+			current: adrIndexCurrent,
+			eyebrow: "Design records",
+			articleHtml: md.render(adrList),
+			tocHtml: "",
+		}),
+	);
+	for (const adr of adrs) {
+		const url = `/docs/adr/${adr.stem}/`;
+		const body = adr.body.replace(/^\s*#\s+(.+?)\s*$/m, "");
+		const env = { sourceFile: `${adr.stem}.md` };
+		const tokens = md.parse(body, env);
+		const destination = path.join(adrOutDir, adr.stem, "index.html");
+		fs.mkdirSync(path.dirname(destination), { recursive: true });
+		fs.writeFileSync(
+			destination,
+			docPage({
+				title: `${adr.h1} · Wyst`,
+				description: "Accepted Wyst architectural decision.",
+				canonical: `${SITE}${url}`,
+				navModel,
+				current: { url, h1: adr.h1, summary: "" },
+				eyebrow: "Architectural decision",
+				articleHtml: md.renderer.render(tokens, md.options, env),
+				tocHtml: buildToc(tokens),
+			}),
+		);
+	}
+	return adrs.length + 1;
+}
+
 export function generateDocs({
 	docsDir = resolveDocsDir(),
+	referenceDir = PUBLIC_REFERENCE,
 	outputDir = resolveOutputDir(),
 } = {}) {
 	const DOCS = path.resolve(docsDir);
@@ -406,7 +462,7 @@ export function generateDocs({
 		const url = isIndex ? "/docs/" : `/docs/${stem}/`;
 		fileToUrl.set(file, url);
 		fileToFragments.set(file, fragmentIdsFor(body));
-		const title = data.title || stem;
+		const title = sourcePageTitle(data, body, stem);
 		pages.push({
 			file,
 			stem,
@@ -432,6 +488,7 @@ export function generateDocs({
 	const outDir = path.join(OUTPUT, "docs");
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
+	copyTree(path.join(referenceDir, "catalogs"), path.join(outDir, "catalogs"));
 	for (const artifact of LOCAL_DESIGN_ARTIFACTS) {
 		fs.copyFileSync(path.join(DOCS, artifact), path.join(outDir, artifact));
 	}
@@ -504,6 +561,12 @@ export function generateDocs({
 		fs.writeFileSync(dest, html);
 		count++;
 	}
+	count += generatePublicReferencePages({
+		md,
+		navModel,
+		outDir,
+		referenceDir,
+	});
 
 	console.log(`generated ${count} pages -> ${path.relative(ROOT, outDir)}/`);
 	console.log("github:", GITHUB_URL);

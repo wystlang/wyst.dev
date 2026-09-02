@@ -42,9 +42,13 @@ Three built-in profiles add an exact firmware schema.
 
 | Profile | Initial EL | Required root | Firmware `x0` |
 | --- | ---: | --- | --- |
-| `qemu-virt-aarch64-el2` | 2 | `pub naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
-| `qemu-virt-aarch64-el2-lse` | 2 | `pub naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
-| `qemu-virt-aarch64-el3` | 3 | `pub naked fn _start() -> never` | not an entry parameter |
+| `qemu-virt-aarch64-el2` | 2 | `naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
+| `qemu-virt-aarch64-el2-lse` | 2 | `naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
+| `qemu-virt-aarch64-el3` | 3 | `naked fn _start() -> never` | not an entry parameter |
+
+Entry selection makes the declaration an artifact root. Source visibility is
+not part of the firmware contract. An entry can be private or public without
+changing its target ABI or native linker identity.
 
 For these profiles, the initial stack state is uninitialized.
 The selected root must contain exactly one compiler-authorized stack transition.
@@ -79,7 +83,7 @@ import core.arch { cpu }
 
 const STACK_TOP: u64 = 0x4010_0000
 
-pub naked fn _start(dtb: u64 in x0) -> never {
+naked fn _start(dtb: u64 in x0) -> never {
   establish stack from STACK_TOP
 
   loop {
@@ -110,7 +114,7 @@ import core.arch { cpu }
 
 const STACK_TOP: u64 = 0x4010_0000
 
-pub naked fn _start() -> never {
+naked fn _start() -> never {
   establish stack from STACK_TOP
 
   loop {

@@ -34,7 +34,7 @@ function active(word) {
 	return ["implemented", "implemented-normative"].includes(word.state);
 }
 
-test("Wyst highlighting exposes the canonical v0.9 lexical categories", () => {
+test("Wyst highlighting exposes the canonical lexical categories", () => {
 	const output = highlight(`module docs.uart
 pub fn uart_write(byte: u8) {
   const UARTDR: @volatile u32 = address<@volatile u32>(0x0900_0000)

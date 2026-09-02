@@ -7,6 +7,7 @@ import {
 	mkdtemp,
 	readdir,
 	readFile,
+	realpath,
 	rm,
 	stat,
 	unlink,
@@ -20,9 +21,12 @@ import { verifyWystSnapshot } from "../tools/wyst-snapshot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDir = path.join(root, "vendor", "wyst-design");
+const referenceDir = path.join(root, "vendor", "wyst-reference");
 const fixtureDir = path.join(root, "tests", "fixtures", "wyst");
 const syncScript = path.join(root, "tools", "sync-wyst-snapshot.mjs");
 const snapshotScript = path.join(root, "tools", "wyst-snapshot.mjs");
+const snapshotInputsScript = path.join(root, "tools", "wyst-snapshot-inputs.mjs");
+const verifySourceScript = path.join(root, "tools", "verify-wyst-source.mjs");
 const homepageExampleScript = path.join(root, "tools", "homepage-example.mjs");
 const highlightPolicyScript = path.join(
 	root,
@@ -57,6 +61,10 @@ const fakeSyntaxCorpusFixtures = [
 	syntaxCorpusManifest,
 	"wync/tests/fixtures/syntax-corpus/negative/removed.wyst",
 	"wync/tests/fixtures/syntax-corpus/positive/canonical.wyst",
+];
+const fakeReferenceFiles = [
+	"catalogs/language/public.tsv",
+	"docs/adr/0001-record.md",
 ];
 
 async function syntaxCorpusFixtures(rootDirectory = fixtureDir) {
@@ -145,11 +153,16 @@ for (const response of responses) {
 		].join("\n");
 
 	const inputs = [
-		["design/README.md", "# Wyst design\n"],
+		[
+			"design/README.md",
+			"# Wyst design\n\n[Public catalog](catalogs/language/public.tsv)\n[Decisions](../docs/adr/)\n",
+		],
+		["design/catalogs/language/public.tsv", "name\tstate\npublic\timplemented\n"],
+		["docs/adr/0001-record.md", "---\nstatus: accepted\n---\n\n# Record\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
 		[
 			"design/catalogs/language/syntax-words.tsv",
-			"// wyst.syntaxWords.v0.9\nfn\treserved\tcore.declarations\tdeclaration\timplemented\n",
+			"// spelling\tclassification\towner\tlegal_positions\tstate\nfn\treserved\tcore.declarations\tdeclaration\timplemented\n",
 		],
 		[
 			"design/catalogs/language/attribute-catalog.tsv",
@@ -204,6 +217,14 @@ for (const response of responses) {
 	await mkdir(path.join(siteRoot, "build"), { recursive: true });
 	await copyFile(syncScript, path.join(siteRoot, "tools", "sync-wyst-snapshot.mjs"));
 	await copyFile(snapshotScript, path.join(siteRoot, "tools", "wyst-snapshot.mjs"));
+	await copyFile(
+		snapshotInputsScript,
+		path.join(siteRoot, "tools", "wyst-snapshot-inputs.mjs"),
+	);
+	await copyFile(
+		verifySourceScript,
+		path.join(siteRoot, "tools", "verify-wyst-source.mjs"),
+	);
 	await copyFile(
 		homepageExampleScript,
 		path.join(siteRoot, "tools", "homepage-example.mjs"),
@@ -266,6 +287,18 @@ function runSync(siteRoot, wystRoot) {
 	);
 }
 
+function runVerifySource(siteRoot, wystRoot) {
+	return spawnSync(
+		process.execPath,
+		[path.join(siteRoot, "tools", "verify-wyst-source.mjs")],
+		{
+			cwd: siteRoot,
+			encoding: "utf8",
+			env: { ...process.env, WYST_REPO_DIR: wystRoot },
+		},
+	);
+}
+
 test("the versioned Wyst publication snapshot has provenance and build inputs", async () => {
 	const [sourceCommit, readme, catalogs, files] =
 		await Promise.all([
@@ -294,12 +327,36 @@ test("the versioned Wyst fixture snapshot contains only site test inputs", async
 	assert.deepEqual(await listFiles(fixtureDir), await expectedFixtures());
 });
 
+test("the public-reference snapshot contains only manual-linked catalogs and ADRs", async () => {
+	const files = await listFiles(referenceDir);
+	assert.ok(files.includes("catalogs/README.md"));
+	assert.ok(files.includes("docs/adr/0001-affine-resumable-call-contracts.md"));
+	assert.ok(files.includes("catalogs/language/semantic-operation-catalog.tsv"));
+	assert.ok(
+		files.every(
+			(file) => file.startsWith("catalogs/") || file.startsWith("docs/adr/"),
+		),
+	);
+});
+
+test("the source model and license map include the public-reference snapshot", async () => {
+	const [readme, license] = await Promise.all([
+		readFile(path.join(root, "README.md"), "utf8"),
+		readFile(path.join(root, "LICENSE.md"), "utf8"),
+	]);
+	assert.match(readme, /vendor\/wyst-reference\/\s+Snapshot-bound catalogs/);
+	assert.match(readme, /git add index\.html vendor\/wyst-design vendor\/wyst-reference/);
+	assert.match(license, /`vendor\/wyst-reference\/`/);
+});
+
 test("the committed snapshot manifest binds every imported byte", async () => {
 	const snapshot = await verifyWystSnapshot();
 	assert.match(snapshot.snapshotSha256, /^[0-9a-f]{64}$/);
 	assert.equal(
 		Object.keys(snapshot.files).length,
-		(await listFiles(designDir)).length + (await listFiles(fixtureDir)).length,
+		(await listFiles(designDir)).length +
+			(await listFiles(referenceDir)).length +
+			(await listFiles(fixtureDir)).length,
 	);
 });
 
@@ -326,11 +383,19 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	assert.equal(
 		Object.keys(manifest.files).length,
 		(await listFiles(path.join(siteRoot, "vendor", "wyst-design"))).length +
+			(await listFiles(path.join(siteRoot, "vendor", "wyst-reference"))).length +
 			(await listFiles(path.join(siteRoot, "tests", "fixtures", "wyst"))).length,
+	);
+	assert.deepEqual(
+		await listFiles(path.join(siteRoot, "vendor", "wyst-reference")),
+		fakeReferenceFiles,
 	);
 	assert.ok(manifest.files["vendor/wyst-design/.source-commit"]);
 	for (const catalog of designCatalogs) {
 		assert.ok(manifest.files[`vendor/wyst-design/${catalog}`]);
+	}
+	for (const file of fakeReferenceFiles) {
+		assert.ok(manifest.files[`vendor/wyst-reference/${file}`]);
 	}
 	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
@@ -371,6 +436,33 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 		homepageTokenTexts,
 	);
 	assert.equal(await readFile(path.join(siteRoot, "index.html"), "utf8"), homepageIndex);
+});
+
+test("source verification rejects a coherently rehashed copied-file edit", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	const synced = runSync(siteRoot, wystRoot);
+	assert.equal(synced.status, 0, synced.stderr || synced.stdout);
+	const initial = runVerifySource(siteRoot, wystRoot);
+	assert.equal(initial.status, 0, initial.stderr || initial.stdout);
+
+	await write(
+		siteRoot,
+		"vendor/wyst-design/README.md",
+		"# Tampered but coherently rehashed design\n",
+	);
+	const rehashed = spawnSync(
+		process.execPath,
+		[await realpath(path.join(siteRoot, "tools", "wyst-snapshot.mjs")), "--write"],
+		{ cwd: siteRoot, encoding: "utf8" },
+	);
+	assert.equal(rehashed.status, 0, rehashed.stderr || rehashed.stdout);
+
+	const result = runVerifySource(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(
+		result.stderr,
+		/Wyst snapshot copy differs from source: vendor\/wyst-design\/README\.md != design\/README\.md/,
+	);
 });
 
 test("snapshot sync rejects a deleted tracked design chapter", async (t) => {

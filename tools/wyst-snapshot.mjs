@@ -7,6 +7,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SNAPSHOT_MANIFEST = path.join(ROOT, "vendor", "wyst-snapshot.json");
 const SNAPSHOT_ROOTS = [
 	["vendor/wyst-design", path.join(ROOT, "vendor", "wyst-design")],
+	["vendor/wyst-reference", path.join(ROOT, "vendor", "wyst-reference")],
 	["tests/fixtures/wyst", path.join(ROOT, "tests", "fixtures", "wyst")],
 ];
 
@@ -45,10 +46,12 @@ async function walk(dir, relativeDir = "") {
 
 export async function collectWystSnapshotFiles({
 	designDir = SNAPSHOT_ROOTS[0][1],
-	fixtureDir = SNAPSHOT_ROOTS[1][1],
+	referenceDir = SNAPSHOT_ROOTS[1][1],
+	fixtureDir = SNAPSHOT_ROOTS[2][1],
 } = {}) {
 	const roots = [
 		["vendor/wyst-design", path.resolve(designDir)],
+		["vendor/wyst-reference", path.resolve(referenceDir)],
 		["tests/fixtures/wyst", path.resolve(fixtureDir)],
 	];
 	const files = {};
@@ -83,6 +86,7 @@ export function wystSnapshotSha256For({ sourceCommit, files }) {
 
 export async function createWystSnapshotManifest({
 	designDir,
+	referenceDir,
 	fixtureDir,
 	destination = SNAPSHOT_MANIFEST,
 	sourceCommit,
@@ -94,7 +98,11 @@ export async function createWystSnapshotManifest({
 				"utf8",
 			)),
 	);
-	const files = await collectWystSnapshotFiles({ designDir, fixtureDir });
+	const files = await collectWystSnapshotFiles({
+		designDir,
+		referenceDir,
+		fixtureDir,
+	});
 	const manifest = {
 		schema: 1,
 		sourceCommit: commit,
@@ -141,6 +149,7 @@ function describeMismatch(expected, actual) {
 
 export async function verifyWystSnapshot({
 	designDir,
+	referenceDir,
 	fixtureDir,
 	manifestPath = SNAPSHOT_MANIFEST,
 } = {}) {
@@ -166,6 +175,7 @@ export async function verifyWystSnapshot({
 	for (const [relativePath, entry] of Object.entries(manifest.files)) {
 		if (
 			(!relativePath.startsWith("vendor/wyst-design/") &&
+				!relativePath.startsWith("vendor/wyst-reference/") &&
 				!relativePath.startsWith("tests/fixtures/wyst/")) ||
 			relativePath.includes("..") ||
 			!metadataIsValid(entry)
@@ -182,7 +192,11 @@ export async function verifyWystSnapshot({
 	if (sourceCommit !== recordedCommit) {
 		throw new Error("Wyst snapshot sourceCommit differs from .source-commit");
 	}
-	const actualFiles = await collectWystSnapshotFiles({ designDir, fixtureDir });
+	const actualFiles = await collectWystSnapshotFiles({
+		designDir,
+		referenceDir,
+		fixtureDir,
+	});
 	const mismatch = describeMismatch(manifest.files, actualFiles);
 	if (mismatch) throw new Error(mismatch);
 	const snapshotSha256 = wystSnapshotSha256For({

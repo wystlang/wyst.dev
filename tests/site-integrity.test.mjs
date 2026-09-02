@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -67,6 +67,17 @@ test("public CSS, routes, local references, and fragments pass the site audit", 
 	assert.equal(result.status, 0, result.stderr || result.stdout);
 	assert.match(result.stdout, /site audit passed/);
 	assert.match(result.stdout, /local references and fragments valid/);
+});
+
+test("generated atomic reference uses its H1 in page and social metadata", async () => {
+	const html = await readFile(
+		new URL("../dist/docs/generated-atomic-matrix/index.html", import.meta.url),
+		"utf8",
+	);
+	assert.match(html, /<title>atomic matrix · Wyst<\/title>/);
+	assert.match(html, /<meta property="og:title" content="atomic matrix · Wyst" \/>/);
+	assert.match(html, /<meta name="twitter:title" content="atomic matrix · Wyst" \/>/);
+	assert.doesNotMatch(html, />generated-atomic-matrix · Wyst</);
 });
 
 test("audit resolves relative assets and skips external URLs without fetching them", async (t) => {

@@ -394,7 +394,7 @@ Statement <- LocalDecl / TupleLocal / TupleAssignment / Assignment / IfStmt / Wh
 StackTransition <- 'establish' 'stack' 'from' Expr
 FrameTransition <- 'establish' 'frame' / 'restore' 'frame'
 
-LocalDecl <- ('const' / 'var') UserName TypeAnnotation?
+LocalDecl <- 'comptime'? ('const' / 'var') UserName TypeAnnotation?
              RegisterPlacement? '=' Expr
 TupleLocal <- ('const' / 'var') '(' List(Binding) ')' '=' Expr
 Assignment <- Expr AssignOperator Expr
@@ -495,11 +495,18 @@ MetaExpr <- '#addr_of' '(' Expr ','? ')'
           / '#dedent' MultilineString
           / '#eval' '(' DirectCall ','? ')'
           / '#field_offset' '(' Type ',' UserName ','? ')'
+          / '#index_of' '(' Expr ','? ')'
+          / '#label_of' '(' Expr ','? ')'
           / '#len' '(' Expr ','? ')'
           / '#link_value' '(' Expr ','? ')'
+          / '#pack_label_count' '(' Expr ',' Expr ','? ')'
+          / '#pack_len' '(' Expr ','? ')'
           / '#percpu_offset_of' '(' Expr ','? ')'
+          / '#satisfies' '(' Expr ',' GenericBound ','? ')'
           / '#size_of' '(' Type ','? ')'
           / '#tag_of' '(' Expr ','? ')'
+          / '#type_name' '(' Expr ','? ')'
+          / '#type_of' '(' Expr ','? ')'
 MultilineString <- a current multiline string literal
 
 BinaryTail <- BinaryOperator Expr / 'is' VariantPattern
@@ -560,14 +567,31 @@ The current `#` meta-operations are listed in the meta-operation catalog.
 | `#eval` | required evaluation of a direct zero-argument function call |
 | `#field_offset` | `#field_offset(Type, field)` |
 | `#if` | compile-time item, statement, or expression selection |
+| `#index_of` | zero-based index of the active staged pack element |
+| `#label_of` | source label of the active staged pack element |
 | `#len` | `#len(expression)` |
 | `#link_value` | `#link_value(layout_symbol)` |
+| `#pack_label_count` | `#pack_label_count(pack, label)` |
+| `#pack_len` | `#pack_len(pack)` |
 | `#percpu_offset_of` | `#percpu_offset_of(expression)` |
 | `#requires` | module target requirement declaration |
+| `#satisfies` | `#satisfies(#type_of(pack_element), bound)` |
 | `#size_of` | `#size_of(Type)` |
 | `#static_assert` | item or statement assertion with a message |
 | `#tag_of` | `#tag_of(expression)` |
 | `#target` | module target declaration |
+| `#type_name` | canonical type identity of the active staged pack element |
+| `#type_of` | closed type of the active staged pack element |
+
+`comptime` locals and the pack-query meta-operations are available only during
+staged specialization. A `comptime` local does not support tuple
+destructuring. `#index_of`, `#label_of`, `#type_name`, and `#type_of` require
+the active binding of a staged pack loop. `#pack_len` and `#pack_label_count`
+require a staged value pack name; the label-count operand must be a closed
+compile-time string. `#satisfies` requires `#type_of(pack_element)` followed by
+one built-in generic bound. A `#type_of` value is valid only as that first
+`#satisfies` operand because a type value has no runtime representation. The
+meta-operation catalog defines the result contracts.
 
 Unknown `#name` forms are lexical errors outside checked assembly.
 Inside checked assembly, `#name` can name an assembly immediate binder.

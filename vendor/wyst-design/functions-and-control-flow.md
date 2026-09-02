@@ -401,6 +401,16 @@ Before stack establishment, naked code cannot use stack storage.
 It also cannot make a returning call.
 Checked assembly provides explicit stack transition clauses.
 
+A pre-stack `if` condition can use literals, compile-time constants,
+register-placed parameters, and authenticated reads from `readonly
+system_register` declarations. It can use field selection, casts, unary
+operators, and binary operators on these values. Nested conditions and
+naked-safe loops use the same rule.
+
+This permission does not include a function call, a system-register write, a
+read from a `readwrite` declaration, MMIO, global or pointer-based memory, or a
+local binding. Naked lowering rejects all stack slots and register spills.
+
 Trap-frame label clauses and vector entries are in
 [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md).
 
