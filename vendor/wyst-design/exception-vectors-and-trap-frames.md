@@ -129,7 +129,7 @@ The final table size must be exactly `0x800` bytes.
 ## AArch64 Trap Frames
 
 `trap_frame` declares a nominal type with a target-owned layout.
-The current selector is `aarch64`.
+The selectors are `aarch64` and `aarch64.sp0`.
 The selected target must run AArch64 at EL1, EL2, or EL3.
 
 ```text
@@ -148,13 +148,20 @@ The declaration must contain these fields in this order:
 | `x` | `[31]u64` | `0x000` | `x0` through `x30` |
 | `elr` | `u64` | `0x0f8` | `ELR_ELx` |
 | `spsr` | `u64` | `0x100` | `SPSR_ELx` |
-| `interrupted_sp` | `u64` | `0x108` | Stack pointer before frame creation |
+| `interrupted_sp` | `u64` | `0x108` | Interrupted stack pointer |
 
 The frame size is `0x110` bytes.
 The frame alignment is 16 bytes.
 
 The compiler rejects a missing, extra, reordered, renamed, or mistyped field.
 The compiler also rejects a changed offset, alignment, or total size.
+
+The `aarch64` profile is the SPx-origin profile. It allocates the frame on the
+active exception stack and records the active stack pointer before allocation.
+The `aarch64.sp0` profile is the SP0-origin profile. It allocates the frame on
+the active `SP_ELx`, but saves banked `SP_EL0` as `interrupted_sp`. Its restore
+sequence writes `interrupted_sp` to `SP_EL0` before it restores the complete
+integer context and executes `eret`.
 
 This frame does not save FP or SIMD registers.
 It does not save FPCR, FPSR, DAIF, or other system state.

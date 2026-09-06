@@ -119,6 +119,7 @@ first-class statements:
 
 ```text
 establish stack from VALUE
+relocate stack alias by VALUE
 establish frame
 restore frame
 ```
@@ -127,6 +128,15 @@ restore frame
 by a target profile. `establish frame` and terminal `restore frame` are valid
 only in their matching target-checked trap-frame labels. Source never spells
 the generated physical save, restore, or `mov sp` sequence.
+
+`relocate stack alias by VALUE` moves an established AArch64 stack by an exact
+nonzero, 16-byte-aligned constant delta in a nonreturning ordinary function.
+The delta is limited to the lower 39-bit virtual-address range. The compiler
+emits the stack-pointer adjustment and clears the frame pointer. The platform
+contract must prove that the addition does not wrap, both virtual ranges are
+canonical, and both ranges name the same stack storage until the transition
+completes. No path can relocate twice or carry a live old-stack address across
+the statement. The statement cannot establish an unknown stack.
 
 An external `b` is a typed tail transfer. Its symbol binder must name a
 function that returns `never`. The assembly signature must bind every target

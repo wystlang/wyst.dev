@@ -700,8 +700,8 @@ test("homepage contains only the introduction and real example", () => {
 	);
 	assert.match(
 		siteCss,
-		/@media \(min-width:\s*1281px\)\s*\{[\s\S]*?\.home-split\s*\{[^}]*grid-template-columns:\s*minmax\(300px,\s*28rem\)\s+max-content;[\s\S]*?\.source-artifact\s*\{[^}]*width:\s*48rem;/,
-		"wide screens should allocate enough space for the UART source without horizontal scrolling",
+		/@media \(min-width:\s*1281px\)\s*\{[\s\S]*?\.home-split\s*\{[^}]*grid-template-columns:\s*minmax\(300px,\s*28rem\)\s+max-content;[\s\S]*?\.source-artifact\s*\{[^}]*width:\s*49rem;/,
+		"wide screens should fit the UART source and a non-overlay scrollbar without horizontal scrolling",
 	);
 	assert.match(
 		siteCss,

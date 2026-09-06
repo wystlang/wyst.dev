@@ -146,6 +146,30 @@ Both platform-memory contracts contain compiler-known MMIO ranges.
 They do not prove source-defined cache, translation, or DMA protocols.
 See [Memory Model](memory-model.md) and [Semantic Operations and Hardware Declarations](semantic-operations.md).
 
+The QEMU `virt` contract also authenticates the physical GICv3 CPU interfaces
+needed by the kernel. The closed GIC system-register set is `ICC_SRE_EL1` read
+and write, `ICC_PMR_EL1` write, `ICC_BPR1_EL1` write, `ICC_CTLR_EL1` read and
+write, `ICC_IGRPEN1_EL1` write, `ICC_IAR1_EL1` read, `ICC_EOIR1_EL1` write,
+`ICC_SGI1R_EL1` write, and `ICC_SRE_EL2` read and write. The `ICC_SRE_EL2`
+entries require EL2. Each entry binds one generated accessor identity,
+encoding, direction, and minimum exception level. The contract does not
+authenticate `ICC_DIR_EL1`, virtual `ICV_*` accessors, or encoded declarations.
+
+The same contract authenticates only the canonical `CNTP_CTL_EL0` read and
+write and `CNTP_CVAL_EL0` write needed by the physical generic timer. These
+exact predicate-resolved accessors disambiguate conditional architectural
+aliases. The selected target feature closure must still satisfy each accessor
+predicate. The contract does not authenticate `CNTP_CVAL_EL0` read, other timer
+control or compare registers, virtual timer accessors, or encoded declarations.
+
+Its GIC MMIO surface binds register maps `GicDistributor` at `0x0800_0000`
+and `GicRedistributor` at `0x080a_0000`. It lists only the fixed cells used by
+the kernel: distributor `CTLR`, `TYPER`, `ICENABLER1` through `ICENABLER8`, and
+`PIDR2`; redistributor `CTLR`, `TYPER`, `WAKER`, `IGROUPR0`, `ISENABLER0`,
+`ICENABLER0`, `IPRIORITYR0`, `IPRIORITYR7` at full redistributor offset
+`0x1041c`, and `ICFGR1` at full redistributor offset `0x10c04`. Other cells do
+not receive MMIO authority.
+
 The four QEMU `virt` profiles use `semihost-service-or-terminal` exit policy.
 The Raspberry Pi 4B QEMU profile uses `terminal-only` exit policy.
 
