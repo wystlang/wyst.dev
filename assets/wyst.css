@@ -377,7 +377,8 @@ body.docs header.site .wrap {
 	}
 
 	.source-artifact {
-		width: 48rem;
+		/* Reserve space for the source lines and a non-overlay scrollbar. */
+		width: 49rem;
 	}
 }
 
