@@ -134,6 +134,13 @@ The compiler rejects ordinary calls and stack-dependent statements in that state
 The exact transition changes the checked stack state to aligned.
 The compiler can then check ordinary statements under the established stack contract.
 
+A later nonreturning path can use `relocate stack alias by VALUE` to move an
+established AArch64 stack once to an authenticated virtual alias. `VALUE` must
+be a nonzero, 16-byte-aligned constant in the lower 39-bit range. This
+operation is not a firmware-entry transition. The platform must prove that the
+addition does not wrap and that the old and new canonical ranges name the same
+storage while the compiler adjusts `sp` and clears the frame pointer.
+
 If the stack source is a visible constant, it must be 16-byte aligned.
 The compiler also verifies the lowered transition against the selected layout entry.
 

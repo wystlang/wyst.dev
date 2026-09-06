@@ -392,6 +392,7 @@ Statement <- LocalDecl / TupleLocal / TupleAssignment / Assignment / IfStmt / Wh
            / StaticAssertStmt / CompileIfStmt / Expr
 
 StackTransition <- 'establish' 'stack' 'from' Expr
+                 / 'relocate' 'stack' 'alias' 'by' Expr
 FrameTransition <- 'establish' 'frame' / 'restore' 'frame'
 
 LocalDecl <- 'comptime'? ('const' / 'var') UserName TypeAnnotation?

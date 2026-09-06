@@ -15,7 +15,8 @@ The compiler does not convert between these categories implicitly.
 
 The sealed `core.collections` module defines `Option<T>` and `Result<T, E>`.
 These types are ordinary enum values.
-Programs inspect them with exhaustive enum control flow.
+Programs use exhaustive enum control flow for local policy or explicit postfix
+`?` for lexical forwarding.
 
 `Option<T>` represents presence or absence.
 `Result<T, E>` stores a returned value or a nominal error value.
@@ -24,8 +25,47 @@ The sealed `core.outcomes` module defines `TerminalOutcome<T, F, C>`.
 This type stores a returned, failed, cancelled, or abandoned terminal state.
 It is ordinary data and does not represent a live call.
 
-The compiler does not provide automatic unwrapping or implicit propagation for these values.
-Postfix `?` does not apply to `Result`.
+Postfix `?` on an authenticated `Result<T, E>` continues with the `.Ok` payload
+or returns `.Error` from the lexical callable. The error type must match the
+lexical Result error type or have one direct `Variant(from E)` relation into
+it. The compiler performs at most one enum wrapping step and calls no
+conversion code.
+
+Postfix `?` on an authenticated `Option<T>` continues with the `.Some` payload
+or returns `.None` from the lexical Option-returning function. The inner and
+outer success payload types can differ for both forms. A same-shaped user enum
+does not participate in stored forwarding.
+
+<!-- wyst-contract: check-pass -->
+```wyst
+module outcomes.stored_forwarding
+
+import core.collections { Option, Result }
+
+enum ReadError { unavailable }
+
+fn widen_result(pending: Result<u8, ReadError>) -> Result<u64, ReadError> {
+  const value = pending?
+  return .Ok(widen<u64>(value))
+}
+
+fn widen_option(pending: Option<u8>) -> Option<u64> {
+  const value = pending?
+  return .Some(widen<u64>(value))
+}
+```
+
+The operand evaluates once. An error or absence uses ordinary lexical return
+processing, including deferred cleanup, postconditions, storage outcomes,
+returned views, concurrency state, and resource obligations. A stored affine
+operand requires explicit transfer, such as `(xfer pending)?`. Stored forwarding
+is invalid inside deferred cleanup or a resume-only handler. It does not
+convert between Option, Result, and interactive offers. `TerminalOutcome` has
+no postfix forwarding form.
+
+[Functions and Control Flow](functions-and-control-flow.md#stored-result-forwarding)
+and [Core Library](core-library.md#corecollections) define the complete stored
+forwarding rules.
 
 ## Required Observation
 
@@ -109,17 +149,55 @@ Handler payload types must match the declared offer types.
 The compiler supports explicit `forward progress`, `forward failure`, and `forward cancelled` arms.
 Forwarding requires an exact matching offer in the enclosing interactive function.
 
-## Exact Failure Forwarding
+## Direct Interactive Failure Forwarding
 
-Postfix `?` is an exact interactive failure-forwarding operation.
-It is valid only on a direct interactive call with return and failure paths.
+Postfix `?` on a direct interactive call forwards its exact failure offer.
+This form takes precedence over stored forwarding and requires a call with
+return and failure paths.
 
 The enclosing function must declare the same failure payload type.
 The compiler rejects `?` when the call also offers progress or cancellation.
-It also rejects `?` on stored `Result` values.
+It does not inspect a stored Result returned by that call. A second postfix
+operation can forward the stored error, as in `(call()?)?`.
 
-The call and its arguments evaluate once in left-to-right order.
-The operation adds no effect beyond the call's effects.
+<!-- wyst-contract: check-pass -->
+```wyst
+module outcomes.interactive_forwarding
+
+import core.collections { Result }
+
+enum ReadError { unavailable }
+
+fn child(value: u8) -> Result<u8, ReadError> offers {
+  terminal {
+    failure(u8)
+  }
+} effects(none) {
+  if value == 0 {
+    fail 1
+  }
+  if value == 255 {
+    return .Error(.unavailable)
+  }
+  return .Ok(value)
+}
+
+fn parent(value: u8) -> Result<u64, ReadError> offers {
+  terminal {
+    failure(u8)
+  }
+} effects(none) {
+  const returned = child(value)?
+  const payload = returned?
+  return .Ok(widen<u64>(payload))
+}
+```
+
+The first `?` forwards the live call failure. The second `?` processes the
+stored returned Result and uses lexical return for its `.Error` path. Neither
+operation converts one kind of failure into the other. The call and its
+arguments evaluate once in left-to-right order. Forwarding adds no effect
+beyond the call's effects.
 
 ## Progress
 

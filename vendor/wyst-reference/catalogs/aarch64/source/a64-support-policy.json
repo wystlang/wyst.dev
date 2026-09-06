@@ -79,6 +79,8 @@
       ],
       "encodingIds": [
         "a64:encoding:add-64-addsub-imm:f9088474ba5a7702",
+        "a64:encoding:add-64-addsub-shift:6f409def0d1e43f6",
+        "a64:encoding:eor-64-log-shift:eebd57442e602d6c",
         "a64:encoding:ldp-64-ldstpair-off:99d67b295cd1ef95",
         "a64:encoding:ldr-64-ldst-pos:4df4b55f398640ec",
         "a64:encoding:stp-64-ldstpair-off:ab0d9c9f204e4af6",
@@ -87,6 +89,8 @@
       ],
       "sourceFormIds": [
         "a64:source_form:add-64-addsub-imm:f9088474ba5a7702",
+        "a64:source_form:add-64-addsub-shift:6f409def0d1e43f6",
+        "a64:source_form:eor-64-log-shift:eebd57442e602d6c",
         "a64:source_form:ldp-64-ldstpair-off:99d67b295cd1ef95",
         "a64:source_form:ldr-64-ldst-pos:4df4b55f398640ec",
         "a64:source_form:mov:2ff230e63232119f",
@@ -163,6 +167,7 @@
         "a64:encoding:blr-64-branch-reg:770ead7e3fcdc8eb",
         "a64:encoding:br-64-branch-reg:9aaf83c0a39db37f",
         "a64:encoding:brk-ex-exception:7046fa1ce7c640b8",
+        "a64:encoding:udf-only-perm-undef:1dee28a3d47a3dbe",
         "a64:encoding:cas-c32-comswap:84a82f7a624a9350",
         "a64:encoding:cas-c64-comswap:7e046efc42a49cac",
         "a64:encoding:casa-c32-comswap:a458ae5ea5b32f0f",
@@ -532,6 +537,7 @@
         "a64:encoding:blr-64-branch-reg:770ead7e3fcdc8eb",
         "a64:encoding:br-64-branch-reg:9aaf83c0a39db37f",
         "a64:encoding:brk-ex-exception:7046fa1ce7c640b8",
+        "a64:encoding:udf-only-perm-undef:1dee28a3d47a3dbe",
         "a64:encoding:cas-c32-comswap:84a82f7a624a9350",
         "a64:encoding:cas-c64-comswap:7e046efc42a49cac",
         "a64:encoding:casa-c32-comswap:a458ae5ea5b32f0f",

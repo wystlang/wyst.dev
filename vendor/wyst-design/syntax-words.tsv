@@ -145,6 +145,7 @@ asm	reserved	core.checked-assembly	statement|expression-prefix	implemented
 retained	contextual	core.checked-assembly	asm-retention-modifier	implemented
 establish	contextual	core.checked-assembly	stack-or-frame-transition	implemented
 restore	contextual	core.checked-assembly	frame-transition	implemented
+relocate	contextual	core.checked-assembly	stack-alias-transition	implemented
 frame	contextual	core.checked-assembly	frame-transition	implemented
 preserves	contextual	core.callable-contracts	callable-storage-preservation	implemented
 establishes	contextual	core.target-structural-dsls	trap-frame-label-clause	implemented

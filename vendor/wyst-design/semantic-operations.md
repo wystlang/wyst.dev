@@ -340,6 +340,22 @@ Named write and modify use the same field-policy engine as register maps.
 The compiler checks target features, exception level, access direction, and register availability.
 A declaration cannot create or override an architecture fact.
 
+A selected platform contract can resolve a catalog-named access whose
+generated architecture predicate is conditional or whose canonical accessor is
+ambiguous with conditional aliases. The authority can select a
+predicate-resolved accessor only when its feature condition matches the selected
+target. Each authority is valid only for the exact generated accessor identity,
+canonical name, encoding, direction, complete semantic row, and minimum
+exception level in the contract. Semantic checking, checked IR construction, IR
+verification, and machine-code lowering derive the same authority again. The
+access adds the `platform_contract` trust boundary to the function effect
+report.
+
+Platform authority does not change the generated catalog. It cannot authorize
+an encoded declaration, an incomplete semantic row, another access direction,
+or another register with the same encoding. Encoded syntax remains limited to
+authenticated target-extension rows.
+
 Each system-register access is a full compiler memory fence.
 It does not imply or emit `dmb`, `dsb`, or `isb`.
 Required architectural sequencing must be explicit.

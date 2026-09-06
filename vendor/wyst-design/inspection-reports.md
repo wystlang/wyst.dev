@@ -129,7 +129,7 @@ wync explain resources PROJECT \
   [--format text|json]
 ```
 
-The JSON schema name is `wync.explain.resources.v2`.
+The JSON schema name is `wync.explain.resources.v3`.
 The report applies to the complete selected artifact.
 `--function` adds one exact named, body-bearing function as a stack-analysis
 root. It does not filter the report or replace the artifact's other roots.
@@ -153,11 +153,28 @@ reasons:
 - an initializer order;
 - an explicit section contribution;
 - artifact verification;
-- an exception-vector slot.
+- an exception-vector slot;
+- an authenticated exception-return continuation.
 
 One function appears once with all applicable reasons. `--function` must
 resolve to one exact function in the selected artifact and that function must
 have a body. The command reports an error otherwise.
+
+Each root reports one of four stack-bound states. `exact` supplies the maximum
+bytes and its path. `unresolved`, `recursive`, and `unbounded` reject the root
+and supply the known prefix and causes. The analyzer follows only reachable
+typed IR. It adds each call site's outgoing stack arguments to the retained
+caller frame instead of using a function-wide maximum.
+
+The transition inventory records direct and resolved indirect calls, checked
+assembly `bl` calls and `b` transfers, structural exception-frame transfers,
+exception restores, and authenticated `eret` handoffs. Each row
+states whether the source frame remains active, the outgoing stack bytes, and
+the resolved target. A `b` transfer retains the source frame if another checked
+machine exit can return. Checked terminal assembly uses the verified final
+machine frame disposition. An `eret` row is exact only when its target EL, ELR target,
+and selected stack register are authenticated. Its continuation starts a new
+stack epoch and appears as a separate root.
 
 The text `selected-status` field and JSON `stackRoots.selectedStatus` field
 describe only the artifact's selected semantic entry. The value is `available`
