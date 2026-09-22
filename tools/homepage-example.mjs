@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -82,9 +82,6 @@ export const HOMEPAGE_EXAMPLES = Object.freeze({
 
 export const HOMEPAGE_SOURCE_PATH = HOMEPAGE_EXAMPLES.uart.sourcePath;
 export const HOMEPAGE_ARTIFACT_PATH = HOMEPAGE_EXAMPLES.uart.artifactPath;
-export const HOMEPAGE_OUTPUT_PATH = HOMEPAGE_EXAMPLES.uart.outputPath;
-export const HOMEPAGE_REGION_START = HOMEPAGE_EXAMPLES.uart.regionStart;
-export const HOMEPAGE_REGION_END = HOMEPAGE_EXAMPLES.uart.regionEnd;
 
 const TOKEN_GENERATOR = "wync-lsp-semanticTokens/full";
 const LSP_HEADER_END = Buffer.from("\r\n\r\n");
@@ -571,10 +568,7 @@ function replaceGeneratedRegion(indexHtml, region, example) {
 	);
 }
 
-export function updateHomepageIndex(indexHtml, artifactOrArtifacts) {
-	const artifacts = artifactOrArtifacts?.schema
-		? { uart: artifactOrArtifacts }
-		: artifactOrArtifacts;
+export function updateHomepageIndex(indexHtml, artifacts) {
 	let updated = indexHtml;
 	for (const [id, artifact] of Object.entries(artifacts ?? {})) {
 		const example = HOMEPAGE_EXAMPLES[id];
@@ -624,10 +618,6 @@ export function updateHomepageOutputs(indexHtml, outputs) {
 	return updated;
 }
 
-export function updateHomepageTerminalOutput(indexHtml, output) {
-	return replaceHomepageOutput(indexHtml, output, HOMEPAGE_EXAMPLES.uart);
-}
-
 export async function readHomepageSemanticArtifact(
 	artifactPath = HOMEPAGE_ARTIFACT_PATH,
 	sourcePath = HOMEPAGE_SOURCE_PATH,
@@ -675,25 +665,6 @@ export async function verifyHomepageExample({
 		);
 	}
 	return artifacts;
-}
-
-export async function writeHomepageExample({
-	artifact,
-	id = "uart",
-	artifactPath,
-	indexPath = HOMEPAGE_INDEX_PATH,
-}) {
-	const example = HOMEPAGE_EXAMPLES[id];
-	if (!example) throw new Error(`unknown homepage example '${id}'`);
-	validateArtifact(artifact, example.sourcePath);
-	const indexHtml = await readFile(indexPath, "utf8");
-	await Promise.all([
-		writeFile(
-			artifactPath ?? example.artifactPath,
-			`${JSON.stringify(artifact, null, 2)}\n`,
-		),
-		writeFile(indexPath, updateHomepageIndex(indexHtml, { [id]: artifact })),
-	]);
 }
 
 if (
