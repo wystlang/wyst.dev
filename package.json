@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "markdown-it": "15.0.1",
-    "markdown-it-anchor": "9.2.1",
+    "markdown-it-anchor": "10.0.0",
     "prismjs": "1.30.0",
     "wrangler": "4.131.0"
   }
