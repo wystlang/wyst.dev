@@ -45,6 +45,27 @@ Different operations require different facts:
 A write does not require the previous value to be initialized.
 A read-modify-write reads the previous value and therefore requires initialization.
 
+A complete ordinary address load copies its value and requires a copyable
+pointee type. A complete ordinary address store requires a discardable pointee
+type. These abilities apply recursively through aggregates. A non-copyable but
+discardable input still requires explicit `xfer` for the store. Ordinary address
+storage has no protocol for accounting or resolving stored values, so it cannot
+hold `must_account` or `must_resolve` values through these operations. Use a
+typed resource or provider API for those obligations. Field projection can
+still read or write a field whose own type permits the operation.
+
+Ordinary address stores also reject values that carry a resource loan. The
+destination has no source-lifetime endpoint for such a loan. Dedicated storage
+operations must retain that relation through their checked contract.
+
+A complete load of an address-bearing value recovers its current stored loans
+through known local storage targets. It cannot copy an exclusive stored loan.
+A shared stored loan remains attached to the loaded value. Returning that value
+requires a matching `from` contract, including through an ordinary wrapper.
+Scalar projections do not acquire the enclosing value's loan. These checks
+retain existing loan authority; they do not establish a lifetime for an
+otherwise unproved raw address.
+
 A forwarding checked subscript authenticates only the bounds dimension. Its
 success path uses the exact captured base descriptor and the authenticated
 index or range from `core.checked`. Usable extent, alignment, initialization,
@@ -78,6 +99,33 @@ It does not prove device protocols, DMA ownership, or complete concurrency proto
 Field projection, element projection, and slicing narrow the authority.
 They do not create additional usable extent.
 
+A returned exclusive loan constrains its backing storage until the last use of
+the view. A slice descriptor and an earlier pointer can identify the same
+storage. Access through either alias must obey that loan. The view retains
+access through its own loan; proven-disjoint storage remains available.
+After release, the loan no longer constrains the source or its aliases.
+When an address can target both local and nonlocal storage, its known local
+targets still constrain overlapping access. An unknown alternative does not
+remove a known alias.
+
+Backing identity follows global arrays, local arrays, address projections, and
+returned views. This identity establishes overlap; it does not establish a
+storage lifetime. Access through a child view uses the authority delegated by
+its checked return contract. Every possible overlapping origin must retain that
+delegation. Combining a child view with an earlier alias does not authorize the
+earlier alias.
+
+A returned loan from a `mut` owner retains the exclusive owner constraint when
+the owner carries an exclusive loan on other storage. Derived views retain both
+constraints. The owner becomes available after the last dependent view's use;
+a carried backing loan does not permit early owner mutation or transfer.
+An owner with shared backing retains shared access: a storage-preserving cursor
+advance remains valid while a shared capture is live.
+
+Wrapping a returned owner in another aggregate or enum payload retains its
+original storage constraints. The result shape does not grant an earlier alias
+the owner's access or remove the required `from` contract.
+
 Address arithmetic is explicit.
 Use `byte_offset` or `element_offset` where the type permits that operation.
 The resulting access must still pass typed memory proof.
@@ -91,6 +139,18 @@ selected enum payload. For example, `from arena on .Ok` lets the `.Ok` payload
 retain the Arena storage identity and lifetime. The `.Error` outcome has no
 such authority. WYSTIF transports this relation for calls compiled without the
 producer source.
+
+Scoped stack-address facts follow aggregate fields and enum payloads separately.
+For a call with `from input on .Ok`, the success payload retains the input's
+lifetime. An independent scalar error does not inherit it. An actual address
+encoded as an integer in an error payload still retains its lifetime. Pattern
+bindings and `?` forwarding select the corresponding payload facts. Merging
+branches retains all possible sources.
+
+The relation covers borrows within the selected payload's aggregate fields.
+It does not authorize borrows under a different variant. Interface emission
+resolves each generic argument in its declaring module before selecting its
+layout and outcome metadata.
 
 `core.text.from_bytes` preserves the exact source byte-slice provenance on
 `.Ok`; validation does not copy or allocate. A checked string slice narrows
@@ -143,6 +203,11 @@ Use the explicit qualifier operations described in [Type System](type-system.md)
 Artifact construction requires an exact selected-platform mapping for MMIO.
 A constant raw MMIO address must identify a known mapped cell or range.
 A dynamic raw MMIO address has no transported mapping identity and is rejected.
+
+A platform can restrict a cell to an exact typed declaration width and access
+direction. Such a cell does not authorize an integer-derived MMIO pointer.
+The compiler joins each typed primitive to its retained declaration,
+placement, and platform cell before it accepts the required memory facts.
 
 A register-map instance transports authenticated mapping identity as a typed
 value. Its runtime base address is accompanied in compiler semantics by a

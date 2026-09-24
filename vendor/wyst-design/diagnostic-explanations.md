@@ -105,6 +105,7 @@ Current semantic diagnostics attach exact actions in these cases:
 
 - `W0217` can attach a `refactor.rewrite` structure-order preview.
 - `W0218` can attach a `quickfix` that removes a redundant local type.
+- `W0221` can attach a `quickfix` that explicitly discards a legal unused call result.
 
 The language server also creates focused source actions.
 See [Editor Integration](editor-integration.md).

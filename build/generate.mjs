@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import { registerWyst } from "./prism-wyst.mjs";
+import { publicToolReferences } from "../tools/wyst-snapshot-inputs.mjs";
 import {
 	docPage,
 	docIndexPage,
@@ -51,6 +52,9 @@ const LOCAL_DESIGN_ARTIFACT_LINKS = new Map(
 );
 
 function publicReferenceHref(href) {
+	const tool = publicToolReferences.find(({ source }) => href === `../${source}`);
+	if (tool) return tool.url;
+	if (href === "../../../design/inspection-reports.md") return "/docs/inspection-reports/";
 	if (href === "../docs/adr/") return "/docs/adr/";
 	if (href === "catalogs/README.md") return "/docs/catalogs/README.md";
 	if (/^catalogs\/[\w./-]+\.(?:json|tsv|jsonl\.gz)$/.test(href)) {
@@ -427,7 +431,32 @@ function generatePublicReferencePages({ md, navModel, outDir, referenceDir }) {
 			}),
 		);
 	}
-	return adrs.length + 1;
+	let toolCount = 0;
+	for (const tool of publicToolReferences) {
+		const sourcePath = path.join(referenceDir, tool.source);
+		if (!fs.existsSync(sourcePath)) continue;
+		const source = fs.readFileSync(sourcePath, "utf8");
+		let { body } = parseFrontmatter(source);
+		const h1 = body.match(/^\s*#\s+(.+?)\s*$/m)?.[1]?.trim();
+		if (!h1) throw new Error(`public tool guide has no H1: ${tool.source}`);
+		body = body.replace(/^\s*#\s+(.+?)\s*$/m, "");
+		const env = { sourceFile: tool.source };
+		const tokens = md.parse(body, env);
+		const destination = path.join(outDir, tool.url.slice("/docs/".length), "index.html");
+		fs.mkdirSync(path.dirname(destination), { recursive: true });
+		fs.writeFileSync(destination, docPage({
+			title: `${h1} · Wyst`,
+			description: "Wyst compiler tool guide.",
+			canonical: `${SITE}${tool.url}`,
+			navModel,
+			current: { url: tool.url, h1, summary: "" },
+			eyebrow: "Tool reference",
+			articleHtml: md.renderer.render(tokens, md.options, env),
+			tocHtml: buildToc(tokens),
+		}));
+		toolCount++;
+	}
+	return adrs.length + toolCount + 1;
 }
 
 export function generateDocs({

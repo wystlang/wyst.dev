@@ -1,0 +1,6 @@
+module projections
+struct State { pages: u64 }
+struct Plan { state: State }
+fn pages(plan: @Plan) -> @u64 {
+  return field_addr(field_addr(plan, .state), .pages)
+}

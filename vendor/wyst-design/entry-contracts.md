@@ -38,13 +38,14 @@ Project layout selection is defined in [Project Builds](project-builds.md).
 
 ## Compiler-Owned Firmware Schemas
 
-Three built-in profiles add an exact firmware schema.
+Four built-in profiles add an exact firmware schema.
 
 | Profile | Initial EL | Required root | Firmware `x0` |
 | --- | ---: | --- | --- |
 | `qemu-virt-aarch64-el2` | 2 | `naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
 | `qemu-virt-aarch64-el2-lse` | 2 | `naked fn _start(dtb: u64 in x0) -> never` | preserved entry parameter |
 | `qemu-virt-aarch64-el3` | 3 | `naked fn _start() -> never` | not an entry parameter |
+| `apple-m1-ultra-m1n1-el2` | 2 | `naked fn _start(dtb: u64 in x0, arg1: u64 in x1, arg2: u64 in x2, arg3: u64 in x3) -> never` | preserved entry parameter |
 
 Entry selection makes the declaration an artifact root. Source visibility is
 not part of the firmware contract. An entry can be private or public without
@@ -65,6 +66,11 @@ value and does not terminate control flow.
 
 The compiler rejects `establish stack from VALUE` when the selected profile
 provides no entry transition.
+Other body-bearing naked functions can use the same profile-owned transition
+for source-managed entries. Each transition retains the exact input placement,
+stack write, and stackless-prefix checks. Source owns the runtime stack extent,
+identity checks, and entry publication. This does not add a firmware ABI or
+make an ordinary function a stack owner.
 Trap-frame entry clauses use separate rules.
 See [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md).
 
@@ -98,6 +104,33 @@ The compiler does not interpret the DTB contents.
 
 The source can use `dtb` after the stack transition.
 Later code must preserve any value that it still needs.
+
+## Apple m1n1 Entry
+
+The Apple profile exposes the four raw handoff words as the exact parameters
+listed above. It does not assume that `x1`, `x2`, and `x3` contain zero; a
+contract witness can observe those values. The stack transition uses `x9`
+instead of the QEMU transition's `x1`, preserving all four live parameters.
+
+Before stack establishment, this profile permits a `u64` local with an explicit
+register pin whose initializer is `cpu.read_stack_pointer()` or the `.raw`
+result of an authenticated `system_register` read from a `readonly` or
+`readwrite` declaration. These operations retain scalar entry facts without
+using the incoming stack. Other local initializers, pointer-based memory, calls, and
+register spills remain invalid in this state. Normal register-conflict checks
+still apply.
+
+```text
+var entry_sp: u64 in x19 = cpu.read_stack_pointer()
+var entry_spsel: u64 in x20 = SPSel.read().raw
+var entry_daif: u64 in x21 = DAIF.read().raw
+establish stack from __stack_top
+```
+
+The transition writes SP through the profile's scratch register. It does not
+write SPSel, DAIF, or translation controls. A witness must retain incoming SP
+before this transition. It can read unchanged control registers afterward,
+before source writes those controls.
 
 ## Secure EL3 Entry
 
@@ -136,13 +169,15 @@ The compiler can then check ordinary statements under the established stack cont
 
 A later nonreturning path can use `relocate stack alias by VALUE` to move an
 established AArch64 stack once to an authenticated virtual alias. `VALUE` must
-be a nonzero, 16-byte-aligned constant in the lower 39-bit range. This
-operation is not a firmware-entry transition. The platform must prove that the
+be a nonzero, 16-byte-aligned constant in the lower 42-bit range. This
+operation also accepts a direct named layout `u64` symbol, with its bounds
+checked after final placement. It is not a firmware-entry transition. The platform must prove that the
 addition does not wrap and that the old and new canonical ranges name the same
 storage while the compiler adjusts `sp` and clears the frame pointer.
 
 If the stack source is a visible constant, it must be 16-byte aligned.
-The compiler also verifies the lowered transition against the selected layout entry.
+The compiler also verifies each lowered transition against its naked owner and
+the selected profile. The layout entry still requires exactly one transition.
 
 Checked assembly syntax is in [Checked Assembly](checked-assembly.md).
 Naked-code rules are in [Functions and Control Flow](functions-and-control-flow.md).

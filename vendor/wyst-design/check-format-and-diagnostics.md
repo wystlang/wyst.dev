@@ -103,6 +103,12 @@ The following options enable additional warnings:
 - `--warn-redundant-local-types` enables `W0218`.
   It reports a removable local type annotation.
   The compiler emits the warning only when removal preserves inferred facts.
+- `--warn-unused-results` enables `W0221`.
+  It reports legal abandonment of an ordinary discardable call result, with its
+  type and callable or callback declaration when available. Direct, indirect,
+  and materialized static-interface calls use the same check. Void and never
+  calls, explicit discard, and consumed results are excluded. Required
+  observation and resource violations remain errors.
 - `--warn-structure-layout N` enables `W0217`.
   `N` must be a positive byte count.
   The warning requires an exact size reduction of at least `N` bytes.
@@ -110,6 +116,8 @@ The following options enable additional warnings:
 `W0217` can include an exact structure-reordering preview.
 `W0218` can include an exact edit that removes the annotation.
 Neither warning makes a performance claim.
+`W0221` offers `discard(call())` only as an explicit source action. The warning
+and its action never insert a discard automatically.
 
 ## Diagnostic Formats
 
@@ -225,9 +233,13 @@ The source formatter applies these principal rules:
 
 - It uses two spaces for each indentation level.
 - It limits breakable syntax to 100 columns.
+- It includes postfix operations and enclosing punctuation when it chooses line breaks.
 - It can leave indivisible text or target-owned assembly lines longer than 100 columns.
 - It uses canonical declaration attributes and modifiers.
 - It sorts module imports and selected names within their formatter groups.
+- It keeps comment-free, single-expression match arms on one line when the complete arm fits.
+- It keeps recovery blocks and commented arms multiline, and omits blocks for no-op arms.
+- It puts a returned-view relation with multiple sources or an outcome qualifier on a separate line after the result.
 - It uses multiline trailing commas for comma lists.
 - It preserves supported declaration, field, arm, statement, and trailing comments.
 - It preserves one intentional blank line at supported statement boundaries.

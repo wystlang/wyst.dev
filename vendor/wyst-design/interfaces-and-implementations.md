@@ -42,8 +42,19 @@ implementation cannot declare or derive an ability proof.
 
 Each operation is a name and one Native callable requirement. `Self` is a
 contextual compiler binder in that requirement. It must occur exactly once as
-the complete type of parameter zero; it cannot be nested in another type or
-appear in a result. There are no static operations.
+the complete type of parameter zero or as the pointee of a read-mode
+`noescape @Self` parameter zero. The borrowed form must be a plain,
+nonvolatile pointer. It does not permit `mut`, `var`, a returned-view source
+`parameter(0)`, or any other nesting of `Self`. `Self` cannot appear in another
+parameter or a result. There are no static operations.
+
+For example, `read: fn(noescape @Self) -> u64 accesses(parameter(0)) effects(none)` can map to
+`fn read_plan(plan: noescape @Plan) -> u64 effects(none)`. The call passes the
+existing borrow through ordinary direct-call rules and does not copy the
+complete `Plan` value. The implementation must retain `noescape`; ordinary
+borrow checks reject retaining or exposing the receiver authority.
+Reading the pointed-to storage requires the ordinary `accesses(parameter(0))`
+contract; `noescape` does not grant that access by itself.
 
 Requirements use positional parameters and the ordinary callable-type contract
 syntax. The parameter mode and `accesses` are independent facts. In the example,
@@ -135,8 +146,9 @@ does not provide constraint intersections or interface inheritance.
 
 An interface-qualified call has the form
 `Interface.operation(subject, arguments...)`. Calls are positional. Parameter
-zero must be the directly constrained generic parameter, and its declared
-interface constraint must match the qualifier. Receiver-dot syntax and
+zero must have the directly constrained generic type, or a plain pointer to
+that type for a `noescape @Self` requirement. The declared interface constraint
+of that type must match the qualifier. Receiver-dot syntax and
 implicit method lookup are not part of static interfaces.
 
 The compiler authenticates a generic body using the requirement contracts,
@@ -204,6 +216,14 @@ associated and receiver calls without making the operation a static-interface
 requirement.
 The `.wystlib` companion indexes interface providers and transports the paired
 module products used for source-less generic materialization.
+
+An outcome-qualified returned loan requires a declared unary enum payload.
+For a symbolic generic result, WYSTIF validates the outcome names and payload
+arity against the exact local enum declaration and its matching generic body,
+or against an authenticated bundled-core import declaration. This shape check
+does not establish a concrete layout. A source-less concrete call still
+requires the ordinary authenticated type layout. A generic enum whose defining
+declaration is unavailable cannot acquire returned-loan authority from its name.
 
 Changing a requirement or mapping invalidates its semantic digest, dependent
 generic materializations, reachability, and paired native objects. Generic

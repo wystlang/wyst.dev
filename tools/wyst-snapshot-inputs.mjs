@@ -17,6 +17,13 @@ export const coreFixturePaths = [
 
 export const syntaxCorpusRoot = "wync/tests/fixtures/syntax-corpus";
 
+export const publicToolReferences = [
+	{
+		source: "wync/tools/compare-compiler-facts/README.md",
+		url: "/docs/tools/compare-compiler-facts/",
+	},
+];
+
 export const vocabularyCatalogs = [
 	"attribute-catalog.tsv",
 	"meta-operation-catalog.tsv",
@@ -61,6 +68,9 @@ export async function publicReferencePaths(wystRoot, designFileNames) {
 				sourcePaths.add(path.posix.join("design", href));
 			} else if (href === "../docs/adr/") {
 				publishesAdrs = true;
+			} else {
+				const tool = publicToolReferences.find(({ source }) => href === `../${source}`);
+				if (tool) sourcePaths.add(tool.source);
 			}
 		}
 	}

@@ -29,6 +29,64 @@ examples conflict, use this order:
 User-visible semantics win over an internal representation or stale test.
 Correct the lower-authority source when resolving a conflict.
 
+[Modules and Symbol Boundaries](modules-and-symbol-boundaries.md) owns declaration
+scope, typed static storage addresses, and inferred type identity.
+[Check, Format, and Diagnostics](check-format-and-diagnostics.md) owns canonical
+source width, match-arm layout, returned-view clause layout, and import comment attachment.
+[Editor Integration](editor-integration.md) owns canonical import actions,
+complete callable help, checked value and custody summaries, and checked syntax
+rewrites. [Check, Format, and Diagnostics](check-format-and-diagnostics.md) also
+owns the opt-in unused-result warning.
+[Intermediate Representation](intermediate-representation.md) owns constant
+array lengths in layouts, initialization, and callable ABI contracts.
+[Type System](type-system.md#bitstruct-types) owns bitstruct field carriers,
+nominal identity, literal rules, and the exclusion of opaque fields. It also
+owns contextual field-address selection and complete struct initializer shorthand; [Editor Integration](editor-integration.md)
+owns its separate field and binding navigation and rename identities.
+The Type System also distinguishes indexed value copies from borrowed slices;
+address-taking retains the projected storage lease.
+[Memory Model](memory-model.md#typed-addresses-and-views) owns the backing-storage
+constraints on owners, backing storage, and aliases of a returned exclusive loan.
+It also owns the propagation of outcome-qualified loans and scoped address facts
+through aggregate payloads.
+[Inspection Reports](inspection-reports.md) owns reference execution of repeated
+value definitions and their materialized local storage.
+It also owns compiler-fact comparison and source-position proof queries. These
+queries expose authenticated facts from the selected source snapshot.
+[Binary Formats](binary-formats.md) owns sequential wire schemas, checked
+dependent expressions, generated native storage and operations, and their
+failure and source-location contracts. Wire layout is separate from native
+type layout.
+[Functions and Control Flow](functions-and-control-flow.md) owns explicit
+scoped `noescape` locals, aggregate borrowing contracts, suspension boundaries,
+name-first parameter contracts, exclusive-loan call markers, their receiver
+spelling, and stackless typed static scalar access.
+[Semantic Operations and Hardware Declarations](semantic-operations.md)
+owns the returning four-word SMC boundary.
+[Interfaces and Implementations](interfaces-and-implementations.md) owns
+borrowed `noescape @Self` requirements, exact conformance, and exclusion of
+receiver-origin results.
+[Entry Contracts](entry-contracts.md) owns the Apple m1n1 handoff parameters,
+profile-selected stack scratch, pinned readonly entry snapshots, and checked
+42-bit stack-alias deltas, including named values checked at final placement,
+and profile-owned stack establishment in source-managed naked entries.
+[A64 Compiler Semantics](a64-compiler-semantics.md) owns exact platform-gated
+VHE entry access derivation, read-only Apple CPU-local FIQ admission checks,
+finite translation-write authority, and selected
+platform authentication of conditional system-register words in lowering reports;
+[Target Profiles](target-profiles.md) owns the selected Apple maintenance limits
+and the four-CPU QEMU redistributor admission, local timer setup, and addressed SGI contract.
+[AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md)
+owns vector installation destinations, including EL1 state selected through
+the independently authorized EL2 `VBAR_EL12` accessor.
+
+[Named Layouts and Placement](named-layouts-and-placement.md) owns final-placement
+assertions and their separation from ordinary compile-time proofs.
+
+[Outcomes, Progress, and Terminal Control](outcomes-and-progress.md) owns the
+single offer block, flat handler arms, and distinct live and stored forwarding.
+Stored forwarding keeps the authenticated success type in effect analysis.
+
 ## Architectural Decisions
 
 Accepted records under [`../docs/adr/`](../docs/adr/) preserve the rationale

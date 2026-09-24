@@ -46,18 +46,65 @@ static-interface requirements and qualified calls.
 A declaration parameter has this order:
 
 ```text
-comptime? mut|var? name: noescape? Type ...? in Register?
+name: comptime? (mut | var)? noescape? Type ('...')? ('in' Register)?
 ```
+
+A parameter contract groups specialization, passing mode, lifetime, and type
+properties after its name. These modifiers are not general type constructors.
+Local `comptime` still prefixes the complete local declaration and initializer.
+Declaration storage properties and attributes retain their own grammar.
+
+The contextual words `comptime`, `mut`, and `noescape` act as modifiers when
+followed by another modifier or a type. Before a parameter boundary, a type
+suffix (`.` or `<`), a pack suffix, or `in Register`, they name a type instead.
+This rule also applies to `mut` and `noescape` in callable parameter contracts.
+For example, `value: mut` uses the type named `mut`, while `value: mut u64`
+loans a `u64`. No contextual word becomes globally reserved.
 
 The unmarked parameter mode is read access.
 `mut` gives an exclusive mutable loan.
 `var` passes an owned mutable value.
-`noescape` applies to the parameter type after the colon.
-It accepts address, slice, and callable-capability parameters.
-The callee cannot retain that authority, and can forward it only to another
-matching `noescape` parameter of a direct call. Returning it requires an
-explicit `from parameter_name` result contract, which transfers the source
-lifetime to the caller-visible result.
+An argument for a `mut` parameter requires the call marker `mut value`.
+For a labeled argument, write `name = mut value`. Read and `var` parameters
+reject this marker. Direct calls, function values, generic calls, and static
+interface calls use the same rule after the parameter is resolved.
+
+The marker does not produce a value. Its argument must satisfy the existing
+writable-place, initialization, alias, storage, and loan rules. It creates no
+temporary or implicit reborrow. Arguments keep source evaluation order.
+Mutation through an address or device authority still follows its own contract;
+an `accesses(mut ...)` clause does not require a call marker for a read parameter.
+Copyable values can be copied into `var` parameters. An owned transfer uses
+`xfer`, which is separate from the exclusive-loan marker.
+
+`noescape` is a parameter contract after the colon.
+It accepts address, slice, callable-capability, struct, enum, tuple, and fixed-array
+parameters. The callee can keep a scoped local alias or derived view. Local
+bindings, whole-local assignments, projections, transfers, and branch joins retain
+the source lifetime. A local owner wrapper can be consumed by a matching
+`noescape` parameter or explicitly discarded.
+
+The callee cannot store that authority in an escaping destination or pass it to
+a retaining parameter. Direct and indirect calls enforce the same contract.
+Returning it requires an explicit `from parameter_name` result contract. Every
+carried source and outcome must match that contract. This transfers the source
+lifetime to the caller-visible result; it does not extend the storage lifetime.
+Explicit address conversions and trap-frame exposure retain their existing
+restrictions. Pointer stores and projected assignments remain conservative.
+
+A scoped local borrow cannot remain live across an execution-suspension boundary.
+Its last use can precede that boundary. A last-use argument remains live until its
+borrowing call returns. This check also applies to scoped aggregate parameters.
+An outer binding used in a loop remains live through its back edge. A binding
+created and last used within one iteration can end before that iteration suspends.
+The existing rules for direct ordinary address parameters in a retained frame and
+for activation-local `MaybeUninit` loans remain separate.
+
+An aggregate `noescape` parameter is conservatively scoped as a whole. A scalar
+field can contain exposed address bits, so its type alone does not remove the
+lifetime. Locally constructed aggregates track each field's actual origin.
+Address-based accessors remain useful when a whole-aggregate parameter would
+unnecessarily constrain scalar observations.
 
 `comptime` marks a read-only parameter that must be a closed compile-time
 value. It has no runtime representation or ABI position. A final `...` marks a
@@ -95,7 +142,7 @@ module returned_payload_lease
 import core.collections { Result }
 import core.storage { Arena, ArenaFailure }
 
-fn allocate(mut arena: Arena) -> Result<@u64, ArenaFailure>
+fn allocate(arena: mut Arena) -> Result<@u64, ArenaFailure>
   from arena on .Ok
 {
   loop { }
@@ -108,6 +155,17 @@ this distinction: it returns `.Error` without a view and unwraps the qualified
 payload on success. A callable type spells the same relation as
 `from parameter(0) on .Ok`.
 
+The source clause precedes the selected outcome, keeping `from source`
+consistent with unconditional returned views.
+
+The selected payload can contain structs, tuples, arrays, and nested enums.
+Every borrow within that payload must come from a declared source. A borrow
+under another outcome does not satisfy the relation. An error payload that
+contains only scalar values carries no storage authority.
+An unconditional relation also checks every carried source. Stored forwarding
+checks only the forwarded payload, including an error wrapped by one declared
+conversion. A success-only relation cannot authorize a borrowed error.
+
 Function contracts use proof-required `requires(condition)`, runtime-checked
 `requires(condition, reason = u16_expression)`, and runtime-checked
 `ensures(condition, reason = u16_expression)`. A reasonless precondition must be
@@ -118,6 +176,10 @@ immutable call arguments. A reason-bearing clause retains the existing runtime
 fatal-trap behavior, and its reason expression must have exactly type `u16`.
 All `requires` clauses must precede all `ensures` clauses.
 These clauses require a body-bearing, non-`naked` Wyst function.
+
+A proof for a fixed array does not establish bounds for another slice or a
+changing cursor. Each call must prove its actual arguments; otherwise retain
+explicit checked behavior rather than substituting a trap or trusted assertion.
 
 Callable concurrency, storage, effect, and trust clauses follow the result.
 Their canonical rules are in [Memory Model](memory-model.md).
@@ -148,9 +210,12 @@ An operation without `self` is associated only.
 
 For an exact nominal receiver, `value.operation(arguments...)` elaborates to
 `Owner.operation(value, arguments...)` before typed IR. The receiver is
-evaluated once and before the remaining arguments. `mut self` needs an
-addressable mutable place. `var self` needs explicit transfer with
-`(xfer value).operation(...)`. Transfer is invalid for a retained `mut self`
+evaluated once and before the remaining arguments. For `self: mut T`, write
+`(mut value).operation(arguments...)`. This elaborates to
+`Owner.operation(mut value, arguments...)` and needs an addressable mutable
+place. The parenthesized marker is valid only as an operation-call receiver.
+`self: var T` needs explicit transfer with
+`(xfer value).operation(...)`. Transfer is invalid for a retained `self: mut T`
 receiver. Lookup does not apply autoref, autoderef, conversion, reborrow,
 interface search, extension lookup, or overload resolution.
 
@@ -185,6 +250,21 @@ allocation, or indirect parser dispatch.
 
 Use `xfer value` to transfer an owned value.
 Resource transfer rules are in [Type System](type-system.md).
+
+### Generated binary operations
+
+The sequential binary profile generates ordinary `decode_Name` and `encode_Name`
+functions. They take explicit bit positions, bit extents, and work limits. Decode
+also takes captured schema parameters and, when needed, caller-provided
+`NameDestination` storage. A successful value can borrow only that destination.
+Encode receives a native `NameValue`, rechecks its snapshots and constraints,
+and writes to a caller-provided output slice. Both operations preserve output on
+failure and use ordinary checked result, loan, and disjointness rules.
+
+These operations do not add implicit cursor state, allocation, native parameter
+modes, or call-site syntax. The complete accepted signatures, generated names,
+and failure ordering are in [Binary Formats](binary-formats.md). Release
+acceptance remains pending the integration gates.
 
 ## Bindings and assignment
 
@@ -321,6 +401,13 @@ Its bounds must have one compatible integer type.
 Direct array or slice iteration requires `#[unroll]`.
 Loop expansion rules are in [Optimization](optimization.md).
 
+Ordinary scalar slice iteration is not implemented. Integer ranges and explicit
+cursors retain load timing, offsets, and mutation order. A later extension needs
+several value-only consumers and must capture the descriptor once, preserve
+backing invalidation and sequential mutation visibility, and define zero
+iterations and `break`/`continue`/`return`. Mutable or affine iteration,
+allocation, and implicit unrolling remain outside that first extension.
+
 `break` and `continue` apply to the nearest enclosing loop.
 A `for` loop can execute zero times.
 Therefore, its body cannot prove that later code is unreachable.
@@ -402,14 +489,27 @@ It also cannot make a returning call.
 Checked assembly provides explicit stack transition clauses.
 
 A pre-stack `if` condition can use literals, compile-time constants,
-register-placed parameters, and authenticated reads from `readonly
-system_register` declarations. It can use field selection, casts, unary
-operators, and binary operators on these values. Nested conditions and
+register-placed parameters, and authenticated `.read()` operations from
+`readonly` or `readwrite system_register` declarations. It can use field
+selection, casts, unary operators, and binary operators on these values. Nested conditions and
 naked-safe loops use the same rule.
 
-This permission does not include a function call, a system-register write, a
-read from a `readwrite` declaration, MMIO, global or pointer-based memory, or a
-local binding. Naked lowering rejects all stack slots and register spills.
+These conditions can also read boolean and native integer fields or elements
+of statically named storage. The address must stay rooted in that declaration;
+pointer loads, aggregate copies, volatile access, and CPU-relative storage are
+not allowed. Static atomic scalar loads and stores use their normal typed
+ordering rules. The platform must make this storage accessible before use.
+
+Typed system-register `.write()` statements are also legal before stack
+establishment when their single operand uses these register-only values or
+`#addr_of` names one static global, function, label, or exception vector. The
+normal catalog, access direction, feature, minimum-EL, and selected platform
+checks still apply. This permission does not include `.modify()`, ordinary
+calls, MMIO, or pointer-based memory access. Register declaration
+access shape does not make an authenticated read into a write operation.
+Local bindings remain invalid except for the explicitly pinned readonly
+snapshots authorized by the [Apple entry contract](entry-contracts.md#apple-m1n1-entry).
+Naked lowering rejects all stack slots and register spills.
 
 Trap-frame label clauses and vector entries are in
 [AArch64 Exception Vectors and Trap Frames](exception-vectors-and-trap-frames.md).
@@ -523,9 +623,7 @@ returned payload is a stored `Result`, a second `?` can process it, as in
 module functions.forwarding
 
 fn child(value: u64) -> u64 offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   if value == 0 {
     fail 1
@@ -535,9 +633,7 @@ fn child(value: u64) -> u64 offers {
 }
 
 fn parent(value: u64) -> u64 offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   return child(value)?
 }

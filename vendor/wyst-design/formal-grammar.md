@@ -101,7 +101,7 @@ CompilationUnit <- Item*
 Item <- ModuleDecl / TargetDecl / RequiresDecl / StaticAssertItem
       / CompileIfItem / ImportDecl / SymbolImport / SymbolExport
       / FunctionDecl / ConstDecl / VarDecl / PerCpuDecl / LabelDecl
-      / InterfaceDecl / ImplDecl
+      / InterfaceDecl / ImplDecl / BinaryDecl
       / TypeDecl / StructDecl / EnumDecl / BitstructDecl
       / RegisterMapDecl / MmioDecl / SystemRegisterDecl
       / VectorTableDecl / TrapFrameDecl / LayoutDecl
@@ -162,7 +162,7 @@ ExternConvention <- 'extern' '"C"'
 FunctionBody <- Block
 
 Parameters <- '(' List(Parameter)? ')'
-Parameter  <- 'comptime'? ParamMode? UserName ':' 'noescape'? Type '...'? RegisterPlacement?
+Parameter  <- UserName ':' 'comptime'? ParamMode? 'noescape'? Type '...'? RegisterPlacement?
 ParamMode  <- 'mut' / 'var'
 
 FunctionResult <- '->' Observation? ReturnMode? ResultType
@@ -213,13 +213,19 @@ BitstructDecl <- AttributeGroup? 'pub'? 'bitstruct' UserName
 BitstructField <- UserName ':' Type 'at' Expr ('..=' Expr)?
 ```
 
+`comptime`, `mut`, and `noescape` remain contextual. The function reference
+defines the token lookahead that distinguishes a modifier from a type name.
+The optional terms above retain all parameter-mode, staging, pack, and
+placement restrictions.
+
 The attribute catalog defines active attributes, subjects, arguments, and conflicts.
 A declaration accepts at most one leading attribute group.
 
 `InterfaceDecl` and `ImplDecl` do not accept attributes. `ImplDecl` does not
 accept `pub`, generic parameters, inline method bodies, or compound subject
 types. `Self` is a contextual compiler binder valid exactly as parameter 0 of
-an interface requirement; it is not part of the ordinary `Type` production.
+an interface requirement, by value or as read-mode `noescape @Self`; it is not
+part of the ordinary `Type` production.
 Each generic parameter has at most one constraint.
 
 The complete nominal-resolution, conformance, and erasure rules are in
@@ -229,21 +235,55 @@ A native function requires a body.
 An `extern "C" fn` can omit its body.
 Contracts require a body-bearing, non-`naked` Wyst function.
 
+## Binary declarations
+
+The sequential binary profile is being integrated; release acceptance remains
+pending. Its semantic authority is [Binary Formats](binary-formats.md).
+
+```peg
+BinaryDecl <- 'pub'? 'binary' UserName BinaryParameters? BinaryWhere*
+              BinaryBody BinaryWhere*
+BinaryParameters <- '(' List(BinaryParameter)? ')'
+BinaryParameter <- UserName ':' QualifiedType
+BinaryBody <- '{' (BinaryField ','?)* '}'
+BinaryField <- UserName ':' BinaryFormat BinaryArguments? BinaryFixed? BinaryWhere*
+BinaryFormat <- '[' ShapeExpr ']' BinaryFormat / QualifiedType
+BinaryArguments <- '(' List(BinaryArgument)? ')'
+BinaryArgument <- UserName '=' ShapeExpr / ShapeExpr
+BinaryFixed <- '=' ConstantExpr
+BinaryWhere <- 'where' '(' PredicateExpr ')'
+ShapeExpr <- Expr
+ConstantExpr <- Expr
+PredicateExpr <- Expr
+```
+
+The parser retains ordinary expression nodes. The checked schema pass restricts
+these expressions to the pure scalar subset in the owning chapter. `QualifiedType`
+here is only a qualified name; it does not include native array, slice, callable,
+address, or generic type forms. Schema parameters are captured scalar inputs.
+A repeated format has a runtime count; this production is separate from native
+fixed-array syntax.
+
+`binary` is contextual at declaration dispatch. `where` starts a predicate only
+when followed by `(` after comments. A field named `where` followed by `:` remains
+a field. The single argument list belongs to the complete repeated format, so
+padding applies to the whole field. Fixed values and predicates follow that list
+in the stated order. Line breaks do not terminate fields. Binary declarations do
+not accept attributes, native parameter modifiers, effects, or type generics.
+
 ## Interactive declarations and calls
 
 ```peg
 InteractiveProtocol <- 'offers' HandlerBound? '{'
-                       ProgressOffer? TerminalOffers? '}'
+                       ProgressOffer? FailureOffer? CancelledOffer? '}'
 HandlerBound <- 'handler' '(' BoundNames ')'
 ProgressOffer <- 'progress' '(' Type ')'
-TerminalOffers <- 'terminal' '{' FailureOffer? CancelledOffer? '}'
 FailureOffer   <- 'failure' '(' Type ')'
 CancelledOffer <- 'cancelled' '(' Type ')'
 
-HandleExpr <- 'handle' DirectCall '{' ProgressHandler? TerminalHandlers? '}'
+HandleExpr <- 'handle' DirectCall '{' ProgressHandler? TerminalHandler* '}'
 ProgressHandler <- HandlerArm('progress')
-TerminalHandlers <- 'terminal' '{'
-                    HandlerArm('failure')? HandlerArm('cancelled')? '}'
+TerminalHandler <- HandlerArm('failure') / HandlerArm('cancelled')
 HandlerArm(L) <- L '(' Binding ')' Block / 'forward' L
 Binding <- UserName / Discard
 
@@ -252,9 +292,9 @@ ForwardExpr <- PrefixExpr (TypeArguments / CallSuffix / IndexSuffix /
                            ForwardCheckedSliceSuffix / FieldSuffix)* '?'
 ```
 
-Offers use canonical `progress`, then `terminal` order.
-Terminal offers use canonical `failure`, then `cancelled` order.
-The terminal group must not be empty.
+Offers use canonical `progress`, `failure`, `cancelled` order and must declare
+at least one label. Handler arms use the same single block. A progress arm must
+come first. The checker requires exact, duplicate-free coverage of the call.
 
 `?` is active syntax. A direct interactive call uses exact interactive failure
 forwarding. Every other operand must be an authentic stored
@@ -293,7 +333,7 @@ The target profile defines valid slots and trap-frame fields.
 
 ```peg
 LayoutDecl <- 'layout' UserName '{' LayoutMember* '}'
-LayoutMember <- LayoutEntry / LayoutRegion / LayoutSection / LayoutSymbol
+LayoutMember <- LayoutEntry / LayoutRegion / LayoutSection / LayoutSymbol / LayoutStaticAssert
 LayoutEntry <- 'entry' ModulePath ('at' Expr)?
 LayoutRegion <- 'region' UserName ':' ('readonly' / 'readwrite')
                 'at' Expr 'size' Expr
@@ -301,6 +341,7 @@ LayoutSection <- 'section' String ':' ('code' / 'rodata' / 'data' / 'bss')
                  LayoutSectionClause*
 LayoutSectionClause <- 'in' UserName / 'after' String / 'align' Expr
 LayoutSymbol <- 'pub'? 'symbol' UserName ':' Type '=' Expr
+LayoutStaticAssert <- '#static_assert' '(' Expr ',' String ','? ')'
 ```
 
 A layout has exactly one entry.
@@ -460,6 +501,7 @@ PrefixExpr <- Literal / NameExpr / '(' Expr ')'
             / TupleExpr / ArrayLiteral / StructLiteral
             / UnaryExpr / IfExpr / MatchExpr / SelectExpr
             / HandleExpr / CheckedAsmExpr / MetaExpr / CompileIfExpr
+            / ExclusiveReceiverCall
 
 UnaryExpr <- ('+' / '-' / '!' / '~' / 'xfer') Expr
 Literal <- Integer / Float / String / Char / 'true' / 'false' / DotName
@@ -469,13 +511,15 @@ DirectCall <- NameExpr TypeArguments? CallSuffix
 TupleExpr <- '(' Expr ',' List(Expr) ')'
 ArrayLiteral <- '[' (Expr ';' Expr / List(Expr))? ']'
 StructLiteral <- '{' List(FieldInit)? '}'
-FieldInit <- UserName '=' Expr
+FieldInit <- UserName ('=' Expr)?
 
 Postfix <- TypeArguments / CallSuffix / IndexSuffix / SliceSuffix
          / ForwardCheckedIndexSuffix / ForwardCheckedSliceSuffix
          / FieldSuffix / ExactForwardSuffix
 CallSuffix <- '(' List(CallArg)? ')'
-CallArg <- Expr / UserName '=' Expr
+CallArg <- CallValue / UserName '=' CallValue
+CallValue <- 'mut'? Expr
+ExclusiveReceiverCall <- '(' 'mut' Expr ')' '.' UserName TypeArguments? CallSuffix
 IndexSuffix <- '[' Expr ']'
 SliceSuffix <- '[' (Expr? '..<' Expr / Expr? '..') ']'
 ForwardCheckedIndexSuffix <- '[' '?' Expr ']'
@@ -525,6 +569,12 @@ label or exception-vector context.
 [Operators and Evaluation](operators-and-evaluation.md) defines precedence, types, and evaluation order.
 Comparisons do not chain without parentheses.
 Positional call arguments must precede labeled arguments.
+`ExclusiveReceiverCall` returns the call result. Its parenthesized `mut`
+receiver is not an independent expression. `mut` is not a unary operator.
+The resolved parameter mode determines whether each call marker is required
+or rejected.
+A parenthesized `mut` receiver that starts on a later line begins a new
+expression. It does not extend the preceding expression with another call.
 
 ## Checked assembly
 

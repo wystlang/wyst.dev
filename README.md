@@ -19,7 +19,7 @@ ignored `dist/` directory:
 index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
-vendor/wyst-reference/     Snapshot-bound catalogs and architectural decisions
+vendor/wyst-reference/     Snapshot-bound catalogs, architectural decisions, and approved tool guides
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
 vendor/wyst-homepage*-semantic-tokens.json
                            Compiler-produced token streams for homepage examples

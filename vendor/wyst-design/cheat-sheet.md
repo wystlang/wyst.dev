@@ -40,12 +40,8 @@ pub fn sum_below(limit: u64) -> u64 {
 
 pub fn state_code(state: State) -> u64 {
   return match state {
-    .idle {
-      0
-    }
-    .ready {
-      1
-    }
+    .idle { 0 }
+    .ready { 1 }
   }
 }
 ```
@@ -151,15 +147,41 @@ Use parentheses when the intended grouping is not immediately clear. See
 
 | Marker | Meaning |
 | --- | --- |
-| `mut parameter` | Borrow one mutable value. |
-| `var parameter` | Pass one owned mutable value. |
-| `noescape` | Prevent the callee from retaining an address, slice, or callable authority. |
+| `const binding` | Prevent rebinding; backing storage can still change. |
+| Read parameter | Read access without taking ownership. |
+| `parameter: mut T` | Borrow one mutable value. |
+| `parameter: var T` | Give the callee an owned mutable value; copy a copyable argument or use `xfer`. |
+| `noescape` | Restrict retention beyond the call; read it with any `from` result relation. |
 | `xfer value` | Transfer an owned resource-bearing value. |
-| `must_observe` | Require the caller to observe the result. |
+| `must_observe` | Require acknowledgment; binding can satisfy observation. |
+| `must_resolve` | Keep a terminal obligation through containing values; generic discard is forbidden. |
+| `resolve(xfer value)` | Discharge terminal obligations in their declaring module. |
+| `preserves(parameter)` | Keep backing storage; contents can change. |
+| `unchanged(parameter) on .Error` | Promise unchanged contents for that outcome. |
+| `Unit` | Use an ordinary empty value for success without a payload. |
 | `Result<T, E>` | Store either `.Ok(value)` or `.Error(error)`. |
 | `Option<T>` | Store either `.Some(value)` or `.None`. |
 | `result?` | Continue with success or forward the stored failure. |
 | `values[?index]` | Check bounds and forward an index failure. |
+
+For example, these contracts make the ownership boundary visible:
+
+```text
+fn commit_initial(initial: noescape @InitialCommitPlan, pending: var PendingTableFrames)
+  -> must_observe Result<CommittedInitialTables, CommitRejected>
+
+fn allocate(arena: mut Arena)
+  -> must_observe Result<@u64, ArenaFailure>
+  from arena on .Ok
+```
+
+The first callable receives owned pending frames. Its result carries either
+committed tables or a rejection; the rejection type defines the retained
+custody. Binding that result acknowledges it but does not discharge a contained
+`must_resolve` value. The second callable returns storage from `arena` on `.Ok`.
+The relation does not promise that the arena's contents stay unchanged.
+Callable hover shows the declared contract; value hover adds current checked
+custody and resolution facts. See [Editor Integration](editor-integration.md).
 
 A checked subscript proves its bounds. It does not also prove initialization,
 alignment, lifetime, or device protocol. See [Memory Model](memory-model.md) and

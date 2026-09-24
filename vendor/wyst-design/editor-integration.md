@@ -27,6 +27,7 @@ The command accepts these startup warning options:
 
 ```sh
 wync lsp --warn-redundant-local-types
+wync lsp --warn-unused-results
 wync lsp --warn-structure-layout 8
 ```
 
@@ -55,6 +56,16 @@ The server implements these document requests:
 The server also implements `workspace/symbol`.
 It refreshes open-document diagnostics after `workspace/didChangeWatchedFiles`.
 
+The on-demand `wync/proof` request accepts `textDocument.uri`, an LSP `position`,
+and an optional `artifact` name. Its JSON result uses the same checked products
+as `wync explain proof`. LSP positions use zero-based UTF-16 units; the response
+also reports the equivalent one-based UTF-8 byte position. The query checks the
+current open document and selected project artifact. Another dirty open
+document makes the dependency snapshot unavailable. A rejected edit never
+receives facts from an earlier successful check. See
+[Source-Position Proof Report](inspection-reports.md#source-position-proof-report)
+for selection, evidence, and verification scope.
+
 Completion triggers are `#`, `@`, and `%`.
 Signature-help triggers are `(` and `,`.
 On-type formatting triggers on a newline.
@@ -69,7 +80,23 @@ Current actions include numeric-base conversion and close-name replacement.
 They also include missing imports, duplicate-module removal, and import-namespace repair.
 The server can add an explicit conversion for a narrow `E0213` case.
 It can preview an exact beneficial structure order.
-It can also organize supported import groups.
+Import organization uses the formatter's ordering and comment attachment rules.
+It changes only supported top-level import spans, including their attached comments.
+It preserves aliases, re-export visibility, group containers, and duplicate imports.
+It does not remove unused imports. Ambiguous comment attachment produces no action.
+
+Checked source actions can insert argument labels, remove a complete uniquely
+inferable generic argument list, replace an exact Result-forwarding match with
+`?`, or explicitly discard an otherwise legal abandoned call result. Each action
+checks the complete edited document with the normal compiler. Call identities,
+materializations, and retained expression types must agree. Labels retain source
+evaluation order. The forwarding action requires unchanged success and whole
+error payloads, retains the operand's explicit transfer, and requires the
+compiler's exact forwarding mode. Mapped errors, recovery handlers, removed
+comments, invalid documents, and ambiguous materializations produce no action.
+Another dirty open document suppresses these actions until saved dependency
+facts can describe the whole project. Edits carry the source text and document
+version; selecting an action never grants trust or inserts ownership transfer.
 
 All edits use the exact source-action rules in
 [Diagnostic Explanations and Source Actions](diagnostic-explanations.md).
@@ -142,6 +169,21 @@ It can also describe target facts, layout facts, and checked assembly facts.
 
 Navigation uses typed symbol identities for supported declarations and local bindings.
 Rename does not change a shadowed binding with a different identity.
+A complete struct initializer such as `{base}` has separate field and binding
+identities. Definition, references, token styling, and token-initiated rename
+select the binding. `textDocument/declaration` selects the field; rename from
+that field declaration selects the field identity. Renaming the binding to
+`new_base` produces `{base = new_base}`. Renaming the field produces
+`{new_base = base}`. Field rename requires checked identities for all matching
+field references, including initializers, projections, and field designators.
+Unavailable or ambiguous facts withhold the edit. Edits carry document versions
+and exact source text; changed documents invalidate them.
+Contextual `field_addr(pointer, .field)` selectors use the checked pointee's
+exact field identity for navigation, rename, hover, and semantic tokens.
+Completion in an unfinished callable projection checks its receiver in the
+current lexical scope. It preserves opaque-field visibility and withholds
+results when dependencies have unsaved changes. Each explicit nested projection
+has its own field identity.
 Import document links use project module facts when a project is available.
 
 Static interfaces and their operations have distinct typed symbol identities.
@@ -152,6 +194,59 @@ qualified operation calls without treating an operation as a struct field.
 Staged function signatures preserve `comptime`, type-pack, and value-pack
 markers. Signature help treats every argument after the fixed prefix as an
 element of the final value pack.
+
+Ordinary callable hover and signature help share one contract renderer. They
+retain parameter modes, `noescape`, result observation and mode, returned-view
+relations, placements, preconditions, postconditions, concurrency clauses,
+effects, and trust bounds. Direct-call help follows resolved declarations,
+including aliases and explicit generic applications. Static-interface help
+retains the complete declared requirement. Declaration links identify the owner.
+Written effect and trust clauses describe upper bounds, not operations that
+every call executes.
+
+Exclusive call markers and receiver markers highlight `mut` as a keyword.
+The marked place retains its declaration, references, and rename identity.
+Adding an argument label preserves the marker as `name = mut value`.
+
+On-demand value hover uses checked expression types, type abilities, enum
+payloads, and resource transitions from the normal checker. It shows copy and
+discard permissions, outcome payload custody, transfer, and terminal resolution.
+It links known `must_resolve` origins to their declarations. Opaque values do
+not expose their representation. These summaries add no inlay hints and perform
+no separate type inference.
+
+Checked summaries require facts for the exact source snapshot. Invalid source
+produces no checked summary. Because project checking replaces one open source
+at a time, summaries are withheld while another open buffer differs from disk.
+Save and watched-file events expire project facts. Source contract text remains
+available independently of checked value summaries.
+
+## Binary schema tooling
+
+Binary tooling uses the retained declaration AST. Schema names, captured
+parameters, fields, child schema names, argument labels, and predicates have
+separate structural roles. Navigation resolves earlier scalar fields and child
+field paths without treating a schema as a native type. Contextual names such as
+`where` and `bits` keep their identifier role outside the predicate and format
+positions.
+
+Checked generated functions and native types navigate to their owning schema.
+The index admits these targets only from authenticated compiler declarations
+whose module, source path, and declaration span match the retained schema.
+Invalid schemas and similarly named authored declarations do not create targets.
+Direct rename of binary schemas and their generated API declarations is not
+supported. Navigation and references remain available.
+
+The formatter preserves field and argument order, whole-field padding placement,
+and comments. It keeps multiline parameter and argument lists and formats the
+ordinary scalar expressions inside a schema. A commented scalar fragment keeps
+its source spelling so formatting does not detach or reorder its comments.
+Tree-sitter exposes the corresponding declaration, shape, argument, and predicate
+nodes. These editor nodes do not replace compiler schema validation.
+
+The accepted semantics and pending release gates are in
+[Binary Formats](binary-formats.md). Generated checks retain source locations on
+the authored schema; diagnostics must not point at a synthetic source buffer.
 
 ## Protocol Limits
 

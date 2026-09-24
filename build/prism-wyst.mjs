@@ -100,11 +100,36 @@ const VARIABLE_DECLARATION_PATTERN = new RegExp(
 	`(\\b(?:${VARIABLE_DECLARATION_WORDS})\\s+)[A-Za-z_][A-Za-z0-9_]*`,
 );
 const POINTER_QUALIFIER_PATTERN = new RegExp(`@(?:${POINTER_QUALIFIERS})\\b`);
+const NAME = "[A-Za-z_][A-Za-z0-9_]*";
+const COMMENT = String.raw`(?:\/\/[^\r\n]*(?:\r?\n|$)|\/\*[\s\S]*?\*\/)`;
+const GAP = `(?:\\s|${COMMENT})*`;
+const SEPARATOR = `(?:\\s|${COMMENT})+`;
+const LITERAL = String.raw`(?:"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*')`;
+const PAREN_ATOM = `(?:[^(){}"'/]|/(?![/*])|${COMMENT}|${LITERAL})`;
+let parameterContents = PAREN_ATOM;
+// Deeper fragments use the ordinary lexical fallback. This is not a parser.
+for (let depth = 0; depth < 3; depth++) {
+	parameterContents = `(?:${PAREN_ATOM}|\\(${parameterContents}*\\))`;
+}
+const PARENTHESES = `\\(${parameterContents}*\\)`;
+const FUNCTION_HEADER_PATTERN = new RegExp(
+	`\\bfn\\s+${NAME}(?:\\s*\\.\\s*${NAME})?(?:\\s*<(?:[^<>\\n]|<[^<>\\n]*>)*>)?${GAP}${PARENTHESES}`,
+);
+const PARAMETER_CONTRACT_PATTERN = new RegExp(
+	`(\\b${NAME}${GAP}:${GAP})(?:comptime${SEPARATOR}(?:(?:mut|var)${SEPARATOR})?(?:noescape${SEPARATOR})?|(?:mut|var)${SEPARATOR}(?:noescape${SEPARATOR})?|noescape${SEPARATOR})(?:(?!in\\b)${NAME}|@(?:${POINTER_QUALIFIERS})?\\b|@|\\[)`,
+);
+const BINARY_ENABLED = ["binary", "where"].every((spelling) =>
+	activeWords.some((word) => word.spelling === spelling && word.classification === "contextual"),
+);
+const BINARY_BODY_ATOM = `(?:[^{}"'/]|/(?![/*])|${COMMENT}|${LITERAL})`;
+const BINARY_DECLARATION_PATTERN = new RegExp(
+	`(?<![#.%])\\bbinary\\b${GAP}${NAME}(?:${GAP}${PARENTHESES})?(?:${GAP}where${GAP}${PARENTHESES})*${GAP}\\{${BINARY_BODY_ATOM}*\\}(?:${GAP}where${GAP}${PARENTHESES})*`,
+);
 
 // Prism is a safe lexical projection, not a parser. Context-sensitive forms
 // are highlighted only where their surrounding spelling is unambiguous.
 export function registerWyst(Prism) {
-	Prism.languages.wyst = {
+	const grammar = {
 		comment: [
 			{ pattern: /\/\/.*/, greedy: true },
 			{ pattern: /\/\*[\s\S]*?\*\//, greedy: true },
@@ -152,6 +177,16 @@ export function registerWyst(Prism) {
 				/'(?:\\x[0-9A-Fa-f]{2}|\\['\\ntr0]|[\x00-\x09\x0B\x0C\x0E-\x26\x28-\x5B\x5D-\x7F])'/,
 			greedy: true,
 		},
+		"function-header": {
+			pattern: FUNCTION_HEADER_PATTERN,
+			greedy: true,
+		},
+		...(BINARY_ENABLED ? {
+			"binary-declaration": {
+				pattern: BINARY_DECLARATION_PATTERN,
+				greedy: true,
+			},
+		} : {}),
 		"static-interface-header": [
 			{
 				pattern:
@@ -310,6 +345,61 @@ export function registerWyst(Prism) {
 		operator:
 			/&&=|\|\|=|%%=|&\^=|<<=|>>=|->|==|!=|<=|>=|<<|>>|&&|\|\||&\^|%%|\+=|-=|\*=|\/=|%=|&=|\|=|\^=|[-+*/%&|^~!<>=]|[@?:]/,
 	};
+	const fragment = Object.fromEntries(
+		Object.entries(grammar).filter(([name]) =>
+			!["function-header", "binary-declaration"].includes(name),
+		),
+	);
+	grammar["function-header"].inside = {
+		"parameter-contract": {
+			pattern: PARAMETER_CONTRACT_PATTERN,
+			lookbehind: true,
+			inside: {
+				comment: fragment.comment,
+				"parameter-modifier": {
+					pattern: new RegExp(`\\b(?:comptime|mut|var|noescape)\\b(?=${SEPARATOR})`),
+					greedy: true,
+					alias: "keyword",
+				},
+				"class-name": { pattern: /\b[A-Z][A-Za-z0-9_]*\b/, alias: "type" },
+				builtin: fragment.builtin,
+				keyword: fragment.keyword,
+				"address-qualifier": fragment["address-qualifier"],
+				punctuation: fragment.punctuation,
+				operator: fragment.operator,
+			},
+		},
+		...fragment,
+	};
+	if (BINARY_ENABLED) {
+		grammar["binary-declaration"].inside = {
+			comment: fragment.comment,
+			string: fragment.string,
+			char: fragment.char,
+			"binary-schema-name": {
+				pattern: new RegExp(`(^binary\\b${GAP})${NAME}`),
+				lookbehind: true,
+				greedy: true,
+				alias: "type",
+			},
+			"binary-format-name": {
+				pattern: new RegExp(`((?:\\b${NAME}${GAP}:${GAP}|\\]${GAP}))${NAME}(?:${GAP}\\.${GAP}${NAME})*`),
+				lookbehind: true,
+				greedy: true,
+				alias: "type",
+				inside: { comment: fragment.comment, punctuation: fragment.punctuation },
+			},
+			"binary-keyword": {
+				pattern: new RegExp(`^binary\\b|(?<![#.%])\\bwhere\\b(?=${GAP}\\()`),
+				greedy: true,
+				alias: "keyword",
+			},
+			...Object.fromEntries(Object.entries(fragment).filter(([name]) =>
+				!["comment", "string", "char"].includes(name),
+			)),
+		};
+	}
+	Prism.languages.wyst = grammar;
 
 	// `text` and `peg` fences intentionally fall back to escaped plain text.
 	if (!Prism.languages.text) Prism.languages.text = {};

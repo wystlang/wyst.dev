@@ -70,12 +70,24 @@ each eligible target through reference execution, injects the results, and
 verifies final IR. Provisional proof products do not enter the final artifact.
 The artifact path then retains reachable declarations.
 
+A direct symbol-address constant retains the symbol's exact declared address
+type. An explicit conversion of symbol relocation bits to a different data
+pointer type remains a distinct, untrusted address-conversion constant. This
+form preserves the symbol and byte addend through static initialization,
+reference execution, native-object emission, and final linking. It does not
+enlarge storage or grant atomic, MMIO, bounds, or lifetime authority.
+Symbol offsets use the 64-bit address representation. A negative byte offset
+cannot become zero in the storage-bounds analysis.
+
 The backend computes concrete type layouts and callable ABI facts.
 It then performs register allocation and AArch64 instruction lowering.
 Native-object emission creates one `ET_REL` product for each selected module product.
 
 A static-library build creates an archive and its semantic-module-interface companion.
 A final-link build performs placement and integrated ELF linking.
+It evaluates selected layout assertions after final section placement.
+Semantic checking validates their closed boolean expressions without deciding
+their final truth.
 These paths do not invoke an external linker or archive tool.
 
 ## Check Data Flow

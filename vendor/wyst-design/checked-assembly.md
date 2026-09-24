@@ -88,6 +88,12 @@ A direct branch or call uses a `symbol` binder.
 The compiler derives register and state effects from instruction rows.
 There is no manual clobber list.
 
+Allocation, boundary copies, and allocation verification use the same scheduled
+basic-block positions. Flat declaration order is not an instruction position:
+short-circuit expressions can place later declarations in earlier blocks.
+Each assembly block expands those scheduled positions into its internal phases
+without changing the surrounding value identities or interference rules.
+
 Callable `effects(...)` are function contracts and follow the complete return
 clause without a comma:
 
@@ -131,7 +137,10 @@ the generated physical save, restore, or `mov sp` sequence.
 
 `relocate stack alias by VALUE` moves an established AArch64 stack by an exact
 nonzero, 16-byte-aligned constant delta in a nonreturning ordinary function.
-The delta is limited to the lower 39-bit virtual-address range. The compiler
+The delta is limited to the lower 42-bit virtual-address range. A direct named
+layout `u64` symbol can supply a placement-dependent delta; final ELF placement
+checks its value before publishing the artifact. Other runtime expressions are
+not accepted. The compiler
 emits the stack-pointer adjustment and clears the frame pointer. The platform
 contract must prove that the addition does not wrap, both virtual ranges are
 canonical, and both ranges name the same stack storage until the transition

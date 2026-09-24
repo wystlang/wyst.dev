@@ -65,6 +65,7 @@ const fakeSyntaxCorpusFixtures = [
 const fakeReferenceFiles = [
 	"catalogs/language/public.tsv",
 	"docs/adr/0001-record.md",
+	"wync/tools/compare-compiler-facts/README.md",
 ];
 
 async function syntaxCorpusFixtures(rootDirectory = fixtureDir) {
@@ -155,8 +156,9 @@ for (const response of responses) {
 	const inputs = [
 		[
 			"design/README.md",
-			"# Wyst design\n\n[Public catalog](catalogs/language/public.tsv)\n[Decisions](../docs/adr/)\n",
+			"# Wyst design\n\n[Public catalog](catalogs/language/public.tsv)\n[Decisions](../docs/adr/)\n[Comparison](../wync/tools/compare-compiler-facts/README.md)\n[Private tool](../wync/tools/private/README.md)\n",
 		],
+		["wync/tools/compare-compiler-facts/README.md", "# Compare compiler facts\n\n[Manual](../../../design/inspection-reports.md)\n"],
 		["design/catalogs/language/public.tsv", "name\tstate\npublic\timplemented\n"],
 		["docs/adr/0001-record.md", "---\nstatus: accepted\n---\n\n# Record\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
@@ -327,14 +329,16 @@ test("the versioned Wyst fixture snapshot contains only site test inputs", async
 	assert.deepEqual(await listFiles(fixtureDir), await expectedFixtures());
 });
 
-test("the public-reference snapshot contains only manual-linked catalogs and ADRs", async () => {
+test("the public-reference snapshot contains only manual-linked catalogs, ADRs, and approved tool guides", async () => {
 	const files = await listFiles(referenceDir);
 	assert.ok(files.includes("catalogs/README.md"));
 	assert.ok(files.includes("docs/adr/0001-affine-resumable-call-contracts.md"));
 	assert.ok(files.includes("catalogs/language/semantic-operation-catalog.tsv"));
+	assert.ok(files.includes("wync/tools/compare-compiler-facts/README.md"));
 	assert.ok(
 		files.every(
-			(file) => file.startsWith("catalogs/") || file.startsWith("docs/adr/"),
+			(file) => file.startsWith("catalogs/") || file.startsWith("docs/adr/") ||
+				file === "wync/tools/compare-compiler-facts/README.md",
 		),
 	);
 });
@@ -516,4 +520,31 @@ test("snapshot sync rejects syntax-corpus changes outside the committed source i
 		result.stderr,
 		/wync\/tests\/fixtures\/syntax-corpus\/positive\/canonical\.wyst/,
 	);
+});
+
+test("source verification rejects a coherently rehashed tool-guide edit", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	const synced = runSync(siteRoot, wystRoot);
+	assert.equal(synced.status, 0, synced.stderr || synced.stdout);
+	const initial = runVerifySource(siteRoot, wystRoot);
+	assert.equal(initial.status, 0, initial.stderr || initial.stdout);
+	await write(siteRoot, "vendor/wyst-reference/wync/tools/compare-compiler-facts/README.md",
+		"# Coherently rehashed tool guide\n");
+	const rehashed = spawnSync(process.execPath,
+		[await realpath(path.join(siteRoot, "tools", "wyst-snapshot.mjs")), "--write"],
+		{ cwd: siteRoot, encoding: "utf8" });
+	assert.equal(rehashed.status, 0, rehashed.stderr || rehashed.stdout);
+	const result = runVerifySource(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr,
+		/Wyst snapshot copy differs from source: vendor\/wyst-reference\/wync\/tools\/compare-compiler-facts\/README\.md/);
+});
+
+test("snapshot sync rejects uncommitted changes to the approved tool guide", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	await write(wystRoot, "wync/tools/compare-compiler-facts/README.md", "# Changed guide\n");
+	const result = runSync(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
+	assert.match(result.stderr, /wync\/tools\/compare-compiler-facts\/README\.md/);
 });

@@ -18,13 +18,15 @@ kHz	contextual	core.frequency-quantities	frequency-unit	implemented
 MHz	contextual	core.frequency-quantities	frequency-unit	implemented
 GHz	contextual	core.frequency-quantities	frequency-unit	implemented
 bitstruct	reserved	core.bitstruct|core.generic-bounds	declaration|generic-bound	implemented
+binary	contextual	core.binary-formats	declaration	implemented
+where	contextual	core.binary-formats	binary-predicate	implemented
 register_map	contextual	core.hardware-registers|core.nominal-types	declaration|nominal-type-declaration	implemented
 system_register	contextual	core.hardware-registers	declaration	implemented
 break	reserved	core.control-flow	statement	implemented
 cancel	reserved	core.outcome-protocols	statement	implemented
 cancelled	reserved	core.outcome-protocols	terminal-offer|terminal-handler-arm	implemented
 const	reserved	core.bindings	declaration|statement	implemented
-comptime	contextual	core.staged-specialization	parameter-prefix|local-prefix	implemented
+comptime	contextual	core.staged-specialization	declaration-parameter-contract|local-prefix	implemented
 continue	reserved	core.control-flow	statement	implemented
 defer	reserved	core.outcome-protocols	statement	implemented
 else	reserved	core.control-flow	if-branch	implemented
@@ -54,7 +56,6 @@ Self	unshadowable	core.static-interfaces	interface-requirement-type	implemented
 noescape	contextual	core.callable-contracts	declaration-parameter-type-prefix|callable-type-parameter-type-prefix	implemented
 offers	contextual	core.outcome-protocols	function-interactive-contract	implemented
 handler	contextual	core.outcome-protocols	function-interactive-contract	implemented
-terminal	contextual	core.outcome-protocols	function-interactive-contract|handler-group	implemented
 packed	reserved	core.declarations	declaration-prefix	implemented
 per_cpu	reserved	core.storage-classes|core.target-operations	declaration-prefix|target-argument-label	implemented
 progress	reserved	core.outcome-protocols	notification-offer|notification-handler-arm	implemented
@@ -178,7 +179,7 @@ resolve	contextual	core.resource-values	statement	implemented
 swap	unshadowable	core.resource-values	expression-callee	implemented
 replace	unshadowable	core.resource-values	expression-callee	implemented
 xfer	contextual	core.resource-values	expression-prefix	implemented
-mut	contextual	core.resource-values|core.concurrency-safety	parameter-mode|callable-type-parameter-mode|returned-view-access|concurrency-access-mode	implemented
+mut	contextual	core.resource-values|core.concurrency-safety	parameter-mode|callable-type-parameter-mode|exclusive-call-argument|exclusive-receiver|returned-view-access|concurrency-access-mode	implemented
 parameter	contextual	core.resource-values|core.uninitialized-storage	callable-type-returned-view-source|callable-type-storage-contract-subject	implemented
 no_copy	contextual	core.resource-values	struct-modifier|enum-modifier	implemented
 must_account	contextual	core.resource-values	struct-modifier|enum-modifier	implemented

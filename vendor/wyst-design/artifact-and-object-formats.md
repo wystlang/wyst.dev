@@ -97,6 +97,12 @@ The companion file stores the matching Wyst semantic module interfaces and
 indexes. The compiler pairs each object with one semantic module interface
 digest.
 
+The compiler retains the actual selected feature set with each native object.
+Platform system-register words require both that feature set and the selected
+platform accessor contract. Cache admission and final linking repeat this
+check against the current target. A platform name or cached object cannot
+supply a missing architectural feature.
+
 The archive contains indexes for these identities:
 
 - module;
@@ -113,13 +119,20 @@ authenticate and materialize generic code without producer source. A
 source-language static interface remains a frontend constraint; neither file
 defines a runtime interface object.
 
-The current schema is WYSTIF revision 12. A nominal operation is encoded as a
+The current schema is WYSTIF revision 13. A nominal operation is encoded as a
 structural declaration relation: the module declaration identity, the exact
 owner declaration identity, the operation leaf, and the canonical
 `module.Owner.leaf` identity. Generic definition and archive declaration
 indexes use the same identity. Import aliases are source spellings and are not
 stored as canonical authority. A consumer rejects a missing, inconsistent, or
 noncanonical operation relation.
+
+Public binary schemas carry a closed checked recipe, private child closure,
+native storage shape, generated callable contracts, and authenticated source
+locations. A schema re-export names its public provider. Captured constants
+carry their checked value and type; a recorded source identity is provenance,
+not authority to import an ordinary constant. Consumers validate the recipe
+and reconstruct its native shape without producer source.
 
 Callable and resource contracts also carry returned-view relations. Each
 relation records its source parameter and, when conditional, its nominal

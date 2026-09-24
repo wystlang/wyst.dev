@@ -3,12 +3,12 @@ title: "Compiler Inspection Reports"
 group: reference
 section: tools
 order: 630
-summary: "Current commands for lowering, effects, storage, layout, resources, and reference execution reports."
+summary: "Current commands for lowering, effects, storage, proof, layout, resources, and reference execution reports."
 ---
 
 # Compiler Inspection Reports
 
-`wync explain` provides six compiler inspection reports.
+`wync explain` provides seven compiler inspection reports.
 These reports describe one selected project artifact.
 
 Diagnostic-code explanations are in
@@ -53,6 +53,10 @@ The report includes these principal facts:
 - relocations, symbols, function bytes, and artifact text bytes.
 
 For a final-link artifact, addresses use the linked ELF placement.
+The selected function's ELF symbol identifies its executable section and byte
+range, including custom code sections. Instruction bytes come from that range;
+local-label fixups use the function's final address and function-relative offsets.
+Packed backend image offsets do not identify offsets within a placed ELF section.
 For a static library, the report uses the owning `ET_REL` object.
 Object reports use object-local offsets and relocation records.
 Final addresses are unavailable for these object reports.
@@ -81,6 +85,49 @@ Direct, external, resolved-indirect, and unresolved-indirect calls remain distin
 
 The report does not provide runtime frequency, target timing, or cache state.
 
+JSON uses the `wync.explain.effects.v1` schema. `semanticIdentity` identifies
+each checked callable independently of its display name or source position.
+`provenTransitiveEffects` contains the existing checker's inferred effects;
+`transitiveEffects` also propagates declared permissions. External and indirect
+call bounds remain explicit premises, not observed runtime operations.
+
+An effect, call, or authority site's `sourceOrigin` uses one of these variants:
+
+- `source` contains exactly `kind`, `path`, `byteSpan`, `line`, `column`,
+  `endLine`, and `endColumn`. `byteSpan` contains the inclusive start and
+  exclusive end byte offsets. Coordinates are one-based UTF-8 byte positions
+  in the mapped source file.
+- `unavailable` contains exactly `kind` and `reason`. Its reason is
+  `source span is unavailable in the authenticated source map`. It has no
+  path, byte span, or coordinates.
+
+The compiler emits `source` only when the authenticated source map resolves the
+span. Some bundled generic instances have checked operations without a span in
+that map. Their location is unavailable; their effect, callable identity, and
+dependency facts remain known. Text output states `source unavailable` and the
+reason. The report does not interpret an unmapped offset in another source file.
+
+The report carries the selected artifact configuration and hashes of the exact
+checked manifest and layout inputs. The repository's
+[comparison tool](../wync/tools/compare-compiler-facts/README.md) checks two
+source snapshots with one executable and verifies its hash after each check.
+It compares callable identities, effects, bounds, trusted assertions, and checked
+callable and storage contracts. An introduced effect retains its reported source
+variant and dependency path. The comparison validates both origin variants and
+rejects unknown variants, malformed coordinates, or extra fields. A failed check
+or incompatible configuration is a comparison failure.
+
+Contract comparisons retain parameter modes, scoped contracts, returned-view
+sources, storage guarantees, and preconditions and postconditions. A changed
+contract has unknown strength unless the checker supplies a proved relation.
+Proof status and runtime-check reasons remain distinct from the contract text.
+The comparison does not infer a guarantee from a callable's name.
+
+Source-line movement or location availability alone does not identify a changed
+callable or effect. An unchanged effect
+set does not establish unchanged behavior, purity, allocation, or storage
+guarantees. The comparison adds no runtime work and does not write the artifact.
+
 ## Storage Report
 
 Use this command:
@@ -97,6 +144,41 @@ It can also list accepted storage-preservation proof facts.
 
 The report does not infer storage meaning from an ordinary function name.
 It does not report runtime allocation behavior or machine cost.
+
+## Source-Position Proof Report
+
+Use this command:
+
+```sh
+wync explain proof PROJECT --source PATH --line N --column N \
+  [--artifact NAME] [--format text|json]
+```
+
+The line and column are one-based. The column counts UTF-8 bytes and must name
+a character boundary. Relative source paths start at the project directory.
+The position selects the smallest enclosing authenticated memory operation.
+The report describes its incoming state after checking the selected artifact's
+source, semantics, and typed IR. It does not certify a final machine artifact.
+
+The report preserves each obligation's required flag and proved, asserted,
+unproved, violated, or not-required status. Address evidence contains the
+verifier's origin, offset range, storage and logical end ranges, and alignment.
+End offsets are relative to the origin; they do not promise initialized or
+readable bytes. An asserted callable premise remains an assertion.
+
+Runtime guard facts identify the condition and successful branch whose
+refinement contributes to the incoming verifier state. They show a path
+premise, not a claim that the guard is necessary for the final proof.
+
+Storage-access evidence identifies the selected view, backing, relevant leases,
+and available preservation or outcome-refinement facts. Missing evidence is
+explicitly unavailable. A failed check includes its diagnostic and does not use
+a previous successful snapshot. The report identifies the complete checked
+source snapshot, target, and artifact configuration. Inspection facts add no
+runtime operations and do not enter cached proof identities.
+
+The [editor query](editor-integration.md#protocol-capabilities) uses the same
+capture and rendering path.
 
 ## Layout Report
 
@@ -175,6 +257,9 @@ machine exit can return. Checked terminal assembly uses the verified final
 machine frame disposition. An `eret` row is exact only when its target EL, ELR target,
 and selected stack register are authenticated. Its continuation starts a new
 stack epoch and appears as a separate root.
+If the target is verified naked code with its own authenticated stack
+establishment, the incoming stack is unused. The report names that continuation
+as `stackTarget` and checks its complete call chain as a separate root.
 
 The text `selected-status` field and JSON `stackRoots.selectedStatus` field
 describe only the artifact's selected semantic entry. The value is `available`
@@ -228,6 +313,10 @@ wync explain execution PROJECT \
 The command compiles and authenticates verified typed IR.
 It then executes the named function in deterministic reference state.
 It does not execute lowered machine code.
+
+When a loop evaluates an IR value again, its materialized local storage receives
+the new value. Repeated address use between evaluations retains that storage's
+current contents. Ordinary aggregate copies do not alias the copied storage.
 
 A module-qualified function name also participates in source discovery. Use
 that form when the function's module is not imported by the artifact root.

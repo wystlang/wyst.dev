@@ -13,22 +13,22 @@ fn bytes(buffer: []u8) -> []u8 from buffer {
   return buffer
 }
 
-fn bytes_mut(mut buffer: []u8) -> mut []u8 from buffer {
+fn bytes_mut(buffer: mut []u8) -> mut []u8 from buffer {
   return buffer
 }
 
-fn close(var value: Handle) {
+fn close(value: var Handle) {
   discard(xfer value)
 }
 
-fn finish(var value: Request) {
+fn finish(value: var Request) {
   resolve(xfer value)
 }
 
 var read_view: fn([]u8) -> []u8 from parameter(0) = bytes
 var write_view: fn(mut []u8) -> mut []u8 from parameter(0) = bytes_mut
 
-fn rotate(mut left: Handle, mut right: Handle, var replacement: Handle) {
+fn rotate(left: mut Handle, right: mut Handle, replacement: var Handle) {
   swap(left, right)
 
   var old = replace(left, xfer replacement)

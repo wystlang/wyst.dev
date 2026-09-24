@@ -84,11 +84,20 @@ Import scope belongs to the module part that declares it.
 Every semantic pass, including transitive effect inference, resolves names in
 that exact part's import scope.
 
+An inferred result retains the identity of each nested field and enum payload
+type. A caller does not need to select those type names to use the result.
+The compiler resolves each type in its declaration's module part. This does not
+add names to the caller's scope or expose an opaque type's fields.
+
 Selection lists must not be empty.
 Wildcard imports are not supported.
 
 The compiler rejects self-imports and duplicate module imports.
 It also rejects missing modules and non-public selections.
+
+A typed `#addr_of` resolves a global's declared storage type in that global's
+module part, even when the consuming module is checked first. This does not
+skip the global initializer check or permit a different storage extent.
 
 Import names must not collide with declarations, namespaces, or other imports.
 Published layout symbols also reserve their bare names.

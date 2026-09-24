@@ -1,0 +1,7 @@
+module boot.layout
+layout kernel {
+  entry boot._start at 0x4008_0000
+  section ".text": code align 16
+  #static_assert(size(".text") <= 258_048, "kernel text budget exceeded")
+  #static_assert(address<u64>(end(".text")) >= address<u64>(start(".text")), "ordered bounds",)
+}
