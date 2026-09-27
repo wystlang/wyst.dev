@@ -55,7 +55,7 @@ function freePort() {
 }
 
 async function stopProcess(child) {
-	if (child.exitCode !== null || child.signalCode !== null) return;
+	if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
 	const exited = new Promise((resolve) => child.once("exit", resolve));
 	child.kill("SIGTERM");
 	await Promise.race([
@@ -68,21 +68,102 @@ async function stopProcess(child) {
 	}
 }
 
-async function poll(url, label, processOutput, attempts = 400) {
+async function poll(url, label, processOutput, child) {
+	const deadline = Date.now() + 20_000;
 	let lastError;
-	for (let attempt = 0; attempt < attempts; attempt++) {
+	while (Date.now() < deadline) {
 		try {
-			const response = await fetch(url);
+			const response = await fetch(url, {
+				signal: AbortSignal.timeout(
+					Math.max(1, Math.min(1000, deadline - Date.now())),
+				),
+			});
 			if (response.ok) return response;
 			lastError = new Error(`${label} returned ${response.status}`);
 		} catch (error) {
 			lastError = error;
 		}
+		if (
+			child &&
+			(!child.pid || child.exitCode !== null || child.signalCode !== null)
+		) break;
 		await new Promise((resolve) => setTimeout(resolve, 50));
 	}
 	throw new Error(
 		`${label} did not become ready: ${lastError?.message || "unknown error"}\n${processOutput()}`,
 	);
+}
+
+async function stopChrome({ chrome, profile }) {
+	await stopProcess(chrome);
+	await rm(profile, {
+		recursive: true,
+		force: true,
+		maxRetries: 5,
+		retryDelay: 100,
+	});
+}
+
+async function startChrome() {
+	const chromeExecutable = chromeBinary();
+	for (let attempt = 1; attempt <= 2; attempt++) {
+		const debugPort = await freePort();
+		const profile = await mkdtemp(path.join(os.tmpdir(), "wyst-browser-audit-"));
+		const chrome = spawn(
+			chromeExecutable,
+			[
+				"--headless=new",
+				"--disable-background-networking",
+				"--disable-component-update",
+				"--disable-default-apps",
+				"--disable-dev-shm-usage",
+				"--disable-extensions",
+				"--disable-gpu",
+				"--disable-sync",
+				"--metrics-recording-only",
+				"--no-default-browser-check",
+				"--no-first-run",
+				...(process.env.CI ? ["--no-sandbox"] : []),
+				"--remote-debugging-address=127.0.0.1",
+				`--remote-debugging-port=${debugPort}`,
+				`--user-data-dir=${profile}`,
+				"about:blank",
+			],
+			{ stdio: ["ignore", "pipe", "pipe"] },
+		);
+		let chromeOutput = "";
+		chrome.stdout.on("data", (chunk) => {
+			chromeOutput += chunk;
+		});
+		chrome.stderr.on("data", (chunk) => {
+			chromeOutput += chunk;
+		});
+		chrome.on("error", (error) => {
+			chromeOutput += `${error.message}\n`;
+		});
+		const browser = { chrome, profile, debugPort };
+		try {
+			await poll(
+				`http://127.0.0.1:${debugPort}/json/version`,
+				"Chrome debugging endpoint",
+				() => {
+					const status = chrome.pid
+						? chrome.exitCode ?? chrome.signalCode ?? "running"
+						: "not started";
+					return `Chrome executable: ${chromeExecutable}\n` +
+						`Chrome exit code: ${status}\n` + chromeOutput;
+				},
+				chrome,
+			);
+			return browser;
+		} catch (error) {
+			await stopChrome(browser);
+			if (attempt === 2) throw error;
+			console.error(
+				`Chrome startup attempt ${attempt} failed; retrying with a fresh profile:\n${error.message}`,
+			);
+		}
+	}
 }
 
 class CdpClient {
@@ -498,7 +579,6 @@ async function homepageTabsAudit(client) {
 	);
 }
 
-const debugPort = await freePort();
 let preview;
 let targetOrigin;
 let previewOutput = "";
@@ -531,54 +611,15 @@ if (configuredOrigin) {
 	});
 }
 
-const profile = await mkdtemp(path.join(os.tmpdir(), "wyst-browser-audit-"));
-
-const chromeExecutable = chromeBinary();
-const chrome = spawn(
-	chromeExecutable,
-	[
-		"--headless=new",
-		"--disable-background-networking",
-		"--disable-component-update",
-		"--disable-default-apps",
-		"--disable-dev-shm-usage",
-		"--disable-extensions",
-		"--disable-gpu",
-		"--disable-sync",
-		"--metrics-recording-only",
-		"--no-default-browser-check",
-		"--no-first-run",
-		...(process.env.CI ? ["--no-sandbox"] : []),
-		"--remote-debugging-address=127.0.0.1",
-		`--remote-debugging-port=${debugPort}`,
-		`--user-data-dir=${profile}`,
-		"about:blank",
-	],
-	{ stdio: ["ignore", "pipe", "pipe"] },
-);
-let chromeOutput = "";
-chrome.stdout.on("data", (chunk) => {
-	chromeOutput += chunk;
-});
-chrome.stderr.on("data", (chunk) => {
-	chromeOutput += chunk;
-});
-
+let browser;
 let client;
 try {
 	if (preview) {
 		await poll(targetOrigin, "preview server", () => previewOutput);
 	}
-	await poll(
-		`http://127.0.0.1:${debugPort}/json/version`,
-		"Chrome debugging endpoint",
-		() =>
-			`Chrome executable: ${chromeExecutable}\n` +
-			`Chrome exit code: ${chrome.exitCode ?? "running"}\n` +
-			chromeOutput,
-	);
+	browser = await startChrome();
 	const targetResponse = await fetch(
-		`http://127.0.0.1:${debugPort}/json/new?${encodeURIComponent("about:blank")}`,
+		`http://127.0.0.1:${browser.debugPort}/json/new?${encodeURIComponent("about:blank")}`,
 		{ method: "PUT" },
 	);
 	if (!targetResponse.ok) {
@@ -860,12 +901,6 @@ try {
 	client?.close();
 	await Promise.all([
 		preview ? stopProcess(preview) : Promise.resolve(),
-		stopProcess(chrome),
+		browser ? stopChrome(browser) : Promise.resolve(),
 	]);
-	await rm(profile, {
-		recursive: true,
-		force: true,
-		maxRetries: 5,
-		retryDelay: 100,
-	});
 }
