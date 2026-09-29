@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -21,10 +24,10 @@ function close(server) {
 	});
 }
 
-function runAudit(origin) {
+function runAudit(origin, environment = {}) {
 	return new Promise((resolve, reject) => {
 		const child = spawn(process.execPath, [auditScript], {
-			env: { ...process.env, WYST_BROWSER_ORIGIN: origin },
+			env: { ...process.env, WYST_BROWSER_ORIGIN: origin, ...environment },
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 		let stdout = "";
@@ -36,13 +39,38 @@ function runAudit(origin) {
 			stderr += chunk;
 		});
 		child.once("error", reject);
-		child.once("exit", (code, signal) => resolve({ code, signal, stdout, stderr }));
+		child.once("close", (code, signal) => resolve({ code, signal, stdout, stderr }));
 	});
+}
+
+async function startupFixture(t, mode) {
+	const directory = await mkdtemp(path.join(os.tmpdir(), "wyst-chrome-test-"));
+	t.after(() => rm(directory, { recursive: true, force: true }));
+	const log = path.join(directory, "launches.jsonl");
+	return {
+		environment: {
+			NODE_OPTIONS: `--import=${new URL("./fixtures/chrome-startup.mjs", import.meta.url).href}`,
+			WYST_TEST_CHROME_MODE: mode,
+			WYST_TEST_CHROME_LOG: log,
+		},
+		async launches() {
+			return (await readFile(log, "utf8")).trim().split("\n").map(JSON.parse);
+		},
+	};
+}
+
+async function assertCleanedUp(launches, expectedAttempts) {
+	assert.equal(launches.length, expectedAttempts, "unexpected Chrome launch count");
+	assert.equal(new Set(launches.map(({ profile }) => profile)).size, expectedAttempts);
+	for (const { pid, profile } of launches) {
+		if (pid) assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
+		await assert.rejects(access(profile), { code: "ENOENT" });
+	}
 }
 
 test(
 	"browser audit catches cross-origin requests, desktop-only overflow, and unnamed controls",
-	{ timeout: 30_000 },
+	{ timeout: 60_000 },
 	async (t) => {
 		const assetServer = http.createServer((request, response) => {
 			if (request.url === "/pixel.svg") {
@@ -111,12 +139,49 @@ test(
 		const sitePort = await listen(siteServer);
 		t.after(() => close(siteServer));
 
-		const result = await runAudit(`http://127.0.0.1:${sitePort}`);
-		assert.notEqual(result.code, 0, result.stdout);
-		assert.match(result.stderr, /unexpected cross-origin request/);
-		assert.match(result.stderr, /Fetch request blocked by connect-src none/);
-		assert.match(result.stderr, /inline style element/);
-		assert.match(result.stderr, /\/docs\/test\/ at desktop 1440px overflows/);
-		assert.match(result.stderr, /\/docs\/test\/ at mobile 375px has unnamed controls/);
+		for (const mode of ["normal", "stall-once"]) {
+			await t.test(mode, async (t) => {
+				const fixture = await startupFixture(t, mode);
+				const result = await runAudit(
+					`http://127.0.0.1:${sitePort}`, fixture.environment,
+				);
+				assert.notEqual(result.code, 0, result.stdout);
+				assert.match(result.stderr, /unexpected cross-origin request/);
+				assert.match(result.stderr, /Fetch request blocked by connect-src none/);
+				assert.match(result.stderr, /inline style element/);
+				assert.match(result.stderr, /\/docs\/test\/ at desktop 1440px overflows/);
+				assert.match(result.stderr, /\/docs\/test\/ at mobile 375px has unnamed controls/);
+				if (mode === "stall-once") {
+					assert.match(result.stderr, /Chrome startup attempt 1 failed/);
+				}
+				await assertCleanedUp(await fixture.launches(), mode === "normal" ? 1 : 2);
+			});
+		}
+	},
+);
+
+test(
+	"browser audit fails promptly after two Chrome startup exits and removes both profiles",
+	{ timeout: 5000 },
+	async (t) => {
+		const fixture = await startupFixture(t, "exit");
+		const result = await runAudit("http://127.0.0.1:1", fixture.environment);
+		assert.notEqual(result.code, 0);
+		assert.match(result.stderr, /Chrome exit code: 17/);
+		assert.match(result.stderr, /Chrome startup fixture exited/);
+		await assertCleanedUp(await fixture.launches(), 2);
+	},
+);
+
+test(
+	"browser audit reports Chrome spawn errors and removes both profiles",
+	{ timeout: 5000 },
+	async (t) => {
+		const fixture = await startupFixture(t, "spawn-error");
+		const result = await runAudit("http://127.0.0.1:1", fixture.environment);
+		assert.notEqual(result.code, 0);
+		assert.match(result.stderr, /Chrome exit code: not started/);
+		assert.match(result.stderr, /ENOENT/);
+		await assertCleanedUp(await fixture.launches(), 2);
 	},
 );
