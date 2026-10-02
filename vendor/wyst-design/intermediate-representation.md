@@ -25,6 +25,9 @@ call operation. See [Interfaces and Implementations](interfaces-and-implementati
 
 The compiler builds IR from one instantiated source tree and its checked
 semantic facts. It can also use one checked layout and selected target facts.
+Struct layout normalization copies each authenticated field offset and
+alignment, including fields that contain payload enums. Updating only the
+enclosing size and alignment leaves inconsistent layout authority.
 
 The production path is:
 
@@ -65,7 +68,7 @@ valid in another function.
 |---|---|
 | Source identity | Source path, size, line count, module name, and source-section ownership |
 | Target facts | Authenticated AArch64 target, target features, cache-line width, entry contract, measurement counter, execution environment, device-memory ranges, and per-CPU contract |
-| Layout facts | Selected layout identity, entry, image base, regions, sections, and layout constants |
+| Layout facts | Selected layout identity, entry, image base, regions, sections, layout constants, and ordered final-placement assertions |
 | Type facts | Structure and bitstructure layouts, nominal carrier layouts, enum representations, and materialized sum facts |
 | Linkage | Internal and external functions, external globals, imports, exports, and symbol resolutions |
 | Code and data | Functions, globals, strings, exception vectors, and init calls |
@@ -81,6 +84,11 @@ entries, and init calls.
 Globals have a symbol, an IR type, an optional initializer, attributes, and a
 storage class. The active storage classes are ordinary module storage and
 per-CPU storage.
+
+Layout assertions retain their closed typed expression, diagnostic message, and
+source span. Final placement compares the assertion sequence against the
+checked IR before it evaluates conditions. These facts produce no runtime IR
+operation and cannot provide an ordinary storage proof.
 
 ## IR types
 
@@ -108,8 +116,16 @@ Each value has one `IrType`. The active type forms are:
 select the smallest 8-, 16-, 32-, or 64-bit storage carrier. A typed bitfield
 integer carrier must have exactly the field width, so `BitfieldInsert` requires
 ordinary IR type identity rather than a separate low-bit range proof.
+Nominal integer fields pass source identity and opacity checks before lowering
+to their primitive integer carriers. The existing nominal-carrier declaration
+metadata retains their semantic identities; field operations use the exact
+primitive width and signedness.
 
-An array length is `Known(u64)` or `Symbolic(String)`. A function-pointer type
+An array length is `Known(u64)` or `Symbolic(String)`. Resolve checked constant
+lengths in the declaring module before aggregate layout, global initialization,
+and callable ABI construction. Exported callable and resource contracts use the
+same checked numeric lengths. Aliases must not select a caller's constant.
+A function-pointer type
 also stores parameter modes, `noescape` flags, register pins, and indirect-read
 flags. The callable result distinguishes void, never, and a value result.
 
@@ -124,6 +140,7 @@ the atomic wrapper. Atomic value operations use one of these memory orders:
 - Integer and Boolean values.
 - An interned string reference.
 - A symbol address with an addend.
+- An untrusted conversion of a symbol relocation to a data pointer.
 - A per-instance offset with an addend.
 - A slice constant with data and length.
 - Array and structure aggregates.
@@ -131,6 +148,16 @@ the atomic wrapper. Atomic value operations use one of these memory orders:
 
 The verifier checks a structured constant against its declared IR type and its
 retained layout facts.
+
+A direct `Address` constant must have the symbol's exact declared address type
+or a raw 64-bit integer type. `AddressCast` retains an explicit, untrusted
+conversion from a `u64` relocation to a data pointer. It keeps the symbol and
+byte addend, and cannot construct an atomic address or a function pointer.
+Memory analysis derives extent, alignment, initialization, and lifetime from
+the symbol's storage. The target lens and qualifiers add no storage authority.
+Negative addends retain their 64-bit offset and cannot become zero in bounds
+analysis. Both forms preserve their relocation through object emission and
+final linking.
 
 ## Functions
 

@@ -107,6 +107,21 @@ test("generated topics use their H1 for page and social titles", () => {
 	);
 });
 
+test("manual links to compiler sources use published snapshot downloads", () => {
+	const sources = [
+		"docs/proposals/bounded-fill-proof-experiment.md",
+		"wync/tools/compare-compiler-facts/README.md",
+		"wync/tests/slot_pool.rs",
+		"wync/tests/fixtures/slot-pool/src/slot_pool_tests.wyst",
+	];
+	const rendered = makeMd().render(
+		sources.map((source) => `[Source](../${source})`).join("\n"),
+	);
+	for (const source of sources) {
+		assert.ok(rendered.includes(`href="/docs/source/${source}"`));
+	}
+});
+
 test("documentation markdown permits only the intentional safe HTML subset", () => {
 	const rendered = makeMd().render(
 		'<SCRIPT type="text/javascript">alert("x")</SCRIPT>\n\ntext<br>next<IMG src=x onerror=alert(1)>\n\n<!-- wyst-contract: sketch -->\n',

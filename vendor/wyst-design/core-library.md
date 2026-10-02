@@ -36,10 +36,11 @@ a reviewed catalog update without accepting the changed surface.
 
 | Module | Current purpose |
 | --- | --- |
-| `core.collections` | `Option`, `Result`, authenticated forwarding, and fatal Result extraction. |
+| `core.collections` | `Unit`, `Option`, `Result`, authenticated forwarding, and fatal Result extraction. |
+| `core.binary` | Checked bit cursors, bounded work, integer conversion, and storage exclusion for [binary formats](binary-formats.md). |
 | `core.outcomes` | Causal records, terminal outcomes, failure aggregation, and work or storage limits. |
 | `core.quantities` | Nominal lengths, offsets, ranges, extents, addresses, counters, and generations. |
-| `core.storage` | Caller-owned fixed buffers, arenas, explicit transitions, and accounting. |
+| `core.storage` | Caller-owned fixed buffers, arenas, slot pools, slot maps, and accounting. |
 | `core.strconv` | Integer byte-count and integer-to-byte conversion. |
 | `core.bytes` | Exact byte comparison and search. |
 | `core.text` | Valid UTF-8 construction, checked slicing, comparison, and search. |
@@ -52,6 +53,13 @@ is a compiler-owned private module for checked operation results. `core.arch`,
 compiler-authenticated operations through their documented import policies.
 
 ## `core.collections`
+
+`Unit` is an ordinary empty struct. Use it when successful completion has no
+payload, for example `Result<Unit, PlanError>`. Construct it with `{}` under an
+expected `Unit` type, or `.Ok({})` under the complete expected Result type.
+It uses the existing empty-aggregate Native ABI. It is a value, distinct from a
+function with no result. It adds no literal, automatic discard, or conversion
+from an integer success code. Keep meaningful counts in their integer types.
 
 `Option<T>` and `Result<T, E>` are ordinary sealed generic enums. Contextual
 constructors such as `.Ok(value)` and `.Error(problem)` work when the complete
@@ -163,7 +171,8 @@ failing operation does not change the cursor offset. `take_until` stops before
 the first exact nonempty delimiter. `finish` requires complete input
 consumption.
 
-`read<Record>(input, comptime template)` defines a staged fixed-record scan.
+`read<Record>(input, template)` defines a staged fixed-record scan. The template
+is a compile-time parameter.
 `Record` must be a concrete named tuple with at least two fields. Supported
 fields are `string`, `bool`, built-in integers, and integer-backed numeric
 nominal types. Each field must occur exactly once. String and Boolean fields
@@ -199,6 +208,11 @@ returns the exact written prefix of the cursor backing storage.
 `cursor_written_string` validates the same prefix as UTF-8 and returns a view
 of the same storage.
 
+`cursor_checkpoint(value: noescape @FormatCursor)` returns its checkpoint
+`from value`. The checkpoint retains the cursor's backing relation.
+`cursor_rollback` accepts the checkpoint as `noescape @FormatCheckpoint`;
+the caller passes a scoped address to the retained checkpoint.
+
 `write<Args...>` accepts a compile-time template and a final heterogeneous
 value pack. It supports strings, integers, Booleans, ordinary and volatile
 typed addresses, named or positional placeholders, integer radix and width
@@ -225,6 +239,7 @@ semantics to unrelated user functions with similar names.
 The public owner-qualified storage transitions are `FixedBuffer.attach`,
 `FixedBuffer.reserve`, `DestinationReservation.initialize_value`,
 `InitializedDestination.finish`, `WrittenRegion.view`, `Arena.attach`,
-`Arena.allocate_value`, `Arena.checkpoint`, `Arena.rewind`, `Arena.detach`, and
-`Arena.abandon_storage`. These identities replace their former flat spellings.
-No compatibility aliases exist.
+`Arena.allocate_value`, `Arena.checkpoint`, `Arena.rewind`, `Arena.detach`,
+`Arena.abandon_storage`, `SlotPool.attach`, `SlotPool.detach`,
+`SlotPool.abandon_storage`, `SlotMap.attach`, `SlotMap.detach`, and
+`SlotMap.abandon_storage`. These transitions have no flat-name aliases.

@@ -148,6 +148,34 @@ The `+` and `-` operators do not accept typed addresses.
 
 Use `byte_offset`, `element_offset`, or `field_addr` for address derivation.
 
+`field_addr(pointer, .field)` selects one ordinary struct field from the
+pointer's checked pointee type. `field_addr(pointer, Owner.field)` also requires
+that the named owner is exactly that pointee type. Both forms preserve the
+field's type, alignment, subobject provenance, leases, and address qualifiers.
+The operation evaluates the pointer once and does not load it.
+
+Use another explicit projection for an embedded field. A selector such as
+`.state.pages` is not accepted. An address-valued field needs an explicit
+`.load()` before a projection through its pointee. Opaque fields remain
+inaccessible outside their owner module.
+
+<!-- wyst-contract: fmt -->
+```wyst
+module projections
+
+struct State {
+  pages: u64
+}
+
+struct Plan {
+  state: State
+}
+
+fn pages(plan: @Plan) -> @u64 {
+  return field_addr(field_addr(plan, .state), .pages)
+}
+```
+
 Use `relens<T>` to change only the element lens.
 
 Use `qualify<T>` to change only the volatile or MMIO qualifiers.
@@ -187,6 +215,9 @@ into all `N` elements, so the element type must be copyable. Repeat syntax does
 not construct SIMD vectors.
 
 An index expression reads or writes one element. A slice expression creates a slice view.
+Reading a copyable element carries storage leases only if its value contains
+an address or view. A variable index does not turn a scalar or scalar aggregate
+copy into a borrowed view of the array.
 
 The slice forms are `values[..]`, `values[..<end]`, `values[start..]`, and `values[start..<end]`.
 
@@ -287,6 +318,21 @@ field type and optional specifier select the parser. Schema errors are
 compile-time diagnostics. A successful `Result` carries string-field
 provenance from the input.
 
+## Binary schemas and native values
+
+A `binary` declaration is a checked wire schema. It is not a native type, a
+memory overlay, or a generic type constructor. Its generated `NameValue` and,
+when materialized pools are needed, `NameDestination` are ordinary native types.
+Schema `[count]Format` repeats a wire format with a checked runtime count. It does
+not alter native fixed-array lengths or introduce value generics.
+
+Variable fields use caller-provided pools. Repeated children use scalar
+descriptors and separate flat payload pools; opaque bits use a byte pool and an
+explicit logical bit count. Returned pool slices preserve the destination
+lifetime. They do not retain encoded input. The accepted sequential contract and
+generated naming rules are in [Binary Formats](binary-formats.md). Its release
+acceptance remains pending integration verification.
+
 ## Nominal carrier types
 
 `type Name: Carrier` declares a distinct nominal carrier type.
@@ -301,8 +347,9 @@ parameter cannot own a declaration. A public operation cannot expose a private
 owner.
 
 Parameter zero named `self` must have the explicit exact owner type. Its normal
-parameter mode defines receiver behavior. Read `self` retains a readable
-value, `mut self` needs an addressable mutable place, and `var self` consumes an
+parameter mode defines receiver behavior. Read `self: T` retains a readable
+value, `self: mut T` needs `(mut value).operation(...)` with an addressable mutable
+place, and `self: var T` consumes an
 explicitly transferred value. Receiver lookup uses the static nominal identity
 only. It does not change references, dereference addresses, convert values, or
 select an interface implementation.
@@ -370,6 +417,13 @@ fn duplicate(value: u64) -> Pair<u64> {
 A struct literal needs an expected struct type.
 
 The literal must initialize every field exactly once.
+
+A bare field name is initializer shorthand: `{base, bytes}` means
+`{base = base, bytes = bytes}`. The value uses ordinary lexical name lookup.
+This form requires an expected struct type; bitstruct fields remain explicit.
+Shorthand adds no defaults, omitted fields, spread, or implicit ownership
+transfer. A transferred field remains explicit, such as
+`{reason, pending = xfer pending}`.
 
 The written field order can differ from the declaration order.
 
@@ -444,9 +498,13 @@ fn wrap(value: u64) -> Reply {
 
 The backing type must be `u8`, `u16`, `u32`, or `u64`.
 
-A field can use `bool`, an exact-width integer type, or a payload-free enum type.
+A field can use `bool`, an exact-width integer type, a non-opaque nominal integer
+type, or a payload-free enum type. A nominal field uses its declared type for
+reads and writes. Its integer carrier must have exactly the field width.
+Opaque nominal carriers are not permitted, even inside their owner module.
+Nominal float carriers are not permitted.
 
-`at N` assigns one bit. Only a `bool` field can use this form.
+`at N` assigns one bit. A one-bit field must use this form.
 
 `at A..=B` assigns an inclusive bit range.
 
@@ -462,8 +520,16 @@ A literal must initialize every declared field exactly once.
 
 Unassigned backing bits are zero after construction.
 
-A field write must have the field's exact type, or be a literal representable by
-that type. Convert a wider runtime value explicitly with `truncate<FieldType>`.
+A field write must have the field's exact type, or be a literal permitted by
+that type. Numeric nominal fields accept representable literals. Plain nominal
+fields require an explicit value of the nominal type; a raw integer or literal
+does not convert implicitly. Different nominal types are not interchangeable,
+even when they use the same integer carrier.
+
+Convert a wider runtime integer explicitly with `truncate<T>` before constructing
+a nominal value with `bitcast<NominalType>`. Field extraction accepts every bit
+pattern and preserves signedness. It performs no runtime validation and creates
+no authority.
 
 Use `bitcast<T>` to cross between a bitstruct and its exact backing type.
 
@@ -471,12 +537,19 @@ Use `bitcast<T>` to cross between a bitstruct and its exact backing type.
 ```wyst
 module manual.bitstruct_types
 
+type Owner: u8
+
 bitstruct Control: u32 {
   enabled: bool at 0
   count: u3 at 8..=10
+  owner: Owner at 16..=23
 }
 
-const RESET: Control = {enabled = true, count = 5}
+const RESET: Control = {
+  enabled = true,
+  count = 5,
+  owner = bitcast<Owner>(numeric<u8>(1)),
+}
 ```
 
 ## Register-map instance types
@@ -666,7 +739,10 @@ constants. Use `alignment_bytes` and explicit representation conversions when
 raw integer or ABI arithmetic is required. The domain types add no runtime
 wrapper.
 
-`#static_assert(condition, "message")` requires a compile-time `bool` value.
+An ordinary declaration or statement `#static_assert(condition, "message")`
+requires a compile-time `bool` value.
+[Named Layouts and Placement](named-layouts-and-placement.md#final-placement-assertions)
+defines the separate final-placement evaluation of layout members.
 
 The compiler reports the supplied message when the condition is false.
 

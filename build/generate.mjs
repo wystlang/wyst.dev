@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import { registerWyst } from "./prism-wyst.mjs";
+import { referenceSourcePath } from "../tools/wyst-snapshot-inputs.mjs";
 import {
 	docPage,
 	docIndexPage,
@@ -52,6 +53,8 @@ const LOCAL_DESIGN_ARTIFACT_LINKS = new Map(
 );
 
 function publicReferenceHref(href) {
+	const source = referenceSourcePath(href);
+	if (source) return `/docs/source/${source}`;
 	if (href === "../docs/adr/") return "/docs/adr/";
 	if (href === "catalogs/README.md") return "/docs/catalogs/README.md";
 	if (/^catalogs\/[\w./-]+\.(?:json|tsv|jsonl\.gz)$/.test(href)) {
@@ -496,6 +499,10 @@ export function generateDocs({
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
 	copyTree(path.join(referenceDir, "catalogs"), path.join(outDir, "catalogs"));
+	const linkedSources = path.join(referenceDir, "source");
+	if (fs.existsSync(linkedSources)) {
+		copyTree(linkedSources, path.join(outDir, "source"));
+	}
 	for (const artifact of LOCAL_DESIGN_ARTIFACTS) {
 		fs.copyFileSync(path.join(DOCS, artifact), path.join(outDir, artifact));
 	}

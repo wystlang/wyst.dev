@@ -5,7 +5,7 @@ status: accepted
 # Add owner-qualified nominal operations
 
 Wyst accepts declarations such as
-`pub fn Arena.allocate_value<T>(mut self: Arena, value: T)`. The declaration
+`pub fn Arena.allocate_value<T>(self: mut Arena, value: T)`. The declaration
 identity has a module, an exact nominal owner, and an operation leaf. The
 canonical identity is `module.Owner.operation`. The owner must be a concrete,
 nongeneric nominal type declared in the same module. A public operation needs
@@ -17,9 +17,9 @@ An operation is receiver-enabled only when parameter zero is an explicit
 only. For an exact nominal receiver, `value.operation(arguments...)`
 elaborates before typed IR to `Owner.operation(value, arguments...)`. The
 receiver is evaluated once and before the remaining arguments. Existing
-parameter modes apply without adjustment: `mut self` needs an addressable
-mutable place, and `var self` needs explicit `xfer`. Transfer is invalid for a
-retained `mut self` receiver.
+parameter modes apply without adjustment: `self: mut T` needs an addressable
+mutable place, and `self: var T` needs explicit `xfer`. Transfer is invalid for a
+retained `self: mut T` receiver.
 
 Lookup uses only the exact static nominal receiver identity. It does not use
 autoref, autoderef, conversion, reborrow, interface search, extension lookup,

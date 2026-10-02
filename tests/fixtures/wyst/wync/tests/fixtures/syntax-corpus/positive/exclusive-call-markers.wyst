@@ -1,0 +1,20 @@
+module exclusive_calls
+
+struct Node {
+  count: u64
+}
+
+fn reset(node: mut Node) {
+  node.count = 0
+}
+
+fn Node.add<T: integer>(self: mut Node, value: T) {
+  self.count = self.count + numeric<u64>(value)
+}
+
+fn use(node: var Node) {
+  reset(mut node)
+  reset(node = mut node)
+  (mut node).add<u8>(1)
+  Node.add<u8>(mut node, 2)
+}

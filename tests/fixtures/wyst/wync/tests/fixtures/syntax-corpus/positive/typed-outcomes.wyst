@@ -6,9 +6,7 @@ enum Stored: u8 {
 }
 
 fn leaf(value: u64) -> u64 offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   if value == 0 {
     fail 7
@@ -18,19 +16,15 @@ fn leaf(value: u64) -> u64 offers {
 }
 
 fn forwarded(value: u64) -> u64 offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   return leaf(value)?
 }
 
 fn pulse(value: u64) -> u64 offers handler(none) {
   progress(u64)
-  terminal {
-    failure(u8)
-    cancelled(u16)
-  }
+  failure(u8)
+  cancelled(u16)
 } effects(none) {
   defer { }
 
@@ -41,13 +35,11 @@ fn pulse(value: u64) -> u64 offers handler(none) {
 fn handled(value: u64) -> u64 effects(none) {
   return handle pulse(value) {
     progress(_) { }
-    terminal {
-      failure(problem) {
-        widen<u64>(problem)
-      }
-      cancelled(cause) {
-        widen<u64>(cause)
-      }
+    failure(problem) {
+      widen<u64>(problem)
+    }
+    cancelled(cause) {
+      widen<u64>(cause)
     }
   }
 }

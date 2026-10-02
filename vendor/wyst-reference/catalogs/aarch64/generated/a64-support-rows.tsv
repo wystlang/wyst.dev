@@ -423,7 +423,7 @@ a64:encoding:clz-asimdmisc-r:6fb6e78f8e2abd92	encoding	a64:instruction_form:clz-
 a64:encoding:clz-z-p-z-m:03b1d3f3a316db95	encoding	a64:instruction_form:clz-z-p-z-m:03b1d3f3a316db95	a64:encoding:clz-z-p-z-m:03b1d3f3a316db95	known_unsupported	none	none	clz
 a64:encoding:clz-z-p-z-z:50e7dddefbb7b031	encoding	a64:instruction_form:clz-z-p-z-z:50e7dddefbb7b031	a64:encoding:clz-z-p-z-z:50e7dddefbb7b031	known_unsupported	none	none	clz
 a64:encoding:cmeq-asimdmisc-z:0f76c45dcda29f84	encoding	a64:instruction_form:cmeq-asimdmisc-z:0f76c45dcda29f84	a64:encoding:cmeq-asimdmisc-z:0f76c45dcda29f84	known_unsupported	none	none	cmeq
-a64:encoding:cmeq-asimdsame-only:0230ac3ba22b4aef	encoding	a64:instruction_form:cmeq-asimdsame-only:0230ac3ba22b4aef	a64:encoding:cmeq-asimdsame-only:0230ac3ba22b4aef	known_unsupported	none	none	cmeq
+a64:encoding:cmeq-asimdsame-only:0230ac3ba22b4aef	encoding	a64:instruction_form:cmeq-asimdsame-only:0230ac3ba22b4aef	a64:encoding:cmeq-asimdsame-only:0230ac3ba22b4aef	active	ordinary_lowering|architecture_operation	wyst.a64.architecture-operations|wyst.a64.ordinary-lowering	cmeq
 a64:encoding:cmeq-asisdmisc-z:91f1fdaa991ad2b2	encoding	a64:instruction_form:cmeq-asisdmisc-z:91f1fdaa991ad2b2	a64:encoding:cmeq-asisdmisc-z:91f1fdaa991ad2b2	known_unsupported	none	none	cmeq
 a64:encoding:cmeq-asisdsame-only:47185185003ecefa	encoding	a64:instruction_form:cmeq-asisdsame-only:47185185003ecefa	a64:encoding:cmeq-asisdsame-only:47185185003ecefa	known_unsupported	none	none	cmeq
 a64:encoding:cmge-asimdmisc-z:99c7ca34f129add6	encoding	a64:instruction_form:cmge-asimdmisc-z:99c7ca34f129add6	a64:encoding:cmge-asimdmisc-z:99c7ca34f129add6	known_unsupported	none	none	cmge
@@ -626,7 +626,7 @@ a64:encoding:dmb-bo-barriers:2877e9b833f4b353	encoding	a64:instruction_form:dmb-
 a64:encoding:drps-64e-branch-reg:ed4cb194f4ad2805	encoding	a64:instruction_form:drps-64e-branch-reg:ed4cb194f4ad2805	a64:encoding:drps-64e-branch-reg:ed4cb194f4ad2805	known_unsupported	none	none	drps
 a64:encoding:dsb-bo-barriers:b265a39edcb37974	encoding	a64:instruction_form:dsb-bo-barriers:b265a39edcb37974	a64:encoding:dsb-bo-barriers:b265a39edcb37974	active	ordinary_lowering|architecture_operation	wyst.a64.architecture-operations|wyst.a64.ordinary-lowering	dsb
 a64:encoding:dsb-bon-barriers:3b24fe808f79a992	encoding	a64:instruction_form:dsb-bon-barriers:3b24fe808f79a992	a64:encoding:dsb-bon-barriers:3b24fe808f79a992	known_unsupported	none	none	dsb
-a64:encoding:dup-asimdins-dr-r:52ff9ecae9f38898	encoding	a64:instruction_form:dup-asimdins-dr-r:52ff9ecae9f38898	a64:encoding:dup-asimdins-dr-r:52ff9ecae9f38898	known_unsupported	none	none	dup
+a64:encoding:dup-asimdins-dr-r:52ff9ecae9f38898	encoding	a64:instruction_form:dup-asimdins-dr-r:52ff9ecae9f38898	a64:encoding:dup-asimdins-dr-r:52ff9ecae9f38898	active	ordinary_lowering|architecture_operation	wyst.a64.architecture-operations|wyst.a64.ordinary-lowering	dup
 a64:encoding:dup-asimdins-dv-v:b222ce77c02ecf15	encoding	a64:instruction_form:dup-asimdins-dv-v:b222ce77c02ecf15	a64:encoding:dup-asimdins-dv-v:b222ce77c02ecf15	known_unsupported	none	none	dup
 a64:encoding:dup-asisdone-only:f7cb5c4c19020161	encoding	a64:instruction_form:dup-asisdone-only:f7cb5c4c19020161	a64:encoding:dup-asisdone-only:f7cb5c4c19020161	known_unsupported	none	none	dup
 a64:encoding:dup-z-i:7436ddc9fa163cb5	encoding	a64:instruction_form:dup-z-i:7436ddc9fa163cb5	a64:encoding:dup-z-i:7436ddc9fa163cb5	known_unsupported	none	none	dup
@@ -657,7 +657,7 @@ a64:encoding:eretaa-64e-branch-reg:b2e840277fb68918	encoding	a64:instruction_for
 a64:encoding:eretab-64e-branch-reg:35cf41f8e1b43865	encoding	a64:instruction_form:eretab-64e-branch-reg:35cf41f8e1b43865	a64:encoding:eretab-64e-branch-reg:35cf41f8e1b43865	known_unsupported	none	none	eretab
 a64:encoding:esb-hi-hints:53adfd1f066c7add	encoding	a64:instruction_form:esb-hi-hints:53adfd1f066c7add	a64:encoding:esb-hi-hints:53adfd1f066c7add	known_unsupported	none	none	esb
 a64:encoding:expand-z-p-z:59207e46931b6488	encoding	a64:instruction_form:expand-z-p-z:59207e46931b6488	a64:encoding:expand-z-p-z:59207e46931b6488	known_unsupported	none	none	expand
-a64:encoding:ext-asimdext-only:1443c6c313ba9346	encoding	a64:instruction_form:ext-asimdext-only:1443c6c313ba9346	a64:encoding:ext-asimdext-only:1443c6c313ba9346	known_unsupported	none	none	ext
+a64:encoding:ext-asimdext-only:1443c6c313ba9346	encoding	a64:instruction_form:ext-asimdext-only:1443c6c313ba9346	a64:encoding:ext-asimdext-only:1443c6c313ba9346	active	ordinary_lowering|architecture_operation	wyst.a64.architecture-operations|wyst.a64.ordinary-lowering	ext
 a64:encoding:ext-z-zi-con:c9c858475df5e090	encoding	a64:instruction_form:ext-z-zi-con:c9c858475df5e090	a64:encoding:ext-z-zi-con:c9c858475df5e090	known_unsupported	none	none	ext
 a64:encoding:ext-z-zi-des:7262f921a89acb66	encoding	a64:instruction_form:ext-z-zi-des:7262f921a89acb66	a64:encoding:ext-z-zi-des:7262f921a89acb66	known_unsupported	none	none	ext
 a64:encoding:extq-z-zi-des:aca6286f2d51bb9e	encoding	a64:instruction_form:extq-z-zi-des:aca6286f2d51bb9e	a64:encoding:extq-z-zi-des:aca6286f2d51bb9e	known_unsupported	none	none	extq

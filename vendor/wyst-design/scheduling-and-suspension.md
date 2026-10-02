@@ -104,6 +104,20 @@ The boundary does not provide these behaviors:
 - task migration; or
 - scheduler progress guarantees.
 
+## Cooperative task transfer fixture
+
+The [cooperative task fixture](../wync/tests/fixtures/qemu/virt/cooperative-tasks/main.wyst)
+exercises EL1 SVC suspension and ERET resumption on separate normal
+stacks with a separate exception stack. The provider copies the current
+`aarch64.sp0` integer frame into the selected saved context and installs the
+next one. This is fixture code, not a runtime scheduler supplied by Wyst.
+FP/SIMD is disabled. The frame does not save that state; a consumer that admits
+it needs another explicit context contract before use. The selected integer
+frame, local activation identity, authenticated imported suspension effects,
+and exact stack-root bounds have focused regression tests. Kernel run queues,
+park/wake state, stack guards, teardown, and execution progress require their
+own integration tests.
+
 ## Interactive Progress
 
 Interactive progress is synchronous and same-strand.

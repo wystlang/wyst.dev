@@ -76,13 +76,13 @@ fn bytes(buffer: Buffer) -> []u8 from buffer {
 }
 
 fn first_if_kept(
-  mut buffer: Buffer,
+  buffer: mut Buffer,
   callback: fn(mut Buffer) -> Status
   preserves(parameter(0)) on .Kept,
 ) -> u8
 {
   const view = bytes(buffer)
-  const status = callback(buffer)
+  const status = callback(mut buffer)
   if status is .Kept {
     return view[0]
   }
@@ -119,9 +119,9 @@ fn bytes(buffer: Buffer) -> []u8 from buffer {
   return buffer.bytes[..]
 }
 
-fn rejected(mut pair: Pair, callback: fn(mut Pair) preserves(parameter(0).left)) -> u8 {
+fn rejected(pair: mut Pair, callback: fn(mut Pair) preserves(parameter(0).left)) -> u8 {
   const view = bytes(pair.right)
-  callback(pair)
+  callback(mut pair)
   return view[0]
 }
 ```
@@ -151,13 +151,13 @@ module storage_example_mutable_boundary_rejection
 struct Buffer { bytes: [4]u8 }
 
 fn rejected(
-  mut buffer: Buffer,
-  mut limit: u64,
+  buffer: mut Buffer,
+  limit: mut u64,
   callback: fn(mut Buffer, u64)
   preserves(parameter(0).bytes[0 ..< parameter(1)]),
 )
 {
-  callback(buffer, limit)
+  callback(mut buffer, limit)
 }
 ```
 
@@ -178,15 +178,15 @@ module storage_example_mutable_boundary_repair
 struct Buffer { bytes: [4]u8 }
 
 fn repaired(
-  mut buffer: Buffer,
-  mut supplied_limit: u64,
+  buffer: mut Buffer,
+  supplied_limit: mut u64,
   callback: fn(mut Buffer, u64)
   preserves(parameter(0).bytes[0 ..< parameter(1)]),
 )
 {
   const frozen_limit: u64 = supplied_limit
   if frozen_limit <= 4 {
-    callback(buffer, frozen_limit)
+    callback(mut buffer, frozen_limit)
   }
 }
 ```

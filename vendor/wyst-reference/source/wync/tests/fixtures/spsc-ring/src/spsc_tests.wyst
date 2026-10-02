@@ -1,0 +1,228 @@
+module spsc_tests
+
+import core.storage {
+  SpscBatchState,
+  SpscConsumer,
+  SpscPop,
+  SpscProducer,
+  SpscPush,
+  SpscRing,
+  spsc_assert_permanent,
+  spsc_close_producer,
+  spsc_finish_consumer,
+  spsc_ring_attach,
+  spsc_ring_reset,
+  spsc_ring_split,
+  spsc_try_pop,
+  spsc_try_pop_batch,
+  spsc_try_push,
+  spsc_try_push_batch,
+}
+
+#[align(128)]
+var BACKING: [512]u8 = [0; 512]
+#[align(128)]
+var OTHER: [512]u8 = [0; 512]
+
+fn impossible() -> never {
+  loop { }
+}
+
+fn require(condition: bool) {
+  if !condition {
+    impossible()
+  }
+}
+
+fn attach(base: u64, capacity: u64) -> SpscRing<u64> {
+  var backing = match spsc_assert_permanent(base, 512) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  return match spsc_ring_attach<u64>(xfer backing, capacity) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+}
+
+fn accepted(result: SpscPush<u64>) {
+  match result {
+    .Accepted
+    .Full(_) { impossible() }
+    .Closed(_) { impossible() }
+  }
+}
+
+fn popped(result: SpscPop<u64>, expected: u64) {
+  match result {
+    .Value(value) { require(value == expected) }
+    .Empty { impossible() }
+    .Closed { impossible() }
+  }
+}
+
+pub fn lifecycle() -> u64 {
+  var (producer, consumer) = spsc_ring_split<u64>(attach(#addr_of(BACKING), 4))
+  match spsc_try_pop<u64>(mut consumer) {
+    .Empty
+    .Value(_) { impossible() }
+    .Closed { impossible() }
+  }
+
+  for round in numeric<u64>(0) ..< numeric<u64>(17) {
+    for index in numeric<u64>(0) ..< numeric<u64>(4) {
+      accepted(spsc_try_push<u64>(mut producer, round * 4 + index))
+    }
+
+    match spsc_try_push<u64>(mut producer, 999) {
+      .Full(value) { require(value == 999) }
+      .Accepted { impossible() }
+      .Closed(_) { impossible() }
+    }
+
+    for index in numeric<u64>(0) ..< numeric<u64>(4) {
+      popped(spsc_try_pop<u64>(mut consumer), round * 4 + index)
+    }
+  }
+
+  accepted(spsc_try_push<u64>(mut producer, 81))
+
+  var closed_producer = spsc_close_producer<u64>(xfer producer)
+  var retained = match spsc_finish_consumer<u64>(xfer consumer) {
+    .Error(rejected) { xfer rejected.consumer }
+    .Ok(_) { impossible() }
+  }
+  popped(spsc_try_pop<u64>(mut retained), 81)
+  match spsc_try_pop<u64>(mut retained) {
+    .Closed
+    .Value(_) { impossible() }
+    .Empty { impossible() }
+  }
+
+  var closed_consumer = match spsc_finish_consumer<u64>(xfer retained) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var reset = match spsc_ring_reset<u64>(xfer closed_producer, xfer closed_consumer) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var (next_producer, next_consumer) = spsc_ring_split<u64>(xfer reset)
+  accepted(spsc_try_push<u64>(mut next_producer, 123))
+  popped(spsc_try_pop<u64>(mut next_consumer), 123)
+  return 0
+}
+
+pub fn zero_capacity() -> u64 {
+  var (producer, consumer) = spsc_ring_split<u64>(attach(#addr_of(BACKING), 0))
+  match spsc_try_push<u64>(mut producer, 7) {
+    .Full(value) { require(value == 7) }
+    .Accepted { impossible() }
+    .Closed(_) { impossible() }
+  }
+
+  match spsc_try_pop<u64>(mut consumer) {
+    .Empty
+    .Value(_) { impossible() }
+    .Closed { impossible() }
+  }
+
+  var ended = spsc_close_producer<u64>(xfer producer)
+  match spsc_try_pop<u64>(mut consumer) {
+    .Closed
+    .Value(_) { impossible() }
+    .Empty { impossible() }
+  }
+
+  return 0
+}
+
+pub fn batches() -> u64 {
+  var (producer, consumer) = spsc_ring_split<u64>(attach(#addr_of(BACKING), 3))
+  var input: [5]u64 = [4, 5, 6, 7, 8]
+  const pushed = spsc_try_push_batch<u64>(mut producer, input[0 ..< 5])
+  require(pushed.accepted == 3 && pushed.remainder.len == 2 && pushed.state == SpscBatchState.Full)
+
+  var output: [5]u64 = [99; 5]
+  var output_view = output[0 ..< 5]
+  const received = spsc_try_pop_batch<u64>(mut consumer, mut output_view)
+  require(received.written == 3 && received.state == SpscBatchState.Empty)
+  require(output[0] == 4 && output[1] == 5 && output[2] == 6 && output[3] == 99 && output[4] == 99)
+
+  const rest = spsc_try_push_batch<u64>(mut producer, pushed.remainder)
+  require(rest.accepted == 2 && rest.remainder.len == 0 && rest.state == SpscBatchState.Complete)
+
+  var ended = spsc_close_producer<u64>(xfer producer)
+  const drained = spsc_try_pop_batch<u64>(mut consumer, mut output_view)
+  require(drained.written == 2 && drained.state == SpscBatchState.Closed)
+  require(output[0] == 7 && output[1] == 8 && output[2] == 6)
+  return 0
+}
+
+pub fn mismatched_reset() -> u64 {
+  var (producer, consumer) = spsc_ring_split<u64>(attach(#addr_of(BACKING), 1))
+  var (other_producer, other_consumer) = spsc_ring_split<u64>(attach(#addr_of(OTHER), 1))
+  var ended = spsc_close_producer<u64>(xfer producer)
+  var other_ended = spsc_close_producer<u64>(xfer other_producer)
+  var drained = match spsc_finish_consumer<u64>(xfer consumer) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var other_drained = match spsc_finish_consumer<u64>(xfer other_consumer) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  match spsc_ring_reset<u64>(xfer ended, xfer other_drained) {
+    .Error(_)
+    .Ok(_) { impossible() }
+  }
+
+  return 0
+}
+
+pub fn attachment_bounds() -> u64 {
+  var admitted = match spsc_assert_permanent(#addr_of(BACKING), 512) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var recovered = match spsc_ring_attach<u64>(xfer admitted, 17) {
+    .Error(rejected) { xfer rejected.backing }
+    .Ok(_) { impossible() }
+  }
+  var ring = match spsc_ring_attach<u64>(xfer recovered, 16) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var (producer, consumer) = spsc_ring_split<u64>(xfer ring)
+  accepted(spsc_try_push<u64>(mut producer, 5))
+  popped(spsc_try_pop<u64>(mut consumer), 5)
+  return 0
+}
+
+numeric type WakeToken: u64
+
+pub fn nominal_payload() -> u64 {
+  var admitted = match spsc_assert_permanent(#addr_of(BACKING), 512) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var ring = match spsc_ring_attach<WakeToken>(xfer admitted, 4) {
+    .Ok(value) { xfer value }
+    .Error(_) { impossible() }
+  }
+  var (producer, consumer) = spsc_ring_split<WakeToken>(xfer ring)
+  const token: WakeToken = 0xfedcba9876543210
+  match spsc_try_push<WakeToken>(mut producer, token) {
+    .Accepted
+    .Full(_) { impossible() }
+    .Closed(_) { impossible() }
+  }
+
+  match spsc_try_pop<WakeToken>(mut consumer) {
+    .Value(value) { require(value == token) }
+    .Empty { impossible() }
+    .Closed { impossible() }
+  }
+
+  return 0
+}

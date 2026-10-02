@@ -1,0 +1,3 @@
+module invalid_loan_value
+
+fn bad(value: var u64) { const loan = (mut value) }

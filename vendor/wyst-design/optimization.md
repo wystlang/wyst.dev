@@ -103,6 +103,15 @@ The compiler can fuse the resulting constant-tag switch into predecessor
 edges.
 The switch must have a closed tag set and exclusive predecessors.
 Payload phis move to the selected handler block.
+If the variants have different payload types, the compiler can form a separate
+payload phi in each handler. Every use of the aggregate must be a compiler
+payload projection in an exclusive handler. Each selected incoming constructor
+must supply that handler's exact payload type. The compiler retains the checks
+and forwards only the payload on the selected edges.
+
+Checked-result authority stays in verified source IR. The backend can apply
+this rule after it consumes the checked-result carrier. Memory-preservation
+verification must still accept the transformed function.
 
 The compiler retains the ordinary aggregate or switch when a condition fails.
 Source-created enum projections do not receive this special rule.
@@ -301,6 +310,7 @@ The AArch64 backend selects one admitted encoding for each lowered operation.
 Instruction selection can use these local forms when their conditions hold:
 
 - immediate arithmetic and comparisons;
+- a comparison followed by selection of its two operands, under the conditions below;
 - compare-with-zero branches;
 - folded load and store addressing;
 - register-offset byte loads;
@@ -313,6 +323,15 @@ Instruction selection can use these local forms when their conditions hold:
 These forms are local backend choices.
 They do not add general common-subexpression elimination or loop transforms.
 The backend keeps the ordinary form when a condition does not hold.
+
+A 64-bit integer comparison can feed `csel` directly when its only use is the
+next scheduled value in the same block, and that value selects the two compared
+operands in either order. Both values must use standard scheduling. The selected
+operands must have exact register homes at the selection point. The comparison
+result must have a stable register home and no stack range. The backend emits
+one `cmp` and one `csel`, with the comparison's signedness and condition. The
+operands are already live for selection, so this form does not extend their
+lifetimes, defer an arm's evaluation, or reuse flags across another operation.
 
 For a cyclic CFG, the backend emits a deterministic successor trace. It keeps
 an unvisited branch successor adjacent when possible. The adjacent edge needs

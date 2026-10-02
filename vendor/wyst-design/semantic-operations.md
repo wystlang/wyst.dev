@@ -55,6 +55,13 @@ fn wait() {
 Architecture categories provide CPU hints, barriers, cache maintenance, TLB maintenance, exceptions, and non-temporal pair access.
 The selected operation owns its argument, privilege, effect, and ordering rules.
 
+`exception.smc64(function, arg1, arg2, arg3)` takes four `u64` values in
+`x0` through `x3`, emits `SMC #0`, and returns the observed `u64` in `x0`.
+The result is `must_observe`; signed firmware status remains its full bit
+pattern. The operation uses the full compiler ABI clobber boundary and the
+external-handler execution-suspension contract. It exposes no additional
+argument or result registers. Source must validate the selected firmware ABI.
+
 [Memory Model](memory-model.md) defines atomic methods and memory ordering.
 [SIMD](simd.md) defines vector operations.
 [Checked Assembly](checked-assembly.md) defines checked assembly.
@@ -322,6 +329,15 @@ See [Memory Model](memory-model.md#volatile-and-mmio-access) for ordering limits
 Placed MMIO instance authority covers register access only. It does not imply
 interrupt, clock, reset, DMA, lifetime-management, isolation, or exclusive
 device-ownership authority.
+
+Indexed register banks are not implemented. Fixed cells and explicit selection
+retain each cell's identity and policy; unrolling initialization does not remove
+a selector needed by a later interrupt path. A bank extension needs another
+concrete bank family or a measured dispatch requirement. It must authenticate
+each cell's origin, width, stride, extent, and non-overlap, and prove or explicitly
+check the index. Each operation must retain its visible volatile access and
+field policy without an implicit trap, ordinary slice, raw-address escape,
+retry, or barrier.
 
 ## System register declarations
 

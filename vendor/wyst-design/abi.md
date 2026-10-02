@@ -137,6 +137,9 @@ The Native ABI classifies a fixed-layout aggregate by size:
 | 9 to 16 bytes | Two general registers |
 | More than 16 bytes | Address of a caller-owned copy |
 
+An empty struct, including `core.collections.Unit`, occupies one argument
+position under this rule. It does not shift later arguments into its position.
+
 An aggregate uses the stack when its required argument registers are not
 available.
 An indirect argument also uses a caller-owned copy area.
@@ -249,6 +252,10 @@ The compiler rejects a hidden stack copy or stack argument in that context.
 The compiler creates a frame when the function needs stack storage, saved
 registers, a frame record, or an indirect-result pointer slot.
 The final frame size is a multiple of 16 bytes.
+
+A value that shares another value's stack storage contributes only its typed
+byte extent to frame sizing and resource reports. It does not add a separate
+minimum-width slot. The owning slot retains its full reservation.
 
 The compiler saves only used callee-saved registers.
 It restores those registers before return.

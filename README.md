@@ -20,7 +20,7 @@ index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
 content/guides/             Site-owned style and best practices Markdown
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
-vendor/wyst-reference/     Snapshot-bound catalogs and architectural decisions
+vendor/wyst-reference/     Snapshot-bound catalogs, decisions, and linked sources
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
 vendor/wyst-homepage*-semantic-tokens.json
                            Compiler-produced token streams for homepage examples
@@ -97,9 +97,12 @@ The compiler repository remains the source of truth for the language design.
 This public repository includes the reference topics, their linked catalogs and
 architectural decisions, the homepage and runtime fixture files, and the shared
 positive/negative syntax corpus required to build and test the site. The
-snapshot-bound files under `vendor/wyst-reference/` make every catalog and ADR
-link in the public manual available without access to the private upstream
-repository. The vendored `syntax-words.tsv`,
+snapshot-bound files under `vendor/wyst-reference/` make linked catalogs,
+ADRs, and compiler sources available without access to the private upstream
+repository. Manual links to test sources, tool notes, and proposals publish the
+original files as downloads under `/docs/source/`. Only source files directly
+linked from the reference are included; their contents remain unchanged.
+The vendored `syntax-words.tsv`,
 `attribute-catalog.tsv`, and `meta-operation-catalog.tsv` are the complete
 public editor vocabulary inputs. `syntax-words.tsv` drives documentation
 highlighting, so Prism does not maintain a parallel keyword or

@@ -29,6 +29,14 @@ The declaration must have one of these selectors:
 The selected target must admit the selector.
 The compiler does not infer the selector from the declaration name.
 
+An installed table's selector must match the exception level selected by the
+authenticated vector-base register. `VBAR_EL1` and the VHE alias `VBAR_EL12`
+select EL1 vector state; `VBAR_EL2` and `VBAR_EL3` select their respective levels.
+This destination does not determine the privilege needed to write the register.
+`VBAR_EL12` still requires its authenticated EL2 accessor and selected platform
+authority. Imported aliases retain the canonical register's access and
+destination rules.
+
 ```text
 vector_table el1_vectors: aarch64.el1 {
   current.sp0.sync     -> unexpected
