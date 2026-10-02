@@ -86,6 +86,7 @@ test("site-owned guides are published with navigation and metadata", async () =>
 	const sitemap = await readFile(new URL("sitemap.xml", output), "utf8");
 	assert.match(index, /<h2>Writing Wyst<\/h2>/);
 	for (const [slug, title] of [
+		["effective-wyst", "Effective Wyst"],
 		["style-guide", "Style Guide"],
 		["best-practices", "Best Practices"],
 	]) {

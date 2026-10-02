@@ -18,7 +18,7 @@ ignored `dist/` directory:
 ```text
 index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
-content/guides/             Site-owned style and best practices Markdown
+content/guides/            Site-owned guidance for writing Wyst
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
 vendor/wyst-reference/     Snapshot-bound catalogs, decisions, and linked sources
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
@@ -47,17 +47,39 @@ isolated builds are byte-identical.
 
 ## Writing guides
 
-The [Style Guide](content/guides/style-guide.md) and
+[Effective Wyst](content/guides/effective-wyst.md), the
+[Style Guide](content/guides/style-guide.md), and
 [Best Practices](content/guides/best-practices.md) are site-owned advice. The
-build publishes them at `/docs/style-guide/` and `/docs/best-practices/`, with
-navigation, heading links, syntax highlighting, and sitemap entries. Edit their
-Markdown sources, not `dist/` or the imported language reference.
+build publishes them at `/docs/effective-wyst/`, `/docs/style-guide/`, and
+`/docs/best-practices/`, with navigation, heading links, syntax highlighting,
+and sitemap entries. Edit their Markdown sources, not `dist/` or the imported
+language reference.
 
 Keep language claims consistent with the imported reference. Link to the
 owning reference topic for exact semantics. Each `wyst` code block in these
 guides is a complete module; check and format it with the matching compiler
 before publication. Project commands assume a project with `wyst.project`.
 Run `npm run check` to validate the complete site publication.
+
+Validate Effective Wyst's examples with a compiler built from the imported
+snapshot's source commit:
+
+```sh
+npm run verify:guides -- --wync ../wyst/wync/target/debug/wync
+```
+
+Use `WYST_WYNC_BIN` instead of `--wync`, or let the command find `wync` on `PATH`.
+Pass Markdown paths after the option to select other guides, for example
+`content/guides/*.md`. The command checks the compiler's `sourceId`, then runs
+`fmt --check`, `check`, and `build` for each complete Wyst block in a separate
+temporary static-library project for `qemu-virt-aarch64-el2`. It does not edit
+the guides. This validates module semantics and static-library construction;
+private functions and functions marked only `pub` can be omitted from the
+library. Machine-code and runtime claims need retained exports and execution
+tests with a suitable runner. The tool checks only `wyst` fences. Check the
+grouped API project in `text` fences separately with its documented commands.
+This author check is separate from `npm run check`, which does not require a
+compiler.
 
 ## Local development
 

@@ -14,6 +14,9 @@ This document applies the [Style Guide](style-guide.md) to common systems
 programming decisions. The recommendations depend on the task. The linked
 reference topics define the exact language rules and compiler limits.
 
+[Effective Wyst](effective-wyst.md) introduces the language patterns used here
+with complete examples.
+
 Each Wyst code block is a complete module. It shows one pattern and must be
 checked in a project with the required target configuration; it is not a
 standalone executable.

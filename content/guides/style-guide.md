@@ -16,6 +16,9 @@ and validation. The [language reference](language-overview.md) defines what the
 compiler accepts. If advice here conflicts with the reference, follow the
 reference and correct the guide.
 
+[Effective Wyst](effective-wyst.md) explains everyday language choices with
+complete examples.
+
 The separation of style rules from practical advice follows the structure of
 [Google's Go style documents](https://google.github.io/styleguide/go/).
 The conventions and examples here are specific to Wyst.
