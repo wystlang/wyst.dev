@@ -95,9 +95,11 @@ const REFERENCE_SECTIONS = [
 ];
 
 function referenceGroups(navModel) {
+	const guides = ["Writing Wyst", navModel.filter((item) => item.group === "guide")];
 	const hasSubjectReference = navModel.some((item) => item.group === "reference");
 	if (!hasSubjectReference) {
 		return [
+			guides,
 			["Topics", navModel.filter((item) => item.group === "chapter")],
 			["Appendices", navModel.filter((item) => item.group === "appendix")],
 			["Manuals", navModel.filter((item) => item.group === "manual")],
@@ -105,6 +107,7 @@ function referenceGroups(navModel) {
 	}
 
 	return [
+		guides,
 		...REFERENCE_SECTIONS.map(([label, section]) => [
 			label,
 			navModel.filter(

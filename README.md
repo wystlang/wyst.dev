@@ -18,6 +18,7 @@ ignored `dist/` directory:
 ```text
 index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
+content/guides/             Site-owned style and best practices Markdown
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
 vendor/wyst-reference/     Snapshot-bound catalogs and architectural decisions
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
@@ -43,6 +44,20 @@ manifest deliberately contains no timestamp or CI run number.
 Generated HTML and deployment bundles are not committed. Pull requests review
 their source changes; CI supplies the generated result and proves that two
 isolated builds are byte-identical.
+
+## Writing guides
+
+The [Style Guide](content/guides/style-guide.md) and
+[Best Practices](content/guides/best-practices.md) are site-owned advice. The
+build publishes them at `/docs/style-guide/` and `/docs/best-practices/`, with
+navigation, heading links, syntax highlighting, and sitemap entries. Edit their
+Markdown sources, not `dist/` or the imported language reference.
+
+Keep language claims consistent with the imported reference. Link to the
+owning reference topic for exact semantics. Each `wyst` code block in these
+guides is a complete module; check and format it with the matching compiler
+before publication. Project commands assume a project with `wyst.project`.
+Run `npm run check` to validate the complete site publication.
 
 ## Local development
 
