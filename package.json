@@ -14,6 +14,7 @@
     "verify:build": "node tools/verify-build.mjs",
     "verify:determinism": "node tools/verify-determinism.mjs",
     "verify:wyst-source": "node tools/verify-wyst-source.mjs",
+    "verify:guides": "node tools/verify-guide-examples.mjs",
     "validate:assets": "node tools/validate-cloudflare-assets.mjs",
     "audit": "node tools/audit-site.mjs --public-root dist",
     "audit:browser": "node tools/audit-browser.mjs",

@@ -97,6 +97,8 @@ reference, grammar, catalogs, implementation, and tests are resolved.
   semantic records, verifier invariants, and rendering.
 - [Storage-Preservation Examples](storage-preservation-examples.md) provides
   executable accepted and rejected proof examples.
+- [Error-Handling Examples](error-handling-examples.md) provides executable
+  failure composition, local recovery, and resource retry examples.
 
 ## Reference Maintenance
 

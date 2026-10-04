@@ -1,0 +1,36 @@
+module contracts
+
+fn Owner.edit(self: mut noescape Owner) { }
+
+fn close(owner: var noescape Owner) { }
+
+fn build<Args...>(count: comptime u64, values: Args...) { }
+
+fn nested(callback: noescape fn(mut noescape []u8, u64 in x0) -> u64 in x1) { }
+
+fn names(mut: u64, comptime: comptime u64, noescape: u64) { }
+
+fn types(
+  a: mut,
+  b: comptime,
+  c: noescape,
+  d: mut.Word,
+  e: comptime.Word,
+  f: noescape.Word,
+  g: mut<u8>,
+  h: comptime<u8>,
+  i: noescape<u8>,
+  j: mut in x0,
+  k: comptime in x1,
+  l: noescape in x2,
+)
+{ }
+
+fn inner(callback: fn(mut, comptime, noescape, mut.Word, comptime.Word, noescape.Word)) { }
+
+fn local() {
+  comptime var index = 0
+}
+
+#[align(64), cache_isolated]
+per_cpu var counter: u64 = 0

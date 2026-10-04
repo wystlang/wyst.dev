@@ -44,6 +44,7 @@ function assertSafeOutputDir(outputDir) {
 		".github",
 		"assets",
 		"build",
+		"content",
 		"tests",
 		"tools",
 		"vendor",

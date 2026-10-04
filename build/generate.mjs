@@ -1,6 +1,6 @@
 // Static documentation generator for wyst.dev.
 //
-// Reads the vendored Wyst design reference (markdown) and emits styled HTML
+// Reads the vendored Wyst reference and site-owned guides, then emits HTML
 // under the configured build output's /docs/ directory,
 // reusing the homepage design system. Markdown source is treated as
 // read-only: cross-links (`*.md`) are rewritten to site URLs at build time so
@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 import { registerWyst } from "./prism-wyst.mjs";
+import { referenceSourcePath } from "../tools/wyst-snapshot-inputs.mjs";
 import {
 	docPage,
 	docIndexPage,
@@ -37,6 +38,7 @@ registerWyst(Prism);
 const ROOT = path.resolve(fileURLToPath(import.meta.url), "../..");
 const SITE = "https://wyst.dev";
 const PUBLIC_REFERENCE = path.join(ROOT, "vendor", "wyst-reference");
+const GUIDES = path.join(ROOT, "content", "guides");
 const LOCAL_DESIGN_ARTIFACTS = new Set([
 	"attribute-catalog.tsv",
 	"c-interactive-adapter-catalog.tsv",
@@ -51,6 +53,8 @@ const LOCAL_DESIGN_ARTIFACT_LINKS = new Map(
 );
 
 function publicReferenceHref(href) {
+	const source = referenceSourcePath(href);
+	if (source) return `/docs/source/${source}`;
 	if (href === "../docs/adr/") return "/docs/adr/";
 	if (href === "catalogs/README.md") return "/docs/catalogs/README.md";
 	if (/^catalogs\/[\w./-]+\.(?:json|tsv|jsonl\.gz)$/.test(href)) {
@@ -447,15 +451,21 @@ export function generateDocs({
 		throw new Error("Wyst documentation snapshot has an invalid source commit");
 	}
 
-	const mdFiles = fs
-		.readdirSync(DOCS)
-		.filter((f) => f.endsWith(".md"))
-		.sort();
+	const sources = [DOCS, GUIDES].flatMap((directory) =>
+		fs
+			.readdirSync(directory)
+			.filter((file) => file.endsWith(".md"))
+			.sort()
+			.map((file) => ({ directory, file })),
+	);
 
 	// pass 1: read frontmatter, build the nav model + url map
 	const pages = [];
-	for (const file of mdFiles) {
-		const text = fs.readFileSync(path.join(DOCS, file), "utf-8");
+	for (const { directory, file } of sources) {
+		if (fileToUrl.has(file)) {
+			throw new Error(`duplicate documentation filename: ${file}`);
+		}
+		const text = fs.readFileSync(path.join(directory, file), "utf-8");
 		const { data, body } = parseFrontmatter(text);
 		const stem = file.replace(/\.md$/, "");
 		const isIndex = file === "README.md";
@@ -489,6 +499,10 @@ export function generateDocs({
 	fs.rmSync(outDir, { recursive: true, force: true });
 	fs.mkdirSync(outDir, { recursive: true });
 	copyTree(path.join(referenceDir, "catalogs"), path.join(outDir, "catalogs"));
+	const linkedSources = path.join(referenceDir, "source");
+	if (fs.existsSync(linkedSources)) {
+		copyTree(linkedSources, path.join(outDir, "source"));
+	}
 	for (const artifact of LOCAL_DESIGN_ARTIFACTS) {
 		fs.copyFileSync(path.join(DOCS, artifact), path.join(outDir, artifact));
 	}
@@ -533,15 +547,17 @@ export function generateDocs({
 			compiler: "Compiler reference",
 			tools: "Tool reference",
 		};
-		const eyebrow = page.group === "appendix"
-			? "Appendix"
-			: page.group === "reference"
-				? sectionEyebrows[page.section] || "Reference"
-				: page.chapter
-					? ""
-					: page.appendix
-						? `Appendix ${page.appendix}`
-						: "Reference";
+		const eyebrow = page.group === "guide"
+			? "Writing Wyst"
+			: page.group === "appendix"
+				? "Appendix"
+				: page.group === "reference"
+					? sectionEyebrows[page.section] || "Reference"
+					: page.chapter
+						? ""
+						: page.appendix
+							? `Appendix ${page.appendix}`
+							: "Reference";
 
 		const html = docPage({
 			title: `${page.navTitle} · Wyst`,

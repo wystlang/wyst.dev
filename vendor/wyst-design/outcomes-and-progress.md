@@ -11,6 +11,9 @@ summary: "Stored outcomes, interactive functions, progress, cleanup, and recover
 Wyst separates stored outcome values from live interactive calls.
 The compiler does not convert between these categories implicitly.
 
+[Error-Handling Examples](error-handling-examples.md) shows sequential stored
+failures, absence policy, local recovery, and retry with returned resources.
+
 ## Stored Values
 
 The sealed `core.collections` module defines `Option<T>` and `Result<T, E>`.
@@ -112,8 +115,9 @@ It can also declare these offers:
 - `failure(F)` for a terminal failure; and
 - `cancelled(C)` for a terminal cancellation.
 
-`failure` and `cancelled` occur inside the `terminal` group.
-Each label is optional.
+All labels occur directly in one `offers` block, in `progress`, `failure`,
+`cancelled` order. Each label is optional, but the block must not be empty.
+Handler arms also occur directly in one block. A progress arm must come first.
 
 <!-- wyst-contract: check-pass -->
 ```wyst
@@ -121,9 +125,7 @@ module interactive_demo
 
 fn pulse() -> u64 offers handler(none) {
   progress(u64)
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   report 3
   return 4
@@ -132,9 +134,7 @@ fn pulse() -> u64 offers handler(none) {
 fn handled() -> u64 effects(none) {
   return handle pulse() {
     progress(value) { discard(value) }
-    terminal {
-      failure(problem) { widen<u64>(problem) }
-    }
+    failure(problem) { widen<u64>(problem) }
   }
 }
 ```
@@ -169,9 +169,7 @@ import core.collections { Result }
 enum ReadError { unavailable }
 
 fn child(value: u8) -> Result<u8, ReadError> offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
   if value == 0 {
     fail 1
@@ -183,18 +181,18 @@ fn child(value: u8) -> Result<u8, ReadError> offers {
 }
 
 fn parent(value: u8) -> Result<u64, ReadError> offers {
-  terminal {
-    failure(u8)
-  }
+  failure(u8)
 } effects(none) {
-  const returned = child(value)?
+  const returned = handle child(value) { forward failure }
   const payload = returned?
   return .Ok(widen<u64>(payload))
 }
 ```
 
-The first `?` forwards the live call failure. The second `?` processes the
-stored returned Result and uses lexical return for its `.Error` path. Neither
+The explicit handler forwards the live call failure. The subsequent `?`
+processes the stored returned Result and uses lexical return for its `.Error`
+path. This form names each boundary when a call has both protocols. The compact
+`(child(value)?)?` form remains valid and has the same behavior. Neither
 operation converts one kind of failure into the other. The call and its
 arguments evaluate once in left-to-right order. Forwarding adds no effect
 beyond the call's effects.

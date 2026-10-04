@@ -18,8 +18,9 @@ ignored `dist/` directory:
 ```text
 index.html                 Homepage source
 assets/                    Site-owned styles, scripts, fonts, and images
+content/guides/            Site-owned guidance for writing Wyst
 vendor/wyst-design/        Versioned Wyst reference-source snapshot
-vendor/wyst-reference/     Snapshot-bound catalogs and architectural decisions
+vendor/wyst-reference/     Snapshot-bound catalogs, decisions, and linked sources
 vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
 vendor/wyst-homepage*-semantic-tokens.json
                            Compiler-produced token streams for homepage examples
@@ -43,6 +44,42 @@ manifest deliberately contains no timestamp or CI run number.
 Generated HTML and deployment bundles are not committed. Pull requests review
 their source changes; CI supplies the generated result and proves that two
 isolated builds are byte-identical.
+
+## Writing guides
+
+[Effective Wyst](content/guides/effective-wyst.md), the
+[Style Guide](content/guides/style-guide.md), and
+[Best Practices](content/guides/best-practices.md) are site-owned advice. The
+build publishes them at `/docs/effective-wyst/`, `/docs/style-guide/`, and
+`/docs/best-practices/`, with navigation, heading links, syntax highlighting,
+and sitemap entries. Edit their Markdown sources, not `dist/` or the imported
+language reference.
+
+Keep language claims consistent with the imported reference. Link to the
+owning reference topic for exact semantics. Each `wyst` code block in these
+guides is a complete module; check and format it with the matching compiler
+before publication. Project commands assume a project with `wyst.project`.
+Run `npm run check` to validate the complete site publication.
+
+Validate Effective Wyst's examples with a compiler built from the imported
+snapshot's source commit:
+
+```sh
+npm run verify:guides -- --wync ../wyst/wync/target/debug/wync
+```
+
+Use `WYST_WYNC_BIN` instead of `--wync`, or let the command find `wync` on `PATH`.
+Pass Markdown paths after the option to select other guides, for example
+`content/guides/*.md`. The command checks the compiler's `sourceId`, then runs
+`fmt --check`, `check`, and `build` for each complete Wyst block in a separate
+temporary static-library project for `qemu-virt-aarch64-el2`. It does not edit
+the guides. This validates module semantics and static-library construction;
+private functions and functions marked only `pub` can be omitted from the
+library. Machine-code and runtime claims need retained exports and execution
+tests with a suitable runner. The tool checks only `wyst` fences. Check the
+grouped API project in `text` fences separately with its documented commands.
+This author check is separate from `npm run check`, which does not require a
+compiler.
 
 ## Local development
 
@@ -82,9 +119,12 @@ The compiler repository remains the source of truth for the language design.
 This public repository includes the reference topics, their linked catalogs and
 architectural decisions, the homepage and runtime fixture files, and the shared
 positive/negative syntax corpus required to build and test the site. The
-snapshot-bound files under `vendor/wyst-reference/` make every catalog and ADR
-link in the public manual available without access to the private upstream
-repository. The vendored `syntax-words.tsv`,
+snapshot-bound files under `vendor/wyst-reference/` make linked catalogs,
+ADRs, and compiler sources available without access to the private upstream
+repository. Manual links to test sources, tool notes, and proposals publish the
+original files as downloads under `/docs/source/`. Only source files directly
+linked from the reference are included; their contents remain unchanged.
+The vendored `syntax-words.tsv`,
 `attribute-catalog.tsv`, and `meta-operation-catalog.tsv` are the complete
 public editor vocabulary inputs. `syntax-words.tsv` drives documentation
 highlighting, so Prism does not maintain a parallel keyword or

@@ -51,14 +51,34 @@ The pointee type fixes the load or store type.
 The final memory verifier checks bounds, extent, alignment, initialization,
 and lifetime. [Memory Model](memory-model.md) defines these checks.
 
+## Byte Search Operations
+
+`import core.arch { simd }` provides three runtime operations for `[u8:16]`:
+
+| Operation | Result |
+| --- | --- |
+| `simd.splat_u8x16(value: u8)` | A `[u8:16]` with `value` in every lane. |
+| `simd.equal_u8x16(left: [u8:16], right: [u8:16])` | A `[u8:16]` with `255` in each equal lane and `0` in each other lane. |
+| `simd.first_nonzero_u8x16(value: [u8:16])` | The lowest nonzero lane index as `u64`, or `16` if all lanes are zero. |
+
+Lane indices start at zero. Lane zero is the first vector literal element and
+the byte at the lowest address in a loaded vector. The first-nonzero operation
+accepts every byte value, not only the result of an equality operation.
+The operations do not access memory, change FPCR or FPSR, or add a language
+effect. They require architectural FP/SIMD register access. They are not
+constant expressions and do not accept other vector shapes. A discarded
+result does not require execution.
+
+These operations do not change the vector memory rules. Callers must prove
+the extent, alignment, initialization, and lifetime of each vector load.
+
 ## Current Limits
 
 The compiler does not provide these vector operations:
 
 - lane extraction or insertion;
-- shuffles or splats;
-- comparison masks;
-- reductions;
+- shuffles;
+- splats, comparison masks, or reductions beyond the byte operations above;
 - vector `fma`;
 - integer vector division; or
 - 64-bit integer-lane multiplication.

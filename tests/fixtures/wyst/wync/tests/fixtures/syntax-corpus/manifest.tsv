@@ -1,4 +1,9 @@
 # kind	stage	name	tags	file	expect
+positive	parse	contextual-field-address	addresses,fields	positive/contextual-field-address.wyst	-
+positive	parse	layout-assertions	layout,static-assert	positive/layout-assertions.wyst	-
+positive	parse	struct-shorthand	structs,initializers,transfer	positive/struct-shorthand.wyst	-
+positive	parse	exclusive-call-markers	resources,parameter-modes,receivers	positive/exclusive-call-markers.wyst	-
+negative	parse	exclusive-loan-value	resources,parameter-modes	negative/exclusive-loan-value.wyst	error[E0101]|expected '.'
 positive	parse	precedence-is	precedence,is,recovery	positive/precedence-is.wyst	-
 positive	parse	generics-if-mmio-atomics	generics,compile-time-if,mmio,atomic-orders	positive/generics-if-mmio-atomics.wyst	-
 positive	parse	callable-storage	callable-types,declaration-prefix,register-placement,storage-classes,never	positive/callable-storage.wyst	-
@@ -39,3 +44,4 @@ negative	parse	unbraced-if-body	braces,control-flow,if,recovery	negative/unbrace
 negative	parse	unbraced-while-body	braces,control-flow,recovery,while	negative/unbraced-while-body.wyst	error[E0101]|expected '{'
 negative	parse	unbraced-for-body	braces,control-flow,for,recovery	negative/unbraced-for-body.wyst	error[E0101]|expected '{'
 negative	parse	unbraced-match-body	braces,control-flow,match,recovery	negative/unbraced-match-body.wyst	error[E0101]|expected '{'
+positive	parse	parameter-contracts	parameter-modes,contextual-names,compile-time,callable-types	positive/parameter-contracts.wyst	-

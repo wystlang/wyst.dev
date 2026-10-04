@@ -120,6 +120,39 @@ The attribute does not create a layout section.
 If retained init records exist, the layout must declare `.initcalls` explicitly.
 That section must have kind `rodata` and alignment of at least eight.
 
+### Final Placement Assertions
+
+A selected layout can contain `#static_assert(condition, "message")` members.
+The condition must have type `bool`. It can use integer and boolean literals,
+unary and binary constant operations, explicit integer/address conversions,
+and the existing `start`, `end`, and `size` section queries. It cannot call a
+function, reference a layout symbol, or use an ordinary relocation.
+
+The compiler checks the expression during `wync check`. It evaluates the
+condition during `wync build`, after final section placement. Assertions run
+in source order. A false condition rejects the build and reports the supplied
+message, source location, and the final start, end, and size of each referenced
+section. Assertions emit no runtime instructions or storage.
+
+<!-- wyst-contract: fmt -->
+```wyst
+module boot.layout
+
+layout kernel {
+  entry boot._start at 0x4008_0000
+  section ".text": code align 16
+  #static_assert(size(".text") <= 258_048, "kernel text budget exceeded")
+}
+```
+
+`size` returns a raw `u64` byte count. A byte-quantity literal has a distinct
+type. Use a `u64` limit for this comparison.
+
+A placement assertion cannot establish an ordinary compile-time storage or
+bounds proof. It does not replace section, region, target, or artifact
+validation. Ordinary declaration and statement assertions retain their
+compile-time evaluation rules.
+
 ### Layout Symbols
 
 A layout symbol has type `@u8` or `u64`.

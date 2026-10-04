@@ -1,0 +1,214 @@
+module cooperative_tasks
+
+#target(arch = arm64-v8a, cpu = generic, el = 2)
+
+import core.arch { barrier, cpu, exception }
+import core.environment { semihost }
+
+system_register VBAR_EL1: writeonly u64 { }
+
+system_register SP_EL0: writeonly u64 { }
+
+system_register CPACR_EL1: writeonly u64 { }
+
+system_register CurrentEL: readonly u64 {
+  EL: u2 at 2..=3
+}
+
+system_register HCR_EL2: writeonly u64 { }
+
+system_register SP_EL1: writeonly u64 { }
+
+system_register ELR_EL2: writeonly u64 { }
+
+system_register SPSR_EL2: writeonly u64 { }
+
+trap_frame Frame: aarch64.sp0 {
+  x: [31]u64
+  elr: u64
+  spsr: u64
+  interrupted_sp: u64
+}
+
+var first: Frame = {
+  x = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  elr = 0,
+  spsr = 0x3c4,
+  interrupted_sp = 0,
+}
+var second: Frame = {
+  x = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  elr = 0,
+  spsr = 0x3c4,
+  interrupted_sp = 0,
+}
+var selected: u64 = 0
+var switches: u64 = 0
+var first_visits: u64 = 0
+var second_visits: u64 = 0
+
+pub naked fn _start(dtb: u64 in x0) -> never {
+  establish stack from __stack_top
+
+  boot()
+}
+
+fn boot() -> never {
+  HCR_EL2.write(0x80000000)
+  SP_EL1.write(__stack_top)
+  VBAR_EL1.write(#addr_of(vectors))
+  // Trap FP/SIMD. The selected kernel context admits only integer execution.
+  CPACR_EL1.write(0)
+  second.elr = address<u64>(#addr_of(task_b))
+  second.interrupted_sp = __second_stack_top
+  SP_EL0.write(__first_stack_top)
+  ELR_EL2.write(address<u64>(#addr_of(task_a)))
+  SPSR_EL2.write(0x3c4)
+  barrier.isb()
+  exception.eret()
+}
+
+fn yield_task() effects(execution_suspension, trap) {
+  exception.svc(0x64)
+}
+
+fn require(condition: bool) {
+  if !condition {
+    test_exit(1)
+  }
+}
+
+fn task_a() -> never {
+  require(CurrentEL.read().EL == 1)
+
+  var value: u64 = 0x1122334455667788
+  const before = address<u64>(addr_of(value))
+  var saved: u64 in x19 = 0xaabbccdd
+  var iteration: u64 = 0
+  while iteration < 16 {
+    value = value + 1
+    first_visits = first_visits + 1
+    yield_task()
+    require(address<u64>(addr_of(value)) == before)
+    require(value == 0x1122334455667789 + iteration)
+    require(saved == 0xaabbccdd)
+    require(first_visits == second_visits)
+    iteration = iteration + 1
+  }
+
+  require(switches == 32)
+  uart_write('M')
+  uart_write('4')
+  uart_write(' ')
+  uart_write('P')
+  uart_write('A')
+  uart_write('S')
+  uart_write('S')
+  uart_write('\n')
+  test_exit(0)
+}
+
+fn task_b() -> never {
+  require(CurrentEL.read().EL == 1)
+
+  var value: u64 = 0x8877665544332211
+  const before = address<u64>(addr_of(value))
+  var saved: u64 in x19 = 0xddccbbaa
+  loop {
+    value = value + 1
+    second_visits = second_visits + 1
+    require(first_visits == second_visits)
+    yield_task()
+    require(address<u64>(addr_of(value)) == before)
+    require(value == 0x8877665544332211 + second_visits)
+    require(saved == 0xddccbbaa)
+  }
+}
+
+fn transfer(frame: noescape @Frame) {
+  require(CurrentEL.read().EL == 1)
+  switches = switches + 1
+  if selected == 0 {
+    first = frame.load()
+    require(first.interrupted_sp <= __first_stack_top)
+    require(first.interrupted_sp >= __first_stack_top - 14336)
+    frame.store(second)
+    selected = 1
+  } else {
+    second = frame.load()
+    require(second.interrupted_sp <= __second_stack_top)
+    require(second.interrupted_sp >= __second_stack_top - 14336)
+    frame.store(first)
+    selected = 0
+  }
+}
+
+vector_table vectors: aarch64.el1 {
+  current.sp0.sync -> trap_entry
+  current.sp0.irq -> trap_unexpected
+  current.sp0.fiq -> trap_unexpected
+  current.sp0.serror -> trap_unexpected
+  current.spx.sync -> trap_entry
+  current.spx.irq -> trap_unexpected
+  current.spx.fiq -> trap_unexpected
+  current.spx.serror -> trap_unexpected
+  lower.aarch64.sync -> trap_entry
+  lower.aarch64.irq -> trap_unexpected
+  lower.aarch64.fiq -> trap_unexpected
+  lower.aarch64.serror -> trap_unexpected
+  lower.aarch32.sync -> trap_entry
+  lower.aarch32.irq -> trap_unexpected
+  lower.aarch32.fiq -> trap_unexpected
+  lower.aarch32.serror -> trap_unexpected
+}
+
+naked label trap_entry establishes frame: @Frame {
+  establish frame
+
+  transfer(frame)
+  goto trap_restore
+}
+
+naked label trap_restore restores Frame {
+  restore frame
+}
+
+label trap_unexpected {
+  test_exit(3)
+}
+
+const SEMIHOST_APPLICATION_EXIT: u64 = 0x20026
+var semihost_exit_reason: u64 = SEMIHOST_APPLICATION_EXIT
+var semihost_exit_status: u64 = 1
+
+fn test_exit(code: u64) -> never {
+  semihost_exit_status = code
+
+  var op_code: u64 in x0 = 0x18
+  var args: u64 in x1 = #addr_of(semihost_exit_reason)
+  semihost.call(op_code, args)
+
+  loop {
+    cpu.wfe()
+  }
+}
+
+register_map Pl011 {
+  DR: readwrite u32 at 0x00 {
+    DATA: u8 at 0..=7
+  }
+
+  FR: readonly u32 at 0x18 {
+    TXFF: bool at 5
+  }
+}
+
+mmio UART0: Pl011 at 0x0900_0000
+
+fn uart_write(byte: u8) {
+  while UART0.FR.read().TXFF {
+    cpu.nop()
+  }
+
+  UART0.DR.write(DATA = byte)
+}

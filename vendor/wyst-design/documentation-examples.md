@@ -70,6 +70,12 @@ profile. It uses `debug .none`, `unwind .none`, and `frame_pointers .minimal`.
 
 The test also checks selected diagnostics and storage reports.
 
+The error-handling example tests compile the documented pipeline and resource
+retry blocks with observation functions, then run them through reference
+execution. They check failure payloads, stage order, cleanup counts, recovered
+resource use, and backing bytes. The nested-absence example must fail for the
+documented Option forwarding reason.
+
 ## Author validation
 
 Run each changed checked block with the profile required by its topic.

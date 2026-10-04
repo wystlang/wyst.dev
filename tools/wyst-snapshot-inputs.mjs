@@ -50,6 +50,12 @@ export async function walkFiles(directory, relativeDirectory = "") {
 	return files;
 }
 
+export function referenceSourcePath(href) {
+	return href.match(
+		/^\.\.\/((?:docs\/proposals|wync\/(?:tests|tools))\/(?:[\w-]+\/)*[\w-]+\.(?:md|rs|wyst))$/,
+	)?.[1] ?? null;
+}
+
 export async function publicReferencePaths(wystRoot, designFileNames) {
 	const sourcePaths = new Set();
 	let publishesAdrs = false;
@@ -57,10 +63,13 @@ export async function publicReferencePaths(wystRoot, designFileNames) {
 		const markdown = await readFile(path.join(wystRoot, "design", file), "utf8");
 		for (const match of markdown.matchAll(/\]\(([^)\s]+)\)/g)) {
 			const href = match[1].split("#", 1)[0];
+			const source = referenceSourcePath(href);
 			if (/^catalogs\/[\w./-]+\.(?:md|json|tsv|jsonl\.gz)$/.test(href)) {
 				sourcePaths.add(path.posix.join("design", href));
 			} else if (href === "../docs/adr/") {
 				publishesAdrs = true;
+			} else if (source) {
+				sourcePaths.add(source);
 			}
 		}
 	}
@@ -73,5 +82,7 @@ export async function publicReferencePaths(wystRoot, designFileNames) {
 }
 
 export function referenceDestination(source) {
-	return source.replace(/^design\//, "");
+	if (source.startsWith("design/")) return source.slice("design/".length);
+	if (source.startsWith("docs/adr/")) return source;
+	return `source/${source}`;
 }

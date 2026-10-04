@@ -18,6 +18,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { verifyWystSnapshot } from "../tools/wyst-snapshot.mjs";
+import { referenceSourcePath } from "../tools/wyst-snapshot-inputs.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const designDir = path.join(root, "vendor", "wyst-design");
@@ -65,6 +66,10 @@ const fakeSyntaxCorpusFixtures = [
 const fakeReferenceFiles = [
 	"catalogs/language/public.tsv",
 	"docs/adr/0001-record.md",
+	"source/docs/proposals/example.md",
+	"source/wync/tests/example.rs",
+	"source/wync/tests/fixtures/example/main.wyst",
+	"source/wync/tools/example/README.md",
 ];
 
 async function syntaxCorpusFixtures(rootDirectory = fixtureDir) {
@@ -155,10 +160,24 @@ for (const response of responses) {
 	const inputs = [
 		[
 			"design/README.md",
-			"# Wyst design\n\n[Public catalog](catalogs/language/public.tsv)\n[Decisions](../docs/adr/)\n",
+			[
+				"# Wyst design",
+				"[Public catalog](catalogs/language/public.tsv)",
+				"[Decisions](../docs/adr/)",
+				"[Proposal](../docs/proposals/example.md)",
+				"[Tests](../wync/tests/example.rs)",
+				"[Fixture](../wync/tests/fixtures/example/main.wyst)",
+				"[Tool](../wync/tools/example/README.md)",
+				"",
+			].join("\n"),
 		],
 		["design/catalogs/language/public.tsv", "name\tstate\npublic\timplemented\n"],
 		["docs/adr/0001-record.md", "---\nstatus: accepted\n---\n\n# Record\n"],
+		["docs/proposals/example.md", "# Proposal\n"],
+		["wync/tests/example.rs", "fn example() {}\n"],
+		["wync/tests/fixtures/example/main.wyst", "module example\n"],
+		["wync/tools/example/README.md", "# Tool\n"],
+		["wync/tests/unlinked.rs", "fn unlinked() {}\n"],
 		["design/chapter-deleted.md", "# Tracked chapter\n"],
 		[
 			"design/catalogs/language/syntax-words.tsv",
@@ -327,16 +346,35 @@ test("the versioned Wyst fixture snapshot contains only site test inputs", async
 	assert.deepEqual(await listFiles(fixtureDir), await expectedFixtures());
 });
 
-test("the public-reference snapshot contains only manual-linked catalogs and ADRs", async () => {
+test("the public-reference snapshot contains only manual-linked references", async () => {
 	const files = await listFiles(referenceDir);
+	const markdown = (await Promise.all(
+		(await readdir(designDir))
+			.filter((file) => file.endsWith(".md"))
+			.map((file) => readFile(path.join(designDir, file), "utf8")),
+	)).join("\n");
 	assert.ok(files.includes("catalogs/README.md"));
 	assert.ok(files.includes("docs/adr/0001-affine-resumable-call-contracts.md"));
 	assert.ok(files.includes("catalogs/language/semantic-operation-catalog.tsv"));
 	assert.ok(
 		files.every(
-			(file) => file.startsWith("catalogs/") || file.startsWith("docs/adr/"),
+			(file) => file.startsWith("catalogs/") || file.startsWith("docs/adr/") ||
+				(file.startsWith("source/") && markdown.includes(`](../${file.slice(7)})`)),
 		),
 	);
+});
+
+test("linked-source selection excludes traversal and unrelated private files", () => {
+	for (const href of [
+		"../wync/tests/../../src/main.rs",
+		"../wync/tests/.hidden.rs",
+		"../wync/src/main.rs",
+		"../docs/private.md",
+		"../wync/tools/example/secrets.json",
+		"https://example.test/wync/tests/example.rs",
+	]) {
+		assert.equal(referenceSourcePath(href), null, href);
+	}
 });
 
 test("the source model and license map include the public-reference snapshot", async () => {
@@ -396,6 +434,12 @@ test("snapshot sync writes a deterministic byte manifest", async (t) => {
 	}
 	for (const file of fakeReferenceFiles) {
 		assert.ok(manifest.files[`vendor/wyst-reference/${file}`]);
+		if (file.startsWith("source/")) {
+			assert.deepEqual(
+				await readFile(path.join(siteRoot, "vendor/wyst-reference", file)),
+				await readFile(path.join(wystRoot, file.slice(7))),
+			);
+		}
 	}
 	for (const fixture of [...coreFixtures, ...fakeSyntaxCorpusFixtures].sort()) {
 		assert.ok(manifest.files[`tests/fixtures/wyst/${fixture}`]);
@@ -499,6 +543,15 @@ test("snapshot sync rejects compiler changes that could alter homepage tokens", 
 	assert.notEqual(result.status, 0);
 	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
 	assert.match(result.stderr, /wync\/src\/main\.rs/);
+});
+
+test("snapshot sync rejects uncommitted manual-linked sources", async (t) => {
+	const { siteRoot, wystRoot } = await makeWystRepo(t);
+	await write(wystRoot, "wync/tests/example.rs", "fn changed() {}\n");
+	const result = runSync(siteRoot, wystRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Commit or restore Wyst snapshot inputs/);
+	assert.match(result.stderr, /wync\/tests\/example\.rs/);
 });
 
 test("snapshot sync rejects syntax-corpus changes outside the committed source identity", async (t) => {

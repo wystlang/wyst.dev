@@ -80,6 +80,29 @@ test("generated atomic reference uses its H1 in page and social metadata", async
 	assert.doesNotMatch(html, />generated-atomic-matrix · Wyst</);
 });
 
+test("site-owned guides are published with navigation and metadata", async () => {
+	const output = new URL("../dist/", import.meta.url);
+	const index = await readFile(new URL("docs/index.html", output), "utf8");
+	const sitemap = await readFile(new URL("sitemap.xml", output), "utf8");
+	assert.match(index, /<h2>Writing Wyst<\/h2>/);
+	for (const [slug, title] of [
+		["effective-wyst", "Effective Wyst"],
+		["style-guide", "Style Guide"],
+		["best-practices", "Best Practices"],
+	]) {
+		const route = `/docs/${slug}/`;
+		const html = await readFile(new URL(`.${route}index.html`, output), "utf8");
+		assert.ok(index.includes(`href="${route}"`));
+		assert.ok(sitemap.includes(`<loc>https://wyst.dev${route}</loc>`));
+		assert.ok(html.includes(`<h1>${title}</h1>`));
+		assert.ok(html.includes(`<link rel="canonical" href="https://wyst.dev${route}"`));
+		assert.ok(html.includes(`href="${route}" aria-current="page"`));
+		assert.match(html, /aria-label="On this page"/);
+		assert.match(html, /class="wyst-code language-wyst"/);
+		assert.match(html, /href="\/docs\/functions-and-control-flow\/"/);
+	}
+});
+
 test("audit resolves relative assets and skips external URLs without fetching them", async (t) => {
 	const publicRoot = await makeFixture(t);
 	const result = runAudit(publicRoot);
