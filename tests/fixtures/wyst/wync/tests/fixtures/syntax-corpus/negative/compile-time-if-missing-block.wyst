@@ -1,4 +1,0 @@
-module syntax_bad_hash_if
-
-#if true
-  const selected: u64 = 1

@@ -1,2 +1,0 @@
-module demo
-fn pair() -> (widen: u64, other: u64) { return (1, 2) }

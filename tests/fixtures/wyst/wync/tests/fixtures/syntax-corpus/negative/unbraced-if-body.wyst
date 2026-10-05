@@ -1,2 +1,0 @@
-module demo
-fn main() { if true return }
