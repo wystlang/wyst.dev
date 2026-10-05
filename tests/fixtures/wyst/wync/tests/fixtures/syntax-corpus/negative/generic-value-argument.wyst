@@ -1,0 +1,7 @@
+module syntax_bad_generic_value
+
+struct Box<T> {
+  value: T
+}
+
+const bad: Box<u64, 4> = 0

@@ -1,0 +1,23 @@
+module shorthand
+
+struct Extent {
+  base: u64
+  bytes: u64
+}
+
+struct Pending {
+  code: u64
+}
+
+struct Rejected {
+  reason: u64
+  pending: Pending
+}
+
+fn extent(base: u64, bytes: u64) -> Extent {
+  return {base, bytes}
+}
+
+fn reject(reason: u64, pending: var Pending) -> Rejected {
+  return {reason, pending = xfer pending}
+}

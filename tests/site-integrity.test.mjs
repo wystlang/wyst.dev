@@ -1,0 +1,138 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+
+const auditScript = fileURLToPath(
+	new URL("../tools/audit-site.mjs", import.meta.url),
+);
+
+function runAudit(publicRoot) {
+	const args = [auditScript];
+	if (publicRoot) args.push("--public-root", publicRoot);
+	return spawnSync(process.execPath, args, { encoding: "utf8" });
+}
+
+async function makeFixture(t, { homeLink = "./guide/#topic" } = {}) {
+	const publicRoot = await mkdtemp(path.join(os.tmpdir(), "wyst-site-audit-"));
+	t.after(() => rm(publicRoot, { recursive: true, force: true }));
+	await mkdir(path.join(publicRoot, "guide"), { recursive: true });
+	await mkdir(path.join(publicRoot, "assets"), { recursive: true });
+	await Promise.all([
+		writeFile(
+			path.join(publicRoot, "index.html"),
+			`<!doctype html><html><head>
+				<link rel="stylesheet" href="/assets/site.css">
+				<meta property="og:image" content="https://wyst.dev/assets/icon.svg">
+			</head><body id="top">
+				<a href="${homeLink}">Guide</a>
+				<a href="https://invalid.example.test/no-network">External</a>
+				<img src="assets/icon.svg#mark" alt="">
+			</body></html>`,
+		),
+		writeFile(
+			path.join(publicRoot, "guide", "index.html"),
+			'<main><h1 id="topic">Topic</h1><a href="../#top">Home</a></main>',
+		),
+		writeFile(
+			path.join(publicRoot, "assets", "site.css"),
+			'body { background-image: url("./pixel.png"); }',
+		),
+		writeFile(path.join(publicRoot, "assets", "pixel.png"), "pixel"),
+		writeFile(
+			path.join(publicRoot, "assets", "icon.svg"),
+			'<svg id="mark" xmlns="http://www.w3.org/2000/svg"></svg>',
+		),
+		writeFile(
+			path.join(publicRoot, "sitemap.xml"),
+			'<urlset><url><loc>https://wyst.dev/</loc></url><url><loc>https://wyst.dev/guide/</loc></url></urlset>',
+		),
+		writeFile(
+			path.join(publicRoot, "robots.txt"),
+			"User-agent: *\nAllow: /\nSitemap: https://wyst.dev/sitemap.xml\n",
+		),
+		writeFile(
+			path.join(publicRoot, "_headers"),
+			"/*\n  X-Content-Type-Options: nosniff\n/assets/site.css\n  Cache-Control: max-age=60\n",
+		),
+	]);
+	return publicRoot;
+}
+
+test("public CSS, routes, local references, and fragments pass the site audit", () => {
+	const result = runAudit();
+	assert.equal(result.status, 0, result.stderr || result.stdout);
+	assert.match(result.stdout, /site audit passed/);
+	assert.match(result.stdout, /local references and fragments valid/);
+});
+
+test("generated atomic reference uses its H1 in page and social metadata", async () => {
+	const html = await readFile(
+		new URL("../dist/docs/generated-atomic-matrix/index.html", import.meta.url),
+		"utf8",
+	);
+	assert.match(html, /<title>atomic matrix · Wyst<\/title>/);
+	assert.match(html, /<meta property="og:title" content="atomic matrix · Wyst" \/>/);
+	assert.match(html, /<meta name="twitter:title" content="atomic matrix · Wyst" \/>/);
+	assert.doesNotMatch(html, />generated-atomic-matrix · Wyst</);
+});
+
+test("site-owned guides are published with navigation and metadata", async () => {
+	const output = new URL("../dist/", import.meta.url);
+	const index = await readFile(new URL("docs/index.html", output), "utf8");
+	const sitemap = await readFile(new URL("sitemap.xml", output), "utf8");
+	assert.match(index, /<h2>Writing Wyst<\/h2>/);
+	for (const [slug, title] of [
+		["effective-wyst", "Effective Wyst"],
+		["style-guide", "Style Guide"],
+		["best-practices", "Best Practices"],
+	]) {
+		const route = `/docs/${slug}/`;
+		const html = await readFile(new URL(`.${route}index.html`, output), "utf8");
+		assert.ok(index.includes(`href="${route}"`));
+		assert.ok(sitemap.includes(`<loc>https://wyst.dev${route}</loc>`));
+		assert.ok(html.includes(`<h1>${title}</h1>`));
+		assert.ok(html.includes(`<link rel="canonical" href="https://wyst.dev${route}"`));
+		assert.ok(html.includes(`href="${route}" aria-current="page"`));
+		assert.match(html, /aria-label="On this page"/);
+		assert.match(html, /class="wyst-code language-wyst"/);
+		assert.match(html, /href="\/docs\/functions-and-control-flow\/"/);
+	}
+});
+
+test("audit resolves relative assets and skips external URLs without fetching them", async (t) => {
+	const publicRoot = await makeFixture(t);
+	const result = runAudit(publicRoot);
+	assert.equal(result.status, 0, result.stderr || result.stdout);
+	assert.match(result.stdout, /2 routes reachable/);
+	assert.match(result.stdout, /1 external references skipped/);
+});
+
+test("audit rejects missing relative targets", async (t) => {
+	const publicRoot = await makeFixture(t, { homeLink: "./missing/" });
+	const result = runAudit(publicRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /invalid public references/);
+	assert.match(result.stderr, /missing local target \/missing\//);
+});
+
+test("audit rejects missing fragments in existing documents", async (t) => {
+	const publicRoot = await makeFixture(t, { homeLink: "./guide/#absent" });
+	const result = runAudit(publicRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /missing fragment #absent in \/guide\//);
+});
+
+test("audit rejects an incomplete sitemap", async (t) => {
+	const publicRoot = await makeFixture(t);
+	await writeFile(
+		path.join(publicRoot, "sitemap.xml"),
+		'<urlset><url><loc>https://wyst.dev/</loc></url></urlset>',
+	);
+	const result = runAudit(publicRoot);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /sitemap missing routes: \/guide\//);
+});

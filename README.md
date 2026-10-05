@@ -1,0 +1,280 @@
+# wyst.dev
+
+Source for [wyst.dev](https://wyst.dev), the project homepage and generated
+reference manual for Wyst. The production site is an assets-only Cloudflare
+Worker; GitHub Actions is its only build and deployment authority.
+
+This repository is public so its standard GitHub Actions usage and repository
+protections can remain free. **Public does not mean open source.** Most site
+code, prose, and Wyst identity assets are all rights reserved. See
+[LICENSE.md](LICENSE.md) for the path-by-path license map.
+
+## Source and artifact model
+
+Only source, imported snapshots, build programs, tests, and deployment
+configuration belong in Git. The complete publication is rebuilt into the
+ignored `dist/` directory:
+
+```text
+index.html                 Homepage source
+assets/                    Site-owned styles, scripts, fonts, and images
+content/guides/            Site-owned guidance for writing Wyst
+vendor/wyst-design/        Versioned Wyst reference-source snapshot
+vendor/wyst-reference/     Snapshot-bound catalogs, decisions, and linked sources
+vendor/wyst-snapshot.json  Hash manifest for imported design and fixture bytes
+vendor/wyst-homepage*-semantic-tokens.json
+                           Compiler-produced token streams for homepage examples
+tests/fixtures/wyst/       Versioned Wyst sample fixtures used by tests
+build/                     Documentation generator, templates, and local server
+tools/                     Build, audit, snapshot, and reproducibility programs
+.github/workflows/         Verification, release, and production monitoring
+wrangler.jsonc             Assets-only Worker configuration
+dist/                      GENERATED, ignored, and never committed
+```
+
+The build generates the documentation, sitemap, custom 404 page, fingerprinted
+assets, and Cloudflare `_headers` directly into `dist/`. It also writes
+`dist/.well-known/build.json`, which records the full site commit, the imported
+Wyst snapshot digest and sync-time source-commit attribution, a deterministic
+public tree hash, and the expected hash and size of every public file. A
+separate release identity binds that tree to the non-public `_headers` file and
+`wrangler.jsonc`; CI also pins the exact bytes of `build.json` itself. The
+manifest deliberately contains no timestamp or CI run number.
+
+Generated HTML and deployment bundles are not committed. Pull requests review
+their source changes; CI supplies the generated result and proves that two
+isolated builds are byte-identical.
+
+## Writing guides
+
+[Effective Wyst](content/guides/effective-wyst.md), the
+[Style Guide](content/guides/style-guide.md), and
+[Best Practices](content/guides/best-practices.md) are site-owned advice. The
+build publishes them at `/docs/effective-wyst/`, `/docs/style-guide/`, and
+`/docs/best-practices/`, with navigation, heading links, syntax highlighting,
+and sitemap entries. Edit their Markdown sources, not `dist/` or the imported
+language reference.
+
+Keep language claims consistent with the imported reference. Link to the
+owning reference topic for exact semantics. Each `wyst` code block in these
+guides is a complete module; check and format it with the matching compiler
+before publication. Project commands assume a project with `wyst.project`.
+Run `npm run check` to validate the complete site publication.
+
+Validate Effective Wyst's examples with a compiler built from the imported
+snapshot's source commit:
+
+```sh
+npm run verify:guides -- --wync ../wyst/wync/target/debug/wync
+```
+
+Use `WYST_WYNC_BIN` instead of `--wync`, or let the command find `wync` on `PATH`.
+Pass Markdown paths after the option to select other guides, for example
+`content/guides/*.md`. The command checks the compiler's `sourceId`, then runs
+`fmt --check`, `check`, and `build` for each complete Wyst block in a separate
+temporary static-library project for `qemu-virt-aarch64-el2`. It does not edit
+the guides. This validates module semantics and static-library construction;
+private functions and functions marked only `pub` can be omitted from the
+library. Machine-code and runtime claims need retained exports and execution
+tests with a suitable runner. The tool checks only `wyst` fences. Check the
+grouped API project in `text` fences separately with its documented commands.
+This author check is separate from `npm run check`, which does not require a
+compiler.
+
+## Local development
+
+Node.js 22 or newer and Chrome or Chromium are required.
+
+```sh
+npm ci
+npm run build
+npm run build:worker-assets # canonical clean Worker-assets build gate
+npm run serve              # http://127.0.0.1:8347
+```
+
+The same verification used by pull requests is available locally:
+
+```sh
+npm test                   # clean build plus unit and regression tests
+npm run test:fast          # read-only source tests used by pre-commit
+npm run audit              # routes, assets, fragments, and sitemap
+npm run audit:browser      # all routes/viewports plus keyboard, AX, CSP, and network gates
+npm run audit:external     # external links (scheduled; intentionally not a PR gate)
+npm run audit:dependencies # high/critical npm advisories (scheduled)
+npm run verify:build       # build identity and byte hashes
+npm run verify:determinism # two isolated builds must match exactly
+npm run verify:wyst-source # compare the snapshot with a local Wyst checkout
+npm run validate:assets    # Cloudflare limits, config, paths, headers, and HTML
+npm run deploy:dry-run     # validate the Wrangler upload without credentials
+npm run check              # build, unit, artifact, asset, local/browser, determinism, and deploy gates
+```
+
+The tracked pre-commit hook runs only the fast tests when relevant files are
+staged. It never regenerates files and never calls `git add`. `npm install`
+activates it through `core.hooksPath`; CI remains authoritative.
+
+## Imported Wyst snapshots
+
+The compiler repository remains the source of truth for the language design.
+This public repository includes the reference topics, their linked catalogs and
+architectural decisions, the homepage and runtime fixture files, and the shared
+positive/negative syntax corpus required to build and test the site. The
+snapshot-bound files under `vendor/wyst-reference/` make linked catalogs,
+ADRs, and compiler sources available without access to the private upstream
+repository. Manual links to test sources, tool notes, and proposals publish the
+original files as downloads under `/docs/source/`. Only source files directly
+linked from the reference are included; their contents remain unchanged.
+The vendored `syntax-words.tsv`,
+`attribute-catalog.tsv`, and `meta-operation-catalog.tsv` are the complete
+public editor vocabulary inputs. `syntax-words.tsv` drives documentation
+highlighting, so Prism does not maintain a parallel keyword or
+compiler-operation list. `vendor/wyst-design/.source-commit`
+records the source commit reported by the trusted local sync operation, while
+`vendor/wyst-snapshot.json` hashes every imported design and fixture byte. The
+build and public CI verify those committed bytes against the snapshot manifest;
+they do not fetch the private/local upstream checkout and therefore do not
+independently authenticate the commit attribution.
+
+The same sync asks that commit's `wync lsp` server for
+`textDocument/semanticTokens/full` on each homepage source, records the returned
+legends, complete source documents, and token data in
+`vendor/wyst-homepage*-semantic-tokens.json`, and regenerates the marked UART,
+overflow, and denied-effects regions in `index.html`. UART publishes its full
+fixture; the other tabs publish configured, feature-relevant line ranges from
+their full verified fixtures. The normal site build fails if generated markup
+or published outputs are edited independently, so the examples cannot drift
+back to handwritten highlighting or diagnostics.
+
+Refresh the snapshots from a sibling `../wyst` checkout or `WYST_REPO_DIR`:
+
+```sh
+npm run sync:wyst
+npm run verify:wyst-source
+npm run check
+git add index.html vendor/wyst-design vendor/wyst-reference \
+  vendor/wyst-snapshot.json \
+  vendor/wyst-homepage*-semantic-tokens.json tests/fixtures/wyst
+```
+
+Website-ready brand exports can similarly be refreshed from a sibling
+`../brand` checkout or `WYST_BRAND_DIR`. The brand manifest selects approved
+identity, icon, social, and font assets; site-owned CSS and runtime files remain
+in place:
+
+```sh
+npm run sync:brand
+npm run check
+git add assets
+```
+
+Do not add `dist/`, generated documentation, or a Worker upload bundle to either
+commit.
+
+## GitHub verification and release
+
+`.github/workflows/site.yml` runs for every pull request, every push to `next`
+or `main`, and manual dispatches. Its `Verify` job has read-only repository
+permissions and receives no deployment secrets. It installs the lockfile
+exactly and runs `npm run check`, which includes build-manifest verification.
+
+`next` is the integration branch for frequent roadmap-driven updates. Pushes to
+`next` stop after `Verify`; they do not upload release artifacts, enter the
+`production` environment, or deploy. A release is the deliberate act of merging
+`next` into protected `main`. The resulting `main` push verifies the release
+commit again before any production work begins.
+
+For `main`, that job uploads the exact `dist/` tree as a one-day GitHub artifact,
+including the normally excluded `.well-known/build.json`. The production job
+downloads and re-verifies that artifact instead of rebuilding it. Before using
+the protected production environment, a separate job confirms that the workflow
+commit is still the tip of `main`. The protected job repeats that check after
+admission, so an older queued run cannot deploy over a newer release.
+
+The release then:
+
+1. Verifies the downloaded artifact's public tree, release inputs, and exact
+   manifest bytes against the checked-out release source.
+2. Sorts Cloudflare deployments by `created_on` and requires the newest one to
+   contain exactly one version at 100% traffic.
+3. Uploads an undeployed version tagged with the full Git commit.
+4. Stages the old version at 100% and the candidate at 0%.
+5. Audits the candidate through the production hostname using a Cloudflare
+   version-override header, exact artifact identity, and a full browser crawl.
+6. Promotes the candidate to 100% and repeats the exact content and identity
+   audit with bounded retries.
+7. Restores the old version if the candidate audit fails, or rolls back to it if
+   the post-promotion content audit fails.
+8. Audits zone-owned HTTPS and injection policy separately. Policy drift fails
+   and alerts without pointlessly rolling back otherwise-correct site content.
+
+If no Worker exists, Wrangler's normal `deploy` command creates the first
+version; if the Worker exists without a deployment, the uploaded candidate is
+bootstrapped at 100%. Those explicit creation paths are audited immediately but
+cannot promise rollback because no prior production version exists. Every
+subsequent release must use the zero-percent staging path above.
+
+Production deployments share a non-cancelling concurrency group, so a release
+cannot be interrupted halfway through its safety sequence. The protected job
+allows 30 minutes, while each Wrangler and audit subprocess has a shorter safety
+timeout that returns control to the release script with time left to restore the
+prior version.
+
+`.github/workflows/monitor.yml` resolves the newest successful `production`
+deployment recorded by the GitHub Environment, requires that deployment to
+match the monitor controller's current `main` commit, checks out that exact
+commit, and rebuilds its expected artifact before performing a secretless HTTP,
+header, and exact build-identity audit every day. It shares the production
+release lock so it cannot inspect a half-finished deployment; a pushed `main`
+commit that has not been deployed fails the monitor as stale. Once a week it also
+renders every sitemap route in Chrome, checks external links with bounded
+retries, and reports high or
+critical npm advisories. Access-limited 403 and 429 responses are reported as
+inconclusive, not broken links. These network-dependent checks stay out of the
+pull-request gate. All audits can be started manually. GitHub automatically
+disables scheduled workflows in inactive public repositories, so manual
+dispatch remains available for recovery and diagnosis.
+
+Dependabot checks both npm dependencies and pinned GitHub Actions weekly. Every
+third-party action in the workflows is pinned to a full commit SHA.
+
+## Repository and production configuration
+
+The public repository and production deployment path are already configured.
+Day-to-day work is pushed to `next`. `main` requires a pull request and the
+exact `Verify` status check, so merging `next` into `main` is the manual release
+gate. The `production` environment is restricted to `main` and holds the
+Cloudflare account identifier and narrowly scoped Workers deployment token.
+GitHub Actions is the sole release authority; Cloudflare Workers Builds and Git
+deployment remain disabled.
+
+The authoritative routing, client-policy, and deployment-ownership requirements
+are in the [Cloudflare production runbook](ops/cloudflare.md). Update that
+runbook when the production contract changes instead of duplicating dashboard
+instructions here.
+
+Use standard Linux runners and a GitHub Actions spending budget of `$0` with
+usage stopping at the limit. The workflows require neither paid runners nor
+long-lived GitHub artifacts.
+
+## Artifact validation and cost model
+
+`wrangler.jsonc` publishes `./dist` as an assets-only Worker. The generated
+`_headers` supplies the content security policy and related response
+protections.
+
+Before any upload, `npm run validate:assets` checks the exact artifact against
+the Workers Free allowance of 20,000 files, the 25 MiB per-file ceiling, the
+100-rule and 2,000-characters-per-line `_headers` limits, and a project-specific
+25 MiB total release budget. It also rejects symlinks, URL-ambiguous or hidden
+paths, case-folding collisions, unexpected Worker code or bindings, config that
+re-enables preview hostnames, and malformed generated HTML. This complements
+Wrangler's dry run, which does not perform a remote static-assets sync.
+
+Check them at any time with:
+
+```sh
+npm run audit:live
+```
+
+The site uses only free Static Assets requests. The custom domain's registration
+and renewal remain separate from Cloudflare hosting and GitHub CI costs.

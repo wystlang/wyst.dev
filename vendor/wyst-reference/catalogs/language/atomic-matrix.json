@@ -1,0 +1,329 @@
+{
+  "storage": {
+    "typeName": "atomic",
+    "type": "atomic<T>",
+    "address": "@atomic<T>",
+    "constructorName": "atomic",
+    "constructor": "atomic<T>(value)",
+    "constructorIntrinsic": "atomic_init",
+    "copyable": false,
+    "hiddenBytes": 0,
+    "size": "size-of-element",
+    "alignment": "natural-element-alignment",
+    "constructorEffect": "storage-initialization",
+    "constructorLowering": "direct-destination-initial-value",
+    "constructorReportedEffect": "none",
+    "staticInitialization": "bytes-and-relocations-no-startup",
+    "runtimeInitialization": "initial-modification-order-value",
+    "rawAddress": {
+      "syntax": "address<@atomic<T>>(raw)",
+      "context": "executable-function-body",
+      "source": "u64-or-representable-untyped-integer",
+      "result": "@atomic<T>",
+      "lowering": "preserve-address-bits-no-memory-event",
+      "runtimeCheck": false,
+      "implicitConversion": false,
+      "relensConversion": false,
+      "reverseExposure": false,
+      "provableMisalignment": "compile-time-diagnostic",
+      "knownDeviceMemory": "compile-time-diagnostic",
+      "reportAuthority": "raw_atomic_address_assertion",
+      "reportOperation": "construct_atomic_storage_address",
+      "reportEvidence": "programmer_asserted",
+      "reportContractIdentity": "wyst.atomicRawAddress",
+      "reportVerificationStatus": "asserted-not-proven",
+      "assertion": "raw address denotes exact atomic<T> storage with natural element alignment, atomic-capable Normal memory, and no mixed atomic/plain access"
+    }
+  },
+  "orders": [
+    {
+      "name": "relaxed",
+      "success": "relaxed-rmw",
+      "failure": "relaxed-load",
+      "a64": {
+        "load": "plain",
+        "store": "plain",
+        "exclusiveLoad": "ldxr",
+        "exclusiveStore": "stxr",
+        "lseSuffix": "",
+        "acquire": false,
+        "release": false
+      }
+    },
+    {
+      "name": "acquire",
+      "success": "acquire-rmw",
+      "failure": "acquire-load",
+      "a64": {
+        "load": "acquire",
+        "store": null,
+        "exclusiveLoad": "ldaxr",
+        "exclusiveStore": "stxr",
+        "lseSuffix": "a",
+        "acquire": true,
+        "release": false
+      }
+    },
+    {
+      "name": "release",
+      "success": "release-rmw",
+      "failure": "relaxed-load",
+      "a64": {
+        "load": null,
+        "store": "release",
+        "exclusiveLoad": "ldxr",
+        "exclusiveStore": "stlxr",
+        "lseSuffix": "l",
+        "acquire": false,
+        "release": true
+      }
+    },
+    {
+      "name": "acq_rel",
+      "success": "acquire-release-rmw",
+      "failure": "acquire-load",
+      "a64": {
+        "load": null,
+        "store": null,
+        "exclusiveLoad": "ldaxr",
+        "exclusiveStore": "stlxr",
+        "lseSuffix": "al",
+        "acquire": true,
+        "release": true
+      }
+    },
+    {
+      "name": "seq_cst",
+      "success": "sequentially-consistent-rmw",
+      "failure": "sequentially-consistent-load",
+      "a64": {
+        "load": "acquire",
+        "store": "release",
+        "exclusiveLoad": "ldaxr",
+        "exclusiveStore": "stlxr",
+        "lseSuffix": "al",
+        "acquire": true,
+        "release": true
+      }
+    }
+  ],
+  "elements": [
+    {
+      "class": "boolean",
+      "exactTypes": ["bool"],
+      "widths": [1],
+      "signed": false
+    },
+    {
+      "class": "integer",
+      "exactTypes": ["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"],
+      "widths": [1, 2, 4, 8],
+      "signed": "from-type"
+    },
+    {
+      "class": "address",
+      "exactTypes": ["one-target-word-address"],
+      "widths": ["target-word"],
+      "signed": false
+    }
+  ],
+  "methods": [
+    {
+      "name": "load",
+      "sourceIntrinsic": "atomic_method_load",
+      "irIntrinsic": "atomic_load",
+      "irOperation": "load",
+      "operands": [],
+      "elements": ["boolean", "integer", "address"],
+      "orders": ["relaxed", "acquire", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": null,
+      "llScUpdate": null,
+      "progress": "lock-free-single-access"
+    },
+    {
+      "name": "store",
+      "sourceIntrinsic": "atomic_method_store",
+      "irIntrinsic": "atomic_store",
+      "irOperation": "store",
+      "operands": ["desired:T"],
+      "elements": ["boolean", "integer", "address"],
+      "orders": ["relaxed", "release", "seq_cst"],
+      "result": "void",
+      "resultFields": [],
+      "lseFamily": null,
+      "llScUpdate": null,
+      "progress": "lock-free-single-access"
+    },
+    {
+      "name": "exchange",
+      "sourceIntrinsic": "atomic_method_exchange",
+      "irIntrinsic": "xchg",
+      "irOperation": "exchange",
+      "operands": ["desired:T"],
+      "elements": ["boolean", "integer", "address"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "swp",
+      "llScUpdate": "desired-value",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "compare_exchange",
+      "sourceIntrinsic": "atomic_method_compare_exchange",
+      "irIntrinsic": "cas",
+      "irOperation": "compare-exchange",
+      "operands": ["expected:T", "desired:T"],
+      "elements": ["boolean", "integer", "address"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "compare-exchange",
+      "resultFields": ["observed:T", "exchanged:bool"],
+      "lseFamily": "cas",
+      "llScUpdate": "exact-width-compare-then-desired-value",
+      "progress": "lock-free-strong-retry-until-success-or-mismatch"
+    },
+    {
+      "name": "fetch_add",
+      "sourceIntrinsic": "atomic_method_fetch_add",
+      "irIntrinsic": "fetch_add",
+      "irOperation": "fetch-add",
+      "operands": ["operand:T"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "ldadd",
+      "llScUpdate": "exact-width-wrapping-add",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "fetch_sub",
+      "sourceIntrinsic": "atomic_method_fetch_sub",
+      "irIntrinsic": "fetch_sub",
+      "irOperation": "fetch-sub",
+      "operands": ["operand:T"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "ldadd",
+      "llScUpdate": "exact-width-wrapping-subtract",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "fetch_and",
+      "sourceIntrinsic": "atomic_method_fetch_and",
+      "irIntrinsic": "fetch_and",
+      "irOperation": "fetch-and",
+      "operands": ["operand:T"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "ldclr",
+      "llScUpdate": "exact-width-and",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "fetch_or",
+      "sourceIntrinsic": "atomic_method_fetch_or",
+      "irIntrinsic": "fetch_or",
+      "irOperation": "fetch-or",
+      "operands": ["operand:T"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "ldset",
+      "llScUpdate": "exact-width-or",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "fetch_xor",
+      "sourceIntrinsic": "atomic_method_fetch_xor",
+      "irIntrinsic": "fetch_xor",
+      "irOperation": "fetch-xor",
+      "operands": ["operand:T"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "element",
+      "resultFields": [],
+      "lseFamily": "ldeor",
+      "llScUpdate": "exact-width-xor",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "test_and_set_bit",
+      "sourceIntrinsic": "atomic_method_test_and_set_bit",
+      "irIntrinsic": "atomic_bit_set",
+      "irOperation": "test-and-set-bit",
+      "operands": ["bit:const-u32-in-range"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "bool",
+      "resultFields": [],
+      "lseFamily": "ldset",
+      "llScUpdate": "exact-width-or-one-bit-mask",
+      "progress": "lock-free-retry-until-success"
+    },
+    {
+      "name": "test_and_clear_bit",
+      "sourceIntrinsic": "atomic_method_test_and_clear_bit",
+      "irIntrinsic": "atomic_bit_clear",
+      "irOperation": "test-and-clear-bit",
+      "operands": ["bit:const-u32-in-range"],
+      "elements": ["integer"],
+      "orders": ["relaxed", "acquire", "release", "acq_rel", "seq_cst"],
+      "result": "bool",
+      "resultFields": [],
+      "lseFamily": "ldclr",
+      "llScUpdate": "exact-width-and-complemented-one-bit-mask",
+      "progress": "lock-free-retry-until-success"
+    }
+  ],
+  "compareExchange": {
+    "strength": "strong",
+    "comparison": "exact-width-value-equality",
+    "success": {
+      "write": "desired",
+      "result": "observed-and-true"
+    },
+    "mismatch": {
+      "write": "none",
+      "result": "observed-and-false",
+      "llScAction": "clrex"
+    },
+    "storeExclusiveFailure": {
+      "write": "none",
+      "result": "none",
+      "action": "retry-while-comparison-remains-eligible"
+    }
+  },
+  "arm64": {
+    "memoryKind": "normal-atomic-capable",
+    "fallback": "hard-target-capability-error",
+    "retryPolicy": "unbounded-retry-until-store-exclusive-success",
+    "sequentiallyConsistentFence": null,
+    "implementation": {
+      "exactWidth": true,
+      "lockFree": true,
+      "fallbackLock": false,
+      "fallbackHelper": false,
+      "allocation": false,
+      "retryBudget": null,
+      "timeout": null,
+      "syntheticFailure": false,
+      "perAgentWaitFree": false
+    },
+    "widths": [
+      {"bytes": 1, "plainLoad": "ldrb", "acquireLoad": "ldarb", "plainStore": "strb", "releaseStore": "stlrb", "signedResult": "sxtb"},
+      {"bytes": 2, "plainLoad": "ldrh", "acquireLoad": "ldarh", "plainStore": "strh", "releaseStore": "stlrh", "signedResult": "sxth"},
+      {"bytes": 4, "plainLoad": "ldr-w", "acquireLoad": "ldar-w", "plainStore": "str-w", "releaseStore": "stlr-w", "signedResult": "sxtw"},
+      {"bytes": 8, "plainLoad": "ldr-x", "acquireLoad": "ldar-x", "plainStore": "str-x", "releaseStore": "stlr-x", "signedResult": null}
+    ],
+    "pairAtomicRangeBytes": 16,
+    "pairAtomicBroadensElementCatalog": false
+  }
+}

@@ -1,0 +1,12 @@
+module syntax_bad_nested_is
+
+enum Maybe: u8 {
+  None
+  Some(u64)
+}
+
+fn main(event: Maybe) {
+  if event is .Some(.Some(value)) {
+    helper()
+  }
+}

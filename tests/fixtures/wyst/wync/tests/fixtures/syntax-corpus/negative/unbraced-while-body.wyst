@@ -1,0 +1,2 @@
+module demo
+fn main() { while true return }

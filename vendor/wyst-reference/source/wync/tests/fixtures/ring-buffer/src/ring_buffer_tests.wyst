@@ -1,0 +1,440 @@
+module ring_buffer_tests
+
+import core.checked
+import core.collections { Option, Result, Unit }
+import core.storage {
+  RingBuffer,
+  RingBufferEntry,
+  ring_buffer_back,
+  ring_buffer_clear,
+  ring_buffer_close,
+  ring_buffer_facts,
+  ring_buffer_front,
+  ring_buffer_linearize,
+  ring_buffer_next,
+  ring_buffer_overwrite_back,
+  ring_buffer_overwrite_front,
+  ring_buffer_pop_back,
+  ring_buffer_pop_front,
+  ring_buffer_push_back,
+  ring_buffer_push_front,
+  ring_buffer_spans,
+}
+
+fn impossible() -> never effects(none) {
+  loop { }
+}
+
+fn require(condition: bool) effects(none) {
+  if !condition {
+    impossible()
+  }
+}
+
+fn read(values: noescape []u64, index: u64) -> u64 effects(none) {
+  if index >= values.len {
+    impossible()
+  }
+
+  return values[index]
+}
+
+fn write(values: mut noescape []u64, index: u64, value: u64) effects(none) {
+  match checked.element<u64>(values, index) {
+    .Ok(place) { place.store(value) }
+    .Error(_) { impossible() }
+  }
+}
+
+fn accepted(result: Result<Unit, u64>) effects(none) {
+  match result {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+}
+
+fn popped(result: Option<u64>, expected: u64) effects(none) {
+  match result {
+    .Some(value) { require(value == expected) }
+    .None { impossible() }
+  }
+}
+
+fn absent(result: Option<u64>) effects(none) {
+  match result {
+    .Some(_) { impossible() }
+    .None
+  }
+}
+
+fn order(ring: mut noescape RingBuffer<u64>, expected: noescape []u64) effects(none) {
+  const facts = ring_buffer_facts<u64>(ring)
+  require(facts.len == expected.len)
+  require(facts.len <= facts.capacity)
+  if facts.capacity == 0 {
+    require(facts.head == 0)
+  } else {
+    require(facts.head < facts.capacity)
+  }
+
+  const spans = ring_buffer_spans<u64>(mut ring)
+  require(spans.first.len + spans.second.len == expected.len)
+  for index in 0 ..< spans.first.len {
+    require(spans.first[index] == read(expected, index))
+  }
+
+  for index in 0 ..< spans.second.len {
+    require(spans.second[index] == read(expected, spans.first.len + index))
+  }
+
+  for index in 0 ..< expected.len {
+    const entry: RingBufferEntry<u64> = match ring_buffer_next<u64>(ring, index) {
+      .Some(value) { value }
+      .None { impossible() }
+    }
+    require(entry.next_index == index + 1)
+    require(entry.value == read(expected, index))
+  }
+
+  match ring_buffer_next<u64>(ring, expected.len) {
+    .Some(_) { impossible() }
+    .None
+  }
+
+  match ring_buffer_next<u64>(ring, u64.MAX) {
+    .Some(_) { impossible() }
+    .None
+  }
+
+  match ring_buffer_front<u64>(mut ring) {
+    .Some(view) { require(view.load() == read(expected, 0)) }
+    .None { require(expected.len == 0) }
+  }
+
+  match ring_buffer_back<u64>(mut ring) {
+    .Some(view) { require(view.load() == read(expected, expected.len - 1)) }
+    .None { require(expected.len == 0) }
+  }
+}
+
+pub fn zero_capacity() -> u64 effects(none) {
+  var backing: [1]u64 = [91]
+  var empty = backing[0 ..< 0]
+  var ring = RingBuffer.attach<u64>(mut empty)
+  require(ring_buffer_facts<u64>(ring).capacity == 0)
+  match ring_buffer_push_back<u64>(mut ring, 1) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 1) }
+  }
+
+  match ring_buffer_push_front<u64>(mut ring, 2) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 2) }
+  }
+
+  match ring_buffer_overwrite_back<u64>(mut ring, 3) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 3) }
+  }
+
+  match ring_buffer_overwrite_front<u64>(mut ring, 4) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 4) }
+  }
+
+  absent(ring_buffer_pop_front<u64>(mut ring))
+  absent(ring_buffer_pop_back<u64>(mut ring))
+  ring_buffer_clear<u64>(mut ring)
+
+  const expected: [1]u64 = [0]
+  order(mut ring, expected[0 ..< 0])
+
+  var destination: [1]u64 = [17]
+  var output = destination[0 ..< 0]
+  match ring_buffer_linearize<u64>(ring, mut output) {
+    .Ok(value) { require(value.len == 0) }
+    .Error(_) { impossible() }
+  }
+
+  ring_buffer_close<u64>(xfer ring)
+  require(backing[0] == 91)
+  require(destination[0] == 17)
+  return 0
+}
+
+pub fn one_capacity() -> u64 effects(none) {
+  var backing: [1]u64 = [99]
+  var storage = backing[0 ..< 1]
+  var ring = RingBuffer.attach<u64>(mut storage)
+  for index in 0 ..< numeric<u64>(24) {
+    accepted(ring_buffer_push_front<u64>(mut ring, index))
+    match ring_buffer_push_back<u64>(mut ring, 999) {
+      .Ok(_) { impossible() }
+      .Error(value) { require(value == 999) }
+    }
+
+    match ring_buffer_overwrite_back<u64>(mut ring, index + 1) {
+      .Ok(value) { popped(value, index) }
+      .Error(_) { impossible() }
+    }
+
+    match ring_buffer_overwrite_front<u64>(mut ring, index + 2) {
+      .Ok(value) { popped(value, index + 1) }
+      .Error(_) { impossible() }
+    }
+
+    popped(ring_buffer_pop_back<u64>(mut ring), index + 2)
+    require(ring_buffer_facts<u64>(ring).head == 0)
+    absent(ring_buffer_pop_front<u64>(mut ring))
+  }
+
+  ring_buffer_close<u64>(xfer ring)
+  return 0
+}
+
+pub fn wrap_and_linearize() -> u64 effects(none) {
+  var backing: [5]u64 = [90, 91, 92, 93, 94]
+  var storage = backing[1 ..< 4]
+  var ring = RingBuffer.attach<u64>(mut storage)
+  const empty: [1]u64 = [0]
+  order(mut ring, empty[0 ..< 0])
+  accepted(ring_buffer_push_back<u64>(mut ring, 10))
+  accepted(ring_buffer_push_back<u64>(mut ring, 20))
+  accepted(ring_buffer_push_back<u64>(mut ring, 30))
+  popped(ring_buffer_pop_front<u64>(mut ring), 10)
+  accepted(ring_buffer_push_back<u64>(mut ring, 40))
+
+  const expected: [3]u64 = [20, 30, 40]
+  order(mut ring, expected[0 ..< 3])
+
+  const spans = ring_buffer_spans<u64>(mut ring)
+  require(spans.first.len == 2 && spans.second.len == 1)
+  match ring_buffer_push_front<u64>(mut ring, 99) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 99) }
+  }
+
+  match ring_buffer_push_back<u64>(mut ring, 98) {
+    .Ok(_) { impossible() }
+    .Error(value) { require(value == 98) }
+  }
+
+  var destination: [5]u64 = [77; 5]
+  var short = destination[1 ..< 3]
+  match ring_buffer_linearize<u64>(ring, mut short) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason.required == 3 && reason.available == 2) }
+  }
+
+  for index in 0 ..< numeric<u64>(5) {
+    require(destination[index] == 77)
+  }
+
+  var output = destination[1 ..< 5]
+  match ring_buffer_linearize<u64>(ring, mut output) {
+    .Ok(value) {
+      require(value.len == 3)
+      for index in 0 ..< value.len {
+        require(value[index] == read(expected[0 ..< 3], index))
+      }
+    }
+    .Error(_) { impossible() }
+  }
+
+  require(destination[0] == 77 && destination[4] == 77)
+  order(mut ring, expected[0 ..< 3])
+  ring_buffer_clear<u64>(mut ring)
+  ring_buffer_clear<u64>(mut ring)
+  order(mut ring, empty[0 ..< 0])
+  ring_buffer_close<u64>(xfer ring)
+  // Rejection, views, linearization, and clear must not move or erase backing.
+  require(backing[0] == 90 && backing[4] == 94)
+  require(backing[1] == 40 && backing[2] == 20 && backing[3] == 30)
+  return 0
+}
+
+pub fn attach_and_reuse() -> u64 effects(none) {
+  var backing: [2]u64 = [81, 82]
+  var storage = backing[0 ..< 2]
+  var ring = RingBuffer.attach<u64>(mut storage)
+  absent(ring_buffer_pop_front<u64>(mut ring))
+  absent(ring_buffer_pop_back<u64>(mut ring))
+  ring_buffer_close<u64>(xfer ring)
+  require(backing[0] == 81 && backing[1] == 82)
+
+  var again = backing[0 ..< 2]
+  var reused = RingBuffer.attach<u64>(mut again)
+  accepted(ring_buffer_push_back<u64>(mut reused, 7))
+  popped(ring_buffer_pop_front<u64>(mut reused), 7)
+  ring_buffer_clear<u64>(mut reused)
+  accepted(ring_buffer_push_front<u64>(mut reused, 8))
+  popped(ring_buffer_pop_back<u64>(mut reused), 8)
+  ring_buffer_close<u64>(xfer reused)
+  backing[0] = 9
+  require(backing[0] == 9)
+  return 0
+}
+
+pub fn view_mutation() -> u64 effects(none) {
+  var backing: [3]u64 = [0; 3]
+  var storage = backing[..]
+  var ring = RingBuffer.attach<u64>(mut storage)
+  accepted(ring_buffer_push_back<u64>(mut ring, 1))
+  accepted(ring_buffer_push_back<u64>(mut ring, 2))
+  accepted(ring_buffer_push_back<u64>(mut ring, 3))
+  popped(ring_buffer_pop_front<u64>(mut ring), 1)
+  accepted(ring_buffer_push_back<u64>(mut ring, 4))
+  match ring_buffer_front<u64>(mut ring) {
+    .Some(place) { place.store(20) }
+    .None { impossible() }
+  }
+
+  match ring_buffer_back<u64>(mut ring) {
+    .Some(place) { place.store(40) }
+    .None { impossible() }
+  }
+
+  const spans = ring_buffer_spans<u64>(mut ring)
+  match checked.element<u64>(spans.first, 0) {
+    .Ok(place) {
+      require(place.load() == 20)
+      place.store(21)
+    }
+    .Error(_) { impossible() }
+  }
+
+  match checked.element<u64>(spans.second, 0) {
+    .Ok(place) {
+      require(place.load() == 40)
+      place.store(41)
+    }
+    .Error(_) { impossible() }
+  }
+
+  const expected: [3]u64 = [21, 3, 41]
+  order(mut ring, expected[..])
+  ring_buffer_close<u64>(xfer ring)
+  return 0
+}
+
+pub fn repeated_wrap_model() -> u64 effects(none) {
+  var backing: [5]u64 = [0; 5]
+  var storage = backing[0 ..< 5]
+  var ring = RingBuffer.attach<u64>(mut storage)
+  var model: [5]u64 = [0; 5]
+  var model_view = model[0 ..< 5]
+  var length: u64 = 0
+  for step in 0 ..< numeric<u64>(160) {
+    const operation = step % 8
+    if operation == 0 || operation == 1 || operation == 2 {
+      match ring_buffer_overwrite_back<u64>(mut ring, step) {
+        .Ok(evicted) {
+          if length == 5 {
+            popped(evicted, read(model_view, 0))
+            for index in 0 ..< numeric<u64>(4) {
+              write(mut model_view, index, read(model_view, index + 1))
+            }
+
+            length -= 1
+          } else {
+            absent(evicted)
+          }
+        }
+        .Error(_) { impossible() }
+      }
+
+      write(mut model_view, length, step)
+      length += 1
+    }
+
+    if operation == 3 || operation == 4 {
+      match ring_buffer_overwrite_front<u64>(mut ring, step) {
+        .Ok(evicted) {
+          if length == 5 {
+            popped(evicted, read(model_view, length - 1))
+            length -= 1
+          } else {
+            absent(evicted)
+          }
+        }
+        .Error(_) { impossible() }
+      }
+
+      var index = length
+      while index > 0 {
+        write(mut model_view, index, read(model_view, index - 1))
+        index -= 1
+      }
+
+      write(mut model_view, 0, step)
+      length += 1
+    }
+
+    if operation == 5 {
+      popped(ring_buffer_pop_front<u64>(mut ring), read(model_view, 0))
+      length -= 1
+      for index in 0 ..< length {
+        write(mut model_view, index, read(model_view, index + 1))
+      }
+    }
+
+    if operation == 6 {
+      popped(ring_buffer_pop_back<u64>(mut ring), read(model_view, length - 1))
+      length -= 1
+    }
+
+    if operation == 7 {
+      accepted(ring_buffer_push_front<u64>(mut ring, step))
+
+      var index = length
+      while index > 0 {
+        write(mut model_view, index, read(model_view, index - 1))
+        index -= 1
+      }
+
+      write(mut model_view, 0, step)
+      length += 1
+    }
+
+    match checked.subslice<u64>(model_view, 0, length) {
+      .Ok(value) { order(mut ring, value) }
+      .Error(_) { impossible() }
+    }
+  }
+
+  ring_buffer_close<u64>(xfer ring)
+  return 0
+}
+
+struct Pair {
+  number: u64
+  valid: bool
+}
+
+pub fn aggregate_values() -> u64 effects(none) {
+  var backing: [2]Pair = [{number = 99, valid = false}; 2]
+  var storage = backing[0 ..< 2]
+  var ring = RingBuffer.attach<Pair>(mut storage)
+  match ring_buffer_push_back<Pair>(mut ring, {number = 7, valid = true}) {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+
+  match ring_buffer_push_front<Pair>(mut ring, {number = 8, valid = false}) {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+
+  match ring_buffer_pop_front<Pair>(mut ring) {
+    .Some(value) { require(value.number == 8 && !value.valid) }
+    .None { impossible() }
+  }
+
+  match ring_buffer_pop_back<Pair>(mut ring) {
+    .Some(value) { require(value.number == 7 && value.valid) }
+    .None { impossible() }
+  }
+
+  ring_buffer_close<Pair>(xfer ring)
+  return 0
+}

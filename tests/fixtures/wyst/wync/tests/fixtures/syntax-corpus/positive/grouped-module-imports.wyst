@@ -1,0 +1,8 @@
+module corpus.grouped_imports
+
+pub import (
+  drivers.uart as uart,
+  runtime.clock { Instant as ClockInstant, now },
+)
+
+fn main() { }

@@ -1,0 +1,505 @@
+module slot_pool_tests
+
+import core.storage {
+  FixedBuffer,
+  SlotHandle,
+  SlotPool,
+  SlotPoolFailure,
+  StorageUse,
+  fixed_buffer_close,
+  slot_pool_allocate,
+  slot_pool_facts,
+  slot_pool_incarnation_assert_fresh,
+  slot_pool_release,
+  slot_pool_view,
+}
+
+#[align(16)]
+var BACKING: [1024]u8 = [0; 1024]
+#[align(16)]
+var OTHER: [1024]u8 = [0; 1024]
+
+// The reference test supplies this fault-injection event. Production core has
+// no operation that sets a slot generation or exposes lifecycle metadata.
+extern "C" fn seed_generation() effects(none)
+
+fn impossible() -> never effects(none) {
+  loop { }
+}
+
+fn require(condition: bool) effects(none) {
+  if !condition {
+    impossible()
+  }
+}
+
+fn attach_u64(
+  backing: mut []u8,
+  capacity: u64,
+  identity: u64,
+) -> SlotPool<u64>
+  from backing
+  effects(none)
+{
+  var buffer = match FixedBuffer.attach(mut backing, StorageUse.OutputOrSubsystem) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var incarnation = slot_pool_incarnation_assert_fresh(identity)
+  return match SlotPool.attach<u64>(xfer buffer, xfer incarnation, capacity) {
+    .Ok(value) { xfer value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+}
+
+pub fn foreign_and_reattached_handles() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 17]
+  var other: []u8 = OTHER[0 ..< 17]
+  var pool = attach_u64(mut bytes, 1, 1)
+  var foreign = attach_u64(mut other, 1, 1)
+  const slot = match slot_pool_allocate<u64>(mut pool, 17) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_view<u64>(mut foreign, slot) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.WrongIdentity) }
+  }
+
+  match slot_pool_release<u64>(mut foreign, slot) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.WrongIdentity) }
+  }
+
+  require(slot_pool_facts<u64>(foreign).free == 1)
+  SlotPool.abandon_storage<u64>(xfer foreign)
+  match slot_pool_release<u64>(mut pool, slot) {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+
+  var buffer = match SlotPool.detach<u64>(xfer pool) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  var incarnation = slot_pool_incarnation_assert_fresh(2)
+  var reattached = match SlotPool.attach<u64>(xfer buffer, xfer incarnation, 1) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  const current = match slot_pool_allocate<u64>(mut reattached, 23) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_view<u64>(mut reattached, slot) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.WrongIdentity) }
+  }
+
+  const view = match slot_pool_view<u64>(mut reattached, current) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(view.load() == 23)
+  SlotPool.abandon_storage<u64>(xfer reattached)
+  return 0
+}
+
+pub fn attachment_rejection_preserves_backing() -> u64 effects(none) {
+  for index in 0 ..< numeric<u64>(1024) {
+    BACKING[index] = 0xa5
+  }
+
+  for attempt in 0 ..< numeric<u64>(3) {
+    var bytes: []u8 = BACKING[0 ..< 33]
+    if attempt == 1 {
+      bytes = BACKING[1 ..< 35]
+    }
+
+    var buffer = match FixedBuffer.attach(mut bytes, StorageUse.OutputOrSubsystem) {
+      .Ok(value) { value }
+      .Error(_) { impossible() }
+    }
+    var incarnation = slot_pool_incarnation_assert_fresh(attempt)
+    var capacity: u64 = 2
+    if attempt == 2 {
+      capacity = u64.MAX
+    }
+
+    match SlotPool.attach<u64>(xfer buffer, xfer incarnation, capacity) {
+      .Ok(value) {
+        discard(xfer value)
+        impossible()
+      }
+      .Error(rejected) {
+        if attempt == 1 {
+          require(rejected.reason == SlotPoolFailure.Misaligned)
+        } else {
+          require(rejected.reason == SlotPoolFailure.InsufficientCapacity)
+        }
+
+        discard(xfer rejected)
+      }
+    }
+  }
+
+  for index in 0 ..< numeric<u64>(1024) {
+    require(BACKING[index] == 0xa5)
+  }
+
+  return 0
+}
+
+pub fn zero_capacity_and_tail() -> u64 effects(none) {
+  for index in 0 ..< numeric<u64>(1024) {
+    BACKING[index] = 0xa5
+  }
+
+  var bytes: []u8 = BACKING[0 ..< 40]
+  var empty = attach_u64(mut bytes, 0, 1)
+  const empty_facts = slot_pool_facts<u64>(empty)
+  require(
+    empty_facts.capacity == 0 && empty_facts.backing_metadata == 0 && empty_facts.unused == 40,
+  )
+  match slot_pool_allocate<u64>(mut empty, 1) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.Exhausted) }
+  }
+
+  SlotPool.abandon_storage<u64>(xfer empty)
+
+  var second_bytes: []u8 = BACKING[0 ..< 40]
+  var pool = attach_u64(mut second_bytes, 2, 2)
+  require(slot_pool_facts<u64>(pool).unused == 6)
+  SlotPool.abandon_storage<u64>(xfer pool)
+  for index in 0 ..< numeric<u64>(16) {
+    require(BACKING[index] == 0xa5)
+  }
+
+  for index in 34 ..< numeric<u64>(1024) {
+    require(BACKING[index] == 0xa5)
+  }
+
+  return 0
+}
+
+struct Empty { }
+
+pub fn storage_policy_and_zero_sized_rejection() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 17]
+  var buffer = match FixedBuffer.attach(mut bytes, StorageUse.Permanent) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var incarnation = slot_pool_incarnation_assert_fresh(1)
+  var pool = match SlotPool.attach<u64>(xfer buffer, xfer incarnation, 1) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  match SlotPool.detach<u64>(xfer pool) {
+    .Ok(value) {
+      discard(xfer value)
+      impossible()
+    }
+    .Error(rejected) {
+      require(rejected.reason == SlotPoolFailure.PermanentStorage)
+      discard(xfer rejected)
+    }
+  }
+
+  var again: []u8 = BACKING[0 ..< 17]
+  var empty_buffer = match FixedBuffer.attach(mut again, StorageUse.CallScopedScratch) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var fresh = slot_pool_incarnation_assert_fresh(2)
+  match SlotPool.attach<Empty>(xfer empty_buffer, xfer fresh, 1) {
+    .Ok(value) {
+      discard(xfer value)
+      impossible()
+    }
+    .Error(rejected) {
+      require(rejected.reason == SlotPoolFailure.InvalidRequest)
+      discard(xfer rejected)
+    }
+  }
+
+  return 0
+}
+
+pub fn detach_recovers_live_pool() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 17]
+  var pool = attach_u64(mut bytes, 1, 1)
+  const slot = match slot_pool_allocate<u64>(mut pool, 67) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var recovered = match SlotPool.detach<u64>(xfer pool) {
+    .Ok(value) {
+      discard(xfer value)
+      impossible()
+    }
+    .Error(rejected) {
+      require(rejected.reason == SlotPoolFailure.LiveSlots)
+      xfer rejected.pool
+    }
+  }
+  const view = match slot_pool_view<u64>(mut recovered, slot) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(view.load() == 67)
+  SlotPool.abandon_storage<u64>(xfer recovered)
+  return 0
+}
+
+pub fn lease_access() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 17]
+  var pool = attach_u64(mut bytes, 1, 1)
+  const slot = match slot_pool_allocate<u64>(mut pool, 71) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  const view = match slot_pool_view<u64>(mut pool, slot) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(view.load() == 71)
+  view.store(73)
+  require(view.load() == 73)
+  require(view.load() == 73)
+  SlotPool.abandon_storage<u64>(xfer pool)
+  return 0
+}
+
+pub fn generation_retirement() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 17]
+  var pool = attach_u64(mut bytes, 1, 1)
+  seed_generation()
+
+  const penultimate = match slot_pool_allocate<u64>(mut pool, 81) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_release<u64>(mut pool, penultimate) {
+    .Ok(facts) { require(facts.free == 1 && facts.retired == 0) }
+    .Error(_) { impossible() }
+  }
+
+  const last = match slot_pool_allocate<u64>(mut pool, 82) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_view<u64>(mut pool, penultimate) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.StaleGeneration) }
+  }
+
+  const view = match slot_pool_view<u64>(mut pool, last) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(view.load() == 82)
+  match slot_pool_release<u64>(mut pool, last) {
+    .Ok(facts) {
+      require(facts.capacity == 1 && facts.live == 0 && facts.free == 0 && facts.retired == 1)
+      require(facts.retired_bytes == 8 && facts.live_bytes == 0 && facts.free_bytes == 0)
+      require(facts.backing_metadata == 9 && facts.unused == 0)
+    }
+    .Error(_) { impossible() }
+  }
+
+  match slot_pool_view<u64>(mut pool, last) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.NotLive) }
+  }
+
+  match slot_pool_release<u64>(mut pool, last) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.NotLive) }
+  }
+
+  match slot_pool_allocate<u64>(mut pool, 83) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.Exhausted) }
+  }
+
+  SlotPool.abandon_storage<u64>(xfer pool)
+  return 0
+}
+
+struct Wide {
+  lanes: [u64: 2]
+  tag: u64
+}
+
+pub fn aligned_aggregate() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 82]
+  var buffer = match FixedBuffer.attach(mut bytes, StorageUse.OutputOrSubsystem) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var incarnation = slot_pool_incarnation_assert_fresh(1)
+  var pool = match SlotPool.attach<Wide>(xfer buffer, xfer incarnation, 2) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  const first = match slot_pool_allocate<Wide>(mut pool, {lanes = [1, 2], tag = 1}) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  const second = match slot_pool_allocate<Wide>(mut pool, {lanes = [3, 4], tag = 2}) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  const one = match slot_pool_view<Wide>(mut pool, first) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(address<u64>(one) & 15 == 0)
+
+  const first_value = one.load()
+  require(first_value.tag == 1)
+
+  const two = match slot_pool_view<Wide>(mut pool, second) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(address<u64>(two) & 15 == 0)
+
+  const second_value = two.load()
+  require(second_value.tag == 2)
+
+  const facts = slot_pool_facts<Wide>(pool)
+  require(facts.live_bytes == 64 && facts.backing_metadata == 18 && facts.unused == 0)
+  SlotPool.abandon_storage<Wide>(xfer pool)
+  return 0
+}
+
+pub fn lifecycle() -> u64 effects(none) {
+  var bytes: []u8 = BACKING[0 ..< 34]
+  var buffer = match FixedBuffer.attach(mut bytes, StorageUse.OutputOrSubsystem) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  var incarnation = slot_pool_incarnation_assert_fresh(1)
+  var pool = match SlotPool.attach<u64>(xfer buffer, xfer incarnation, 2) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  const initial = slot_pool_facts<u64>(pool)
+  require(initial.capacity == 2 && initial.free == 2 && initial.live == 0 && initial.retired == 0)
+  require(initial.control_metadata == 72 && #size_of(SlotHandle<u64>) == 32)
+  require(
+    initial.backing == 34 && initial.backing_metadata == 18 && initial.free_bytes == 16
+      && initial.unused == 0,
+  )
+
+  const first = match slot_pool_allocate<u64>(mut pool, 11) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  const second = match slot_pool_allocate<u64>(mut pool, 22) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_allocate<u64>(mut pool, 33) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.Exhausted) }
+  }
+
+  const view = match slot_pool_view<u64>(mut pool, first) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(view.load() == 11)
+  view.store(44)
+  require(view.load() == 44)
+
+  const original_second = match slot_pool_view<u64>(mut pool, second) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(original_second.load() == 22)
+
+  match slot_pool_release<u64>(mut pool, first) {
+    .Ok(facts) { require(facts.live == 1 && facts.free == 1) }
+    .Error(_) { impossible() }
+  }
+
+  match slot_pool_release<u64>(mut pool, first) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.NotLive) }
+  }
+
+  match slot_pool_view<u64>(mut pool, first) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.NotLive) }
+  }
+
+  const reused = match slot_pool_allocate<u64>(mut pool, 55) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  match slot_pool_view<u64>(mut pool, first) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.StaleGeneration) }
+  }
+
+  match slot_pool_release<u64>(mut pool, first) {
+    .Ok(_) { impossible() }
+    .Error(reason) { require(reason == SlotPoolFailure.StaleGeneration) }
+  }
+
+  const unchanged = slot_pool_facts<u64>(pool)
+  require(unchanged.live == 2 && unchanged.free == 0 && unchanged.retired == 0)
+
+  const replacement = match slot_pool_view<u64>(mut pool, reused) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(replacement.load() == 55)
+
+  const stable = match slot_pool_view<u64>(mut pool, second) {
+    .Ok(value) { value }
+    .Error(_) { impossible() }
+  }
+  require(stable.load() == 22)
+  match slot_pool_release<u64>(mut pool, second) {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+
+  match slot_pool_release<u64>(mut pool, reused) {
+    .Ok(_)
+    .Error(_) { impossible() }
+  }
+
+  var detached = match SlotPool.detach<u64>(xfer pool) {
+    .Ok(value) { value }
+    .Error(rejected) {
+      discard(xfer rejected)
+      impossible()
+    }
+  }
+  fixed_buffer_close(xfer detached)
+  return 0
+}

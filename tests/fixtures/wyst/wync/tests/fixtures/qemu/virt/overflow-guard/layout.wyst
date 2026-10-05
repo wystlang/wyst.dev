@@ -1,0 +1,14 @@
+module layout
+
+layout kernel {
+  entry boot.overflow_guard._start at 0x4008_0000
+  region ram: readwrite at 0x4008_0000 size 0x0008_0000
+  section ".text": code in ram align 16
+  section ".rodata": rodata in ram after ".text" align 16
+  section ".data": data in ram after ".rodata" align 8
+  section ".bss": bss in ram after ".data" align 16
+  pub symbol __image_base: u64 = 0x4008_0000
+  pub symbol __stack_top: u64 = 0x4010_0000
+  pub symbol __bss_start: u64 = address<u64>(start(".bss"))
+  pub symbol __bss_end: u64 = address<u64>(end(".bss"))
+}

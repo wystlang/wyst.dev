@@ -1,0 +1,217 @@
+import { createHash } from "node:crypto";
+import {
+	cp,
+	mkdir,
+	readFile,
+	readdir,
+	rename,
+	rm,
+	writeFile,
+} from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { generate404 } from "../build/generate-404.mjs";
+import { generateSitemap } from "../build/generate-sitemap.mjs";
+import { generateDocs } from "../build/generate.mjs";
+import {
+	createBuildManifest,
+	resolveOutputDir,
+} from "./build-manifest.mjs";
+import { verifyHomepageExample } from "./homepage-example.mjs";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function assertSafeOutputDir(outputDir) {
+	const output = path.resolve(outputDir);
+	const filesystemRoot = path.parse(output).root;
+	if (output === filesystemRoot || output === ROOT) {
+		throw new Error(`refusing to clean unsafe output directory: ${output}`);
+	}
+
+	// An output directory that contains the repository would delete the source
+	// tree when the clean build starts.
+	const repoFromOutput = path.relative(output, ROOT);
+	if (
+		repoFromOutput &&
+		!repoFromOutput.startsWith("..") &&
+		!path.isAbsolute(repoFromOutput)
+	) {
+		throw new Error(`output directory must not contain the repository: ${output}`);
+	}
+
+	const protectedDirectories = [
+		".git",
+		".github",
+		"assets",
+		"build",
+		"content",
+		"tests",
+		"tools",
+		"vendor",
+	].map((entry) => path.join(ROOT, entry));
+	for (const protectedDir of protectedDirectories) {
+		const relative = path.relative(protectedDir, output);
+		if (!relative.startsWith("..") && !path.isAbsolute(relative)) {
+			throw new Error(
+				`output directory overlaps build input ${path.relative(ROOT, protectedDir)}: ${output}`,
+			);
+		}
+	}
+	return output;
+}
+
+async function walk(dir) {
+	const found = [];
+	const entries = await readdir(dir, { withFileTypes: true });
+	entries.sort((a, b) => a.name.localeCompare(b.name));
+	for (const entry of entries) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) found.push(...(await walk(full)));
+		else if (entry.isFile()) found.push(full);
+		else throw new Error(`unsupported build input: ${full}`);
+	}
+	return found;
+}
+
+function hash8(contents) {
+	return createHash("sha256").update(contents).digest("hex").slice(0, 8);
+}
+
+async function fingerprintAssets(outputDir) {
+	const assetsDir = path.join(outputDir, "assets");
+	const htmlFiles = (await walk(outputDir)).filter((file) =>
+		file.endsWith(".html"),
+	);
+	const rewrites = [];
+
+	for (const asset of ["wyst.css", "docs.css", "docs.js", "home.js"]) {
+		const source = path.join(assetsDir, asset);
+		const contents = await readFile(source);
+		const extension = path.extname(asset);
+		const stem = asset.slice(0, -extension.length);
+		const fingerprinted = `${stem}.${hash8(contents)}${extension}`;
+		await rename(source, path.join(assetsDir, fingerprinted));
+		rewrites.push([`assets/${asset}`, `assets/${fingerprinted}`]);
+	}
+
+	for (const file of htmlFiles) {
+		let html = await readFile(file, "utf8");
+		for (const [source, destination] of rewrites) {
+			html = html.split(source).join(destination);
+		}
+		await writeFile(file, html);
+	}
+	return rewrites;
+}
+
+const IMMUTABLE = "public, max-age=31536000, immutable";
+const REVALIDATE = "public, max-age=86400, stale-while-revalidate=604800";
+const MUST_REVALIDATE = "public, max-age=0, must-revalidate";
+const FAVICON_URLS = new Set([
+	"/assets/apple-touch-icon.png",
+	"/assets/favicon-48.png",
+	"/assets/favicon.svg",
+]);
+const CACHE_POLICY = {
+	".css": IMMUTABLE,
+	".js": IMMUTABLE,
+	".woff2": IMMUTABLE,
+	".woff": IMMUTABLE,
+	".ttf": IMMUTABLE,
+	".otf": IMMUTABLE,
+	".avif": REVALIDATE,
+	".webp": REVALIDATE,
+	".png": REVALIDATE,
+	".jpg": REVALIDATE,
+	".jpeg": REVALIDATE,
+	".gif": REVALIDATE,
+	".svg": REVALIDATE,
+	".ico": REVALIDATE,
+};
+
+const SECURITY_HEADERS = `/*
+  Content-Security-Policy: default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'self'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; upgrade-insecure-requests
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 0`;
+
+async function writeHeaders(outputDir) {
+	const assetsDir = path.join(outputDir, "assets");
+	const rules = [];
+	for (const file of await walk(assetsDir)) {
+		const url = `/${path.relative(outputDir, file).split(path.sep).join("/")}`;
+		const cacheControl = FAVICON_URLS.has(url)
+			? MUST_REVALIDATE
+			: CACHE_POLICY[path.extname(file).toLowerCase()];
+		if (cacheControl) rules.push({ url, cacheControl });
+	}
+	rules.sort((a, b) => a.url.localeCompare(b.url));
+
+	const headers =
+		"# Generated by tools/prepare-worker-assets.mjs — do not edit by hand.\n" +
+		"# Security and cache policy for static assets served by Cloudflare Workers Assets.\n" +
+		SECURITY_HEADERS +
+		"\n" +
+		rules
+			.map(
+				(rule) =>
+					`${rule.url}\n  Cache-Control: ${rule.cacheControl}`,
+			)
+			.join("\n") +
+		"\n";
+	await writeFile(path.join(outputDir, "_headers"), headers);
+	return rules.length;
+}
+
+export async function prepareWorkerAssets({
+	outputDir = resolveOutputDir(),
+} = {}) {
+	await verifyHomepageExample();
+	const output = assertSafeOutputDir(outputDir);
+	await rm(output, { recursive: true, force: true });
+	await mkdir(output, { recursive: true });
+
+	for (const entry of ["index.html", "assets", "robots.txt"]) {
+		await cp(path.join(ROOT, entry), path.join(output, entry), {
+			recursive: true,
+			force: true,
+		});
+	}
+
+	generateDocs({ outputDir: output });
+	generate404({ outputDir: output });
+	await generateSitemap({ outputDir: output });
+	const rewrites = await fingerprintAssets(output);
+	const headerRules = await writeHeaders(output);
+	const manifest = await createBuildManifest({ outputDir: output });
+
+	console.log(`prepared deterministic site in ${path.relative(ROOT, output)}`);
+	console.log(
+		`fingerprinted ${rewrites.map(([from, to]) => `${from} -> ${to}`).join(", ")}`,
+	);
+	console.log(`wrote _headers (${headerRules} cache rules)`);
+	return { manifest, outputDir: output };
+}
+
+function parseArgs(argv) {
+	let outputDir = resolveOutputDir();
+	for (let index = 0; index < argv.length; index++) {
+		if (argv[index] === "--output-dir" && argv[index + 1]) {
+			outputDir = path.resolve(argv[++index]);
+			continue;
+		}
+		throw new Error(`unknown argument: ${argv[index]}`);
+	}
+	return { outputDir };
+}
+
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	await prepareWorkerAssets(parseArgs(process.argv.slice(2)));
+}

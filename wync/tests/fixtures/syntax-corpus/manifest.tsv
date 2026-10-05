@@ -1,3 +1,0 @@
-# kind	stage	name	tags	file	expect
-positive	parse	canonical	version-gating	positive/canonical.wyst	-
-negative	parse	removed	version-gating	negative/removed.wyst	expected error

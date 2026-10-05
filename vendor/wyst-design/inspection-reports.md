@@ -1,0 +1,426 @@
+---
+title: "Compiler Inspection Reports"
+group: reference
+section: tools
+order: 630
+summary: "Current commands for lowering, effects, storage, proof, layout, resources, and reference execution reports."
+---
+
+# Compiler Inspection Reports
+
+`wync explain` provides seven compiler inspection reports.
+These reports describe one selected project artifact.
+
+Diagnostic-code explanations are in
+[Diagnostic Explanations and Source Actions](diagnostic-explanations.md).
+
+## Common Command Rules
+
+Each report accepts a project directory or its `wyst.project` file.
+Each report accepts `--artifact NAME`.
+Without this option, the command selects the default artifact.
+
+Each report accepts `--format text|json`.
+The default is `text`.
+The report goes to stdout.
+Diagnostics go to stderr.
+
+Inspection commands do not write the selected project artifact.
+They can compile intermediate products in memory to construct the report.
+
+## Lowering Report
+
+Use this command:
+
+```sh
+wync explain lowering PROJECT \
+  [--artifact NAME] \
+  [--function NAME] \
+  [--format text|json]
+```
+
+The report selects one lowered function.
+`--function` accepts its exact qualified semantic identity or its lookup name.
+The function must have an emitted native body in the selected artifact.
+`pub` controls Wyst visibility and does not retain native code by itself.
+An explicit `export` retains a native library entry point. Calls from retained
+functions can retain other bodies. External declarations and fully inlined
+functions can have no separate native body. The diagnostic distinguishes a
+missing body from an unknown name or a declaration that is not a function.
+
+The report includes these principal facts:
+
+- the selected target and source graph;
+- the callable identity and typed IR;
+- typed-IR operand and control-flow structure;
+- type layouts, ABI locations, value homes, and frame composition;
+- direct calls, effects, atomics, and checked-assembly allocation;
+- machine instructions and their source or generated origins; and
+- relocations, symbols, function bytes, and artifact text bytes.
+
+For a final-link artifact, addresses use the linked ELF placement.
+The selected function's ELF symbol identifies its executable section and byte
+range, including custom code sections. Instruction bytes come from that range;
+local-label fixups use the function's final address and function-relative offsets.
+Packed backend image offsets do not identify offsets within a placed ELF section.
+For a static library, the report uses the owning `ET_REL` object.
+Object reports use object-local offsets and relocation records.
+Final addresses are unavailable for these object reports.
+
+The report does not provide hardware timing, cache state, branch prediction, or measured performance.
+For closed final artifacts, its call facts distinguish source-indirect calls
+that were statically bound from indirect transfers that remain at runtime.
+
+## Effects Report
+
+Use this command:
+
+```sh
+wync explain effects PROJECT \
+  [--artifact NAME] \
+  [--function NAME] \
+  [--format text|json]
+```
+
+Without `--function`, the report includes all checked functions.
+With `--function`, it includes only the named function. The selector accepts
+the exact qualified `semanticIdentity`, as used by proof inspection, or the
+report's `name` field. It does not match a name by suffix. A native export is
+not required for effects inspection.
+
+The report includes declared bounds, direct effects, transitive effects, and their dependency paths.
+It also includes effect sites, call sites, authority sites, and selected target facts.
+Direct, external, resolved-indirect, and unresolved-indirect calls remain distinct.
+
+The report does not provide runtime frequency, target timing, or cache state.
+
+JSON uses the `wync.explain.effects.v1` schema. `semanticIdentity` identifies
+each checked callable independently of its display name or source position.
+`provenTransitiveEffects` contains the existing checker's inferred effects;
+`transitiveEffects` also propagates declared permissions. External and indirect
+call bounds remain explicit premises, not observed runtime operations.
+
+An effect, call, or authority site's `sourceOrigin` uses one of these variants:
+
+- `source` contains exactly `kind`, `path`, `byteSpan`, `line`, `column`,
+  `endLine`, and `endColumn`. `byteSpan` contains the inclusive start and
+  exclusive end byte offsets. Coordinates are one-based UTF-8 byte positions
+  in the mapped source file.
+- `unavailable` contains exactly `kind` and `reason`. Its reason is
+  `source span is unavailable in the authenticated source map`. It has no
+  path, byte span, or coordinates.
+
+The compiler emits `source` only when the authenticated source map resolves the
+span. Some bundled generic instances have checked operations without a span in
+that map. Their location is unavailable; their effect, callable identity, and
+dependency facts remain known. Text output states `source unavailable` and the
+reason. The report does not interpret an unmapped offset in another source file.
+
+The report carries the selected artifact configuration and hashes of the exact
+checked manifest and layout inputs. The repository's
+[comparison tool](../wync/tools/compare-compiler-facts/README.md) checks two
+source snapshots with one executable and verifies its hash after each check.
+It compares callable identities, effects, bounds, trusted assertions, and checked
+callable and storage contracts. An introduced effect retains its reported source
+variant and dependency path. The comparison validates both origin variants and
+rejects unknown variants, malformed coordinates, or extra fields. A failed check
+or incompatible configuration is a comparison failure.
+
+Contract comparisons retain parameter modes, scoped contracts, returned-view
+sources, storage guarantees, and preconditions and postconditions. A changed
+contract has unknown strength unless the checker supplies a proved relation.
+Proof status and runtime-check reasons remain distinct from the contract text.
+The comparison does not infer a guarantee from a callable's name.
+
+The comparison's text renderer shows changed contract fields separately and
+retains clause proof status and runtime-check reasons. It explains simple
+parameter-preservation outcome swaps only when the complete canonical contract
+matches the supported form. Other storage/concurrency text remains verbatim;
+the renderer does not infer a strength relation. Raw callable construction is
+labeled as a programmer assertion and distinguished from invocation. These
+text explanations do not change the JSON facts, checking, or evidence status.
+
+Source-line movement or location availability alone does not identify a changed
+callable or effect. An unchanged effect
+set does not establish unchanged behavior, purity, allocation, or storage
+guarantees. The comparison adds no runtime work and does not write the artifact.
+
+## Storage Report
+
+Use this command:
+
+```sh
+wync explain storage PROJECT \
+  [--artifact NAME] \
+  [--format text|json]
+```
+
+The report includes the selected target, source graph, and compiler storage vocabulary.
+It lists authenticated `core.storage` operations.
+It can also list accepted storage-preservation proof facts.
+
+The report does not infer storage meaning from an ordinary function name.
+It does not report runtime allocation behavior or machine cost.
+
+## Proof Report
+
+Select one exact, module-qualified function from the selected artifact:
+
+```sh
+wync explain proof PROJECT --function MODULE.FUNCTION \
+  [--operation ID] [--artifact NAME] [--format text|json]
+```
+
+Without `--operation`, the report lists the function's authenticated memory
+operations and semantic storage accesses. Each obligation has an opaque
+`operationId`. Pass that ID with the same function to inspect one operation.
+The function must have a checked body. An unknown name is an error; a checked
+function with no memory operations has an empty inventory. The query does not
+add modules outside the selected artifact's source closure.
+Use `semanticIdentity` from the effects report to select a concrete generic
+instance that has a retained typed-IR body. A generic declaration without an
+instance, or an instance fully expanded into its callers, has no selectable body.
+
+An operation ID belongs to the checked source snapshot, artifact configuration,
+and compiler source identity. Dependency, manifest, layout, or source changes
+invalidate the ID. Use the same compiler executable for listing and selection.
+IDs are query selectors, not proof certificates or identities across edits.
+Each query checks the current inputs. An unknown or stale ID produces an
+unavailable report and a nonzero exit status, with no earlier facts.
+
+Function selection keeps obligations with unavailable source locations. Such
+records have `sourceStatus: "unavailable"` and `source: null`; their known proof
+dimensions remain present. Storage evidence for a selected operation describes
+the smallest enclosing authenticated source access in that function. It is
+unavailable when that source relation cannot be established.
+
+The JSON `selection` identifies the query mode. Function queries have no
+`position` or selected-file `sourceSnapshot`; both are `null`. `sourceGraph`
+still identifies the complete checked source snapshot. Each operation reports
+its own incoming state. The inventory does not describe one shared state at
+function entry and does not certify the final machine artifact.
+
+### Source-Position Proof Report
+
+Use this command:
+
+```sh
+wync explain proof PROJECT --source PATH --line N --column N \
+  [--artifact NAME] [--format text|json]
+```
+
+The line and column are one-based. The column counts UTF-8 bytes and must name
+a character boundary. Relative source paths start at the project directory.
+The position selects the smallest enclosing authenticated memory operation.
+The report describes its incoming state after checking the selected artifact's
+source, semantics, and typed IR. It does not certify a final machine artifact.
+Position selection cannot be combined with `--function` or `--operation`.
+Position and function queries use the same obligation records and operation IDs.
+
+The report preserves each obligation's required flag and proved, asserted,
+unproved, violated, or not-required status. Address evidence contains the
+verifier's origin, offset range, storage and logical end ranges, and alignment.
+End offsets are relative to the origin; they do not promise initialized or
+readable bytes. An asserted callable premise remains an assertion.
+
+Runtime guard facts identify the condition and successful branch whose
+refinement contributes to the incoming verifier state. They show a path
+premise, not a claim that the guard is necessary for the final proof.
+
+Storage-access evidence identifies the selected view, backing, relevant leases,
+and available preservation or outcome-refinement facts. Missing evidence is
+explicitly unavailable. A failed check includes its diagnostic and does not use
+a previous successful snapshot. The report identifies the complete checked
+source snapshot, target, and artifact configuration. Inspection facts add no
+runtime operations and do not enter cached proof identities.
+
+The [editor query](editor-integration.md#protocol-capabilities) uses the same
+capture and rendering path.
+
+## Layout Report
+
+Use this command:
+
+```sh
+wync explain layout PROJECT \
+  [--artifact NAME] \
+  [--format text|json]
+```
+
+The report uses the checked concrete structure-layout facts.
+For each structure, it includes size, alignment, stride, useful extent, and padding.
+It also includes field offsets, sizes, alignments, and preceding padding.
+
+For an unconstrained structure, the report can include a reordered candidate.
+The candidate includes its complete field order and exact byte reduction.
+A positive reduction is a size fact, not a runtime performance guarantee.
+
+Generic structures without concrete arguments have no fabricated layout row.
+
+## Resources Report
+
+Use this command:
+
+```sh
+wync explain resources PROJECT \
+  [--artifact NAME] \
+  [--function NAME] \
+  [--format text|json]
+```
+
+The JSON schema name is `wync.explain.resources.v3`.
+The report applies to the complete selected artifact.
+`--function` adds one exact named, body-bearing function as a stack-analysis
+root. It does not filter the report or replace the artifact's other roots.
+
+It includes these principal groups:
+
+- semantic module interfaces;
+- the artifact reference graph;
+- resumable and affine-verifier facts;
+- stack roots;
+- the active closed optimizer policy and pass order; and
+- per-function IR, ABI, frame, allocation, instruction, proof, call, phi, and
+  expansion counts.
+
+The stack-root set contains each function retained for one or more of these
+reasons:
+
+- the selected semantic entry;
+- the function requested by `--function`;
+- an explicit native export;
+- an initializer order;
+- an explicit section contribution;
+- artifact verification;
+- an exception-vector slot;
+- an authenticated exception-return continuation.
+
+One function appears once with all applicable reasons. `--function` must
+resolve to one exact function in the selected artifact and that function must
+have a body. The command reports an error otherwise.
+
+Each root reports one of four stack-bound states. `exact` supplies the maximum
+bytes and its path. `unresolved`, `recursive`, and `unbounded` reject the root
+and supply the known prefix and causes. The analyzer follows only reachable
+typed IR. It adds each call site's outgoing stack arguments to the retained
+caller frame instead of using a function-wide maximum.
+
+The transition inventory records direct and resolved indirect calls, checked
+assembly `bl` calls and `b` transfers, structural exception-frame transfers,
+exception restores, and authenticated `eret` handoffs. Each row
+states whether the source frame remains active, the outgoing stack bytes, and
+the resolved target. A `b` transfer retains the source frame if another checked
+machine exit can return. Checked terminal assembly uses the verified final
+machine frame disposition. An `eret` row is exact only when its target EL, ELR target,
+and selected stack register are authenticated. Its continuation starts a new
+stack epoch and appears as a separate root.
+If the target is verified naked code with its own authenticated stack
+establishment, the incoming stack is unused. The report names that continuation
+as `stackTarget` and checks its complete call chain as a separate root.
+
+The text `selected-status` field and JSON `stackRoots.selectedStatus` field
+describe only the artifact's selected semantic entry. The value is `available`
+when that entry resolves to a callable, `unknown` when the entry does not
+resolve to a callable, and `unavailable` when the artifact kind has no selected
+semantic entry. A requested function does not change this status.
+
+The post-optimization census uses these definitions:
+
+- `blocks` is the complete typed-IR block count.
+- `reachableBlocks` is the control-flow-reachable block count.
+- `values` is the complete typed-IR value count.
+- `liveValues` counts every value whose post-optimization kind is not `Noop`.
+- `noOpValues` is the remaining value count.
+- Direct calls, indirect calls, and phi values count live values of that kind.
+- `memoryProofObligations` counts classified memory operations.
+- `memoryProofRequirements` counts their required bounds, extent, alignment,
+  initialization, and lifetime dimensions.
+- `indexBoundsObligations` counts retained logical index obligations.
+- `inlineExpansions` counts source-mandated inline-expansion records.
+
+The census status is `exact` for a function with typed IR. A target-generated
+function with no typed IR has `not_applicable` status and no zero-valued
+substitute census.
+
+The report gives exact emitted text words and bytes. Each optimizer record has
+its admitted before and after target cost. Each inline expansion has exact
+exclusive and inclusive emitted bytes when machine attribution is available.
+The report does not sum these values into an invented whole-program saving.
+It marks a missing nonexpanded product as an unavailable counterfactual.
+
+Text and JSON output use project-relative paths. The resource report must be
+identical after a rebuild and from a different checkout path when all inputs
+are identical.
+
+The report distinguishes retained and eliminated artifact work.
+It does not provide hardware timing, cache state, branch prediction, or counterfactual inline estimates.
+
+## Reference Execution Report
+
+Use this command:
+
+```sh
+wync explain execution PROJECT \
+  [--artifact NAME] \
+  --function NAME \
+  [--input scenario.json] \
+  [--format text|json]
+```
+
+The command compiles and authenticates verified typed IR.
+It then executes the named function in deterministic reference state.
+It does not execute lowered machine code.
+
+When a loop evaluates an IR value again, its materialized local storage receives
+the new value. Repeated address use between evaluations retains that storage's
+current contents. Ordinary aggregate copies do not alias the copied storage.
+
+A module-qualified function name also participates in source discovery. Use
+that form when the function's module is not imported by the artifact root.
+
+The report includes the completion class, return value, step count, and trace events.
+It also includes consumed environment events, generic instances, and reference addresses.
+Runtime completions are report results, including traps, faults, resource exhaustion, and unsupported operations.
+
+The scenario is a version `1` JSON object.
+It can provide arguments, memory, indeterminate bytes, environment results, and execution limits.
+It can set `recordTrace` to `false` for a corpus that does not inspect events.
+The default is `true`.
+
+The optional `volatileReads` array scripts authenticated volatile loads. Each
+record has an `address`, a typed `result`, and an optional positive `repeat`
+count. The default repeat count is `1`. The executor checks the record order,
+address, and result type. It does not expand repeated records or change memory.
+The addressed memory must still be mapped and initialized. If `volatileReads`
+is absent, volatile loads use memory. If it is present, an unexpected,
+exhausted, or unused record completes as `environment-unavailable`. The report
+gives the consumed and total scripted read counts.
+
+The default execution limits are:
+
+- `steps`: 1,000,000;
+- `callDepth`: 256;
+- `memoryBytes`: 67,108,864; and
+- `traceEvents`: 1,000,000.
+
+A scenario can replace these limits with positive values.
+The CLI rejects a scenario file larger than 8,388,608 bytes.
+The underlying scenario JSON parser also has a 16 MiB input limit.
+It rejects JSON nesting after 128 levels.
+
+Checked assembly has no reference-execution instruction semantics.
+An execution that reaches them completes as `unsupported`.
+
+`#eval` uses the same verified-IR execution semantics with empty scenario
+state and trace recording disabled. It uses the default step, call-depth, and
+memory limits. Only a normal returned closed value can become constant data.
+
+## Bounded Functional-Proof Experiment
+
+The [bounded-fill prototype](../docs/proposals/bounded-fill-proof-experiment.md)
+uses the function proof query to authenticate one fixed source snapshot. Its
+external adapter retains that report and its operation IDs, then adds separately
+labeled source-level functional obligations, assumptions, and selected claims.
+The wrapper uses an experimental schema. It does not change this chapter's
+compiler report schemas, ordinary checking, or runtime contracts. The source
+proof leaves compiler lowering and final-machine correctness outside its scope.

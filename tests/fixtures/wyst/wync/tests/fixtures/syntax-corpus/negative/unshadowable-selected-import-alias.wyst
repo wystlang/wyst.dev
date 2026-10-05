@@ -1,0 +1,2 @@
+module demo
+import library { value as widen }

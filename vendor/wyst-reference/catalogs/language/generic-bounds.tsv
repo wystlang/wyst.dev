@@ -1,0 +1,12 @@
+// spelling	state	owner	subject_contract	capability_contract	enum_payload_word_compatible
+integer	implemented	core.generic-bounds	builtin-integer-or-integer-backed-numeric-nominal	integer-arithmetic|integer-limits|bitwise|comparison|equality|fixed-layout-move|copy|discard|complete-typed-store	true
+unsigned_integer	implemented	core.generic-bounds	builtin-unsigned-integer-or-unsigned-integer-backed-numeric-nominal	integer-arithmetic|integer-limits|bitwise|comparison|equality|fixed-layout-move|copy|discard|complete-typed-store	true
+signed_integer	implemented	core.generic-bounds	builtin-signed-integer-or-signed-integer-backed-numeric-nominal	integer-arithmetic|integer-limits|bitwise|comparison|equality|negation|fixed-layout-move|copy|discard|complete-typed-store	true
+float	implemented	core.generic-bounds	builtin-float-or-float-backed-numeric-nominal	float-arithmetic|comparison|equality|negation|fixed-layout-move|copy|discard|complete-typed-store	false
+numeric	implemented	core.generic-bounds	builtin-numeric-or-numeric-nominal	numeric-arithmetic|comparison|equality|fixed-layout-move|copy|discard|complete-typed-store	false
+scalar	implemented	core.generic-bounds	bool-or-builtin-numeric-or-nominal-carrier	scalar-equality|fixed-layout-move|copy|discard|complete-typed-store	false
+address	implemented	core.generic-bounds	address-or-function-pointer	address-equality|fixed-layout-move|copy|discard|complete-typed-store	true
+bitstruct	implemented	core.generic-bounds	declared-bitstruct	whole-value-equality|storage|passing|returning|address-taking|fixed-layout-move|copy|discard|complete-typed-store	true
+payload_word	implemented	core.generic-bounds	bool-or-builtin-integer-or-integer-backed-nominal-carrier-or-address-or-function-pointer-or-bitstruct	payload-storage|fixed-layout-move|copy|discard|complete-typed-store	true
+fixed_layout_movable	implemented	core.generic-bounds	compiler-proven-fixed-layout-value-with-ordinary-move-semantics	storage|passing|returning|enum-payload	false
+copyable_discardable	implemented	core.generic-bounds	compiler-proven-fixed-layout-value-with-copy-and-discard-abilities	storage|passing|returning|copy|discard|complete-typed-store	false

@@ -1,0 +1,3 @@
+module demo
+enum State { idle }
+fn main(state: State) { match state return }
