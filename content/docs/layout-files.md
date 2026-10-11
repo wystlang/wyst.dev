@@ -30,7 +30,7 @@ symbol __bss_end:   u64 = end(.bss)
 | --- | --- |
 | `entry m.f at A` | Function `f` of module `m` is the ELF entry. It must be at address `A`. There is one entry. |
 | `region r: readwrite at A size N` | Memory from `A` to `A + N`. A region is `readonly` or `readwrite`. |
-| `section s: k in r align N` | A section of kind `code`, `rodata`, `data`, or `bss` in region `r`. `N` is a power of two. |
+| `section s: k in r align N` | A section of kind `code`, `rodata`, `data`, or `bss` in region `r`. `N` is a power of two, and at least 4 for a `code` section. |
 | `section s: k in r after t align N` | The section starts at the end of the earlier section `t`, in the same region. |
 | `symbol n: u64 = v` | A `u64` name that each function can read. `v` is an integer, `start(s)`, or `end(s)`. |
 
@@ -42,9 +42,8 @@ Thus a region comes before its sections, and a section comes before each
 
 - A section without `after` starts at the start of its region. The build
   aligns the start of each section up to its alignment.
-- Each instruction is 4 bytes. The compiler does not check that a `code`
-  section starts at a multiple of 4. Thus give each `code` section an
-  alignment of at least 4.
+- Each instruction is 4 bytes, so a `code` section needs an alignment of
+  at least 4.
 - Each section must fit in its region and must not overlap another
   section. A `data` or `bss` section must be in a `readwrite` region.
 - The entry function is first in its section, so that section must start

@@ -61,9 +61,9 @@ maps the device in a page table, can name the same constant. The address
 of each register, the base plus the offset, must be a multiple of the
 register size.
 
-The device is local to its module. `pub` does not export it, so another
-module cannot access the device. Make a `pub` function that accesses the
-device, and call this function from the other module.
+The device is local to its module, and a `pub` device is not implemented
+now. Make a `pub` function that accesses the device, and call this
+function from the other module.
 
 ## Arrays of devices
 

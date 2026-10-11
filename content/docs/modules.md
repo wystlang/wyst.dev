@@ -82,8 +82,9 @@ Two modules can import each other.
   [Boot and exceptions](/docs/boot-and-exceptions/).
 
 A module variable, a struct, an enum, a device, a system register, and
-the vector table are local to their module now, also with `pub`. A call
-to a function that is not `pub` is an error:
+the vector table are local to their module now. A `pub` struct, enum,
+device, or system register is not implemented now. A call to a function
+that is not `pub` is an error:
 
 ```wyst fails
 import drivers.serial

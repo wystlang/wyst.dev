@@ -43,8 +43,8 @@ const ICC_NMIAR1_EL1: readonly u64 {
 main.wyst:2:23: error: `ICC_NMIAR1_EL1` cannot be read
 ```
 
-The declaration is local to its module. `pub` does not export it, so
-another module cannot read or write the register.
+The declaration is local to its module, and a `pub` system register is
+not implemented now.
 
 ## Reading and writing
 
