@@ -43,11 +43,7 @@ function publicFileIndex(publicRoot) {
 			.readdirSync(directory, { withFileTypes: true })
 			.sort((a, b) => a.name.localeCompare(b.name));
 		for (const entry of entries) {
-			if (
-				entry.name === "_headers" ||
-				(entry.name.startsWith(".") &&
-					!(segments.length === 0 && entry.name === ".well-known"))
-			) {
+			if (entry.name === "_headers" || entry.name.startsWith(".")) {
 				continue;
 			}
 
@@ -57,8 +53,8 @@ function publicFileIndex(publicRoot) {
 				walk(fullPath, childSegments);
 				continue;
 			}
-			// The generated artifact validator rejects links and special files. Ignore
-			// them here as well so a custom preview tree cannot escape its root.
+			// Ignore links and special files, so that a preview tree cannot
+			// escape its root.
 			if (!entry.isFile()) continue;
 
 			const urlPath = `/${childSegments.join("/")}`;

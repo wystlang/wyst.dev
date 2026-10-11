@@ -1,2 +1,0 @@
-module demo
-fn identity(widen: u64) -> u64 { return widen }

@@ -4,9 +4,6 @@
 	const SCROLL_CUE_DISTANCE = 96;
 	const SCROLL_CUE_STEPS = 8;
 	const buttons = [...document.querySelectorAll("[data-copy-target]")];
-	const tabs = [
-		...document.querySelectorAll('[role="tab"][data-example-tab]'),
-	];
 	const sourcePanes = [
 		...document.querySelectorAll(".source-viewport > pre"),
 	];
@@ -37,48 +34,6 @@
 		updateSourceScrollCues();
 	}
 
-	function activateTab(tab, focus = false) {
-		for (const candidate of tabs) {
-			const selected = candidate === tab;
-			candidate.setAttribute("aria-selected", String(selected));
-			candidate.tabIndex = selected ? 0 : -1;
-			const panel = document.getElementById(
-				candidate.getAttribute("aria-controls") ?? "",
-			);
-			if (panel) panel.hidden = !selected;
-		}
-
-		const panel = document.getElementById(tab.getAttribute("aria-controls") ?? "");
-		const pane = panel?.querySelector(".source-viewport > pre");
-		if (pane) updateSourceScrollCue(pane);
-		if (focus) tab.focus();
-	}
-
-	for (const [index, tab] of tabs.entries()) {
-		tab.addEventListener("click", () => activateTab(tab));
-		tab.addEventListener("keydown", (event) => {
-			let nextIndex;
-			switch (event.key) {
-				case "ArrowLeft":
-					nextIndex = (index - 1 + tabs.length) % tabs.length;
-					break;
-				case "ArrowRight":
-					nextIndex = (index + 1) % tabs.length;
-					break;
-				case "Home":
-					nextIndex = 0;
-					break;
-				case "End":
-					nextIndex = tabs.length - 1;
-					break;
-				default:
-					return;
-			}
-			event.preventDefault();
-			activateTab(tabs[nextIndex], true);
-		});
-	}
-
 	function legacyCopy(text) {
 		const buffer = document.createElement("textarea");
 		buffer.value = text;
@@ -99,26 +54,6 @@
 			buffer.remove();
 		}
 		return copied;
-	}
-
-	function sourceText(target) {
-		const alignedLines = new Map();
-		for (const line of target.querySelectorAll(".block-comment-line")) {
-			alignedLines.set(
-				line.textContent,
-				(alignedLines.get(line.textContent) ?? 0) + 1,
-			);
-		}
-
-		return target.textContent
-			.split("\n")
-			.map((line) => {
-				const remaining = alignedLines.get(line) ?? 0;
-				if (!remaining) return line;
-				alignedLines.set(line, remaining - 1);
-				return ` ${line}`;
-			})
-			.join("\n");
 	}
 
 	async function copyText(text) {
@@ -154,7 +89,7 @@
 			button.textContent = "wait…";
 			if (status) status.textContent = "The browser copies the code.";
 			try {
-				await copyText(sourceText(target));
+				await copyText(target.textContent);
 				button.textContent = "copied";
 				button.dataset.copyState = "success";
 				if (status) status.textContent = "The browser copied the code.";
