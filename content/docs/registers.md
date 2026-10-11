@@ -31,6 +31,9 @@ struct Redistributor {
 - A field with `= value`, such as `ARE: bool at 4 = true`, is fixed. Each
   write gives it that value, and a write cannot name it. A bit that the
   specification requires to be 1 (RES1) is a fixed field.
+- The fields in `{ }` are optional.
+- A constant or an expression in place of the offset or a bit position is
+  not implemented now. Write an integer literal.
 
 Register and field names follow the datasheet. `wync fmt` aligns the
 entries in columns, because a reader scans a register map by column.
@@ -54,7 +57,13 @@ const uart: Pl011
 ```
 
 The address is a `u64` constant. Thus other code, such as the code that
-maps the device in a page table, can name the same constant.
+maps the device in a page table, can name the same constant. The address
+of each register, the base plus the offset, must be a multiple of the
+register size.
+
+The device is local to its module, and a `pub` device is not implemented
+now. Make a `pub` function that accesses the device, and call this
+function from the other module.
 
 ## Arrays of devices
 
@@ -85,7 +94,8 @@ is less than N, as for any index. See [Index proofs](/docs/index-proofs/).
 
 `dev.R.read()` loads register `R` one time and gives a snapshot. `.F`
 reads field `F` from the snapshot. It does not access the device again. A
-local cannot hold a snapshot now, so each read gives one field:
+local cannot hold a snapshot now. Thus a read in an expression gives one
+field:
 
 ```wyst
 #[register_map]
@@ -103,10 +113,21 @@ fn put(byte: u8) {
 }
 ```
 
+A read can also be a statement alone. It loads the register and discards
+the value.
+
+`.F` has the type of field `F`. An enum field gives its backing `uN`,
+because the register can hold a value that is no variant. A local cannot
+hold a `uN` other than `u8`, `u16`, `u32`, or `u64`. Use `widen` for
+a narrower field: for a `u5` field `N`, write
+`const n: u8 = widen(gic.TYPER.read().N)`. See
+[Bit field types](/docs/values/#bit-field-types).
+
 `dev.R.write(F = v, ...)` makes one value from the named fields and stores
 it one time. Each field that the call does not name is zero, or its fixed
-value. Each value must have the exact field type, and a literal must fit
-in its field.
+value. Each bit outside the fields is zero, so `dev.R.write()` stores zero
+in a register without fields. Each value must have the exact field type,
+and a literal must fit in its field.
 
 The compiler refuses a `write` of a `readonly` register and a `read` of a
 `writeonly` register:

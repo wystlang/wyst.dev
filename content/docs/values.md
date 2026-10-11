@@ -51,7 +51,8 @@ In an operator, a literal takes the type of the other operand:
 ## Booleans
 
 `bool` has two values, `true` and `false`. `!` gives the other value. A
-`bool` is not an integer, so `&`, `|`, and `+` do not take it.
+`bool` is not an integer, so `&`, `|`, and `+` do not take it. `==` and
+`!=` on a `bool` are not implemented now. Use the `bool` itself, or `!`.
 
 ```wyst
 var ready: bool = false
@@ -123,5 +124,23 @@ that loops forever or stops the machine. See [Functions](/docs/functions/).
 
 A bit field of a register or of a `#[bits]` struct can also have the type
 `uN`, an unsigned value of N bits with N from 1 to 64, or an enum. These
-types are only for bit fields now. See
+types are only for bit fields. See
 [Enums and bit structs](/docs/enums-and-bit-structs/).
+
+A read of a `uN` field gives a `uN` value. A read of an enum field gives
+the backing `uN` of the enum. An operator, a comparison, and `widen` take
+a `uN` value. When N is not 8, 16, 32, or 64, a parameter, a local, or a
+variable cannot hold the value. Use `widen`:
+
+```wyst
+#[bits]
+struct Entry: u64 {
+  Low: u5 at 0..=4
+}
+
+fn low(slot: @u64) -> u8 {
+  const entry: Entry = load(slot)
+  const low: u8 = widen(entry.Low)
+  return low
+}
+```

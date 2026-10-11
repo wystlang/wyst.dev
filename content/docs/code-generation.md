@@ -9,10 +9,10 @@ source.
 
 ## The rule
 
-Compiler work may be hidden; runtime behavior may not. The compiler
-removes the loads, stores, and temporary values that it makes itself. It
-keeps each call, branch, and device or system register access that the
-source has, in order.
+Compiler work may be hidden; runtime behavior may not. The compiler keeps
+values in registers when it can, so it adds few loads, stores, and copies
+of its own. It keeps each call, branch, and device or system register
+access that the source has, in order.
 
 ## An example
 
@@ -56,8 +56,8 @@ fn init() {
 - The loop on `BUSY` is one `ldr` and one `tbnz`, which tests bit 3.
 - The compiler computes the value of each write from its fields:
   `FEN = true, WLEN = 3` is `0x70`.
-- `init` makes no call and keeps no value, so it has no prologue. Its
-  epilogue is `ret`.
+- `init` makes no call and has no home in `x19` to `x28` or on the stack,
+  so it has no prologue. Its epilogue is `ret`.
 
 ## Registers
 
@@ -110,13 +110,15 @@ each copy.
 | Source | Machine code |
 | --- | --- |
 | A constant | One `movz`, then one `movk` for each other halfword that is not 0. Or `movn` and `movk`, when more halfwords are `0xffff`. |
-| A register `read` or `write` | One `ldr` or `str` with a base register and the offset. |
+| An operator on literals and module constants | No code of its own: the compiler computes the result, which is one constant. A constant condition keeps its branch: `mov`, then `cbz` or `cbnz`. |
+| A register `read` or `write` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str` with a base register and the offset. A device base that the function uses only one time adds the code of a constant. A device of an array adds one shifted `add` for the index. |
 | A system register `read` or `write` | One `mrs` or `msr`. |
-| A field write | One `lsl` or `orr` for each field, then one `orr` for the fixed bits. |
-| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. |
+| A field write | One `lsl` or `orr` for each field value that is not a constant. The fixed fields and the constant values make one constant. One `orr` adds it when it fits in the instruction. If it does not fit, the code of the constant and one `orr` add it. A write of only constants is one constant. |
+| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. The address of a field, or of an element at a constant index, adds one `add` for the offset. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
 | `widen`, `bitcast` | No code. |
 | `truncate` | One `ubfx`. |
-| `x * 2^k`, `x / 2^k` | One `lsl` or `lsr`. |
+| `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
+| `x / 2^k` | One `lsr`. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
@@ -125,16 +127,20 @@ each copy.
 | `trap()` | `brk #0`. |
 | A string, a function address, or a section symbol | `adrp` and `add`. |
 | A module variable | `adrp` and one load or store. |
-| `v += x`, `v -= x` | `adrp` and one load, `add` or `sub`, then `adrp` and one store. |
+| `v += x`, `v -= x` | `adrp` and one load, `add` or `sub` (and a `ubfx` for a type below 64 bits), then `adrp` and one store. |
 
 A constant operand goes in the instruction when it fits, such as a value
 below 4096 for `add`, `sub`, and `cmp`. A `tbz` or a `tbnz` reaches only 32
-KiB, so a longer function with one is an error.
+KiB, so a condition on a one-bit field is an error when its `if` body or
+loop body is longer than 32 KiB.
 
 ## Linking
 
 The linker puts each function in its section, in this order: the entry,
-then each function of the vector table in entry order, then each function
-in the order of its first call or `@`. It then writes the branch offsets
-and the addresses. The ELF file has no relocations. See
+then each function of the vector table in entry order, then the other
+functions breadth first. Each function adds its new callees and the new
+functions that it takes with `@` to the end of the order, in the order of
+their first use. A function that the entry and the vector table do not
+reach gets no code. The linker then writes the branch offsets and the
+addresses. The ELF file has no relocations. See
 [ELF output](/docs/elf-output/).

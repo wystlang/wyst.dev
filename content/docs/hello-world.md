@@ -4,8 +4,8 @@ summary: Write, build, and run a bare-metal program on QEMU.
 ---
 
 This program writes `Hello, World!` to the UART of the QEMU `virt` board,
-then stops QEMU. It has no operating system and no runtime: the program
-starts the CPU, sets up the UART, and writes each byte itself.
+then stops QEMU. It has no operating system: the program sets its own
+stack, sets up the UART, and writes each byte itself.
 
 ## The program
 
@@ -121,9 +121,10 @@ a normal function. `never` is the return type of a function that does not
 return. See [Boot and exceptions](/docs/boot-and-exceptions/).
 
 **The UART.** `init` disables the UART, waits while it is busy, and sets
-the baud rate and the data format. Each `write` call is one store to the
-device, and each `read` call is one load. `for uart.FR.read().BUSY {}`
-loads `FR` again on each pass, while the `BUSY` bit is set.
+the baud rate and the data format. Then it enables the UART and its
+transmitter. Each `write` call is one store to the device, and each `read`
+call is one load. `for uart.FR.read().BUSY {}` loads `FR` again on each
+pass, while the `BUSY` bit is set.
 
 **The loop.** `for byte in "Hello, World!\n"` runs its body one time for
 each byte of the string. `write` is `#[inline]`, so the compiler copies its

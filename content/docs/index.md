@@ -12,6 +12,6 @@ examples that the compiler checks. [Building programs](/docs/compiler/)
 tells how to build and run a program. [Reference](/docs/syntax/) gives the exact rules, and
 [Design](/docs/goals/) tells why the language has its form.
 
-Wyst grows only when its one user, a new kernel, needs a feature. Some
-grammar has no implementation yet. These pages say "not implemented now"
+Wyst grows mainly when its one user, a new kernel, needs a feature. Some
+grammar has no implementation now. These pages say "not implemented now"
 for such a feature, and [Status](/docs/status/) lists them.

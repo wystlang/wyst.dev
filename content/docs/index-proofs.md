@@ -16,7 +16,8 @@ The same rule applies to an index of an array of devices, as in
 The checker knows the highest value of:
 
 - a constant;
-- `x & m`, where `m` is a constant;
+- `a & b`, which is at most the highest value of `a` or of `b`;
+- `widen(x)`, which keeps the proof of `x`;
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
   knows the highest value `h` of `n`;
 - a `const` local, which keeps the proof of its value.
@@ -43,8 +44,8 @@ fn clear_all(table: @[slots]u64) {
 
 ## Conditions
 
-The condition of an `if` gives a bound to a local `x` when it compares `x`
-with an expression whose highest value the checker knows: `x < e`,
+The condition of an `if` gives a bound to a parameter, a loop variable, or
+a `const` local `x` when it compares `x` with an expression `e`: `x < e`,
 `x <= e`, or `x == e`, with `x` on either side, and `!` of a comparison.
 The bound holds in the body of the `if`.
 
@@ -56,6 +57,10 @@ fn mark(table: @[4]u64, cursor: @u64) {
   }
 }
 ```
+
+`e` must have a highest value that is a number, such as a constant or a
+mask. A parameter or a module variable as `e` gives no bound now. A
+condition gives no bound to a module variable.
 
 When the body cannot reach its end, the condition is false after the
 `if`. Thus after `if at >= 4 { return }`, `at` is at most 3 until the end
@@ -145,4 +150,12 @@ fn record(table: @[4]u64) {
 main.wyst:5:15: error: the checker cannot prove that this value is less than 4
 ```
 
-The entry is called by no code, so its parameters have no proof.
+When the end `n` of `for i in a ..< n` is a parameter or a module
+variable, the checker proves in the same way that `n` is at most the
+length of the array. For an array of 8, a call that passes 9 as `n` gives
+the error `the checker cannot prove that this argument is less than 9`.
+
+The entry is called by no code, so its parameters have no proof. When an
+index gets its value from a parameter of the entry, the error is at the
+index. For an array of 8, the error is
+`the checker cannot prove that the index is less than 8`.

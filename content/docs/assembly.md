@@ -9,8 +9,9 @@ inputs and outputs, and keeps each line in order.
 
 ## asm blocks
 
-`asm(inputs) { lines }` is a statement. Each line is one A64 instruction.
-A block without inputs has no parentheses:
+`asm(inputs) { lines }` is a statement. Each line is one A64 instruction
+in the canonical Arm form of its encoding. A block without inputs can
+leave out the parentheses:
 
 ```wyst
 fn sync() {
@@ -21,8 +22,18 @@ fn sync() {
 }
 ```
 
-A barrier option and a system operation use their Arm names, such as
-`dsb sy` and `tlbi vmalle1`.
+An Arm alias, such as `mov`, `cmp`, or `lsl`, is an error. Write the
+instruction that the alias names:
+
+- `orr to.x, xzr, from.x` for `mov to.x, from.x`
+- `subs xzr, from.x, #1` for `cmp from.x, #1`
+- `ubfm to.x, from.x, #61, #60` for `lsl to.x, from.x, #3`
+- `add sp, x0, #0` for `mov sp, x0`
+
+A barrier option is a number or its Arm name: `dsb sy` is `dsb #15`. A DC,
+IC, or TLBI operation of the A64 tables can use its Arm name, such as
+`tlbi vmalle1`. The tables have no other system operation, so a line such
+as `at s1e1r` is an error.
 
 The compiler checks each line for the kernel at EL1 on the QEMU `virt`
 target: the base A64 instructions, the atomic instructions of the
@@ -42,9 +53,9 @@ can also name `xzr` or `wzr`. When a 32-bit form and a 64-bit form both
 accept a line, the line must give the view:
 
 ```wyst
-fn put(byte: u8) {
-  asm(dr = 0x0900_0000, byte) {
-    strb byte.w, [dr]
+fn save(address: u64, value: u64) {
+  asm(address, value) {
+    str value.x, [address]
   }
 }
 ```
@@ -130,7 +141,7 @@ fn try_lock(word: u64) -> u64 {
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. The `const` can also have a
 `#[bits]` struct type with backing type `u64`. Only the value of a `const`
-can be a block with an output. A block with an output has at most 8
+can be a block with an output. A block with a `u64` output has at most 8
 inputs.
 
 ## Option outputs

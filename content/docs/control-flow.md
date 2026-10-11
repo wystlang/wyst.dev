@@ -6,7 +6,7 @@ summary: if, the four forms of for, and return.
 ## if
 
 `if cond {}` runs its body when `cond`, a `bool`, is true. The condition
-has no parentheses.
+needs no parentheses.
 
 `else` after `if` is not implemented now. Use an early `return` in its
 place:
@@ -20,6 +20,9 @@ fn max(a: u64, b: u64) -> u64 {
 }
 ```
 
+`else` after an `Option` value takes the value of `.Some`, as
+[Optional values](/docs/options/#unwrap-with-else) shows.
+
 A body with one statement can stay on one line:
 
 ```wyst
@@ -32,9 +35,10 @@ fn check(count: u64) {
 
 `for` is the one loop. It has four forms.
 
-`for {}` runs its body forever. `break` is not implemented now, so the loop
-does not end, and a statement after it is an error. A function that
-returns `never` can end with it:
+`for {}` runs its body forever. `break` is not implemented now, so only a
+`return` in the body leaves the loop. A statement after the loop is an
+error. A function with a result can end with `for {}`, as
+[Functions](/docs/functions/#results) shows:
 
 ```wyst
 fn idle() -> never {
@@ -45,6 +49,9 @@ fn idle() -> never {
   }
 }
 ```
+
+The checker does not read `for true {}` as a loop that does not end, so
+`for true {}` cannot end a function with a result.
 
 `for cond {}` runs its body while `cond` is true. It tests `cond` before
 each pass:
@@ -63,9 +70,11 @@ A loop with an empty body waits for a condition, such as a device bit:
 `for uart.FR.read().BUSY {}`.
 
 `for i in a ..< b {}` runs its body one time for each value from `a` up
-to, but not including, `b`. `a` and `b` have one integer type, which is the
-type of `i`. The loop computes `b` one time, before the first pass. An
-empty range runs no pass.
+to, but not including, `b`. `a` and `b` have one type, `u8`, `u16`, `u32`,
+or `u64`, which is the type of `i`. A literal bound takes the type of the
+other bound, so one bound must have a type: `0 ..< count` is correct, and
+`0 ..< 4` is an error. The loop computes `b` one time, before the first
+pass. An empty range runs no pass.
 
 ```wyst
 var sum: u64 = 0
@@ -80,13 +89,17 @@ fn add_range(first: u64, end: u64) {
 `for byte in "text" {}` runs its body one time for each byte of a string
 literal, as [Values and types](/docs/values/#strings) shows.
 
-`..=`, `break`, and `continue` are not implemented now.
+`for i in a ..= b`, `break`, and `continue` are not implemented now.
 
 ## return
 
-`return` ends the function. In a function with a result, `return` takes a
-value of the result type. In a function without a result, `return` has no
-value. A statement after `return` is an error.
+`return` ends the function. In a function with a value or `Option` result,
+`return` takes a value of that type. In a function without a result,
+`return` has no value. A function that returns `never` cannot use
+`return`. A statement after `return` is an error.
+
+When `value` is `.None`, `value?` also returns `.None`, as
+[Optional values](/docs/options/#the-operator) shows.
 
 ## Not implemented now
 
@@ -95,4 +108,5 @@ now:
 
 - `match`, with variant patterns;
 - labels (`name:`) and `goto`;
+- `for x in e` over the elements of an array or a slice;
 - `if` and `match` as values.

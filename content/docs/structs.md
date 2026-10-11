@@ -6,7 +6,7 @@ summary: Plain structs, their layout in memory, size_of, and field_offset.
 ## Plain structs
 
 `struct Name { fields }` declares a plain struct: the shape of a record in
-memory. Each field is `name: Type` on its own line.
+memory. Each field is `name: Type`. A newline or `,` ends a field.
 
 ```wyst
 struct Slot {
@@ -75,7 +75,8 @@ Thus a struct cannot hold itself.
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. `T` is `u8`, `u16`, `u32`, `u64`, or a plain struct of the
-module.
+module. A module constant or a `static_assert` that uses them comes after
+the declaration of `T`. A function that uses them can come before it.
 
 Code that depends on a layout states it with `static_assert`, directly
 below the struct:
@@ -99,5 +100,7 @@ change moves a field, the assertion stops the build.
 
 A plain struct is only the type of memory at an address now. A parameter,
 a local, and a variable cannot hold a struct, and a struct literal is not
-implemented now. Code reads and writes a struct through its address, as
-[Addresses and memory](/docs/addresses/) shows.
+implemented now. Code reads and writes each field through the address of
+the struct, such as `load(@slot.kind)`, as
+[Addresses and memory](/docs/addresses/) shows. `load` and `store` of a
+whole struct are not implemented now.

@@ -25,11 +25,12 @@ const SCTLR_EL1: readwrite u64 {
 }
 ```
 
-The name must be a system register of the A64 tables. The code runs at
-EL1, so each access that the declaration gives must be possible at EL1: a
-read for `readonly` and `readwrite`, and a write for `writeonly` and
-`readwrite`. A register that needs a feature that the target does not
-have is an error:
+The name must be a system register of the A64 tables. The compiler checks
+each access for EL1, also in a function that runs at EL0, such as a
+function in the section `.el0`. Each access that the declaration gives
+must be possible at EL1: a read for `readonly` and `readwrite`, and a
+write for `writeonly` and `readwrite`. A register that needs a feature
+that the target does not have is an error:
 
 ```wyst fails
 #[sysreg]
@@ -42,7 +43,8 @@ const ICC_NMIAR1_EL1: readonly u64 {
 main.wyst:2:23: error: `ICC_NMIAR1_EL1` cannot be read
 ```
 
-The declaration is local to its module.
+The declaration is local to its module, and a `pub` system register is
+not implemented now.
 
 ## Reading and writing
 

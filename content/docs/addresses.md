@@ -11,7 +11,8 @@ offset.
 
 `@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
 `u32`, `u64`, a plain struct of the module, or an array `[N]T` of one of
-these. `N` is a constant, such as a module constant.
+these. `N` is a constant, such as a module constant. Another target, such
+as `bool`, an address, or an array of arrays, is not implemented now.
 
 An address is not an integer. No operator takes an address, and `@u8` and
 `@u32` are different types:
@@ -33,7 +34,7 @@ keep an address after the call.
 ## bitcast
 
 `bitcast(x)` gives the `u64` `x` as the address type that its position
-expects. It is the only way to make an address:
+expects. It is the only way to make an address from an integer:
 
 ```wyst
 fn table_at(frame: u64) {
@@ -41,6 +42,10 @@ fn table_at(frame: u64) {
   store(@table[0], 0)
 }
 ```
+
+`bitcast` makes only an address from a `u64` now. A literal has no type
+in `bitcast(...)`. Put the value in a typed constant, such as
+`const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
 
 The code that calls `bitcast` asserts that memory of that type is at `x`
 while the address is in use. The compiler does not check this. Thus each
@@ -74,6 +79,9 @@ array. [Index proofs](/docs/index-proofs/) gives the rules.
 
 `@p`, where `p` is an address, is an error, because `p` is already the
 address. `@` of a local or of a module variable is not implemented now.
+
+`@name` of a naked function or of the vector table gives a code address,
+a `u64`. See [Code addresses](/docs/boot-and-exceptions/#code-addresses).
 
 ## load and store
 

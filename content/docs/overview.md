@@ -9,8 +9,8 @@ source and writes one AArch64 ELF executable. The QEMU `virt` board is the
 target now.
 
 The goal of Wyst is low-level code that a reader can read and reason about.
-The language has 20 keywords, and it has no feature that kernel code does
-not use.
+The language has 20 keywords, and its features are mainly the ones that
+kernel code needs.
 
 ## A first look
 
@@ -51,11 +51,13 @@ a `DATA` value that is not a `u8`.
   specification. Its inputs and outputs have Wyst types. See
   [Assembly](/docs/assembly/).
 - **Cost stays visible.** The compiler keeps each call, branch, and device
-  or system register access that the source has. It removes only the work
+  or system register access that the source has. It computes operators on
+  constants, and it removes only the loads, stores, and temporary values
   that it adds itself. See [Code generation](/docs/code-generation/).
 - **No undefined behavior.** Integer arithmetic wraps. A division or a
-  shift takes only a constant that the compiler checks, so no operation
-  can fail at run time.
+  shift takes only a constant that the compiler checks, so no operator can
+  fail at run time. [`bitcast`](/docs/addresses/#bitcast) marks each place
+  where the program trusts a fact that the compiler cannot prove.
 - **No LLVM.** The compiler writes A64 machine words and the ELF file
   itself. Two builds of the same input give byte-identical files.
 
@@ -65,8 +67,8 @@ Wyst is experimental and has no version number. The compiler is a Rust
 program. Its source is in a private repository now.
 
 The language grows with one user: a new ARM64 kernel. A feature enters the
-compiler only when the next kernel module needs it. Thus the grammar has
-some forms that the compiler does not implement yet, such as `match` and
+compiler mainly when the next kernel module needs it. Thus the grammar has
+some forms that the compiler does not implement now, such as `match` and
 `else` after `if`. [Status](/docs/status/) lists what exists now.
 
 ## Next steps

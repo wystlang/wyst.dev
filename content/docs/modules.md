@@ -10,6 +10,11 @@ the name of the module. A directory is not a module: it only groups
 modules, and its name is a part of their module paths. The file
 `drivers/serial.wyst` is the module `drivers.serial`.
 
+Each module path starts at the root: the directory of the file that
+`wync build` takes. Thus a module in `drivers/` also imports
+`drivers.serial`, not `serial`. See
+[Using the compiler](/docs/compiler/#module-paths).
+
 This module is `drivers/serial.wyst`. It declares a UART and two `pub`
 items:
 
@@ -76,8 +81,10 @@ Two modules can import each other.
 - `@m.f` gives the address of the `pub` naked function `f`. See
   [Boot and exceptions](/docs/boot-and-exceptions/).
 
-A module variable, a struct, and an enum are local to their module now.
-A call to a function that is not `pub` is an error:
+A module variable, a struct, an enum, a device, a system register, and
+the vector table are local to their module now. A `pub` struct, enum,
+device, or system register is not implemented now. A call to a function
+that is not `pub` is an error:
 
 ```wyst fails
 import drivers.serial
@@ -139,3 +146,6 @@ fn align(address: u64) -> u64 {
   return aligned
 }
 ```
+
+A newline directly inside `(...)` or `[...]` has no effect. In a body in
+`{...}`, `,` also ends a statement or an entry, such as a field.

@@ -10,9 +10,8 @@ stack exists. The entry of a program is usually naked, because the CPU
 starts without a stack.
 
 A naked function has no parameters, and it returns `never`. It has no
-frame, so it cannot have a range or string loop, `const x = ... else {}`,
-an inline call, or a call to `semihost.test_exit`. No function can call
-it:
+frame, so it cannot have a local (`const`), a range or string loop, an
+inline call, or a call to `semihost.test_exit`. No function can call it:
 
 ```wyst fails
 #[naked]
@@ -147,11 +146,16 @@ fn stop() -> never {
   to the function of its entry.
 - The table goes in the section `.vectors` of the layout, which must have
   an alignment of at least 0x800.
-- `@name` gives the address of the table, a `u64`, so that the code can
-  write it to `VBAR_EL1`.
+- In its module, `@name` gives the address of the table, a `u64`, so that
+  the code can write it to `VBAR_EL1`.
 
 `trap()` is the instruction `brk #0`. At EL1 on `SP_EL1`, it takes the
 entry `current_spx_sync`.
+
+An entry that is not naked saves no register. Thus an entry that returns
+to the interrupted code is naked: an `asm` block saves the registers
+first, and an `asm -> never` block restores them and ends with `eret`.
+See [Blocks that do not return](/docs/assembly/#blocks-that-do-not-return).
 
 ## Sections
 
@@ -168,7 +172,7 @@ pub fn spin() -> never {
 ```
 
 The kernel puts the code of its EL0 modules in `.el0`, so that its page
-tables can give EL0 only these pages.
+tables let EL0 execute only these pages.
 
 ## Semihosting
 

@@ -25,8 +25,10 @@ change its parameters.
 ## Results
 
 A result is a value type, `Option<T>`, or `never`. A function with a
-result must not reach the end of its body: each path ends with `return` or
-with a call to a `never` function.
+result must not reach the end of its body. Each path ends with `return`,
+with a call to a `never` function such as `trap()`, with `for {}`, or with
+an [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
+function that returns `never` cannot use `return`.
 
 ```wyst fails
 fn sign(x: u8) -> u8 {
@@ -75,6 +77,8 @@ fn skip(x: u8) {
 ```text
 main.wyst:6:3: error: the `u8` result of this call is not used
 ```
+
+`_ = next(x)`, which drops the result, is not implemented now.
 
 A call with a value result is only one of these whole values now. It
 cannot be an operand or an argument, because a call changes the registers
@@ -154,5 +158,11 @@ functions that the entry or the exception vector table can reach, through
 calls and `@`. Thus a module can keep a function that the program does not
 use, at no cost.
 
-Methods (`fn T.f`), generic functions, and named arguments of a function
-are not implemented now. Named arguments are only for register writes.
+These forms are not implemented now:
+
+- methods (`fn T.f`) and generic functions;
+- the parameter modes `mut` and `xfer`;
+- a parameter in a register, such as `x: u64 in x0`;
+- named arguments of a function.
+
+Named arguments are only for register writes.
