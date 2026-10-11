@@ -1,2 +1,0 @@
-module demo
-fn identity<widen>(value: u64) -> u64 { return value }

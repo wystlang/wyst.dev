@@ -1,0 +1,60 @@
+// A bare-metal program for the QEMU `virt` board. It writes
+// "Hello, World!" to the PL011 UART and stops QEMU.
+import runtime.semihost
+
+// The registers of the PL011 UART. Each register has an access kind, a
+// size, a byte offset, and named bit fields.
+#[register_map]
+struct Pl011 {
+  DR:    readwrite u32 at 0x00 { DATA: u8 at 0..=7 }
+  FR:    readonly  u32 at 0x18 { BUSY: bool at 3, TXFF: bool at 5 }
+  IBRD:  readwrite u32 at 0x24 { DIVINT: u16 at 0..=15 }
+  FBRD:  readwrite u32 at 0x28 { DIVFRAC: u6 at 0..=5 }
+  LCR_H: readwrite u32 at 0x2c { FEN: bool at 4, WLEN: u2 at 5..=6 }
+  CR:    readwrite u32 at 0x30 { UARTEN: bool at 0, TXE: bool at 8, RXE: bool at 9 }
+}
+
+// QEMU puts the UART at this physical address.
+#[mmio(0x0900_0000)]
+const uart: Pl011
+
+// The CPU starts here with no stack. A naked function has no prologue,
+// so it can set the stack pointer before its first call.
+#[naked]
+pub fn _start() -> never {
+  asm(top in x0 = __stack_top) {
+    add sp, x0, #0
+  }
+
+  main()
+}
+
+fn main() -> never {
+  init()
+
+  for byte in "Hello, World!\n" {
+    write(byte)
+  }
+
+  // Semihosting asks QEMU to stop with exit status 0.
+  semihost.test_exit(0)
+}
+
+// Each `write` is one store to the device, and each `read` is one load.
+fn init() {
+  uart.CR.write(UARTEN = false, TXE = false, RXE = false)
+  for uart.FR.read().BUSY {}
+  uart.LCR_H.write(FEN = false)
+  // The 24 MHz clock divided by 13 + 1/64 gives about 115200 baud.
+  uart.IBRD.write(DIVINT = 13)
+  uart.FBRD.write(DIVFRAC = 1)
+  uart.LCR_H.write(FEN = true, WLEN = 3)
+  uart.CR.write(UARTEN = true, TXE = true, RXE = false)
+}
+
+// The compiler copies an inline function into each caller.
+#[inline]
+fn write(byte: u8) {
+  for uart.FR.read().TXFF {}
+  uart.DR.write(DATA = byte)
+}

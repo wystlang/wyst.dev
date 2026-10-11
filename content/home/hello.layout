@@ -1,0 +1,5 @@
+entry hello._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0008_0000
+section .text:   code   in ram align 16
+section .rodata: rodata in ram after .text align 16
+symbol __stack_top: u64 = 0x4010_0000

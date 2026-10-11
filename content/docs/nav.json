@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Getting started",
+    "pages": ["overview", "installation", "hello-world"]
+  },
+  {
+    "title": "Language tour",
+    "pages": [
+      "modules",
+      "values",
+      "constants-and-variables",
+      "operators",
+      "functions",
+      "control-flow",
+      "options",
+      "structs",
+      "addresses",
+      "index-proofs",
+      "enums-and-bit-structs",
+      "registers",
+      "system-registers",
+      "assembly",
+      "boot-and-exceptions"
+    ]
+  },
+  {
+    "title": "Building programs",
+    "pages": ["compiler", "layout-files", "formatting", "qemu"]
+  },
+  {
+    "title": "Reference",
+    "pages": ["syntax", "words", "code-generation", "elf-output"]
+  },
+  {
+    "title": "Design",
+    "pages": ["goals", "status"]
+  }
+]
