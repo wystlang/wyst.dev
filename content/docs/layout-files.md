@@ -34,10 +34,17 @@ symbol __bss_end:   u64 = end(.bss)
 | `section s: k in r after t align N` | The section starts at the end of the earlier section `t`, in the same region. |
 | `symbol n: u64 = v` | A `u64` name that each function can read. `v` is an integer, `start(s)`, or `end(s)`. |
 
+A line can name only a region or a section that an earlier line declares.
+Thus a region comes before its sections, and a section comes before each
+`after`, `start(s)`, or `end(s)` that names it.
+
 ## Placement
 
 - A section without `after` starts at the start of its region. The build
   aligns the start of each section up to its alignment.
+- Each instruction is 4 bytes. The compiler does not check that a `code`
+  section starts at a multiple of 4. Thus give each `code` section an
+  alignment of at least 4.
 - Each section must fit in its region and must not overlap another
   section. A `data` or `bss` section must be in a `readwrite` region.
 - The entry function is first in its section, so that section must start
@@ -53,8 +60,8 @@ symbol __bss_end:   u64 = end(.bss)
 | `.vectors` | The exception vector table | A `code` section, with an alignment of at least 0x800. |
 | `.name` | The functions with `#[section(.name)]` | A `code` section other than `.vectors`. |
 
-The other sections stay empty. A layout needs a section only when the
-program puts something in it.
+The other sections stay empty. The build always needs `.text`. It needs
+another section only when the program puts something in it.
 
 ## Symbols
 
@@ -64,4 +71,5 @@ function reads a symbol by its name, as `__stack_top` in
 on a symbol with an integer value. A symbol of the start or the end of a
 section uses an address that the code computes when it runs.
 
-Instructions are always 4-byte aligned.
+A module `const` or `var` cannot use a layout symbol. The checker computes
+these values, and the layout is not part of the language.

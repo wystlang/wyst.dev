@@ -76,10 +76,11 @@ static_assert(data.UXN)
 
 ## Literals
 
-A literal `{FIELD = value}` makes a value. Each field that the literal does
-not name is zero, or its fixed value. The literal cannot name a fixed
-field, and an enum field takes only `.Variant`. When each field is fixed,
-`{}` is the only literal.
+A literal `{FIELD = value}` makes a value. A literal is only the value of a
+constant or a local `const` of the struct type now. Each field that the
+literal does not name is zero, or its fixed value. The literal cannot name
+a fixed field, and an enum field takes only `.Variant`. When each field is
+fixed, `{}` is the only literal.
 
 The compiler computes the value of each literal. Thus each field value is
 a value that it can compute, such as a literal or a module constant. A
@@ -87,9 +88,10 @@ field value that is a parameter or a local is not implemented now.
 
 ## Values
 
-A value that is not a literal has the backing type. Thus a table of
-entries is an array of `u64`, and `frame | data` makes an entry for the
-address `frame`:
+A value that is not a literal, such as `load(slot)`, has the backing type.
+Each use of a constant or a local of the struct type, other than a field
+read `x.F`, also gives the backing type. Thus a table of entries is an
+array of `u64`, and `frame | data` makes an entry for the address `frame`:
 
 ```wyst
 #[bits]
@@ -117,4 +119,6 @@ imported module. When the compiler computes a value of the struct type,
 each fixed field must have its fixed value. A value at run time, such as a
 `load` of an entry, keeps its bits.
 
-Only a module constant or a local `const` can have the struct type now.
+Only a module constant or a local `const` can have the struct type now. A
+local `const` of the struct type that unwraps an
+[`Option`](/docs/options/) with `else` or `?` is not implemented now.

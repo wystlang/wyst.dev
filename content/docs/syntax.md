@@ -32,7 +32,9 @@ positions below. [Keywords and builtins](/docs/words/) lists each word.
 ```text
 Name     <- [A-Za-z_] [A-Za-z0-9_]*     // not a keyword; '_' alone discards
 VName    <- Name / [0-9] [0-9_]* [A-Za-z] [A-Za-z0-9_]*   // a variant name, such as 16K
-Integer  <- [0-9] [0-9_]* / '0x' [0-9A-Fa-f_]+ / '0b' [01_]+
+Integer  <- [0-9] [0-9_]*
+          / '0x' '_'* [0-9A-Fa-f] [0-9A-Fa-f_]*
+          / '0b' '_'* [01] [01_]*
 String   <- '"' (char / '\' [nrt0\\"] / '\x' hex hex)* '"'
 Comment  <- '//' to the end of the line
 Register <- an A64 register name from the A64 tables
@@ -42,14 +44,16 @@ List(A)  <- A (',' A)* ','?
 There is no `;`. A newline ends a statement or a body entry, but not after
 a binary operator, `,`, `.`, `(`, `[`, or `{`. A newline directly inside
 `(...)` or `[...]` has no effect. In a `{...}` body, `,` also ends an
-entry. `<` and `>` around type arguments are not operators.
+entry. `<` and `>` around type arguments are not operators. Where type
+arguments close, the first `>` of `>>`, `>=`, or `>>=` closes them, and the
+rest of the token follows.
 
 A token of digits and then a letter, such as `16K`, is a variant name. It
 is valid only after `.` and as a variant of an enum.
 
 The body of an `asm` block is not Wyst. Each line of the body, up to the
-first `}`, is one assembly line, and `//` starts a comment. A line cannot
-have `{`.
+first `}` that is not in a comment, is one assembly line, and `//` starts a
+comment. Outside a comment, a line cannot have `{`.
 
 ## Files and declarations
 
@@ -57,7 +61,7 @@ have `{`.
 File       <- Import* Item*
 Import     <- 'import' Name? Path
 Path       <- Name ('.' Name)*
-Item       <- Attrs? 'pub'? (Fn / Struct / Enum / Interface / Const / Var)
+Item       <- Attrs* 'pub'? (Fn / Struct / Enum / Interface / Const / Var)
             / 'static_assert' '(' Expr ')'
 Attrs      <- '#[' List(Name ('(' List(Expr) ')')?) ']'
 
@@ -137,8 +141,8 @@ vector table. A struct literal cannot be the direct condition of `if`,
 
 ## Limits
 
-Expressions, blocks, and type arguments nest at most 128 levels deep. The
-tree of an expression is at most 128 levels high: an operator, a field, an
-index, a call, an `asm` block, and a struct literal are each one level
-above their parts. The compiler recurses for each level, so the limit
-keeps deep input from overflowing its stack.
+Expressions, unary operands, blocks, and types nest at most 128 levels
+deep. The tree of an expression is at most 128 levels high: an operator, a
+field, an index, a call, a `?`, an `asm` block, and a struct literal are
+each one level above their parts. The compiler recurses for each level, so
+the limit keeps deep input from overflowing its stack.

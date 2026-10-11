@@ -4,7 +4,9 @@ summary: The one static AArch64 executable that the compiler writes.
 ---
 
 The compiler writes one static AArch64 executable in ELF64 format. The
-layout file gives each section its address and alignment. The writer does
+layout file gives the alignment of each section. The build computes the
+address of each section from the layout, as
+[Layout files](/docs/layout-files/#placement) tells. The ELF writer does
 not choose addresses.
 
 ## The file
@@ -14,12 +16,17 @@ not choose addresses.
 - The program headers follow the header. Each section with a memory size
   larger than zero gets one `PT_LOAD`. Its physical address is its virtual
   address, and its alignment is 0x1000. Code is read and execute. Read-only
-  data is read. Data and bss are read and write.
+  data is read. Data is read and write.
+- The compiler puts nothing in a `bss` section now. Thus a `bss` section
+  gets an `SHT_NOBITS` header of size 0 and no `PT_LOAD`. A module
+  variable with the value zero goes in `.data`.
 - Each section has a file offset that is congruent to its address modulo
-  0x1000, because `PT_LOAD` requires it. Bss uses no file bytes. All gaps
-  are zero bytes.
+  0x1000, because `PT_LOAD` requires it. All gaps are zero bytes.
 - After the loaded bytes come `.symtab`, `.strtab`, `.shstrtab`, and the
   section header table.
+- The section headers are the null header, one header for each layout
+  section in layout order (also for an empty section), and then the three
+  tables.
 
 ## Symbols
 
@@ -31,8 +38,9 @@ gives the names.
 ## Not in the file
 
 The file has no relocations, because the compiler resolves every address
-before it writes the file. It has no dynamic linking, position-independent
-code, thread-local storage, notes, debug data, or unwind tables.
+before it writes the file. It is not a position-independent executable
+(PIE). It has no dynamic linking, thread-local storage, notes, debug data,
+or unwind tables.
 
 ## Determinism
 

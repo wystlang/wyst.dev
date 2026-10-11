@@ -47,8 +47,9 @@ you with `brew pin qemu`, and upgrade it as a separate step.
 ## Your editor
 
 `wync fmt` gives each file one standard form, as `gofmt` does. It has no
-options. With no path, it reads standard input and writes standard output,
-so an editor can run it on save. For example, in Zed or Gram:
+style options and no configuration file. With no path, it reads standard
+input and writes standard output, so an editor can run it on save. For
+example, in Zed or Gram:
 
 ```json
 {

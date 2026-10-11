@@ -7,6 +7,9 @@ The operators take two operands of the same type and give that type, or a
 `bool` for a comparison. No operator has undefined behavior, and no
 operator can fail at run time.
 
+A call with a value result cannot be an operand now. Put its result in a
+local first, as [Functions](/docs/functions/#results-must-be-used) shows.
+
 ## Arithmetic
 
 `+`, `-`, and `*` wrap modulo 2^N for a `uN` value. For `x` equal to 255,
@@ -38,9 +41,9 @@ main.wyst:2:16: error: the divisor of `/` must be a literal or a module constant
 `&` and `|` are bitwise AND and OR. `~a` is the bitwise complement, in the
 bits of the type of `a`. `^` is not implemented now.
 
-`a << k` and `a >> k` shift `a` by `k` bits. `k` must be a constant less
-than the width of the type. `<<` drops the bits that move out of the type,
-and `>>` puts zeros in the high bits.
+`a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
+it must be a constant less than the width of that type. `<<` drops the
+bits that move out of the type, and `>>` puts zeros in the high bits.
 
 ```wyst
 const page_shift: u64 = 14
@@ -57,8 +60,9 @@ fn offset(address: u64) -> u64 {
 ## Comparisons
 
 `==`, `!=`, `<`, `<=`, `>`, and `>=` compare two integers of the same type
-and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. Comparisons do
-not chain: `a < b < c` is an error.
+and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. `==` and `!=`
+on a `bool` are not implemented now. Comparisons do not chain:
+`a < b < c` is an error.
 
 `!` gives the other `bool`. `&&` and `||` are not implemented now. Use
 nested `if` statements, or an early `return`.

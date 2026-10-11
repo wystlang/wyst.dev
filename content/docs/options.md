@@ -7,7 +7,9 @@ summary: Option results, else blocks, and the ? operator.
 
 `Option<T>` is a value of type `T`, or no value. `T` is a value type. Its
 variants are `.Some(value)` and `.None`. `Option<T>` is a function result
-now.
+now. The output `Option<u64>` of an `asm` block is also an `Option`, as
+[Assembly](/docs/assembly/#option-outputs) shows. `else` and `?` take a
+call with an `Option` result or such a block.
 
 ```wyst
 const slots: u64 = 8
@@ -54,8 +56,9 @@ fn add(table: @[slots]u64, key: u64) {
 
 `const index = find(table, key) else { return }` gives the value of
 `.Some` to `index`. When the result is `.None`, the `else` block runs. That
-block cannot use `index`, and it must not reach its end: it ends with
-`return`, `trap()`, or another `never` call.
+block cannot use `index`, and it must not reach its end. As a path of a
+[function](/docs/functions/#results) does, it ends with `return`, a call to
+a `never` function such as `trap()`, `for {}`, or an `asm -> never` block.
 
 `find(table, 0) else { trap() }` drops the value of `.Some`. It states that
 the key must be in the table.
@@ -102,7 +105,9 @@ fn distance(table: @[slots]u64, a: u64, b: u64) -> Option<u64> {
 }
 ```
 
-`?` is only the whole value of a statement or of `const` now.
+`?` is only the whole value of a statement or of `const` now. `?` gives
+the value of `.Some`, not an `Option`, so `else` or a second `?` cannot
+follow it.
 
 ## Not implemented now
 

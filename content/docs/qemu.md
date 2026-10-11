@@ -13,7 +13,7 @@ qemu-system-aarch64 -machine virt,gic-version=3 -cpu cortex-a76 -smp 4 \
 | Option | Why |
 | --- | --- |
 | `-machine virt,gic-version=3` | The QEMU `virt` board, with a GICv3 interrupt controller. The board gives a GICv2 by default. |
-| `-cpu cortex-a76` | The kernel uses 16 KiB pages. The default `cortex-a53` has no 16 KiB translation granule. |
+| `-cpu cortex-a76` | The board gives a 32-bit `cortex-a15` CPU by default. The kernel uses 16 KiB pages, and the 64-bit `cortex-a53` has no 16 KiB translation granule. |
 | `-smp 4` | Four CPUs. CPUs 1 to 3 stay off until the program starts them with the PSCI call `CPU_ON`. |
 | `-nographic` | The UART goes to the terminal. |
 | `-semihosting-config enable=on,target=native` | Lets `semihost.test_exit` stop QEMU. |
@@ -22,6 +22,8 @@ qemu-system-aarch64 -machine virt,gic-version=3 -cpu cortex-a76 -smp 4 \
 QEMU loads the ELF directly: there is no Linux image header. The CPU starts
 at EL1 at the entry, with `x0` equal to 0 and no device tree address. The
 program has the board to itself.
+
+To stop QEMU when the program does not stop it, press Ctrl-A, then X.
 
 ## The virt board
 

@@ -16,17 +16,24 @@ and the layout file. It writes one static AArch64 ELF executable.
 ## Module paths
 
 The root directory is the directory of `<file.wyst>`, and the module path
-of `<file.wyst>` is its name. `import a.b` names the module in
+of `<file.wyst>` is its name. This name must be a
+[name](/docs/syntax/#lexical-forms) that is not a keyword, so
+`my-mod.wyst` cannot be a module. `import a.b` names the module in
 `<root>/a/b.wyst`, and its module path is `a.b`. Each name must be equal to
-the name of the directory or the file, also in case.
+the name of the directory or the file, also in case. The exception is
+`import runtime.semihost`: the compiler supplies this module, and it reads
+no file for it.
+
+For `wync build kernel/src/boot.wyst`, the root is `kernel/src/`:
 
 ```text
 kernel/
-  boot.wyst          module boot
-  cpus.wyst          module cpus
-  el0/
-    console.wyst     module el0.console
   qemu_virt.layout
+  src/
+    boot.wyst        module boot
+    cpus.wyst        module cpus
+    el0/
+      console.wyst   module el0.console
 ```
 
 The build reads each module that `<file.wyst>` imports, directly or
@@ -48,7 +55,7 @@ indirectly. Imports can make a cycle.
 The build stops at the first error and prints one line to standard error:
 
 - A source or layout error is `file:line:col: error: message`.
-- A file system error is `path: message`.
+- A file system error or a file name error is `path: message`.
 - An error that has no source position, such as a branch out of range at
   link time, is the message only.
 
