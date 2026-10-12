@@ -9,8 +9,9 @@ summary: wync build, module paths, errors, exit status, symbols, and byte-identi
 wync build <file.wyst> --layout <layout-file> -o <output.elf>
 ```
 
-`wync build` reads the module `<file.wyst>`, each module that it imports,
-and the layout file. It writes one static AArch64 ELF executable.
+`wync build` reads the module `<file.wyst>`, the layout file, the module
+of the layout entry, and each module that they import. It writes one
+static AArch64 ELF executable.
 [Layout files](/docs/layout-files/) gives the format of the layout file.
 
 ## Module paths
@@ -18,26 +19,41 @@ and the layout file. It writes one static AArch64 ELF executable.
 The root directory is the directory of `<file.wyst>`, and the module path
 of `<file.wyst>` is its name. This name must be a
 [name](/docs/syntax/#lexical-forms) that is not a keyword, so
-`my-mod.wyst` cannot be a module. `import a.b` names the module in
-`<root>/a/b.wyst`, and its module path is `a.b`. Each name must be equal to
-the name of the directory or the file, also in case. The exception is
-`import runtime.semihost`: the compiler supplies this module, and it reads
-no file for it.
+`my-mod.wyst` cannot be a module. The target directory is the directory of
+the layout file. `import a.b` names the module in `<root>/a/b.wyst`, or
+else in `<target>/a/b.wyst`, and its module path is `a.b`. Each name must
+be equal to the name of the directory or the file, also in case. The
+exception is `import runtime.semihost`: the compiler supplies this module,
+and it reads no file for it.
 
-For `wync build kernel/src/boot.wyst`, the root is `kernel/src/`:
+A module path that names a file in both directories is an error, so a
+target module cannot hide a shared module. When the two directories are
+one directory, the file is one file.
+
+For `wync build kernel/src/kernel.wyst --layout
+kernel/qemu_virt/qemu_virt.layout`, the root is `kernel/src/` and the
+target directory is `kernel/qemu_virt/`:
 
 ```text
 kernel/
-  qemu_virt.layout
   src/
-    boot.wyst        module boot
-    cpus.wyst        module cpus
+    kernel.wyst        module kernel
+    pages.wyst         module pages
     el0/
-      console.wyst   module el0.console
+      root.wyst        module el0.root
+  qemu_virt/
+    qemu_virt.layout   entry boot._start
+    boot.wyst          module boot
+    cpus.wyst          module cpus
+    el0/
+      console.wyst     module el0.console
 ```
 
-The build reads each module that `<file.wyst>` imports, directly or
-indirectly. Imports can make a cycle.
+The build reads `<file.wyst>`, the module of the layout entry, and each
+module that they import, directly or indirectly. Imports can make a cycle.
+No module has to import the entry module. Thus the layout file selects the
+target: the shared modules stay in `src/`, and each target directory has
+its layout file and its target modules.
 
 ## What the build makes
 
