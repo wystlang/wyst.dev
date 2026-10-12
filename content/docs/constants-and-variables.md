@@ -11,8 +11,10 @@ computes its value, so the value is a constant: a literal, `true` or
 that the file imports, `size_of(T)`, `field_offset(T, f)`, `widen` or
 `truncate` of a constant, or an operator on constants. A
 [`#[bits]` struct](/docs/enums-and-bit-structs/#literals) literal and a
-field read `x.F` of a constant `x` are also constants. The type is
-optional when the value has a type:
+field read `x.F` of a constant `x` are also constants. A constant can
+also have an [enum type](/docs/enums-and-bit-structs/#enum-constants),
+with a value such as `.40Bits`. The type is optional when the value has a
+type:
 
 ```wyst
 const page_size: u64 = 16384

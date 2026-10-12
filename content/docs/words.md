@@ -12,10 +12,10 @@ name. A field and an argument can.
 | Keyword | Meaning | Now |
 | --- | --- | --- |
 | `import` | Imports a module. | yes |
-| `pub` | Exports a declaration. | functions and constants |
+| `pub` | Exports a declaration. | functions, constants, and enums |
 | `fn` | Declares a function. | yes, without methods and type parameters |
 | `struct` | Declares a struct. | plain, `#[register_map]`, and `#[bits]` structs |
-| `enum` | Declares an enum. | only as the type of a bit field |
+| `enum` | Declares an enum. | only as the type of a bit field or of a module constant |
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
 | `var` | Declares a variable. | module variables only |
