@@ -1,10 +1,10 @@
 ---
 title: ELF output
-summary: The one static AArch64 executable that the compiler writes.
+summary: The static AArch64 executable or raw image that the compiler writes.
 ---
 
-The compiler writes one static AArch64 executable in ELF64 format. The
-layout file gives the alignment of each section. The build computes the
+The compiler writes one static AArch64 executable in ELF64 format, or
+with `wync build --raw`, the raw image of the same build. The layout file gives the alignment of each section. The build computes the
 address of each section from the layout, as
 [Layout files](/docs/layout-files/#placement) tells. The ELF writer does
 not choose addresses.
@@ -41,6 +41,20 @@ The file has no relocations, because the compiler resolves every address
 before it writes the file. It is not a position-independent executable
 (PIE). It has no dynamic linking, thread-local storage, notes, debug data,
 or unwind tables.
+
+## Raw image
+
+A loader that copies an image to memory as it is, such as m1n1 on the
+Mac Studio, takes the raw image.
+
+- The raw image holds the bytes from the start of the first section to the
+  end of the last. Only a section with a memory size larger than zero
+  counts. All gaps are zero bytes.
+- The raw image has no header and no symbols. The loader gives the entry
+  address. m1n1 starts the image at its start plus 0x800, so the layout of
+  an image for the Mac Studio puts the entry there.
+- When the compiler cannot get the memory for the raw image, for example
+  because two sections are far apart, the build stops with an error.
 
 ## Determinism
 
