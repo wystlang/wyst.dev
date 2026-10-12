@@ -10,8 +10,9 @@ the name of the module. A directory is not a module: it only groups
 modules, and its name is a part of their module paths. The file
 `drivers/serial.wyst` is the module `drivers.serial`.
 
-Each module path starts at the root: the directory of the file that
-`wync build` takes. Thus a module in `drivers/` also imports
+Each module path starts at the root, the directory of the file that
+`wync build` takes, or else at the target directory, the directory of the
+layout file. Thus a module in `drivers/` also imports
 `drivers.serial`, not `serial`. See
 [Using the compiler](/docs/compiler/#module-paths).
 
