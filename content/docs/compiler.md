@@ -6,12 +6,14 @@ summary: wync build, module paths, errors, exit status, symbols, and byte-identi
 ## wync build
 
 ```sh
-wync build <file.wyst> --layout <layout-file> -o <output.elf>
+wync build <file.wyst> --layout <layout-file> [--raw] -o <output>
 ```
 
 `wync build` reads the module `<file.wyst>`, the layout file, the module
 of the layout entry, and each module that they import. It writes one
-static AArch64 ELF executable.
+static AArch64 ELF executable. With `--raw`, it writes the
+[raw image](/docs/elf-output/#raw-image) of the same build in place of the
+ELF file.
 [Layout files](/docs/layout-files/) gives the format of the layout file.
 
 ## Module paths

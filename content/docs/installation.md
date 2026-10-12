@@ -23,7 +23,7 @@ The executable is `wync/target/release/wync`. Put it on your `PATH`, then
 run it with no arguments. It prints its usage and stops with status 2:
 
 ```text
-usage: wync build <file.wyst> --layout <layout-file> -o <output.elf>
+usage: wync build <file.wyst> --layout <layout-file> [--raw] -o <output>
        wync fmt [<path>...]
        wync fmt --check <path>...
 ```
