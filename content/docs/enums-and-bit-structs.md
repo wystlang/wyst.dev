@@ -28,13 +28,63 @@ enum Granule: u2 {
 }
 ```
 
-A field of enum type takes `.Variant`, such as `TG0 = .16K`. It does not
-take an integer, so a reserved value that has no variant cannot be
-written. A read of an enum field gives its backing `uN`, because the
-hardware can hold a value that is no variant.
+A field of enum type takes `.Variant`, such as `TG0 = .16K`, or a
+constant of the enum type. It does not take an integer, so a reserved
+value that has no variant cannot be written. A read of an enum field gives
+its backing `uN`, because the hardware can hold a value that is no
+variant.
 
-An enum is only the type of a bit field now: of a register, or of a
-`#[bits]` struct.
+## Enum constants
+
+An enum is the type of a bit field, of a register or of a `#[bits]`
+struct, and the type of a module constant. A constant of an enum type
+takes `.Variant` or a constant of the same enum type. Thus one module
+gives the value of a field that another module writes, such as a fact of
+the target hardware.
+
+A module that imports module `m` names the `pub` enum `E` of `m` as `m.E`:
+
+```wyst platform/target.wyst
+pub enum PhysicalBits: u3 {
+  36Bits = 1
+  40Bits = 2
+  42Bits = 3
+}
+
+// The CPU of the target has 40-bit physical addresses.
+pub const physical_bits: PhysicalBits = .40Bits
+```
+
+```wyst
+import platform.target
+
+#[sysreg]
+const TCR_EL1: readwrite u64 {
+  IPS: target.PhysicalBits at 32..=34
+}
+
+fn init() {
+  TCR_EL1.write(IPS = target.physical_bits)
+}
+```
+
+A constant of an enum type does not take an integer:
+
+```wyst fails
+enum Granule: u2 {
+  4K = 0
+  64K = 1
+  16K = 2
+}
+
+const granule: Granule = 3
+```
+
+```text
+main.wyst:7:26: error: expected Granule, found an integer
+```
+
+A parameter, a local, and a variable cannot have an enum type now.
 
 ## Bit structs
 

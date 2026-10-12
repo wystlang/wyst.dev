@@ -79,12 +79,14 @@ Two modules can import each other.
 
 - `m.f(...)` calls the `pub` function `f` of module `m`.
 - `m.name` gives the value of the `pub` constant `name`.
+- `m.E` names the `pub` enum `E`. See
+  [Enums and bit structs](/docs/enums-and-bit-structs/#enum-constants).
 - `@m.f` gives the address of the `pub` naked function `f`. See
   [Boot and exceptions](/docs/boot-and-exceptions/).
 
-A module variable, a struct, an enum, a device, a system register, and
-the vector table are local to their module now. A `pub` struct, enum,
-device, or system register is not implemented now. A call to a function
+A module variable, a struct, a device, a system register, and the vector
+table are local to their module now. A `pub` struct, device, or system
+register is not implemented now. A call to a function
 that is not `pub` is an error:
 
 ```wyst fails

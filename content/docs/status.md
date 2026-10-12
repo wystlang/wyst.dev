@@ -25,8 +25,9 @@ This page lists both sides.
   `store`, `bitcast`, `widen`, and `truncate`.
 - Index proofs from constants, masks, range loops, conditions, calls, and
   writes.
-- Enums of bit fields, `#[bits]` structs, register maps, devices, arrays of
-  devices, and system registers.
+- Enums of bit fields and of module constants, `pub` enums, `#[bits]`
+  structs, register maps, devices, arrays of devices, and system
+  registers.
 - Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
   that do not return.
 - Naked functions, code addresses, the exception vector table, function
@@ -58,7 +59,7 @@ kernel needs it:
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
-| Structs, enums, devices, system registers, and the vector table of another module, and `pub` on a struct, an enum, a device, or a system register | A module uses only the `pub` functions, the `pub` constants, and `@m.f` of the `pub` naked functions of another module. |
+| Structs, devices, system registers, and the vector table of another module, and `pub` on a struct, a device, or a system register | A module uses only the `pub` functions, the `pub` constants, the `pub` enums, and `@m.f` of the `pub` naked functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |
@@ -75,7 +76,7 @@ kernel needs it:
 | A `#[bits]` struct as a parameter, a variable, or a result, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local `const` of the struct type. |
 | A `#[bits]` literal other than the value of a constant or a local `const`, such as an argument of `store` | Put the literal in a local `const` first. |
 | A `#[bits]` field value at run time | Field values are constants. |
-| Enum variants with payloads, such as `Some(u64)`, and enums outside bit fields | Enums are only bit field types. |
+| Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
 | An `asm` output of a type other than `u64` or `Option<u64>` | Use a `u64` output and `truncate`. |
 

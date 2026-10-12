@@ -123,9 +123,9 @@ that loops forever or stops the machine. See [Functions](/docs/functions/).
 ## Bit field types
 
 A bit field of a register or of a `#[bits]` struct can also have the type
-`uN`, an unsigned value of N bits with N from 1 to 64, or an enum. These
-types are only for bit fields. See
-[Enums and bit structs](/docs/enums-and-bit-structs/).
+`uN`, an unsigned value of N bits with N from 1 to 64, or an enum. `uN`
+is only for bit fields. An enum is also the type of a module constant.
+See [Enums and bit structs](/docs/enums-and-bit-structs/).
 
 A read of a `uN` field gives a `uN` value. A read of an enum field gives
 the backing `uN` of the enum. An operator, a comparison, and `widen` take
