@@ -1,6 +1,6 @@
 ---
 title: Boot and exceptions
-summary: Naked functions, the stack, code addresses, the exception vector table, sections, and semihosting.
+summary: Naked functions, the stack, code addresses, EL2 functions, the exception vector table, sections, and semihosting.
 ---
 
 ## Naked functions
@@ -9,9 +9,9 @@ summary: Naked functions, the stack, code addresses, the exception vector table,
 stack exists. The entry of a program is usually naked, because the CPU
 starts without a stack.
 
-A naked function has no parameters, and it returns `never`. It has no
-frame, so it cannot have a local (`const`), a range or string loop, an
-inline call, or a call to `semihost.test_exit`. No function can call it:
+A naked function returns `never`. It has no frame, so it cannot have a
+local (`const`), a range or string loop, an inline call, or a call to
+`semihost.test_exit`. No function can call it:
 
 ```wyst fails
 #[naked]
@@ -27,6 +27,42 @@ fn restart() {
 ```text
 main.wyst:7:3: error: a naked function cannot be called
 ```
+
+## Parameters
+
+A naked function can take parameters in `x0` to `x7`, as a call gives
+them. The parameters stay in these registers, so the function gives them
+to the call or the `eret` that ends it:
+
+- Each call in the function takes the parameters, in order, as its
+  arguments, and returns `never`. A call that returns can change `x0` to
+  `x17`.
+- A parameter can be only such an argument.
+- No `asm` line or input writes the register of a parameter, and no line
+  takes an exception, such as `hvc` or `svc`, because the handler can
+  change `x0` to `x17`.
+
+```wyst
+#[naked]
+pub fn _start(boot_args: u64) -> never {
+  asm(top in x1 = __stack_top) {
+    add sp, x1, #0
+  }
+
+  main(boot_args)
+}
+
+fn main(boot_args: u64) -> never {
+  for {}
+}
+```
+
+An `eret` keeps `x0` to `x7`, so a naked function that ends with `eret`
+gives its parameters to the naked function at which `eret` goes. The
+compiler does not check that this function takes the same parameters. On
+the Mac Studio, m1n1 gives the address of `boot_args` in `x0`, and the
+entry gives it to EL1 in this way, as [EL2 functions](#el2-functions)
+shows.
 
 ## The stack
 
@@ -92,6 +128,72 @@ fn start(cpu: u64) {
 The value of a constant cannot be the address of code, because only the
 linker places code.
 
+## EL2 functions
+
+`#[el2] fn` runs at EL2. m1n1 starts a kernel on the Mac Studio at EL2.
+The boot code and the per-core setup run at EL2, and then go to EL1 with
+`eret`.
+
+- The compiler checks the `asm` lines and the system register accesses of
+  an `#[el2]` function for EL2, and those of each other function for EL1.
+- An `#[el2]` function can call only `#[el2]` functions, and only an
+  `#[el2]` function can call one, because a callee runs at the EL of its
+  caller. A function of the vector table runs at EL1, so it cannot have
+  `#[el2]`.
+- `@f` of a naked function without `#[el2]` gives the address at which
+  `eret` goes to EL1.
+
+```wyst
+// RW makes EL1 AArch64.
+#[sysreg]
+const HCR_EL2: writeonly u64 {
+  RW: bool at 31
+}
+
+enum Mode: u4 {
+  EL1h = 0b0101
+}
+
+#[sysreg]
+const SPSR_EL2: writeonly u64 {
+  M: Mode at 0..=3
+  F: bool at 6
+  I: bool at 7
+  A: bool at 8
+  D: bool at 9
+}
+
+#[sysreg]
+const ELR_EL2: writeonly u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+#[naked]
+#[el2]
+pub fn _start(boot_args: u64) -> never {
+  HCR_EL2.write(RW = true)
+  SPSR_EL2.write(M = .EL1h, F = true, I = true, A = true, D = true)
+  ELR_EL2.write(ADDRESS = @el1)
+
+  asm -> never {
+    eret
+  }
+}
+
+#[naked]
+fn el1(boot_args: u64) -> never {
+  asm(top in x1 = __stack_top) {
+    add sp, x1, #0
+  }
+
+  main(boot_args)
+}
+
+fn main(boot_args: u64) -> never {
+  for {}
+}
+```
+
 ## The exception vector table
 
 `#[vector_table] const name = { entry = function }` declares the EL1
@@ -141,7 +243,8 @@ fn stop() -> never {
   `lower_aarch32`, each with `_sync`, `_irq`, `_fiq`, and `_serror`. Each
   entry is necessary. There is no default.
 - Each entry names a function of its module. The function has no
-  parameters and returns `never`. It can be naked, but not inline.
+  parameters and returns `never`. It can be naked, but not inline, and it
+  cannot have `#[el2]`.
 - The table is 0x800 bytes: 16 slots of 0x80 bytes. Each slot is one `b`
   to the function of its entry.
 - The table goes in the section `.vectors` of the layout, which must have

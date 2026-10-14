@@ -30,8 +30,9 @@ This page lists both sides.
   registers.
 - Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
   that do not return.
-- Naked functions, code addresses, the exception vector table, function
-  sections, and semihosting.
+- Naked functions with parameters, `#[el2]` functions, code addresses, the
+  exception vector table, function sections, and semihosting.
+- Implementation-defined system registers, by their encoding.
 - `wync build` and `wync fmt`.
 
 ## Not implemented now
