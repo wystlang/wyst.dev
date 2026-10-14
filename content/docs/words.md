@@ -58,13 +58,15 @@ name. A field and an argument can.
 | Attribute | On | Meaning |
 | --- | --- | --- |
 | `#[naked]` | `fn` | No prologue and no epilogue. |
+| `#[el2]` | `fn` | Runs at EL2, and the compiler checks it for EL2. |
 | `#[inline]` | `fn` | Copied into each caller. |
 | `#[section(.name)]` | `fn` | Puts the code in a section of the layout. |
 | `#[register_map]` | `struct` | The registers of a device. |
 | `#[bits]` | `struct` | The named bits of an integer. |
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
-| `#[sysreg]` | `const` | A system register. |
+| `#[sysreg]` | `const` | A system register of the A64 tables. |
+| `#[sysreg(S3_5_C15_C1_3)]` | `const` | An implementation-defined system register, by its encoding. |
 | `#[vector_table]` | `const` | The EL1 exception vector table. |
 
 Attribute names are not reserved.

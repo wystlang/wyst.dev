@@ -1,6 +1,6 @@
 ---
 title: System registers
-summary: Declare an AArch64 system register, then read and write its fields.
+summary: Declare an AArch64 system register, by its name or by its encoding, then read and write its fields.
 ---
 
 ## Declaring a system register
@@ -25,12 +25,11 @@ const SCTLR_EL1: readwrite u64 {
 }
 ```
 
-The name must be a system register of the A64 tables. The compiler checks
-each access for EL1, also in a function that runs at EL0, such as a
-function in the section `.el0`. Each access that the declaration gives
-must be possible at EL1: a read for `readonly` and `readwrite`, and a
-write for `writeonly` and `readwrite`. A register that needs a feature
-that the target does not have is an error:
+The name must be a system register of the A64 tables. Each access that
+the declaration gives must be possible at EL2, the highest EL of the code:
+a read for `readonly` and `readwrite`, and a write for `writeonly` and
+`readwrite`. A register that needs a feature that the target does not
+have is an error:
 
 ```wyst fails
 #[sysreg]
@@ -43,8 +42,71 @@ const ICC_NMIAR1_EL1: readonly u64 {
 main.wyst:2:23: error: `ICC_NMIAR1_EL1` cannot be read
 ```
 
+Each read and each write must be possible at the EL of its function: EL1,
+or EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions).
+The compiler checks a function that runs at EL0, such as a function in the
+section `.el0`, for EL1. Thus a function without `#[el2]` cannot read
+`VBAR_EL2`:
+
+```wyst fails
+#[sysreg]
+const VBAR_EL2: readonly u64 {
+  VBA: u53 at 11..=63
+}
+
+fn installed() -> bool {
+  return VBAR_EL2.read().VBA != 0
+}
+```
+
+```text
+main.wyst:7:19: error: `VBAR_EL2` can be read only at EL2, in an `#[el2]` function
+```
+
 The declaration is local to its module, and a `pub` system register is
 not implemented now.
+
+## Implementation-defined registers
+
+`#[sysreg(S3_5_C15_C1_3)] const NAME: access u64 { fields }` declares, by
+its encoding, an implementation-defined system register, which the A64
+tables do not name. The Apple cores have such registers for their FIQ
+sources and for the per-core setup of m1n1.
+
+```wyst
+// IMODE 0 turns off the FIQ of the performance counters.
+#[sysreg(S3_1_C15_C0_0)]
+const PMCR0_EL1: writeonly u64 {
+  IMODE: u3 at 8..=10
+}
+
+fn mask_counters() {
+  PMCR0_EL1.write(IMODE = 0)
+}
+```
+
+- The encoding is `S<op0>_<op1>_C<CRn>_C<CRm>_<op2>`, as the Arm
+  architecture writes it, in decimal with no leading zero.
+- The architecture keeps op0 = 3 with CRn = 11 or 15 for
+  implementation-defined registers, so each other encoding is an error,
+  also the encoding of a register that the tables name:
+
+```wyst fails
+#[sysreg(S3_0_C1_C0_0)]
+const SCTLR: readwrite u64 {
+  M: bool at 0
+}
+```
+
+```text
+main.wyst:1:10: error: `S3_0_C1_C0_0` is not implementation-defined: op0 must be 3, and CRn 11 or 15
+```
+
+- The name is free. The other rules of a system register apply, but not
+  the EL rules.
+- The tables do not give the EL of such a register, so a function at each
+  EL can access it, as its access kind lets. The declaration asserts that
+  the code accesses the register only at an EL that can.
 
 ## Reading and writing
 

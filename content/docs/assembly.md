@@ -35,8 +35,9 @@ IC, or TLBI operation of the A64 tables can use its Arm name, such as
 `tlbi vmalle1`. The tables have no other system operation, so a line such
 as `at s1e1r` is an error.
 
-The compiler checks each line for the kernel at EL1 on the QEMU `virt`
-target: the base A64 instructions, the atomic instructions of the
+The compiler checks each line for the kernel at EL1, or at EL2 in an
+[`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), on the QEMU
+`virt` target: the base A64 instructions, the atomic instructions of the
 Cortex-A76 (`FEAT_LSE`), and the GICv3 CPU interface (`FEAT_GICv3`). An
 instruction or a system register that needs a higher exception level or
 another feature is an error.

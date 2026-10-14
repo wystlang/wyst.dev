@@ -76,6 +76,10 @@ block, the first homes take the scratch registers above the deepest
 expression. The next homes take `x19` to `x28`, and the others are 8-byte
 stack slots.
 
+A naked function has no frame, so the home of its parameter N is `xN`. A
+call in it takes these parameters in order, so each argument is already in
+its register.
+
 An operation on a `uN` value with N below 64 clears the bits above N after
 `+`, `-`, `*`, `~`, and `<<`.
 

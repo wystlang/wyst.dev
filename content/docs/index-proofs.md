@@ -155,7 +155,7 @@ variable, the checker proves in the same way that `n` is at most the
 length of the array. For an array of 8, a call that passes 9 as `n` gives
 the error `the checker cannot prove that this argument is less than 9`.
 
-The entry is called by no code, so its parameters have no proof. When an
-index gets its value from a parameter of the entry, the error is at the
-index. For an array of 8, the error is
+No code calls the entry or a naked function, so their parameters have no
+proof. When an index gets its value from such a parameter, the error is at
+the index. For an array of 8, the error is
 `the checker cannot prove that the index is less than 8`.
