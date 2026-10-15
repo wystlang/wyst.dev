@@ -1,6 +1,6 @@
 ---
 title: Operators
-summary: Arithmetic that wraps, division and shifts by constants, comparisons, precedence, and assignment.
+summary: Arithmetic that wraps, division, remainder, and shifts by constants, comparisons, precedence, and assignment.
 ---
 
 The operators take two operands of the same type and give that type, or a
@@ -21,8 +21,17 @@ fn next(x: u8) -> u8 {
 }
 ```
 
-`a / b` divides without sign and drops the remainder. `b` must be a
-constant other than 0, so a division cannot fail:
+`a / b` divides without sign and drops the remainder, and `a % b` gives
+that remainder. `b` must be a constant other than 0, so a division cannot
+fail:
+
+```wyst
+const slots: u64 = 6
+
+fn slot(ticket: u64) -> u64 {
+  return ticket % slots
+}
+```
 
 ```wyst fails
 fn share(total: u64, parts: u64) -> u64 {
@@ -34,12 +43,27 @@ fn share(total: u64, parts: u64) -> u64 {
 main.wyst:2:16: error: the divisor of `/` must be a literal or a module constant
 ```
 
-`%` and unary `-` are not implemented now.
+`-a` is `0 - a`, so it wraps as `-` does: for `x` equal to 1, `-x` in a
+`u8` is 255. It is also `~a + 1`, so `x & -x` keeps only the lowest set
+bit of `x`:
+
+```wyst
+fn lowest_bit(x: u64) -> u64 {
+  return x & -x
+}
+```
 
 ## Bits
 
-`&` and `|` are bitwise AND and OR. `~a` is the bitwise complement, in the
-bits of the type of `a`. `^` is not implemented now.
+`&`, `|`, and `^` are bitwise AND, OR, and exclusive OR. `~a` is the
+bitwise complement, in the bits of the type of `a`. `x ^ 1` changes only
+the low bit, so it gives the other entry of a pair:
+
+```wyst
+fn partner(entry: u64) -> u64 {
+  return entry ^ 1
+}
+```
 
 `a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
 it must be a constant less than the width of that type. `<<` drops the
@@ -139,6 +163,22 @@ main.wyst:1:22: error: 255 + 1 does not fit in u8
 ```
 
 At run time, the same operation wraps.
+
+A constant `-a` is `0 - a`, so it is an error unless `a` is 0:
+
+```wyst fails
+const all: u8 = -1
+```
+
+```text
+main.wyst:1:17: error: -1 does not fit in u8
+```
+
+For a value with each bit of its type set, write `~0`:
+
+```wyst
+const all: u8 = ~0
+```
 
 ## Assignment
 

@@ -15,8 +15,9 @@ This page lists both sides.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
   `-=`,
   and local constants.
-- The operators `+`, `-`, `*`, `/` by a constant, `&`, `|`, `<<` and `>>`
-  by a constant, `~`, `!`, `&&`, `||`, and the six comparisons.
+- The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
+  `<<` and `>>` by a constant, unary `-`, `~`, `!`, `&&`, `||`, and the six
+  comparisons.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`.
 - `if` with `else` and `else if`, `for` in four forms, and `return`.
@@ -46,7 +47,6 @@ kernel needs it:
 | `if` and `match` as values | Refused. |
 | `for i in a ..= b` | Use `..<`. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
-| `%`, `^`, and unary `-` | Refused. |
 | `==` and `!=` on a `bool` | Use the `bool` itself, or `!`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
 | `var` in a function body | Locals do not change. |

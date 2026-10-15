@@ -123,6 +123,9 @@ each copy.
 | `truncate` | One `ubfx`. |
 | `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
 | `x / 2^k` | One `lsr`. |
+| `x % 2^k`, for `k` above 0 | One `and`. |
+| `x % c` for another constant `c` | The code of the constant `c`, then `udiv` and `msub`. |
+| `-x` | One `sub` from `xzr`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
