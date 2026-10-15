@@ -47,7 +47,8 @@ fn clear_all(table: @[slots]u64) {
 The condition of an `if` gives a bound to a parameter, a loop variable, or
 a `const` local `x` when it compares `x` with an expression `e`: `x < e`,
 `x <= e`, or `x == e`, with `x` on either side, and `!` of a comparison.
-The bound holds in the body of the `if`.
+The bound holds in the body of the `if`, and the bound of the false
+condition holds in its `else` block.
 
 ```wyst
 fn mark(table: @[4]u64, cursor: @u64) {
@@ -73,6 +74,36 @@ fn mark(table: @[4]u64, cursor: @u64) {
 
   store(@table[at], 1)
 }
+```
+
+A true `a && b` gives the bounds of `a` and of `b`, and a false `a || b`
+gives the bounds of the false `a` and of the false `b`. The code computes
+`b` only when `a` does not give the value, so the bound of `a` also holds
+in `b`:
+
+```wyst
+fn mark(table: @[4]u64, cursor: @u64) {
+  const at = load(cursor)
+  if at < 4 && load(@table[at]) == 0 {
+    store(@table[at], 1)
+  }
+}
+```
+
+A true `a || b` and a false `a && b` give no bound, because either operand
+can give the value:
+
+```wyst fails
+fn mark(table: @[4]u64, cursor: @u64, all: bool) {
+  const at = load(cursor)
+  if at < 4 || all {
+    store(@table[at], 1)
+  }
+}
+```
+
+```text
+main.wyst:4:18: error: the checker cannot prove that the index is less than 4
 ```
 
 Without the condition, the checker knows nothing about a value from

@@ -64,8 +64,37 @@ and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. `==` and `!=`
 on a `bool` are not implemented now. Comparisons do not chain:
 `a < b < c` is an error.
 
-`!` gives the other `bool`. `&&` and `||` are not implemented now. Use
-nested `if` statements, or an early `return`.
+## Logical operators
+
+`!` gives the other `bool`. `a && b` is true when `a` and `b` are true, and
+`a || b` is true when `a` or `b` is true. They take two `bool` values and
+give a `bool`.
+
+The code computes `b` only when `a` does not give the value: when `a` is
+true for `&&`, or false for `||`. Thus `a` can guard `b`. Here the load
+runs only when the index is less than 4, and the checker uses that bound,
+as [Index proofs](/docs/index-proofs/#conditions) shows:
+
+```wyst
+fn ready(table: @[4]u64, i: u64) -> bool {
+  return i < 4 && load(@table[i]) != 0
+}
+```
+
+In the condition of `if` or `for`, an operand of `&&` or `||` can be a call
+with a `bool` result, as `!` can:
+
+```wyst
+fn idle() -> bool {
+  return true
+}
+
+fn poll(count: u64) {
+  if count == 0 || !idle() {
+    trap()
+  }
+}
+```
 
 ## Precedence
 
@@ -84,8 +113,10 @@ From the lowest to the highest precedence:
 | 9 | `*` `/` `%` |
 
 Each level groups from the left. Unary operators bind tighter, and a
-field, an index, or a call binds tightest. Unlike C, `&` binds tighter than
-`==`, so `x & 1 == 1` tests the low bit of `x`:
+field, an index, or a call binds tightest. `&&` and `||` bind more loosely
+than the comparisons, so `a < 4 || b == 0 && c` is
+`(a < 4) || ((b == 0) && c)`. Unlike C, `&` binds tighter than `==`, so
+`x & 1 == 1` tests the low bit of `x`:
 
 ```wyst
 fn odd(x: u64) -> bool {
