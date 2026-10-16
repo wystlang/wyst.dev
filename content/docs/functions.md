@@ -26,7 +26,8 @@ change its parameters.
 
 A result is a value type, `Option<T>`, or `never`. A function with a
 result must not reach the end of its body. Each path ends with `return`,
-with a call to a `never` function such as `trap()`, with `for {}`, or with
+with a call to a `never` function such as `trap()`, with a `for {}`
+without a `break`, or with
 an [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
 function that returns `never` cannot use `return`.
 

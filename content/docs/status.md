@@ -21,7 +21,8 @@ This page lists both sides.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
-- `if` with `else` and `else if`, `for` in four forms, and `return`.
+- `if` with `else` and `else if`, `for` in four forms, with `..<` and `..=`
+  ranges, `break`, `continue`, and `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
   `store`, `bitcast`, `widen`, and `truncate`.
@@ -44,9 +45,8 @@ kernel needs it:
 
 | Form | Now |
 | --- | --- |
-| `match`, `break`, `continue`, labels, and `goto` | Refused. |
+| `match`, labels, and `goto` | Refused. |
 | `if` and `match` as values | Refused. |
-| `for i in a ..= b` | Use `..<`. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
 | `==` and `!=` on a `bool` | Use the `bool` itself, or `!`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |

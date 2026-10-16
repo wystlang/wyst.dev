@@ -114,8 +114,8 @@ fn start(base: u64, size: u64) {
 - In a block, one blank line goes between two statements when one of them
   has a body on more than one line, or when they are of different kinds.
   The kinds are a one-line guard, such as `if c { return }`; a jump, which
-  is `return`; and each other one-line statement. `break`, `continue`, and
-  `goto` are not implemented now. A jump in a block of two statements or
+  is `return`, `break`, or `continue`; and each other one-line statement.
+  `goto` is not implemented now. A jump in a block of two statements or
   less stays directly after the statement above it.
 - A one-line `const` stays directly above the next statement when that
   statement uses its name on its first line.
