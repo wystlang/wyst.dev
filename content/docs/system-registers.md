@@ -151,6 +151,27 @@ fn granule() -> u64 {
 A read of the enum field `TG0` gives its backing `u2` value, so
 `TCR_EL1.read().TG0 == 2` compares it with the value of `.16K`.
 
+`const s = NAME.read()` keeps the snapshot of one `mrs` in the local `s`,
+and each `s.F` reads field `F` from it, as for a device register. The
+number of a CPU of the Mac Studio uses four fields of one read of
+`MPIDR_EL1`:
+
+```wyst
+#[sysreg]
+const MPIDR_EL1: readonly u64 {
+  Core:    u8 at 0..=7
+  Cluster: u3 at 8..=10
+  Die:     u4 at 11..=14
+  P:       u1 at 16..=16
+}
+
+fn current() -> u64 {
+  const mpidr = MPIDR_EL1.read()
+  return 10 * widen(mpidr.Die) + 4 * widen(mpidr.Cluster) + widen(mpidr.Core) -
+    2 * widen(mpidr.P)
+}
+```
+
 ## Barriers
 
 The compiler does not remove, combine, or move a system register access,

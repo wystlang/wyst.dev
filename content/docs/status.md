@@ -29,8 +29,8 @@ This page lists both sides.
 - Index proofs from constants, masks, range loops, conditions, calls, and
   writes.
 - Enums of bit fields and of module constants, `pub` enums, `#[bits]`
-  structs, register maps, devices, arrays of devices, and system
-  registers.
+  structs, register maps, devices, arrays of devices, system registers,
+  and locals that keep a register snapshot.
 - Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
   that do not return.
 - Naked functions with parameters, `#[el2]` functions, code addresses, the
@@ -71,7 +71,6 @@ kernel needs it:
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
 | Slices `[]T` and slice expressions `a[i ..< j]` | Refused. |
-| A local that holds a register snapshot | Read each field with its own `read`. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A register offset or a bit position other than an integer literal | Write an integer literal. |
 | A `#[bits]` struct as a parameter, a variable, or a result, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local `const` of the struct type. |
