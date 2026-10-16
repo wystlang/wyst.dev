@@ -69,7 +69,7 @@ program. Its source is in a private repository now.
 The language grows with one user: a new ARM64 kernel. A feature enters the
 compiler mainly when the next kernel module needs it. Thus the grammar has
 some forms that the compiler does not implement now, such as `match` and
-`else` after `if`. [Status](/docs/status/) lists what exists now.
+`goto`. [Status](/docs/status/) lists what exists now.
 
 ## Next steps
 

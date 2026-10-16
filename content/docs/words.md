@@ -19,11 +19,11 @@ name. A field and an argument can.
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
 | `var` | Declares a variable. | module variables only |
-| `if` | Runs a block when a condition is true. | yes, without `else` |
-| `else` | The other block of `if`, or the block of an unwrap. | unwrap only |
-| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, and `for x in "text" {}`; not `..=`, and not `for x in` an array or a slice |
-| `break` | Leaves a loop. | no |
-| `continue` | Starts the next pass of a loop. | no |
+| `if` | Runs a block when a condition is true. | yes, not as a value |
+| `else` | The other block of `if`, or the block of an unwrap. | yes |
+| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, and `for x in "text" {}`; not `for x in` an array or a slice |
+| `break` | Leaves a loop. | yes |
+| `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
 | `match` | Selects a block by the variant of a value. | no |
 | `goto` | Jumps to a label. | no |

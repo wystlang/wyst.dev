@@ -89,13 +89,14 @@ fn wake(cpu: u64) {
 
 `name[i].R` is register `R` of device `i`. The compiler must prove that `i`
 is less than N, as for any index. See [Index proofs](/docs/index-proofs/).
+A call in the index, such as `redistributors[cpu() & 3]`, is not
+implemented now. Put the result of the call in a local first.
 
 ## Reading and writing
 
 `dev.R.read()` loads register `R` one time and gives a snapshot. `.F`
 reads field `F` from the snapshot. It does not access the device again. A
-local cannot hold a snapshot now. Thus a read in an expression gives one
-field:
+read in an expression gives one field:
 
 ```wyst
 #[register_map]
@@ -110,6 +111,27 @@ const uart: Pl011
 fn put(byte: u8) {
   for uart.FR.read().TXFF {}
   uart.DR.write(DATA = byte)
+}
+```
+
+`const s = dev.R.read()` keeps the snapshot in the local `s`. Each `s.F`
+reads field `F` from the same snapshot, with no more access. A field read
+is the only use of a snapshot. A naked function has no local, so each read
+in it gives one field.
+
+```wyst
+#[register_map]
+struct Pl011 {
+  FR: readonly u32 at 0x18 { BUSY: bool at 3, TXFF: bool at 5 }
+}
+
+#[mmio(0x0900_0000)]
+const uart: Pl011
+
+// One load of FR gives both flags.
+fn idle() -> bool {
+  const flags = uart.FR.read()
+  return !flags.BUSY && !flags.TXFF
 }
 ```
 

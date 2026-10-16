@@ -19,7 +19,8 @@ The checker knows the highest value of:
 - `a & b`, which is at most the highest value of `a` or of `b`;
 - `widen(x)`, which keeps the proof of `x`;
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
-  knows the highest value `h` of `n`;
+  knows the highest value `h` of `n`, and of `for i in a ..= n`, which is
+  `h`;
 - a `const` local, which keeps the proof of its value.
 
 A mask is the simplest proof. For an array of 8, `i & 7` is at most 7:
@@ -47,7 +48,8 @@ fn clear_all(table: @[slots]u64) {
 The condition of an `if` gives a bound to a parameter, a loop variable, or
 a `const` local `x` when it compares `x` with an expression `e`: `x < e`,
 `x <= e`, or `x == e`, with `x` on either side, and `!` of a comparison.
-The bound holds in the body of the `if`.
+The bound holds in the body of the `if`, and the bound of the false
+condition holds in its `else` block.
 
 ```wyst
 fn mark(table: @[4]u64, cursor: @u64) {
@@ -73,6 +75,36 @@ fn mark(table: @[4]u64, cursor: @u64) {
 
   store(@table[at], 1)
 }
+```
+
+A true `a && b` gives the bounds of `a` and of `b`, and a false `a || b`
+gives the bounds of the false `a` and of the false `b`. The code computes
+`b` only when `a` does not give the value, so the bound of `a` also holds
+in `b`:
+
+```wyst
+fn mark(table: @[4]u64, cursor: @u64) {
+  const at = load(cursor)
+  if at < 4 && load(@table[at]) == 0 {
+    store(@table[at], 1)
+  }
+}
+```
+
+A true `a || b` and a false `a && b` give no bound, because either operand
+can give the value:
+
+```wyst fails
+fn mark(table: @[4]u64, cursor: @u64, all: bool) {
+  const at = load(cursor)
+  if at < 4 || all {
+    store(@table[at], 1)
+  }
+}
+```
+
+```text
+main.wyst:4:18: error: the checker cannot prove that the index is less than 4
 ```
 
 Without the condition, the checker knows nothing about a value from
@@ -154,6 +186,9 @@ When the end `n` of `for i in a ..< n` is a parameter or a module
 variable, the checker proves in the same way that `n` is at most the
 length of the array. For an array of 8, a call that passes 9 as `n` gives
 the error `the checker cannot prove that this argument is less than 9`.
+For `for i in a ..= n`, `n` must be less than the length, so a call that
+passes 8 gives the error
+`the checker cannot prove that this argument is less than 8`.
 
 No code calls the entry or a naked function, so their parameters have no
 proof. When an index gets its value from such a parameter, the error is at
