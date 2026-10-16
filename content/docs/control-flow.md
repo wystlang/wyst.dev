@@ -78,7 +78,7 @@ Thus a function with a result can end with it, as `cost` does, and a
 statement after it is an error. The code computes `value` one time, so a
 `match` on a register read reads the register one time.
 
-A value cannot be a pattern of two arms:
+A value cannot be two patterns of the `match`, also in one arm:
 
 ```wyst fails
 fn size(x: u8) -> u8 {
