@@ -118,9 +118,10 @@ now. Thus the address that a function gives stays valid after the call:
 it comes from a parameter or from `bitcast`. A call statement that drops
 the address is an error, as for a value result.
 
-The result of a `pub` function cannot be an address now, because another
-module could then reach the fields of a struct of the module. An `Option`
-of an address is not implemented now.
+The result of a `pub` function cannot be an address now. No kernel code
+needs one, and the address of a struct would give another module the
+fields of a struct that is local to its module. An `Option` of an address
+is not implemented now.
 
 ## load and store
 
