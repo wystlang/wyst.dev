@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, the four forms of for, break and continue, and return.
+summary: if, match, the four forms of for, break and continue, and return.
 ---
 
 ## if
@@ -49,6 +49,49 @@ A body with one statement can stay on one line:
 fn check(count: u64) {
   if count > 4 { trap() }
 }
+```
+
+## match
+
+`match value {}` runs the arm that has a pattern equal to `value`, an
+integer. A pattern is an integer or a constant of the module, of the type
+of `value`. An arm can have more patterns, with `,` between them. `_`
+matches each other value, so it is the only pattern of the last arm:
+
+```wyst
+const wait: u16 = 4
+const send: u16 = 11
+
+fn cost(call: u16) -> u64 {
+  match call {
+    0, 1 { return 1 }
+    wait { return 2 }
+    send { return 3 }
+    _ { return 0 }
+  }
+}
+```
+
+Without `_`, no arm runs for a value that no pattern gives. When the
+`match` has `_` and no arm can reach its end, the `match` cannot either.
+Thus a function with a result can end with it, as `cost` does, and a
+statement after it is an error. The code computes `value` one time, so a
+`match` on a register read reads the register one time.
+
+A value cannot be a pattern of two arms:
+
+```wyst fails
+fn size(x: u8) -> u8 {
+  match x {
+    1, 2 { return 1 }
+    2 { return 2 }
+    _ { return 0 }
+  }
+}
+```
+
+```text
+main.wyst:4:5: error: the value 2 is already a pattern of this `match`
 ```
 
 ## for
@@ -162,7 +205,8 @@ When `value` is `.None`, `value?` also returns `.None`, as
 The grammar also has these forms. The compiler does not implement them
 now:
 
-- `match`, with variant patterns;
+- `match` on a value that is not an integer, and the variant patterns
+  `.V` and `.V(p)`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
 - `if` and `match` as values.

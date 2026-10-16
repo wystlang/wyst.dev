@@ -103,7 +103,7 @@ change before it enters:
 
 - concurrency clauses, contracts, and compile-time meta-operations;
 - a protocol for interactive outcomes: `Result`, `match`, and `?` do this
-  work (`Result` and `match` are not implemented now);
+  work (`Result`, and `match` on a `Result`, are not implemented now);
 - staged specialization (`comptime`, `where`) and conditional compilation
   (`#if`, `#target`): the build selects the target;
 - floating point, `switch`, `i8`, `i16`, and `i32`;

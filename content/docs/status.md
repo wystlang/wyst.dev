@@ -22,8 +22,8 @@ This page lists both sides.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
-- `if` with `else` and `else if`, `for` in four forms, with `..<` and `..=`
-  ranges, `break`, `continue`, and `return`.
+- `if` with `else` and `else if`, `match` on an integer, `for` in four
+  forms, with `..<` and `..=` ranges, `break`, `continue`, and `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
   `store`, `bitcast`, `widen`, and `truncate`.
@@ -46,7 +46,8 @@ kernel needs it:
 
 | Form | Now |
 | --- | --- |
-| `match`, labels, and `goto` | Refused. |
+| Labels and `goto` | Refused. |
+| `match` on a value that is not an integer, and the variant patterns `.V` and `.V(p)` | Refused. A `match` on an integer works. |
 | `if` and `match` as values | Refused. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
 | `==` and `!=` on a `bool` | Use the `bool` itself, or `!`. |
@@ -86,9 +87,5 @@ kernel needs it:
 
 Some kernel code uses a simpler form until the compiler has a feature:
 
-- A function result of type `@T`, so that one function gives the record of
-  a domain or the end of a channel.
-- `match` with integer patterns, so that the kernel call dispatch is one
-  `match`.
 - A string literal as a value, so that one function writes a line to the
   console.

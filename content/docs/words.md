@@ -25,7 +25,7 @@ name. A field and an argument can.
 | `break` | Leaves a loop. | yes |
 | `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
-| `match` | Selects a block by the variant of a value. | no |
+| `match` | Selects a block by the value or the variant of a value. | on an integer, without variant patterns |
 | `goto` | Jumps to a label. | no |
 | `mut` | A parameter mode, also marked at the call site. | no |
 | `xfer` | A parameter mode that takes ownership, also marked at the call site. | no |
