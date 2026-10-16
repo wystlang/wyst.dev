@@ -89,6 +89,8 @@ fn wake(cpu: u64) {
 
 `name[i].R` is register `R` of device `i`. The compiler must prove that `i`
 is less than N, as for any index. See [Index proofs](/docs/index-proofs/).
+A call in the index, such as `redistributors[cpu() & 3]`, is not
+implemented now. Put the result of the call in a local first.
 
 ## Reading and writing
 

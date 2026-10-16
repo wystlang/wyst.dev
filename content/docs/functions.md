@@ -46,21 +46,33 @@ main.wyst:1:4: error: function `sign` can reach its end without `return`
 
 ## Results must be used
 
-A value result must be used. `const` or `return` takes it, or it is the
-condition of `if` or `for`, also under `!`:
+A value result must be used. A call with a value result is a value as each
+other value is: an operand, an argument, a condition, or the value of
+`const`, an assignment, or `return`:
 
 ```wyst
+var count: u8 = 0
+
 fn above(x: u8, limit: u8) -> bool {
   return x > limit
 }
 
+fn next(x: u8) -> u8 {
+  return x + 1
+}
+
 fn clamp(x: u8) -> u8 {
-  if above(x, 100) {
-    return 100
+  if !above(x, 100) {
+    count = next(count)
+    return next(next(x)) + 1
   }
-  return x
+  return 100
 }
 ```
+
+The calls in a value run from left to right, and each load and each
+register access stays before or after each call, as in the source. Thus
+in `count + next(x)`, the value of `count` is the one before `next` runs.
 
 A call statement that drops the result is an error:
 
@@ -79,21 +91,6 @@ main.wyst:6:3: error: the `u8` result of this call is not used
 ```
 
 `_ = next(x)`, which drops the result, is not implemented now.
-
-A call with a value result is only one of these whole values now. It
-cannot be an operand or an argument, because a call changes the registers
-that hold the other operands. Put the result in a local first:
-
-```wyst
-fn next(x: u8) -> u8 {
-  return x + 1
-}
-
-fn after_next(x: u8) -> u8 {
-  const y = next(x)
-  return y + 1
-}
-```
 
 ## never
 

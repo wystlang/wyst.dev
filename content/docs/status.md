@@ -19,7 +19,8 @@ This page lists both sides.
   `<<` and `>>` by a constant, unary `-`, `~`, `!`, `&&`, `||`, and the six
   comparisons.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
-  and `#[inline]`.
+  and `#[inline]`. A call result is an operand, an argument, or the value
+  of an assignment.
 - `if` with `else` and `else if`, `for` in four forms, and `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
@@ -50,7 +51,7 @@ kernel needs it:
 | `==` and `!=` on a `bool` | Use the `bool` itself, or `!`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
 | `var` in a function body | Locals do not change. |
-| A call with a value result as an operand, an argument, or the value of an assignment, other than as an operand of `!`, `&&`, or `\|\|` in a condition | Put the result in a local. |
+| A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
 | `Option` as the type of a parameter or a variable | Unwrap the `Option` with `else` or `?`. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |

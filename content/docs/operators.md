@@ -5,10 +5,8 @@ summary: Arithmetic that wraps, division, remainder, and shifts by constants, co
 
 The operators take two operands of the same type and give that type, or a
 `bool` for a comparison. No operator has undefined behavior, and no
-operator can fail at run time.
-
-A call with a value result cannot be an operand now. Put its result in a
-local first, as [Functions](/docs/functions/#results-must-be-used) shows.
+operator can fail at run time. An operand can be a call, as
+[Functions](/docs/functions/#results-must-be-used) shows.
 
 ## Arithmetic
 

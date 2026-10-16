@@ -68,13 +68,19 @@ fn init() {
 | `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |
 | `x18` | Not used. |
-| `x19` to `x28` | Homes of locals and loop values, which a callee saves. |
+| `x19` to `x28` | Homes of locals, loop values, and values that wait while a call runs, which a callee saves. |
 | `x29`, `x30` | The frame pointer and the return address. |
 
 Each local has a home. In a function without a call and without an `asm`
 block, the first homes take the scratch registers above the deepest
 expression. The next homes take `x19` to `x28`, and the others are 8-byte
 stack slots.
+
+A call can change `x0` to `x17`. Thus in `load(p) + f()`, the value of
+`load(p)` waits in a home while `f` runs, and so does each argument before
+the last argument with a call. A constant, a layout symbol, or a local
+does not wait, because no call changes it: the code computes it after the
+call.
 
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in
