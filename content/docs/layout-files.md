@@ -54,7 +54,7 @@ Thus a region comes before its sections, and a section comes before each
 | Section | Holds | Rule |
 | --- | --- | --- |
 | `.text` | Functions | A `code` section. |
-| `.rodata` | String literals | A `rodata` section. |
+| `.rodata` | String literals, each one its `u64` length and then its bytes | A `rodata` section, with an alignment of at least 8. |
 | `.data` | Module variables | A `data` section, with an alignment of at least the largest variable. |
 | `.vectors` | The exception vector table | A `code` section, with an alignment of at least 0x800. |
 | `.name` | The functions with `#[section(.name)]` | A `code` section other than `.vectors`. |

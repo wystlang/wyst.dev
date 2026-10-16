@@ -38,7 +38,7 @@ name. A field and an argument can.
 | --- | --- | --- |
 | `bool`, `u8`, `u16`, `u32`, `u64` | Value types. | yes |
 | `i64` | The signed 64-bit integer. | no |
-| `string` | A string value. | no: a string literal is only the head of a `for` loop |
+| `string` | A string value. | as the type of a parameter |
 | `never` | The type of a function that does not return. | yes |
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result and an `asm` output |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |

@@ -13,6 +13,7 @@ This page lists both sides.
 - Modules, imports with aliases, `pub` functions, constants, and system
   registers.
 - The value types `bool`, `u8`, `u16`, `u32`, and `u64`, and `never`.
+- `string` parameters, with a string literal as the argument.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
   `-=`,
   and local constants.
@@ -58,7 +59,7 @@ kernel needs it:
 | `Option` as the type of a parameter or a variable | Unwrap the `Option` with `else` or `?`. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
-| A string literal as a value | A string literal is only the head of a `for` loop. |
+| `string` as the type of a local, a variable, a field, or a result | `string` is only the type of a parameter. Give the string literal as the argument. |
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
@@ -82,10 +83,3 @@ kernel needs it:
 | Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
 | An `asm` output of a type other than `u64` or `Option<u64>` | Use a `u64` output and `truncate`. |
-
-## Waiting in the kernel
-
-Some kernel code uses a simpler form until the compiler has a feature:
-
-- A string literal as a value, so that one function writes a line to the
-  console.

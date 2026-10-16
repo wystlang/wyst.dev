@@ -18,8 +18,9 @@ fn max(a: u64, b: u64) -> u64 {
 }
 ```
 
-A parameter has a value type or an address type, which
-[Addresses and memory](/docs/addresses/) describes. A function cannot
+A parameter has a value type, an address type, which
+[Addresses and memory](/docs/addresses/) describes, or `string`, which
+[Values and types](/docs/values/#strings) describes. A function cannot
 change its parameters.
 
 ## Results

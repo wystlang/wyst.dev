@@ -163,8 +163,9 @@ fn add_through(first: u64, last: u64) {
 }
 ```
 
-`for byte in "text" {}` runs its body one time for each byte of a string
-literal, as [Values and types](/docs/values/#strings) shows.
+`for byte in text {}` runs its body one time for each byte of `text`, a
+string literal or a `string` parameter, as
+[Values and types](/docs/values/#strings) shows.
 
 ## break and continue
 
