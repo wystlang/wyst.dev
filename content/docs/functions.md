@@ -24,7 +24,7 @@ change its parameters.
 
 ## Results
 
-A result is a value type, `Option<T>`, or `never`. A function with a
+A result is a value type, an address type, `Option<T>`, or `never`. A function with a
 result must not reach the end of its body. Each path ends with `return`,
 with a call to a `never` function such as `trap()`, with a `for {}`
 without a `break`, or with
@@ -47,9 +47,9 @@ main.wyst:1:4: error: function `sign` can reach its end without `return`
 
 ## Results must be used
 
-A value result must be used. A call with a value result is a value as each
-other value is: an operand, an argument, a condition, or the value of
-`const`, an assignment, or `return`:
+A value result and an address result must be used. A call with a value
+result is a value as each other value is: an operand, an argument, a
+condition, or the value of `const`, an assignment, or `return`:
 
 ```wyst
 var count: u8 = 0

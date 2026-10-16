@@ -64,7 +64,7 @@ fn init() {
 | Registers | Use |
 | --- | --- |
 | `x0` to `x7` | Parameters. |
-| `x0` | A value result. |
+| `x0` | A value result or an address result. |
 | `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |
 | `x18` | Not used. |

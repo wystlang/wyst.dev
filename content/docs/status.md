@@ -66,7 +66,8 @@ kernel needs it:
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |
 | `load` and `store` of a struct or an array | Load or store each field. |
-| An address as a function result, a module variable, or a field | An address is only the type of a parameter or a local. Repeat the place in each function. |
+| An address as a module variable or a field | An address is only the type of a parameter, a local, or a result. Keep a `u64`, and make the address with `bitcast`. |
+| An address as the result of a `pub` function, and an `Option` of an address | Refused. A function that is not `pub` can give an address. |
 | `@` of a local or of a module variable | Refused. |
 | `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct of the module, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |

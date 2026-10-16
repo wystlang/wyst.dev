@@ -27,9 +27,9 @@ fn next(base: @u64) {
 main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
-An address is only the type of a parameter or a local now. A result, a
-module variable, and memory cannot hold an address. Thus a function cannot
-keep an address after the call.
+An address is the type of a parameter, a local, or a result. A module
+variable and memory cannot hold an address now. Thus a function cannot
+keep an address after the call, except through its result.
 
 ## bitcast
 
@@ -82,6 +82,46 @@ address. `@` of a local or of a module variable is not implemented now.
 
 `@name` of a naked function or of the vector table gives a code address,
 a `u64`. See [Code addresses](/docs/boot-and-exceptions/#code-addresses).
+
+## Address results
+
+A function can give an address, so one function names a place, and each
+caller uses the call as an address:
+
+```wyst
+struct Domain {
+  root: u64
+  frames: u64
+}
+
+const count: u64 = 256
+
+var records: u64 = 0
+
+fn record(domain: u64) -> @Domain {
+  const all: @[count]Domain = bitcast(records)
+  return @all[domain & (count - 1)]
+}
+
+fn take(domain: u64) {
+  const own = record(domain)
+  store(@own.frames, load(@own.frames) - 1)
+}
+
+fn root_of(domain: u64) -> u64 {
+  return load(@record(domain).root)
+}
+```
+
+No address points to a local, because `@` of a local is not implemented
+now. Thus the address that a function gives stays valid after the call:
+it comes from a parameter or from `bitcast`. A call statement that drops
+the address is an error, as for a value result.
+
+The result of a `pub` function cannot be an address now. No kernel code
+needs one, and the address of a struct would give another module the
+fields of a struct that is local to its module. An `Option` of an address
+is not implemented now.
 
 ## load and store
 
