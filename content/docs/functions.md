@@ -21,7 +21,9 @@ fn max(a: u64, b: u64) -> u64 {
 A parameter has a value type, an address type, which
 [Addresses and memory](/docs/addresses/) describes, or `string`, which
 [Values and types](/docs/values/#strings) describes. A function cannot
-change its parameters.
+change its parameters. No call starts the entry or a naked function, so no
+string literal gives their parameters, and a `string` parameter of one of
+them is not implemented now.
 
 ## Results
 

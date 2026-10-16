@@ -59,7 +59,7 @@ kernel needs it:
 | `Option` as the type of a parameter or a variable | Unwrap the `Option` with `else` or `?`. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
-| `string` as the type of a local, a variable, a field, or a result | `string` is only the type of a parameter. Give the string literal as the argument. |
+| `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
