@@ -19,7 +19,8 @@ The checker knows the highest value of:
 - `a & b`, which is at most the highest value of `a` or of `b`;
 - `widen(x)`, which keeps the proof of `x`;
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
-  knows the highest value `h` of `n`;
+  knows the highest value `h` of `n`, and of `for i in a ..= n`, which is
+  `h`;
 - a `const` local, which keeps the proof of its value.
 
 A mask is the simplest proof. For an array of 8, `i & 7` is at most 7:
@@ -185,6 +186,9 @@ When the end `n` of `for i in a ..< n` is a parameter or a module
 variable, the checker proves in the same way that `n` is at most the
 length of the array. For an array of 8, a call that passes 9 as `n` gives
 the error `the checker cannot prove that this argument is less than 9`.
+For `for i in a ..= n`, `n` must be less than the length, so a call that
+passes 8 gives the error
+`the checker cannot prove that this argument is less than 8`.
 
 No code calls the entry or a naked function, so their parameters have no
 proof. When an index gets its value from such a parameter, the error is at
