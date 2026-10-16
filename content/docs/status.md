@@ -10,7 +10,8 @@ This page lists both sides.
 
 ## Implemented now
 
-- Modules, imports with aliases, `pub` functions and constants.
+- Modules, imports with aliases, `pub` functions, constants, and system
+  registers.
 - The value types `bool`, `u8`, `u16`, `u32`, and `u64`, and `never`.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
   `-=`,
@@ -60,7 +61,7 @@ kernel needs it:
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
-| Structs, devices, system registers, and the vector table of another module, and `pub` on a struct, a device, or a system register | A module uses only the `pub` functions, the `pub` constants, the `pub` enums, and `@m.f` of the `pub` naked functions of another module. |
+| Structs, devices, and the vector table of another module, and `pub` on a struct or a device | A module uses only the `pub` functions, constants, enums, and system registers, and `@m.f` of the `pub` naked functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |

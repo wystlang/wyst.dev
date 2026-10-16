@@ -63,8 +63,62 @@ fn installed() -> bool {
 main.wyst:7:19: error: `VBAR_EL2` can be read only at EL2, in an `#[el2]` function
 ```
 
-The declaration is local to its module, and a `pub` system register is
-not implemented now.
+## Sharing a register
+
+`pub` lets each module that imports the module of a system register use
+the register: `m.NAME.read()` and `m.NAME.write(F = v, ...)` access the
+`pub` register `NAME` of module `m`. The EL rules apply at the function
+that accesses it. Thus a register that two modules use has one
+declaration. This module declares the control register of the EL1
+physical timer:
+
+```wyst cpu/timer.wyst
+// The timer signals its interrupt while ENABLE is 1, IMASK is 0, and
+// ISTATUS is 1.
+#[sysreg]
+pub const CNTP_CTL_EL0: readwrite u64 {
+  ENABLE:  bool at 0
+  IMASK:   bool at 1
+  ISTATUS: bool at 2
+}
+
+#[sysreg]
+const CNTP_TVAL_EL0: readwrite u64 {
+  TimerValue: u32 at 0..=31
+}
+
+pub fn start(ticks: u32) {
+  CNTP_TVAL_EL0.write(TimerValue = ticks)
+  CNTP_CTL_EL0.write(ENABLE = true)
+}
+```
+
+Another module reads the status of the same register:
+
+```wyst
+import cpu.timer
+
+fn pending() -> bool {
+  return timer.CNTP_CTL_EL0.read().ISTATUS
+}
+```
+
+A register that is not `pub` is local to its module:
+
+```wyst fails
+import cpu.timer
+
+fn ticks() -> u32 {
+  return timer.CNTP_TVAL_EL0.read().TimerValue
+}
+```
+
+```text
+main.wyst:4:16: error: system register `CNTP_TVAL_EL0` of module `cpu.timer` is not `pub`
+```
+
+An enum field of a `pub` register takes `.Variant` in each module, also
+when the enum is not `pub`, because the field gives the enum.
 
 ## Implementation-defined registers
 
