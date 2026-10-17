@@ -6,7 +6,9 @@ summary: Named values of a bit field, and named bits of an integer in memory.
 ## Enums
 
 An enum gives names to the values of a bit field, in place of numbers. It
-has a backing type `uN`, and each variant has a value that fits in it:
+has a backing type `uN`, and each variant has a value that fits in it. An
+enum without a backing type, a variant without a value, and a variant with
+values, such as `Ok(u64)`, are not implemented now:
 
 ```wyst
 enum Shareability: u2 {

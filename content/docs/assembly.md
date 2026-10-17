@@ -46,7 +46,8 @@ another feature is an error.
 
 An input is `name = value`, or `name` alone, which is `name = name`. The
 value has a value type. An untyped integer is a `u64`. A block has at most
-9 inputs.
+9 inputs. A typed input, `name: T in xN`, and a `scratch` operand are not
+implemented now.
 
 Where an instruction takes a general register, a line names an input:
 `name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
@@ -142,8 +143,9 @@ fn try_lock(word: u64) -> u64 {
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. The `const` can also have a
 `#[bits]` struct type with backing type `u64`. Only the value of a `const`
-can be a block with an output. A block with a `u64` output has at most 8
-inputs.
+can be a block with an output now. A block with a `u64` output has at most 8
+inputs. An output in a named register, `-> name in xN`, an output with a
+value, and a list of outputs, `-> (a, b)`, are not implemented now.
 
 ## Option outputs
 

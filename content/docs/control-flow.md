@@ -96,7 +96,7 @@ main.wyst:4:5: error: the value 2 is already a pattern of this `match`
 
 ## for
 
-`for` is the one loop. It has four forms.
+`for` is the one loop. The compiler implements four forms of it now.
 
 `for {}` runs its body until a `break` or a `return` leaves the loop. A
 `for {}` without a `break` does not end, so a statement after it is an

@@ -5,7 +5,9 @@ summary: What the compiler implements now, and the grammar that waits for a user
 
 Wyst grows mainly when its one user, a new kernel, needs a feature. Thus the
 grammar has forms that the compiler does not implement now. The compiler
-refuses such a form, and these pages say "not implemented now" for it.
+refuses such a form with an error that names the form and says "not
+implemented now", such as ``error: `goto` is not implemented now``, and
+these pages say "not implemented now" for it.
 This page lists both sides.
 
 ## Implemented now
@@ -74,12 +76,14 @@ kernel needs it:
 | `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct of the module, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
-| Slices `[]T` and slice expressions `a[i ..< j]` | Refused. |
+| Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A register offset or a bit position other than an integer literal | Write an integer literal. |
 | A `#[bits]` struct as a parameter, a variable, or a result, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local `const` of the struct type. |
 | A `#[bits]` literal other than the value of a constant or a local `const`, such as an argument of `store` | Put the literal in a local `const` first. |
 | A `#[bits]` field value at run time | Field values are constants. |
 | Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
+| An enum without a backing type, and a variant without a value | Give the backing type `uN` and the value of each variant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
 | An `asm` output of a type other than `u64` or `Option<u64>` | Use a `u64` output and `truncate`. |
+| An `asm` block with an output in an expression, such as `1 + asm -> v {...}` | Give the block to a local `const`, then use the local. |

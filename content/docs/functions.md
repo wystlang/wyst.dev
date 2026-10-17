@@ -21,7 +21,8 @@ fn max(a: u64, b: u64) -> u64 {
 A parameter has a value type, an address type, which
 [Addresses and memory](/docs/addresses/) describes, or `string`, which
 [Values and types](/docs/values/#strings) describes. A function cannot
-change its parameters. No call starts the entry or a naked function, so no
+change its parameters, because a `mut` parameter is not implemented now.
+No call starts the entry or a naked function, so no
 string literal gives their parameters, and a `string` parameter of one of
 them is not implemented now.
 
@@ -166,4 +167,4 @@ These forms are not implemented now:
 - a parameter in a register, such as `x: u64 in x0`;
 - named arguments of a function.
 
-Named arguments are only for register writes.
+Named arguments are only for register writes now.
