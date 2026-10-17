@@ -142,10 +142,11 @@ fn try_lock(word: u64) -> u64 {
 
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. The `const` can also have a
-`#[bits]` struct type with backing type `u64`. Only the value of a `const`
-can be a block with an output now. A block with a `u64` output has at most 8
-inputs. An output in a named register, `-> name in xN`, an output with a
-value, and a list of outputs, `-> (a, b)`, are not implemented now.
+`#[bits]` struct type with backing type `u64`. Only the value of a local
+`const` can be a block with an output now. A block with a `u64` output has
+at most 8 inputs. An output in a named register, `-> name in xN`, an
+output with a value, and a list of outputs, `-> (a, b)`, are not
+implemented now.
 
 ## Option outputs
 
