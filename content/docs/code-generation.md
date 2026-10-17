@@ -136,9 +136,10 @@ each copy.
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. |
+| A string loop | Its cursor and its end are in homes. One `ldr` reads the length before the loop, and each pass reads its byte with one `ldrb`. The test is `cmp` and `b.lo`. |
 | `const x = f() else {}` | The call, then `cbnz x0`. |
 | `trap()` | `brk #0`. |
-| A string, a function address, or a section symbol | `adrp` and `add`. |
+| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register. |
 | A module variable | `adrp` and one load or store. |
 | `v += x`, `v -= x` | `adrp` and one load, `add` or `sub` (and a `ubfx` for a type below 64 bits), then `adrp` and one store. |
 

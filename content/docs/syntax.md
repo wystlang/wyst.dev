@@ -4,7 +4,7 @@ summary: The grammar of Wyst on one page.
 ---
 
 This page gives the full grammar of Wyst. The grammar has some forms that
-the compiler does not implement now, such as `match` and `interface`.
+the compiler does not implement now, such as `goto` and `interface`.
 [Status](/docs/status/) lists them. The pages of the
 [Language tour](/docs/modules/) give the meaning of each form.
 
@@ -110,7 +110,7 @@ Bind    <- ('const' / 'var') Name (':' Type ('in' Register)?)? '=' Expr
 If      <- 'if' Expr Block ('else' (If / Block))?
 For     <- 'for' (Name 'in' Expr (('..<' / '..=') Expr)? / Expr)? Block
 Match   <- 'match' Expr '{' (List(Pattern) Block)* '}'
-Pattern <- '.' VName ('(' List(Pattern) ')')? / Name
+Pattern <- '.' VName ('(' List(Pattern) ')')? / Integer / Name
 Jump    <- 'break' / 'continue' / 'return' Expr? / 'goto' Name
 Assign  <- Expr ('=' / '+=' / '-=' / '*=' / '/=' / '%=' / '&=' / '|='
                  / '^=' / '<<=' / '>>=') Expr

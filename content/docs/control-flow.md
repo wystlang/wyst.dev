@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, the four forms of for, break and continue, and return.
+summary: if, match, the four forms of for, break and continue, and return.
 ---
 
 ## if
@@ -51,9 +51,52 @@ fn check(count: u64) {
 }
 ```
 
+## match
+
+`match value {}` runs the arm that has a pattern equal to `value`, an
+integer. A pattern is an integer or a constant of the module, of the type
+of `value`. An arm can have more patterns, with `,` between them. `_`
+matches each other value, so it is the only pattern of the last arm:
+
+```wyst
+const wait: u16 = 4
+const send: u16 = 11
+
+fn cost(call: u16) -> u64 {
+  match call {
+    0, 1 { return 1 }
+    wait { return 2 }
+    send { return 3 }
+    _ { return 0 }
+  }
+}
+```
+
+Without `_`, no arm runs for a value that no pattern gives. When the
+`match` has `_` and no arm can reach its end, the `match` cannot either.
+Thus a function with a result can end with it, as `cost` does, and a
+statement after it is an error. The code computes `value` one time, so a
+`match` on a register read reads the register one time.
+
+A value cannot be two patterns of the `match`, also in one arm:
+
+```wyst fails
+fn size(x: u8) -> u8 {
+  match x {
+    1, 2 { return 1 }
+    2 { return 2 }
+    _ { return 0 }
+  }
+}
+```
+
+```text
+main.wyst:4:5: error: the value 2 is already a pattern of this `match`
+```
+
 ## for
 
-`for` is the one loop. It has four forms.
+`for` is the one loop. The compiler implements four forms of it now.
 
 `for {}` runs its body until a `break` or a `return` leaves the loop. A
 `for {}` without a `break` does not end, so a statement after it is an
@@ -120,8 +163,9 @@ fn add_through(first: u64, last: u64) {
 }
 ```
 
-`for byte in "text" {}` runs its body one time for each byte of a string
-literal, as [Values and types](/docs/values/#strings) shows.
+`for byte in text {}` runs its body one time for each byte of `text`, a
+string literal or a `string` parameter, as
+[Values and types](/docs/values/#strings) shows.
 
 ## break and continue
 
@@ -162,7 +206,8 @@ When `value` is `.None`, `value?` also returns `.None`, as
 The grammar also has these forms. The compiler does not implement them
 now:
 
-- `match`, with variant patterns;
+- `match` on a value that is not an integer, and the variant patterns
+  `.V` and `.V(p)`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
 - `if` and `match` as values.

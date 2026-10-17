@@ -181,7 +181,8 @@ const all: u8 = ~0
 ## Assignment
 
 An assignment is a statement. It changes a module variable, and nothing
-else can change:
+else can change, because a local `var` and a `mut` parameter are not
+implemented now:
 
 | Form | Meaning |
 | --- | --- |
@@ -206,7 +207,7 @@ pub fn spend() {
 }
 ```
 
-A parameter and a local cannot change, so an assignment to one is an
+A parameter and a local cannot change now, so an assignment to one is an
 error:
 
 ```wyst fails
