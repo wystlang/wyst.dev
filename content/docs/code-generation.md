@@ -78,9 +78,11 @@ stack slots.
 
 A call can change `x0` to `x17`. Thus in `load(p) + f()`, the value of
 `load(p)` waits in a home while `f` runs, and so does each argument before
-the last argument with a call. A constant, a layout symbol, or a local
-does not wait, because no call changes it: the code computes it after the
-call.
+the last argument with a call. A constant, a layout symbol, an operation
+on constants and layout symbols with an integer value, a string literal,
+or a local does not wait, because no call changes it: the code computes it
+after the call. No scratch register holds a value while the code computes
+an argument or a value that waits, so each starts at depth 0.
 
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in
