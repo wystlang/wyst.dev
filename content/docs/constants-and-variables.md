@@ -110,7 +110,8 @@ starts.
 ## Locals
 
 `const name = value` in a function body declares a local. A local cannot
-change, and neither can a parameter:
+change, and neither can a parameter, because a local `var` and a `mut`
+parameter are not implemented now:
 
 ```wyst fails
 fn count(limit: u64) {

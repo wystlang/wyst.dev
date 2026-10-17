@@ -19,13 +19,13 @@ name. A field and an argument can.
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
 | `var` | Declares a variable. | module variables only |
-| `if` | Runs a block when a condition is true. | yes, without `else` |
-| `else` | The other block of `if`, or the block of an unwrap. | unwrap only |
-| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, and `for x in "text" {}`; not `..=`, and not `for x in` an array or a slice |
-| `break` | Leaves a loop. | no |
-| `continue` | Starts the next pass of a loop. | no |
+| `if` | Runs a block when a condition is true. | yes, not as a value |
+| `else` | The other block of `if`, or the block of an unwrap. | yes |
+| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, and `for x in "text" {}`; not `for x in` an array or a slice |
+| `break` | Leaves a loop. | yes |
+| `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
-| `match` | Selects a block by the variant of a value. | no |
+| `match` | Selects a block by the value or the variant of a value. | on an integer, without variant patterns |
 | `goto` | Jumps to a label. | no |
 | `mut` | A parameter mode, also marked at the call site. | no |
 | `xfer` | A parameter mode that takes ownership, also marked at the call site. | no |
@@ -38,7 +38,7 @@ name. A field and an argument can.
 | --- | --- | --- |
 | `bool`, `u8`, `u16`, `u32`, `u64` | Value types. | yes |
 | `i64` | The signed 64-bit integer. | no |
-| `string` | A string value. | no: a string literal is only the head of a `for` loop |
+| `string` | A string value. | as the type of a parameter |
 | `never` | The type of a function that does not return. | yes |
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result and an `asm` output |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
@@ -58,13 +58,15 @@ name. A field and an argument can.
 | Attribute | On | Meaning |
 | --- | --- | --- |
 | `#[naked]` | `fn` | No prologue and no epilogue. |
+| `#[el2]` | `fn` | Runs at EL2, and the compiler checks it for EL2. |
 | `#[inline]` | `fn` | Copied into each caller. |
 | `#[section(.name)]` | `fn` | Puts the code in a section of the layout. |
 | `#[register_map]` | `struct` | The registers of a device. |
 | `#[bits]` | `struct` | The named bits of an integer. |
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
-| `#[sysreg]` | `const` | A system register. |
+| `#[sysreg]` | `const` | A system register of the A64 tables. |
+| `#[sysreg(S3_5_C15_C1_3)]` | `const` | An implementation-defined system register, by its encoding. |
 | `#[vector_table]` | `const` | The EL1 exception vector table. |
 
 Attribute names are not reserved.

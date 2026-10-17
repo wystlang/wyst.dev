@@ -64,17 +64,29 @@ fn init() {
 | Registers | Use |
 | --- | --- |
 | `x0` to `x7` | Parameters. |
-| `x0` | A value result. |
+| `x0` | A value result or an address result. |
 | `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |
 | `x18` | Not used. |
-| `x19` to `x28` | Homes of locals and loop values, which a callee saves. |
+| `x19` to `x28` | Homes of locals, loop values, and values that wait while a call runs, which a callee saves. |
 | `x29`, `x30` | The frame pointer and the return address. |
 
 Each local has a home. In a function without a call and without an `asm`
 block, the first homes take the scratch registers above the deepest
 expression. The next homes take `x19` to `x28`, and the others are 8-byte
 stack slots.
+
+A call can change `x0` to `x17`. Thus in `load(p) + f()`, the value of
+`load(p)` waits in a home while `f` runs, and so does each argument before
+the last argument with a call. A constant, a layout symbol, an operation
+on constants and layout symbols with an integer value, a string literal,
+or a local does not wait, because no call changes it: the code computes it
+after the call. No scratch register holds a value while the code computes
+an argument or a value that waits, so each starts at depth 0.
+
+A naked function has no frame, so the home of its parameter N is `xN`. A
+call in it takes these parameters in order, so each argument is already in
+its register.
 
 An operation on a `uN` value with N below 64 clears the bits above N after
 `+`, `-`, `*`, `~`, and `<<`.
@@ -119,13 +131,17 @@ each copy.
 | `truncate` | One `ubfx`. |
 | `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
 | `x / 2^k` | One `lsr`. |
+| `x % 2^k`, for `k` above 0 | One `and`. |
+| `x % c` for another constant `c` | The code of the constant `c`, then `udiv` and `msub`. |
+| `-x` | One `sub` from `xzr`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. |
+| A string loop | Its cursor and its end are in homes. One `ldr` reads the length before the loop, and each pass reads its byte with one `ldrb`. The test is `cmp` and `b.lo`. |
 | `const x = f() else {}` | The call, then `cbnz x0`. |
 | `trap()` | `brk #0`. |
-| A string, a function address, or a section symbol | `adrp` and `add`. |
+| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register. |
 | A module variable | `adrp` and one load or store. |
 | `v += x`, `v -= x` | `adrp` and one load, `add` or `sub` (and a `ubfx` for a type below 64 bits), then `adrp` and one store. |
 

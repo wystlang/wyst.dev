@@ -1,14 +1,12 @@
 ---
 title: Operators
-summary: Arithmetic that wraps, division and shifts by constants, comparisons, precedence, and assignment.
+summary: Arithmetic that wraps, division, remainder, and shifts by constants, comparisons, precedence, and assignment.
 ---
 
 The operators take two operands of the same type and give that type, or a
 `bool` for a comparison. No operator has undefined behavior, and no
-operator can fail at run time.
-
-A call with a value result cannot be an operand now. Put its result in a
-local first, as [Functions](/docs/functions/#results-must-be-used) shows.
+operator can fail at run time. An operand can be a call, as
+[Functions](/docs/functions/#results-must-be-used) shows.
 
 ## Arithmetic
 
@@ -21,8 +19,17 @@ fn next(x: u8) -> u8 {
 }
 ```
 
-`a / b` divides without sign and drops the remainder. `b` must be a
-constant other than 0, so a division cannot fail:
+`a / b` divides without sign and drops the remainder, and `a % b` gives
+that remainder. `b` must be a constant other than 0, so a division cannot
+fail:
+
+```wyst
+const slots: u64 = 6
+
+fn slot(ticket: u64) -> u64 {
+  return ticket % slots
+}
+```
 
 ```wyst fails
 fn share(total: u64, parts: u64) -> u64 {
@@ -34,12 +41,27 @@ fn share(total: u64, parts: u64) -> u64 {
 main.wyst:2:16: error: the divisor of `/` must be a literal or a module constant
 ```
 
-`%` and unary `-` are not implemented now.
+`-a` is `0 - a`, so it wraps as `-` does: for `x` equal to 1, `-x` in a
+`u8` is 255. It is also `~a + 1`, so `x & -x` keeps only the lowest set
+bit of `x`:
+
+```wyst
+fn lowest_bit(x: u64) -> u64 {
+  return x & -x
+}
+```
 
 ## Bits
 
-`&` and `|` are bitwise AND and OR. `~a` is the bitwise complement, in the
-bits of the type of `a`. `^` is not implemented now.
+`&`, `|`, and `^` are bitwise AND, OR, and exclusive OR. `~a` is the
+bitwise complement, in the bits of the type of `a`. `x ^ 1` changes only
+the low bit, so it gives the other entry of a pair:
+
+```wyst
+fn partner(entry: u64) -> u64 {
+  return entry ^ 1
+}
+```
 
 `a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
 it must be a constant less than the width of that type. `<<` drops the
@@ -64,8 +86,37 @@ and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. `==` and `!=`
 on a `bool` are not implemented now. Comparisons do not chain:
 `a < b < c` is an error.
 
-`!` gives the other `bool`. `&&` and `||` are not implemented now. Use
-nested `if` statements, or an early `return`.
+## Logical operators
+
+`!` gives the other `bool`. `a && b` is true when `a` and `b` are true, and
+`a || b` is true when `a` or `b` is true. They take two `bool` values and
+give a `bool`.
+
+The code computes `b` only when `a` does not give the value: when `a` is
+true for `&&`, or false for `||`. Thus `a` can guard `b`. Here the load
+runs only when the index is less than 4, and the checker uses that bound,
+as [Index proofs](/docs/index-proofs/#conditions) shows:
+
+```wyst
+fn ready(table: @[4]u64, i: u64) -> bool {
+  return i < 4 && load(@table[i]) != 0
+}
+```
+
+In the condition of `if` or `for`, an operand of `&&` or `||` can be a call
+with a `bool` result, as `!` can:
+
+```wyst
+fn idle() -> bool {
+  return true
+}
+
+fn poll(count: u64) {
+  if count == 0 || !idle() {
+    trap()
+  }
+}
+```
 
 ## Precedence
 
@@ -84,8 +135,10 @@ From the lowest to the highest precedence:
 | 9 | `*` `/` `%` |
 
 Each level groups from the left. Unary operators bind tighter, and a
-field, an index, or a call binds tightest. Unlike C, `&` binds tighter than
-`==`, so `x & 1 == 1` tests the low bit of `x`:
+field, an index, or a call binds tightest. `&&` and `||` bind more loosely
+than the comparisons, so `a < 4 || b == 0 && c` is
+`(a < 4) || ((b == 0) && c)`. Unlike C, `&` binds tighter than `==`, so
+`x & 1 == 1` tests the low bit of `x`:
 
 ```wyst
 fn odd(x: u64) -> bool {
@@ -109,10 +162,27 @@ main.wyst:1:22: error: 255 + 1 does not fit in u8
 
 At run time, the same operation wraps.
 
+A constant `-a` is `0 - a`, so it is an error unless `a` is 0:
+
+```wyst fails
+const all: u8 = -1
+```
+
+```text
+main.wyst:1:17: error: -1 does not fit in u8
+```
+
+For a value with each bit of its type set, write `~0`:
+
+```wyst
+const all: u8 = ~0
+```
+
 ## Assignment
 
 An assignment is a statement. It changes a module variable, and nothing
-else can change:
+else can change, because a local `var` and a `mut` parameter are not
+implemented now:
 
 | Form | Meaning |
 | --- | --- |
@@ -137,7 +207,7 @@ pub fn spend() {
 }
 ```
 
-A parameter and a local cannot change, so an assignment to one is an
+A parameter and a local cannot change now, so an assignment to one is an
 error:
 
 ```wyst fails

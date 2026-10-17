@@ -1,6 +1,6 @@
 ---
 title: System registers
-summary: Declare an AArch64 system register, then read and write its fields.
+summary: Declare an AArch64 system register, by its name or by its encoding, then read and write its fields.
 ---
 
 ## Declaring a system register
@@ -25,12 +25,11 @@ const SCTLR_EL1: readwrite u64 {
 }
 ```
 
-The name must be a system register of the A64 tables. The compiler checks
-each access for EL1, also in a function that runs at EL0, such as a
-function in the section `.el0`. Each access that the declaration gives
-must be possible at EL1: a read for `readonly` and `readwrite`, and a
-write for `writeonly` and `readwrite`. A register that needs a feature
-that the target does not have is an error:
+The name must be a system register of the A64 tables. Each access that
+the declaration gives must be possible at EL2, the highest EL of the code:
+a read for `readonly` and `readwrite`, and a write for `writeonly` and
+`readwrite`. A register that needs a feature that the target does not
+have is an error:
 
 ```wyst fails
 #[sysreg]
@@ -43,8 +42,125 @@ const ICC_NMIAR1_EL1: readonly u64 {
 main.wyst:2:23: error: `ICC_NMIAR1_EL1` cannot be read
 ```
 
-The declaration is local to its module, and a `pub` system register is
-not implemented now.
+Each read and each write must be possible at the EL of its function: EL1,
+or EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions).
+The compiler checks a function that runs at EL0, such as a function in the
+section `.el0`, for EL1. Thus a function without `#[el2]` cannot read
+`VBAR_EL2`:
+
+```wyst fails
+#[sysreg]
+const VBAR_EL2: readonly u64 {
+  VBA: u53 at 11..=63
+}
+
+fn installed() -> bool {
+  return VBAR_EL2.read().VBA != 0
+}
+```
+
+```text
+main.wyst:7:19: error: `VBAR_EL2` can be read only at EL2, in an `#[el2]` function
+```
+
+## Sharing a register
+
+`pub` lets each module that imports the module of a system register use
+the register: `m.NAME.read()` and `m.NAME.write(F = v, ...)` access the
+`pub` register `NAME` of module `m`. The EL rules apply at the function
+that accesses it. Thus a register that two modules use has one
+declaration. This module declares the control register of the EL1
+physical timer:
+
+```wyst cpu/timer.wyst
+// The timer signals its interrupt while ENABLE is 1, IMASK is 0, and
+// ISTATUS is 1.
+#[sysreg]
+pub const CNTP_CTL_EL0: readwrite u64 {
+  ENABLE:  bool at 0
+  IMASK:   bool at 1
+  ISTATUS: bool at 2
+}
+
+#[sysreg]
+const CNTP_TVAL_EL0: readwrite u64 {
+  TimerValue: u32 at 0..=31
+}
+
+pub fn start(ticks: u32) {
+  CNTP_TVAL_EL0.write(TimerValue = ticks)
+  CNTP_CTL_EL0.write(ENABLE = true)
+}
+```
+
+Another module reads the status of the same register:
+
+```wyst
+import cpu.timer
+
+fn pending() -> bool {
+  return timer.CNTP_CTL_EL0.read().ISTATUS
+}
+```
+
+A register that is not `pub` is local to its module:
+
+```wyst fails
+import cpu.timer
+
+fn ticks() -> u32 {
+  return timer.CNTP_TVAL_EL0.read().TimerValue
+}
+```
+
+```text
+main.wyst:4:16: error: system register `CNTP_TVAL_EL0` of module `cpu.timer` is not `pub`
+```
+
+An enum field of a `pub` register takes `.Variant` in each module, also
+when the enum is not `pub`, because the field gives the enum.
+
+## Implementation-defined registers
+
+`#[sysreg(S3_5_C15_C1_3)] const NAME: access u64 { fields }` declares, by
+its encoding, an implementation-defined system register, which the A64
+tables do not name. The Apple cores have such registers for their FIQ
+sources and for the per-core setup of m1n1.
+
+```wyst
+// IMODE 0 turns off the FIQ of the performance counters.
+#[sysreg(S3_1_C15_C0_0)]
+const PMCR0_EL1: writeonly u64 {
+  IMODE: u3 at 8..=10
+}
+
+fn mask_counters() {
+  PMCR0_EL1.write(IMODE = 0)
+}
+```
+
+- The encoding is `S<op0>_<op1>_C<CRn>_C<CRm>_<op2>`, as the Arm
+  architecture writes it, in decimal with no leading zero.
+- The architecture keeps op0 = 3 with CRn = 11 or 15 for
+  implementation-defined registers, so each other encoding is an error,
+  also the encoding of a register that the tables name:
+
+```wyst fails
+#[sysreg(S3_0_C1_C0_0)]
+const SCTLR: readwrite u64 {
+  M: bool at 0
+}
+```
+
+```text
+main.wyst:1:10: error: `S3_0_C1_C0_0` is not implementation-defined: op0 must be 3, and CRn 11 or 15
+```
+
+- The name is free. The other rules of a system register apply, but not
+  the EL rules.
+- The tables do not give the EL of such a register, so a function at each
+  EL can access it, as its access kind lets. The declaration asserts that
+  the code accesses the register only at an EL that can.
 
 ## Reading and writing
 
@@ -88,6 +204,27 @@ fn granule() -> u64 {
 
 A read of the enum field `TG0` gives its backing `u2` value, so
 `TCR_EL1.read().TG0 == 2` compares it with the value of `.16K`.
+
+`const s = NAME.read()` keeps the snapshot of one `mrs` in the local `s`,
+and each `s.F` reads field `F` from it, as for a device register. The
+number of a CPU of the Mac Studio uses four fields of one read of
+`MPIDR_EL1`:
+
+```wyst
+#[sysreg]
+const MPIDR_EL1: readonly u64 {
+  Core:    u8 at 0..=7
+  Cluster: u3 at 8..=10
+  Die:     u4 at 11..=14
+  P:       u1 at 16..=16
+}
+
+fn current() -> u64 {
+  const mpidr = MPIDR_EL1.read()
+  return 10 * widen(mpidr.Die) + 4 * widen(mpidr.Cluster) + widen(mpidr.Core) -
+    2 * widen(mpidr.P)
+}
+```
 
 ## Barriers
 

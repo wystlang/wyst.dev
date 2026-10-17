@@ -35,8 +35,9 @@ IC, or TLBI operation of the A64 tables can use its Arm name, such as
 `tlbi vmalle1`. The tables have no other system operation, so a line such
 as `at s1e1r` is an error.
 
-The compiler checks each line for the kernel at EL1 on the QEMU `virt`
-target: the base A64 instructions, the atomic instructions of the
+The compiler checks each line for the kernel at EL1, or at EL2 in an
+[`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), on the QEMU
+`virt` target: the base A64 instructions, the atomic instructions of the
 Cortex-A76 (`FEAT_LSE`), and the GICv3 CPU interface (`FEAT_GICv3`). An
 instruction or a system register that needs a higher exception level or
 another feature is an error.
@@ -45,7 +46,8 @@ another feature is an error.
 
 An input is `name = value`, or `name` alone, which is `name = name`. The
 value has a value type. An untyped integer is a `u64`. A block has at most
-9 inputs.
+9 inputs. A typed input, `name: T in xN`, and a `scratch` operand are not
+implemented now.
 
 Where an instruction takes a general register, a line names an input:
 `name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
@@ -140,9 +142,11 @@ fn try_lock(word: u64) -> u64 {
 
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. The `const` can also have a
-`#[bits]` struct type with backing type `u64`. Only the value of a `const`
-can be a block with an output. A block with a `u64` output has at most 8
-inputs.
+`#[bits]` struct type with backing type `u64`. Only the value of a local
+`const` can be a block with an output now. A block with a `u64` output has
+at most 8 inputs. An output in a named register, `-> name in xN`, an
+output with a value, and a list of outputs, `-> (a, b)`, are not
+implemented now.
 
 ## Option outputs
 

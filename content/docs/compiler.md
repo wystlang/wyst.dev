@@ -33,8 +33,8 @@ target module cannot hide a shared module. When the two directories are
 one directory, the file is one file.
 
 For `wync build kernel/src/kernel.wyst --layout
-kernel/qemu_virt/qemu_virt.layout`, the root is `kernel/src/` and the
-target directory is `kernel/qemu_virt/`:
+kernel/src/qemu_virt/qemu_virt.layout`, the root is `kernel/src/` and the
+target directory is `kernel/src/qemu_virt/`:
 
 ```text
 kernel/
@@ -43,19 +43,21 @@ kernel/
     pages.wyst         module pages
     el0/
       root.wyst        module el0.root
-  qemu_virt/
-    qemu_virt.layout   entry boot._start
-    boot.wyst          module boot
-    cpus.wyst          module cpus
-    el0/
-      console.wyst     module el0.console
+    qemu_virt/
+      qemu_virt.layout entry boot._start
+      boot.wyst        module boot
+      cpus.wyst        module cpus
+      el0/
+        console.wyst   module el0.console
 ```
 
 The build reads `<file.wyst>`, the module of the layout entry, and each
 module that they import, directly or indirectly. Imports can make a cycle.
 No module has to import the entry module. Thus the layout file selects the
-target: the shared modules stay in `src/`, and each target directory has
-its layout file and its target modules.
+target: the shared modules are in `src/`, and each target directory in it
+has its layout file and its target modules. The target directory is in
+the root, so `qemu_virt.boot` also names `boot.wyst`. The kernel imports
+a target module only by its name in the target, such as `boot`.
 
 ## What the build makes
 

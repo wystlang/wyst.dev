@@ -50,11 +50,11 @@ A signature states only types and parameter modes. The compiler infers the
 rest from the body:
 
 - A function cannot keep an address parameter after the call, except
-  through its result. A result of an address type is not implemented now.
-  There is no `noescape` marker.
+  through its result. There is no `noescape` marker.
 - There are no effect clauses. Inference of the effects of each call is not
   implemented now.
-- Each value result and each `Option` result of a call must be used. A
+- Each value result, address result, and `Option` result of a call must
+  be used. A
   linear value must also be used, and an unread binding does not count as
   a use. `linear` is not implemented now.
 - Interface methods use named parameters. There are no function pointer
@@ -103,7 +103,7 @@ change before it enters:
 
 - concurrency clauses, contracts, and compile-time meta-operations;
 - a protocol for interactive outcomes: `Result`, `match`, and `?` do this
-  work (`Result` and `match` are not implemented now);
+  work (`Result`, and `match` on a `Result`, are not implemented now);
 - staged specialization (`comptime`, `where`) and conditional compilation
   (`#if`, `#target`): the build selects the target;
 - floating point, `switch`, `i8`, `i16`, and `i32`;

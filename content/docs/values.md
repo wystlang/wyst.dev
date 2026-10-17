@@ -102,17 +102,36 @@ A string literal is a sequence of bytes. It has no zero byte at its end,
 as a C string has. The escapes are `\n`, `\r`, `\t`, `\0`, `\\`, `\"`, and
 `\x` with two hexadecimal digits.
 
-A string literal can only be the head of a `for` loop now. The loop visits
-each byte as a `u8`:
+A string literal has the type `string`. `string` is only the type of a
+parameter now, so a string literal is the argument of a `string` parameter
+or the head of a `for` loop. A `for` loop on a `string` visits each byte
+as a `u8`:
 
 ```wyst
 var sum: u8 = 0
 
-fn checksum() {
-  for byte in "Wyst\n" {
+fn checksum(text: string) {
+  for byte in text {
     sum += byte
   }
 }
+
+fn check() {
+  checksum("Wyst\n")
+}
+```
+
+A local, a variable, a field, and a result cannot have the type `string`
+now:
+
+```wyst fails
+fn greet() {
+  const text = "hello\n"
+}
+```
+
+```text
+main.wyst:2:16: error: `string` is only the type of a parameter now
 ```
 
 ## never

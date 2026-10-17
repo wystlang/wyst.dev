@@ -83,11 +83,12 @@ Two modules can import each other.
   [Enums and bit structs](/docs/enums-and-bit-structs/#enum-constants).
 - `@m.f` gives the address of the `pub` naked function `f`. See
   [Boot and exceptions](/docs/boot-and-exceptions/).
+- `m.R.read()` and `m.R.write(...)` access the `pub` system register `R`.
+  See [System registers](/docs/system-registers/#sharing-a-register).
 
-A module variable, a struct, a device, a system register, and the vector
-table are local to their module now. A `pub` struct, device, or system
-register is not implemented now. A call to a function
-that is not `pub` is an error:
+A module variable, a struct, a device, and the vector table are local to
+their module now. A `pub` struct or device is not implemented now. A call
+to a function that is not `pub` is an error:
 
 ```wyst fails
 import drivers.serial
