@@ -137,8 +137,10 @@ mask. A parameter or a module variable as `e` gives no bound now. A
 condition gives no bound to a module variable.
 
 `x` can also be the sum `a + b` of two parameters, loop variables, or
-`const` locals. The bound then holds for each `a + b` and `b + a`, because
-`a` and `b` do not change. Thus a range loop that ends at the sum proves
+`const` locals. The bound then holds for each `a + b` and `b + a` of the
+same type, because `a` and `b` do not change. A sum in another type, such
+as `widen(a) + widen(b)` of two `u8` values, wraps at another value, so
+it has no bound. Thus a range loop that ends at the sum proves
 its variable:
 
 ```wyst

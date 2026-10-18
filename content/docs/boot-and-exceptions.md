@@ -193,8 +193,11 @@ it.
 The CPU starts the entry and each naked function with no stack. A naked
 function has no stack until an `asm` block of its body, not of an inner
 block, writes `sp`. A function that it calls before then, also in the
-inputs of that block, runs with no stack, and so does a function at which
-its `eret` goes and an entry that is not naked. The compiler makes sure
+inputs of that block, runs with no stack, and so does an entry that is not
+naked. A naked function can also start a function `f` that is not naked
+with `eret` or as a new CPU, also after it sets `sp`, because `eret` can
+change the stack pointer, so `@f` in a naked function also gives `f` no
+stack. The compiler makes sure
 that such a function, and each function that it calls, uses no stack: it
 saves no register, has no stack slot, and does not call `test_exit`. A
 function that returns `never` saves no register, and a function keeps ten
@@ -264,9 +267,11 @@ main.wyst:5:3: error: naked function `main._start` has no stack here, because no
 `@name` of a function gives its address, a `u64`, so that a CPU or a
 thread can start there. `@m.f` gives the address of the `pub` function `f`
 of the imported module `m`. No call starts the function, so it is naked,
-or it has no parameters and returns `never`. A CPU starts with no stack,
-and a thread of EL0 starts with the stack that the kernel gives it, so the
-function of a thread need not be naked.
+or it has no parameters and returns `never`. A thread of EL0 starts with
+the stack that the kernel gives it, so the function of a thread need not
+be naked. A CPU starts with no stack, so its function is naked: in a
+function that is not naked, the compiler does not check what the code
+does with an address.
 
 This code starts another CPU at `secondary` with the PSCI call `CPU_ON`:
 
