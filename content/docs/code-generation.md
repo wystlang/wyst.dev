@@ -106,7 +106,8 @@ sub sp, sp, #size
 ```
 
 There is one `stp` for each pair of home registers that the function uses,
-and `size` is the stack slot area, rounded up to 16 bytes. The epilogue
+and `size` is the stack slot area, rounded up to 16 bytes. A `sub` holds at
+most 4095, so a slot area larger than 4095 bytes is an error. The epilogue
 undoes the prologue and ends with `ret`.
 
 Two kinds of function save no registers:
@@ -127,6 +128,7 @@ each copy.
 | An operator on literals and module constants | No code of its own: the compiler computes the result, which is one constant. A constant condition keeps its branch: `mov`, then `cbz` or `cbnz`. |
 | A register `read` or `write` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str` with a base register and the offset. A device base that the function uses only one time adds the code of a constant. A device of an array adds one shifted `add` for the index, and a register of a bank adds one shifted `add` for its index. |
 | A system register `read` or `write` | One `mrs` or `msr`. |
+| A field read | One `ubfx`. A field at bit 0 that fills its value adds no code: a field of 64 bits, or `VALUE: u32 at 0..=31` in a `u32` register. |
 | A field write | One `lsl` or `orr` for each field value that is not a constant. The fixed fields and the constant values make one constant. One `orr` adds it when it fits in the instruction. If it does not fit, the code of the constant and one `orr` add it. A write of only constants is one constant. |
 | `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. The address of a field, or of an element at a constant index, adds one `add` for the offset. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
 | `widen`, `bitcast` | No code. |
@@ -137,9 +139,11 @@ each copy.
 | `x % 2^k`, for `k` above 0 | One `and`. |
 | `x % c` for another constant `c` | The code of the constant `c`, then `udiv` and `msub`. |
 | `-x` | One `sub` from `xzr`, and one `ubfx` for a type below 64 bits. |
+| `~x` | One `mvn`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
+| `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. |
 | A string loop | Its cursor and its end are in homes. One `ldr` reads the length before the loop, and each pass reads its byte with one `ldrb`. The test is `cmp` and `b.lo`. |
 | `const x = f() else {}` | The call, then `cbnz x0`. |
