@@ -86,9 +86,12 @@ Two modules can import each other.
   [Boot and exceptions](/docs/boot-and-exceptions/).
 - `m.R.read()` and `m.R.write(...)` access the `pub` system register `R`.
   See [System registers](/docs/system-registers/#sharing-a-register).
+- `m.S` names the `pub` plain struct `S`. See
+  [Structs](/docs/structs/#pub-structs).
 
-A module variable, a struct, a device, and the vector table are local to
-their module now. A `pub` struct or device is not implemented now. A call
+A module variable, a register map, a `#[bits]` struct, a device, and the
+vector table are local to their module now. A `pub` register map,
+`#[bits]` struct, or device is not implemented now. A call
 to a function that is not `pub` is an error:
 
 ```wyst fails

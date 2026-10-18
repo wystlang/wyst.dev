@@ -12,8 +12,8 @@ This page lists both sides.
 
 ## Implemented now
 
-- Modules, imports with aliases, `pub` functions, constants, and system
-  registers.
+- Modules, imports with aliases, `pub` functions, constants, plain
+  structs, and system registers.
 - The value types `bool`, `u8`, `u16`, `u32`, and `u64`, and `never`.
 - `string` parameters, with a string literal as the argument.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
@@ -65,7 +65,7 @@ kernel needs it:
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
-| Structs, devices, and the vector table of another module, and `pub` on a struct or a device | A module uses only the `pub` functions, constants, enums, and system registers, and `@m.f` of the `pub` naked functions of another module. |
+| Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` naked functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |
@@ -73,7 +73,7 @@ kernel needs it:
 | An address as a module variable or a field | An address is only the type of a parameter, a local, or a result. Keep a `u64`, and make the address with `bitcast`. |
 | An address as the result of a `pub` function, and an `Option` of an address | Refused. A function that is not `pub` can give an address. |
 | `@` of a local, of a module variable, or of a module constant | Refused. |
-| `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct of the module, or an array of them. |
+| `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
