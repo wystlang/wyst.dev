@@ -19,6 +19,9 @@ const rate: u32 = 115_200
 const uart: u64 = 0x0900_0000
 ```
 
+The prefixes are lowercase, so `0X10` is an error that gives the prefix
+`0x`.
+
 ## Literals take their type
 
 A literal has no type of its own. It takes the type that its position
@@ -47,6 +50,20 @@ main.wyst:2:17: error: the type of this integer is not known
 
 In an operator, a literal takes the type of the other operand:
 `x + 1` has the type of `x`.
+
+A variant, such as `.Some(1)`, also takes the type that its position
+expects, such as the result type of `return`. Where no type is expected,
+it is an error, also with `?` and as a statement:
+
+```wyst fails
+fn start() {
+  const frame = .Some(1)
+}
+```
+
+```text
+main.wyst:2:17: error: the type of `.Some` is not known here
+```
 
 ## Booleans
 
@@ -122,7 +139,8 @@ fn check() {
 ```
 
 A local, a variable, a field, and a result cannot have the type `string`
-now:
+now. `string` takes no type arguments, and memory at an address is not a
+`string` now, so `string<u8>` and `@string` are errors too:
 
 ```wyst fails
 fn greet() {
@@ -161,14 +179,46 @@ that loops forever or stops the machine. See [Functions](/docs/functions/).
 ## Bit field types
 
 A bit field of a register or of a `#[bits]` struct can also have the type
-`uN`, an unsigned value of N bits with N from 1 to 64, or an enum. `uN`
-is only for bit fields. An enum is also the type of a module constant.
-See [Enums and bit structs](/docs/enums-and-bit-structs/).
+`uN`, an unsigned value of N bits with N from 1 to 64, or an enum. When N
+is not 8, 16, 32, or 64, `uN` is only for bit fields, so a parameter, a
+local, a constant, a variable, a result, and a type argument cannot have
+it:
+
+```wyst fails
+fn bit(core: u64) -> u4 {
+  return 1
+}
+```
+
+```text
+main.wyst:1:22: error: `u4` is only the type of a bit field
+```
+
+An enum is also the type of a module constant. See
+[Enums and bit structs](/docs/enums-and-bit-structs/).
 
 A read of a `uN` field gives a `uN` value. A read of an enum field gives
 the backing `uN` of the enum. An operator, a comparison, and `widen` take
-a `uN` value. When N is not 8, 16, 32, or 64, a parameter, a local, or a
-variable cannot hold the value. Use `widen`:
+a `uN` value. When N is not 8, 16, 32, or 64, a local cannot hold the
+value:
+
+```wyst fails
+#[bits]
+struct Entry: u64 {
+  Low: u5 at 0..=4
+}
+
+fn low(slot: @u64) {
+  const entry: Entry = load(slot)
+  const low = entry.Low
+}
+```
+
+```text
+main.wyst:8:15: error: a local cannot hold u5; `widen` gives a wider value
+```
+
+Use `widen`:
 
 ```wyst
 #[bits]

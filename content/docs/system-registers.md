@@ -43,8 +43,9 @@ const ICC_IAR1_EL1: readonly u64 {
 The name must be a system register of the A64 tables. Each access that
 the declaration gives must be possible at EL2, the highest EL of the code:
 a read for `readonly` and `readwrite`, and a write for `writeonly` and
-`readwrite`. A register that needs a feature that the target does not
-have is an error:
+`readwrite`. Else the error gives the reason of the A64 tables. A
+register that needs a feature that the target does not have gives the
+features:
 
 ```wyst fails
 #[sysreg]
@@ -54,7 +55,20 @@ const ICC_NMIAR1_EL1: readonly u64 {
 ```
 
 ```text
-main.wyst:2:23: error: `ICC_NMIAR1_EL1` cannot be read
+main.wyst:2:23: error: `ICC_NMIAR1_EL1` needs FEAT_GCIE_LEGACY or FEAT_GICv3_NMI, which the target does not have
+```
+
+A register that only EL3 can access gives the EL:
+
+```wyst fails
+#[sysreg]
+const SCR_EL3: readwrite u64 {
+  NS: bool at 0
+}
+```
+
+```text
+main.wyst:2:16: error: `SCR_EL3` can be read only at EL3 or higher
 ```
 
 Each read and each write must be possible at the EL of its function: EL1,
@@ -155,7 +169,20 @@ fn mask_counters() {
 ```
 
 - The encoding is `S<op0>_<op1>_C<CRn>_C<CRm>_<op2>`, as the Arm
-  architecture writes it, in decimal with no leading zero.
+  architecture writes it, in decimal with no leading zero. The error for
+  a wrong encoding names the wrong part:
+
+```wyst fails
+#[sysreg(S3_8_C15_C1_3)]
+const VM_TMR_FIQ_ENA_EL2: readwrite u64 {
+  P: bool at 1
+}
+```
+
+```text
+main.wyst:1:10: error: op1 is at most 7, found 8
+```
+
 - The architecture keeps op0 = 3 with CRn = 11 or 15 for
   implementation-defined registers, so each other encoding is an error,
   also the encoding of a register that the tables name:
@@ -240,6 +267,26 @@ fn current() -> u64 {
     2 * widen(mpidr.P)
 }
 ```
+
+A system register is not a value, not a type, and not memory, so it has
+no address. A register of another module gives the same error as a
+register of the module:
+
+```wyst fails
+#[sysreg]
+const TPIDR_EL1: readwrite u64 {
+  Thread: u64 at 0..=63
+}
+
+fn save(thread: TPIDR_EL1) {}
+```
+
+```text
+main.wyst:6:17: error: `TPIDR_EL1` is a system register, not a type
+```
+
+A constant cannot read a register, before or after its declaration,
+because the compiler cannot compute the value.
 
 ## Barriers
 
