@@ -56,8 +56,10 @@ module that they import, directly or indirectly. Imports can make a cycle.
 No module has to import the entry module. Thus the layout file selects the
 target: the shared modules are in `src/`, and each target directory in it
 has its layout file and its target modules. The target directory is in
-the root, so `qemu_virt.boot` also names `boot.wyst`. The kernel imports
-a target module only by its name in the target, such as `boot`.
+the root, so `qemu_virt.boot` also names `boot.wyst`. The build reads each
+file one time, so a second module path for a file is an error at its
+import. Thus import a target module only by its name in the target, such
+as `boot`.
 
 ## What the build makes
 
@@ -75,7 +77,8 @@ a target module only by its name in the target, such as `boot`.
 The build stops at the first error and prints one line to standard error:
 
 - A source or layout error is `file:line:col: error: message`.
-- A file system error or a file name error is `path: message`.
+- A file system error or a file name error is `path: message`, such as
+  for a directory that the build cannot read.
 - An error that has no source position, such as a branch out of range at
   link time, is the message only.
 

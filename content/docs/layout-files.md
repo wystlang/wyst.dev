@@ -28,7 +28,7 @@ symbol __bss_end:   u64 = end(.bss)
 
 | Declaration | Meaning |
 | --- | --- |
-| `entry m.f at A` | Function `f` of module `m` is the ELF entry. It must be at address `A`. There is one entry. |
+| `entry m.f at A` | Function `f` of module `m` is the ELF entry. It must be at address `A`. There is one entry. Each part of `m.f` is a name, as in an import. |
 | `region r: readwrite at A size N` | Memory from `A` to `A + N`. A region is `readonly` or `readwrite`. |
 | `section s: k in r align N` | A section of kind `code`, `rodata`, `data`, or `bss` in region `r`. `N` is a power of two, and at least 4 for a `code` section. |
 | `section s: k in r after t align N` | The section starts at the end of the earlier section `t`, in the same region. |
@@ -46,6 +46,9 @@ Thus a region comes before its sections, and a section comes before each
   at least 4.
 - Each section must fit in its region and must not overlap another
   section. A `data` or `bss` section must be in a `readwrite` region.
+- For `wync build --raw`, all sections must be in one region, so that the
+  [raw image](/docs/elf-output/#raw-image) holds no gap between two
+  regions.
 - The entry function is first in its section, so that section must start
   at the entry address.
 

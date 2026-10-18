@@ -53,8 +53,9 @@ Mac Studio, takes the raw image.
 - The raw image has no header and no symbols. The loader gives the entry
   address. m1n1 starts the image at its start plus 0x800, so the layout of
   an image for the Mac Studio puts the entry there.
-- When the compiler cannot get the memory for the raw image, for example
-  because two sections are far apart, the build stops with an error.
+- All sections of the layout must be in one region, so that the gap
+  between two regions cannot make a file of many GiB. When the compiler
+  cannot get the memory for the raw image, the build stops with an error.
 
 ## Determinism
 
