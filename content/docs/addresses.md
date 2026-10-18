@@ -77,6 +77,18 @@ fn kind_of(base: u64, index: u64) -> u16 {
 The compiler must prove that each index is less than the length of its
 array. [Index proofs](/docs/index-proofs/) gives the rules.
 
+An element is memory, not a value, so `load` reads it:
+
+```wyst fails
+fn first(table: @[4]u64) -> u64 {
+  return table[0]
+}
+```
+
+```text
+main.wyst:2:10: error: an element at an address is not a value; `load(@a[i])` reads it
+```
+
 `@p`, where `p` is an address, is an error, because `p` is already the
 address. `@` of a local, of a module variable, or of a module constant is
 not implemented now.

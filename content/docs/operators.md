@@ -82,9 +82,9 @@ fn offset(address: u64) -> u64 {
 ## Comparisons
 
 `==`, `!=`, `<`, `<=`, `>`, and `>=` compare two integers of the same type
-and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. `==` and `!=`
-on a `bool` are not implemented now. Comparisons do not chain:
-`a < b < c` is an error.
+and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. A `bool` is
+not an integer, so `==` and `!=` do not take it: use the `bool` itself,
+or `!`. Comparisons do not chain: `a < b < c` is an error.
 
 ## Logical operators
 

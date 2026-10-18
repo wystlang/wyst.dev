@@ -45,9 +45,10 @@ another feature is an error.
 ## Inputs
 
 An input is `name = value`, or `name` alone, which is `name = name`. The
-value has a value type. An untyped integer is a `u64`. A block has at most
-9 inputs. A typed input, `name: T in xN`, and a `scratch` operand are not
-implemented now.
+value has a value type. An untyped integer is a `u64`. An address type,
+such as the type `@u64` of `@p.f`, is not a value type, so `@p.f` is not
+an input. A block has at most 9 inputs. A typed input, `name: T in xN`, and a
+`scratch` operand are not implemented now.
 
 Where an instruction takes a general register, a line names an input:
 `name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
@@ -169,7 +170,25 @@ fn receive() -> Option<u64> {
 
 Only `else` or `?` takes the `Option` of a block. The block has an `svc`
 line, or inputs in `x0` and `x1`. No line can name the output or `x0` and
-`x1`.
+`x1`. The value of `.Some` is a `u64`, because a register holds 64 bits,
+so an output with a type is an `Option<u64>`, and `-> out: u32` is an
+error. An output with no type is a `u64`, so `else` and `?` do not take
+it:
+
+```wyst fails
+fn midr() -> u64 {
+  const id = asm -> id {
+    mrs id, midr_el1
+  } else {
+    trap()
+  }
+  return id
+}
+```
+
+```text
+main.wyst:2:21: error: `else` takes an `Option`, and an `asm` output with no type is a `u64`
+```
 
 ## Blocks that do not return
 

@@ -44,7 +44,7 @@ name. A field and an argument can.
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of an array or a slice. | no |
-| `size_of` | The size of a type in bytes. | only for the name of `u8`, `u16`, `u32`, `u64`, or a plain struct of the module |
+| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, a plain struct of the module, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
 | `static_assert` | Checks a constant condition. | yes |

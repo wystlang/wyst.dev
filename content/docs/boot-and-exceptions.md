@@ -57,6 +57,32 @@ fn main(boot_args: u64) -> never {
 }
 ```
 
+A naked function has no frame, so a value cannot wait in it while a call
+runs. A constant, a layout symbol, a string literal, and a parameter do
+not wait, because the code computes them after the call. A module
+variable does:
+
+```wyst fails
+var count: u64 = 0
+
+#[naked]
+pub fn _start() -> never {
+  run(count, next())
+}
+
+fn next() -> u64 {
+  return 1
+}
+
+fn run(a: u64, b: u64) -> never {
+  for {}
+}
+```
+
+```text
+main.wyst:5:3: error: a naked function has no frame for a value that waits while a call runs
+```
+
 An `eret` keeps `x0` to `x7`, so a naked function that ends with `eret`
 gives its parameters to the naked function at which `eret` goes. The
 compiler does not check that this function takes the same parameters. On
