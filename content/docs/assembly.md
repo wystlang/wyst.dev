@@ -129,26 +129,32 @@ So is `eret`, except at the end of a block that does not return.
 
 ## Outputs
 
-`const name = asm(inputs) -> out { lines }` gives the local `name` the
-value of the output `out` after the last line. A line can read and write
-the output. A block that does not write its output is an error.
+`asm(inputs) -> out { lines }` is a value: the value of the output `out`
+after the last line. As a call, it can be the value of a local `const` or
+of `return`, an operand, or an argument. A line can read and write the
+output. A block that does not write its output is an error.
 
 ```wyst
 fn try_lock(word: u64) -> u64 {
-  const held = asm(word, one = 1) -> held {
+  return asm(word, one = 1) -> held {
     swpa one.x, held.x, [word]
   }
-  return held
+}
+
+fn ticks_since(start: u64) -> u64 {
+  return asm -> now { mrs now, cntvct_el0 } - start
 }
 ```
 
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
-is a `u64`, because a register holds 64 bits. The `const` can also have a
-`#[bits]` struct type with backing type `u64`. Only the value of a local
-`const` can be a block with an output now. A block with a `u64` output has
-at most 8 inputs. An output in a named register, `-> name in xN`, an
-output with a value, and a list of outputs, `-> (a, b)`, are not
-implemented now.
+is a `u64`, because a register holds 64 bits. A local `const` of the block
+can also have a `#[bits]` struct type with backing type `u64`. A block with
+a `u64` output has at most 8 inputs. The inputs are in the scratch
+registers, and an `svc` or an `hvc` can change `x0` to `x17`. Thus the
+compiler keeps each value that it needs after the block in a home while
+the block runs, as for a call. An output in a named register,
+`-> name in xN`, an output with a value, and a list of outputs,
+`-> (a, b)`, are not implemented now.
 
 ## Option outputs
 
@@ -162,14 +168,15 @@ function:
 const call_receive: u64 = 4
 
 fn receive() -> Option<u64> {
-  const message = asm -> result: Option<u64> {
+  return asm -> result: Option<u64> {
     svc #call_receive
-  }?
-  return .Some(message)
+  }
 }
 ```
 
-Only `else` or `?` takes the `Option` of a block. The block has an `svc`
+The `Option` of a block has the uses of the `Option` result of a call:
+`else`, `?`, and the value of `return` in a function with an `Option<u64>`
+result. The block has an `svc`
 line, or inputs in `x0` and `x1`. No line can name the output or `x0` and
 `x1`. The value of `.Some` is a `u64`, because a register holds 64 bits,
 so an output with a type is an `Option<u64>`, and `-> out: u32` is an
