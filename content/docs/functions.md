@@ -35,6 +35,19 @@ fn second(_: u64, b: u64) -> u64 {
 }
 ```
 
+Each other parameter has a name of its own. A second parameter with the
+same name is an error:
+
+```wyst fails
+fn add(a: u64, a: u64) -> u64 {
+  return a + a
+}
+```
+
+```text
+main.wyst:1:16: error: a second parameter `a`
+```
+
 ## Results
 
 A result is a value type, an address type, `Option<T>`, or `never`. A function with a
