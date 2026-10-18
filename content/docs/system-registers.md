@@ -25,6 +25,21 @@ const SCTLR_EL1: readwrite u64 {
 }
 ```
 
+A bit position can be a
+[constant that the compiler computes](/docs/registers/#computed-positions),
+as in a register map:
+
+```wyst
+// An INTID has 24 bits. With no LPIs, each INTID is below 1024, so the
+// low 16 bits hold it.
+const intid_bits: u8 = 16
+
+#[sysreg]
+const ICC_IAR1_EL1: readonly u64 {
+  INTID: u16 at 0..=intid_bits - 1
+}
+```
+
 The name must be a system register of the A64 tables. Each access that
 the declaration gives must be possible at EL2, the highest EL of the code:
 a read for `readonly` and `readwrite`, and a write for `writeonly` and
