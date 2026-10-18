@@ -38,6 +38,11 @@ A line can name only a region or a section that an earlier line declares.
 Thus a region comes before its sections, and a section comes before each
 `after`, `start(s)`, or `end(s)` that names it.
 
+`A`, `N`, and an integer `v` are integers. A layout file cannot name a
+constant of the Wyst source. Thus the layout and the source each give a
+value that both use, and the build does not check that the two values are
+equal.
+
 ## Placement
 
 - A section without `after` starts at the start of its region. The build

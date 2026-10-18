@@ -207,12 +207,23 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
   gives.
 - `@f` of a naked function without `#[el2]` gives the address at which
   `eret` goes to EL1.
+- `_start` reads CurrentEL, because it starts at EL1 when the m1n1
+  hypervisor runs the kernel as a guest. At EL1, it writes no EL2
+  register, and its `eret` stays at EL1.
 
 ```wyst
-// RW makes EL1 AArch64.
+// EL is the exception level that runs.
+#[sysreg]
+const CurrentEL: readonly u64 {
+  EL: u2 at 2..=3
+}
+
+// RW makes EL1 AArch64. m1n1 sets E2H, and the write keeps it, so that
+// each register name keeps its meaning at EL2.
 #[sysreg]
 const HCR_EL2: writeonly u64 {
-  RW: bool at 31
+  RW:  bool at 31
+  E2H: bool at 34
 }
 
 enum Mode: u4 {
@@ -233,12 +244,35 @@ const ELR_EL2: writeonly u64 {
   ADDRESS: u64 at 0..=63
 }
 
+#[sysreg]
+const SPSR_EL1: writeonly u64 {
+  M: Mode at 0..=3
+  F: bool at 6
+  I: bool at 7
+  A: bool at 8
+  D: bool at 9
+}
+
+#[sysreg]
+const ELR_EL1: writeonly u64 {
+  ADDRESS: u64 at 0..=63
+}
+
 #[naked]
 #[el2]
 pub fn _start(boot_args: u64) -> never {
-  HCR_EL2.write(RW = true)
-  SPSR_EL2.write(M = .EL1h, F = true, I = true, A = true, D = true)
-  ELR_EL2.write(ADDRESS = @el1)
+  if CurrentEL.read().EL == 2 {
+    HCR_EL2.write(RW = true, E2H = true)
+    SPSR_EL2.write(M = .EL1h, F = true, I = true, A = true, D = true)
+    ELR_EL2.write(ADDRESS = @el1)
+
+    asm -> never {
+      eret
+    }
+  }
+
+  SPSR_EL1.write(M = .EL1h, F = true, I = true, A = true, D = true)
+  ELR_EL1.write(ADDRESS = @el1)
 
   asm -> never {
     eret
