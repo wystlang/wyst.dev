@@ -153,8 +153,7 @@ fn scaled(value: u64) -> u64 {
 ```
 
 A local is not a constant, also when `const` declares it. The compiler
-does not compute its value, so it cannot be the divisor of `/` or the
-amount of a shift.
+does not compute its value, so it cannot be the divisor of `/`.
 
 `const _ = value` computes the value and keeps nothing, and a loop
 variable `_` counts the passes with no name:

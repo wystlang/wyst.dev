@@ -1,6 +1,6 @@
 ---
 title: Operators
-summary: Arithmetic that wraps, division, remainder, and shifts by constants, comparisons, precedence, and assignment.
+summary: Arithmetic that wraps, division, remainder, shifts, comparisons, precedence, and assignment.
 ---
 
 The operators take two operands of the same type and give that type, or a
@@ -64,8 +64,8 @@ fn partner(entry: u64) -> u64 {
 ```
 
 `a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
-it must be a constant less than the width of that type. `<<` drops the
-bits that move out of the type, and `>>` puts zeros in the high bits.
+it must be less than the width of that type. `<<` drops the bits that move
+out of the type, and `>>` puts zeros in the high bits.
 
 ```wyst
 const page_shift: u64 = 14
@@ -77,6 +77,31 @@ fn page(address: u64) -> u64 {
 fn offset(address: u64) -> u64 {
   return address & ((1 << page_shift) - 1)
 }
+```
+
+When `k` is not a constant, the compiler must prove that it is less than
+the width, as it proves an index: see
+[Index proofs](/docs/index-proofs/). Here the loop gives `core` the highest
+value 3, so `1 << core` is a correct shift of a `u64`:
+
+```wyst
+const cores: u64 = 4
+
+fn mark_all(masks: @[cores]u64) {
+  for core in 0 ..< cores {
+    store(@masks[core], 1 << core)
+  }
+}
+```
+
+```wyst fails
+fn bit(cursor: @u64) -> u64 {
+  return 1 << load(cursor)
+}
+```
+
+```text
+main.wyst:2:12: error: the checker cannot prove that the amount of `<<` is less than 64
 ```
 
 ## Comparisons

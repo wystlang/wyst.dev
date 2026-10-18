@@ -131,6 +131,7 @@ each copy.
 | `truncate` | One `ubfx`. |
 | `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
 | `x / 2^k` | One `lsr`. |
+| `a << k`, `a >> k` | One `lsl` or `lsr` for a constant `k`, or one `lslv` or `lsrv` for another `k`. `<<` adds one `ubfx` for a type below 64 bits. |
 | `x % 2^k`, for `k` above 0 | One `and`. |
 | `x % c` for another constant `c` | The code of the constant `c`, then `udiv` and `msub`. |
 | `-x` | One `sub` from `xzr`, and one `ubfx` for a type below 64 bits. |

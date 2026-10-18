@@ -20,8 +20,7 @@ This page lists both sides.
   `-=`,
   and local constants.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
-  `<<` and `>>` by a constant, unary `-`, `~`, `!`, `&&`, `||`, and the six
-  comparisons.
+  `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.

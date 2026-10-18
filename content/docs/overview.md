@@ -54,9 +54,10 @@ a `DATA` value that is not a `u8`.
   or system register access that the source has. It computes operators on
   constants, and it removes only the loads, stores, and temporary values
   that it adds itself. See [Code generation](/docs/code-generation/).
-- **No undefined behavior.** Integer arithmetic wraps. A division or a
-  shift takes only a constant that the compiler checks, so no operator can
-  fail at run time. [`bitcast`](/docs/addresses/#bitcast) marks each place
+- **No undefined behavior.** Integer arithmetic wraps. A division takes
+  only a constant divisor that the compiler checks, and the compiler
+  proves each shift amount less than the width, so no operator can fail
+  at run time. [`bitcast`](/docs/addresses/#bitcast) marks each place
   where the program trusts a fact that the compiler cannot prove.
 - **No LLVM.** The compiler writes A64 machine words and the ELF file
   itself. Two builds of the same input give byte-identical files.

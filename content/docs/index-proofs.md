@@ -9,7 +9,10 @@ build stops. There is no bounds check at run time, so a proved index costs
 nothing.
 
 The same rule applies to an index of an array of devices, as in
-`redistributors[cpu]`. See [Registers and devices](/docs/registers/).
+`redistributors[cpu]`. See [Registers and devices](/docs/registers/). When
+the amount `k` of `a << k` or `a >> k` is not a constant, the compiler
+proves in the same way that `k` is less than the width of `a`. See
+[Operators](/docs/operators/#bits).
 
 ## What the checker knows
 
@@ -68,9 +71,9 @@ operands:
 
 - `x % n` is less than the constant `n`, for each `x`;
 - `x / n` is at most the highest value of `x` divided by `n`, and `x >> k`
-  is at most that value shifted right by `k`;
-- `a << k` is at most the highest value of `a` shifted left by `k`, when
-  no set bit moves out of the type. Else the value can wrap, and the
+  is at most that value shifted right by a constant `k`;
+- `a << k` is at most the highest value of `a` shifted left by a constant
+  `k`, when no set bit moves out of the type. Else the value can wrap, and the
   checker knows no highest value;
 - `a | b` and `a ^ b` are at most the smallest number of all ones, such as
   7, that is at least the highest values of `a` and `b`.
