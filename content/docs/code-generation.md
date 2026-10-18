@@ -88,7 +88,9 @@ registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
 
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in
-its register.
+its register. A call of a naked function puts its arguments in `x0` to
+`x7`, as each call does, and is then one `b`, because the callee does not
+return.
 
 An operation on a `uN` value with N below 64 clears the bits above N after
 `+`, `-`, `*`, `~`, and `<<`.

@@ -11,7 +11,48 @@ starts without a stack.
 
 A naked function returns `never`. It has no frame, so it cannot have a
 local (`const`), a range or string loop, an inline call, or a call to
-`semihost.test_exit`. No function can call it:
+`semihost.test_exit`.
+
+Only a naked function can call a naked function. The call is a branch,
+`b`, so the callee gets the registers and the stack as they are, and the
+call ends the caller. Thus two naked functions can share code:
+
+```wyst
+#[naked]
+fn from_el0_sync() -> never {
+  asm {
+    stp x0, x1, [sp, #-16]!
+  }
+
+  save(false)
+}
+
+#[naked]
+fn from_el0_irq() -> never {
+  asm {
+    stp x0, x1, [sp, #-16]!
+  }
+
+  save(true)
+}
+
+#[naked]
+fn save(irq: bool) -> never {
+  asm {
+    stp x2, x3, [sp, #-16]!
+  }
+
+  handle(irq)
+}
+
+fn handle(irq: bool) -> never {
+  for {}
+}
+```
+
+Each entry saves `x0` and `x1` first, so `save` can take `irq` in `x0`. A
+function that is not naked cannot call a naked function, because its
+frame would stay on the stack:
 
 ```wyst fails
 #[naked]
@@ -19,13 +60,13 @@ fn entry() -> never {
   for {}
 }
 
-fn restart() {
+fn restart() -> never {
   entry()
 }
 ```
 
 ```text
-main.wyst:7:3: error: a naked function cannot be called
+main.wyst:7:3: error: only a naked function can call a naked function
 ```
 
 ## Parameters
