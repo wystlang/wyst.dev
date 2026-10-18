@@ -32,9 +32,9 @@ This page lists both sides.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, calls, and writes.
 - Enums of bit fields and of module constants, `pub` enums, `#[bits]`
-  structs, register maps, devices, arrays of devices, system registers,
-  offsets and bit positions that the compiler computes, and locals that
-  keep a register snapshot.
+  structs, register maps, register banks, devices, arrays of devices,
+  system registers, offsets and bit positions that the compiler computes,
+  and locals that keep a register snapshot.
 - Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
   that do not return.
 - Naked functions with parameters, `#[el2]` functions, code addresses, the
