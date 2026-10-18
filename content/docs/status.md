@@ -73,7 +73,7 @@ kernel needs it:
 | `load` and `store` of a struct or an array | Load or store each field. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, or a result. Keep a `u64`, and make the address with `bitcast`. |
 | An address as the result of a `pub` function, and an `Option` of an address | Refused. A function that is not `pub` can give an address. |
-| `@` of a local or of a module variable | Refused. |
+| `@` of a local, of a module variable, or of a module constant | Refused. |
 | `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct of the module, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
