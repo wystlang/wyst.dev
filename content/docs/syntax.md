@@ -22,8 +22,10 @@ mut  xfer  linear  asm
 ```
 
 No other word is reserved. A declaration, an import, a parameter, and a
-local cannot take a builtin name, but a field and an argument can.
-Attribute names, register names, register access kinds, and assembly
+local cannot take a builtin name, but a field and an argument can. `_`
+alone discards and is never a name: a parameter, a local, or a loop
+variable `_` gets no name, a read of `_` is an error, and a declaration or
+an import cannot be `_`. Attribute names, register names, register access kinds, and assembly
 operand kinds are ordinary names. `in` and `at` have a meaning only in the
 positions below. [Keywords and builtins](/docs/words/) lists each word.
 

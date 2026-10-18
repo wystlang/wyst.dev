@@ -134,6 +134,25 @@ fn greet() {
 main.wyst:2:16: error: `string` is only the type of a parameter now
 ```
 
+## Discarding a value
+
+`_` discards a value, and it is never a name. A parameter, a local, or a
+loop variable `_` gets no name, so a read of `_` is an error:
+
+```wyst fails
+fn second(_: u64, b: u64) -> u64 {
+  return _
+}
+```
+
+```text
+main.wyst:2:10: error: `_` discards a value, so it cannot be read
+```
+
+A declaration and an import cannot be `_`.
+[Locals](/docs/constants-and-variables/#locals) and
+[Functions](/docs/functions/#declaring-a-function) give the uses of `_`.
+
 ## never
 
 `never` is the type of a function that does not return, such as a function
