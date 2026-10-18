@@ -295,15 +295,15 @@ fn configure() {
 }
 
 fn granule() -> u64 {
-  if TCR_EL1.read().TG0 == 2 {
+  if TCR_EL1.read().TG0 == .16K {
     return 16384
   }
   return 4096
 }
 ```
 
-A read of the enum field `TG0` gives its backing `u2` value, so
-`TCR_EL1.read().TG0 == 2` compares it with the value of `.16K`.
+A read of the enum field `TG0` gives a value of `Granule`, so
+`TCR_EL1.read().TG0 == .16K` compares it with the variant.
 
 `const s = NAME.read()` keeps the snapshot of one `mrs` in the local `s`,
 and each `s.F` reads field `F` from it, as for a device register. The

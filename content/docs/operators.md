@@ -111,9 +111,9 @@ and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. A `bool` is
 not an integer, so `==` and `!=` do not take it: use the `bool` itself,
 or `!`. Comparisons do not chain: `a < b < c` is an error.
 
-`==` and `!=` also compare a field of
-[enum type](/docs/enums-and-bit-structs/#enums) with a variant. The
-variant takes the type of the field:
+`==` and `!=` also compare two values of one
+[enum](/docs/enums-and-bit-structs/#enums). A variant takes the enum of
+the other operand, such as a field of enum type:
 
 ```wyst
 enum MemoryType: u3 {

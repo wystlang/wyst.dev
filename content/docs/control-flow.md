@@ -54,9 +54,10 @@ fn check(count: u64) {
 ## match
 
 `match value {}` runs the arm that has a pattern equal to `value`, an
-integer. A pattern is an integer or a constant of the module, of the type
-of `value`. An arm can have more patterns, with `,` between them. `_`
-matches each other value, so it is the only pattern of the last arm:
+integer or a value of an enum. A pattern is an integer, a variant `.V` of
+the enum, or a constant of the module, of the type of `value`. An arm can
+have more patterns, with `,` between them. `_` matches each other value,
+so it is the only pattern of the last arm:
 
 ```wyst
 const wait: u16 = 4
@@ -77,6 +78,25 @@ Without `_`, no arm runs for a value that no pattern gives. When the
 Thus a function with a result can end with it, as `cost` does, and a
 statement after it is an error. The code computes `value` one time, so a
 `match` on a register read reads the register one time.
+
+On an enum, the patterns are its variants. A value of an enum can be a
+value that no variant has, so `_` also takes each such value, as
+[Enum values](/docs/enums-and-bit-structs/#enum-values) shows:
+
+```wyst
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+}
+
+fn cost(call: Call) -> u64 {
+  match call {
+    .Wait { return 2 }
+    .Send { return 3 }
+    _ { return 0 }
+  }
+}
+```
 
 In an arm, a parameter or a `const` local `value` is at most the highest
 pattern of the arm, so it can index an array, as
@@ -219,8 +239,8 @@ When `value` is `.None`, `value?` also returns `.None`, as
 The grammar also has these forms. The compiler does not implement them
 now:
 
-- `match` on a value that is not an integer, and the variant patterns
-  `.V` and `.V(p)`;
+- `match` on a value that is not an integer or an enum, and the variant
+  pattern `.V(p)`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
 - `if` and `match` as values.

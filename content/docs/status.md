@@ -24,15 +24,16 @@ This page lists both sides.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
-- `if` with `else` and `else if`, `match` on an integer, `for` in four
-  forms, with `..<` and `..=` ranges, `break`, `continue`, and `return`.
+- `if` with `else` and `else if`, `match` on an integer or an enum, `for`
+  in four forms, with `..<` and `..=` ranges, `break`, `continue`, and
+  `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
   `store`, `bitcast`, `widen`, and `truncate`.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, calls, and writes.
-- Enums of bit fields and of module constants, `pub` enums, `#[bits]`
-  structs, register maps, register banks, devices, arrays of devices,
+- Enums as the type of bit fields, constants, parameters, locals, results,
+  and fields of plain structs, `pub` enums, `#[bits]` structs, register maps, register banks, devices, arrays of devices,
   system registers, offsets and bit positions that the compiler computes,
   and locals that keep a register snapshot.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
@@ -50,7 +51,7 @@ kernel needs it:
 | Form | Now |
 | --- | --- |
 | Labels and `goto` | Refused. |
-| `match` on a value that is not an integer, and the variant patterns `.V` and `.V(p)` | Refused. A `match` on an integer works. |
+| `match` on a value that is not an integer or an enum, and the variant pattern `.V(p)` | Refused. A `match` on an integer or an enum works. |
 | `if` and `match` as values | Refused. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
@@ -81,6 +82,6 @@ kernel needs it:
 | A `#[bits]` struct as a parameter, a variable, or a result, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local `const` of the struct type. |
 | A `#[bits]` literal other than the value of a constant or a local `const`, such as an argument of `store` | Put the literal in a local `const` first. |
 | A `#[bits]` field value at run time | Field values are constants. |
-| Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
+| Enum variants with payloads, such as `Some(u64)`, a module variable of an enum type, and an `Option` of an enum | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type. |
 | An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |

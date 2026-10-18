@@ -91,14 +91,21 @@ function, so this is safe.
 ## Immediates
 
 Where an instruction takes an immediate, `#name` or `#m.name` gives the
-value of an integer constant:
+value of an integer or enum constant. `#E.V` or `#m.E.V` gives the value
+of variant `V` of enum `E`. A line gives `.V` no type, so the line names
+the enum:
 
 ```wyst
-const call_send: u64 = 3
+const wait: u64 = 4
 
-fn send() {
+enum Call: u16 {
+  Send = 11
+}
+
+fn calls() {
   asm {
-    svc #call_send
+    svc #wait
+    svc #Call.Send
   }
 }
 ```

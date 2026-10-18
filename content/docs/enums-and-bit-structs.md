@@ -5,8 +5,9 @@ summary: Named values of a bit field, and named bits of an integer in memory.
 
 ## Enums
 
-An enum gives names to the values of a bit field, in place of numbers. It
-has a backing type `uN`, and each variant has a value that fits in it. An
+An enum gives names to values, in place of numbers: the values of a bit
+field, and kinds, such as the kinds of a kernel object. It has a backing
+type `uN`, and each variant has a value that fits in it. An
 enum without a backing type, a variant without a value, a variant value
 that is not an integer literal, and a variant with values, such as
 `Ok(u64)`, are not implemented now:
@@ -31,14 +32,13 @@ enum Granule: u2 {
 }
 ```
 
-A field of enum type takes `.Variant`, such as `TG0 = .16K`, or a
-constant of the enum type. It does not take an integer, so a reserved
-value that has no variant cannot be written. A read of an enum field gives
-its backing `uN`, because the hardware can hold a value that is no
-variant.
+A field of enum type takes `.Variant`, such as `TG0 = .16K`, or a value
+of the enum type. It does not take an integer, so code cannot write a
+reserved value that has no variant. A read of an enum field gives a value
+of the enum.
 
-`==` and `!=` compare an enum field with `.Variant`, on either side. The
-variant takes the enum of the field, so the compare is of two `uN` values:
+`==` and `!=` compare two values of one enum. A variant takes the enum of
+the other operand, on either side:
 
 ```wyst
 enum Granule: u2 {
@@ -57,10 +57,73 @@ fn uses_16k() -> bool {
 }
 ```
 
+No other operator takes an enum. `widen(e)` gives the value of `e` as an
+integer of at least its width, such as `widen(TCR_EL1.read().TG0)`.
+
+## Enum values
+
+An enum is a type of values. A parameter, a local, a result, and a field
+of a plain struct can have an enum type, as a bit field and a module
+constant can. A field of a plain struct needs a backing type of 8, 16, 32,
+or 64 bits, as memory holds:
+
+```wyst
+enum Kind: u16 {
+  Free = 0
+  Memory = 1
+  Channel = 2
+}
+
+struct Slot {
+  object: u64
+  kind: Kind
+}
+
+fn take(slot: @Slot, kind: Kind) -> bool {
+  if load(@slot.kind) != .Free {
+    return false
+  }
+
+  store(@slot.kind, kind)
+
+  return true
+}
+
+fn grant(slot: @Slot) -> bool {
+  return take(slot, .Memory)
+}
+```
+
+A value of an enum can be a value that no variant has. The hardware can
+hold one in a field, and another domain can write one in a message. Thus
+a `match` on an enum takes the variants as its patterns, and `_` takes
+each other value:
+
+```wyst
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+}
+
+#[sysreg]
+const ESR_EL1: readonly u64 {
+  imm16: Call at 0..=15
+}
+
+fn known() -> bool {
+  match ESR_EL1.read().imm16 {
+    .Wait, .Send { return true }
+    _ { return false }
+  }
+}
+```
+
+A module variable of an enum type and an [`Option`](/docs/options/) of an
+enum are not implemented now.
+
 ## Enum constants
 
-An enum is the type of a bit field, of a register or of a `#[bits]`
-struct, and the type of a module constant. A constant of an enum type
+A constant of an enum type
 takes `.Variant` or a constant of the same enum type. Thus one module
 gives the value of a field that another module writes, such as a fact of
 the target hardware.
@@ -106,8 +169,6 @@ const granule: Granule = 3
 ```text
 main.wyst:7:26: error: expected Granule, found an integer
 ```
-
-A parameter, a local, and a variable cannot have an enum type now.
 
 ## Bit structs
 
