@@ -37,6 +37,26 @@ value that has no variant cannot be written. A read of an enum field gives
 its backing `uN`, because the hardware can hold a value that is no
 variant.
 
+`==` and `!=` compare an enum field with `.Variant`, on either side. The
+variant takes the enum of the field, so the compare is of two `uN` values:
+
+```wyst
+enum Granule: u2 {
+  4K = 0
+  64K = 1
+  16K = 2
+}
+
+#[sysreg]
+const TCR_EL1: readwrite u64 {
+  TG0: Granule at 14..=15
+}
+
+fn uses_16k() -> bool {
+  return TCR_EL1.read().TG0 == .16K
+}
+```
+
 ## Enum constants
 
 An enum is the type of a bit field, of a register or of a `#[bits]`

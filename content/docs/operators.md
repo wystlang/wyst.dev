@@ -111,6 +111,27 @@ and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. A `bool` is
 not an integer, so `==` and `!=` do not take it: use the `bool` itself,
 or `!`. Comparisons do not chain: `a < b < c` is an error.
 
+`==` and `!=` also compare a field of
+[enum type](/docs/enums-and-bit-structs/#enums) with a variant. The
+variant takes the type of the field:
+
+```wyst
+enum MemoryType: u3 {
+  Normal = 0
+  Device = 1
+}
+
+#[bits]
+struct Entry: u64 {
+  AttrIndx: MemoryType at 2..=4
+}
+
+fn normal(value: u64) -> bool {
+  const entry: Entry = value
+  return entry.AttrIndx == .Normal
+}
+```
+
 ## Logical operators
 
 `!` gives the other `bool`. `a && b` is true when `a` and `b` are true, and
