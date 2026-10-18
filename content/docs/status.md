@@ -30,8 +30,8 @@ This page lists both sides.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
   `store`, `bitcast`, `widen`, and `truncate`.
-- Index proofs from constants, masks, range loops, conditions, calls, and
-  writes.
+- Index proofs from constants, masks and other operators, range loops,
+  conditions, calls, and writes.
 - Enums of bit fields and of module constants, `pub` enums, `#[bits]`
   structs, register maps, devices, arrays of devices, system registers,
   offsets and bit positions that the compiler computes, and locals that
