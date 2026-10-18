@@ -170,6 +170,28 @@ fn idle() -> bool {
 }
 ```
 
+Each other use of a snapshot, such as an operand, an argument, `@s`, or a
+copy in another local, is an error:
+
+```wyst fails
+#[register_map]
+struct Pl011 {
+  FR: readonly u32 at 0x18 { BUSY: bool at 3 }
+}
+
+#[mmio(0x0900_0000)]
+const uart: Pl011
+
+fn quiet() -> bool {
+  const flags = uart.FR.read()
+  return flags == 0
+}
+```
+
+```text
+main.wyst:11:10: error: a field read is the only use of a register snapshot
+```
+
 A read can also be a statement alone. It loads the register and discards
 the value.
 

@@ -54,7 +54,6 @@ kernel needs it:
 | `match` on a value that is not an integer, and the variant patterns `.V` and `.V(p)` | Refused. A `match` on an integer works. |
 | `if` and `match` as values | Refused. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
-| `==` and `!=` on a `bool` | Use the `bool` itself, or `!`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
 | `var` in a function body | Locals do not change. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
@@ -63,6 +62,7 @@ kernel needs it:
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
+| An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
@@ -85,5 +85,4 @@ kernel needs it:
 | Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
 | An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
-| An `asm` output of a type other than `u64` or `Option<u64>` | Use a `u64` output and `truncate`. |
 | An `asm` block with an output in an expression, such as `1 + asm -> v {...}` | Give the block to a local `const`, then use the local. |

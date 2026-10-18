@@ -68,8 +68,8 @@ main.wyst:2:17: error: the type of `.Some` is not known here
 ## Booleans
 
 `bool` has two values, `true` and `false`. `!` gives the other value. A
-`bool` is not an integer, so `&`, `|`, and `+` do not take it. `==` and
-`!=` on a `bool` are not implemented now. Use the `bool` itself, or `!`.
+`bool` is not an integer, so `&`, `|`, `+`, `==`, and `!=` do not take it.
+Use the `bool` itself, or `!`.
 
 ```wyst
 var ready: bool = false
@@ -77,6 +77,16 @@ var ready: bool = false
 fn toggle() {
   ready = !ready
 }
+```
+
+```wyst fails
+fn done(ready: bool) -> bool {
+  return ready == true
+}
+```
+
+```text
+main.wyst:2:16: error: `==` takes only integers, found bool
 ```
 
 ## No implicit conversions

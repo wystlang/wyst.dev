@@ -74,9 +74,11 @@ Thus a struct cannot hold itself.
 
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
-constants. `T` is `u8`, `u16`, `u32`, `u64`, or a plain struct of the
-module. A module constant or a `static_assert` that uses them comes after
-the declaration of `T`. A function that uses them can come before it.
+constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, a plain
+struct of the module, or, for `size_of`, an array of them, such as
+`[4]Slot`. A module constant or a `static_assert` that uses them comes
+after the declaration of `T`. A function that uses them can come before
+it.
 
 Code that depends on a layout states it with `static_assert`, directly
 below the struct:
@@ -90,6 +92,7 @@ struct Slot {
 }
 
 static_assert(size_of(Slot) == 16)
+static_assert(size_of([4]Slot) == 64)
 static_assert(field_offset(Slot, kind) == 12)
 ```
 
