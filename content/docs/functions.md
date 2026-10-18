@@ -26,6 +26,15 @@ No call starts the entry or a naked function, so no
 string literal gives their parameters, and a `string` parameter of one of
 them is not implemented now.
 
+A parameter `_` takes its argument and gives it no name, so the body
+cannot read it:
+
+```wyst
+fn second(_: u64, b: u64) -> u64 {
+  return b
+}
+```
+
 ## Results
 
 A result is a value type, an address type, `Option<T>`, or `never`. A function with a
@@ -95,7 +104,20 @@ fn skip(x: u8) {
 main.wyst:6:3: error: the `u8` result of this call is not used
 ```
 
-`_ = next(x)`, which drops the result, is not implemented now.
+`const _ = next(x)` calls `next` and keeps nothing, so it drops the
+result:
+
+```wyst
+fn next(x: u8) -> u8 {
+  return x + 1
+}
+
+fn skip(x: u8) {
+  const _ = next(x)
+}
+```
+
+`_ = next(x)` is not implemented now.
 
 ## never
 

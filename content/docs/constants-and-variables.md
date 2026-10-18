@@ -127,4 +127,24 @@ A local is not a constant, also when `const` declares it. The compiler
 does not compute its value, so it cannot be the divisor of `/` or the
 amount of a shift.
 
+`const _ = value` computes the value and keeps nothing, and a loop
+variable `_` counts the passes with no name:
+
+```wyst
+var sent: u64 = 0
+
+fn send(byte: u8) -> u64 {
+  sent += 1
+  return sent
+}
+
+fn greet(count: u64) {
+  const _ = send(72)
+
+  for _ in 0 ..< count {
+    const _ = send(33)
+  }
+}
+```
+
 `var` in a function body is not implemented now.
