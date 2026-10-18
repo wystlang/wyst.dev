@@ -73,8 +73,8 @@ Params     <- '(' List(Param)? ')'
 Param      <- Name ':' ('mut' / 'xfer')? Type ('in' Register)?
 
 Struct     <- 'linear'? 'struct' Name TypeParams? (':' Type)? '{' Field* '}'
-Field      <- Name ':' Name Type 'at' Expr ('{' Bits* '}')?   // register map
-            / Bits                                         // #[bits]
+Field      <- Name ':' ('[' Expr ']')? Name Type 'at' Expr ('{' Bits* '}')?   // register map
+            / Bits                                                         // #[bits]
             / Name ':' Type
 Bits       <- Name ':' Type 'at' Expr ('..=' Expr)? ('=' Expr)?
 Enum       <- 'linear'? 'enum' Name TypeParams? (':' Type)? '{' Variant* '}'
@@ -88,7 +88,8 @@ Var        <- 'var' Name (':' Type)? '=' Expr
 A file is a module. An item that starts with the builtin name
 `static_assert` checks a constant and declares nothing. The register map
 form of `Field` is valid only in a `#[register_map] struct`; its second
-name is `readonly`, `writeonly`, or `readwrite`. The `Bits` form of
+name is `readonly`, `writeonly`, or `readwrite`, and a `[N]` before it
+declares a bank of N registers. The `Bits` form of
 `Field` and the `:` type of a struct are valid only in a `#[bits] struct`.
 Only a `#[mmio(address)]` or `#[sysreg]` `const` has no initializer.
 

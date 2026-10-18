@@ -1,6 +1,6 @@
 ---
 title: Registers and devices
-summary: Register maps, devices at physical addresses, arrays of devices, and register access.
+summary: Register maps, register banks, devices at physical addresses, arrays of devices, and register access.
 ---
 
 A device has registers at fixed offsets from its base address. Wyst
@@ -126,6 +126,60 @@ fn wake(cpu: u64) {
 is less than N, as for any index. See [Index proofs](/docs/index-proofs/).
 A call in the index, such as `redistributors[cpu() & 3]`, is not
 implemented now. Put the result of the call in a local first.
+
+## Register banks
+
+A register bank is a fixed number of registers of one shape, one after the
+other from one offset. `[N]` before the access kind declares N registers.
+The Apple PMGR has one start register for each cluster of cores:
+
+```wyst
+const clusters: u64 = 3
+
+#[register_map]
+struct Pmgr {
+  START: [clusters]writeonly u32 at 0x5_4008 { CORES: u4 at 0..=3 }
+}
+
+#[mmio(0x2_8e08_0000)]
+const pmgr: Pmgr
+
+// Starts core 0 of each cluster.
+fn start() {
+  for cluster in 0 ..< clusters {
+    pmgr.START[cluster].write(CORES = 1)
+  }
+}
+```
+
+`dev.R[i]` is register `i` of bank `R`, at the offset of the bank plus `i`
+times the register size: here 0x5_4008, 0x5_400c, and 0x5_4010. The
+compiler must prove that `i` is less than N, as for an array of devices,
+and a call in the index is not implemented now. N is a constant that the
+compiler computes, and it is not 0. The bank takes N times the register
+size, so no other register can start in it, and each bank fits in the
+stride of an array of devices. A device of an array takes its own index
+first, as in `pmgrs[die].START[cluster]`.
+
+A bank needs the index, and a register that is not a bank takes none:
+
+```wyst fails
+#[register_map]
+struct Pmgr {
+  START: [3]writeonly u32 at 0x5_4008 { CORES: u4 at 0..=3 }
+}
+
+#[mmio(0x2_8e08_0000)]
+const pmgr: Pmgr
+
+fn start() {
+  pmgr.START.write(CORES = 1)
+}
+```
+
+```text
+main.wyst:10:8: error: `START` is a register bank; select one with `START[index]`
+```
 
 ## Reading and writing
 

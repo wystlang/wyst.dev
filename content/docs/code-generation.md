@@ -123,7 +123,7 @@ each copy.
 | --- | --- |
 | A constant | One `movz`, then one `movk` for each other halfword that is not 0. Or `movn` and `movk`, when more halfwords are `0xffff`. |
 | An operator on literals and module constants | No code of its own: the compiler computes the result, which is one constant. A constant condition keeps its branch: `mov`, then `cbz` or `cbnz`. |
-| A register `read` or `write` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str` with a base register and the offset. A device base that the function uses only one time adds the code of a constant. A device of an array adds one shifted `add` for the index. |
+| A register `read` or `write` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str` with a base register and the offset. A device base that the function uses only one time adds the code of a constant. A device of an array adds one shifted `add` for the index, and a register of a bank adds one shifted `add` for its index. |
 | A system register `read` or `write` | One `mrs` or `msr`. |
 | A field write | One `lsl` or `orr` for each field value that is not a constant. The fixed fields and the constant values make one constant. One `orr` adds it when it fits in the instruction. If it does not fit, the code of the constant and one `orr` add it. A write of only constants is one constant. |
 | `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. The address of a field, or of an element at a constant index, adds one `add` for the offset. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
