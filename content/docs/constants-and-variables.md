@@ -123,6 +123,35 @@ fn count(limit: u64) {
 main.wyst:2:3: error: cannot assign to parameter `limit`
 ```
 
+A block cannot have two locals with one name:
+
+```wyst fails
+fn total(a: u64, b: u64) -> u64 {
+  const sum = a + b
+  const sum = sum + 1
+  return sum
+}
+```
+
+```text
+main.wyst:3:9: error: a second local `sum` in this block
+```
+
+A local of the body can hide a parameter, and a local of an inner block
+or a loop variable can hide a local of an outer block:
+
+```wyst
+fn scaled(value: u64) -> u64 {
+  const value = value * 2
+  if value > 100 {
+    const value = value - 100
+    return value
+  }
+
+  return value
+}
+```
+
 A local is not a constant, also when `const` declares it. The compiler
 does not compute its value, so it cannot be the divisor of `/` or the
 amount of a shift.
