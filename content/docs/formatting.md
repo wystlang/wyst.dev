@@ -128,7 +128,7 @@ These rules follow the `wsl` linter for Go.
 ## Spaces
 
 - One space goes around a binary operator, an assignment, `=`, `->`, and
-  `..<` in a `for` range. A bit range has no spaces: `at 0..=7`.
+  `..<` or `..=` in a `for` range. A bit range has no spaces: `at 0..=7`.
 - There is no space after a unary operator, before `?`, around `.`, inside
   `()` and `[]`, before the `(` of a call, or in `#[...]`, `Option<u64>`,
   `[N]T`, `@T`, and `.V`.

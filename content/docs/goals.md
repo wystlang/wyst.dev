@@ -17,9 +17,9 @@ These properties together are the reason for the language:
 
 - **Memory safety** in the safe subset, proved from the origin of each
   address, with no lifetime syntax and no runtime. Now, the index proofs
-  and the rules for addresses give this: an address cannot leave its
-  function, and each index is proved. Each `bitcast` marks a fact that the
-  program trusts.
+  and the rules for addresses give this: an address leaves its function
+  only as the [result](/docs/addresses/#address-results), and each index
+  is proved. Each `bitcast` marks a fact that the program trusts.
 - **Linear resources.** A `linear` value cannot leave a function without
   the declaring module consuming it. Thus the compiler can refuse a
   forgotten end-of-interrupt write. This is not implemented now.
