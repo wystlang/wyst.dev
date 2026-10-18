@@ -82,7 +82,9 @@ the last argument with a call. A constant, a layout symbol, an operation
 on constants and layout symbols with an integer value, a string literal,
 or a local does not wait, because no call changes it: the code computes it
 after the call. No scratch register holds a value while the code computes
-an argument or a value that waits, so each starts at depth 0.
+an argument or a value that waits, so each starts at depth 0. An `asm`
+block is a call for this rule, because its inputs are in the scratch
+registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
 
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in

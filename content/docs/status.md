@@ -35,8 +35,8 @@ This page lists both sides.
   structs, register maps, register banks, devices, arrays of devices,
   system registers, offsets and bit positions that the compiler computes,
   and locals that keep a register snapshot.
-- Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
-  that do not return.
+- Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
+  and blocks that do not return.
 - Naked functions with parameters, `#[el2]` functions, code addresses, the
   exception vector table, function sections, and semihosting.
 - Implementation-defined system registers, by their encoding.
@@ -84,4 +84,3 @@ kernel needs it:
 | Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
 | An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
-| An `asm` block with an output in an expression, such as `1 + asm -> v {...}` | Give the block to a local `const`, then use the local. |
