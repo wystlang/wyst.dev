@@ -78,7 +78,8 @@ The compiler must prove that each index is less than the length of its
 array. [Index proofs](/docs/index-proofs/) gives the rules.
 
 `@p`, where `p` is an address, is an error, because `p` is already the
-address. `@` of a local or of a module variable is not implemented now.
+address. `@` of a local, of a module variable, or of a module constant is
+not implemented now.
 
 `@name` of a naked function or of the vector table gives a code address,
 a `u64`. See [Code addresses](/docs/boot-and-exceptions/#code-addresses).
