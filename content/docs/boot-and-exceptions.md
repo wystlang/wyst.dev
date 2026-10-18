@@ -85,10 +85,45 @@ main.wyst:5:3: error: a naked function has no frame for a value that waits while
 
 An `eret` keeps `x0` to `x7`, so a naked function that ends with `eret`
 gives its parameters to the naked function at which `eret` goes. The
-compiler does not check that this function takes the same parameters. On
-the Mac Studio, m1n1 gives the address of `boot_args` in `x0`, and the
-entry gives it to EL1 in this way, as [EL2 functions](#el2-functions)
-shows.
+statement directly before the `asm` block of the `eret` gives this
+function `f` when it writes `@f`, and nothing else, to ELR_EL2 or ELR_EL1,
+such as `ELR_EL2.write(ADDRESS = @f)`. The compiler checks that `f` takes
+the same parameter types in the same order. A naked function with
+parameters needs this write, and its `asm` lines cannot write ELR_EL2 or
+ELR_EL1. On the Mac Studio, m1n1 gives the address of `boot_args` in
+`x0`, and the entry gives it to EL1 in this way, as
+[EL2 functions](#el2-functions) shows.
+
+Here `next` takes only one of the two parameters:
+
+```wyst fails
+#[sysreg]
+const ELR_EL1: writeonly u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+#[naked]
+pub fn _start(a: u64, b: u64) -> never {
+  ELR_EL1.write(ADDRESS = @next)
+
+  asm -> never {
+    eret
+  }
+}
+
+#[naked]
+fn next(a: u64) -> never {
+  run(a)
+}
+
+fn run(a: u64) -> never {
+  for {}
+}
+```
+
+```text
+main.wyst:10:3: error: `eret` goes to `next`, which does not take the parameter types of `_start` in the same order
+```
 
 ## The stack
 
