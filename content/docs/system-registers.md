@@ -92,6 +92,64 @@ fn installed() -> bool {
 main.wyst:7:19: error: `VBAR_EL2` can be read only at EL2, in an `#[el2]` function
 ```
 
+## EL1 registers at EL2
+
+The target has `FEAT_VHE`, as the Cortex-A76 and the cores of the Mac
+Studio do. Thus an
+[`#[el2]` function](/docs/boot-and-exceptions/#el2-functions) can access
+the EL1 and EL0 registers through the `_EL12` and `_EL02` names, such as
+`SCTLR_EL12` and `CNTP_CTL_EL02`. These names reach the EL1 and EL0
+registers only while `HCR_EL2.E2H` is 1. While E2H is 0, an access through
+them takes an Undefined Instruction exception.
+
+While E2H is 1, an `_EL1` or `_EL0` name at EL2 reaches the EL2 register:
+`SCTLR_EL1` gives SCTLR_EL2, and `CNTP_CTL_EL0` gives CNTHP_CTL_EL2. The
+compiler cannot see E2H, so it checks each name only for the EL of its
+function, and the code sets E2H before such an access. This function gives
+EL1 a known SCTLR_EL1 before the code goes to EL1:
+
+```wyst
+#[sysreg]
+const HCR_EL2: writeonly u64 {
+  RW:  bool at 31
+  E2H: bool at 34
+}
+
+// A write sets the RES1 bits, and turns off the MMU and the caches of EL1.
+#[sysreg]
+const SCTLR_EL12: writeonly u64 {
+  EOS:    bool at 11 = true
+  TSCXT:  bool at 20 = true
+  EIS:    bool at 22 = true
+  SPAN:   bool at 23 = true
+  nTLSMD: bool at 28 = true
+  LSMAOE: bool at 29 = true
+}
+
+#[el2]
+fn prepare_el1() {
+  HCR_EL2.write(RW = true, E2H = true)
+  SCTLR_EL12.write()
+}
+```
+
+A function without `#[el2]` cannot use these names:
+
+```wyst fails
+#[sysreg]
+const SCTLR_EL12: writeonly u64 {
+  M: bool at 0
+}
+
+fn stop() {
+  SCTLR_EL12.write(M = false)
+}
+```
+
+```text
+main.wyst:7:14: error: `SCTLR_EL12` can be written only at EL2, in an `#[el2]` function
+```
+
 ## Sharing a register
 
 `pub` lets each module that imports the module of a system register use

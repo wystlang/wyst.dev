@@ -166,6 +166,10 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
   `#[el2]` function can call one, because a callee runs at the EL of its
   caller. A function of the vector table runs at EL1, so it cannot have
   `#[el2]`.
+- An `#[el2]` function accesses the EL1 registers through the `_EL12` and
+  `_EL02` names while `HCR_EL2.E2H` is 1, as
+  [EL1 registers at EL2](/docs/system-registers/#el1-registers-at-el2)
+  gives.
 - `@f` of a naked function without `#[el2]` gives the address at which
   `eret` goes to EL1.
 
