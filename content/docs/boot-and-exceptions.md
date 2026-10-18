@@ -147,15 +147,85 @@ fn main() -> never {
 ```
 
 `__stack_top` is a symbol of the layout file. The stack grows down from
-it. The compiler does not check that a naked function sets the stack
-before its first call.
+it.
+
+The CPU starts the entry and each naked function with no stack. A naked
+function has no stack until an `asm` block of its body, not of an inner
+block, writes `sp`. A function that it calls before then, also in the
+inputs of that block, runs with no stack, and so does a function at which
+its `eret` goes and an entry that is not naked. The compiler makes sure
+that such a function, and each function that it calls, uses no stack: it
+saves no register, has no stack slot, and does not call `test_exit`. A
+function that returns `never` saves no register, and a function keeps ten
+values in registers before it puts one on the stack. Thus a naked function
+can compute its stack with a call:
+
+```wyst
+#[sysreg]
+const MPIDR_EL1: readonly u64 {
+  Aff0: u8 at 0..=7
+}
+
+#[naked]
+pub fn _start() -> never {
+  asm(top in x0 = __stack_top - cpu() * 0x4000) {
+    add sp, x0, #0
+  }
+
+  main()
+}
+
+fn cpu() -> u64 {
+  const mpidr = MPIDR_EL1.read()
+  return widen(mpidr.Aff0)
+}
+
+fn main() -> never {
+  for {}
+}
+```
+
+A call of a function that uses the stack, before the stack is set, is an
+error:
+
+```wyst fails
+var ticks: u64 = 0
+
+#[naked]
+pub fn _start() -> never {
+  count()
+
+  asm(top in x0 = __stack_top) {
+    add sp, x0, #0
+  }
+
+  for {}
+}
+
+fn count() {
+  tick()
+}
+
+fn tick() {
+  ticks += 1
+}
+```
+
+```text
+main.wyst:5:3: error: naked function `main._start` has no stack here, because no `asm` block of its body has written `sp`, but `main.count` uses the stack
+```
+
+`count` returns and calls a function, so its prologue saves `x29` and
+`x30` on the stack.
 
 ## Code addresses
 
-`@name` of a naked function gives its address, a `u64`, so that a CPU or a
-thread can start there. `@m.f` gives the address of the `pub` naked
-function `f` of the imported module `m`. `@` of a function takes only a
-naked function.
+`@name` of a function gives its address, a `u64`, so that a CPU or a
+thread can start there. `@m.f` gives the address of the `pub` function `f`
+of the imported module `m`. No call starts the function, so it is naked,
+or it has no parameters and returns `never`. A CPU starts with no stack,
+and a thread of EL0 starts with the stack that the kernel gives it, so the
+function of a thread need not be naked.
 
 This code starts another CPU at `secondary` with the PSCI call `CPU_ON`:
 

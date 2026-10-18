@@ -38,7 +38,8 @@ This page lists both sides.
   and locals that keep a register snapshot.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
   and blocks that do not return.
-- Naked functions with parameters, `#[el2]` functions, code addresses, the
+- Naked functions with parameters, the check that a function that runs
+  with no stack uses none, `#[el2]` functions, code addresses, the
   exception vector table, function sections, and semihosting.
 - Implementation-defined system registers, by their encoding.
 - `wync build` and `wync fmt`.
@@ -66,7 +67,7 @@ kernel needs it:
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
-| Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` naked functions of another module. |
+| Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |
