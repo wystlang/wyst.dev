@@ -32,11 +32,46 @@ struct Redistributor {
   write gives it that value, and a write cannot name it. A bit that the
   specification requires to be 1 (RES1) is a fixed field.
 - The fields in `{ }` are optional.
-- A constant or an expression in place of the offset or a bit position is
-  not implemented now. Write an integer literal.
 
 Register and field names follow the datasheet. `wync fmt` aligns the
 entries in columns, because a reader scans a register map by column.
+
+## Computed positions
+
+The offset and each bit position are constants that the compiler
+computes: a literal, a module constant, a `pub` constant of an imported
+module, or an operator on constants. Each is an integer, as an index is,
+and one with only literals is a `u64`. Thus one constant can give the
+place of a line in more than one register:
+
+```wyst
+// Line n of the AIC is bit n % 32 of word n / 32 of MASK_SET and
+// MASK_CLR.
+const uart_line: u16 = 1097
+
+#[register_map]
+struct Aic {
+  MASK_SET: readwrite u32 at 0x6400 + 4 * (uart_line / 32) { Uart: bool at uart_line % 32 }
+  MASK_CLR: readwrite u32 at 0x6600 + 4 * (uart_line / 32) { Uart: bool at uart_line % 32 }
+}
+```
+
+The compiler gives a register map its fields in declaration order, as it
+gives a constant its value. Thus a position can use only the constants of
+its module before the map, and a device comes after its map:
+
+```wyst fails
+#[register_map]
+struct Uart {
+  ICR: writeonly u32 at 0x44 { RX: bool at rx }
+}
+
+const rx: u8 = 4
+```
+
+```text
+main.wyst:3:44: error: `rx` is used before its declaration
+```
 
 ## Devices
 

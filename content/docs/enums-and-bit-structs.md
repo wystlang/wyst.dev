@@ -7,8 +7,9 @@ summary: Named values of a bit field, and named bits of an integer in memory.
 
 An enum gives names to the values of a bit field, in place of numbers. It
 has a backing type `uN`, and each variant has a value that fits in it. An
-enum without a backing type, a variant without a value, and a variant with
-values, such as `Ok(u64)`, are not implemented now:
+enum without a backing type, a variant without a value, a variant value
+that is not an integer literal, and a variant with values, such as
+`Ok(u64)`, are not implemented now:
 
 ```wyst
 enum Shareability: u2 {
@@ -124,7 +125,25 @@ static_assert(data.UXN)
 - The backing type is `u8`, `u16`, `u32`, or `u64`. For another width,
   use the next of these types and leave the high bits without a field.
 - The fields follow the rules of a register map, inside the backing type.
-  A field with `= value` is fixed.
+  A field with `= value` is fixed, and a bit position can be a
+  [constant that the compiler computes](/docs/registers/#computed-positions).
+
+The compiler gives a bit struct its fields in declaration order, as it
+gives a constant its value. Thus a constant of the struct type comes after
+the struct:
+
+```wyst fails
+const data: Entry = { UXN = true }
+
+#[bits]
+struct Entry: u64 {
+  UXN: bool at 54
+}
+```
+
+```text
+main.wyst:1:13: error: `Entry` is used before its declaration
+```
 
 ## Literals
 

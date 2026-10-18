@@ -34,7 +34,8 @@ This page lists both sides.
   writes.
 - Enums of bit fields and of module constants, `pub` enums, `#[bits]`
   structs, register maps, devices, arrays of devices, system registers,
-  and locals that keep a register snapshot.
+  offsets and bit positions that the compiler computes, and locals that
+  keep a register snapshot.
 - Checked `asm` blocks, with inputs, outputs, `Option` outputs, and blocks
   that do not return.
 - Naked functions with parameters, `#[el2]` functions, code addresses, the
@@ -78,12 +79,11 @@ kernel needs it:
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
-| A register offset or a bit position other than an integer literal | Write an integer literal. |
 | A `#[bits]` struct as a parameter, a variable, or a result, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local `const` of the struct type. |
 | A `#[bits]` literal other than the value of a constant or a local `const`, such as an argument of `store` | Put the literal in a local `const` first. |
 | A `#[bits]` field value at run time | Field values are constants. |
 | Enum variants with payloads, such as `Some(u64)`, and an enum as the type of a parameter, a local, or a variable | An enum is only the type of a bit field or of a module constant. |
-| An enum without a backing type, and a variant without a value | Give the backing type `uN` and the value of each variant. |
+| An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
 | `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
 | An `asm` output of a type other than `u64` or `Option<u64>` | Use a `u64` output and `truncate`. |
 | An `asm` block with an output in an expression, such as `1 + asm -> v {...}` | Give the block to a local `const`, then use the local. |
