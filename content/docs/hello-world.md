@@ -96,6 +96,10 @@ qemu-system-aarch64 -machine virt -cpu cortex-a76 -nographic \
   -semihosting-config enable=on,target=native -kernel hello.elf
 ```
 
+The `virt` board gives a 32-bit CPU by default, so `-cpu cortex-a76`
+selects a 64-bit CPU. [Running on QEMU](/docs/qemu/) tells why each
+option is necessary.
+
 QEMU prints the line and stops with exit status 0:
 
 ```text

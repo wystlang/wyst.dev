@@ -149,18 +149,16 @@ fn ready(table: @[4]u64, i: u64) -> bool {
 }
 ```
 
-In the condition of `if` or `for`, an operand of `&&` or `||` can be a call
-with a `bool` result, as `!` can:
+An operand of `&&` or `||` can be a call with a `bool` result, as an
+operand of `!` can. Here `idle` runs only when `count` is 0:
 
 ```wyst
 fn idle() -> bool {
   return true
 }
 
-fn poll(count: u64) {
-  if count == 0 || !idle() {
-    trap()
-  }
+fn busy(count: u64) -> bool {
+  return count != 0 || !idle()
 }
 ```
 

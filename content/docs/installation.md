@@ -11,7 +11,8 @@ editor that formats Wyst files on save.
 `wync` is a Rust program. Its source is in the `wystlang/wyst` repository,
 which is private now. The repository pins the Rust toolchain in
 `rust-toolchain.toml`, and `rustup` installs that toolchain on the first
-build.
+build. `cargo` also needs a linker for the host. On macOS, install the
+Xcode Command Line Tools with `xcode-select --install`.
 
 In a checkout of the repository, build the compiler:
 
