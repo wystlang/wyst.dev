@@ -18,6 +18,9 @@ The checker knows the highest value of:
 - a constant;
 - `a & b`, which is at most the highest value of `a` or of `b`;
 - `widen(x)`, which keeps the proof of `x`;
+- a read of a field of `N` bits, which is less than 2^N;
+- `truncate(x)` to `uN`, which keeps the proof of `x` and is less than
+  2^N;
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
   knows the highest value `h` of `n`, and of `for i in a ..= n`, which is
   `h`;
@@ -41,6 +44,20 @@ fn clear_all(table: @[slots]u64) {
   for i in 0 ..< slots {
     store(@table[i], 0)
   }
+}
+```
+
+A field of 2 bits is at most 3, so it proves an index into an array of 4:
+
+```wyst
+#[bits]
+struct Slot: u8 {
+  Way: u2 at 0..=1
+}
+
+fn clear(table: @[4]u64, cursor: @u8) {
+  const slot: Slot = load(cursor)
+  store(@table[slot.Way], 0)
 }
 ```
 
@@ -171,6 +188,24 @@ fn mark(table: @[4]u64, cursor: @u64) {
 
 ```text
 main.wyst:3:16: error: the checker cannot prove that the index is less than 4
+```
+
+## match
+
+In an arm of a `match` on a parameter, a loop variable, or a `const` local
+`x`, `x` is at most the highest pattern of the arm, as under `if x == p`.
+The arm `_` gives no bound:
+
+```wyst
+fn mark(table: @[4]u64, cursor: @u64) {
+  const at = load(cursor)
+  match at {
+    0, 3 {
+      store(@table[at], 1)
+    }
+    _ {}
+  }
+}
 ```
 
 ## Parameters and variables

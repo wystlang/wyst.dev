@@ -78,6 +78,19 @@ Thus a function with a result can end with it, as `cost` does, and a
 statement after it is an error. The code computes `value` one time, so a
 `match` on a register read reads the register one time.
 
+In an arm, a parameter or a `const` local `value` is at most the highest
+pattern of the arm, so it can index an array, as
+[Index proofs](/docs/index-proofs/#match) shows:
+
+```wyst
+fn charge(costs: @[4]u64, call: u64) -> u64 {
+  match call {
+    0, 3 { return load(@costs[call]) }
+    _ { return 0 }
+  }
+}
+```
+
 A value cannot be two patterns of the `match`, also in one arm:
 
 ```wyst fails
