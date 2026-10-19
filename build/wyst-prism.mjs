@@ -26,6 +26,8 @@ export function registerWyst(Prism) {
 	Prism.languages.wyst = {
 		comment: /\/\/.*/,
 		string: { pattern: /"(?:\\.|[^"\\\n])*"/, greedy: true },
+		// A character literal, such as `'q'` or `'\n'`, is an integer.
+		char: { pattern: /'(?:\\x[\dA-Fa-f]{2}|\\.|[^'\\\n])'/, greedy: true, alias: "number" },
 		attribute: {
 			pattern: /#\[[^\]\n]*\]/,
 			alias: "macro",

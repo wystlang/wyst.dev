@@ -151,5 +151,5 @@ reader scans by column.
   stays at the top of the file.
 - Each line of an `asm` body is one level in, and its text does not
   change.
-- Integers, strings, and variant names keep their spelling, such as
-  `0x0110_0000` and `16K`. Parentheses stay as written.
+- Integers, characters, strings, and variant names keep their spelling,
+  such as `0x0110_0000`, `'\n'`, and `16K`. Parentheses stay as written.

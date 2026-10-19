@@ -16,6 +16,8 @@ This page lists both sides.
   structs, and system registers.
 - The value types `bool`, `u8`, `u16`, `u32`, and `u64`, and `never`.
 - `string` parameters, with a string literal as the argument.
+- Character literals, such as `'q'`, which are integer literals with the
+  value of one byte.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
   `-=`,
   and local constants.
