@@ -136,16 +136,18 @@ or the head of a `for` loop. A `for` loop on a `string` visits each byte
 as a `u8`:
 
 ```wyst
-var sum: u8 = 0
+fn checksum(text: string) -> u8 {
+  var sum: u8 = 0
 
-fn checksum(text: string) {
   for byte in text {
     sum += byte
   }
+
+  return sum
 }
 
-fn check() {
-  checksum("Wyst\n")
+fn check() -> u8 {
+  return checksum("Wyst\n")
 }
 ```
 

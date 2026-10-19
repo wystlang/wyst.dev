@@ -224,8 +224,8 @@ const all: u8 = ~0
 
 ## Assignment
 
-An assignment is a statement. It changes a module variable, and nothing
-else can change, because a local `var` and a `mut` parameter are not
+An assignment is a statement. It changes a local `var` or a module
+variable. Nothing else can change, because a `mut` parameter is not
 implemented now:
 
 | Form | Meaning |
@@ -251,8 +251,19 @@ pub fn spend() {
 }
 ```
 
-A parameter and a local cannot change now, so an assignment to one is an
-error:
+The value of an assignment to a local `var` can read the local:
+
+```wyst
+fn grow(seed: u64) -> u64 {
+  var x = seed
+  x = x * 3 + x
+
+  return x
+}
+```
+
+A parameter and a `const` local cannot change, so an assignment to one is
+an error:
 
 ```wyst fails
 fn count(limit: u64) {

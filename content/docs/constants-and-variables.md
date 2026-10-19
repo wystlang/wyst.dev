@@ -101,7 +101,8 @@ pub fn stop() {
 ```
 
 `name = value`, `name += value`, and `name -= value` change a module
-variable. [Operators](/docs/operators/#assignment) gives their rules.
+variable or a [local `var`](#locals).
+[Operators](/docs/operators/#assignment) gives their rules.
 
 Each module variable is in the ELF file with its initial value, in the
 section `.data`. The program does not need to clear memory before it
@@ -109,9 +110,44 @@ starts.
 
 ## Locals
 
-`const name = value` in a function body declares a local. A local cannot
-change, and neither can a parameter, because a local `var` and a `mut`
-parameter are not implemented now:
+`const name = value` in a function body declares a local that cannot
+change. `var name: T = value` declares a local `var`, which an assignment
+can change while its name is in scope. As a module variable, a local `var`
+has the type `bool`, `u8`, `u16`, `u32`, or `u64`, and the type is
+optional when the value has a type:
+
+```wyst
+fn sum(limit: u64) -> u64 {
+  var total: u64 = 0
+
+  var i = limit
+  for i != 0 {
+    total += i
+    i -= 1
+  }
+
+  return total
+}
+```
+
+A local `var` of another type, such as an address, is not implemented
+now:
+
+```wyst fails
+fn first(table: @[4]u64) {
+  var cursor = table
+}
+```
+
+```text
+main.wyst:2:16: error: a local `var` that holds @[4]u64 is not implemented now
+```
+
+The checker keeps no proof of the highest value of a local `var`, as
+[Index proofs](/docs/index-proofs/#local-variables) gives.
+
+A parameter cannot change, because a `mut` parameter is not implemented
+now:
 
 ```wyst fails
 fn count(limit: u64) {
