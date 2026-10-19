@@ -137,9 +137,10 @@ So is `eret`, except at the end of a block that does not return.
 ## Outputs
 
 `asm(inputs) -> out { lines }` is a value: the value of the output `out`
-after the last line. As a call, it can be the value of a local `const` or
-of `return`, an operand, or an argument. A line can read and write the
-output. A block that does not write its output is an error.
+after the last line. As a call, it can be the value of a local `const`, of
+a local `var`, of an assignment, or of `return`, an operand, or an
+argument. A line can read and write the output. A block that does not
+write its output is an error.
 
 ```wyst
 fn try_lock(word: u64) -> u64 {
