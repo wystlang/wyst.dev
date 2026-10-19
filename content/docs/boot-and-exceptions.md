@@ -10,8 +10,8 @@ stack exists. The entry of a program is usually naked, because the CPU
 starts without a stack.
 
 A naked function returns `never`. It has no frame, so it cannot have a
-local (`const`), a range or string loop, an inline call, or a call to
-`semihost.test_exit`.
+local (`const` or `var`), a range or string loop, an inline call, or a
+call to `semihost.test_exit`.
 
 Only a naked function can call a naked function. The call is a branch,
 `b`, so the callee gets the registers and the stack as they are, and the
