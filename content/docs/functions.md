@@ -18,7 +18,8 @@ fn max(a: u64, b: u64) -> u64 {
 }
 ```
 
-A parameter has a value type, an address type, which
+A parameter has a value type, an
+[enum](/docs/enums-and-bit-structs/#enum-values), an address type, which
 [Addresses and memory](/docs/addresses/) describes, or `string`, which
 [Values and types](/docs/values/#strings) describes. A function cannot
 change its parameters, because a `mut` parameter is not implemented now.
@@ -50,11 +51,11 @@ main.wyst:1:16: error: a second parameter `a`
 
 ## Results
 
-A result is a value type, an address type, `Option<T>`, or `never`. A function with a
-result must not reach the end of its body. Each path ends with `return`,
-with a call to a `never` function such as `trap()`, with a `for {}`
-without a `break`, or with
-an [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
+A result is a value type, an enum, an address type, `Option<T>`, or
+`never`. A function with a result must not reach the end of its body.
+Each path ends with `return`, with a call to a `never` function such as
+`trap()`, with a `for {}` without a `break`, or with an
+[`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
 function that returns `never` cannot use `return`.
 
 ```wyst fails

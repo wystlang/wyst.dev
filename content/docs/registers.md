@@ -249,10 +249,11 @@ main.wyst:11:10: error: a field read is the only use of a register snapshot
 A read can also be a statement alone. It loads the register and discards
 the value.
 
-`.F` has the type of field `F`. An enum field gives its backing `uN`,
-because the register can hold a value that is no variant. A local cannot
-hold a `uN` other than `u8`, `u16`, `u32`, or `u64`. Use `widen` for
-a narrower field: for a `u5` field `N`, write
+`.F` has the type of field `F`. An enum field gives a value of its enum,
+which can be a value that no variant has, as
+[Enum values](/docs/enums-and-bit-structs/#enum-values) gives. A local
+cannot hold a `uN` other than `u8`, `u16`, `u32`, or `u64`. Use `widen`
+for a narrower field: for a `u5` field `N`, write
 `const n: u8 = widen(gic.TYPER.read().N)`. See
 [Bit field types](/docs/values/#bit-field-types).
 

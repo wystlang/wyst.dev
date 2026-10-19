@@ -17,9 +17,10 @@ struct Slot {
 }
 ```
 
-A field type is `u8`, `u16`, `u32`, `u64`, a plain struct of the module,
-or an array `[N]T` of one of these. Other field types are not implemented
-now:
+A field type is `u8`, `u16`, `u32`, `u64`, an
+[enum](/docs/enums-and-bit-structs/#enum-values) of one of these, a plain
+struct, or an array `[N]T` of one of these. Other field types are not
+implemented now:
 
 ```wyst fails
 struct Flag {
@@ -28,10 +29,38 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
+
+## pub structs
+
+A struct is local to its module. `pub struct` lets each module that
+imports the module name the struct as `m.S`, as the target of an address,
+the type of a field, and the type of `size_of` and `field_offset`:
+
+```wyst ipc/channels.wyst
+pub struct Message {
+  count: u64
+  handles: [4]u64
+  bytes: [256]u8
+}
+```
+
+```wyst
+import ipc.channels
+
+static_assert(field_offset(channels.Message, bytes) == 40)
+
+fn clear(block: @channels.Message) {
+  store(@block.count, 0)
+}
+```
+
+In another module, the name of a struct that is not `pub` gives the error
+``struct `Slot` of module `table` is not `pub` ``. A `pub` register map or
+`#[bits]` struct is not implemented now.
 
 A struct with `#[register_map]` declares the registers of a device, and a
 struct with `#[bits]` names the bits of an integer. They are not plain
@@ -68,15 +97,16 @@ struct Table {
 ```
 
 A struct comes after the structs and the constants that its fields use.
-Thus a struct cannot hold itself.
+Thus a struct cannot hold itself. The structs and the constants of an
+imported module come first.
 
 ## size_of and field_offset
 
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
-constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, a plain
-struct of the module, or, for `size_of`, an array of them, such as
-`[4]Slot`. A module constant or a `static_assert` that uses them comes
+constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
+enum of one of these, a plain struct, or, for `size_of`, an array of
+them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
 after the declaration of `T`. A function that uses them can come before
 it.
 

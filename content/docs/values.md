@@ -86,7 +86,7 @@ fn done(ready: bool) -> bool {
 ```
 
 ```text
-main.wyst:2:16: error: `==` takes only integers, found bool
+main.wyst:2:16: error: `==` takes only integers and enums, found bool
 ```
 
 ## No implicit conversions
@@ -95,7 +95,8 @@ Wyst does not convert a value from one type to another by itself. `widen`
 and `truncate` convert an integer to the integer type that their position
 expects:
 
-- `widen(x)` gives `x` in a type that is at least as wide.
+- `widen(x)` gives `x` in a type that is at least as wide. For a value
+  of an enum, it gives the value of the enum value.
 - `truncate(x)` gives the low bits of `x` in a type that is at most as
   wide. The compiler does not check the bits that it removes.
 
@@ -204,12 +205,13 @@ fn bit(core: u64) -> u4 {
 main.wyst:1:22: error: `u4` is only the type of a bit field
 ```
 
-An enum is also the type of a module constant. See
-[Enums and bit structs](/docs/enums-and-bit-structs/).
+An enum is also the type of a module constant, a parameter, a local, a
+result, and a field of a plain struct. See
+[Enums and bit structs](/docs/enums-and-bit-structs/#enum-values).
 
-A read of a `uN` field gives a `uN` value. A read of an enum field gives
-the backing `uN` of the enum. An operator, a comparison, and `widen` take
-a `uN` value. When N is not 8, 16, 32, or 64, a local cannot hold the
+A read of a `uN` field gives a `uN` value, and a read of an enum field
+gives a value of the enum. An operator, a comparison, and `widen` take a
+`uN` value. When N is not 8, 16, 32, or 64, a local cannot hold the
 value:
 
 ```wyst fails

@@ -38,10 +38,23 @@ A line can name only a region or a section that an earlier line declares.
 Thus a region comes before its sections, and a section comes before each
 `after`, `start(s)`, or `end(s)` that names it.
 
-`A`, `N`, and an integer `v` are integers. A layout file cannot name a
-constant of the Wyst source. Thus the layout and the source each give a
-value that both use, and the build does not check that the two values are
-equal.
+`A`, `N`, and an integer `v` are integers. Each of them can also be
+`m.name`, a `pub` integer constant of module `m` of the build. Thus the
+layout and the source use one value, such as the size of a page:
+
+```text
+entry boot._start at boot.image_start
+region ram: readwrite at boot.image_start size boot.image_size
+section .text: code in ram align frames.size
+```
+
+`m` is a module path, as in an import. The module must be in the build:
+the entry module, or a module that a module of the build imports. Else
+the error is ``module `frames` is not in the build``. The compiler gives
+the value after it checks the source, and then checks the line: an
+alignment is a power of two. A layout file has no operators, so the
+source computes a value in a constant, such as `boot.image_start`, and
+the layout names it.
 
 ## Placement
 

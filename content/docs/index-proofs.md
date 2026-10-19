@@ -136,6 +136,26 @@ fn mark(table: @[4]u64, cursor: @u64) {
 mask. A parameter or a module variable as `e` gives no bound now. A
 condition gives no bound to a module variable.
 
+`x` can also be the sum `a + b` of two parameters, loop variables, or
+`const` locals. The bound then holds for each `a + b` and `b + a` of the
+same type, because `a` and `b` do not change. A sum in another type, such
+as `widen(a) + widen(b)` of two `u8` values, wraps at another value, so
+it has no bound. Thus a range loop that ends at the sum proves
+its variable:
+
+```wyst
+fn clear(table: @[8]u64, first: u64, count: u64) {
+  if first + count > 8 { return }
+
+  for i in first ..< first + count {
+    store(@table[i], 0)
+  }
+}
+```
+
+The bound is of the value of the sum, so it holds also when `first +
+count` wraps: `i` is less than that value.
+
 When the body cannot reach its end, the condition is false after the
 `if`. Thus after `if at >= 4 { return }`, `at` is at most 3 until the end
 of the block:

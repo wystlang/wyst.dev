@@ -10,9 +10,11 @@ offset.
 ## Address types
 
 `@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
-`u32`, `u64`, a plain struct of the module, or an array `[N]T` of one of
-these. `N` is a constant, such as a module constant. Another target, such
-as `bool`, an address, or an array of arrays, is not implemented now.
+`u32`, `u64`, an enum of one of these, a plain struct of the module, a
+`pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
+of these. `N` is a constant, such as a module constant. Another target,
+such as `bool`, an address, or an array of arrays, is not implemented
+now.
 
 An address is not an integer. No operator takes an address, and `@u8` and
 `@u32` are different types:
@@ -132,15 +134,18 @@ it comes from a parameter or from `bitcast`. A call statement that drops
 the address is an error, as for a value result.
 
 The result of a `pub` function cannot be an address now. No kernel code
-needs one, and the address of a struct would give another module the
-fields of a struct that is local to its module. An `Option` of an address
-is not implemented now.
+needs one, and the address of a struct that is not `pub` would give
+another module the fields of that struct. An `Option` of an address is not
+implemented now.
 
 ## load and store
 
-`load(a)` reads the integer at address `a`, and `store(a, v)` writes `v`
-there. `a` is `@u8`, `@u16`, `@u32`, or `@u64`. Each is one load or one
-store of the size of the integer.
+`load(a)` reads the integer or the enum value at address `a`, and
+`store(a, v)` writes `v` there. `a` is `@u8`, `@u16`, `@u32`, `@u64`, or
+the address of an enum. Each is one load or one store of the size of the
+integer, or of the backing type of the enum. A value of an enum from
+memory can be a value that no variant has, as
+[Enum values](/docs/enums-and-bit-structs/#enum-values) gives.
 
 ```wyst
 struct Slot {
