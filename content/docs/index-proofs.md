@@ -304,3 +304,41 @@ No code calls the entry or a naked function, so their parameters have no
 proof. When an index gets its value from such a parameter, the error is at
 the index. For an array of 8, the error is
 `the checker cannot prove that the index is less than 8`.
+
+## Local variables
+
+An assignment can change a local `var`, so the checker keeps no proof of
+its highest value, and a condition or a `match` gives it no bound. An
+index of a local `var` needs an operator that gives a highest value, such
+as a mask:
+
+```wyst
+fn fill(table: @[8]u64, count: u64) {
+  var i: u64 = 0
+  for i != count {
+    store(@table[i & 7], i)
+    i += 1
+  }
+}
+```
+
+Without the mask, a condition does not prove the index, because an
+assignment after the condition can change the local:
+
+```wyst fails
+fn mark(table: @[8]u64, start: u64) {
+  var i = start
+  if i < 7 {
+    i += 2
+    store(@table[i], 1)
+  }
+}
+```
+
+```text
+main.wyst:5:18: error: the checker cannot prove that the index is less than 8
+```
+
+When a call passes a local `var`, the argument has no proof, so an index
+that uses the parameter gives the error at the call, as
+[Parameters and variables](#parameters-and-variables) gives.

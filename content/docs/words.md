@@ -18,7 +18,7 @@ name. A field and an argument can.
 | `enum` | Declares an enum. | only as the type of a bit field or of a module constant |
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
-| `var` | Declares a variable. | module variables only |
+| `var` | Declares a variable. | module variables, and locals of `bool` and `u8` to `u64` |
 | `if` | Runs a block when a condition is true. | yes, not as a value |
 | `else` | The other block of `if`, or the block of an unwrap. | yes |
 | `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, and `for x in "text" {}`; not `for x in` an array or a slice |

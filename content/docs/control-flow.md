@@ -153,12 +153,13 @@ The checker does not read `for true {}` as a loop that does not end, so
 each pass:
 
 ```wyst
-var count: u64 = 0
-
-fn count_to(limit: u64) {
+fn count_to(limit: u64) -> u64 {
+  var count: u64 = 0
   for count < limit {
     count += 1
   }
+
+  return count
 }
 ```
 
@@ -173,12 +174,14 @@ other bound, so one bound must have a type: `0 ..< count` is correct, and
 pass. An empty range runs no pass.
 
 ```wyst
-var sum: u64 = 0
+fn add_range(first: u64, end: u64) -> u64 {
+  var sum: u64 = 0
 
-fn add_range(first: u64, end: u64) {
   for i in first ..< end {
     sum += i
   }
+
+  return sum
 }
 ```
 
@@ -187,12 +190,14 @@ the highest value of the type, such as 0xff for `u8`. When `a` is above
 `b`, the loop runs no pass.
 
 ```wyst
-var sum: u64 = 0
+fn add_through(first: u64, last: u64) -> u64 {
+  var sum: u64 = 0
 
-fn add_through(first: u64, last: u64) {
   for i in first ..= last {
     sum += i
   }
+
+  return sum
 }
 ```
 
@@ -208,15 +213,17 @@ condition tests it again, and a range loop or a string loop goes to its next
 value.
 
 ```wyst
-var total: u64 = 0
+fn add_odd(limit: u64) -> u64 {
+  var total: u64 = 0
 
-fn add_odd(limit: u64) {
   for i in 0 ..< limit {
     if (i & 1) == 0 { continue }
     if total > 1000 { break }
 
     total += i
   }
+
+  return total
 }
 ```
 

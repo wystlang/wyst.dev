@@ -56,7 +56,8 @@ kernel needs it:
 | `if` and `match` as values | Refused. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
-| `var` in a function body | Locals do not change. |
+| A local `var` of a type other than `bool` and `u8` to `u64`, such as an address | Use a `const`. |
+| `var x = f() else {}` | Use `const y = f() else {}`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
 | `Option` as the type of a parameter or a variable | Unwrap the `Option` with `else` or `?`. |
