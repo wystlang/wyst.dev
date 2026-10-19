@@ -1,6 +1,6 @@
 ---
 title: Values and types
-summary: Integers, literals, bool, strings, conversions, and never.
+summary: Integers, characters, literals, bool, strings, conversions, and never.
 ---
 
 ## Integers
@@ -21,6 +21,30 @@ const uart: u64 = 0x0900_0000
 
 The prefixes are lowercase, so `0X10` is an error that gives the prefix
 `0x`.
+
+## Characters
+
+A character literal, such as `'q'`, is an integer literal. Its value is
+one byte: the byte of the character, or of an escape. The escapes are
+those of a string, with `\'` in place of `\"`. A character literal takes
+its type as each literal does, and it is also a pattern of `match`:
+
+```wyst
+fn kind(key: u8) -> u64 {
+  match key {
+    'n', '\t' {
+      return 1
+    }
+    'q' {
+      return 2
+    }
+  }
+  return 0
+}
+```
+
+A character literal holds one byte, so a character that is two or more
+bytes in UTF-8, such as `'é'`, is an error.
 
 ## Literals take their type
 

@@ -37,6 +37,7 @@ VName    <- Name / [0-9] [0-9_]* [A-Za-z] [A-Za-z0-9_]*   // a variant name, suc
 Integer  <- [0-9] [0-9_]*
           / '0x' '_'* [0-9A-Fa-f] [0-9A-Fa-f_]*
           / '0b' '_'* [01] [01_]*
+          / "'" (char / '\' [nrt0\\'] / '\x' hex hex) "'"   // one byte, such as 'q'
 String   <- '"' (char / '\' [nrt0\\"] / '\x' hex hex)* '"'
 Comment  <- '//' to the end of the line
 Register <- an A64 register name from the A64 tables
