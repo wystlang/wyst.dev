@@ -74,10 +74,10 @@ Params     <- '(' List(Param)? ')'
 Param      <- Name ':' ('mut' / 'xfer')? Type ('in' Register)?
 
 Struct     <- 'linear'? 'struct' Name TypeParams? (':' Type)? '{' Field* '}'
-Field      <- Name ':' ('[' Expr ']')? Name Type 'at' Expr ('{' Bits* '}')?   // register map
-            / Bits                                                         // #[bits]
-            / Name ':' Type
-Bits       <- Name ':' Type 'at' Expr ('..=' Expr)? ('=' Expr)?
+Field      <- Attrs* Name ':' ('[' Expr ']')? Name Type 'at' Expr ('{' Bits* '}')?   // register map
+            / Bits                                                                // #[bits]
+            / Attrs* Name ':' Type
+Bits       <- Attrs* Name ':' Type 'at' Expr ('..=' Expr)? ('=' Expr)?
 Enum       <- 'linear'? 'enum' Name TypeParams? (':' Type)? '{' Variant* '}'
 Variant    <- VName ('(' List(Type) ')')? ('=' Expr)?
 Interface  <- 'interface' Name '{' ('fn' Name Params ('->' Type)?)* '}'
@@ -92,6 +92,10 @@ form of `Field` is valid only in a `#[register_map] struct`; its second
 name is `readonly`, `writeonly`, or `readwrite`, and a `[N]` before it
 declares a bank of N registers. The `Bits` form of
 `Field` and the `:` type of a struct are valid only in a `#[bits] struct`.
+An attribute before a field or a register can only be `#[big_endian]`, as
+[Structs](/docs/structs/#big-endian-fields) and
+[Registers and devices](/docs/registers/#big-endian-registers) give. An
+attribute before a bit field is an error.
 Only a `#[mmio(address)]` or `#[sysreg]` `const` has no initializer.
 
 ## Types
