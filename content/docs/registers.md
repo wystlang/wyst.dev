@@ -1,6 +1,6 @@
 ---
 title: Registers and devices
-summary: Register maps, register banks, devices at physical addresses, arrays of devices, and register access.
+summary: Register maps, register banks, devices at physical addresses, arrays of devices, register access, and big-endian registers.
 ---
 
 A device has registers at fixed offsets from its base address. Wyst
@@ -284,9 +284,53 @@ fn clear() {
 main.wyst:10:11: error: register `FR` is readonly
 ```
 
+## Big-endian registers
+
+`#[big_endian]` before a register of type `u16`, `u32`, or `u64` makes
+the register big-endian. A read reverses the bytes after the load, so
+each field takes its bits from the reversed value, and a write reverses
+the bytes of the value before the store. The fw_cfg device of QEMU virt
+has such registers:
+
+```wyst
+#[register_map]
+struct FwCfg {
+  DATA:                   readonly  u8  at 0x00 { BYTE: u8 at 0..=7 }
+  #[big_endian] SELECTOR: writeonly u16 at 0x08 { KEY: u16 at 0..=15 }
+  #[big_endian] DMA:      writeonly u64 at 0x10 { ADDRESS: u64 at 0..=63 }
+}
+
+#[mmio(0x0902_0000)]
+const fw_cfg: FwCfg
+
+fn transfer(record: u64) {
+  fw_cfg.SELECTOR.write(KEY = 0x19)
+  fw_cfg.DMA.write(ADDRESS = record)
+}
+```
+
+`wync fmt` keeps an attribute on the line of its register, or on the line
+above it, as in the source. On the line of the register, the attribute is
+a part of the name column. A bit field has no byte order of its own, so
+an attribute before it is an error:
+
+```wyst fails
+#[register_map]
+struct Device {
+  CONTROL: readwrite u32 at 0x00 {
+    #[big_endian] MODE: u16 at 0..=15
+  }
+}
+```
+
+```text
+main.wyst:4:7: error: unknown attribute `big_endian` here
+```
+
 ## What the compiler keeps
 
-Each access is one load or store of the register size. The compiler does
+Each access is one load or store of the register size, with one `rev16`
+or `rev` for a big-endian register. The compiler does
 not remove, combine, or move a device access, and it adds no barrier. When
 the order of accesses to two devices matters, an `asm` block gives the
 barrier, such as `dsb sy`. See [Assembly](/docs/assembly/).

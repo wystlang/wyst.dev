@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, size_of, and field_offset.
+summary: Plain structs, their layout in memory, big-endian fields, size_of, and field_offset.
 ---
 
 ## Plain structs
@@ -99,6 +99,53 @@ struct Table {
 A struct comes after the structs and the constants that its fields use.
 Thus a struct cannot hold itself. The structs and the constants of an
 imported module come first.
+
+## Big-endian fields
+
+`#[big_endian]` before a field of type `u16`, `u32`, or `u64` makes the
+field big-endian. Its bytes are in the reverse order of the bytes of the
+CPU, as in a network header or a record that a device reads. `load` of
+the field reverses the bytes after the load and gives a normal integer,
+and `store` reverses the bytes of the value before the store. Thus there
+is no big-endian type, and the attribute does not change the layout.
+
+```wyst
+// An ARP packet, after the Ethernet header.
+struct Arp {
+  #[big_endian] htype: u16
+  #[big_endian] ptype: u16
+  hlen: u8
+  plen: u8
+  #[big_endian] oper: u16
+}
+
+fn request(arp: @Arp) {
+  store(@arp.htype, 1)
+  store(@arp.ptype, 0x0800)
+  store(@arp.hlen, 6)
+  store(@arp.plen, 4)
+  store(@arp.oper, 1)
+}
+
+fn is_reply(arp: @Arp) -> bool {
+  return load(@arp.oper) == 2
+}
+```
+
+The address `@p.f` of a big-endian field keeps the byte order, also in a
+local. It is not a `@u16`, `@u32`, or `@u64`, because a load through such
+an address would not reverse the bytes. The attribute before a field of
+another type, such as `u8`, an enum, or an array, is an error:
+
+```wyst fails
+struct Header {
+  #[big_endian] length: u8
+}
+```
+
+```text
+main.wyst:2:5: error: a big-endian field is `u16`, `u32`, or `u64`, not u8
+```
 
 ## size_of and field_offset
 

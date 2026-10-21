@@ -145,7 +145,9 @@ implemented now.
 the address of an enum. Each is one load or one store of the size of the
 integer, or of the backing type of the enum. A value of an enum from
 memory can be a value that no variant has, as
-[Enum values](/docs/enums-and-bit-structs/#enum-values) gives.
+[Enum values](/docs/enums-and-bit-structs/#enum-values) gives. At a
+[big-endian field](/docs/structs/#big-endian-fields), `load` and `store`
+also reverse the bytes.
 
 ```wyst
 struct Slot {

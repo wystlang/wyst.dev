@@ -32,6 +32,7 @@ This page lists both sides.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, places, `load`,
   `store`, `bitcast`, `widen`, and `truncate`.
+- `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, calls, and writes.
 - Enums as the type of bit fields, constants, parameters, locals, results,
