@@ -45,9 +45,33 @@ fn table_at(frame: u64) {
 }
 ```
 
-`bitcast` makes only an address from a `u64` now. A literal has no type
-in `bitcast(...)`. Put the value in a typed constant, such as
-`const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
+`bitcast(s)` of a `string` `s`, a string literal or a `string` parameter,
+gives the `u64` that is the value of `s`: the address of its length, which
+its bytes follow, as [Code generation](/docs/code-generation/) gives. Thus
+code can read a string by address, and a function can give the address of
+a string as its result:
+
+```wyst
+fn first(text: string) -> u8 {
+  const head: u64 = bitcast(text)
+  const length: @u64 = bitcast(head)
+  if load(length) == 0 {
+    return 0
+  }
+
+  const byte: @u8 = bitcast(head + 8)
+  return load(byte)
+}
+
+fn banner() -> u64 {
+  return bitcast("Wyst")
+}
+```
+
+`bitcast` makes only an address from a `u64` and a `u64` from a `string`
+now. An integer literal has no type in `bitcast(...)`. Put the value in a
+typed constant, such as `const uart: u64 = 0x0900_0000`, and use
+`bitcast(uart)`.
 
 The code that calls `bitcast` asserts that memory of that type is at `x`
 while the address is in use. The compiler does not check this. Thus each

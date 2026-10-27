@@ -155,9 +155,10 @@ as a C string has. The escapes are `\n`, `\r`, `\t`, `\0`, `\\`, `\"`, and
 `\x` with two hexadecimal digits.
 
 A string literal has the type `string`. `string` is only the type of a
-parameter now, so a string literal is the argument of a `string` parameter
-or the head of a `for` loop. A `for` loop on a `string` visits each byte
-as a `u8`:
+parameter now, so a string literal is the argument of a `string` parameter,
+the head of a `for` loop, or the operand of `bitcast`, which gives its
+address as a `u64`, as [Addresses and memory](/docs/addresses/#bitcast)
+describes. A `for` loop on a `string` visits each byte as a `u8`:
 
 ```wyst
 fn checksum(text: string) -> u8 {
