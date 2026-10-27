@@ -51,7 +51,7 @@ name. A field and an argument can.
 | `trap` | Stops the program with `brk #0`. | yes |
 | `load`, `store` | Read and write the integer at an address. | yes |
 | `widen`, `truncate` | Convert an integer to a wider or a narrower type. | yes |
-| `bitcast` | Makes an address from a `u64`. | yes |
+| `bitcast` | Makes an address from a `u64`, or a `u64` from a `string`. | yes |
 
 ## Attributes
 
