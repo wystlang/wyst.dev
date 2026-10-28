@@ -4,8 +4,8 @@ summary: Arithmetic that wraps, division, remainder, shifts, comparisons, preced
 ---
 
 The operators take two operands of the same type and give that type, or a
-`bool` for a comparison. No operator has undefined behavior, and no
-operator can fail at run time. An operand can be a call, as
+`bool` for a comparison. No operator has undefined behavior, and only a
+division by 0 can fail at run time. An operand can be a call, as
 [Functions](/docs/functions/#results-must-be-used) shows.
 
 ## Arithmetic
@@ -20,8 +20,8 @@ fn next(x: u8) -> u8 {
 ```
 
 `a / b` divides without sign and drops the remainder, and `a % b` gives
-that remainder. `b` must be a constant other than 0, so a division cannot
-fail:
+that remainder. When `b` is 0 at run time, the code traps, as `trap()`
+does:
 
 ```wyst
 const slots: u64 = 6
@@ -29,16 +29,22 @@ const slots: u64 = 6
 fn slot(ticket: u64) -> u64 {
   return ticket % slots
 }
-```
 
-```wyst fails
 fn share(total: u64, parts: u64) -> u64 {
   return total / parts
 }
 ```
 
+A constant divisor of 0 is an error:
+
+```wyst fails
+fn none(total: u64) -> u64 {
+  return total / 0
+}
+```
+
 ```text
-main.wyst:2:16: error: the divisor of `/` must be a literal or a module constant
+main.wyst:2:16: error: the divisor of `/` is 0
 ```
 
 `-a` is `0 - a`, so it wraps as `-` does: for `x` equal to 1, `-x` in a

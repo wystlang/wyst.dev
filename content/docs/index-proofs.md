@@ -69,9 +69,13 @@ fn clear(table: @[4]u64, cursor: @u8) {
 These operators give a highest value from the highest values of their
 operands:
 
-- `x % n` is less than the constant `n`, for each `x`;
-- `x / n` is at most the highest value of `x` divided by `n`, and `x >> k`
-  is at most that value shifted right by a constant `k`;
+- `x % n` is less than `n` and at most `x`, so one of the two needs a
+  highest value;
+- `x / n` is at most the highest value of `x` divided by a constant `n`.
+  When `n` is not a constant, it can be 1, so `x / n` is at most the
+  highest value of `x`. A divisor of 0 traps;
+- `x >> k` is at most the highest value of `x` shifted right by a
+  constant `k`;
 - `a << k` is at most the highest value of `a` shifted left by a constant
   `k`, when no set bit moves out of the type. Else the value can wrap, and the
   checker knows no highest value;
