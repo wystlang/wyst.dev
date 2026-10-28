@@ -89,4 +89,4 @@ kernel needs it:
 | A `#[bits]` field value at run time | Field values are constants. |
 | Enum variants with payloads, such as `Some(u64)`, a module variable of an enum type, and an `Option` of an enum | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type. |
 | An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
-| `scratch` operands, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
+| A `scratch` output, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
