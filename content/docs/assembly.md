@@ -48,8 +48,8 @@ another feature is an error.
 An input is `name = value`, or `name` alone, which is `name = name`. The
 value has a value type. An untyped integer is a `u64`. An address type,
 such as the type `@u64` of `@p.f`, is not a value type, so `@p.f` is not
-an input. A block has at most 9 inputs. A typed input, `name: T in xN`, and a
-`scratch` operand are not implemented now.
+an input. A block has at most 9 inputs. A typed input, `name: T in xN`, is
+not implemented now.
 
 Where an instruction takes a general register, a line names an input:
 `name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
@@ -134,6 +134,39 @@ main.wyst:3:5: error: the `asm` line writes input `count`
 A line of the Arm branch class, such as `b`, `br`, or `ret`, is an error.
 So is `eret`, except at the end of a block that does not return.
 
+## Scratch registers
+
+`scratch name` after the inputs gives the block a register of its own.
+It holds no value when the block starts. A line can read it and write it,
+and a block that does not write it is an error. Thus a block can copy 16
+bytes with `ldp` and `stp`:
+
+```wyst
+fn copy(to: u64, from: u64) {
+  asm(to, from, scratch low, scratch high) {
+    ldp low, high, [from]
+    stp low, high, [to]
+  }
+}
+```
+
+The inputs, the output, and the `scratch` operands share 9 registers, so a
+block has at most 9 of them together. Each input comes before each
+`scratch` operand. A naked function and a block that does not return name
+physical registers, so they have no `scratch` operand.
+
+```wyst fails
+fn store_zero(address: u64) {
+  asm(address, scratch zero) {
+    str zero.x, [address]
+  }
+}
+```
+
+```text
+main.wyst:2:24: error: no line of this `asm` block writes `scratch zero`
+```
+
 ## Outputs
 
 `asm(inputs) -> out { lines }` is a value: the value of the output `out`
@@ -161,8 +194,8 @@ a `u64` output has at most 8 inputs. The inputs are in the scratch
 registers, and an `svc` or an `hvc` can change `x0` to `x17`. Thus the
 compiler keeps each value that it needs after the block in a home while
 the block runs, as for a call. An output in a named register,
-`-> name in xN`, an output with a value, and a list of outputs,
-`-> (a, b)`, are not implemented now.
+`-> name in xN`, an output with a value, a `scratch` output, and a list of
+outputs, `-> (a, b)`, are not implemented now.
 
 ## Option outputs
 
