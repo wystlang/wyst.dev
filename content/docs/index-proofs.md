@@ -69,14 +69,53 @@ fn clear(table: @[4]u64, cursor: @u8) {
 These operators give a highest value from the highest values of their
 operands:
 
-- `x % n` is less than the constant `n`, for each `x`;
-- `x / n` is at most the highest value of `x` divided by `n`, and `x >> k`
-  is at most that value shifted right by a constant `k`;
+- `a + b` and `a * b` are at most the sum and the product of the highest
+  values of `a` and `b`, when it fits in the type. Else the value can
+  wrap, and the checker knows no highest value;
+- `x % n` is less than `n` and at most `x`, so one of the two needs a
+  highest value;
+- `x / n` is at most the highest value of `x` divided by a constant `n`.
+  When `n` is not a constant, it can be 1, so `x / n` is at most the
+  highest value of `x`. A divisor of 0 traps;
+- `x >> k` is at most the highest value of `x` shifted right by a
+  constant `k`;
 - `a << k` is at most the highest value of `a` shifted left by a constant
   `k`, when no set bit moves out of the type. Else the value can wrap, and the
   checker knows no highest value;
 - `a | b` and `a ^ b` are at most the smallest number of all ones, such as
   7, that is at least the highest values of `a` and `b`.
+
+Thus the bounds of loops prove an index into a grid: `row` is at most 2
+and `column` at most 3, so `row * 4 + column` is at most 11:
+
+```wyst
+const rows: u64 = 3
+const columns: u64 = 4
+
+fn clear(table: @[12]u64) {
+  for row in 0 ..< rows {
+    for column in 0 ..< columns {
+      store(@table[row * columns + column], 0)
+    }
+  }
+}
+```
+
+`a - b` has no highest value, because it wraps when `b` is more than `a`.
+Thus a division that rounds up is `(x + (n - 1)) / n`, where `n - 1` is a
+constant. Here `count` is at most 32, so `(count + 7) / 8` is at most 4:
+
+```wyst
+fn mark(table: @[4]u64, count: u64) {
+  if count > 32 {
+    return
+  }
+
+  for i in 0 ..< (count + (8 - 1)) / 8 {
+    store(@table[i], 1)
+  }
+}
+```
 
 `%` proves an index into an array of any length, also when the length is
 not a power of two:
@@ -140,8 +179,8 @@ condition gives no bound to a module variable.
 `const` locals. The bound then holds for each `a + b` and `b + a` of the
 same type, because `a` and `b` do not change. A sum in another type, such
 as `widen(a) + widen(b)` of two `u8` values, wraps at another value, so
-it has no bound. Thus a range loop that ends at the sum proves
-its variable:
+the bound of `a + b` is not its bound. Thus a range loop that ends at the
+sum proves its variable:
 
 ```wyst
 fn clear(table: @[8]u64, first: u64, count: u64) {
