@@ -72,9 +72,12 @@ fn init() {
 | `x29`, `x30` | The frame pointer and the return address. |
 
 Each local has a home. In a function without a call and without an `asm`
-block, the first homes take the scratch registers above the deepest
-expression. The next homes take `x19` to `x28`, and the others are 8-byte
-stack slots.
+block, the homes can take the scratch registers above the deepest
+expression. Then they take `x19` to `x28`, and the others are 8-byte stack
+slots. The homes that the code uses most get the registers first: each
+read and each write of a home counts 8 to the power of the loops around
+it. Thus the locals of an inner loop are in registers before a local that
+the code uses one time.
 
 A call can change `x0` to `x17`. Thus in `load(p) + f()`, the value of
 `load(p)` waits in a home while `f` runs, and so does each argument before
@@ -120,7 +123,8 @@ Two kinds of function save no registers:
   stack. It has no prologue, and its epilogue is `ret`.
 
 An inline function runs in the frame of its caller, with new homes for
-each copy.
+each copy. The homes of a copy are free after it, and so are the homes of
+a loop after the loop, so the next copy takes them.
 
 ## Costs
 
