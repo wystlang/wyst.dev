@@ -58,6 +58,19 @@ const ICC_NMIAR1_EL1: readonly u64 {
 main.wyst:2:23: error: `ICC_NMIAR1_EL1` needs FEAT_GCIE_LEGACY or FEAT_GICv3_NMI, which the target does not have
 ```
 
+The target has the PMUv3 of the Cortex-A76 of QEMU `virt`, so a
+declaration can name a register of the performance monitors. A write of
+`PMUSERENR_EL0` sets each bit that it does not name to zero, so
+`PMUSERENR_EL0.write(EN = false)` stops each access to the counters from
+EL0:
+
+```wyst
+#[sysreg]
+const PMUSERENR_EL0: writeonly u64 {
+  EN: bool at 0
+}
+```
+
 A register that only EL3 can access gives the EL:
 
 ```wyst fails
