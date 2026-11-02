@@ -42,8 +42,10 @@ This page lists both sides.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
   and blocks that do not return.
 - Naked functions with parameters, the check that a function that runs
-  with no stack uses none, `#[el2]` functions, code addresses, the
-  exception vector table, function sections, and semihosting.
+  with no stack uses none, the check that each function that starts on a
+  new stack fits in the `stack` of the layout, `#[el2]` functions, code
+  addresses, the exception vector table, function sections, and
+  semihosting.
 - Implementation-defined system registers, by their encoding.
 - `wync build` and `wync fmt`.
 

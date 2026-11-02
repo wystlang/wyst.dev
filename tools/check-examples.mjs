@@ -14,6 +14,8 @@
 //   ```wyst dir/name.wyst   a module that the other examples of the page
 //                           import; the importing examples check it
 //   ```wyst fragment        not checked
+//   ```layout check         the layout of the ```wyst example directly
+//                           after it, in place of the layout below
 //
 // The homepage example in content/home/ also builds with its layout.
 
@@ -81,6 +83,7 @@ function examples(file) {
 			if (words[0] !== "wyst" || words.includes("fragment")) return null;
 			const name = words.find((word) => word.endsWith(".wyst")) ?? "main.wyst";
 			const fails = words.includes("fails");
+			const before = fences[i - 1];
 			const next = fences[i + 1];
 			if (fails && next?.info.trim() !== "text") {
 				throw new Error(`${file}:${fence.map[0] + 1}: no \`text\` fence after \`wyst fails\``);
@@ -90,6 +93,7 @@ function examples(file) {
 				name,
 				source: fence.content,
 				expected: fails ? next.content.trim() : "",
+				layout: before?.info.trim() === "layout check" ? before.content : undefined,
 			};
 		})
 		.filter(Boolean);
@@ -116,7 +120,7 @@ for (const file of fs.readdirSync(DOCS).filter((f) => f.endsWith(".md")).sort())
 			fs.writeFileSync(path.join(dir, module.name), module.source);
 		}
 		fs.writeFileSync(path.join(dir, example.name), example.source);
-		report(`content/docs/${file}:${example.line}`, check(dir, example.name), example.expected);
+		report(`content/docs/${file}:${example.line}`, check(dir, example.name, example.layout), example.expected);
 	}
 }
 

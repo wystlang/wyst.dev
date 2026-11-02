@@ -262,6 +262,74 @@ main.wyst:5:3: error: naked function `main._start` has no stack here, because no
 `count` returns and calls a function, so its prologue saves `x29` and
 `x30` on the stack.
 
+## The size of the stack
+
+The line `stack N` of the [layout file](/docs/layout-files/#stacks) gives
+the size of each stack. A function starts on a new stack when a naked
+function calls it after an `asm` block of its body writes `sp`, and when a
+function that is not naked takes its address, because the kernel gives a
+thread its stack. The compiler adds the frame of such a function, which
+holds the registers that its prologue saves, its stack slots, and the
+block of `test_exit`, to the bytes that its deepest call can use. The
+build fails when the sum is more than `N`, and the error gives the path of
+calls and the bytes of each frame. Thus the stacks of two CPUs can be
+next to each other, with no guard page between them.
+
+The build also fails when a call can come back to a function that did
+not return, because such a cycle has no bound. The compiler does not use
+the values of the code, so a condition that stops the calls at run time
+does not change the result. With this layout:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .data: data in ram after .text align 8
+symbol __stack_top: u64 = 0x4009_0000
+stack 0x1000
+```
+
+`ping` and `pong` can fill any stack:
+
+```wyst fails
+var turns: u64 = 0
+
+#[naked]
+pub fn _start() -> never {
+  asm(top in x0 = __stack_top) {
+    add sp, x0, #0
+  }
+
+  run()
+}
+
+fn run() -> never {
+  for {
+    ping()
+  }
+}
+
+fn ping() {
+  if turns < 10 {
+    turns += 1
+    pong()
+  }
+}
+
+fn pong() {
+  ping()
+}
+```
+
+```text
+main.wyst:9:3: error: `main.run` starts on a new stack, but the stack has no bound, because a call can come back to `main.ping` before it returns: `main.ping` calls `main.pong`, which calls `main.ping`
+```
+
+The check counts only the frames that the compiler makes. It does not
+count what the `asm` lines of a naked function write below `sp`, or a
+function of the vector table that is not naked, which runs on the stack
+that the exception found.
+
 ## Code addresses
 
 `@name` of a function gives its address, a `u64`, so that a CPU or a
