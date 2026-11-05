@@ -10,7 +10,8 @@ offset.
 ## Address types
 
 `@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
-`u32`, `u64`, an enum of one of these, a plain struct of the module, a
+`u32`, `u64`, an enum of one of these, a plain struct or a
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
 `pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
 of these. `N` is a constant, such as a module constant. Another target,
 such as `bool`, an address, or an array of arrays, is not implemented

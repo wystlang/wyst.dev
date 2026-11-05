@@ -19,8 +19,9 @@ struct Slot {
 
 A field type is `u8`, `u16`, `u32`, `u64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of one of these, a plain
-struct, or an array `[N]T` of one of these. Other field types are not
-implemented now:
+struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
+holds its backing integer, or an array `[N]T` of one of these. Other field
+types are not implemented now:
 
 ```wyst fails
 struct Flag {
@@ -29,7 +30,7 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -152,8 +153,8 @@ main.wyst:2:5: error: a big-endian field is `u16`, `u32`, or `u64`, not u8
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
-enum of one of these, a plain struct, or, for `size_of`, an array of
-them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
+enum of one of these, a plain struct, or, for `size_of`, a `#[bits]`
+struct or an array of them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
 after the declaration of `T`. A function that uses them can come before
 it.
 
