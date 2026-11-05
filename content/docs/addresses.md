@@ -29,9 +29,10 @@ fn next(base: @u64) {
 main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
-An address is the type of a parameter, a local, or a result. A module
-variable and memory cannot hold an address now. Thus a function cannot
-keep an address after the call, except through its result.
+An address is the type of a parameter, a local, a result, or a
+[module constant](#address-constants). A module variable and memory
+cannot hold an address now. Thus a function cannot keep an address after
+the call, except through its result.
 
 ## bitcast
 
@@ -78,6 +79,62 @@ while the address is in use. The compiler does not check this. Thus each
 `bitcast` marks a place where the program trusts a fact that the compiler
 cannot prove.
 
+## Address constants
+
+A module constant can be an address when its value is `bitcast` of a
+`u64` constant. Each use gives the address that `bitcast` gives there, as
+each use of a `u64` constant gives its value. Thus the functions of a
+module do not each make the same address:
+
+```wyst
+struct State {
+  count: u64
+  lines: [4]u32
+}
+
+const state: u64 = 0x0100_8000
+const own: @State = bitcast(state)
+
+fn reset() {
+  store(@own.count, 0)
+  store(@own.lines[0], 0)
+}
+
+fn count() -> u64 {
+  return load(@own.count)
+}
+```
+
+Another value, such as `@own.lines`, is not implemented now. A `pub`
+address constant is not implemented now, as an address result of a `pub`
+function is not:
+
+```wyst fails
+const state: u64 = 0x0100_8000
+pub const own: @u64 = bitcast(state)
+```
+
+```text
+main.wyst:2:16: error: a `pub` address constant is not implemented now
+```
+
+Thus a module that needs the address of a `pub` `u64` constant of another
+module declares its own address constant:
+
+```wyst platform/memory.wyst
+pub const shared: u64 = 0x0100_8000
+```
+
+```wyst
+import platform.memory
+
+const words: @[2]u64 = bitcast(memory.shared)
+
+fn total() -> u64 {
+  return load(@words[0]) + load(@words[1])
+}
+```
+
 ## Places
 
 `@p.f` is the address of field `f` of the struct at address `p`. `@p[i]`
@@ -115,9 +172,9 @@ fn first(table: @[4]u64) -> u64 {
 main.wyst:2:10: error: an element at an address is not a value; `load(@a[i])` reads it
 ```
 
-`@p`, where `p` is an address, is an error, because `p` is already the
-address. `@` of a local, of a module variable, or of a module constant is
-not implemented now.
+`@p`, where `p` is an address, also an address constant, is an error,
+because `p` is already the address. `@` of a local, of a module variable,
+or of a module constant that is not an address is not implemented now.
 
 `@name` of a naked function or of the vector table gives a code address,
 a `u64`. See [Code addresses](/docs/boot-and-exceptions/#code-addresses).

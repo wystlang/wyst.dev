@@ -29,8 +29,8 @@ This page lists both sides.
   in four forms, with `..<` and `..=` ranges, `break`, `continue`, and
   `return`.
 - `Option` results, `else` unwrap, and `?`.
-- Plain structs, `size_of`, `field_offset`, address types, places, `load`,
-  `store`, `bitcast`, `widen`, and `truncate`.
+- Plain structs, `size_of`, `field_offset`, address types, address
+  constants, places, `load`, `store`, `bitcast`, `widen`, and `truncate`.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, calls, and writes.
@@ -77,9 +77,10 @@ kernel needs it:
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | A struct literal of a plain struct | Write each field with `store`. |
 | `load` and `store` of a struct or an array | Load or store each field. |
-| An address as a module variable or a field | An address is only the type of a parameter, a local, or a result. Keep a `u64`, and make the address with `bitcast`. |
-| An address as the result of a `pub` function, and an `Option` of an address | Refused. A function that is not `pub` can give an address. |
-| `@` of a local, of a module variable, or of a module constant | Refused. |
+| An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
+| An address as the result of a `pub` function, a `pub` address constant, and an `Option` of an address | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
+| An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
+| `@` of a local, of a module variable, or of a module constant that is not an address | Refused. |
 | `@T` for another `T`, such as `@bool`, `@@u64`, `@[2][2]u8`, or a `#[bits]` struct | `T` is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |

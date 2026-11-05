@@ -37,6 +37,23 @@ main.wyst:1:24: error: `pages` is used before its declaration
 A constant that wraps is an error, as a literal that does not fit is. See
 [Operators](/docs/operators/).
 
+A constant can also be an address, when its value is `bitcast` of a
+`u64` constant. Each use gives the address, as
+[Address constants](/docs/addresses/#address-constants) gives:
+
+```wyst
+struct Counter {
+  ticks: u64
+}
+
+const counter: u64 = 0x0100_8000
+const own: @Counter = bitcast(counter)
+
+fn tick() {
+  store(@own.ticks, load(@own.ticks) + 1)
+}
+```
+
 ## Shared constants
 
 `pub const` exports a constant. In a file that imports module `m`,
