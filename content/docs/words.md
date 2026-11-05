@@ -82,7 +82,7 @@ names elsewhere:
 - `readonly`, `writeonly`, `readwrite`: the access kind of a register;
 - `scratch`: an `asm` argument form that is not implemented now.
 
-The layout file has its own words: `entry`, `region`, `section`, `symbol`,
-`at`, `size`, `in`, `after`, `align`, `start`, `end`, `readonly`,
-`readwrite`, `code`, `rodata`, `data`, `bss`, and `u64`. See
-[Layout files](/docs/layout-files/).
+The layout file has its own words: `entry`, `region`, `section`,
+`functions`, `symbol`, `stack`, `at`, `size`, `in`, `after`, `align`,
+`start`, `end`, `readonly`, `readwrite`, `code`, `rodata`, `data`, `bss`,
+and `u64`. See [Layout files](/docs/layout-files/).
