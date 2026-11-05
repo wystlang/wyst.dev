@@ -272,8 +272,7 @@ thread its stack. The compiler adds the frame of such a function, which
 holds the registers that its prologue saves, its stack slots, and the
 block of `test_exit`, to the bytes that its deepest call can use. The
 build fails when the sum is more than `N`, and the error gives the path of
-calls and the bytes of each frame. Thus the stacks of two CPUs can be
-next to each other, with no guard page between them.
+calls and the bytes of each frame.
 
 The build also fails when a call can come back to a function that did
 not return, because such a cycle has no bound. The compiler does not use
@@ -326,9 +325,15 @@ main.wyst:9:3: error: `main.run` starts on a new stack, but the stack has no bou
 ```
 
 The check counts only the frames that the compiler makes. It does not
-count what the `asm` lines of a naked function write below `sp`, or a
-function of the vector table that is not naked, which runs on the stack
-that the exception found.
+count what the `asm` lines of a naked function, or of a block with output
+`never`, write below `sp`, or a function of the vector table that is not
+naked, which runs on the stack that the exception found. Each write of
+`sp` that gives a naked function its stack gives a new stack to the
+check, also a write such as `sub sp, sp, #256`. So the check does not
+count the frames that are on the stack before such a write, as in a
+naked function of the vector table for an exception at the current EL.
+Thus, when these add nothing to a stack, the stacks of two CPUs can be
+next to each other, with no guard page between them.
 
 ## Code addresses
 
@@ -339,7 +344,9 @@ or it has no parameters and returns `never`. A thread of EL0 starts with
 the stack that the kernel gives it, so the function of a thread need not
 be naked. A CPU starts with no stack, so its function is naked: in a
 function that is not naked, the compiler does not check what the code
-does with an address.
+does with an address, but it checks the stack of the function at the
+address as the stack of a new thread, as [The size of the
+stack](#the-size-of-the-stack) gives.
 
 This code starts another CPU at `secondary` with the PSCI call `CPU_ON`:
 
