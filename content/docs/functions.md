@@ -118,8 +118,7 @@ fn skip(x: u8) {
 main.wyst:6:3: error: the `u8` result of this call is not used
 ```
 
-`const _ = next(x)` calls `next` and keeps nothing, so it drops the
-result:
+`_ = next(x)` calls `next` and keeps nothing, so it drops the result:
 
 ```wyst
 fn next(x: u8) -> u8 {
@@ -127,11 +126,9 @@ fn next(x: u8) -> u8 {
 }
 
 fn skip(x: u8) {
-  const _ = next(x)
+  _ = next(x)
 }
 ```
-
-`_ = next(x)` is not implemented now.
 
 ## never
 

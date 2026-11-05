@@ -19,8 +19,7 @@ This page lists both sides.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables with `=`, `+=`, and
-  `-=`,
-  and local constants.
+  `-=`, local constants, and `_ = v`, which drops a value.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
@@ -72,7 +71,7 @@ kernel needs it:
 | An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
 | `Result`, `i64`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
-| `mut`, `xfer`, `linear`, and `_ = v` | Refused. |
+| `mut`, `xfer`, and `linear` | Refused. |
 | Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, a plain struct, or an array of them. |

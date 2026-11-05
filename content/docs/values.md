@@ -192,8 +192,8 @@ main.wyst:2:16: error: `string` is only the type of a parameter now
 
 ## Discarding a value
 
-`_` discards a value, and it is never a name. A parameter, a local, or a
-loop variable `_` gets no name, so a read of `_` is an error:
+`_` discards a value, and it is never a name. A parameter or a loop
+variable `_` gets no name, so a read of `_` is an error:
 
 ```wyst fails
 fn second(_: u64, b: u64) -> u64 {
@@ -205,9 +205,10 @@ fn second(_: u64, b: u64) -> u64 {
 main.wyst:2:10: error: `_` discards a value, so it cannot be read
 ```
 
-A declaration and an import cannot be `_`.
-[Locals](/docs/constants-and-variables/#locals) and
-[Functions](/docs/functions/#declaring-a-function) give the uses of `_`.
+`_ = value` computes a value and keeps nothing. A declaration, an import,
+and a local cannot be `_`. [Locals](/docs/constants-and-variables/#locals)
+and [Functions](/docs/functions/#declaring-a-function) give the uses of
+`_`.
 
 ## never
 

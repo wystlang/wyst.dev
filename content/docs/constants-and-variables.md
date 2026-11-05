@@ -191,8 +191,8 @@ fn scaled(value: u64) -> u64 {
 A local is not a constant, also when `const` declares it, because the
 compiler does not compute its value.
 
-`const _ = value` computes the value and keeps nothing, and a loop
-variable `_` counts the passes with no name:
+`_ = value` computes the value and keeps nothing, and a loop variable `_`
+counts the passes with no name:
 
 ```wyst
 var sent: u64 = 0
@@ -203,12 +203,29 @@ fn send(byte: u8) -> u64 {
 }
 
 fn greet(count: u64) {
-  const _ = send(72)
+  _ = send(72)
 
   for _ in 0 ..< count {
-    const _ = send(33)
+    _ = send(33)
   }
 }
+```
+
+A local cannot be `_`, so `_ = value` is the one statement that drops a
+value:
+
+```wyst fails
+fn next(x: u8) -> u8 {
+  return x + 1
+}
+
+fn skip(x: u8) {
+  const _ = next(x)
+}
+```
+
+```text
+main.wyst:6:9: error: a local cannot be `_`; `_ = value` drops a value
 ```
 
 `var` in a function body is not implemented now.
