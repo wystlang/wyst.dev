@@ -33,6 +33,7 @@ symbol __bss_end:   u64 = end(.bss)
 | `section s: k in r align N` | A section of kind `code`, `rodata`, `data`, or `bss` in region `r`. `N` is a power of two, and at least 4 for a `code` section. |
 | `section s: k in r after t align N` | The section starts at the end of the earlier section `t`, in the same region. |
 | `symbol n: u64 = v` | A `u64` name that each function can read. `v` is an integer, `start(s)`, or `end(s)`. |
+| `stack N` | Each stack of the build has `N` bytes. There is at most one `stack`. |
 
 A line can name only a region or a section that an earlier line declares.
 Thus a region comes before its sections, and a section comes before each
@@ -46,6 +47,7 @@ layout and the source use one value, such as the size of a page:
 entry boot._start at boot.image_start
 region ram: readwrite at boot.image_start size boot.image_size
 section .text: code in ram align frames.size
+stack kernel.stack_size
 ```
 
 `m` is a module path, as in an import. The module must be in the build:
@@ -82,6 +84,70 @@ the layout names it.
 
 The other sections stay empty. The build always needs `.text`. It needs
 another section only when the program puts something in it.
+
+## Stacks
+
+`stack N` gives the size of each stack of the build, in bytes. A function
+starts on a new stack when a naked function calls it after it sets `sp`,
+or when a function that is not naked takes its address, so that a thread
+can start there. The build fails when such a function can use more than
+`N` bytes with its calls, as [the stack](/docs/boot-and-exceptions/#the-size-of-the-stack)
+gives. A layout without `stack` has no such check.
+
+With this layout:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .data: data in ram after .text align 8
+symbol __stack_top: u64 = 0x4009_0000
+stack 32
+```
+
+the calls from `run` can use 48 bytes, so the build fails:
+
+```wyst fails
+var ticks: u64 = 0
+
+#[naked]
+pub fn _start() -> never {
+  asm(top in x0 = __stack_top) {
+    add sp, x0, #0
+  }
+
+  run()
+}
+
+fn run() -> never {
+  for {
+    count()
+  }
+}
+
+fn count() {
+  const before = ticks
+  tick()
+  ticks = before + 1
+}
+
+fn tick() {
+  bump()
+}
+
+fn bump() {
+  ticks += 1
+}
+```
+
+```text
+main.wyst:9:3: error: `main.run` starts on a new stack of 32 bytes, but it can use 48 bytes with its calls, in these frames: `main.run` 0, `main.count` 32, `main.tick` 16, `main.bump` 0
+```
+
+`run` returns `never`, so it saves no register. `count` saves `x29`,
+`x30`, and `x19`, which keeps `before` during the call, and `tick` saves
+`x29` and `x30`. The frames are a multiple of 16 bytes, because `sp` stays
+16-byte aligned.
 
 ## Symbols
 
