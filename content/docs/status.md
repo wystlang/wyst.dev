@@ -18,8 +18,9 @@ This page lists both sides.
 - `string` parameters, with a string literal as the argument.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
-- Module constants, `static_assert`, module variables with `=`, `+=`, and
-  `-=`, local constants, and `_ = v`, which drops a value.
+- Module constants, `static_assert`, module variables, local constants,
+  `=` and the compound assignments, such as `+=` and `<<=`, and `_ = v`,
+  which drops a value.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
@@ -63,7 +64,6 @@ kernel needs it:
 | `match` on a value that is not an integer or an enum, and the variant pattern `.V(p)` | Refused. A `match` on an integer or an enum works. |
 | An `if` or `match` value of an `Option` | `return` the `Option` in each block of an `if` or `match` statement. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
-| `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, and a `#[bits]` struct, such as an address | Use a `const`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |

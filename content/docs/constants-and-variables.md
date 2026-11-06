@@ -117,8 +117,8 @@ pub fn stop() {
 }
 ```
 
-`name = value`, `name += value`, and `name -= value` change a module
-variable or a [local `var`](#locals).
+`name = value` and the compound assignments, such as `name += value` and
+`name |= value`, change a module variable or a [local `var`](#locals).
 [Operators](/docs/operators/#assignment) gives their rules.
 
 Each module variable is in the ELF file with its initial value, in the
