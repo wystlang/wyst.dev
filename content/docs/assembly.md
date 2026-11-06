@@ -216,9 +216,9 @@ fn receive() -> Option<u64> {
 ```
 
 The `Option` of a block has the uses of the `Option` result of a call:
-`else`, `?`, and the value of `return` in a function with an `Option<u64>`
-result. The block has an `svc`
-line, or inputs in `x0` and `x1`. No line can name the output or `x0` and
+`else`, `?`, `match`, an argument, the value of a local `const`, and the
+value of `return` in a function with an `Option<u64>` result. The block
+has an `svc` line, or inputs in `x0` and `x1`. No line can name the output or `x0` and
 `x1`. The value of `.Some` is a `u64`, because a register holds 64 bits,
 so an output with a type is an `Option<u64>`, and `-> out: u32` is an
 error. An output with no type is a `u64`, so `else` and `?` do not take

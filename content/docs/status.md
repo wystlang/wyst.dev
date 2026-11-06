@@ -24,13 +24,16 @@ This page lists both sides.
   which drops a value.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
-- Functions with up to 8 parameters, value and `Option` results, `never`,
-  and `#[inline]`. A call result is an operand, an argument, or the value
+- Functions with up to 8 parameters in 8 registers, value and `Option`
+  results, `never`, and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
 - `if` with `else` and `else if`, `match` on an integer or an enum, `if`
   and `match` as values, `for` in four forms, with `..<` and `..=`
   ranges, `break`, `continue`, and `return`.
-- `Option` results, `else` unwrap, and `?`.
+- `Option` results, parameters, and local constants of a value type, an
+  enum, or a `#[bits]` struct, `Option` results of an address, `else`
+  unwrap, `?`, `match` with `.Some(v)` and `.None`, and the check that
+  each path reads an `Option`.
 - Plain structs, `size_of`, `field_offset`, address types, address
   constants, places, `load`, `store`, `store` of a struct literal with
   nested literals, `bitcast`, `widen`, and `truncate`.
@@ -62,7 +65,7 @@ kernel needs it:
 | Form | Now |
 | --- | --- |
 | Labels and `goto` | Refused. |
-| `match` on a value that is not a `uN` or an enum, such as an `i64`, and the variant pattern `.V(p)` | Refused. A `match` on a `uN` or an enum works. |
+| `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and the variant pattern `.V(p)` of an enum | Refused. A `match` on a `uN`, an enum, or an `Option` works. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
 | An `if` or `match` value of an `Option` | `return` the `Option` in each block of an `if` or `match` statement. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
@@ -70,7 +73,7 @@ kernel needs it:
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
-| `Option` as the type of a parameter or a variable | Unwrap the `Option` with `else` or `?`. |
+| `Option` as the type of a local `var`, a module variable, a module constant, or a field, and an `Option` parameter of a naked function | Use a local `const`, or unwrap the `Option` with `else`, `?`, or `match`. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
@@ -84,7 +87,8 @@ kernel needs it:
 | A struct literal of a plain struct other than the value of `store`, a value of an array field in a literal, and a literal of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
 | `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
-| An address as the result of a `pub` function, a `pub` address constant, and an `Option` of an address | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
+| An address or an `Option` of an address as the result of a `pub` function, and a `pub` address constant | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
+| An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
 | `@` of a local, of a module variable, or of a module constant that is not an address | Refused. |
 | `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
@@ -92,7 +96,7 @@ kernel needs it:
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
-| A `#[bits]` struct as a module variable or in an `Option`, and a `#[bits]` local that unwraps an `Option` | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
-| Enum variants with payloads, such as `Some(u64)`, a module variable of an enum type, and an `Option` of an enum | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type. |
+| A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
+| Enum variants with payloads, such as `Some(u64)`, and a module variable of an enum type | Refused. A parameter, a local, a result, a field of a plain struct, and the value of `Some` can have an enum type. |
 | An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
 | A `scratch` output, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |

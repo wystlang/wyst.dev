@@ -219,8 +219,60 @@ the address is an error, as for a value result.
 
 The result of a `pub` function cannot be an address now. No kernel code
 needs one, and the address of a struct that is not `pub` would give
-another module the fields of that struct. An `Option` of an address is not
-implemented now.
+another module the fields of that struct.
+
+A result can also be an `Option` of an address. An address is never in
+memory or in a module variable, and a parameter and a local cannot hold
+an `Option` of an address. `else`, `?`, and `match` take it at the call,
+and give the address of `Some` to a local:
+
+```wyst
+struct Domain {
+  root: u64
+  frames: u64
+}
+
+const count: u64 = 256
+
+var records: u64 = 0
+
+fn lookup(domain: u64) -> Option<@Domain> {
+  if domain >= count {
+    return .None
+  }
+
+  const all: @[count]Domain = bitcast(records)
+  return .Some(@all[domain])
+}
+
+fn root_of(domain: u64) -> Option<u64> {
+  const own = lookup(domain)?
+  return .Some(load(@own.root))
+}
+```
+
+A local of the `Option` is an error:
+
+```wyst fails
+struct Domain {
+  root: u64
+}
+
+fn lookup(domain: u64) -> Option<@Domain> {
+  return .None
+}
+
+fn keep(domain: u64) {
+  const found = lookup(domain)
+}
+```
+
+```text
+main.wyst:10:17: error: an `Option` of an address is only a result, which `else`, `?`, or `match` takes at the call
+```
+
+As for an address result, the result of a `pub` function cannot be an
+`Option` of an address now.
 
 ## load and store
 

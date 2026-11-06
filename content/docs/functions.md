@@ -6,8 +6,9 @@ summary: Parameters, results, never, results that must be used, and inline funct
 ## Declaring a function
 
 `fn name(parameters) -> Result { body }` declares a function. A parameter
-is `name: Type`. A function has at most 8 parameters. A function without
-`->` returns no value.
+is `name: Type`. A function has at most 8 parameters, and they take at
+most 8 registers: an `Option` takes two. A function without `->` returns
+no value.
 
 ```wyst
 fn max(a: u64, b: u64) -> u64 {
@@ -21,8 +22,9 @@ fn max(a: u64, b: u64) -> u64 {
 A parameter has a value type, an
 [enum](/docs/enums-and-bit-structs/#enum-values), a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), an address type,
-which [Addresses and memory](/docs/addresses/) describes, or `string`, which
-[Values and types](/docs/values/#strings) describes. A function cannot
+which [Addresses and memory](/docs/addresses/) describes, `string`, which
+[Values and types](/docs/values/#strings) describes, or an `Option`, which
+[Optional values](/docs/options/) describes. A function cannot
 change its parameters, because a `mut` parameter is not implemented now.
 No call starts the entry or a naked function, so no
 string literal gives their parameters, and a `string` parameter of one of
@@ -53,7 +55,8 @@ main.wyst:1:16: error: a second parameter `a`
 ## Results
 
 A result is a value type, an enum, a `#[bits]` struct, an address type,
-`Option<T>`, or `never`. A function with a result must not reach the end of its body.
+`Option<T>`, or `never`. A function with a result must not reach the end
+of its body.
 Each path ends with `return`, with a call to a `never` function such as
 `trap()`, with a `for {}` without a `break`, or with an
 [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
@@ -130,6 +133,10 @@ fn skip(x: u8) {
   _ = next(x)
 }
 ```
+
+An `Option` result is must-use, so `_ = value` cannot drop it: `else`,
+`?`, or `match` takes it, as [Optional values](/docs/options/#must-use)
+shows.
 
 ## never
 

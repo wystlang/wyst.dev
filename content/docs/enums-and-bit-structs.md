@@ -118,8 +118,9 @@ fn known() -> bool {
 }
 ```
 
-A module variable of an enum type and an [`Option`](/docs/options/) of an
-enum are not implemented now.
+An enum is also the type of the value of `Some` of an
+[`Option`](/docs/options/), as in `Option<Call>`. A module variable of an
+enum type is not implemented now.
 
 ## Enum constants
 
@@ -347,6 +348,7 @@ When the compiler computes a value of the struct type, each fixed field
 must have its fixed value. A value at run time, such as a `load` of an
 entry, keeps its bits.
 
-A module variable and an [`Option`](/docs/options/) of the struct type
-are not implemented now, and neither is a local `const` of the struct
-type that unwraps an `Option` with `else` or `?`.
+The struct type is also the type of the value of `Some` of an
+[`Option`](/docs/options/), and `const entry = f() else { trap() }` keeps
+the struct type of the value. A module variable of the struct type is not
+implemented now.

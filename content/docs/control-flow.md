@@ -41,7 +41,9 @@ fn inside(x: u64, low: u64, high: u64) -> bool {
 ```
 
 `else` after an `Option` value takes the value of `.Some`, as
-[Optional values](/docs/options/#unwrap-with-else) shows.
+[Optional values](/docs/options/#unwrap-with-else) shows. A path that
+leaves an `Option` local must read it, as
+[Optional values](/docs/options/#must-use) shows.
 
 A body with one statement can stay on one line:
 
@@ -78,6 +80,27 @@ Without `_`, no arm runs for a value that no pattern gives. When the
 Thus a function with a result can end with it, as `cost` does, and a
 statement after it is an error. The code computes `value` one time, so a
 `match` on a register read reads the register one time.
+
+A `match` on an `Option` has the patterns `.Some(v)`, `.None`, and `_`.
+`.Some(v)` gives the value of `Some` to the new local `v`:
+
+```wyst
+fn pick(x: u8) -> Option<u8> {
+  if x > 4 {
+    return .Some(x)
+  }
+  return .None
+}
+
+fn size(x: u8) -> u8 {
+  match pick(x) {
+    .Some(v) { return v }
+    .None { return 0 }
+  }
+}
+```
+
+[Optional values](/docs/options/#match) gives the rules.
 
 On an enum, the patterns are its variants. A value of an enum can be a
 value that no variant has, so `_` also takes each such value, as
@@ -317,7 +340,7 @@ statement after `break` or `continue` is an error.
 ## return
 
 `return` ends the function. In a function with a value or `Option` result,
-`return` takes a value of that type. In a function without a result,
+`return` takes a value of that type, also an `Option` local or parameter. In a function without a result,
 `return` has no value. A function that returns `never` cannot use
 `return`. A statement after `return` is an error.
 
@@ -329,8 +352,8 @@ When `value` is `.None`, `value?` also returns `.None`, as
 The grammar also has these forms. The compiler does not implement them
 now:
 
-- `match` on a value that is not an integer or an enum, and the variant
-  pattern `.V(p)`;
+- `match` on a value that is not an integer, an enum, or an `Option`, and
+  the variant pattern `.V(p)` of an enum;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
 - an `if` or `match` value of an `Option`.
