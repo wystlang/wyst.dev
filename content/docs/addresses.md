@@ -222,11 +222,12 @@ implemented now.
 
 ## load and store
 
-`load(a)` reads the integer or the enum value at address `a`, and
-`store(a, v)` writes `v` there. `a` is `@u8`, `@u16`, `@u32`, `@u64`, or
-the address of an enum. Each is one load or one store of the size of the
-integer, or of the backing type of the enum. A value of an enum from
-memory can be a value that no variant has, as
+`load(a)` reads the integer, the enum value, or the `#[bits]` struct
+value at address `a`, and `store(a, v)` writes `v` there. `a` is `@u8`,
+`@u16`, `@u32`, `@u64`, or the address of an enum or of a `#[bits]`
+struct. Each is one load or one store of the size of the integer, or of
+the backing type of the enum or of the `#[bits]` struct. A value of an
+enum from memory can be a value that no variant has, as
 [Enum values](/docs/enums-and-bit-structs/#enum-values) gives. At a
 [big-endian field](/docs/structs/#big-endian-fields), `load` and `store`
 also reverse the bytes.
@@ -246,4 +247,22 @@ fn reuse(slot: @Slot, object: u64) {
 }
 ```
 
-`load` and `store` of a whole struct or array are not implemented now.
+At the address of a plain struct, `store` takes a
+[struct literal](/docs/structs/#struct-literals) and writes the full
+struct: each named field, and 0 in each other byte.
+
+```wyst
+struct Descriptor {
+  address: u64
+  length: u32
+  flags: u16
+  next: u16
+}
+
+fn give(descriptor: @Descriptor, buffer: u64) {
+  store(descriptor, { address = buffer, length = 2048, flags = 2 })
+}
+```
+
+`load` of a whole struct, and `load` and `store` of a whole array, are
+not implemented now.

@@ -30,7 +30,8 @@ This page lists both sides.
   `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, address
-  constants, places, `load`, `store`, `bitcast`, `widen`, and `truncate`.
+  constants, places, `load`, `store`, `store` of a struct literal with
+  nested literals, `bitcast`, `widen`, and `truncate`.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, calls, and writes.
@@ -77,8 +78,8 @@ kernel needs it:
 | Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
-| A struct literal of a plain struct | Write each field with `store`. |
-| `load` and `store` of a struct or an array | Load or store each field. |
+| A struct literal of a plain struct other than the value of `store`, a value of an array field in a literal, and a literal of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
+| `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
 | An address as the result of a `pub` function, a `pub` address constant, and an `Option` of an address | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
