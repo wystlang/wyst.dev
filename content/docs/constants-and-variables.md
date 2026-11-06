@@ -148,6 +148,17 @@ fn sum(limit: u64) -> u64 {
 }
 ```
 
+The value of a `const` can be an
+[`if` or `match` value](/docs/control-flow/#if-and-match-values), so a
+local that a condition selects needs no `var`:
+
+```wyst
+fn edge(left: u64, width: u64, right: bool) -> u64 {
+  const x = if right { left + width } else { left }
+  return x
+}
+```
+
 A local `var` of another type, such as an address, is not implemented
 now:
 

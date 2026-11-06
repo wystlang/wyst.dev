@@ -25,16 +25,17 @@ This page lists both sides.
 - Functions with up to 8 parameters, value and `Option` results, `never`,
   and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
-- `if` with `else` and `else if`, `match` on an integer or an enum, `for`
-  in four forms, with `..<` and `..=` ranges, `break`, `continue`, and
-  `return`.
+- `if` with `else` and `else if`, `match` on an integer or an enum, `if`
+  and `match` as values, `for` in four forms, with `..<` and `..=`
+  ranges, `break`, `continue`, and `return`.
 - `Option` results, `else` unwrap, and `?`.
 - Plain structs, `size_of`, `field_offset`, address types, address
   constants, places, `load`, `store`, `store` of a struct literal with
   nested literals, `bitcast`, `widen`, and `truncate`.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - Index proofs from constants, masks and other operators, field widths,
-  range loops, conditions, `match` arms, calls, and writes.
+  range loops, conditions, `match` arms, `if` and `match` values, calls,
+  and writes.
 - Enums as the type of bit fields, constants, parameters, locals, results,
   and fields of plain structs, `pub` enums, `#[bits]` structs as the type
   of constants, parameters, locals, local `var`s, results, and fields of
@@ -60,7 +61,7 @@ kernel needs it:
 | --- | --- |
 | Labels and `goto` | Refused. |
 | `match` on a value that is not an integer or an enum, and the variant pattern `.V(p)` | Refused. A `match` on an integer or an enum works. |
-| `if` and `match` as values | Refused. |
+| An `if` or `match` value of an `Option` | `return` the `Option` in each block of an `if` or `match` statement. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
 | `*=`, `/=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, and `>>=` | Use `x = x * y`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, and a `#[bits]` struct, such as an address | Use a `const`. |

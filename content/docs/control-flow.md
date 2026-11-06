@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, match, the four forms of for, break and continue, and return.
+summary: if, match, their values, the four forms of for, break and continue, and return.
 ---
 
 ## if
@@ -127,6 +127,89 @@ fn size(x: u8) -> u8 {
 main.wyst:4:5: error: the value 2 is already a pattern of this `match`
 ```
 
+## if and match values
+
+`if` and `match` can also give a value. The last statement of each block
+gives the value, and each block gives a value of one type:
+
+```wyst
+fn least(a: u64, b: u64) -> u64 {
+  return if a < b { a } else { b }
+}
+```
+
+The value can be the value of `const`, `var`, an assignment, and
+`return`, an operand, and an argument. A statement that starts with `if`
+or `match` is a statement, not a value. When the position of the value
+expects a type, each block takes that type. Else the first block with a
+value gives the type, so a literal there needs a type, as for
+`const x = 1`:
+
+```wyst
+fn scroll(up: bool, by: u64) -> u64 {
+  const step: u64 = if up { 1 } else { 2 }
+  return by * step
+}
+```
+
+An `if` value has an `else` block:
+
+```wyst fails
+fn pick(up: bool) -> u64 {
+  return if up { 1 }
+}
+```
+
+```text
+main.wyst:2:10: error: an `if` value needs an `else` block
+```
+
+A `match` value has an arm for each value: `_`, or an arm for each variant
+of its enum. Without `_`, a value of the enum that no variant has traps,
+as `trap()` does. A block can have statements before its value, and a
+block can end with a call to a `never` function in place of a value:
+
+```wyst
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+  Stop = 12
+}
+
+fn cost(call: Call, size: u64) -> u64 {
+  return match call {
+    .Wait { 2 }
+    .Send {
+      const words = (size + 7) / 8
+      3 + words
+    }
+    .Stop { trap() }
+  }
+}
+```
+
+A `match` value without `_` and without an arm for each variant is an
+error:
+
+```wyst fails
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+}
+
+fn cost(call: Call) -> u64 {
+  return match call { .Wait { 2 } }
+}
+```
+
+```text
+main.wyst:7:10: error: this `match` value has no arm for `.Send`, and no `_`
+```
+
+The highest value of an `if` or `match` value is the largest of those of
+its blocks, so the value can be an index, as
+[Index proofs](/docs/index-proofs/#conditions) shows.
+
 ## for
 
 `for` is the one loop. The compiler implements four forms of it now.
@@ -250,4 +333,4 @@ now:
   pattern `.V(p)`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
-- `if` and `match` as values.
+- an `if` or `match` value of an `Option`.

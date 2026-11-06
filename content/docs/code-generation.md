@@ -149,6 +149,7 @@ a loop after the loop, so the next copy takes them.
 | `~x` | One `mvn`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
+| An `if` or `match` value | The code of the statement, and each block puts its value in one register: the home of the local, x0 for `return`, or a scratch register. A `match` value without `_` has a `brk #0` for a value that no variant has. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. A constant end that fits in the `cmp`, such as `0 ..< 512`, has no home. |

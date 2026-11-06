@@ -27,6 +27,8 @@ The checker knows the highest value of:
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
   knows the highest value `h` of `n`, and of `for i in a ..= n`, which is
   `h`;
+- an `if` or `match` value, which is the largest of the highest values of
+  its blocks, each with the bounds of its block;
 - a `const` local, which keeps the proof of its value;
 - the operators in [Operators](#operators).
 
@@ -168,6 +170,17 @@ fn mark(table: @[4]u64, cursor: @u64) {
   if at < 4 {
     store(@table[at], 1)
   }
+}
+```
+
+A block of an `if` value has the bounds of its condition, and the value
+has the largest of the highest values of its blocks, so it can be an
+index:
+
+```wyst
+fn mark(table: @[4]u64, cursor: @u64) {
+  const at = load(cursor)
+  store(@table[if at < 4 { at } else { 0 }], 1)
 }
 ```
 
