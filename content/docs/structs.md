@@ -17,8 +17,8 @@ struct Slot {
 }
 ```
 
-A field type is `u8`, `u16`, `u32`, `u64`, an
-[enum](/docs/enums-and-bit-structs/#enum-values) of one of these, a plain
+A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
+[enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, a plain
 struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
 holds its backing integer, or an array `[N]T` of one of these. Other field
 types are not implemented now:
@@ -30,7 +30,7 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.

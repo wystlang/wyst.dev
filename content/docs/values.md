@@ -6,8 +6,15 @@ summary: Integers, characters, literals, bool, strings, conversions, and never.
 ## Integers
 
 `u8`, `u16`, `u32`, and `u64` are unsigned integers of 8, 16, 32, and 64
-bits. They are the integer types of values now. Signed integers are not
-implemented now.
+bits. `i64` is a signed integer of 64 bits in two's complement, from
+-2^63 to 2^63 - 1. These are the integer types of values. There is no
+`i8`, `i16`, or `i32`.
+
+An `i64` holds a value that can be less than 0, such as the move of the
+pointer from a press. It is the type of a parameter, a local, a constant,
+a variable, a result, and a field of a plain struct, as `u64` is. An
+index, the amount of a shift, and an address are not an `i64`, and a range
+loop and a `match` on an `i64` are not implemented now.
 
 An integer literal is decimal, hexadecimal with `0x`, or binary with `0b`.
 `_` can separate the digits:
@@ -21,6 +28,17 @@ const uart: u64 = 0x0900_0000
 
 The prefixes are lowercase, so `0X10` is an error that gives the prefix
 `0x`.
+
+A literal is at least 0. `-` before it gives a value less than 0, as in
+`-3`, so an `i64` constant can be negative:
+
+```wyst
+const back: i64 = -3
+const least: i64 = -9223372036854775807 - 1
+```
+
+The largest literal of an `i64` is 2^63 - 1, so the constant -2^63
+needs an operator, as `least` shows.
 
 ## Characters
 
@@ -116,7 +134,7 @@ main.wyst:2:16: error: `==` takes only integers and enums, found bool
 ## No implicit conversions
 
 Wyst does not convert a value from one type to another by itself. `widen`
-and `truncate` convert an integer to the integer type that their position
+and `truncate` convert a `uN` to the `uN` type that their position
 expects:
 
 - `widen(x)` gives `x` in a type that is at least as wide. For a value
@@ -146,6 +164,34 @@ fn low_byte(x: u64) -> u8 {
 
 ```text
 main.wyst:2:10: error: expected u8, found u64
+```
+
+`widen` and `truncate` do not take or give an `i64`. `bitcast` gives the
+`i64` with the bits of a `u64`, and the reverse, so a `u64` of 2^63 or more
+gives an `i64` less than 0. To get a value less than 0 from `u64` values,
+give the operands to `bitcast`. Where the position expects an `i64`, an
+operand without a type of its own is a `u64`, so `bitcast(widen(x))` is
+the `i64` of a `u32` `x`. Here `signed` gives the `i64` of a 32-bit count
+with its sign in bit 31, because `>>` of an `i64` keeps the sign:
+
+```wyst
+fn moved(x: u64, press: u64) -> i64 {
+  return bitcast(x) - bitcast(press)
+}
+
+fn signed(value: u32) -> i64 {
+  return bitcast(widen(value) << 32) >> 32
+}
+```
+
+```wyst fails
+fn wide(value: u32) -> i64 {
+  return widen(value)
+}
+```
+
+```text
+main.wyst:2:10: error: `widen` cannot make i64 from u32
 ```
 
 ## Strings

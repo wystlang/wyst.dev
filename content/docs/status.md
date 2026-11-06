@@ -14,7 +14,8 @@ This page lists both sides.
 
 - Modules, imports with aliases, `pub` functions, constants, plain
   structs, and system registers.
-- The value types `bool`, `u8`, `u16`, `u32`, and `u64`, and `never`.
+- The value types `bool`, `u8`, `u16`, `u32`, `u64`, and `i64`, and
+  `never`.
 - `string` parameters, with a string literal as the argument.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
@@ -61,10 +62,11 @@ kernel needs it:
 | Form | Now |
 | --- | --- |
 | Labels and `goto` | Refused. |
-| `match` on a value that is not an integer or an enum, and the variant pattern `.V(p)` | Refused. A `match` on an integer or an enum works. |
+| `match` on a value that is not a `uN` or an enum, such as an `i64`, and the variant pattern `.V(p)` | Refused. A `match` on a `uN` or an enum works. |
+| A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
 | An `if` or `match` value of an `Option` | `return` the `Option` in each block of an `if` or `match` statement. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
-| A local `var` of a type other than `bool`, `u8` to `u64`, and a `#[bits]` struct, such as an address | Use a `const`. |
+| A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, and a `#[bits]` struct, such as an address | Use a `const`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
@@ -73,19 +75,19 @@ kernel needs it:
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
 | An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
-| `Result`, `i64`, `len`, and `align_of` | Refused. |
+| `Result`, `len`, and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, `xfer`, and `linear` | Refused. |
 | Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
-| A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
+| A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct literal of a plain struct other than the value of `store`, a value of an array field in a literal, and a literal of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
 | `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
 | An address as the result of a `pub` function, a `pub` address constant, and an `Option` of an address | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
 | `@` of a local, of a module variable, or of a module constant that is not an address | Refused. |
-| `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
+| `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |

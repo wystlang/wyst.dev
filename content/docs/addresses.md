@@ -10,7 +10,7 @@ offset.
 ## Address types
 
 `@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
-`u32`, `u64`, an enum of one of these, a plain struct or a
+`u32`, `u64`, `i64`, an enum of `u8` to `u64`, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
 `pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
 of these. `N` is a constant, such as a module constant. Another target,
@@ -70,10 +70,12 @@ fn banner() -> u64 {
 }
 ```
 
-`bitcast` makes only an address from a `u64` and a `u64` from a `string`
-now. An integer literal has no type in `bitcast(...)`. Put the value in a
-typed constant, such as `const uart: u64 = 0x0900_0000`, and use
-`bitcast(uart)`.
+`bitcast` makes only an address from a `u64`, a `u64` from a `string`,
+and an `i64` from a `u64` and the reverse now, as
+[Values and types](/docs/values/#no-implicit-conversions) gives for
+`i64`. An integer literal has no type in `bitcast(...)` of an address.
+Put the value in a typed constant, such as
+`const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
 
 The code that calls `bitcast` asserts that memory of that type is at `x`
 while the address is in use. The compiler does not check this. Thus each

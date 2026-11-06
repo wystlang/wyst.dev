@@ -91,7 +91,7 @@ function, so this is safe.
 ## Immediates
 
 Where an instruction takes an immediate, `#name` or `#m.name` gives the
-value of an integer or enum constant. `#E.V` or `#m.E.V` gives the value
+value of a `uN` or enum constant. `#E.V` or `#m.E.V` gives the value
 of variant `V` of enum `E`. A line gives `.V` no type, so the line names
 the enum:
 

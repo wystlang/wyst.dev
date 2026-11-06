@@ -130,9 +130,9 @@ starts.
 `const name = value` in a function body declares a local that cannot
 change. `var name: T = value` declares a local `var`, which an assignment
 can change while its name is in scope. As a module variable, a local `var`
-has the type `bool`, `u8`, `u16`, `u32`, or `u64`, and it can also have a
-[`#[bits]` struct](/docs/enums-and-bit-structs/#values) type. The type is
-optional when the value has a type:
+has the type `bool`, `u8`, `u16`, `u32`, `u64`, or `i64`, and it can also
+have a [`#[bits]` struct](/docs/enums-and-bit-structs/#values) type. The
+type is optional when the value has a type:
 
 ```wyst
 fn sum(limit: u64) -> u64 {
