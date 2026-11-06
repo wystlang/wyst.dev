@@ -1,6 +1,6 @@
 ---
 title: Constants and variables
-summary: Module constants, static_assert, module variables, and locals.
+summary: Module constants, constant tables, static_assert, module variables, and locals.
 ---
 
 ## Module constants
@@ -53,6 +53,70 @@ fn tick() {
   store(@own.ticks, load(@own.ticks) + 1)
 }
 ```
+
+## Constant tables
+
+A module constant of an array type `[N]T` or of a plain struct type is a
+constant table: read-only data, such as a table of colors. Its value is
+an array literal of N elements, or a struct literal. An element or a
+field of an array type takes an array literal, and one of a plain struct
+type takes a struct literal. Each other value is a constant of its type.
+A field that the literal does not name is 0, and so is each byte of
+padding:
+
+```wyst
+struct Palette {
+  bar: u32
+  text: u32
+  favicons: [3]u32
+  lit: u8
+}
+
+const light: Palette = { bar = 0x00f8_f9fc, favicons = [0x002f_5fe0, 0x00b9_5918, 0x001a_835a], lit = 179 }
+const steps: [4]u16 = [0, 0x1018, 0x204f, 0x308a]
+
+fn favicon(sum: u64) -> u32 {
+  return load(@light.favicons[sum % 3])
+}
+
+fn step(i: u64) -> u16 {
+  if i >= 4 {
+    return 0
+  }
+  return load(@steps[i])
+}
+```
+
+`@name` gives the address of the table, and `@m.name` of a `pub` table
+of an imported module, so `load` reads it, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives. The
+name alone is not a value:
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn first() -> u16 {
+  return steps[0]
+}
+```
+
+```text
+main.wyst:4:10: error: `steps` is a constant table; `@steps` gives its address
+```
+
+The literal has the length of the array:
+
+```wyst fails
+const steps: [4]u16 = [0, 0x1018, 0x204f]
+```
+
+```text
+main.wyst:1:23: error: expected 4 elements, found 3
+```
+
+An array literal has no type of its own, so it is only the value of a
+constant table, and the table needs its type. A table is in the section
+`.rodata`, after the string literals, and it has at most 65536 bytes now.
 
 ## Shared constants
 

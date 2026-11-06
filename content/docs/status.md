@@ -37,6 +37,9 @@ This page lists both sides.
 - Plain structs, `size_of`, `field_offset`, address types, address
   constants, places, `load`, `store`, `store` of a struct literal with
   nested literals, `bitcast`, `widen`, and `truncate`.
+- Constant tables of an array or a plain struct type, with array and
+  struct literals, `@c` of a table, and the check that no `store` writes
+  through the address of a table, also in a function that takes it.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, `if` and `match` values, calls,
@@ -84,16 +87,17 @@ kernel needs it:
 | Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
-| A struct literal of a plain struct other than the value of `store`, a value of an array field in a literal, and a literal of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
+| A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
+| A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
 | `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
 | An address or an `Option` of an address as the result of a `pub` function, and a `pub` address constant | Refused. A function that is not `pub` can give an address, and each module declares its own address constant. |
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
-| `@` of a local, of a module variable, or of a module constant that is not an address | Refused. |
+| `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
-| Arrays as values: parameters, locals, variables, constants, and literals such as `[1, 2]` | An array is only the target of an address or an array of devices. |
+| Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table | An array is only the target of an address, an array of devices, or a constant table. |
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |

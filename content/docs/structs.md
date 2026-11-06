@@ -203,6 +203,20 @@ main.wyst:7:18: error: a value of array field `destination` in a literal is not 
 
 A literal of a struct of more than 4096 bytes is not implemented now.
 
+A struct literal is also the value of a
+[constant table](/docs/constants-and-variables/#constant-tables) of a
+plain struct type. There, a field of an array type takes an array
+literal:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  #[big_endian] type: u16
+}
+
+const broadcast: Ethernet = { destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff], type = 0x0800 }
+```
+
 ## size_of and field_offset
 
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
@@ -234,9 +248,9 @@ change moves a field, the assertion stops the build.
 
 ## What a struct can do now
 
-A plain struct is only the type of memory at an address now. A parameter,
-a local, and a variable cannot hold a struct. Code reads and writes each
-field through the address of the struct, such as `load(@slot.kind)`, as
-[Addresses and memory](/docs/addresses/) shows, and `store` writes the
-full struct from a literal. `load` of a whole struct, and a struct
-literal as another value, are not implemented now.
+A plain struct is only the type of memory at an address or of a constant
+table now. A parameter, a local, and a variable cannot hold a struct.
+Code reads and writes each field through the address of the struct, such
+as `load(@slot.kind)`, as [Addresses and memory](/docs/addresses/) shows,
+and `store` writes the full struct from a literal. `load` of a whole
+struct, and a struct literal as another value, are not implemented now.

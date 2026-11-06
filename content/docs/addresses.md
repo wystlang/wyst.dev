@@ -31,7 +31,8 @@ main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
 An address is the type of a parameter, a local, a result, or a
-[module constant](#address-constants). A module variable and memory
+[module constant](#address-constants), and `@c` gives the address of a
+[constant table](#read-only-addresses). A module variable and memory
 cannot hold an address now. Thus a function cannot keep an address after
 the call, except through its result.
 
@@ -177,7 +178,8 @@ main.wyst:2:10: error: an element at an address is not a value; `load(@a[i])` re
 
 `@p`, where `p` is an address, also an address constant, is an error,
 because `p` is already the address. `@` of a local, of a module variable,
-or of a module constant that is not an address is not implemented now.
+or of a module constant that is not an address or a constant table is not
+implemented now.
 
 `@name` of a naked function or of the vector table gives a code address,
 a `u64`. See [Code addresses](/docs/boot-and-exceptions/#code-addresses).
@@ -214,7 +216,8 @@ fn root_of(domain: u64) -> u64 {
 
 No address points to a local, because `@` of a local is not implemented
 now. Thus the address that a function gives stays valid after the call:
-it comes from a parameter or from `bitcast`. A call statement that drops
+it comes from a parameter, from `bitcast`, or from `@c` of a constant
+table. A call statement that drops
 the address is an error, as for a value result.
 
 The result of a `pub` function cannot be an address now. No kernel code
@@ -273,6 +276,81 @@ main.wyst:10:17: error: an `Option` of an address is only a result, which `else`
 
 As for an address result, the result of a `pub` function cannot be an
 `Option` of an address now.
+
+## Read-only addresses
+
+`@c` gives the address of the
+[constant table](/docs/constants-and-variables/#constant-tables) `c`, and
+`@m.c` of a `pub` table of the imported module `m`. A function can take
+the address and give it as its result, as each other address:
+
+```wyst
+struct Palette {
+  bar: u32
+  text: u32
+}
+
+const light: Palette = { bar = 0x00f8_f9fc, text = 0x001b_2230 }
+const dark: Palette = { bar = 0x0015_181f, text = 0x00e4_e8ef }
+
+fn palette(night: bool) -> @Palette {
+  if night {
+    return @dark
+  }
+  return @light
+}
+
+fn copy(from: @u32, to: @u32) {
+  store(to, load(from))
+}
+
+fn paint(night: bool, pixel: @u32) {
+  copy(@palette(night).text, pixel)
+}
+```
+
+A table is read-only, so a `store` through its address is an error:
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn clear() {
+  store(@steps[1], 0)
+}
+```
+
+```text
+main.wyst:4:9: error: `store` cannot write through this address: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+The signature does not say which parameters a function writes through.
+The compiler infers, for each function, the address parameters that it
+stores through, also in the functions that it calls, and the parameters
+and the tables that its result can come from. Thus `copy` above can take
+the address of a table as `from`, but not as `to`:
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn reset(cell: @u16) {
+  clear(cell)
+}
+
+fn clear(at: @u16) {
+  store(at, 0)
+}
+
+fn start() {
+  reset(@steps[0])
+}
+```
+
+```text
+main.wyst:12:9: error: function `main.reset` stores through parameter `cell`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+An `asm` input cannot hold the address of a table, as it cannot hold
+another address.
 
 ## load and store
 
