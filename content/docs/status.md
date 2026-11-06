@@ -42,7 +42,7 @@ This page lists both sides.
   of constants, parameters, locals, local `var`s, results, and fields of
   plain structs, with field values at run time, register maps, register banks, devices, arrays of devices,
   system registers, offsets and bit positions that the compiler computes,
-  and locals that keep a register snapshot.
+  locals that keep a register snapshot, and `modify` of a register.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
   and blocks that do not return.
 - Naked functions with parameters, the check that a function that runs
