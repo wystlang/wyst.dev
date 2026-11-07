@@ -65,7 +65,7 @@ fn init() {
 | --- | --- |
 | `x0` to `x7` | Parameters. |
 | `x0` | A value result or an address result. |
-| `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. |
+| `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. The result of an enum with values: `x0` is the tag, and `x1` is the value of the variant. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |
 | `x18` | Not used. |
 | `x19` to `x28` | Homes of locals, loop values, and values that wait while a call runs, which a callee saves. |
@@ -136,7 +136,7 @@ a loop after the loop, so the next copy takes them.
 | A system register `read` or `write` | One `mrs` or `msr`. |
 | A field read | One `ubfx`. A field at bit 0 that fills its value adds no code: a field of 64 bits, or `VALUE: u32 at 0..=31` in a `u32` register. |
 | A field write | One `lsl` or `orr` for each field value that is not a constant. The fixed fields and the constant values make one constant. One `orr` adds it when it fits in the instruction. If it does not fit, the code of the constant and one `orr` add it. A write of only constants is one constant. |
-| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. A big-endian field adds one `rev16` or `rev`, except in a store of a constant, which the compiler reverses itself. The address of a field, or of an element at a constant index, adds one `add` for the offset. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
+| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. A big-endian field adds one `rev16` or `rev`, except in a store of a constant, which the compiler reverses itself. The address of a field, or of an element at a constant index, adds one `add` for the offset, except at an [address constant](/docs/addresses/#address-constants): the compiler adds the offset to the constant. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
 | `widen`, `bitcast` | No code. |
 | `truncate` | One `ubfx`. |
 | `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
@@ -149,6 +149,7 @@ a loop after the loop, so the next copy takes them.
 | `~x` | One `mvn`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
+| An `if` or `match` value | The code of the statement, and each block puts its value in one register: the home of the local, x0 for `return`, or a scratch register. A `match` value without `_` has a `brk #0` for a value that no variant has. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. A constant end that fits in the `cmp`, such as `0 ..< 512`, has no home. |

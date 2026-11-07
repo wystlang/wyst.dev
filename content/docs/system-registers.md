@@ -166,11 +166,11 @@ main.wyst:7:14: error: `SCTLR_EL12` can be written only at EL2, in an `#[el2]` f
 ## Sharing a register
 
 `pub` lets each module that imports the module of a system register use
-the register: `m.NAME.read()` and `m.NAME.write(F = v, ...)` access the
-`pub` register `NAME` of module `m`. The EL rules apply at the function
-that accesses it. Thus a register that two modules use has one
-declaration. This module declares the control register of the EL1
-physical timer:
+the register: `m.NAME.read()`, `m.NAME.write(F = v, ...)`, and
+`m.NAME.modify(F = v, ...)` access the `pub` register `NAME` of module
+`m`. The EL rules apply at the function that accesses it. Thus a register
+that two modules use has one declaration. This module declares the control
+register of the EL1 physical timer:
 
 ```wyst cpu/timer.wyst
 // The timer signals its interrupt while ENABLE is 1, IMASK is 0, and
@@ -277,9 +277,11 @@ main.wyst:1:10: error: `S3_0_C1_C0_0` is not implementation-defined: op0 must be
 
 ## Reading and writing
 
-`NAME.read()` is one `mrs` instruction, and `NAME.write(F = v, ...)` is one
-`msr`. They follow the rules of register access: a read gives a snapshot,
-and a write makes one value from the named fields.
+`NAME.read()` is one `mrs` instruction, `NAME.write(F = v, ...)` is one
+`msr`, and `NAME.modify(F = v, ...)` is one `mrs` and one `msr`. They
+follow the rules of register access: a read gives a snapshot, a write
+makes one value from the named fields, and `modify` changes the named
+fields of the value that it read.
 
 A write sets each bit that it does not name to zero, except a fixed field.
 Thus the declaration gives each RES1 bit as a fixed field, as `SCTLR_EL1`
@@ -317,6 +319,27 @@ fn granule() -> u64 {
 
 A read of the enum field `TG0` gives a value of `Granule`, so
 `TCR_EL1.read().TG0 == .16K` compares it with the variant.
+
+`modify` keeps each bit that it does not name, and gives each fixed field
+its fixed value. It is a read and a write, so each of the two must be
+possible at the EL of the function. The per-core setup of the Mac Studio
+changes only the bits that m1n1 changes:
+
+```wyst
+// Bits of an implementation-defined register of the Apple P cores, with
+// the names of m1n1.
+#[sysreg(S3_0_C15_C4_0)]
+const HID4: readwrite u64 {
+  DISABLE_DC_MVA:       bool at 11
+  CNF_CNTR_THRESH:      u2   at 40..=41
+  DISABLE_DC_SW_L2_OPS: bool at 44
+}
+
+fn setup_core() {
+  HID4.modify(DISABLE_DC_MVA = true, DISABLE_DC_SW_L2_OPS = true)
+  HID4.modify(CNF_CNTR_THRESH = 3)
+}
+```
 
 `const s = NAME.read()` keeps the snapshot of one `mrs` in the local `s`,
 and each `s.F` reads field `F` from it, as for a device register. The

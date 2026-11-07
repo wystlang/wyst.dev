@@ -564,8 +564,12 @@ pub fn spin() -> never {
 }
 ```
 
-The kernel puts the code of its EL0 modules in `.el0`, so that its page
-tables let EL0 execute only these pages.
+The layout line `functions m in s` puts the code of each function of each
+module whose path starts with `m.` in the section `s`, as
+[Function sections](/docs/layout-files/#function-sections) gives.
+`#[section]` on a function of such a module wins over the line. The
+kernel layouts have `functions el0 in .el0`, so that the page tables let
+EL0 execute only the code of the EL0 modules.
 
 ## Semihosting
 

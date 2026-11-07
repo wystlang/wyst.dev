@@ -6,8 +6,11 @@ summary: Parameters, results, never, results that must be used, and inline funct
 ## Declaring a function
 
 `fn name(parameters) -> Result { body }` declares a function. A parameter
-is `name: Type`. A function has at most 8 parameters. A function without
-`->` returns no value.
+is `name: Type`. A function has at most 8 parameters, and they take at
+most 8 registers: an `Option` and an
+[enum with values](/docs/enums-and-bit-structs/#enums-with-values) take
+two. A function without `->` returns
+no value.
 
 ```wyst
 fn max(a: u64, b: u64) -> u64 {
@@ -19,9 +22,11 @@ fn max(a: u64, b: u64) -> u64 {
 ```
 
 A parameter has a value type, an
-[enum](/docs/enums-and-bit-structs/#enum-values), an address type, which
-[Addresses and memory](/docs/addresses/) describes, or `string`, which
-[Values and types](/docs/values/#strings) describes. A function cannot
+[enum](/docs/enums-and-bit-structs/#enum-values), a
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values), an address type,
+which [Addresses and memory](/docs/addresses/) describes, `string`, which
+[Values and types](/docs/values/#strings) describes, or an `Option`, which
+[Optional values](/docs/options/) describes. A function cannot
 change its parameters, because a `mut` parameter is not implemented now.
 No call starts the entry or a naked function, so no
 string literal gives their parameters, and a `string` parameter of one of
@@ -51,8 +56,9 @@ main.wyst:1:16: error: a second parameter `a`
 
 ## Results
 
-A result is a value type, an enum, an address type, `Option<T>`, or
-`never`. A function with a result must not reach the end of its body.
+A result is a value type, an enum, a `#[bits]` struct, an address type,
+`Option<T>`, or `never`. A function with a result must not reach the end
+of its body.
 Each path ends with `return`, with a call to a `never` function such as
 `trap()`, with a `for {}` without a `break`, or with an
 [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A
@@ -69,6 +75,24 @@ fn sign(x: u8) -> u8 {
 ```text
 main.wyst:1:4: error: function `sign` can reach its end without `return`
 ```
+
+The checker infers the highest value of a value result from the value
+of each `return`, and each call has it, so a call can be an index. Here
+each result of `slot` is at most 3:
+
+```wyst
+fn slot(ticket: u64) -> u64 {
+  return ticket % 4
+}
+
+fn mark(table: @[4]u64, ticket: u64) {
+  store(@table[slot(ticket)], 1)
+}
+```
+
+A function that calls itself, also through other functions, gives its
+result no highest value. [Index proofs](/docs/index-proofs/#results)
+gives the rules.
 
 [Optional values](/docs/options/) describes `Option<T>`.
 
@@ -118,8 +142,7 @@ fn skip(x: u8) {
 main.wyst:6:3: error: the `u8` result of this call is not used
 ```
 
-`const _ = next(x)` calls `next` and keeps nothing, so it drops the
-result:
+`_ = next(x)` calls `next` and keeps nothing, so it drops the result:
 
 ```wyst
 fn next(x: u8) -> u8 {
@@ -127,11 +150,13 @@ fn next(x: u8) -> u8 {
 }
 
 fn skip(x: u8) {
-  const _ = next(x)
+  _ = next(x)
 }
 ```
 
-`_ = next(x)` is not implemented now.
+An `Option` result is must-use, so `_ = value` cannot drop it: `else`,
+`?`, or `match` takes it, as [Optional values](/docs/options/#must-use)
+shows.
 
 ## never
 

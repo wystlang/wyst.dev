@@ -18,8 +18,8 @@ name. A field and an argument can.
 | `enum` | Declares an enum. | only as the type of a bit field or of a module constant |
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
-| `var` | Declares a variable. | module variables, and locals of `bool` and `u8` to `u64` |
-| `if` | Runs a block when a condition is true. | yes, not as a value |
+| `var` | Declares a variable. | module variables, and locals of `bool`, `u8` to `u64`, and `i64` |
+| `if` | Runs a block when a condition is true. | yes |
 | `else` | The other block of `if`, or the block of an unwrap. | yes |
 | `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, and `for x in "text" {}`; not `for x in` an array or a slice |
 | `break` | Leaves a loop. | yes |
@@ -37,14 +37,14 @@ name. A field and an argument can.
 | Name | Meaning | Now |
 | --- | --- | --- |
 | `bool`, `u8`, `u16`, `u32`, `u64` | Value types. | yes |
-| `i64` | The signed 64-bit integer. | no |
+| `i64` | The signed 64-bit integer, a value type. | yes |
 | `string` | A string value. | as the type of a parameter |
 | `never` | The type of a function that does not return. | yes |
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result and an `asm` output |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of an array or a slice. | no |
-| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, a plain struct, and an array of them |
+| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, `i64`, a plain struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
 | `static_assert` | Checks a constant condition. | yes |
@@ -82,7 +82,7 @@ names elsewhere:
 - `readonly`, `writeonly`, `readwrite`: the access kind of a register;
 - `scratch`: an `asm` argument form that is not implemented now.
 
-The layout file has its own words: `entry`, `region`, `section`, `symbol`,
-`at`, `size`, `in`, `after`, `align`, `start`, `end`, `readonly`,
-`readwrite`, `code`, `rodata`, `data`, `bss`, and `u64`. See
-[Layout files](/docs/layout-files/).
+The layout file has its own words: `entry`, `region`, `section`,
+`functions`, `symbol`, `stack`, `at`, `size`, `in`, `after`, `align`,
+`start`, `end`, `readonly`, `readwrite`, `code`, `rodata`, `data`, `bss`,
+and `u64`. See [Layout files](/docs/layout-files/).

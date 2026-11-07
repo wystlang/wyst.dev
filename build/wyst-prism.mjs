@@ -69,8 +69,8 @@ export function registerWyst(Prism) {
 		},
 		number: NUMBER,
 		keyword: words([
-			"entry", "region", "section", "symbol", "at", "size", "in", "after",
-			"align", "stack",
+			"entry", "region", "section", "functions", "symbol", "at", "size", "in",
+			"after", "align", "stack",
 		]),
 		constant: {
 			pattern: /(:\s*)(?:readonly|readwrite|code|rodata|data|bss)\b/,

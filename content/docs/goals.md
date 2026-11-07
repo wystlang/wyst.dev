@@ -94,7 +94,7 @@ already proved:
 - Stack setup and memory barriers are `asm` lines.
 - Layouts are a separate file format that the build reads, as `go.mod` is.
 
-Labels, `goto`, interfaces, `_ = v`, and `linear` are not implemented now.
+Labels, `goto`, interfaces, and `linear` are not implemented now.
 
 ## Not in the language
 

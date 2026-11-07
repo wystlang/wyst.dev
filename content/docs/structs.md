@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, big-endian fields, size_of, and field_offset.
+summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, and field_offset.
 ---
 
 ## Plain structs
@@ -17,10 +17,12 @@ struct Slot {
 }
 ```
 
-A field type is `u8`, `u16`, `u32`, `u64`, an
-[enum](/docs/enums-and-bit-structs/#enum-values) of one of these, a plain
-struct, or an array `[N]T` of one of these. Other field types are not
-implemented now:
+A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
+[enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
+[with values](/docs/enums-and-bit-structs/#enums-with-values), a plain
+struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
+holds its backing integer, or an array `[N]T` of one of these. Other field
+types are not implemented now:
 
 ```wyst fails
 struct Flag {
@@ -29,7 +31,7 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, an enum, a plain struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -120,11 +122,7 @@ struct Arp {
 }
 
 fn request(arp: @Arp) {
-  store(@arp.htype, 1)
-  store(@arp.ptype, 0x0800)
-  store(@arp.hlen, 6)
-  store(@arp.plen, 4)
-  store(@arp.oper, 1)
+  store(arp, { htype = 1, ptype = 0x0800, hlen = 6, plen = 4, oper = 1 })
 }
 
 fn is_reply(arp: @Arp) -> bool {
@@ -147,13 +145,86 @@ struct Header {
 main.wyst:2:5: error: a big-endian field is `u16`, `u32`, or `u64`, not u8
 ```
 
+## Struct literals
+
+`store(p, { f = v, ... })` writes the full struct at the address `p`.
+Each named field gets its value, with the rules of a `store` of that
+field. A field that is a plain struct takes a nested literal. Each other
+byte is 0, padding included, so a message or a frame keeps no old byte.
+
+```wyst
+struct Header {
+  kind: u32
+  flags: u32
+  fence: u64
+}
+
+struct Rect {
+  x: u32
+  y: u32
+  width: u32
+  height: u32
+}
+
+struct Flush {
+  header: Header
+  rect: Rect
+  resource: u32
+  padding: u32
+}
+
+fn flush(request: @Flush, width: u32, height: u32) {
+  store(request, { header = { kind = 0x0104 }, rect = { width = width, height = height }, resource = 1 })
+}
+```
+
+Here the store writes the kind, the width, the height, and the resource,
+and 0 in each other byte of the request. The code computes the address,
+writes the zero bytes, and then computes and writes each field value in
+the order of the literal. Thus a field value that reads the struct, also
+through a call, reads the bytes that the store wrote before it.
+
+A field of an array type takes no value in a literal now, so it is 0.
+Store its elements after the literal:
+
+```wyst fails
+struct Ethernet {
+  destination: [6]u8
+  #[big_endian] type: u16
+}
+
+fn broadcast(frame: @Ethernet) {
+  store(frame, { destination = 0xff, type = 0x0800 })
+}
+```
+
+```text
+main.wyst:7:18: error: a value of array field `destination` in a literal is not implemented now; store its elements after the literal
+```
+
+A literal of a struct of more than 4096 bytes is not implemented now.
+
+A struct literal is also the value of a
+[constant table](/docs/constants-and-variables/#constant-tables) of a
+plain struct type. There, a field of an array type takes an array
+literal:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  #[big_endian] type: u16
+}
+
+const broadcast: Ethernet = { destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff], type = 0x0800 }
+```
+
 ## size_of and field_offset
 
 `size_of(T)` gives the size of `T` in bytes, and `field_offset(T, f)`
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
-enum of one of these, a plain struct, or, for `size_of`, an array of
-them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
+enum of one of these, a plain struct, or, for `size_of`, a `#[bits]`
+struct or an array of them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
 after the declaration of `T`. A function that uses them can come before
 it.
 
@@ -178,9 +249,9 @@ change moves a field, the assertion stops the build.
 
 ## What a struct can do now
 
-A plain struct is only the type of memory at an address now. A parameter,
-a local, and a variable cannot hold a struct, and a struct literal is not
-implemented now. Code reads and writes each field through the address of
-the struct, such as `load(@slot.kind)`, as
-[Addresses and memory](/docs/addresses/) shows. `load` and `store` of a
-whole struct are not implemented now.
+A plain struct is only the type of memory at an address or of a constant
+table now. A parameter, a local, and a variable cannot hold a struct.
+Code reads and writes each field through the address of the struct, such
+as `load(@slot.kind)`, as [Addresses and memory](/docs/addresses/) shows,
+and `store` writes the full struct from a literal. `load` of a whole
+struct, and a struct literal as another value, are not implemented now.

@@ -84,7 +84,8 @@ Two modules can import each other.
   [Enums and bit structs](/docs/enums-and-bit-structs/#enum-constants).
 - `@m.f` gives the address of the `pub` naked function `f`. See
   [Boot and exceptions](/docs/boot-and-exceptions/).
-- `m.R.read()` and `m.R.write(...)` access the `pub` system register `R`.
+- `m.R.read()`, `m.R.write(...)`, and `m.R.modify(...)` access the `pub`
+  system register `R`.
   See [System registers](/docs/system-registers/#sharing-a-register).
 - `m.S` names the `pub` plain struct `S`. See
   [Structs](/docs/structs/#pub-structs).
