@@ -27,6 +27,11 @@ The checker knows the highest value of:
 - the variable `i` of `for i in a ..< n`, which is `h - 1` when the checker
   knows the highest value `h` of `n`, and of `for i in a ..= n`, which is
   `h`;
+- an `if` or `match` value, which is the largest of the highest values of
+  its blocks, each with the bounds of its block;
+- a call, which has the highest value of the result of its function, as
+  [Results](#results) gives;
+- a load, which has only the highest value of its type;
 - a `const` local, which keeps the proof of its value;
 - the operators in [Operators](#operators).
 
@@ -61,6 +66,15 @@ struct Slot: u8 {
 fn clear(table: @[4]u64, cursor: @u8) {
   const slot: Slot = load(cursor)
   store(@table[slot.Way], 0)
+}
+```
+
+Hostile code or a device can write the memory, so a load has only the
+highest value of its type. A `u8` from memory is at most 255:
+
+```wyst
+fn mark(table: @[256]u64, cursor: @u8) {
+  store(@table[widen(load(cursor))], 1)
 }
 ```
 
@@ -171,6 +185,17 @@ fn mark(table: @[4]u64, cursor: @u64) {
 }
 ```
 
+A block of an `if` value has the bounds of its condition, and the value
+has the largest of the highest values of its blocks, so it can be an
+index:
+
+```wyst
+fn mark(table: @[4]u64, cursor: @u64) {
+  const at = load(cursor)
+  store(@table[if at < 4 { at } else { 0 }], 1)
+}
+```
+
 `e` must have a highest value that is a number, such as a constant or a
 mask. A parameter or a module variable as `e` gives no bound now. A
 condition gives no bound to a module variable.
@@ -238,8 +263,7 @@ fn mark(table: @[4]u64, cursor: @u64, all: bool) {
 main.wyst:4:18: error: the checker cannot prove that the index is less than 4
 ```
 
-Without the condition, the checker knows nothing about a value from
-memory:
+Without the condition, the load has only the highest value of `u64`:
 
 ```wyst fails
 fn mark(table: @[4]u64, cursor: @u64) {
@@ -343,6 +367,78 @@ No code calls the entry or a naked function, so their parameters have no
 proof. When an index gets its value from such a parameter, the error is at
 the index. For an array of 8, the error is
 `the checker cannot prove that the index is less than 8`.
+
+## Results
+
+The checker infers the highest value of a function result: the largest
+of the highest values of its `return` values, each with the bounds at its
+`return`. Each call of the function has that number, so a call can be an
+index, an operand of an operator, or an argument. Here the condition
+gives the result of `current` the highest value 3, so
+`current() * slots + slot` is at most 15:
+
+```wyst
+const cpus: u64 = 4
+const slots: u64 = 4
+
+#[sysreg]
+const MPIDR_EL1: readonly u64 {
+  Aff0: u8 at 0..=7
+}
+
+fn current() -> u64 {
+  const n: u64 = widen(MPIDR_EL1.read().Aff0)
+  if n >= cpus { trap() }
+
+  return n
+}
+
+fn clear(table: @[cpus * slots]u64) {
+  const first = current() * slots
+
+  for slot in 0 ..< slots {
+    store(@table[first + slot], 0)
+  }
+}
+```
+
+Each `return` value needs a highest value that is a number, as an operand
+of `+` does. A parameter or a module variable without a condition gives
+no number, so the result of `same` has no highest value:
+
+```wyst fails
+fn same(x: u64) -> u64 {
+  return x
+}
+
+fn mark(table: @[4]u64) {
+  store(@table[same(1)], 1)
+}
+```
+
+```text
+main.wyst:6:16: error: the checker cannot prove that the index is less than 4
+```
+
+The checker checks each function after the functions that it calls. A
+function that calls itself, also through other functions, gives its
+result no highest value, although each `return` value of `depth` is at
+most 3:
+
+```wyst fails
+fn depth(n: u64) -> u64 {
+  if n == 0 { return 0 }
+  return depth(n - 1) & 3
+}
+
+fn mark(table: @[4]u64) {
+  store(@table[depth(5)], 1)
+}
+```
+
+```text
+main.wyst:7:16: error: the checker cannot prove that the index is less than 4
+```
 
 ## Local variables
 

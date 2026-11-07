@@ -1,6 +1,6 @@
 ---
 title: Constants and variables
-summary: Module constants, static_assert, module variables, and locals.
+summary: Module constants, constant tables, static_assert, module variables, and locals.
 ---
 
 ## Module constants
@@ -36,6 +36,89 @@ main.wyst:1:24: error: `pages` is used before its declaration
 
 A constant that wraps is an error, as a literal that does not fit is. See
 [Operators](/docs/operators/).
+
+A constant can also be an address, when its value is `bitcast` of a
+`u64` constant. Each use gives the address, as
+[Address constants](/docs/addresses/#address-constants) gives:
+
+```wyst
+struct Counter {
+  ticks: u64
+}
+
+const counter: u64 = 0x0100_8000
+const own: @Counter = bitcast(counter)
+
+fn tick() {
+  store(@own.ticks, load(@own.ticks) + 1)
+}
+```
+
+## Constant tables
+
+A module constant of an array type `[N]T` or of a plain struct type is a
+constant table: read-only data, such as a table of colors. Its value is
+an array literal of N elements, or a struct literal. An element or a
+field of an array type takes an array literal, and one of a plain struct
+type takes a struct literal. Each other value is a constant of its type.
+A field that the literal does not name is 0, and so is each byte of
+padding. A `#[bits]` value that the compiler computes gives each fixed
+field its fixed value, so the literal names each field in which 0 gives
+a fixed field another value, as in `flags = {}`:
+
+```wyst
+struct Palette {
+  bar: u32
+  text: u32
+  favicons: [3]u32
+  lit: u8
+}
+
+const light: Palette = { bar = 0x00f8_f9fc, favicons = [0x002f_5fe0, 0x00b9_5918, 0x001a_835a], lit = 179 }
+const steps: [4]u16 = [0, 0x1018, 0x204f, 0x308a]
+
+fn favicon(sum: u64) -> u32 {
+  return load(@light.favicons[sum % 3])
+}
+
+fn step(i: u64) -> u16 {
+  if i >= 4 {
+    return 0
+  }
+  return load(@steps[i])
+}
+```
+
+`@name` gives the address of the table, and `@m.name` of a `pub` table
+of an imported module, so `load` reads it, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives. The
+name alone is not a value:
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn first() -> u16 {
+  return steps[0]
+}
+```
+
+```text
+main.wyst:4:10: error: `steps` is a constant table, not a value; `@steps` gives its address, and `load(@steps[i])` reads an element
+```
+
+The literal has the length of the array:
+
+```wyst fails
+const steps: [4]u16 = [0, 0x1018, 0x204f]
+```
+
+```text
+main.wyst:1:23: error: expected 4 elements, found 3
+```
+
+An array literal has no type of its own, so it is only the value of a
+constant table, and the table needs its type. A table is in the section
+`.rodata`, after the string literals, and it has at most 65536 bytes now.
 
 ## Shared constants
 
@@ -100,8 +183,8 @@ pub fn stop() {
 }
 ```
 
-`name = value`, `name += value`, and `name -= value` change a module
-variable or a [local `var`](#locals).
+`name = value` and the compound assignments, such as `name += value` and
+`name |= value`, change a module variable or a [local `var`](#locals).
 [Operators](/docs/operators/#assignment) gives their rules.
 
 Each module variable is in the ELF file with its initial value, in the
@@ -113,8 +196,10 @@ starts.
 `const name = value` in a function body declares a local that cannot
 change. `var name: T = value` declares a local `var`, which an assignment
 can change while its name is in scope. As a module variable, a local `var`
-has the type `bool`, `u8`, `u16`, `u32`, or `u64`, and the type is
-optional when the value has a type:
+has the type `bool`, `u8`, `u16`, `u32`, `u64`, or `i64`, and it can also
+have a [`#[bits]` struct](/docs/enums-and-bit-structs/#values) type or an
+[enum](/docs/enums-and-bit-structs/#enum-values) type, also with values.
+The type is optional when the value has a type:
 
 ```wyst
 fn sum(limit: u64) -> u64 {
@@ -127,6 +212,43 @@ fn sum(limit: u64) -> u64 {
   }
 
   return total
+}
+```
+
+An assignment gives an enum with values a new tag and value, and the value
+of the variant can read the `var`: it reads the value before the
+assignment:
+
+```wyst
+enum Shape: u8 {
+  Empty = 0
+  Line(u64) = 1
+}
+
+fn length(shape: Shape) -> u64 {
+  match shape {
+    .Line(n) { return n }
+    _ { return 0 }
+  }
+}
+
+fn grown(n: u64) -> u64 {
+  var shape: Shape = .Empty
+  shape = .Line(n)
+  shape = .Line(length(shape) + 1)
+
+  return length(shape)
+}
+```
+
+The value of a `const` can be an
+[`if` or `match` value](/docs/control-flow/#if-and-match-values), so a
+local that a condition selects needs no `var`:
+
+```wyst
+fn edge(left: u64, width: u64, right: bool) -> u64 {
+  const x = if right { left + width } else { left }
+  return x
 }
 ```
 
@@ -191,8 +313,8 @@ fn scaled(value: u64) -> u64 {
 A local is not a constant, also when `const` declares it, because the
 compiler does not compute its value.
 
-`const _ = value` computes the value and keeps nothing, and a loop
-variable `_` counts the passes with no name:
+`_ = value` computes the value and keeps nothing, and a loop variable `_`
+counts the passes with no name:
 
 ```wyst
 var sent: u64 = 0
@@ -203,12 +325,29 @@ fn send(byte: u8) -> u64 {
 }
 
 fn greet(count: u64) {
-  const _ = send(72)
+  _ = send(72)
 
   for _ in 0 ..< count {
-    const _ = send(33)
+    _ = send(33)
   }
 }
+```
+
+A local cannot be `_`, so `_ = value` is the one statement that drops a
+value:
+
+```wyst fails
+fn next(x: u8) -> u8 {
+  return x + 1
+}
+
+fn skip(x: u8) {
+  const _ = next(x)
+}
+```
+
+```text
+main.wyst:6:9: error: a local cannot be `_`; `_ = value` drops a value
 ```
 
 `var` in a function body is not implemented now.

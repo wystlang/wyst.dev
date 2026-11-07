@@ -10,8 +10,8 @@ division by 0 can fail at run time. An operand can be a call, as
 
 ## Arithmetic
 
-`+`, `-`, and `*` wrap modulo 2^N for a `uN` value. For `x` equal to 255,
-this function gives 0:
+`+`, `-`, and `*` wrap modulo 2^N for a `uN` value, and modulo 2^64 for
+an `i64`. For `x` equal to 255, this function gives 0:
 
 ```wyst
 fn next(x: u8) -> u8 {
@@ -19,9 +19,11 @@ fn next(x: u8) -> u8 {
 }
 ```
 
-`a / b` divides without sign and drops the remainder, and `a % b` gives
-that remainder. When `b` is 0 at run time, the code traps, as `trap()`
-does:
+`a / b` divides and drops the remainder, and `a % b` gives that
+remainder. For a `uN`, it divides without sign. For an `i64`, it divides
+with the sign and rounds toward 0, and the remainder has the sign of `a`:
+`-7 / 2` is -3, and `-7 % 2` is -1. -2^63 / -1 wraps to -2^63. When `b` is
+0 at run time, the code traps, as `trap()` does:
 
 ```wyst
 const slots: u64 = 6
@@ -32,6 +34,10 @@ fn slot(ticket: u64) -> u64 {
 
 fn share(total: u64, parts: u64) -> u64 {
   return total / parts
+}
+
+fn scaled(moved: i64, strip: i64, track: i64) -> i64 {
+  return moved * strip / track
 }
 ```
 
@@ -71,7 +77,10 @@ fn partner(entry: u64) -> u64 {
 
 `a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
 it must be less than the width of that type. `<<` drops the bits that move
-out of the type, and `>>` puts zeros in the high bits.
+out of the type, and `>>` puts zeros in the high bits of a `uN`. `>>` of an
+`i64` keeps the sign: it copies the sign bit into the high bits, so
+`-3 >> 1` is -2. The amount of a shift is not an `i64`, so the amount of
+a shift of an `i64` is a constant.
 
 ```wyst
 const page_shift: u64 = 14
@@ -113,9 +122,21 @@ main.wyst:2:12: error: the checker cannot prove that the amount of `<<` is less 
 ## Comparisons
 
 `==`, `!=`, `<`, `<=`, `>`, and `>=` compare two integers of the same type
-and give a `bool`. `<`, `<=`, `>`, and `>=` are unsigned. A `bool` is
-not an integer, so `==` and `!=` do not take it: use the `bool` itself,
-or `!`. Comparisons do not chain: `a < b < c` is an error.
+and give a `bool`. `<`, `<=`, `>`, and `>=` compare a `uN` without sign,
+and an `i64` with the sign. A `bool` is not an integer, so `==` and `!=`
+do not take it: use the `bool` itself, or `!`. Comparisons do not chain:
+`a < b < c` is an error.
+
+```wyst
+fn width(start: i64, moved: i64) -> u64 {
+  const wanted = start + moved
+  if wanted < 0 {
+    return 0
+  }
+
+  return bitcast(wanted)
+}
+```
 
 `==` and `!=` also compare two values of one
 [enum](/docs/enums-and-bit-structs/#enums). A variant takes the enum of
@@ -228,25 +249,39 @@ For a value with each bit of its type set, write `~0`:
 const all: u8 = ~0
 ```
 
+For an `i64`, a constant `+`, `-`, `*`, `<<`, or `-a` whose value is not
+from -2^63 to 2^63 - 1 is an error:
+
+```wyst fails
+const below: i64 = -9223372036854775807 - 2
+```
+
+```text
+main.wyst:1:41: error: -9223372036854775807 - 2 does not fit in i64
+```
+
 ## Assignment
 
 An assignment is a statement. It changes a local `var` or a module
-variable. Nothing else can change, because a `mut` parameter is not
-implemented now:
+variable. No other name can change, because a `mut` parameter is not
+implemented now, and an assignment to a field or an element is an error:
+only `store` changes memory.
 
 | Form | Meaning |
 | --- | --- |
 | `name = value` | Gives `name` the value. |
-| `name += value` | `name = name + value` |
-| `name -= value` | `name = name - value` |
+| `name op= value` | `name = name op value`, for each `op` of `+`, `-`, `*`, `/`, `%`, `&`, `\|`, `^`, `<<`, and `>>`. |
 
-`value` has the type of the variable, and a literal takes that type. `+=`
-and `-=` wrap modulo 2^N, as `+` and `-` do. For `credits` equal to 0,
-`spend` gives it the value 255:
+`value` has the type of the variable, and a literal takes that type. A
+compound assignment has the rules of its operator: `+=`, `-=`, and `*=`
+wrap modulo 2^N, `/=` and `%=` trap on a divisor of 0 at run time, and an
+amount of `<<=` or `>>=` that is not a constant needs a proof. For
+`credits` equal to 0, `spend` gives it the value 255:
 
 ```wyst
 var ticks: u64 = 0
 var credits: u8 = 3
+var ready: u64 = 0
 
 pub fn tick(n: u64) {
   ticks += n
@@ -254,6 +289,10 @@ pub fn tick(n: u64) {
 
 pub fn spend() {
   credits -= 1
+}
+
+pub fn mark(slot: u64) {
+  ready |= 1 << slot % 64
 }
 ```
 
@@ -265,6 +304,35 @@ fn grow(seed: u64) -> u64 {
   x = x * 3 + x
 
   return x
+}
+
+fn ones(word: u64) -> u64 {
+  var rest = word
+  var count: u64 = 0
+
+  for rest != 0 {
+    count += rest & 1
+    rest >>= 1
+  }
+
+  return count
+}
+```
+
+`value` is one operand, so `x <<= 8 | b` is `x = x << (8 | b)`. To shift
+`x` and then add the bits of `b`, write `x = x << 8 | b`:
+
+```wyst
+const width: u64 = 4
+
+fn gather(bytes: @[width]u8) -> u64 {
+  var value: u64 = 0
+
+  for i in 0 ..< width {
+    value = value << 8 | widen(load(@bytes[i]))
+  }
+
+  return value
 }
 ```
 
@@ -280,6 +348,3 @@ fn count(limit: u64) {
 ```text
 main.wyst:2:3: error: cannot assign to parameter `limit`
 ```
-
-The grammar also has `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, and `>>=`.
-They are not implemented now. Write `name = name * value` in their place.

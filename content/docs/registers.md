@@ -263,8 +263,37 @@ value. Each bit outside the fields is zero, so `dev.R.write()` stores zero
 in a register without fields. Each value must have the exact field type,
 and a literal must fit in its field.
 
-The compiler refuses a `write` of a `readonly` register and a `read` of a
-`writeonly` register:
+`dev.R.modify(F = v, ...)` loads a `readwrite` register one time, gives
+each named field its value and each fixed field its fixed value, and
+stores the value one time. Each other bit keeps the bit that the load
+gave, so a change of some bits needs no mask constant. The fields and the
+values follow the rules of `write`. The load comes before the values, and
+the store after them. Here each call changes only the bits that it names,
+and keeps each bit that the firmware set:
+
+```wyst
+// The PHY of a PCIe port of the Mac Studio. CFGACC lets the port change
+// LANE_CFG. REFCLK0REQ asks for the reference clock, and REFCLK0ACK is 1
+// when it runs.
+#[register_map]
+struct Phy {
+  LANE_CFG: readwrite u32 at 0x0 { REFCLK0REQ: bool at 0, REFCLK0ACK: bool at 2 }
+  LANE_CTL: readwrite u32 at 0x4 { CFGACC: bool at 15 }
+}
+
+#[mmio(0x5_8008_c000)]
+const phy: Phy
+
+fn start_clock() {
+  phy.LANE_CTL.modify(CFGACC = true)
+  phy.LANE_CFG.modify(REFCLK0REQ = true)
+  for !phy.LANE_CFG.read().REFCLK0ACK {}
+  phy.LANE_CTL.modify(CFGACC = false)
+}
+```
+
+The compiler refuses a `write` of a `readonly` register, a `read` of a
+`writeonly` register, and a `modify` of each:
 
 ```wyst fails
 #[register_map]
@@ -330,7 +359,11 @@ main.wyst:4:7: error: unknown attribute `big_endian` here
 ## What the compiler keeps
 
 Each access is one load or store of the register size, with one `rev16`
-or `rev` for a big-endian register. The compiler does
-not remove, combine, or move a device access, and it adds no barrier. When
-the order of accesses to two devices matters, an `asm` block gives the
-barrier, such as `dsb sy`. See [Assembly](/docs/assembly/).
+or `rev` for a big-endian register, and `modify` is one load and one
+store. Between them, one `and` clears each field whose value has a 0 bit,
+and one `orr` for each field puts in its bits of value 1, so the code is
+that of the mask form `dev.R.write(VALUE = dev.R.read().VALUE & ~m | v)`.
+The compiler does not remove, combine, or move a device access, and it
+adds no barrier. When the order of accesses to two devices matters, an
+`asm` block gives the barrier, such as `dsb sy`. See
+[Assembly](/docs/assembly/).

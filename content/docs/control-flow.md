@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, match, the four forms of for, break and continue, and return.
+summary: if, match, their values, the four forms of for, break and continue, and return.
 ---
 
 ## if
@@ -41,7 +41,9 @@ fn inside(x: u64, low: u64, high: u64) -> bool {
 ```
 
 `else` after an `Option` value takes the value of `.Some`, as
-[Optional values](/docs/options/#unwrap-with-else) shows.
+[Optional values](/docs/options/#unwrap-with-else) shows. A path that
+leaves an `Option` local must read it, as
+[Optional values](/docs/options/#must-use) shows.
 
 A body with one statement can stay on one line:
 
@@ -79,8 +81,29 @@ Thus a function with a result can end with it, as `cost` does, and a
 statement after it is an error. The code computes `value` one time, so a
 `match` on a register read reads the register one time.
 
-On an enum, the patterns are its variants. A value of an enum can be a
-value that no variant has, so `_` also takes each such value, as
+A `match` on an `Option` has the patterns `.Some(v)`, `.None`, and `_`.
+`.Some(v)` gives the value of `Some` to the new local `v`:
+
+```wyst
+fn pick(x: u8) -> Option<u8> {
+  if x > 4 {
+    return .Some(x)
+  }
+  return .None
+}
+
+fn size(x: u8) -> u8 {
+  match pick(x) {
+    .Some(v) { return v }
+    .None { return 0 }
+  }
+}
+```
+
+[Optional values](/docs/options/#match) gives the rules.
+
+On an enum, the patterns are its variants. A value of an enum can have a
+tag that no variant has, so `_` also takes each such value, as
 [Enum values](/docs/enums-and-bit-structs/#enum-values) shows:
 
 ```wyst
@@ -94,6 +117,28 @@ fn cost(call: Call) -> u64 {
     .Wait { return 2 }
     .Send { return 3 }
     _ { return 0 }
+  }
+}
+```
+
+On an [enum with values](/docs/enums-and-bit-structs/#enums-with-values),
+`.V(v)` gives the value of variant `V` to the new local `v`, or to no
+local with `.V(_)`, and `.V` takes a variant without a value. An arm
+with two or more patterns gives the same local in each pattern, or no
+local:
+
+```wyst
+enum Control: u8 {
+  None = 0
+  Open = 1
+  Row(u64) = 5
+}
+
+fn lit_row(control: Control) -> u64 {
+  return match control {
+    .Row(row) { row + 1 }
+    .None, .Open { 0 }
+    _ { 0 }
   }
 }
 ```
@@ -126,6 +171,89 @@ fn size(x: u8) -> u8 {
 ```text
 main.wyst:4:5: error: the value 2 is already a pattern of this `match`
 ```
+
+## if and match values
+
+`if` and `match` can also give a value. The last statement of each block
+gives the value, and each block gives a value of one type:
+
+```wyst
+fn least(a: u64, b: u64) -> u64 {
+  return if a < b { a } else { b }
+}
+```
+
+The value can be the value of `const`, `var`, an assignment, and
+`return`, an operand, and an argument. A statement that starts with `if`
+or `match` is a statement, not a value. When the position of the value
+expects a type, each block takes that type. Else the first block with a
+value gives the type, so a literal there needs a type, as for
+`const x = 1`:
+
+```wyst
+fn scroll(up: bool, by: u64) -> u64 {
+  const step: u64 = if up { 1 } else { 2 }
+  return by * step
+}
+```
+
+An `if` value has an `else` block:
+
+```wyst fails
+fn pick(up: bool) -> u64 {
+  return if up { 1 }
+}
+```
+
+```text
+main.wyst:2:10: error: an `if` value needs an `else` block
+```
+
+A `match` value has an arm for each value: `_`, or an arm for each variant
+of its enum. Without `_`, a value of the enum that no variant has traps,
+as `trap()` does. A block can have statements before its value, and a
+block can end with a call to a `never` function in place of a value:
+
+```wyst
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+  Stop = 12
+}
+
+fn cost(call: Call, size: u64) -> u64 {
+  return match call {
+    .Wait { 2 }
+    .Send {
+      const words = (size + 7) / 8
+      3 + words
+    }
+    .Stop { trap() }
+  }
+}
+```
+
+A `match` value without `_` and without an arm for each variant is an
+error:
+
+```wyst fails
+enum Call: u16 {
+  Wait = 4
+  Send = 11
+}
+
+fn cost(call: Call) -> u64 {
+  return match call { .Wait { 2 } }
+}
+```
+
+```text
+main.wyst:7:10: error: this `match` value has no arm for `.Send`, and no `_`
+```
+
+The highest value of an `if` or `match` value is the largest of those of
+its blocks, so the value can be an index, as
+[Index proofs](/docs/index-proofs/#conditions) shows.
 
 ## for
 
@@ -234,7 +362,7 @@ statement after `break` or `continue` is an error.
 ## return
 
 `return` ends the function. In a function with a value or `Option` result,
-`return` takes a value of that type. In a function without a result,
+`return` takes a value of that type, also an `Option` local or parameter. In a function without a result,
 `return` has no value. A function that returns `never` cannot use
 `return`. A statement after `return` is an error.
 
@@ -246,8 +374,8 @@ When `value` is `.None`, `value?` also returns `.None`, as
 The grammar also has these forms. The compiler does not implement them
 now:
 
-- `match` on a value that is not an integer or an enum, and the variant
-  pattern `.V(p)`;
+- `match` on a value that is not an integer, an enum, or an `Option`, and
+  a pattern in `.V(p)` other than a new local or `_`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
-- `if` and `match` as values.
+- an `if` or `match` value of an `Option` or of an enum with values.
