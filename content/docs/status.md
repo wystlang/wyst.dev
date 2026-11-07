@@ -80,7 +80,7 @@ kernel needs it:
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
 | An `if` or `match` value of an `Option`, of an enum with values, or of a slice | `return` the value in each block of an `if` or `match` statement, or assign an enum with values to a local `var`. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
-| `for x in` a slice of plain structs or of an enum with values | Use `for i in 0 ..< len(s)` and `@s[i]`. |
+| `for x in` a slice of a type other than an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |

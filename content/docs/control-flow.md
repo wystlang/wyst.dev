@@ -362,9 +362,10 @@ fn sum_table(table: @[4]u32) -> u64 {
 }
 ```
 
-A `for` over a slice of plain structs or of an enum with values is not
-implemented now. `for i in 0 ..< len(s)` and `@s[i]` give the address of
-each element.
+The element is an integer, an enum without values, or a `#[bits]`
+struct, which one load gives. A `for` over a slice of another type, such
+as a plain struct or an enum with values, is not implemented now.
+`for i in 0 ..< len(s)` and `@s[i]` give the address of each element.
 
 ## break and continue
 
@@ -412,6 +413,7 @@ now:
 - labels (`name:`) and `goto`;
 - `for x in a` over the elements of an array, which
   `for x in @a[0 ..]` gives;
-- `for x in s` over a slice of plain structs or of an enum with values;
+- `for x in s` over a slice of a type other than an integer, an enum
+  without values, or a `#[bits]` struct;
 - an `if` or `match` value of an `Option`, of an enum with values, or of
   a slice.
