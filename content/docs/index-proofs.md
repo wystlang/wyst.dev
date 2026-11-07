@@ -31,7 +31,8 @@ The checker knows the highest value of:
   its blocks, each with the bounds of its block;
 - a call, which has the highest value of the result of its function, as
   [Results](#results) gives;
-- a load, which has only the highest value of its type;
+- a load of a `u8`, `u16`, or `u32`, which has only the highest value of
+  its type;
 - a `const` local, which keeps the proof of its value;
 - the operators in [Operators](#operators).
 
@@ -69,14 +70,23 @@ fn clear(table: @[4]u64, cursor: @u8) {
 }
 ```
 
-Hostile code or a device can write the memory, so a load has only the
-highest value of its type. A `u8` from memory is at most 255:
+Hostile code or a device can write the memory, so a load of a `u8`,
+`u16`, or `u32` has only the highest value of its type. A `u8` from
+memory is at most 255:
 
 ```wyst
 fn mark(table: @[256]u64, cursor: @u8) {
   store(@table[widen(load(cursor))], 1)
 }
 ```
+
+The highest value of a `u64` proves nothing, so a load of a `u64` has no
+highest value, as a parameter without a condition. Thus in `load(p) & n`
+and after `x < load(p)`, the proof of a parameter `n` or `x` stays. See
+[Parameters and variables](#parameters-and-variables). The number of a
+load of a `u8`, `u16`, or `u32` replaces the proof of a parameter in `&`,
+in a condition, and at the end of a range, as the number of a read of a
+field does.
 
 ## Operators
 
@@ -263,7 +273,7 @@ fn mark(table: @[4]u64, cursor: @u64, all: bool) {
 main.wyst:4:18: error: the checker cannot prove that the index is less than 4
 ```
 
-Without the condition, the load has only the highest value of `u64`:
+Without the condition, a load of a `u64` has no highest value:
 
 ```wyst fails
 fn mark(table: @[4]u64, cursor: @u64) {
@@ -403,7 +413,7 @@ fn clear(table: @[cpus * slots]u64) {
 ```
 
 Each `return` value needs a highest value that is a number, as an operand
-of `+` does. A parameter or a module variable without a condition gives
+of `+` does. A module variable, or a parameter without a condition, gives
 no number, so the result of `same` has no highest value:
 
 ```wyst fails
@@ -420,10 +430,10 @@ fn mark(table: @[4]u64) {
 main.wyst:6:16: error: the checker cannot prove that the index is less than 4
 ```
 
-The checker checks each function after the functions that it calls. A
-function that calls itself, also through other functions, gives its
-result no highest value, although each `return` value of `depth` is at
-most 3:
+The checker finds the result of each function after the functions that
+it calls. A function that calls itself, also through other functions,
+gives its result no highest value, although each `return` value of
+`depth` is at most 3:
 
 ```wyst fails
 fn depth(n: u64) -> u64 {
