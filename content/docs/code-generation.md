@@ -63,7 +63,7 @@ fn init() {
 
 | Registers | Use |
 | --- | --- |
-| `x0` to `x7` | Parameters. A [slice](/docs/addresses/#slices) parameter takes two registers, as its argument does: its address, and then its length. |
+| `x0` to `x7` | Parameters. A [slice](/docs/addresses/#slices) parameter takes two registers, as its argument does: its address, and then its length. A [struct with no fields](/docs/structs/#structs-with-no-fields) takes no register, so the next parameter takes its register. |
 | `x0` | A value result or an address result. |
 | `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. The result of an enum with values: `x0` is the tag, and `x1` is the value of the variant. A slice result: `x0` is the address, and `x1` is the length. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |

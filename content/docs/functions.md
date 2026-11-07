@@ -315,7 +315,9 @@ fn handle() {
 main.wyst:17:12: error: linear local `interrupt` is used after a path gave it away
 ```
 
-`.Some(v)` gives the value away, as in `return .Some(v)`. Each other use
+`.Some(v)` gives the value away, as in `return .Some(v)`. An argument of
+a parameter that lends the value keeps it, as
+[Lending a linear value](#lending-a-linear-value) gives. Each other use
 of a linear value copies it, which is an error. A linear value is not its
 backing integer, and a second local cannot hold it:
 
@@ -398,11 +400,11 @@ A parameter of a linear type without `xfer`, such as `held: Held`, lends
 the value for the call. The argument is a linear local or parameter
 without `xfer`, and the caller keeps it, so a path after the call can use
 it. The function can read the fields of the value and lend it again, but
-it cannot consume it, give it to an `xfer` parameter, or return it, and
-the end of the function does not drop it. A
-[struct with no fields](/docs/structs/#structs-with-no-fields) has no
-bytes, so a linear one is a proof that makes no code, such as the proof
-that the CPU holds a lock:
+it cannot consume it, give it to an `xfer` parameter other than of a
+`never` function, or return it, and the end of the function does not
+drop it. A [struct with no fields](/docs/structs/#structs-with-no-fields)
+has no bytes, so a linear one is a proof that takes no register, such as
+the proof that the CPU holds a lock:
 
 ```wyst
 pub linear struct Held {}

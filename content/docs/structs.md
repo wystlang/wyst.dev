@@ -251,8 +251,8 @@ change moves a field, the assertion stops the build.
 
 A plain struct with no fields, such as `struct Mark {}`, is a value with
 no bytes: the type of a parameter, a local `const`, and a result. `{}` is
-its value. It takes no register, so it makes no code, and it does not
-count in the limit of 8 parameters of a
+its value. It takes no register, so a literal or a local of it makes no
+code, and it does not count in the limit of 8 parameters of a
 [function](/docs/functions/#declaring-a-function).
 
 ```wyst

@@ -102,6 +102,7 @@ kernel needs it:
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct with fields as a parameter, a local, or a variable | A plain struct with fields is only the type of memory at an address. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
+| A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |

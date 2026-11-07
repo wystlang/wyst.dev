@@ -72,10 +72,12 @@ main.wyst:7:3: error: only a naked function can call a naked function
 ## Parameters
 
 A naked function can take parameters in `x0` to `x7`, as a call gives
-them, one in each register. An `Option`, an enum with values, or a
-[slice](/docs/addresses/#slices) parameter of a naked function is not
-implemented now. The parameters stay in these registers, so the function
-gives them to the call or the `eret` that ends it:
+them, one in each register. An `Option`, an enum with values, a
+[slice](/docs/addresses/#slices), a
+[struct with no fields](/docs/structs/#structs-with-no-fields), or a
+[linear](/docs/functions/#linear-values) parameter of a naked function is
+not implemented now. The parameters stay in these registers, so the
+function gives them to the call or the `eret` that ends it:
 
 - Each call in the function takes the parameters, in order, as its
   arguments, and returns `never`. A call that returns can change `x0` to
