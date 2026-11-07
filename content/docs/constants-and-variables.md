@@ -333,7 +333,9 @@ fn greet(count: u64) {
 }
 ```
 
-A local cannot be `_`, so `_ = value` is the one statement that drops a
+In the module that declares a linear type, `_ = value` consumes a value
+of that type, as [Linear values](/docs/functions/#linear-values) gives. A
+local cannot be `_`, so `_ = value` is the one statement that drops a
 value:
 
 ```wyst fails

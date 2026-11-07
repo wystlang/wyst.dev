@@ -12,7 +12,7 @@ name. A field and an argument can.
 | Keyword | Meaning | Now |
 | --- | --- | --- |
 | `import` | Imports a module. | yes |
-| `pub` | Exports a declaration. | functions, constants, and enums |
+| `pub` | Exports a declaration. | functions, constants, constant tables, plain and `#[bits]` structs, enums, and system registers |
 | `fn` | Declares a function. | yes, without methods and type parameters |
 | `struct` | Declares a struct. | plain, `#[register_map]`, and `#[bits]` structs |
 | `enum` | Declares an enum. | only as the type of a bit field or of a module constant |
@@ -28,8 +28,8 @@ name. A field and an argument can.
 | `match` | Selects a block by the value or the variant of a value. | on an integer, without variant patterns |
 | `goto` | Jumps to a label. | no |
 | `mut` | A parameter mode, also marked at the call site. | no |
-| `xfer` | A parameter mode that takes ownership, also marked at the call site. | no |
-| `linear` | A type whose values the declaring module must consume. | no |
+| `xfer` | A parameter mode that takes ownership, also marked at the call site. | yes, on a parameter of a linear type |
+| `linear` | A type whose values the declaring module must consume. | only on a `#[bits]` struct |
 | `asm` | An assembly block. | yes |
 
 ## Builtin names

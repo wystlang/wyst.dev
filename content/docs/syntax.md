@@ -24,10 +24,11 @@ mut  xfer  linear  asm
 No other word is reserved. A declaration, an import, a parameter, and a
 local cannot take a builtin name, but a field and an argument can. `_`
 alone discards and is never a name: a parameter or a loop variable `_`
-gets no name, `_ = e` drops a value, a read of `_` is an error, and a
-declaration, an import, or a local cannot be `_`. Attribute names,
-register names, register access kinds, and assembly operand kinds are
-ordinary names. `in` and `at` have a meaning only in the positions below.
+gets no name, `_ = e` drops a value or consumes a linear one, a read of
+`_` is an error, and a declaration, an import, or a local cannot be `_`.
+Attribute names, register names, register access kinds, and assembly
+operand kinds are ordinary names. `in` and `at` have a meaning only in the
+positions below.
 [Keywords and builtins](/docs/words/) lists each word.
 
 ## Lexical forms
@@ -146,7 +147,9 @@ AsmOut  <- AsmArg / '(' List(AsmArg) ')'
 `.V` names a variant of the type that the context expects. `{f = v}` builds
 a value of the type that the context expects, or gives the entries of a
 vector table. A struct literal cannot be the direct condition of `if`,
-`for`, or `match`.
+`for`, or `match`. `xfer v` gives the linear local or parameter `v` to an
+`xfer` parameter, to `return`, to `_ =`, or to the end of a block of a
+value, as [Linear values](/docs/functions/#linear-values) gives.
 
 ## Limits
 

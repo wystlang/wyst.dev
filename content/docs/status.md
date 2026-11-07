@@ -92,8 +92,11 @@ kernel needs it:
 | An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
-| `mut`, `xfer`, and `linear` | Refused. |
-| Register maps, `#[bits]` structs, devices, and the vector table of another module, and `pub` on a register map, a `#[bits]` struct, or a device | A module uses only the `pub` functions, constants, plain structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
+| `mut`, and a `linear` plain struct or enum | Refused. |
+| A parameter of a linear type without `xfer`, which lends the value | Give the value with `xfer`, and give it back as the result. |
+| An `Option` local or parameter of a linear type, and a `match` on such an `Option` | Unwrap the `Option` at the call with `else` or `?`. |
+| A local `var`, a module constant, and memory of a linear type | Keep the value in a local `const` or a parameter. |
+| Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
