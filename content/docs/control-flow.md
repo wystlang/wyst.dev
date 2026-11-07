@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, match, their values, the four forms of for, break and continue, and return.
+summary: if, match, their values, the five forms of for, break and continue, and return.
 ---
 
 ## if
@@ -257,7 +257,7 @@ its blocks, so the value can be an index, as
 
 ## for
 
-`for` is the one loop. The compiler implements four forms of it now.
+`for` is the one loop. The compiler implements five forms of it now.
 
 `for {}` runs its body until a `break` or a `return` leaves the loop. A
 `for {}` without a `break` does not end, so a statement after it is an
@@ -333,12 +333,45 @@ fn add_through(first: u64, last: u64) -> u64 {
 string literal or a `string` parameter, as
 [Values and types](/docs/values/#strings) shows.
 
+`for x in s {}` runs its body one time for each element of the
+[slice](/docs/addresses/#slices) `s`, in order. Each pass loads its
+element in `x`, which has the type of the element. The loop computes `s`
+one time, before the first pass. A `for` over the elements of an array is
+not implemented now, but `for x in @a[0 ..] {}` gives the elements of the
+array at `a`:
+
+```wyst
+fn sum(values: []u32) -> u64 {
+  var total: u64 = 0
+
+  for value in values {
+    total += widen(value)
+  }
+
+  return total
+}
+
+fn sum_table(table: @[4]u32) -> u64 {
+  var total: u64 = 0
+
+  for value in @table[0 ..] {
+    total += widen(value)
+  }
+
+  return total
+}
+```
+
+A `for` over a slice of plain structs or of an enum with values is not
+implemented now. `for i in 0 ..< len(s)` and `@s[i]` give the address of
+each element.
+
 ## break and continue
 
 `break` leaves the innermost loop, and the statement after that loop runs
 next. `continue` ends the pass of the innermost loop: a loop with a
-condition tests it again, and a range loop or a string loop goes to its next
-value.
+condition tests it again, and a range loop, a string loop, or a slice loop
+goes to its next value.
 
 ```wyst
 fn add_odd(limit: u64) -> u64 {
@@ -377,5 +410,8 @@ now:
 - `match` on a value that is not an integer, an enum, or an `Option`, and
   a pattern in `.V(p)` other than a new local or `_`;
 - labels (`name:`) and `goto`;
-- `for x in e` over the elements of an array or a slice;
-- an `if` or `match` value of an `Option` or of an enum with values.
+- `for x in a` over the elements of an array, which
+  `for x in @a[0 ..]` gives;
+- `for x in s` over a slice of plain structs or of an enum with values;
+- an `if` or `match` value of an `Option`, of an enum with values, or of
+  a slice.

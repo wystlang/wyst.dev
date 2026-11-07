@@ -21,7 +21,7 @@ name. A field and an argument can.
 | `var` | Declares a variable. | module variables, and locals of `bool`, `u8` to `u64`, and `i64` |
 | `if` | Runs a block when a condition is true. | yes |
 | `else` | The other block of `if`, or the block of an unwrap. | yes |
-| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, and `for x in "text" {}`; not `for x in` an array or a slice |
+| `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, `for x in "text" {}`, and `for x in s {}` of a slice; not `for x in` an array |
 | `break` | Leaves a loop. | yes |
 | `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
@@ -43,7 +43,7 @@ name. A field and an argument can.
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result and an `asm` output |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
-| `len` | The length of an array or a slice. | no |
+| `len` | The length of a slice, a `u64`. | of a slice local or parameter |
 | `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, `i64`, a plain struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
