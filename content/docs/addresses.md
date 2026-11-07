@@ -350,7 +350,11 @@ main.wyst:12:9: error: function `main.reset` stores through parameter `cell`, so
 ```
 
 An `asm` input cannot hold the address of a table, as it cannot hold
-another address.
+another address. The `asm` blocks of a naked function, and an `asm`
+block that does not return, name physical registers, so they can read
+the parameters of the function in their registers. Thus a naked
+function, and a function with such a block, stores through each of its
+address parameters.
 
 ## load and store
 

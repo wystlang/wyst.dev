@@ -62,7 +62,9 @@ an array literal of N elements, or a struct literal. An element or a
 field of an array type takes an array literal, and one of a plain struct
 type takes a struct literal. Each other value is a constant of its type.
 A field that the literal does not name is 0, and so is each byte of
-padding:
+padding. A `#[bits]` value that the compiler computes gives each fixed
+field its fixed value, so the literal names each field in which 0 gives
+a fixed field another value, as in `flags = {}`:
 
 ```wyst
 struct Palette {
@@ -101,7 +103,7 @@ fn first() -> u16 {
 ```
 
 ```text
-main.wyst:4:10: error: `steps` is a constant table; `@steps` gives its address
+main.wyst:4:10: error: `steps` is a constant table, not a value; `@steps` gives its address, and `load(@steps[i])` reads an element
 ```
 
 The literal has the length of the array:
