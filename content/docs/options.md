@@ -6,7 +6,7 @@ summary: Option results, parameters, and locals, match, else blocks, and the ? o
 ## Option
 
 `Option<T>` is a value of type `T`, or no value. `T` is a value type, an
-enum, a `#[bits]` struct, or an address type. Its variants are
+enum without values, a `#[bits]` struct, or an address type. Its variants are
 `.Some(value)` and `.None`. An `Option` is the type of a function result,
 of a parameter, and of a local `const`. An `Option` of an address is only
 a result, as [Addresses and memory](/docs/addresses/#address-results) shows. The

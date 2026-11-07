@@ -7,10 +7,9 @@ summary: Named values of a bit field, and named bits of an integer.
 
 An enum gives names to values, in place of numbers: the values of a bit
 field, and kinds, such as the kinds of a kernel object. It has a backing
-type `uN`, and each variant has a value that fits in it. An
-enum without a backing type, a variant without a value, a variant value
-that is not an integer literal, and a variant with values, such as
-`Ok(u64)`, are not implemented now:
+type `uN`, and each variant has a tag, the integer after `=`, that fits
+in it. An enum without a backing type, a variant without a tag, and a tag
+that is not an integer literal are not implemented now:
 
 ```wyst
 enum Shareability: u2 {
@@ -20,7 +19,7 @@ enum Shareability: u2 {
 }
 ```
 
-No two variants have the same name or the same value. A variant name can
+No two variants have the same name or the same tag. A variant name can
 start with a digit, such as `16K`. Such a name is valid only after `.` and
 as a variant, so a reader does not take it for a number:
 
@@ -57,14 +56,14 @@ fn uses_16k() -> bool {
 }
 ```
 
-No other operator takes an enum. `widen(e)` gives the value of `e` as an
+No other operator takes an enum. `widen(e)` gives the tag of `e` as an
 integer of at least its width, such as `widen(TCR_EL1.read().TG0)`.
 
 ## Enum values
 
-An enum is a type of values. A parameter, a local, a result, and a field
-of a plain struct can have an enum type, as a bit field and a module
-constant can. A field of a plain struct needs a backing type of 8, 16, 32,
+An enum is a type of values. A parameter, a local `const` or `var`, a
+result, and a field of a plain struct can have an enum type, as a bit
+field and a module constant can. A field of a plain struct needs a backing type of 8, 16, 32,
 or 64 bits, as memory holds:
 
 ```wyst
@@ -94,7 +93,7 @@ fn grant(slot: @Slot) -> bool {
 }
 ```
 
-A value of an enum can be a value that no variant has. The hardware can
+A value of an enum can have a tag that no variant has. The hardware can
 hold one in a field, and another domain can write one in a message. Thus
 a `match` on an enum takes the variants as its patterns, and `_` takes
 each other value:
@@ -121,6 +120,117 @@ fn known() -> bool {
 An enum is also the type of the value of `Some` of an
 [`Option`](/docs/options/), as in `Option<Call>`. A module variable of an
 enum type is not implemented now.
+
+## Enums with values
+
+A variant can hold one value, of the type in `(...)` after its name. Such
+an enum is an enum with values: a kind and the number that goes with it
+are one value, such as a button of a column and the slot of the column.
+`.V(v)` gives a value of the enum with the tag of `V` and the value `v`,
+and `.V` gives a variant without a value:
+
+```wyst
+enum Button: u8 {
+  None = 0
+  Back(u64) = 1
+  Close(u64) = 2
+  Open = 3
+}
+
+fn under(slot: u64, x: u64) -> Button {
+  if x < 40 {
+    return .Back(slot)
+  }
+
+  if x < 80 {
+    return .Close(slot)
+  }
+
+  return .None
+}
+```
+
+The value of a variant is `u8`, `u16`, `u32`, `u64`, `i64`, or an enum
+without values of `u8` to `u64`, so that memory holds it. A variant with
+two or more values is not implemented now.
+
+An enum with values is the type of a parameter, a local `const` or `var`,
+a result, a field of a plain struct, an element of an array, and the
+target of an address. As a value, it takes two registers, as an `Option`
+does: the tag, and the value of its variant, or 0 for a variant without a
+value. In memory, it is a struct of the tag and the value, which starts at
+the next multiple of the alignment of the widest value, so `Button` has 16
+bytes:
+
+```wyst
+enum Button: u8 {
+  None = 0
+  Back(u64) = 1
+  Open = 3
+}
+
+struct State {
+  count: u8
+  pushed: Button
+}
+
+static_assert(size_of(Button) == 16 && field_offset(State, pushed) == 8)
+
+fn press(state: @State, slot: u64) {
+  store(@state.pushed, .Back(slot))
+}
+```
+
+A `store` writes the tag and the value, each in a word of the width of
+the wider of the two, so each byte of padding is 0, and a variant without
+a value writes 0 in its value. A `load` gives the tag and the value as
+they are, so a tag that no variant has goes to the arm `_` of a `match`.
+
+Only `match` takes the tag and the value. `.V(v)` gives the value of `V`
+to the new local `v`, or to no local with `.V(_)`. An arm with two or more
+patterns gives the same local in each pattern, or no local:
+
+```wyst
+enum Button: u8 {
+  None = 0
+  Back(u64) = 1
+  Close(u64) = 2
+  Open = 3
+}
+
+struct State {
+  pushed: Button
+}
+
+fn slot_of(state: @State) -> u64 {
+  match load(@state.pushed) {
+    .Back(slot), .Close(slot) { return slot }
+    _ { return 0 }
+  }
+}
+```
+
+`==`, `!=`, each other operator, and `widen` take only an enum without
+values, so code compares two buttons with `match`:
+
+```wyst fails
+enum Button: u8 {
+  None = 0
+  Back(u64) = 1
+}
+
+fn same(a: Button, b: Button) -> bool {
+  return a == b
+}
+```
+
+```text
+main.wyst:7:12: error: `==` takes no enum with values, found Button; `match` takes it
+```
+
+A bit field holds only an enum without values. A module constant, a value
+in a constant table, an `Option` of an enum with values, and an `if` or
+`match` value of one are not implemented now.
 
 ## Enum constants
 

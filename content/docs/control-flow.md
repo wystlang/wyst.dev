@@ -102,8 +102,8 @@ fn size(x: u8) -> u8 {
 
 [Optional values](/docs/options/#match) gives the rules.
 
-On an enum, the patterns are its variants. A value of an enum can be a
-value that no variant has, so `_` also takes each such value, as
+On an enum, the patterns are its variants. A value of an enum can have a
+tag that no variant has, so `_` also takes each such value, as
 [Enum values](/docs/enums-and-bit-structs/#enum-values) shows:
 
 ```wyst
@@ -117,6 +117,28 @@ fn cost(call: Call) -> u64 {
     .Wait { return 2 }
     .Send { return 3 }
     _ { return 0 }
+  }
+}
+```
+
+On an [enum with values](/docs/enums-and-bit-structs/#enums-with-values),
+`.V(v)` gives the value of variant `V` to the new local `v`, or to no
+local with `.V(_)`, and `.V` takes a variant without a value. An arm
+with two or more patterns gives the same local in each pattern, or no
+local:
+
+```wyst
+enum Control: u8 {
+  None = 0
+  Open = 1
+  Row(u64) = 5
+}
+
+fn lit_row(control: Control) -> u64 {
+  return match control {
+    .Row(row) { row + 1 }
+    .None, .Open { 0 }
+    _ { 0 }
   }
 }
 ```
@@ -353,7 +375,7 @@ The grammar also has these forms. The compiler does not implement them
 now:
 
 - `match` on a value that is not an integer, an enum, or an `Option`, and
-  the variant pattern `.V(p)` of an enum;
+  a pattern in `.V(p)` other than a new local or `_`;
 - labels (`name:`) and `goto`;
 - `for x in e` over the elements of an array or a slice;
-- an `if` or `match` value of an `Option`.
+- an `if` or `match` value of an `Option` or of an enum with values.

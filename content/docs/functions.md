@@ -7,7 +7,9 @@ summary: Parameters, results, never, results that must be used, and inline funct
 
 `fn name(parameters) -> Result { body }` declares a function. A parameter
 is `name: Type`. A function has at most 8 parameters, and they take at
-most 8 registers: an `Option` takes two. A function without `->` returns
+most 8 registers: an `Option` and an
+[enum with values](/docs/enums-and-bit-structs/#enums-with-values) take
+two. A function without `->` returns
 no value.
 
 ```wyst

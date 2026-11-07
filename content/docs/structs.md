@@ -18,7 +18,8 @@ struct Slot {
 ```
 
 A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
-[enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, a plain
+[enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
+[with values](/docs/enums-and-bit-structs/#enums-with-values), a plain
 struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
 holds its backing integer, or an array `[N]T` of one of these. Other field
 types are not implemented now:

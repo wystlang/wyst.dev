@@ -362,9 +362,11 @@ address parameters.
 value at address `a`, and `store(a, v)` writes `v` there. `a` is `@u8`,
 `@u16`, `@u32`, `@u64`, or the address of an enum or of a `#[bits]`
 struct. Each is one load or one store of the size of the integer, or of
-the backing type of the enum or of the `#[bits]` struct. A value of an
-enum from memory can be a value that no variant has, as
-[Enum values](/docs/enums-and-bit-structs/#enum-values) gives. At a
+the backing type of the enum or of the `#[bits]` struct, and two for an
+[enum with values](/docs/enums-and-bit-structs/#enums-with-values): the
+tag and the value. A value of an enum from memory can have a tag that no
+variant has, as [Enum values](/docs/enums-and-bit-structs/#enum-values)
+gives. At a
 [big-endian field](/docs/structs/#big-endian-fields), `load` and `store`
 also reverse the bytes.
 

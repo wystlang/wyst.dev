@@ -27,7 +27,8 @@ This page lists both sides.
 - Functions with up to 8 parameters in 8 registers, value and `Option`
   results, `never`, and `#[inline]`. A call result is an operand, an argument, or the value
   of an assignment.
-- `if` with `else` and `else if`, `match` on an integer or an enum, `if`
+- `if` with `else` and `else if`, `match` on an integer, an enum, or an
+  enum with values, with `.V(v)` patterns, `if`
   and `match` as values, `for` in four forms, with `..<` and `..=`
   ranges, `break`, `continue`, and `return`.
 - `Option` results, parameters, and local constants of a value type, an
@@ -44,8 +45,10 @@ This page lists both sides.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, `if` and `match` values, calls,
   and writes.
-- Enums as the type of bit fields, constants, parameters, locals, results,
-  and fields of plain structs, `pub` enums, `#[bits]` structs as the type
+- Enums as the type of bit fields, constants, parameters, locals, local
+  `var`s, results, and fields of plain structs, `pub` enums, enums with
+  values as the type of parameters, locals, local `var`s, results, and
+  memory, `#[bits]` structs as the type
   of constants, parameters, locals, local `var`s, results, and fields of
   plain structs, with field values at run time, register maps, register banks, devices, arrays of devices,
   system registers, offsets and bit positions that the compiler computes,
@@ -68,11 +71,11 @@ kernel needs it:
 | Form | Now |
 | --- | --- |
 | Labels and `goto` | Refused. |
-| `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and the variant pattern `.V(p)` of an enum | Refused. A `match` on a `uN`, an enum, or an `Option` works. |
+| `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Give the value of `.V(v)` to a local, and compare it. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
-| An `if` or `match` value of an `Option` | `return` the `Option` in each block of an `if` or `match` statement. |
+| An `if` or `match` value of an `Option` or of an enum with values | `return` the value in each block of an `if` or `match` statement, or assign it to a local `var`. |
 | `for x in` an array or a slice | Use `for i in a ..< b` and the index `i`. |
-| A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, and a `#[bits]` struct, such as an address | Use a `const`. |
+| A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address | Use a `const`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
@@ -101,6 +104,7 @@ kernel needs it:
 | Slices `[]T` and slice expressions `a[i ..< j]` and `a[i ..]` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
-| Enum variants with payloads, such as `Some(u64)`, and a module variable of an enum type | Refused. A parameter, a local, a result, a field of a plain struct, and the value of `Some` can have an enum type. |
-| An enum without a backing type, a variant without a value, and a variant value other than an integer literal | Give the backing type `uN` and an integer literal for each variant. |
+| A variant with two or more values, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
+| `load` of an enum with values at an address with a call, such as `load(@slot().shape)` | Put the address in a local first. |
+| An enum without a backing type, a variant without a tag, and a tag other than an integer literal | Give the backing type `uN` and an integer literal tag for each variant. |
 | A `scratch` output, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
