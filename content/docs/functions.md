@@ -247,9 +247,9 @@ fn handle() {
 linear type has `xfer`. `xfer v` at the call gives the linear local or
 parameter `v` to it, so the reader sees each call that takes the value,
 and no path after the call can use `v`. `xfer` is optional where `v` is
-dead: in `return v`, at the end of a block of an `if` or `match` value,
-and in `_ = v`. A call or a literal goes to an `xfer` parameter without
-`xfer`. `v.F` reads a field and keeps `v`.
+dead: in `return v` and `return .Some(v)`, at the end of a block of an
+`if` or `match` value, and in `_ = v`. A call or a literal goes to an
+`xfer` parameter without `xfer`. `v.F` reads a field and keeps `v`.
 
 A path that keeps the value to a `return`, to a `break` or `continue`
 that leaves its block, or to the end of its block or function, drops it,
@@ -312,8 +312,9 @@ fn handle() {
 main.wyst:17:12: error: linear local `interrupt` is used after a path gave it away
 ```
 
-Each other use of a linear value copies it, which is an error. A linear
-value is not its backing integer, and a second local cannot hold it:
+`.Some(v)` gives the value away, as in `return .Some(v)`. Each other use
+of a linear value copies it, which is an error. A linear value is not its
+backing integer, and a second local cannot hold it:
 
 ```wyst fails
 #[bits]

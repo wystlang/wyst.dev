@@ -148,8 +148,8 @@ AsmOut  <- AsmArg / '(' List(AsmArg) ')'
 a value of the type that the context expects, or gives the entries of a
 vector table. A struct literal cannot be the direct condition of `if`,
 `for`, or `match`. `xfer v` gives the linear local or parameter `v` to an
-`xfer` parameter, to `return`, to `_ =`, or to the end of a block of a
-value, as [Linear values](/docs/functions/#linear-values) gives.
+`xfer` parameter, to `.Some`, to `return`, to `_ =`, or to the end of a
+block of a value, as [Linear values](/docs/functions/#linear-values) gives.
 
 ## Limits
 
