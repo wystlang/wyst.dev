@@ -76,6 +76,24 @@ fn sign(x: u8) -> u8 {
 main.wyst:1:4: error: function `sign` can reach its end without `return`
 ```
 
+The checker infers the highest value of a value result from the value
+of each `return`, and each call has it, so a call can be an index. Here
+each result of `slot` is at most 3:
+
+```wyst
+fn slot(ticket: u64) -> u64 {
+  return ticket % 4
+}
+
+fn mark(table: @[4]u64, ticket: u64) {
+  store(@table[slot(ticket)], 1)
+}
+```
+
+A function that calls itself, also through other functions, gives its
+result no highest value. [Index proofs](/docs/index-proofs/#results)
+gives the rules.
+
 [Optional values](/docs/options/) describes `Option<T>`.
 
 ## Results must be used
