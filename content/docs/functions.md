@@ -1,6 +1,6 @@
 ---
 title: Functions
-summary: Parameters, results, never, results that must be used, linear values, and inline functions.
+summary: Parameters, results, never, results that must be used, linear values and lending, and inline functions.
 ---
 
 ## Declaring a function
@@ -9,8 +9,9 @@ summary: Parameters, results, never, results that must be used, linear values, a
 is `name: Type`. A function has at most 8 parameters, and they take at
 most 8 registers: an `Option`, an
 [enum with values](/docs/enums-and-bit-structs/#enums-with-values), and
-a [slice](/docs/addresses/#slices) take two. A function without `->`
-returns no value.
+a [slice](/docs/addresses/#slices) take two, and a
+[struct with no fields](/docs/structs/#structs-with-no-fields) takes
+none, so it does not count. A function without `->` returns no value.
 
 ```wyst
 fn max(a: u64, b: u64) -> u64 {
@@ -23,12 +24,14 @@ fn max(a: u64, b: u64) -> u64 {
 
 A parameter has a value type, an
 [enum](/docs/enums-and-bit-structs/#enum-values), a
-[`#[bits]` struct](/docs/enums-and-bit-structs/#values), an address type,
-which [Addresses and memory](/docs/addresses/) describes, a slice type
-`[]T`, which [Slices](/docs/addresses/#slices) describes, `string`, which
-[Values and types](/docs/values/#strings) describes, or an `Option`, which
-[Optional values](/docs/options/) describes. A parameter of a linear
-type has `xfer`, as [Linear values](#linear-values) gives. A function
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values), a
+[struct with no fields](/docs/structs/#structs-with-no-fields), an
+address type, which [Addresses and memory](/docs/addresses/) describes, a
+slice type `[]T`, which [Slices](/docs/addresses/#slices) describes,
+`string`, which [Values and types](/docs/values/#strings) describes, or
+an `Option`, which [Optional values](/docs/options/) describes. A
+parameter of a linear type with `xfer` takes the value, and one without
+`xfer` lends it, as [Linear values](#linear-values) gives. A function
 cannot change its parameters, because a `mut` parameter is not
 implemented now.
 No call starts the entry or a naked function, so no
@@ -194,6 +197,7 @@ main.wyst:3:3: error: this statement is not reachable
 ## Linear values
 
 `linear` before a [`#[bits]` struct](/docs/enums-and-bit-structs/#bit-structs)
+or a [struct with no fields](/docs/structs/#structs-with-no-fields)
 makes its type linear. A value of a linear type stands for a duty that the
 program must do, such as the end of an interrupt that it acknowledged. No
 path that returns can drop the value: each path gives it to an `xfer`
@@ -243,8 +247,7 @@ fn handle() {
 }
 ```
 
-`p: xfer T` is a parameter that takes the value, and a parameter of a
-linear type has `xfer`. `xfer v` at the call gives the linear local or
+`p: xfer T` is a parameter that takes the value. `xfer v` at the call gives the linear local or
 parameter `v` to it, so the reader sees each call that takes the value,
 and no path after the call can use `v`. `xfer` is optional where `v` is
 dead: in `return v` and `return .Some(v)`, at the end of a block of an
@@ -340,7 +343,7 @@ fn handle() -> u16 {
 ```
 
 ```text
-main.wyst:16:23: error: linear local `interrupt` cannot be copied: only a field read, `xfer interrupt`, `return interrupt`, and `_ = interrupt` use it
+main.wyst:16:23: error: linear local `interrupt` cannot be copied: only a field read, a lent argument, `xfer interrupt`, `return interrupt`, and `_ = interrupt` use it
 ```
 
 Only the module that declares a linear type consumes its value, also when
@@ -384,11 +387,121 @@ local from outside the loop and then go to the next pass. A path that
 gives it away and then leaves the loop is correct.
 
 The statements `acknowledge() else { return }` and `acknowledge()?` drop
-the value of `.Some`, so they are errors with a linear value. A parameter
-of a linear type without `xfer`, which lends the value, an `Option` local
-or parameter of a linear type, a `match` on such an `Option`, a local
-`var`, a module constant, and memory of a linear type, and a `linear`
-plain struct or enum are not implemented now.
+the value of `.Some`, so they are errors with a linear value. An `Option`
+local or parameter of a linear type, a `match` on such an `Option`, a
+local `var`, a module constant, and memory of a linear type, a `linear`
+plain struct with fields, and a `linear` enum are not implemented now.
+
+### Lending a linear value
+
+A parameter of a linear type without `xfer`, such as `held: Held`, lends
+the value for the call. The argument is a linear local or parameter
+without `xfer`, and the caller keeps it, so a path after the call can use
+it. The function can read the fields of the value and lend it again, but
+it cannot consume it, give it to an `xfer` parameter, or return it, and
+the end of the function does not drop it. A
+[struct with no fields](/docs/structs/#structs-with-no-fields) has no
+bytes, so a linear one is a proof that makes no code, such as the proof
+that the CPU holds a lock:
+
+```wyst
+pub linear struct Held {}
+
+var word: u64 = 0
+
+pub fn lock() -> Held {
+  word = 1
+  return {}
+}
+
+pub fn unlock(held: xfer Held) {
+  word = 0
+  _ = held
+}
+
+fn change(held: Held, value: u64) {
+  word = value
+}
+
+fn update(value: u64) {
+  const held = lock()
+  change(held, value)
+  change(held, value + 1)
+  unlock(xfer held)
+}
+```
+
+Each function that needs the lock takes `held: Held`, so a call without
+the lock is an error, as after `unlock`:
+
+```wyst fails
+pub linear struct Held {}
+
+pub fn lock() -> Held {
+  return {}
+}
+
+pub fn unlock(held: xfer Held) {
+  _ = held
+}
+
+fn change(held: Held) {}
+
+fn update() {
+  const held = lock()
+  unlock(xfer held)
+  change(held)
+}
+```
+
+```text
+main.wyst:16:10: error: linear local `held` is used after a path gave it away
+```
+
+A function cannot release a lock that its caller lends:
+
+```wyst fails
+pub linear struct Held {}
+
+pub fn unlock(held: xfer Held) {
+  _ = held
+}
+
+fn change(held: Held) {
+  unlock(xfer held)
+}
+```
+
+```text
+main.wyst:8:15: error: the caller lends linear parameter `held`, so the function cannot give it away or consume it, except in a call of a `never` function; `held: xfer Held` takes the value
+```
+
+A function that returns `never` does not give control back to its
+caller, so the caller does not use the value again. Thus an `xfer`
+parameter of such a function can take a value that the caller of the
+function lends. The kernel uses this when a thread waits: the kernel
+call lends the lock, and the function that runs the next thread
+releases it:
+
+```wyst
+pub linear struct Held {}
+
+pub fn unlock(held: xfer Held) {
+  _ = held
+}
+
+fn run_next(held: xfer Held) -> never {
+  unlock(xfer held)
+  trap()
+}
+
+fn wait(held: Held, ready: bool) -> u64 {
+  if !ready {
+    run_next(xfer held)
+  }
+  return 1
+}
+```
 
 ## Inline functions
 

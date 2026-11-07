@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, and field_offset.
+summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, and structs with no fields.
 ---
 
 ## Plain structs
@@ -247,10 +247,62 @@ static_assert(field_offset(Slot, kind) == 12)
 An `asm` block that reads a struct at fixed offsets is an example. If a
 change moves a field, the assertion stops the build.
 
+## Structs with no fields
+
+A plain struct with no fields, such as `struct Mark {}`, is a value with
+no bytes: the type of a parameter, a local `const`, and a result. `{}` is
+its value. It takes no register, so it makes no code, and it does not
+count in the limit of 8 parameters of a
+[function](/docs/functions/#declaring-a-function).
+
+```wyst
+struct Mark {}
+
+fn mark() -> Mark {
+  return {}
+}
+
+fn both(first: Mark, second: Mark) -> Mark {
+  _ = second
+  return first
+}
+
+fn use_marks() {
+  const first = mark()
+  _ = both(first, {})
+}
+```
+
+`linear` before such a struct makes a value that stands for a duty or a
+proof, such as the lock that the CPU holds, as
+[Lending a linear value](/docs/functions/#lending-a-linear-value) gives.
+A local `var` and an `Option` of a struct with no fields are not
+implemented now, and neither is an argument of it that is a call or an
+`if` or `match` value. `const x = f()` keeps the value of a call:
+
+```wyst fails
+struct Mark {}
+
+fn mark() -> Mark {
+  return {}
+}
+
+fn take(mark: Mark) {}
+
+fn use_mark() {
+  take(mark())
+}
+```
+
+```text
+main.wyst:10:8: error: a call or an `if` or `match` value as an argument of Mark, a struct with no fields, is not implemented now; `const x = value` keeps it
+```
+
 ## What a struct can do now
 
-A plain struct is only the type of memory at an address or of a constant
-table now. A parameter, a local, and a variable cannot hold a struct.
+A plain struct with fields is only the type of memory at an address or
+of a constant table now. A parameter, a local, and a variable cannot hold
+it.
 Code reads and writes each field through the address of the struct, such
 as `load(@slot.kind)`, as [Addresses and memory](/docs/addresses/) shows,
 and `store` writes the full struct from a literal. `load` of a whole

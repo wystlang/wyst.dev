@@ -25,7 +25,8 @@ This page lists both sides.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
 - Functions with up to 8 parameters in 8 registers, value and `Option`
-  results, `never`, and `#[inline]`. A call result is an operand, an argument, or the value
+  results, `never`, and `#[inline]`. A struct with no fields takes no
+  register. A call result is an operand, an argument, or the value
   of an assignment.
 - `if` with `else` and `else if`, `match` on an integer, an enum, or an
   enum with values, with `.V(v)` patterns, `if`
@@ -35,9 +36,12 @@ This page lists both sides.
   enum, or a `#[bits]` struct, `Option` results of an address, `else`
   unwrap, `?`, `match` with `.Some(v)` and `.None`, and the check that
   each path reads an `Option`.
-- Plain structs, `size_of`, `field_offset`, address types, address
-  constants, places, `load`, `store`, `store` of a struct literal with
-  nested literals, `bitcast`, `widen`, and `truncate`.
+- Linear `#[bits]` structs and linear structs with no fields, `xfer`
+  parameters, which take a linear value, and parameters that lend it.
+- Plain structs, structs with no fields as the type of parameters, local
+  constants, and results, `size_of`, `field_offset`, address types,
+  address constants, places, `load`, `store`, `store` of a struct literal
+  with nested literals, `bitcast`, `widen`, and `truncate`.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
@@ -92,12 +96,12 @@ kernel needs it:
 | An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
-| `mut`, and a `linear` plain struct or enum | Refused. |
-| A parameter of a linear type without `xfer`, which lends the value | Give the value with `xfer`, and give it back as the result. |
+| `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |
 | An `Option` local or parameter of a linear type, and a `match` on such an `Option` | Unwrap the `Option` at the call with `else` or `?`. |
 | A local `var`, a module constant, and memory of a linear type | Keep the value in a local `const` or a parameter. |
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
-| A plain struct as a parameter, a local, or a variable | A plain struct is only the type of memory at an address. |
+| A plain struct with fields as a parameter, a local, or a variable | A plain struct with fields is only the type of memory at an address. |
+| A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
