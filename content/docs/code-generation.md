@@ -63,7 +63,7 @@ fn init() {
 
 | Registers | Use |
 | --- | --- |
-| `x0` to `x7` | Parameters. A [slice](/docs/addresses/#slices) is two parameters, and two arguments: its address, and then its length. |
+| `x0` to `x7` | Parameters. A [slice](/docs/addresses/#slices) parameter takes two registers, as its argument does: its address, and then its length. |
 | `x0` | A value result or an address result. |
 | `x0`, `x1` | An `Option` result: `x0` is 1 for `.Some` and 0 for `.None`, and `x1` is the value of `.Some`. The result of an enum with values: `x0` is the tag, and `x1` is the value of the variant. A slice result: `x0` is the address, and `x1` is the length. |
 | `x9` to `x17` | Expression values: `x9` at depth 0, `x10` at depth 1, and so on. An expression deeper than `x17` is an error. |
@@ -154,7 +154,7 @@ a loop after the loop, so the next copy takes them.
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. A constant end that fits in the `cmp`, such as `0 ..< 512`, has no home. |
 | A string loop | Its cursor and its end are in homes. One `ldr` reads the length before the loop, and each pass reads its byte with one `ldrb`. The test is `cmp` and `b.lo`. |
-| A slice loop | A range loop over an index with no name, from 0 to the length. The index and the end are in homes. Each pass starts with the load of the element: one `add`, with a shift for an element of 2, 4, or 8 bytes, and one load. |
+| A slice loop | A range loop over an index with no name, from 0 to the length. The address, the index, and the end are in homes. Each pass starts with the load of the element: one `add`, with a shift for an element of 2, 4, or 8 bytes, and one load. |
 | `const x = f() else { trap() }` | The call, then `cbnz x0`. `else { break }` and `else { continue }` are one `cbz x0` to the target of the jump. |
 | `trap()` | `brk #0`. |
 | A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register, and `bitcast` of a `string` gives this register as a `u64`. |
