@@ -40,11 +40,11 @@ name. A field and an argument can.
 | `i64` | The signed 64-bit integer, a value type. | yes |
 | `string` | A string value. | as the type of a parameter |
 | `never` | The type of a function that does not return. | yes |
-| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result and an `asm` output |
+| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, memory, and an `asm` output |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of a slice, a `u64`. | of a slice local or parameter |
-| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, `i64`, a plain struct, and an array of them |
+| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` in memory, a plain struct, a `#[bits]` struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
 | `static_assert` | Checks a constant condition. | yes |

@@ -19,10 +19,12 @@ struct Slot {
 
 A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
-[with values](/docs/enums-and-bit-structs/#enums-with-values), a plain
-struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
-holds its backing integer, or an array `[N]T` of one of these. Other field
-types are not implemented now:
+[with values](/docs/enums-and-bit-structs/#enums-with-values), an
+[`Option`](/docs/options/#option-fields) of one of these that has no
+values, a plain struct, a
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
+backing integer, or an array `[N]T` of one of these. Other field types
+are not implemented now:
 
 ```wyst fails
 struct Flag {
@@ -31,7 +33,7 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -77,7 +79,8 @@ A plain struct lays out its fields as C does:
 - Each field starts at the next multiple of its alignment. The alignment
   of `uN` is its size, the alignment of an array is the alignment of its
   element, and the alignment of a struct is the largest alignment of its
-  fields.
+  fields. An `Option<T>` is the tag and the value, each in a word of the
+  width of `T`, so an `Option<u64>` has 16 bytes, with the alignment 8.
 - The size of a struct is a multiple of its alignment.
 
 Thus `Slot` above is 16 bytes. In `Table` below, `marks` starts at byte 2,
@@ -224,7 +227,8 @@ const broadcast: Ethernet = { destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
 enum of one of these, a plain struct, or, for `size_of`, a `#[bits]`
-struct or an array of them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
+struct, an `Option` in memory, such as `Option<u64>`, or an array of them,
+such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
 after the declaration of `T`. A function that uses them can come before
 it.
 

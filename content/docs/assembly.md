@@ -200,8 +200,8 @@ outputs, `-> (a, b)`, are not implemented now.
 ## Option outputs
 
 A block with the output type `Option<u64>` takes `x0` and `x1` after its
-last line as the result of a call: `x0` is 1 for `.Some` and 0 for
-`.None`, and `x1` is the value of `.Some`. A kernel call from EL0 gives its
+last line as the result of a call: `x0` is 0 for `.None` and not 0 for
+`.Some`, and `x1` is the value of `.Some`. A kernel call from EL0 gives its
 result in this form, so the code uses it as it uses the result of a
 function:
 

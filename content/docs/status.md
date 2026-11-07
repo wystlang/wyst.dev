@@ -33,9 +33,10 @@ This page lists both sides.
   and `match` as values, `for` in five forms, with `..<` and `..=`
   ranges and over a slice, `break`, `continue`, and `return`.
 - `Option` results, parameters, and local constants of a value type, an
-  enum, or a `#[bits]` struct, `Option` results of an address, `else`
-  unwrap, `?`, `match` with `.Some(v)` and `.None`, and the check that
-  each path reads an `Option`.
+  enum, or a `#[bits]` struct, `Option` results of an address, `Option`
+  fields and other memory of an integer or an enum without values, with
+  `load` and `store`, `else` unwrap, `?`, `match` with `.Some(v)` and
+  `.None`, and the check that each path reads an `Option`.
 - Linear `#[bits]` structs and linear structs with no fields, `xfer`
   parameters, which take a linear value, and parameters that lend it.
 - Plain structs, structs with no fields as the type of parameters, local
@@ -89,7 +90,8 @@ kernel needs it:
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
-| `Option` as the type of a local `var`, a module variable, a module constant, or a field, and an `Option` parameter of a naked function | Use a local `const`, or unwrap the `Option` with `else`, `?`, or `match`. |
+| `Option` as the type of a local `var`, a module variable, or a module constant, and an `Option` parameter of a naked function | Use a local `const` or a field of a plain struct, or unwrap the `Option` with `else`, `?`, or `match`. |
+| An `Option` in memory of a type other than an integer or an enum without values, such as `Option<bool>`, and a value of an `Option` in a constant table | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
@@ -103,7 +105,7 @@ kernel needs it:
 | A plain struct with fields as a parameter, a local, or a variable | A plain struct with fields is only the type of memory at an address. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
-| A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
+| A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
 | `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
@@ -112,7 +114,7 @@ kernel needs it:
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
 | `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |
-| `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them. |
+| `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
@@ -121,6 +123,6 @@ kernel needs it:
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
 | A variant with two or more values, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
-| `load` of an enum with values at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
+| `load` of an enum with values or of an `Option` at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
 | An enum without a backing type, a variant without a tag, and a tag other than an integer literal | Give the backing type `uN` and an integer literal tag for each variant. |
 | A `scratch` output, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
