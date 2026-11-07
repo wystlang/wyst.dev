@@ -157,10 +157,10 @@ two or more values is not implemented now.
 An enum with values is the type of a parameter, a local `const` or `var`,
 a result, a field of a plain struct, an element of an array, and the
 target of an address. As a value, it takes two registers, as an `Option`
-does: the tag, and the value of its variant, or 0 for a variant without a
-value. In memory, it is a struct of the tag and the value, which starts at
-the next multiple of the alignment of the widest value, so `Button` has 16
-bytes:
+does: the tag, and the value of its variant. `.None`, a variant without a
+value, gives the value 0. In memory, it is a struct of the tag and the
+value, which starts at the next multiple of the alignment of the widest
+value, so `Button` has 16 bytes:
 
 ```wyst
 enum Button: u8 {
@@ -182,9 +182,11 @@ fn press(state: @State, slot: u64) {
 ```
 
 A `store` writes the tag and the value, each in a word of the width of
-the wider of the two, so each byte of padding is 0, and a variant without
-a value writes 0 in its value. A `load` gives the tag and the value as
-they are, so a tag that no variant has goes to the arm `_` of a `match`.
+the wider of the two. Thus `.Back(slot)` and `.None` write 0 in each byte
+of padding, and `.None` writes 0 in its value. A value from a `load`
+writes the bytes of the value that the `load` read, also for a variant
+without a value. A `load` gives the tag and the value as they are, so a
+tag that no variant has goes to the arm `_` of a `match`.
 
 Only `match` takes the tag and the value. `.V(v)` gives the value of `V`
 to the new local `v`, or to no local with `.V(_)`. An arm with two or more

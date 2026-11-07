@@ -105,6 +105,6 @@ kernel needs it:
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
 | A variant with two or more values, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
-| `load` of an enum with values at an address with a call, such as `load(@slot().shape)` | Put the address in a local first. |
+| `load` of an enum with values at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
 | An enum without a backing type, a variant without a tag, and a tag other than an integer literal | Give the backing type `uN` and an integer literal tag for each variant. |
 | A `scratch` output, operand types such as `a: u64 in x0 = v`, an output in a named register, and more than one output of an `asm` block | Refused. |
