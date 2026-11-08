@@ -148,6 +148,9 @@ fn skip(x: u8) {
 main.wyst:6:3: error: the `u8` result of this call is not used
 ```
 
+A statement of a builtin with a value, such as `load(p)` or `len(s)`, and
+a [register read](/docs/registers/) alone are errors in the same way.
+
 `_ = next(x)` calls `next` and keeps nothing, so it drops the result:
 
 ```wyst
