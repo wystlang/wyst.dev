@@ -15,7 +15,7 @@ name. A field and an argument can.
 | `pub` | Exports a declaration. | functions, constants, constant tables, plain and `#[bits]` structs, enums, and system registers |
 | `fn` | Declares a function. | yes, without methods and type parameters |
 | `struct` | Declares a struct. | plain, `#[register_map]`, and `#[bits]` structs |
-| `enum` | Declares an enum. | only as the type of a bit field or of a module constant |
+| `enum` | Declares an enum. | with a backing type and a tag for each variant: the type of a bit field, a module constant, a parameter, a local, a result, a field of a plain struct, and the value of `Some`; an enum with values, such as `Row(u64) = 5`, of a parameter, a local, a result, and memory; not of a module variable |
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
 | `var` | Declares a variable. | module variables, and locals of `bool`, `u8` to `u64`, and `i64` |
@@ -25,7 +25,7 @@ name. A field and an argument can.
 | `break` | Leaves a loop. | yes |
 | `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
-| `match` | Selects a block by the value or the variant of a value. | on an integer, without variant patterns |
+| `match` | Selects a block by the value or the variant of a value. | on an integer other than `i64`, an enum, an enum with values, and an `Option`, as a statement and as a value; a pattern in `.V(p)` and `.Some(p)` is a new local or `_` |
 | `goto` | Jumps to a label. | no |
 | `mut` | A parameter mode, also marked at the call site. | no |
 | `xfer` | A parameter mode that takes ownership, also marked at the call site. | yes, on a parameter of a linear type |
@@ -40,7 +40,7 @@ name. A field and an argument can.
 | `i64` | The signed 64-bit integer, a value type. | yes |
 | `string` | A string value. | as the type of a parameter |
 | `never` | The type of a function that does not return. | yes |
-| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, memory, and an `asm` output |
+| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of a slice, a `u64`. | of a slice local or parameter |
