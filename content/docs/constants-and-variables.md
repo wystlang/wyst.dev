@@ -140,10 +140,42 @@ fn clear(stacks: @[cpus.count]u64, cpu: u64) {
 ```
 
 Two modules can import each other. When a value of module `a` uses a
-constant of module `b`, the compiler computes the values of `b` at that
-point, if it did not compute them before. A value of `b` can then use only
-the constants of `a` above that value of `a`. Thus put such a constant of
-`a` above the value that uses `b`.
+constant or a struct of module `b`, the compiler computes the values of
+`b` up to that item at that point, if it did not compute them before. A
+value of `b` up to that item can then use only the constants and structs
+of `a` above that value of `a`. Thus put such a constant of `a` above the
+value that uses `b`. The values of `b` below that item come later, so
+they can also use the items of `a` below the value. Here the length of
+`colors` is `site.samples`, and `site.Column`, below `samples`, holds a
+`Shade`, which is below `colors`:
+
+```wyst ui/site.wyst
+import main
+
+pub const samples: u64 = 3
+
+pub struct Column {
+  sample: u64
+  shade: main.Shade
+}
+```
+
+```wyst
+import ui.site
+
+const colors: [site.samples]u32 = [0x00fd_e3d3, 0x00d4_efdc, 0x00f8_ebbf]
+
+pub struct Shade {
+  color: u32
+}
+
+fn paint(column: @site.Column) {
+  const sample = load(@column.sample)
+  if sample < site.samples {
+    store(@column.shade.color, load(@colors[sample]))
+  }
+}
+```
 
 ## static_assert
 
