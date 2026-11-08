@@ -202,8 +202,9 @@ makes its type linear. A value of a linear type stands for a duty that the
 program must do, such as the end of an interrupt that it acknowledged. No
 path that returns can drop the value: each path gives it to an `xfer`
 parameter or to `return`, or the module that declares the type consumes
-it with `_ = v`. A path that calls a `never` function keeps it with no
-error.
+it with `_ = v`. A path that calls a `never` function, or that ends in
+an [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return),
+keeps it with no error.
 
 ```wyst
 #[bits]
@@ -386,7 +387,10 @@ main.wyst:4:7: error: only module `irq.interrupts`, which declares the linear ty
 
 The body of a loop can run again, so a pass cannot give away a linear
 local from outside the loop and then go to the next pass. A path that
-gives it away and then leaves the loop is correct.
+gives it away and then leaves the loop is correct. The condition of
+`for cond {}` runs before each pass, so it is part of the loop: when the
+condition gives a linear value away, each path of the body must leave the
+loop with `break` or `return`.
 
 The statements `acknowledge() else { return }` and `acknowledge()?` drop
 the value of `.Some`, so they are errors with a linear value. An `Option`
