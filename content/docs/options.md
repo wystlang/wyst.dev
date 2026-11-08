@@ -219,9 +219,9 @@ fn release(key: u64) -> Option<u8> {
 argument, and `return` take it. `match`, `else`, and `?` test the tag, and
 load the value only for `.Some`. `store` writes the tag and the value,
 each in its full word: `.Some(v)` writes 1 and `v`, and `.None` writes 0
-in each byte. A value from a `load` writes the bytes that the `load`
-read. A function that returns `.None` sets only the tag, so the store of
-a `.None` from a call writes the bytes of the register of the value. A
+in each byte. A value from a `load`, a call, an `asm` block, a local, or
+a parameter also writes 1 and the value for `.Some`, and 0 in each byte
+for `.None`. Thus a message that another domain reads keeps no old byte. A
 [struct literal](/docs/structs/#struct-literals) can name an `Option`
 field, as in `store(own, { count = 1, hover = .Some(3) })`.
 
