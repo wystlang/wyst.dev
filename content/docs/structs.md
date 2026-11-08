@@ -102,8 +102,8 @@ struct Table {
 ```
 
 A struct comes after the structs and the constants that its fields use.
-Thus a struct cannot hold itself. The structs and the constants of an
-imported module come first.
+Thus a struct cannot hold itself. The items of an imported module up to
+the struct or the constant that a field uses come first.
 
 ## Big-endian fields
 
