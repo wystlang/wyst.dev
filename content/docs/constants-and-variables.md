@@ -383,5 +383,3 @@ fn skip(x: u8) {
 ```text
 main.wyst:6:9: error: a local cannot be `_`; `_ = value` drops a value
 ```
-
-`var` in a function body is not implemented now.
