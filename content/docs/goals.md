@@ -60,7 +60,8 @@ rest from the body:
 - Interface methods use named parameters. There are no function pointer
   types. Interfaces are not implemented now.
 - An `else` block that must exit replaces manual unwrap arms. No keyword
-  marks the unwrap, because a local cannot hold an `Option`.
+  marks the unwrap: `const x = f()` keeps the `Option`, and `else`, `?`,
+  or a `match` with the patterns `.Some(v)` and `.None` unwraps it.
 
 ## Optimization
 
