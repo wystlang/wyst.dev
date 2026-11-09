@@ -10,7 +10,9 @@ offset.
 ## Address types
 
 `@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
-`u32`, `u64`, `i64`, an enum of `u8` to `u64`, a plain struct or a
+`u32`, `u64`, `i64`, an enum of `u8` to `u64`, an
+[`Option`](/docs/options/#option-fields) of one of these that has no
+values, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
 `pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
 of these. `N` is a constant, such as a module constant. Another target,
@@ -34,7 +36,8 @@ An address is the type of a parameter, a local, a result, or a
 [module constant](#address-constants), and `@c` gives the address of a
 [constant table](#read-only-addresses). A module variable and memory
 cannot hold an address now. Thus a function cannot keep an address after
-the call, except through its result.
+the call, except through its result. A [slice](#slices) is an address and
+a length, with the same rule.
 
 ## bitcast
 
@@ -142,8 +145,8 @@ fn total() -> u64 {
 ## Places
 
 `@p.f` is the address of field `f` of the struct at address `p`. `@p[i]`
-is the address of element `i` of the array at address `p`. The forms
-combine, as in `@table[i].kind`.
+is the address of element `i` of the array at address `p`, or of the
+[slice](#slices) `p`. The forms combine, as in `@table[i].kind`.
 
 ```wyst
 struct Slot {
@@ -162,7 +165,7 @@ fn kind_of(base: u64, index: u64) -> u16 {
 ```
 
 The compiler must prove that each index is less than the length of its
-array. [Index proofs](/docs/index-proofs/) gives the rules.
+array or slice. [Index proofs](/docs/index-proofs/) gives the rules.
 
 An element is memory, not a value, so `load` reads it:
 
@@ -277,6 +280,78 @@ main.wyst:10:17: error: an `Option` of an address is only a result, which `else`
 As for an address result, the result of a `pub` function cannot be an
 `Option` of an address now.
 
+## Slices
+
+`[]T` is the type of a slice: the address of a number of elements of type
+`T`, one after the other, and that number, its length. `T` is a type that
+an address can have. A slice takes two registers: the address, and then
+the length.
+
+`@a[x ..< y]` gives the slice of the elements of `a` from `x` up to, but
+not including, `y`. `a` is the address of an array `[N]T`, or a slice
+local or parameter. `@a[..< y]` starts at 0, and `@a[x ..]` ends at the
+end of `a`: `N`, or the length of the slice. `x` and `y` are `uN` values,
+as an index is. `len(s)` gives the length of the slice local or
+parameter `s`, a `u64`, and `@s[i]` is the address of element `i`:
+
+```wyst
+struct Buffer {
+  count: u64
+  bytes: [64]u8
+}
+
+fn used(buffer: @Buffer) -> []u8 {
+  const count = load(@buffer.count)
+  if count > 64 { trap() }
+
+  return @buffer.bytes[..< count]
+}
+
+fn clear(bytes: []u8) {
+  for i in 0 ..< len(bytes) {
+    store(@bytes[i], 0)
+  }
+}
+
+fn reset(buffer: @Buffer) {
+  clear(used(buffer))
+}
+```
+
+The compiler must prove that `x <= y`, that `y` is at most `N` or the
+length of `a`, and that `i` is less than `len(s)`.
+[Index proofs](/docs/index-proofs/#slices) gives the rules. `for x in s`
+loads each element of `s`, as [Control flow](/docs/control-flow/#for)
+shows.
+
+A slice is an address, so it is the type of a parameter, a local `const`,
+and a result, and never the type of memory, of a module constant, or of a
+module variable:
+
+```wyst fails
+struct Text {
+  bytes: []u8
+}
+```
+
+```text
+main.wyst:2:10: error: a slice is only the type of a parameter, a local, or a result, and never in memory
+```
+
+No operator takes a slice. A slice is not memory, so `@s` of a slice `s`
+is an error.
+
+The address and the length of a slice each use its start `x`, so `x` is a
+constant or a local. `len` and `@s[i]` take a slice local or parameter.
+These forms are not implemented now:
+
+- a start that is not a constant or a local, such as `@a[x + 1 ..]`;
+- `len(f())` and `@f()[i]` of a call `f()`: `const s = f()` comes first;
+- a local `var`, an `Option`, and an `if` or `match` value of a slice;
+- a slice result of a `pub` function, as for an address result, and a
+  slice parameter of a naked function;
+- a slice of arrays, such as `[][4]u8`.
+
 ## Read-only addresses
 
 `@c` gives the address of the
@@ -347,6 +422,28 @@ fn start() {
 
 ```text
 main.wyst:12:9: error: function `main.reset` stores through parameter `cell`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+A [slice](#slices) of a table is read-only data in the same way. `clear`
+stores through its slice parameter, so it cannot take a slice of
+`steps`:
+
+```wyst fails
+const steps: [4]u16 = [0, 0x1018, 0x204f, 0x308a]
+
+fn clear(cells: []u16) {
+  for i in 0 ..< len(cells) {
+    store(@cells[i], 0)
+  }
+}
+
+fn start() {
+  clear(@steps[1 ..])
+}
+```
+
+```text
+main.wyst:10:9: error: function `main.clear` stores through parameter `cells`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
 ```
 
 An `asm` input cannot hold the address of a table, as it cannot hold
