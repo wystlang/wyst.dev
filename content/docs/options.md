@@ -1,6 +1,6 @@
 ---
 title: Optional values
-summary: Option results, parameters, and locals, match, else blocks, and the ? operator.
+summary: Option results, parameters, locals, and fields, match, else blocks, and the ? operator.
 ---
 
 ## Option
@@ -8,8 +8,10 @@ summary: Option results, parameters, and locals, match, else blocks, and the ? o
 `Option<T>` is a value of type `T`, or no value. `T` is a value type, an
 enum without values, a `#[bits]` struct, or an address type. Its variants are
 `.Some(value)` and `.None`. An `Option` is the type of a function result,
-of a parameter, and of a local `const`. An `Option` of an address is only
-a result, as [Addresses and memory](/docs/addresses/#address-results) shows. The
+of a parameter, and of a local `const`, and memory holds an `Option` of an
+integer or of an enum without values, as [Option fields](#option-fields)
+shows. An `Option` of an address is only a result, as
+[Addresses and memory](/docs/addresses/#address-results) shows. The
 output `Option<u64>` of an `asm` block is also an `Option`, as
 [Assembly](/docs/assembly/#option-outputs) shows.
 
@@ -27,18 +29,19 @@ fn find(table: @[slots]u64, key: u64) -> Option<u64> {
 ```
 
 `return` takes `.Some(value)`, `.None`, a call with the same result type,
-or an `Option` local or parameter of that type.
+an `Option` local or parameter of that type, or a `load` of that type.
 
-An `Option` takes two registers: the tag, 1 for `Some` and 0 for `None`,
-and the value of `Some`. Thus an `Option` parameter takes two of the 8
-parameter registers. No operator takes an `Option`: `else`, `?`, and
+An `Option` takes two registers: the tag, 0 for `None` and not 0 for
+`Some`, and the value of `Some`. `.Some(v)` gives the tag 1, and a `load`
+gives the tag that memory holds. Thus an `Option` parameter takes two of
+the 8 parameter registers. No operator takes an `Option`: `else`, `?`, and
 `match` take its value.
 
 ## Unwrap with else
 
 A call statement cannot drop an `Option`. `else` takes the value of
-`.Some` of a call, of an `asm` block, or of an `Option` local or
-parameter:
+`.Some` of a call, of an `asm` block, of an `Option` local or parameter,
+or of a `load` of an `Option` in memory:
 
 ```wyst
 const slots: u64 = 8
@@ -108,7 +111,8 @@ fn twice(x: u8) -> u8 {
 
 An arm has one pattern. A `match` statement can omit an arm, and then no
 arm runs for that variant. A `match` value has an arm for each variant,
-or `_`. `match` also takes a call directly, as `match pick(x + 1)` does.
+or `_`. `match` also takes a call directly, as `match pick(x + 1)` does,
+and a `load`.
 
 ## Must-use
 
@@ -165,11 +169,93 @@ fn distance(table: @[slots]u64, a: u64, b: u64) -> Option<u64> {
 the value of `.Some`, not an `Option`, so `else` or a second `?` cannot
 follow it.
 
+## Option fields
+
+Memory holds an `Option<T>` with `T` an integer or an enum without
+values: a field of a [plain struct](/docs/structs/), an element of an
+array, and the target of an address. Its layout is that of an
+[enum with values](/docs/enums-and-bit-structs/#enums-with-values) of
+`u8`: the tag, a `u8`, and then the value of `.Some`, each in a word of
+the width of `T`. Thus an `Option<u64>` has 16 bytes, and an
+`Option<u8>` has 2. The tag 0 is `.None`, and each other tag is `.Some`,
+so each byte in memory gives a value, and memory of zeros is `.None`.
+
+```wyst
+struct State {
+  count: u64
+  hover: Option<u64>
+  keys: [4]Option<u8>
+}
+
+static_assert(size_of(State) == 32 && field_offset(State, keys) == 24)
+
+const state: u64 = 0x4008_8000
+const own: @State = bitcast(state)
+
+fn enter(slot: u64) {
+  store(@own.hover, .Some(slot))
+}
+
+fn outlined(slot: u64) -> bool {
+  return match load(@own.hover) {
+    .Some(hover) { hover == slot }
+    .None { false }
+  }
+}
+
+fn release(key: u64) -> Option<u8> {
+  if key >= 4 {
+    return .None
+  }
+
+  const holder = load(@own.keys[key])
+  store(@own.keys[key], .None)
+
+  return holder
+}
+```
+
+`load` gives the `Option` in memory, and `match`, `else`, `?`, a local, an
+argument, and `return` take it. `match`, `else`, and `?` test the tag, and
+load the value only for `.Some`. `store` writes the tag and the value,
+each in its full word: `.Some(v)` writes 1 and `v`, and `.None` writes 0
+in each byte. A value from a `load`, a call, an `asm` block, a local, or
+a parameter also writes 1 and the value for `.Some`, and 0 in each byte
+for `.None`. Thus a message that another domain reads keeps no old byte. A
+[struct literal](/docs/structs/#struct-literals) can name an `Option`
+field, as in `store(own, { count = 1, hover = .Some(3) })`.
+
+`load` reads the tag and then the value, and computes the address for
+each read, so an address with a call or a register read is not
+implemented now:
+
+```wyst fails
+struct Column {
+  back: Option<u64>
+}
+
+fn column(slot: u64) -> @Column {
+  return bitcast(0x4008_8000 + slot * 16)
+}
+
+fn back_of(slot: u64) -> Option<u64> {
+  return load(@column(slot).back)
+}
+```
+
+```text
+main.wyst:10:15: error: `load` of an `Option` at an address with a call is not implemented now
+```
+
+Put the address in a local first, as in `const record = column(slot)` and
+then `load(@record.back)`.
+
 ## Not implemented now
 
 `Result<T, E>`, with `.Ok` and `.Error`, is not implemented now. The `?`
 of a `Result` returns its error from a function with a `Result` result of
-the same error type. An `Option` as a local `var`, a module variable, a
-module constant, or a field of a plain struct, an `Option` parameter of a
-naked function, and an `if` or `match` value of an `Option` are not
-implemented now.
+the same error type. An `Option` as a local `var`, a module variable, or
+a module constant, an `Option` in memory of another type, such as
+`Option<bool>`, a value of an `Option` in a constant table, an `Option`
+parameter of a naked function, and an `if` or `match` value of an
+`Option` are not implemented now.

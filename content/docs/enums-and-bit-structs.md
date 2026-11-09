@@ -464,3 +464,64 @@ The struct type is also the type of the value of `Some` of an
 [`Option`](/docs/options/), and `const entry = f() else { trap() }` keeps
 the struct type of the value. A module variable of the struct type is not
 implemented now.
+
+## pub and linear
+
+`pub` before `struct` lets each module that imports the module name the
+type as `m.S`, as the type of a parameter, a local, a result, a constant,
+and a field. `linear` before `struct` makes the type linear: no path that
+returns drops a value, and only the module that declares the type
+consumes it, as [Linear values](/docs/functions/#linear-values) gives.
+
+```wyst platform/interrupts.wyst
+#[bits]
+pub struct Flags: u8 {
+  READY: bool at 0
+}
+
+#[bits]
+pub linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+pub fn end(interrupt: xfer Interrupt) {
+  _ = interrupt
+}
+```
+
+```wyst
+import platform.interrupts
+
+const ready: interrupts.Flags = { READY = true }
+
+fn take(interrupt: xfer interrupts.Interrupt) -> u16 {
+  const number = interrupt.NUMBER
+  interrupts.end(xfer interrupt)
+
+  return number
+}
+```
+
+A linear value is not its backing integer: a field read, such as
+`interrupt.NUMBER`, gives its bits. A `#[bits]` struct that is not `pub`
+is local to its module:
+
+```wyst platform/entries.wyst
+#[bits]
+struct Entry: u64 {
+  Valid: bool at 0
+}
+```
+
+```wyst fails
+import platform.entries
+
+fn map(entry: entries.Entry) {}
+```
+
+```text
+main.wyst:3:23: error: struct `Entry` of module `platform.entries` is not `pub`
+```
+
+A `linear` register map is an error, because a register map is not a
+value.
