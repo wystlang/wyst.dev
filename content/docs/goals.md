@@ -21,8 +21,9 @@ These properties together are the reason for the language:
   only as the [result](/docs/addresses/#address-results), and each index
   is proved. Each `bitcast` marks a fact that the program trusts.
 - **Linear resources.** A `linear` value cannot leave a function without
-  the declaring module consuming it. Thus the compiler can refuse a
-  forgotten end-of-interrupt write. This is not implemented now.
+  the declaring module consuming it. Thus the compiler refuses a
+  forgotten end-of-interrupt write, as
+  [Linear values](/docs/functions/#linear-values) shows.
 - **Typed registers.** Register maps, devices, and system registers are
   declarations that the compiler understands.
 - **Deterministic output.** The compiler writes AArch64 ELF files without
@@ -54,13 +55,13 @@ rest from the body:
 - There are no effect clauses. Inference of the effects of each call is not
   implemented now.
 - Each value result, address result, and `Option` result of a call must
-  be used. A
-  linear value must also be used, and an unread binding does not count as
-  a use. `linear` is not implemented now.
+  be used. A linear value must also be used, and an unread binding does
+  not count as a use.
 - Interface methods use named parameters. There are no function pointer
   types. Interfaces are not implemented now.
 - An `else` block that must exit replaces manual unwrap arms. No keyword
-  marks the unwrap, because a local cannot hold an `Option`.
+  marks the unwrap: `const x = f()` keeps the `Option`, and `else`, `?`,
+  or a `match` with the patterns `.Some(v)` and `.None` unwraps it.
 
 ## Optimization
 
@@ -94,7 +95,7 @@ already proved:
 - Stack setup and memory barriers are `asm` lines.
 - Layouts are a separate file format that the build reads, as `go.mod` is.
 
-Labels, `goto`, interfaces, and `linear` are not implemented now.
+Labels, `goto`, and interfaces are not implemented now.
 
 ## Not in the language
 

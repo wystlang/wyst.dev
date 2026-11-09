@@ -246,8 +246,9 @@ fn quiet() -> bool {
 main.wyst:11:10: error: a field read is the only use of a register snapshot
 ```
 
-A read can also be a statement alone. It loads the register and discards
-the value.
+`_ = R.read()` loads the register and drops the snapshot. The read alone
+is not a statement, because `_ = value` is the one statement that drops a
+value.
 
 `.F` has the type of field `F`. An enum field gives a value of its enum,
 which can be a value that no variant has, as

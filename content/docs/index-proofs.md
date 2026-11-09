@@ -1,12 +1,14 @@
 ---
 title: Index proofs
-summary: How the compiler proves each array index before the program runs.
+summary: How the compiler proves each array and slice index before the program runs.
 ---
 
 Each index of an array must be less than the length of the array. The
 compiler proves this at compile time. When it cannot prove an index, the
 build stops. There is no bounds check at run time, so a proved index costs
-nothing.
+nothing. Each index of a slice must be less than the length of the slice,
+and the start and the end of a slice must be in order and in the array or
+the slice that it comes from, as [Slices](#slices) gives.
 
 The same rule applies to an index of an array of devices, as in
 `redistributors[cpu]`. See [Registers and devices](/docs/registers/). When
@@ -206,9 +208,12 @@ fn mark(table: @[4]u64, cursor: @u64) {
 }
 ```
 
-`e` must have a highest value that is a number, such as a constant or a
-mask. A parameter or a module variable as `e` gives no bound now. A
-condition gives no bound to a module variable.
+For an index of an array, `e` must have a highest value that is a
+number, such as a constant or a mask. A parameter or a module variable as
+`e` gives no number. A condition gives no bound to a module variable. A
+local `e` that is not a `var`, such as a parameter or `len(s)`, also
+gives `x` a bound against `e`, which proves an index of a slice, as
+[Slices](#slices) gives.
 
 `x` can also be the sum `a + b` of two parameters, loop variables, or
 `const` locals. The bound then holds for each `a + b` and `b + a` of the
@@ -487,3 +492,138 @@ main.wyst:5:18: error: the checker cannot prove that the index is less than 8
 When a call passes a local `var`, the argument has no proof, so an index
 that uses the parameter gives the error at the call, as
 [Parameters and variables](#parameters-and-variables) gives.
+
+## Slices
+
+The checker must prove that each index `i` of `@s[i]` is less than
+`len(s)`. For a [slice](/docs/addresses/#slices) `@a[x ..< y]`, it must
+prove that `x <= y`, and that `y` is at most `N` for an array `[N]T`, or
+at most `len(a)` for a slice `a`.
+
+The length of a slice is known only at run time, so the proof is a bound
+against a local: a key is less than, or at most, the value of a local
+that is not a `var`, such as `len(s)`. A key is a parameter, a loop
+variable, a `const` local, the length of a slice, or the sum of two of
+them. The key and the local do not change, so the bound holds while they
+are in scope.
+
+When `n` is such a local, `for i in a ..< n` gives `i < n`, and
+`for i in a ..= n` gives `i <= n`. `i` also gets each bound of `n`. Thus
+`for i in 0 ..< len(s)` proves `@s[i]`:
+
+```wyst
+fn clear(bytes: []u8) {
+  for i in 0 ..< len(bytes) {
+    store(@bytes[i], 0)
+  }
+}
+```
+
+A condition gives a bound as it gives a highest value: `x < e`, `x <= e`,
+or `x == e`, with `x` on either side, also after an `if` whose body
+cannot reach its end, and with `&&` and `||`, as [Conditions](#conditions)
+gives:
+
+```wyst
+fn get(bytes: []u8, i: u64) -> u8 {
+  if i >= len(bytes) { return 0 }
+  return load(@bytes[i])
+}
+```
+
+`x` also gets each bound of `e`. Here `len(from)` is at most `len(to)`, so
+`i` is less than `len(to)`:
+
+```wyst
+fn copy(from: []u8, to: []u8) {
+  if len(from) > len(to) { trap() }
+
+  for i in 0 ..< len(from) {
+    store(@to[i], load(@from[i]))
+  }
+}
+```
+
+In the same way, after `if end > len(s) { trap() }`, the variable of
+`for i in start ..< end` is less than `len(s)`. A `const` local keeps the
+bounds of its value, and the length of a slice local keeps the bounds of
+the length of its value. Thus after `const head = @s[..< end]`,
+`len(head)` is at most `len(s)`, and `i < len(head)` also proves `@s[i]`.
+
+A copy of a slice is another slice. For `const other = bytes`,
+`i < len(bytes)` does not prove `@other[i]`:
+
+```wyst fails
+fn mark(bytes: []u8, i: u64) {
+  const other = bytes
+
+  if i < len(bytes) {
+    store(@other[i], 1)
+  }
+}
+```
+
+```text
+main.wyst:5:18: error: the checker cannot prove that the index is less than the length of `other`
+```
+
+`x > c`, `x >= c`, or `x == c`, with `x` on either side, gives a local `x`
+the lowest value `c + 1` or `c`, where `c` is a constant or a local with
+a lowest value. An index or an end with a highest value that is a number
+is correct when it is less than, or at most, the lowest value of the
+length. Thus after `if len(s) < 4 { trap() }`, `@s[3]` and `@s[4 ..]` are
+correct:
+
+```wyst
+fn header(bytes: []u8) -> u64 {
+  if len(bytes) < 4 { trap() }
+
+  const body = @bytes[4 ..]
+  return widen(load(@bytes[3])) + len(body)
+}
+```
+
+`x != c` gives no lowest value, so `if len(s) == 0 { return }` does not
+prove `@s[0]`. `if len(s) < 1 { return }` proves it.
+
+`x <= y` holds when `x` is 0, when `y` is a constant and `x` is at most
+`y`, or when `x` has a bound against the local `y`, as after
+`if x > y { return }`:
+
+```wyst
+fn part(bytes: []u8, from: u64, to: u64) -> []u8 {
+  if to > len(bytes) || from > to { trap() }
+  return @bytes[from ..< to]
+}
+```
+
+Two highest values do not put a start and an end in order:
+
+```wyst fails
+fn part(table: @[4]u8, from: u64, to: u64) -> []u8 {
+  if from > 4 || to > 4 { trap() }
+  return @table[from ..< to]
+}
+```
+
+```text
+main.wyst:3:17: error: the checker cannot prove that the start of the slice is at most its end
+```
+
+An assignment can change a `var`, so a `var` gets no bound, and no bound
+is against a `var`. Thus `@s[i]` with a `var` `i` is an error, also after
+`i < len(s)`:
+
+```wyst fails
+fn clear(bytes: []u8) {
+  var i: u64 = 0
+  for i < len(bytes) {
+    store(@bytes[i], 0)
+    i += 1
+  }
+}
+```
+
+```text
+main.wyst:4:18: error: the checker cannot prove that the index is less than the length of `bytes`
+```

@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, and field_offset.
+summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, and structs with no fields.
 ---
 
 ## Plain structs
@@ -19,10 +19,12 @@ struct Slot {
 
 A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
-[with values](/docs/enums-and-bit-structs/#enums-with-values), a plain
-struct, a [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which
-holds its backing integer, or an array `[N]T` of one of these. Other field
-types are not implemented now:
+[with values](/docs/enums-and-bit-structs/#enums-with-values), an
+[`Option`](/docs/options/#option-fields) of one of these that has no
+values, a plain struct, a
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
+backing integer, or an array `[N]T` of one of these. Other field types
+are not implemented now:
 
 ```wyst fails
 struct Flag {
@@ -31,7 +33,7 @@ struct Flag {
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -77,7 +79,8 @@ A plain struct lays out its fields as C does:
 - Each field starts at the next multiple of its alignment. The alignment
   of `uN` is its size, the alignment of an array is the alignment of its
   element, and the alignment of a struct is the largest alignment of its
-  fields.
+  fields. An `Option<T>` is the tag and the value, each in a word of the
+  width of `T`, so an `Option<u64>` has 16 bytes, with the alignment 8.
 - The size of a struct is a multiple of its alignment.
 
 Thus `Slot` above is 16 bytes. In `Table` below, `marks` starts at byte 2,
@@ -99,8 +102,8 @@ struct Table {
 ```
 
 A struct comes after the structs and the constants that its fields use.
-Thus a struct cannot hold itself. The structs and the constants of an
-imported module come first.
+Thus a struct cannot hold itself. The items of an imported module up to
+the struct or the constant that a field uses come first.
 
 ## Big-endian fields
 
@@ -224,7 +227,8 @@ const broadcast: Ethernet = { destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
 enum of one of these, a plain struct, or, for `size_of`, a `#[bits]`
-struct or an array of them, such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
+struct, an `Option` in memory, such as `Option<u64>`, or an array of them,
+such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
 after the declaration of `T`. A function that uses them can come before
 it.
 
@@ -247,10 +251,62 @@ static_assert(field_offset(Slot, kind) == 12)
 An `asm` block that reads a struct at fixed offsets is an example. If a
 change moves a field, the assertion stops the build.
 
+## Structs with no fields
+
+A plain struct with no fields, such as `struct Mark {}`, is a value with
+no bytes: the type of a parameter, a local `const`, and a result. `{}` is
+its value. It takes no register, so a literal or a local of it makes no
+code, and it does not count in the limit of 8 parameters of a
+[function](/docs/functions/#declaring-a-function).
+
+```wyst
+struct Mark {}
+
+fn mark() -> Mark {
+  return {}
+}
+
+fn both(first: Mark, second: Mark) -> Mark {
+  _ = second
+  return first
+}
+
+fn use_marks() {
+  const first = mark()
+  _ = both(first, {})
+}
+```
+
+`linear` before such a struct makes a value that stands for a duty or a
+proof, such as the lock that the CPU holds, as
+[Lending a linear value](/docs/functions/#lending-a-linear-value) gives.
+A local `var` and an `Option` of a struct with no fields are not
+implemented now, and neither is an argument of it that is a call or an
+`if` or `match` value. `const x = f()` keeps the value of a call:
+
+```wyst fails
+struct Mark {}
+
+fn mark() -> Mark {
+  return {}
+}
+
+fn take(mark: Mark) {}
+
+fn use_mark() {
+  take(mark())
+}
+```
+
+```text
+main.wyst:10:8: error: a call or an `if` or `match` value as an argument of Mark, a struct with no fields, is not implemented now; `const x = value` keeps it
+```
+
 ## What a struct can do now
 
-A plain struct is only the type of memory at an address or of a constant
-table now. A parameter, a local, and a variable cannot hold a struct.
+A plain struct with fields is only the type of memory at an address or
+of a constant table now. A parameter, a local, and a variable cannot hold
+it.
 Code reads and writes each field through the address of the struct, such
 as `load(@slot.kind)`, as [Addresses and memory](/docs/addresses/) shows,
 and `store` writes the full struct from a literal. `load` of a whole

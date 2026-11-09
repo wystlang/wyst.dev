@@ -87,13 +87,15 @@ Two modules can import each other.
 - `m.R.read()`, `m.R.write(...)`, and `m.R.modify(...)` access the `pub`
   system register `R`.
   See [System registers](/docs/system-registers/#sharing-a-register).
-- `m.S` names the `pub` plain struct `S`. See
-  [Structs](/docs/structs/#pub-structs).
+- `m.S` names the `pub` plain struct or `#[bits]` struct `S`. See
+  [Structs](/docs/structs/#pub-structs) and
+  [Enums and bit structs](/docs/enums-and-bit-structs/#pub-and-linear).
 
-A module variable, a register map, a `#[bits]` struct, a device, and the
-vector table are local to their module now. A `pub` register map,
-`#[bits]` struct, or device is not implemented now. A call
-to a function that is not `pub` is an error:
+Only the module that declares a linear type consumes a value of it, also
+when the type is `pub`, as [Linear values](/docs/functions/#linear-values)
+gives. A module variable, a register map, a device, and the vector table
+are local to their module now. A `pub` register map or device is not
+implemented now. A call to a function that is not `pub` is an error:
 
 ```wyst fails
 import drivers.serial
