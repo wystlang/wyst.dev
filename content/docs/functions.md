@@ -9,9 +9,11 @@ summary: Parameters, results, never, results that must be used, linear values an
 is `name: Type`. A function has at most 8 parameters, and they take at
 most 8 registers: an `Option`, an
 [enum with values](/docs/enums-and-bit-structs/#enums-with-values), and
-a [slice](/docs/addresses/#slices) take two, and a
-[struct with no fields](/docs/structs/#structs-with-no-fields) takes
-none, so it does not count. A function without `->` returns no value.
+a [slice](/docs/addresses/#slices) take two, a
+[struct value](/docs/structs/#struct-values) takes one for each field,
+and a [struct with no fields](/docs/structs/#structs-with-no-fields)
+takes none, so it does not count. A function without `->` returns no
+value.
 
 ```wyst
 fn max(a: u64, b: u64) -> u64 {
@@ -25,6 +27,7 @@ fn max(a: u64, b: u64) -> u64 {
 A parameter has a value type, an
 [enum](/docs/enums-and-bit-structs/#enum-values), a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), a
+[struct value](/docs/structs/#struct-values), a
 [struct with no fields](/docs/structs/#structs-with-no-fields), an
 address type, which [Addresses and memory](/docs/addresses/) describes, a
 slice type `[]T`, which [Slices](/docs/addresses/#slices) describes,
@@ -62,9 +65,12 @@ main.wyst:1:16: error: a second parameter `a`
 
 ## Results
 
-A result is a value type, an enum, a `#[bits]` struct, an address type,
-a [slice](/docs/addresses/#slices) type, `Option<T>`, or `never`. A
-function with a result must not reach the end of its body.
+A result is a value type, an enum, a `#[bits]` struct, a
+[struct value](/docs/structs/#struct-values), a struct with no fields,
+an address type, a [slice](/docs/addresses/#slices) type, `Option<T>`,
+or `never`. A result takes at most 8 registers, so a struct result has
+at most 8 fields. A function with a result must not reach the end of its
+body.
 Each path ends with `return`, with a call to a `never` function such as
 `trap()`, with a `for {}` without a `break`, or with an
 [`asm -> never` block](/docs/assembly/#blocks-that-do-not-return). A

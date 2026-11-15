@@ -499,5 +499,7 @@ fn give(descriptor: @Descriptor, buffer: u64) {
 }
 ```
 
-`load` of a whole struct, and `load` and `store` of a whole array, are
-not implemented now.
+`load` of a whole struct gives a [struct value](/docs/structs/#struct-values)
+when each field is an integer, an enum without values, or a `#[bits]`
+struct. `load` of another struct, and `load` and `store` of a whole
+array, are not implemented now.
