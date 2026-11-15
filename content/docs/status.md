@@ -24,10 +24,11 @@ This page lists both sides.
   which drops a value.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
-- Functions with up to 8 parameters in 8 registers, value and `Option`
-  results, `never`, and `#[inline]`. A struct with no fields takes no
-  register. A call result is an operand, an argument, or the value
-  of an assignment.
+- Functions with up to 8 parameters in 8 registers, value, struct, and
+  `Option` results, `never`, and `#[inline]`. A struct value takes one
+  register for each field, and a struct with no fields takes no
+  register. A call result is an operand, an argument, or the value of an
+  assignment.
 - `if` with `else` and `else if`, `match` on an integer, an enum, or an
   enum with values, with `.V(v)` patterns, `if`
   and `match` as values, `for` in five forms, with `..<` and `..=`
@@ -39,8 +40,9 @@ This page lists both sides.
   `.None`, and the check that each path reads an `Option`.
 - Linear `#[bits]` structs and linear structs with no fields, `xfer`
   parameters, which take a linear value, and parameters that lend it.
-- Plain structs, structs with no fields as the type of parameters, local
-  constants, and results, `size_of`, `field_offset`, address types,
+- Plain structs, struct values and structs with no fields as the type of
+  parameters, local constants, and results, struct literals, field reads,
+  `load` of a struct value, `size_of`, `field_offset`, address types,
   address constants, places, `load`, `store`, `store` of a struct literal
   with nested literals, `bitcast`, `widen`, and `truncate`.
 - Constant tables of an array or a plain struct type, with array and
@@ -83,7 +85,7 @@ kernel needs it:
 | Labels and `goto` | Refused. |
 | `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Give the value of `.V(v)` to a local, and compare it. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
-| An `if` or `match` value of an `Option`, of an enum with values, or of a slice | `return` the value in each block of an `if` or `match` statement, or assign an enum with values to a local `var`. |
+| An `if` or `match` value of an `Option`, of an enum with values, of a slice, or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement, or assign an enum with values to a local `var`. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
@@ -102,13 +104,13 @@ kernel needs it:
 | An `Option` local or parameter of a linear type, and a `match` on such an `Option` | Unwrap the `Option` at the call with `else` or `?`. |
 | A local `var`, a module constant, and memory of a linear type | Keep the value in a local `const` or a parameter. |
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
-| A plain struct with fields as a parameter, a local, or a variable | A plain struct with fields is only the type of memory at an address. |
+| A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
-| A struct literal of a plain struct other than the value of `store` or of a constant table, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Store the elements of an array field after the literal. |
+| A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
-| `load` of a struct, and `load` and `store` of an array | Load each field, or store each element. |
+| `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant | Refused. A function that is not `pub` can give an address or a slice, and each module declares its own address constant. |
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |

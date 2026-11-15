@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, and structs with no fields.
+summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, struct values, and structs with no fields.
 ---
 
 ## Plain structs
@@ -42,7 +42,8 @@ A field is visible wherever its type is. Wyst has no private fields.
 
 A struct is local to its module. `pub struct` lets each module that
 imports the module name the struct as `m.S`, as the target of an address,
-the type of a field, and the type of `size_of` and `field_offset`:
+the type of a field, the type of a [value](#struct-values), and the type
+of `size_of` and `field_offset`:
 
 ```wyst ipc/channels.wyst
 pub struct Message {
@@ -302,12 +303,73 @@ fn use_mark() {
 main.wyst:10:8: error: a call or an `if` or `match` value as an argument of Mark, a struct with no fields, is not implemented now; `const x = value` keeps it
 ```
 
-## What a struct can do now
+## Struct values
 
-A plain struct with fields is only the type of memory at an address or
-of a constant table now. A parameter, a local, and a variable cannot hold
-it.
-Code reads and writes each field through the address of the struct, such
-as `load(@slot.kind)`, as [Addresses and memory](/docs/addresses/) shows,
-and `store` writes the full struct from a literal. `load` of a whole
-struct, and a struct literal as another value, are not implemented now.
+A plain struct whose fields are integers, enums without values, or
+`#[bits]` structs is also a value: the type of a parameter, a local
+`const`, and a result. The value takes one register for each field, in
+the order of the declaration, as an `Option` takes two. Thus a struct
+value has at most 8 fields, and a parameter of it counts its fields in
+the 8 registers of the parameters of a
+[function](/docs/functions/#declaring-a-function).
+
+A struct literal gives the value where its position gives the type, and
+each field that it does not name is 0. `v.f` reads field `f` of a local
+or a parameter `v`. `load` of the struct gives the value, with one load
+for each field, and `load(p).f` loads one field:
+
+```wyst
+struct Answer {
+  address: u32
+  option: u32
+}
+
+fn answer(address: u32, option: u32) -> Answer {
+  if option == 0 {
+    return {}
+  }
+  return { address = address, option = option }
+}
+
+fn gateway(kept: @Answer) -> u32 {
+  const copy = load(kept)
+  const leased = answer(copy.address, load(kept).option)
+  return leased.option
+}
+```
+
+A field of a local has the highest value of the value of the field, as a
+local has, so it can be an index, as [Index proofs](/docs/index-proofs/)
+gives. A field of a parameter or of a call has the highest value of its
+type. A field that is big-endian in memory holds the normal integer.
+
+These forms are not implemented now: a value of a struct with a field of
+another type, such as an array, a local `var` of a struct, an `Option` of
+a struct, an `if` or `match` value of a struct, a struct value in a naked
+function, `@` of a struct local or parameter, and the read of a field of
+the struct of a call. `const x = f()` keeps the struct of a call:
+
+```wyst fails
+struct Point {
+  x: u64
+  y: u64
+}
+
+fn origin() -> Point {
+  return {}
+}
+
+fn height() -> u64 {
+  return origin().y
+}
+```
+
+```text
+main.wyst:11:19: error: the read of a field of the struct of a call is not implemented now; `const x = value` keeps the struct
+```
+
+A literal names the fields in any order, but the value has them in the
+order of the declaration. Thus a literal in another order with a call or
+a register read is not implemented now, because the calls and the reads
+would not run in the order of the source. A module variable cannot hold
+a struct, and `store` writes a struct only from a literal now.
