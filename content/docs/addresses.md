@@ -112,35 +112,34 @@ fn count() -> u64 {
 }
 ```
 
-Another value, such as `@own.lines`, is not implemented now. A `pub`
-address constant is not implemented now, as an address result of a `pub`
-function is not:
+Another value, such as `@own.lines`, is not implemented now.
 
-```wyst fails
-const state: u64 = 0x0100_8000
-pub const own: @u64 = bitcast(state)
-```
-
-```text
-main.wyst:2:16: error: a `pub` address constant is not implemented now
-```
-
-Thus a module that needs the address of a `pub` `u64` constant of another
-module declares its own address constant:
+A `pub` address constant gives the address to each module that imports
+its module. `m.c` of the `pub` address constant `c` of module `m` is the
+address, so `@m.c.f` is the address of field `f`:
 
 ```wyst platform/memory.wyst
-pub const shared: u64 = 0x0100_8000
+pub struct Shared {
+  count: u64
+  words: [2]u64
+}
+
+const base: u64 = 0x0100_8000
+
+pub const shared: @Shared = bitcast(base)
+pub const first: @u64 = bitcast(base)
 ```
 
 ```wyst
 import platform.memory
 
-const words: @[2]u64 = bitcast(memory.shared)
-
 fn total() -> u64 {
-  return load(@words[0]) + load(@words[1])
+  return load(memory.first) + load(@memory.shared.words[0]) + load(@memory.shared.words[1])
 }
 ```
+
+The target of a `pub` address constant has the rule of an
+[address result of a `pub` function](#pub-results).
 
 ## Places
 
@@ -223,10 +222,6 @@ it comes from a parameter, from `bitcast`, or from `@c` of a constant
 table. A call statement that drops
 the address is an error, as for a value result.
 
-The result of a `pub` function cannot be an address now. No kernel code
-needs one, and the address of a struct that is not `pub` would give
-another module the fields of that struct.
-
 A result can also be an `Option` of an address. An address is never in
 memory or in a module variable, and a parameter and a local cannot hold
 an `Option` of an address. `else`, `?`, and `match` take it at the call,
@@ -277,8 +272,50 @@ fn keep(domain: u64) {
 main.wyst:10:17: error: an `Option` of an address is only a result, which `else`, `?`, or `match` takes at the call
 ```
 
-As for an address result, the result of a `pub` function cannot be an
-`Option` of an address now.
+### Pub results
+
+The result of a `pub` function can be an address, an `Option` of an
+address, or a [slice](#slices). Another module uses the call as each
+other address. The target is `u8`, `u16`, `u32`, `u64`, `i64`, a `pub`
+struct, or an array of one of these, so no module gets the fields of a
+struct that is not `pub`:
+
+```wyst
+pub struct Slot {
+  object: u64
+  kind: u16
+}
+
+const base: u64 = 0x0100_8000
+
+pub fn slot(i: u64) -> @Slot {
+  const slots: @[4]Slot = bitcast(base)
+  return @slots[i & 3]
+}
+```
+
+Another target, such as an enum or a struct that is not `pub`, is not
+implemented now:
+
+```wyst fails
+struct Point {
+  x: u64
+  y: u64
+}
+
+pub fn same(p: @Point) -> @Point {
+  return p
+}
+```
+
+```text
+main.wyst:6:27: error: an address of `Point` as the result of a `pub` function is not implemented now: the target is `u8`, `u16`, `u32`, `u64`, `i64`, a `pub` struct, or an array of one of these
+```
+
+The compiler infers what the result of a `pub` function can come from, as
+for each other result, so a `store` through the result of a call is an
+error when the result can be the address of a
+[constant table](#read-only-addresses), also in another module.
 
 ## Slices
 
@@ -348,8 +385,7 @@ These forms are not implemented now:
 - a start that is not a constant or a local, such as `@a[x + 1 ..]`;
 - `len(f())` and `@f()[i]` of a call `f()`: `const s = f()` comes first;
 - a local `var`, an `Option`, and an `if` or `match` value of a slice;
-- a slice result of a `pub` function, as for an address result, and a
-  slice parameter of a naked function;
+- a slice parameter of a naked function;
 - a slice of arrays, such as `[][4]u8`.
 
 ## Read-only addresses

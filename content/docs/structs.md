@@ -64,8 +64,8 @@ fn clear(block: @channels.Message) {
 ```
 
 In another module, the name of a struct that is not `pub` gives the error
-``struct `Slot` of module `table` is not `pub` ``. A `pub` register map or
-`#[bits]` struct is not implemented now.
+``struct `Slot` of module `table` is not `pub` ``. A `pub` register map is
+not implemented now.
 
 A struct with `#[register_map]` declares the registers of a device, and a
 struct with `#[bits]` names the bits of an integer. They are not plain
