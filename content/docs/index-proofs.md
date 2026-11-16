@@ -36,6 +36,8 @@ The checker knows the highest value of:
   [Results](#results) gives;
 - a load of a `u8`, `u16`, or `u32`, which has only the highest value of
   its type;
+- a load of a field with a limit `n`, which is `n - 1`, as
+  [Fields with a limit](/docs/structs/#fields-with-a-limit) gives;
 - a `const` local, which keeps the proof of its value;
 - the operators in [Operators](#operators).
 
@@ -74,8 +76,9 @@ fn clear(table: @[4]u64, cursor: @u8) {
 ```
 
 Hostile code or a device can write the memory, so a load of a `u8`,
-`u16`, or `u32` has only the highest value of its type. A `u8` from
-memory is at most 255:
+`u16`, or `u32` has only the highest value of its type. The load of a
+field with a limit is the one exception, because it traps on a value that
+is not below the limit. A `u8` from memory is at most 255:
 
 ```wyst
 fn mark(table: @[256]u64, cursor: @u8) {

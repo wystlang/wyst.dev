@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, struct values, and structs with no fields.
+summary: Plain structs, their layout in memory, struct literals, big-endian fields, fields with a limit, size_of, field_offset, struct values, and structs with no fields.
 ---
 
 ## Plain structs
@@ -198,6 +198,64 @@ struct Header {
 ```text
 main.wyst:2:5: error: a big-endian field is `u16`, `u32`, or `u64`, not u8
 ```
+
+## Fields with a limit
+
+`#[below(n)]` before a field of type `u8`, `u16`, `u32`, or `u64`, or of
+an array of one of these, gives each value of the field the limit `n`, a
+constant from 1 to the highest value of the type. A `load` of the field
+traps when the value is not below `n`, as `trap()` does, so the value of
+the load is below `n`, and it proves an index, as
+[What the checker knows](/docs/index-proofs/#what-the-checker-knows)
+gives. Thus the code needs no test of its own after the load:
+
+```wyst
+const slots: u64 = 16
+
+// The strip of a shell. Only this module writes it.
+struct Strip {
+  #[below(slots)] focus: u64
+  #[below(slots)] order: [slots]u8
+}
+
+fn focused(strip: @Strip, names: @[slots]u64) -> u64 {
+  return load(@names[load(@strip.focus)])
+}
+
+fn follow(strip: @Strip, place: u64) {
+  store(@strip.focus, widen(load(@strip.order[place & (slots - 1)])))
+}
+```
+
+Hostile code or a device can write the memory, so the load tests the
+value: one compare and one branch, as `/` tests its divisor. A field
+whose bad value must not stop the code, such as a count in a message of
+another domain, has no limit, and the code tests its value. The
+attribute does not change the layout.
+
+The value of the field in a `store`, in a struct literal, and in a
+constant table needs a proof that it is below `n`, as an index does. A
+`u64` from memory has no such proof:
+
+```wyst fails
+struct Strip {
+  #[below(16)] focus: u64
+}
+
+fn choose(strip: @Strip, chosen: @u64) {
+  store(@strip.focus, load(chosen))
+}
+```
+
+```text
+main.wyst:6:23: error: the checker cannot prove that the value of a field with a limit is less than 16
+```
+
+The address `@p.f` of a field with a limit keeps the limit, as the
+address of a big-endian field keeps the byte order. It is not a `@u64`,
+because a store through such an address would need no proof. A limit on
+an `i64` field, and a big-endian field with a limit, are not implemented
+now.
 
 ## Struct literals
 

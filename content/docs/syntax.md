@@ -94,9 +94,11 @@ form of `Field` is valid only in a `#[register_map] struct`; its second
 name is `readonly`, `writeonly`, or `readwrite`, and a `[N]` before it
 declares a bank of N registers. The `Bits` form of
 `Field` and the `:` type of a struct are valid only in a `#[bits] struct`.
-An attribute before a field or a register can only be `#[big_endian]`, as
-[Structs](/docs/structs/#big-endian-fields) and
-[Registers and devices](/docs/registers/#big-endian-registers) give. An
+An attribute before a field can only be `#[big_endian]` or `#[below(n)]`,
+as [Structs](/docs/structs/#big-endian-fields) and
+[Fields with a limit](/docs/structs/#fields-with-a-limit) give, and one
+before a register can only be `#[big_endian]`, as
+[Registers and devices](/docs/registers/#big-endian-registers) gives. An
 attribute before a bit field is an error.
 Only a `#[mmio(address)]` or `#[sysreg]` `const` has no initializer.
 

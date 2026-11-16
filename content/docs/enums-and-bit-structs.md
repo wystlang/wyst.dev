@@ -38,7 +38,9 @@ of the enum.
 
 `==` and `!=` compare two values of one enum, also of an
 [enum with values](#enums-with-values). A variant takes the enum of the
-other operand, on either side:
+other operand. A variant without a value can be either operand, and a
+variant with a value only the right operand, as
+[Enums with values](#enums-with-values) gives:
 
 ```wyst
 enum Granule: u2 {
@@ -218,7 +220,8 @@ they have the same tag, and the variant of the tag has no value or their
 values are equal. A value from memory keeps only the bits of the type of
 the value of its variant, as for `match`, and a tag that no variant has
 holds no value. `x == .V` of a variant without a value reads only the tag
-of `x`:
+of `x`. `.V(v) == x`, with the variant with a value as the left operand,
+is not implemented now: write `x == .V(v)`, as `closing` does:
 
 ```wyst
 enum Button: u8 {

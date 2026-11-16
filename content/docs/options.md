@@ -142,8 +142,9 @@ a `load`, and an `if` or `match` value.
 
 `==` and `!=` compare two `Option` values of one type. `.None` is equal
 only to `.None`, and `.Some(a)` is equal to `.Some(b)` when `a == b`. A
-variant takes its type from the other operand, on either side, as in
-`find(table, key) != .None`:
+variant takes its type from the other operand, as in
+`find(table, key) != .None`. `.None` can be either operand, and
+`.Some(v)` only the right operand, as the end of this section gives:
 
 ```wyst
 const slots: u64 = 8
@@ -193,6 +194,21 @@ fn same() -> bool {
 
 ```text
 main.wyst:10:20: error: expected Option<u64>, found Option<u8>
+```
+
+A variant takes its type from the other operand, so the checker checks
+the right operand first, but the code computes the left operand first.
+Thus `.Some(v)` as the left operand of `==` or `!=` is not implemented
+now:
+
+```wyst fails
+fn first(found: Option<u64>) -> bool {
+  return .Some(0) == found
+}
+```
+
+```text
+main.wyst:2:10: error: a variant with a value as the left operand of `==` is not implemented now; write `x == .Some(v)`
 ```
 
 ## Must-use

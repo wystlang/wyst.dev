@@ -60,12 +60,14 @@ This page lists both sides.
   slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
   writes through a slice of a table.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
+- `#[below(n)]` fields of plain structs: a load traps on a value that is
+  not below `n`, and a store needs a proof of its value.
 - `bool` fields of plain structs and other memory of a `bool`: one byte,
   in which each value other than 0 is `true`.
 - Index proofs from constants, masks and other operators, field widths,
-  range loops, conditions, `match` arms, `if` and `match` values, calls,
-  and writes, and the proofs of slices from bounds against a local and
-  lowest values.
+  loads of fields with a limit, range loops, conditions, `match` arms,
+  `if` and `match` values, calls, and writes, and the proofs of slices
+  from bounds against a local and lowest values.
 - Enums as the type of bit fields, constants, parameters, locals, local
   `var`s, results, and fields of plain structs, `pub` enums, enums with
   values as the type of parameters, locals, local `var`s, results, and
@@ -95,6 +97,7 @@ kernel needs it:
 | Labels and `goto` | Refused. |
 | `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Compare the value with `==`, as in `x == .Row(0)`, or give the value of `.V(v)` to a local, and compare it. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
+| A variant with a value as the left operand of `==` or `!=`, such as `.Some(v) == x` | Write `x == .Some(v)`. A variant without a value, such as `.None`, can be either operand. |
 | An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than a `bool`, an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
@@ -135,6 +138,7 @@ kernel needs it:
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
 | A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |
 | A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
+| A limit on an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
 | A variant with two or more values, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
 | `load` of an enum with values or of an `Option` at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
