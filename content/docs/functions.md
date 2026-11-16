@@ -67,8 +67,8 @@ main.wyst:1:16: error: a second parameter `a`
 
 A result is a value type, an enum, a `#[bits]` struct, a
 [struct value](/docs/structs/#struct-values), a struct with no fields,
-an address type, a [slice](/docs/addresses/#slices) type, `Option<T>`,
-or `never`. A result takes at most 8 registers, so a struct result has
+an address type, a [slice](/docs/addresses/#slices) type,
+[`string`](/docs/values/#strings), `Option<T>`, or `never`. A result takes at most 8 registers, so a struct result has
 at most 8 fields. A function with a result must not reach the end of its
 body.
 Each path ends with `return`, with a call to a `never` function such as

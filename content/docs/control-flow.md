@@ -255,6 +255,27 @@ The highest value of an `if` or `match` value is the largest of those of
 its blocks, so the value can be an index, as
 [Index proofs](/docs/index-proofs/#conditions) shows.
 
+The value can also be an `Option`, as
+[Optional values](/docs/options/#option-values) shows, or an enum with
+values. Such a value takes two registers, as the result of a call does,
+and a variant takes its type from the position:
+
+```wyst
+enum Shape: u8 {
+  Empty = 0
+  Dot(u8) = 1
+  Line(u64) = 2
+}
+
+fn shape(length: u64) -> Shape {
+  return match length {
+    0 { .Empty }
+    1 { .Dot(1) }
+    _ { .Line(length) }
+  }
+}
+```
+
 ## for
 
 `for` is the one loop. The compiler implements five forms of it now.
@@ -330,8 +351,7 @@ fn add_through(first: u64, last: u64) -> u64 {
 ```
 
 `for byte in text {}` runs its body one time for each byte of `text`, a
-string literal or a `string` parameter, as
-[Values and types](/docs/values/#strings) shows.
+`string` value, as [Values and types](/docs/values/#strings) shows.
 
 `for x in s {}` runs its body one time for each element of the
 [slice](/docs/addresses/#slices) `s`, in order. Each pass loads its
@@ -400,6 +420,10 @@ statement after `break` or `continue` is an error.
 `return` has no value. A function that returns `never` cannot use
 `return`. A statement after `return` is an error.
 
+`return value else { ... }` returns the value of `.Some` of an `Option`,
+and runs the `else` block for `.None`, as
+[Optional values](/docs/options/#unwrap-with-else) shows.
+
 When `value` is `.None`, `value?` also returns `.None`, as
 [Optional values](/docs/options/#the-operator) shows.
 
@@ -415,5 +439,4 @@ now:
   `for x in @a[0 ..]` gives;
 - `for x in s` over a slice of a type other than an integer, an enum
   without values, or a `#[bits]` struct;
-- an `if` or `match` value of an `Option`, of an enum with values, or of
-  a slice.
+- an `if` or `match` value of a slice or of a plain struct with fields.

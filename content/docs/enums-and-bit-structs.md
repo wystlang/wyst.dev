@@ -155,12 +155,12 @@ without values of `u8` to `u64`, so that memory holds it. A variant with
 two or more values is not implemented now.
 
 An enum with values is the type of a parameter, a local `const` or `var`,
-a result, a field of a plain struct, an element of an array, and the
-target of an address. As a value, it takes two registers, as an `Option`
-does: the tag, and the value of its variant. `.None`, a variant without a
-value, gives the value 0. In memory, it is a struct of the tag and the
-value, which starts at the next multiple of the alignment of the widest
-value, so `Button` has 16 bytes:
+a result, an `if` or `match` value, a field of a plain struct, an element
+of an array, and the target of an address. As a value, it takes two
+registers, as an `Option` does: the tag, and the value of its variant.
+`.None`, a variant without a value, gives the value 0. In memory, it is a
+struct of the tag and the value, which starts at the next multiple of the
+alignment of the widest value, so `Button` has 16 bytes:
 
 ```wyst
 enum Button: u8 {
@@ -231,8 +231,8 @@ main.wyst:7:12: error: `==` takes no enum with values, found Button; `match` tak
 ```
 
 A bit field holds only an enum without values. A module constant, a value
-in a constant table, an `Option` of an enum with values, and an `if` or
-`match` value of one are not implemented now.
+in a constant table, and an `Option` of an enum with values are not
+implemented now.
 
 ## Enum constants
 
@@ -521,6 +521,25 @@ fn map(entry: entries.Entry) {}
 
 ```text
 main.wyst:3:23: error: struct `Entry` of module `platform.entries` is not `pub`
+```
+
+Thus a `pub` function that takes or gives a value of such a struct, also
+in an `Option`, and a `pub` constant or constant table of it, are not
+implemented now, because each would give another module the fields of
+the struct, as for a plain struct in
+[pub structs](/docs/structs/#pub-structs). Make the struct `pub`:
+
+```wyst fails
+#[bits]
+struct Mode: u32 {
+  READY: bool at 0
+}
+
+pub const ready: Mode = { READY = true }
+```
+
+```text
+main.wyst:6:18: error: a `pub` constant of struct `Mode`, which is not `pub`, is not implemented now
 ```
 
 A `linear` register map is an error, because a register map is not a
