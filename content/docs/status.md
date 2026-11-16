@@ -43,8 +43,9 @@ This page lists both sides.
 - Plain structs, struct values and structs with no fields as the type of
   parameters, local constants, and results, struct literals, field reads,
   `load` of a struct value, `size_of`, `field_offset`, address types,
-  address constants, places, `load`, `store`, `store` of a struct literal
-  with nested literals, `bitcast`, `widen`, and `truncate`.
+  address constants, also `pub`, address and slice results of `pub`
+  functions, places, `load`, `store`, `store` of a struct literal with
+  nested literals, `bitcast`, `widen`, and `truncate`.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
@@ -106,13 +107,14 @@ kernel needs it:
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
+| A value of a plain struct that is not `pub` as a parameter or a result of a `pub` function | Make the struct `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
-| `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. |
+| `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
-| An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant | Refused. A function that is not `pub` can give an address or a slice, and each module declares its own address constant. |
+| An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than `u8`, `u16`, `u32`, `u64`, `i64`, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
 | `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |

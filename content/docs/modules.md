@@ -79,7 +79,9 @@ Two modules can import each other.
 `pub` exports a name. Another module can use only these names of a module:
 
 - `m.f(...)` calls the `pub` function `f` of module `m`.
-- `m.name` gives the value of the `pub` constant `name`.
+- `m.name` gives the value of the `pub` constant `name`, also of an
+  address constant, such as `@m.name.f`. See
+  [Addresses](/docs/addresses/#address-constants).
 - `m.E` names the `pub` enum `E`. See
   [Enums and bit structs](/docs/enums-and-bit-structs/#enum-constants).
 - `@m.f` gives the address of the `pub` naked function `f`. See
@@ -90,6 +92,36 @@ Two modules can import each other.
 - `m.S` names the `pub` plain struct or `#[bits]` struct `S`. See
   [Structs](/docs/structs/#pub-structs) and
   [Enums and bit structs](/docs/enums-and-bit-structs/#pub-and-linear).
+
+A `pub` function can give an address, an `Option` of an address, or a
+slice of an integer, of a `pub` struct, or of an array of one of these,
+as [Addresses](/docs/addresses/#pub-results) gives. Another module uses
+the address as its own:
+
+```wyst memory/pages.wyst
+pub struct Page {
+  owner: u64
+  count: u64
+}
+
+const base: u64 = 0x4100_0000
+
+pub const first: @Page = bitcast(base)
+
+pub fn page(i: u64) -> @Page {
+  const pages: @[16]Page = bitcast(base)
+  return @pages[i & 15]
+}
+```
+
+```wyst
+import memory.pages
+
+fn take(i: u64) {
+  store(@pages.page(i).owner, 1)
+  store(@pages.first.count, 0)
+}
+```
 
 Only the module that declares a linear type consumes a value of it, also
 when the type is `pub`, as [Linear values](/docs/functions/#linear-values)

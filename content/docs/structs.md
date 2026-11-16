@@ -64,8 +64,8 @@ fn clear(block: @channels.Message) {
 ```
 
 In another module, the name of a struct that is not `pub` gives the error
-``struct `Slot` of module `table` is not `pub` ``. A `pub` register map or
-`#[bits]` struct is not implemented now.
+``struct `Slot` of module `table` is not `pub` ``. A `pub` register map is
+not implemented now.
 
 A struct with `#[register_map]` declares the registers of a device, and a
 struct with `#[bits]` names the bits of an integer. They are not plain
@@ -283,7 +283,10 @@ proof, such as the lock that the CPU holds, as
 [Lending a linear value](/docs/functions/#lending-a-linear-value) gives.
 A local `var` and an `Option` of a struct with no fields are not
 implemented now, and neither is an argument of it that is a call or an
-`if` or `match` value. `const x = f()` keeps the value of a call:
+`if` or `match` value. `load` of a struct with no fields is not
+implemented now either, because it would make no code, and the code of
+its address, which can trap, would not run. `{}` gives the value.
+`const x = f()` keeps the value of a call:
 
 ```wyst fails
 struct Mark {}
@@ -340,8 +343,27 @@ fn gateway(kept: @Answer) -> u32 {
 
 A field of a local has the highest value of the value of the field, as a
 local has, so it can be an index, as [Index proofs](/docs/index-proofs/)
-gives. A field of a parameter or of a call has the highest value of its
-type. A field that is big-endian in memory holds the normal integer.
+gives. A field of a load, as `load(p).f` or a field of a local that
+holds a load, has the highest value of its type. The checker knows no
+highest value of a field of a parameter or of a call now, so such a
+field needs a mask or a condition before it is an index:
+
+```wyst fails
+struct Slot {
+  index: u64
+}
+
+fn clear(table: @[8]u64, slot: Slot) {
+  store(@table[slot.index], 0)
+}
+```
+
+```text
+main.wyst:6:16: error: the checker cannot prove that the index is less than 8
+```
+
+`slot.index & 7` is at most 7, so it proves the index. A field that is
+big-endian in memory holds the normal integer.
 
 These forms are not implemented now: a value of a struct with a field of
 another type, such as an array, a local `var` of a struct, an `Option` of
@@ -373,3 +395,23 @@ order of the declaration. Thus a literal in another order with a call or
 a register read is not implemented now, because the calls and the reads
 would not run in the order of the source. A module variable cannot hold
 a struct, and `store` writes a struct only from a literal now.
+
+A parameter or a result of a `pub` function that is a value of a struct
+that is not `pub` is not implemented now, because it would give another
+module the fields of that struct. Make the struct `pub`, as
+[pub structs](#pub-structs) gives:
+
+```wyst fails
+struct Point {
+  x: u64
+  y: u64
+}
+
+pub fn moved(by: u64, p: Point) -> u64 {
+  return p.x + by
+}
+```
+
+```text
+main.wyst:6:26: error: a value of struct `Point`, which is not `pub`, in a `pub` function is not implemented now
+```
