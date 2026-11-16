@@ -16,7 +16,9 @@ This page lists both sides.
   structs, and system registers.
 - The value types `bool`, `u8`, `u16`, `u32`, `u64`, and `i64`, and
   `never`.
-- `string` parameters, with a string literal as the argument.
+- `string` parameters, local constants, results, and `if` and `match`
+  values, and `len(s)` and `@s[i]` of a `string` local or parameter, with
+  a proof of the index.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -97,8 +99,8 @@ kernel needs it:
 | An `Option` in memory of a type other than an integer or an enum without values, such as `Option<bool>`, and a value of an `Option` in a constant table | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
-| `string` as the type of a local, a variable, a field, or a result, and a `string` parameter of the entry or of a naked function | `string` is only the type of a parameter of a function that a call starts. Give the string literal as the argument. |
-| An index of a `string`, such as `text[0]` | A `for` loop on the `string` visits each byte. |
+| `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry or of a naked function | Use a local `const`, a parameter of a function that a call starts, or a result. |
+| A slice of a `string`, such as `@s[1 ..]`, and `len` and a byte of a `string` that is not a local or a parameter, such as `len(f())` | Use `@s[i]`, and put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |
@@ -108,6 +110,7 @@ kernel needs it:
 | A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
 | A value of a plain struct that is not `pub` as a parameter or a result of a `pub` function | Make the struct `pub`. |
+| A field of a `pub` struct whose type is a plain struct or a `#[bits]` struct that is not `pub`, or an array of one | Make the struct of the field `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |

@@ -67,6 +67,26 @@ In another module, the name of a struct that is not `pub` gives the error
 ``struct `Slot` of module `table` is not `pub` ``. A `pub` register map is
 not implemented now.
 
+Each module that imports the module uses each field of a `pub` struct, so
+a field of a plain struct or of a `#[bits]` struct that is not `pub`, or
+of an array of one, would give it the fields of that struct. Such a field
+is not implemented now:
+
+```wyst fails
+struct Hidden {
+  secret: u64
+}
+
+pub struct Record {
+  count: u64
+  hidden: [2]Hidden
+}
+```
+
+```text
+main.wyst:7:11: error: struct `Hidden`, which is not `pub`, as a field of a `pub` struct is not implemented now
+```
+
 A struct with `#[register_map]` declares the registers of a device, and a
 struct with `#[bits]` names the bits of an integer. They are not plain
 structs. See [Registers and devices](/docs/registers/) and

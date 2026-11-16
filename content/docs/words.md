@@ -38,7 +38,7 @@ name. A field and an argument can.
 | --- | --- | --- |
 | `bool`, `u8`, `u16`, `u32`, `u64` | Value types. | yes |
 | `i64` | The signed 64-bit integer, a value type. | yes |
-| `string` | A string value. | as the type of a parameter |
+| `string` | A string value. | as the type of a parameter, a local `const`, a result, and an `if` or `match` value; not as a local `var`, a module variable, a module constant, or a field |
 | `never` | The type of a function that does not return. | yes |
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |

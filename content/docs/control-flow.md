@@ -330,8 +330,7 @@ fn add_through(first: u64, last: u64) -> u64 {
 ```
 
 `for byte in text {}` runs its body one time for each byte of `text`, a
-string literal or a `string` parameter, as
-[Values and types](/docs/values/#strings) shows.
+`string` value, as [Values and types](/docs/values/#strings) shows.
 
 `for x in s {}` runs its body one time for each element of the
 [slice](/docs/addresses/#slices) `s`, in order. Each pass loads its

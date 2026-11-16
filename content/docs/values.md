@@ -200,10 +200,12 @@ A string literal is a sequence of bytes. It has no zero byte at its end,
 as a C string has. The escapes are `\n`, `\r`, `\t`, `\0`, `\\`, `\"`, and
 `\x` with two hexadecimal digits.
 
-A string literal has the type `string`. `string` is only the type of a
-parameter now, so a string literal is the argument of a `string` parameter,
-the head of a `for` loop, or the operand of `bitcast`, which gives its
-address as a `u64`, as [Addresses and memory](/docs/addresses/#bitcast)
+A string literal has the type `string`, and so does a parameter, a local
+`const`, a result, and an `if` or `match` value. A `string` value is one
+register: the address of its length, which its bytes follow, as
+[Code generation](/docs/code-generation/) gives. It is an argument, the
+head of a `for` loop, or the operand of `bitcast`, which gives its address
+as a `u64`, as [Addresses and memory](/docs/addresses/#bitcast)
 describes. A `for` loop on a `string` visits each byte as a `u8`:
 
 ```wyst
@@ -217,23 +219,62 @@ fn checksum(text: string) -> u8 {
   return sum
 }
 
+fn greeting(night: bool) -> string {
+  return if night { "Good night\n" } else { "Hello\n" }
+}
+
 fn check() -> u8 {
-  return checksum("Wyst\n")
+  const text = greeting(false)
+  return checksum(text)
 }
 ```
 
-A local, a variable, a field, and a result cannot have the type `string`
-now. `string` takes no type arguments, and memory at an address is not a
-`string` now, so `string<u8>` and `@string` are errors too:
+`len(s)` gives the length of the `string` local or parameter `s`, a `u64`,
+and `@s[i]` gives the address of its byte `i`, a `@u8`. The compiler must
+prove that `i` is less than `len(s)`, as for an index of a slice, which
+[Index proofs](/docs/index-proofs/#strings) describes:
+
+```wyst
+fn first(text: string) -> u8 {
+  if len(text) < 1 {
+    return 0
+  }
+  return load(@text[0])
+}
+```
+
+A string is read-only data, as a
+[constant table](/docs/addresses/#read-only-addresses) is, so a `store`
+through the address of one of its bytes is an error:
 
 ```wyst fails
-fn greet() {
-  const text = "hello\n"
+fn shout(text: string) {
+  if len(text) < 1 {
+    return
+  }
+
+  store(@text[0], 'A')
 }
 ```
 
 ```text
-main.wyst:2:16: error: `string` is only the type of a parameter now
+main.wyst:6:9: error: `store` cannot write through this address: it can be the address of a byte of a string, which is read-only data
+```
+
+A local `var`, a module variable, a module constant, a field, and an
+`Option` cannot be a `string` now, and neither can a slice of a string,
+such as `@s[1 ..]`. `string` takes no type arguments, and memory at an
+address is not a `string` now, so `string<u8>` and `@string` are errors
+too:
+
+```wyst fails
+fn greet() {
+  var text = "hello\n"
+}
+```
+
+```text
+main.wyst:2:14: error: a local `var` that holds string is not implemented now
 ```
 
 ## Discarding a value
