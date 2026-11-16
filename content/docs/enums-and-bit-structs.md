@@ -523,5 +523,24 @@ fn map(entry: entries.Entry) {}
 main.wyst:3:23: error: struct `Entry` of module `platform.entries` is not `pub`
 ```
 
+Thus a `pub` function that takes or gives a value of such a struct, also
+in an `Option`, and a `pub` constant or constant table of it, are not
+implemented now, because each would give another module the fields of
+the struct, as for a plain struct in
+[pub structs](/docs/structs/#pub-structs). Make the struct `pub`:
+
+```wyst fails
+#[bits]
+struct Mode: u32 {
+  READY: bool at 0
+}
+
+pub const ready: Mode = { READY = true }
+```
+
+```text
+main.wyst:6:18: error: a `pub` constant of struct `Mode`, which is not `pub`, is not implemented now
+```
+
 A `linear` register map is an error, because a register map is not a
 value.

@@ -87,6 +87,12 @@ pub struct Record {
 main.wyst:7:11: error: struct `Hidden`, which is not `pub`, as a field of a `pub` struct is not implemented now
 ```
 
+For the same reason, these uses of a plain struct or a `#[bits]` struct
+that is not `pub` are not implemented now: a value of it in a `pub`
+function, as [Struct values](#struct-values) gives; a `pub` constant
+table of it, or of an array of it; and a `pub` constant of a `#[bits]`
+one.
+
 A struct with `#[register_map]` declares the registers of a device, and a
 struct with `#[bits]` names the bits of an integer. They are not plain
 structs. See [Registers and devices](/docs/registers/) and
@@ -416,10 +422,11 @@ a register read is not implemented now, because the calls and the reads
 would not run in the order of the source. A module variable cannot hold
 a struct, and `store` writes a struct only from a literal now.
 
-A parameter or a result of a `pub` function that is a value of a struct
-that is not `pub` is not implemented now, because it would give another
-module the fields of that struct. Make the struct `pub`, as
-[pub structs](#pub-structs) gives:
+A parameter or a result of a `pub` function that is a value of a plain
+struct or of a `#[bits]` struct that is not `pub`, also in an `Option`,
+is not implemented now, because it would give another module the fields
+of that struct. Make the struct `pub`, as [pub structs](#pub-structs)
+gives:
 
 ```wyst fails
 struct Point {
