@@ -36,8 +36,9 @@ shows.
 An `Option` takes two registers: the tag, 0 for `None` and not 0 for
 `Some`, and the value of `Some`. `.Some(v)` gives the tag 1, and a `load`
 gives the tag that memory holds. Thus an `Option` parameter takes two of
-the 8 parameter registers. No operator takes an `Option`: `else`, `?`, and
-`match` take its value.
+the 8 parameter registers. `else`, `?`, and `match` take its value, and
+`==` and `!=` compare two of them, as [Compare options](#compare-options)
+shows. No other operator takes an `Option`.
 
 ## Unwrap with else
 
@@ -137,15 +138,72 @@ arm runs for that variant. A `match` value has an arm for each variant,
 or `_`. `match` also takes a call directly, as `match pick(x + 1)` does,
 a `load`, and an `if` or `match` value.
 
+## Compare options
+
+`==` and `!=` compare two `Option` values of one type. `.None` is equal
+only to `.None`, and `.Some(a)` is equal to `.Some(b)` when `a == b`. A
+variant takes its type from the other operand, on either side, as in
+`find(table, key) != .None`:
+
+```wyst
+const slots: u64 = 8
+
+fn find(table: @[slots]u64, key: u64) -> Option<u64> {
+  for i in 0 ..< slots {
+    if load(@table[i]) == key {
+      return .Some(i)
+    }
+  }
+  return .None
+}
+
+fn present(table: @[slots]u64, key: u64) -> bool {
+  return find(table, key) != .None
+}
+
+fn first(table: @[slots]u64, key: u64) -> bool {
+  return find(table, key) == .Some(0)
+}
+
+fn together(table: @[slots]u64, a: u64, b: u64) -> bool {
+  return find(table, a) == find(table, b)
+}
+```
+
+The value of `.Some` has a type that `==` takes: an integer, an enum
+without values, or a `#[bits]` struct that is not linear. Each tag that is
+not 0 is `.Some`, also a tag from memory, and `x == .None` reads only the
+tag of `x`. Else the code computes the tag and the value of each operand,
+from left to right, also the value `v` of `.Some(v)` when the other
+operand gives `.None`. Operands of two types are an error:
+
+```wyst fails
+fn wide() -> Option<u64> {
+  return .None
+}
+
+fn narrow() -> Option<u8> {
+  return .None
+}
+
+fn same() -> bool {
+  return wide() == narrow()
+}
+```
+
+```text
+main.wyst:10:20: error: expected Option<u64>, found Option<u8>
+```
+
 ## Must-use
 
 An `Option` must be used. A path from an `Option` local or parameter to
 the end of its block, or to a `return`, a `?`, a `break`, or a `continue`
-that leaves its block, must read it: with `else`, `?`, or `match`, as an
-argument, as the value of `return`, or as the value of another local. A
-path that calls a `never` function, such as `trap()`, needs no read. A
-loop body can run no time, and the code can skip the right operand of
-`&&` and `||`, so a read there does not count for a local outside it.
+that leaves its block, must read it: with `else`, `?`, `match`, `==`, or
+`!=`, as an argument, as the value of `return`, or as the value of another
+local. A path that calls a `never` function, such as `trap()`, needs no
+read. A loop body can run no time, and the code can skip the right operand
+of `&&` and `||`, so a read there does not count for a local outside it.
 `_ = value` and a parameter `_` cannot drop an `Option`.
 
 ```wyst fails
@@ -289,10 +347,7 @@ fn enter(slot: u64) {
 }
 
 fn outlined(slot: u64) -> bool {
-  return match load(@own.hover) {
-    .Some(hover) { hover == slot }
-    .None { false }
-  }
+  return load(@own.hover) == .Some(slot)
 }
 
 fn release(key: u64) -> Option<u8> {
@@ -307,15 +362,16 @@ fn release(key: u64) -> Option<u8> {
 }
 ```
 
-`load` gives the `Option` in memory, and `match`, `else`, `?`, a local, an
-argument, and `return` take it. `match`, `else`, and `?` test the tag, and
-load the value only for `.Some`. `store` writes the tag and the value,
-each in its full word: `.Some(v)` writes 1 and `v`, and `.None` writes 0
-in each byte. A value from a `load`, a call, an `asm` block, a local, or
-a parameter also writes 1 and the value for `.Some`, and 0 in each byte
-for `.None`. Thus a message that another domain reads keeps no old byte. A
-[struct literal](/docs/structs/#struct-literals) can name an `Option`
-field, as in `store(own, { count = 1, hover = .Some(3) })`.
+`load` gives the `Option` in memory, and `match`, `else`, `?`, `==`, `!=`,
+a local, an argument, and `return` take it. `match`, `else`, and `?` test
+the tag, and load the value only for `.Some`. `store` writes the tag and
+the value, each in its full word: `.Some(v)` writes 1 and `v`, and
+`.None` writes 0 in each byte. A value from a `load`, a call, an `asm`
+block, a local, or a parameter also writes 1 and the value for `.Some`,
+and 0 in each byte for `.None`. Thus a message that another domain reads
+keeps no old byte. A [struct literal](/docs/structs/#struct-literals) can
+name an `Option` field, as in
+`store(own, { count = 1, hover = .Some(3) })`.
 
 `load` reads the tag and then the value, and computes the address for
 each read, so an address with a call or a register read is not

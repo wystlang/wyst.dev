@@ -36,8 +36,9 @@ of the enum type. It does not take an integer, so code cannot write a
 reserved value that has no variant. A read of an enum field gives a value
 of the enum.
 
-`==` and `!=` compare two values of one enum. A variant takes the enum of
-the other operand, on either side:
+`==` and `!=` compare two values of one enum, also of an
+[enum with values](#enums-with-values). A variant takes the enum of the
+other operand, on either side:
 
 ```wyst
 enum Granule: u2 {
@@ -188,7 +189,7 @@ writes the bytes of the value that the `load` read, also for a variant
 without a value. A `load` gives the tag and the value as they are, so a
 tag that no variant has goes to the arm `_` of a `match`.
 
-Only `match` takes the tag and the value. `.V(v)` gives the value of `V`
+`match` takes the tag and the value. `.V(v)` gives the value of `V`
 to the new local `v`, or to no local with `.V(_)`. An arm with two or more
 patterns gives the same local in each pattern, or no local:
 
@@ -212,8 +213,39 @@ fn slot_of(state: @State) -> u64 {
 }
 ```
 
-`==`, `!=`, each other operator, and `widen` take only an enum without
-values, so code compares two buttons with `match`:
+`==` and `!=` compare two values of the enum. Two values are equal when
+they have the same tag, and the variant of the tag has no value or their
+values are equal. A value from memory keeps only the bits of the type of
+the value of its variant, as for `match`, and a tag that no variant has
+holds no value. `x == .V` of a variant without a value reads only the tag
+of `x`:
+
+```wyst
+enum Button: u8 {
+  None = 0
+  Back(u64) = 1
+  Close(u64) = 2
+  Open = 3
+}
+
+struct State {
+  pushed: Button
+}
+
+fn pushed(state: @State, button: Button) -> bool {
+  return load(@state.pushed) == button
+}
+
+fn closing(state: @State, slot: u64) -> bool {
+  return load(@state.pushed) == .Close(slot)
+}
+
+fn idle(state: @State) -> bool {
+  return load(@state.pushed) == .None
+}
+```
+
+Each other operator and `widen` take only an enum without values:
 
 ```wyst fails
 enum Button: u8 {
@@ -221,13 +253,13 @@ enum Button: u8 {
   Back(u64) = 1
 }
 
-fn same(a: Button, b: Button) -> bool {
-  return a == b
+fn before(a: Button, b: Button) -> bool {
+  return a < b
 }
 ```
 
 ```text
-main.wyst:7:12: error: `==` takes no enum with values, found Button; `match` takes it
+main.wyst:7:12: error: `<` needs integers, found Button; an enum takes only `==` and `!=`
 ```
 
 A bit field holds only an enum without values. A module constant, a value

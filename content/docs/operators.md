@@ -159,6 +159,27 @@ fn normal(value: u64) -> bool {
 }
 ```
 
+`==` and `!=` also compare two values of one
+[enum with values](/docs/enums-and-bit-structs/#enums-with-values) or of
+one [`Option`](/docs/options/#compare-options) type. Two values are equal
+when they have the same variant, and that variant has no value or their
+values are equal. No other operator takes an enum or an `Option`:
+
+```wyst
+enum Button: u8 {
+  None = 0
+  Close(u64) = 2
+}
+
+fn closing(pushed: Button, slot: u64) -> bool {
+  return pushed == .Close(slot)
+}
+
+fn held(key: Option<u8>) -> bool {
+  return key != .None
+}
+```
+
 ## Logical operators
 
 `!` gives the other `bool`. `a && b` is true when `a` and `b` are true, and
