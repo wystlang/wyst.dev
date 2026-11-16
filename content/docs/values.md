@@ -131,6 +131,23 @@ fn done(ready: bool) -> bool {
 main.wyst:2:16: error: `==` takes only integers and enums, found bool
 ```
 
+In memory, as a [field of a plain struct](/docs/structs/#plain-structs)
+or at an address `@bool`, a `bool` is one byte. 0 is `false`, and each
+other value is `true`. `load` gives `true` or `false`, and `store` writes
+1 or 0:
+
+```wyst
+struct Card {
+  counting: bool
+}
+
+fn stop(card: @Card) {
+  if load(@card.counting) {
+    store(@card.counting, false)
+  }
+}
+```
+
 ## No implicit conversions
 
 Wyst does not convert a value from one type to another by itself. `widen`

@@ -58,6 +58,8 @@ This page lists both sides.
   slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
   writes through a slice of a table.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
+- `bool` fields of plain structs and other memory of a `bool`: one byte,
+  in which each value other than 0 is `true`.
 - Index proofs from constants, masks and other operators, field widths,
   range loops, conditions, `match` arms, `if` and `match` values, calls,
   and writes, and the proofs of slices from bounds against a local and
@@ -92,7 +94,7 @@ kernel needs it:
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
 | An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
-| `for x in` a slice of a type other than an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
+| `for x in` a slice of a type other than a `bool`, an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
@@ -111,10 +113,10 @@ kernel needs it:
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
-| A value of a plain struct or of a `#[bits]` struct that is not `pub`, also in an `Option`, as a parameter or a result of a `pub` function, and a `pub` constant or constant table of such a struct | Make the struct `pub`. |
+| A value of a plain struct or of a `#[bits]` struct that is not `pub`, also of a struct with no fields and in an `Option`, as a parameter or a result of a `pub` function, and a `pub` constant or constant table of such a struct | Make the struct `pub`. |
 | A field of a `pub` struct whose type is a plain struct or a `#[bits]` struct that is not `pub`, or an array of one | Make the struct of the field `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
-| A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
+| A field of a plain struct of another type, such as a slice | A field is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |
 | A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
@@ -123,7 +125,7 @@ kernel needs it:
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
 | `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |
-| `@T` for another `T`, such as `@bool`, `@@u64`, or `@[2][2]u8` | `T` is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
+| `@T` for another `T`, such as `@@u64` or `@[2][2]u8` | `T` is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |

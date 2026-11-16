@@ -17,23 +17,46 @@ struct Slot {
 }
 ```
 
-A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
+A field type is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
 [with values](/docs/enums-and-bit-structs/#enums-with-values), an
 [`Option`](/docs/options/#option-fields) of one of these that has no
 values, a plain struct, a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
-backing integer, or an array `[N]T` of one of these. Other field types
-are not implemented now:
+backing integer, or an array `[N]T` of one of these. Other field types,
+such as an [address](/docs/addresses/), are not implemented now:
 
 ```wyst fails
-struct Flag {
-  set: bool
+struct Link {
+  next: @u64
 }
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:9: error: a field of a plain struct is only `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+```
+
+A `bool` field is one byte. 0 is `false`, and each other value is
+`true`, so each byte in memory gives a value, and memory of zeros is
+`false`. `load` gives `true` or `false`, and `store` writes 1 for `true`
+and 0 for `false`. Thus the test of a field that tells if a state is on
+is the `load` of the field, or `!` of the `load`:
+
+```wyst
+struct Shell {
+  saving: bool
+  count: u64
+}
+
+fn start_save(shell: @Shell) -> bool {
+  if load(@shell.saving) {
+    return false
+  }
+
+  store(@shell.saving, true)
+
+  return true
+}
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -334,12 +357,12 @@ main.wyst:10:8: error: a call or an `if` or `match` value as an argument of Mark
 
 ## Struct values
 
-A plain struct whose fields are integers, enums without values, or
-`#[bits]` structs is also a value: the type of a parameter, a local
-`const`, and a result. The value takes one register for each field, in
-the order of the declaration, as an `Option` takes two. Thus a struct
-value has at most 8 fields, and a parameter of it counts its fields in
-the 8 registers of the parameters of a
+A plain struct whose fields are `bool` values, integers, enums without
+values, or `#[bits]` structs is also a value: the type of a parameter, a
+local `const`, and a result. The value takes one register for each
+field, in the order of the declaration, as an `Option` takes two. Thus a
+struct value has at most 8 fields, and a parameter of it counts its
+fields in the 8 registers of the parameters of a
 [function](/docs/functions/#declaring-a-function).
 
 A struct literal gives the value where its position gives the type, and
@@ -425,8 +448,11 @@ a struct, and `store` writes a struct only from a literal now.
 A parameter or a result of a `pub` function that is a value of a plain
 struct or of a `#[bits]` struct that is not `pub`, also in an `Option`,
 is not implemented now, because it would give another module the fields
-of that struct. Make the struct `pub`, as [pub structs](#pub-structs)
-gives:
+of that struct. This is also true for a
+[struct with no fields](#structs-with-no-fields). It has no fields to
+give, but a struct that is not `pub` is local to its module, and a value
+of it would take the struct to another module. Make the struct `pub`, as
+[pub structs](#pub-structs) gives:
 
 ```wyst fails
 struct Point {
