@@ -479,7 +479,8 @@ another address. The `asm` blocks of a naked function, and an `asm`
 block that does not return, name physical registers, so they can read
 the parameters of the function in their registers. Thus a naked
 function, and a function with such a block, stores through each of its
-address parameters.
+address and `string` parameters. A byte of a string is read-only data,
+so a string argument of such a function is an error.
 
 ## load and store
 
