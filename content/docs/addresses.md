@@ -51,24 +51,12 @@ fn table_at(frame: u64) {
 }
 ```
 
-`bitcast(s)` of a `string` `s`, a string literal or a `string` parameter,
-gives the `u64` that is the value of `s`: the address of its length, which
-its bytes follow, as [Code generation](/docs/code-generation/) gives. Thus
-code can read a string by address, and a function can give the address of
-a string as its result:
+`bitcast(s)` of a `string` `s` gives the `u64` that is the value of `s`:
+the address of its length, which its bytes follow, as
+[Code generation](/docs/code-generation/) gives. `len(s)` and `@s[i]` read
+a string, as [Values and types](/docs/values/#strings) gives:
 
 ```wyst
-fn first(text: string) -> u8 {
-  const head: u64 = bitcast(text)
-  const length: @u64 = bitcast(head)
-  if load(length) == 0 {
-    return 0
-  }
-
-  const byte: @u8 = bitcast(head + 8)
-  return load(byte)
-}
-
 fn banner() -> u64 {
   return bitcast("Wyst")
 }
@@ -481,6 +469,10 @@ fn start() {
 ```text
 main.wyst:10:9: error: function `main.clear` stores through parameter `cells`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
 ```
+
+A byte of a [string](/docs/values/#strings) is read-only data in the same
+way, so a `store` through `@s[i]` is an error, also in a function that
+takes the address.
 
 An `asm` input cannot hold the address of a table, as it cannot hold
 another address. The `asm` blocks of a naked function, and an `asm`

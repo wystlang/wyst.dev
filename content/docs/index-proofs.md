@@ -1,6 +1,6 @@
 ---
 title: Index proofs
-summary: How the compiler proves each array and slice index before the program runs.
+summary: How the compiler proves each array, slice, and string index before the program runs.
 ---
 
 Each index of an array must be less than the length of the array. The
@@ -8,7 +8,8 @@ compiler proves this at compile time. When it cannot prove an index, the
 build stops. There is no bounds check at run time, so a proved index costs
 nothing. Each index of a slice must be less than the length of the slice,
 and the start and the end of a slice must be in order and in the array or
-the slice that it comes from, as [Slices](#slices) gives.
+the slice that it comes from, as [Slices](#slices) gives. Each index of a
+`string` must be less than its length, as [Strings](#strings) gives.
 
 The same rule applies to an index of an array of devices, as in
 `redistributors[cpu]`. See [Registers and devices](/docs/registers/). When
@@ -626,4 +627,46 @@ fn clear(bytes: []u8) {
 
 ```text
 main.wyst:4:18: error: the checker cannot prove that the index is less than the length of `bytes`
+```
+
+## Strings
+
+The checker must prove that each index `i` of `@s[i]`, a byte of the
+[`string`](/docs/values/#strings) local or parameter `s`, is less than
+`len(s)`, as for an index of a slice. A string is read-only, so its length
+does not change, and a bound against `len(s)` or a lowest value of
+`len(s)` holds while `s` is in scope:
+
+```wyst
+fn count(text: string, letter: u8) -> u64 {
+  var found: u64 = 0
+
+  for i in 0 ..< len(text) {
+    if load(@text[i]) == letter {
+      found += 1
+    }
+  }
+
+  return found
+}
+
+fn kind(text: string) -> u8 {
+  if len(text) < 2 {
+    return 0
+  }
+  return load(@text[1])
+}
+```
+
+`len(s) - 1` has no highest value, because `-` can wrap, so it is not an
+index of `s` without a condition:
+
+```wyst fails
+fn last(text: string) -> u8 {
+  return load(@text[len(text) - 1])
+}
+```
+
+```text
+main.wyst:2:31: error: the checker cannot prove that the index is less than the length of `text`
 ```
