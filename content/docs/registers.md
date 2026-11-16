@@ -1,6 +1,6 @@
 ---
 title: Registers and devices
-summary: Register maps, register banks, devices at physical addresses, arrays of devices, register access, and big-endian registers.
+summary: Register maps, register banks, devices at physical addresses, arrays of devices, shared register maps, register access, and big-endian registers.
 ---
 
 A device has registers at fixed offsets from its base address. Wyst
@@ -98,7 +98,8 @@ register size.
 
 The device is local to its module, and a `pub` device is not implemented
 now. Make a `pub` function that accesses the device, and call this
-function from the other module.
+function from the other module, or share the register map, as
+[Sharing a register map](#sharing-a-register-map) gives.
 
 ## Arrays of devices
 
@@ -126,6 +127,50 @@ fn wake(cpu: u64) {
 is less than N, as for any index. See [Index proofs](/docs/index-proofs/).
 A call in the index, such as `redistributors[cpu() & 3]`, is not
 implemented now. Put the result of the call in a local first.
+
+## Sharing a register map
+
+`pub` before `struct` lets each module that imports the module of a
+register map put the map at its own address: `m.S` names the `pub`
+register map `S` of module `m` as the type of an `#[mmio]` constant. Thus
+the drivers of one kind of device declare its registers one time. This
+module declares registers of the common configuration of a virtio device:
+
+```wyst drivers/virtio.wyst
+#[register_map]
+pub struct Common {
+  DEVICE_STATUS: readwrite u8  at 0x14 { BITS: u8 at 0..=7 }
+  QUEUE_SELECT:  writeonly u16 at 0x16 { QUEUE: u16 at 0..=15 }
+}
+```
+
+Each driver puts the map at the address of its own device, and the device
+is local to the driver:
+
+```wyst
+import drivers.virtio
+
+#[mmio(0x1000_0000)]
+const configuration: virtio.Common
+
+fn reset() {
+  configuration.DEVICE_STATUS.write(BITS = 0)
+  for configuration.DEVICE_STATUS.read().BITS != 0 {}
+}
+```
+
+A field takes `.Variant` also when its enum is not `pub`, because the
+field gives the enum. A `pub` register map is still not a value:
+
+```wyst fails
+import drivers.virtio
+
+fn reset(configuration: virtio.Common) {}
+```
+
+```text
+main.wyst:3:25: error: a `#[register_map]` struct is only the type of an `#[mmio]` constant now
+```
 
 ## Register banks
 

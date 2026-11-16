@@ -88,7 +88,8 @@ fn clear(block: @channels.Message) {
 
 In another module, the name of a struct that is not `pub` gives the error
 ``struct `Slot` of module `table` is not `pub` ``. A `pub` register map is
-not implemented now.
+the type of a device of another module, as
+[Sharing a register map](/docs/registers/#sharing-a-register-map) gives.
 
 Each module that imports the module uses each field of a `pub` struct, so
 a field of a plain struct or of a `#[bits]` struct that is not `pub`, or

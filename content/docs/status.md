@@ -69,7 +69,8 @@ This page lists both sides.
   values as the type of parameters, locals, local `var`s, results, and
   memory, `#[bits]` structs as the type
   of constants, parameters, locals, local `var`s, results, and fields of
-  plain structs, with field values at run time, register maps, register banks, devices, arrays of devices,
+  plain structs, with field values at run time, register maps, `pub`
+  register maps as the type of a device of another module, register banks, devices, arrays of devices,
   system registers, offsets and bit positions that the compiler computes,
   locals that keep a register snapshot, and `modify` of a register.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
@@ -110,7 +111,7 @@ kernel needs it:
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |
 | An `Option` local or parameter of a linear type, and a `match` on such an `Option` | Unwrap the `Option` at the call with `else` or `?`. |
 | A local `var`, a module constant, and memory of a linear type | Keep the value in a local `const` or a parameter. |
-| Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
+| Devices and the vector table of another module, and `pub` on a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, register maps, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
 | A value of a plain struct or of a `#[bits]` struct that is not `pub`, also of a struct with no fields and in an `Option`, as a parameter or a result of a `pub` function, and a `pub` constant or constant table of such a struct | Make the struct `pub`. |

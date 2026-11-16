@@ -92,6 +92,9 @@ Two modules can import each other.
 - `m.S` names the `pub` plain struct or `#[bits]` struct `S`. See
   [Structs](/docs/structs/#pub-structs) and
   [Enums and bit structs](/docs/enums-and-bit-structs/#pub-and-linear).
+- `m.S` also names the `pub` register map `S`, as the type of an
+  `#[mmio]` constant. See
+  [Registers and devices](/docs/registers/#sharing-a-register-map).
 
 A `pub` function can give an address, an `Option` of an address, or a
 slice of an integer, of a `pub` struct, or of an array of one of these,
@@ -125,9 +128,9 @@ fn take(i: u64) {
 
 Only the module that declares a linear type consumes a value of it, also
 when the type is `pub`, as [Linear values](/docs/functions/#linear-values)
-gives. A module variable, a register map, a device, and the vector table
-are local to their module now. A `pub` register map or device is not
-implemented now. A call to a function that is not `pub` is an error:
+gives. A module variable, a device, and the vector table are local to
+their module now. A `pub` device is not implemented now. A call to a
+function that is not `pub` is an error:
 
 ```wyst fails
 import drivers.serial
