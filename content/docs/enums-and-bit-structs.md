@@ -155,12 +155,12 @@ without values of `u8` to `u64`, so that memory holds it. A variant with
 two or more values is not implemented now.
 
 An enum with values is the type of a parameter, a local `const` or `var`,
-a result, a field of a plain struct, an element of an array, and the
-target of an address. As a value, it takes two registers, as an `Option`
-does: the tag, and the value of its variant. `.None`, a variant without a
-value, gives the value 0. In memory, it is a struct of the tag and the
-value, which starts at the next multiple of the alignment of the widest
-value, so `Button` has 16 bytes:
+a result, an `if` or `match` value, a field of a plain struct, an element
+of an array, and the target of an address. As a value, it takes two
+registers, as an `Option` does: the tag, and the value of its variant.
+`.None`, a variant without a value, gives the value 0. In memory, it is a
+struct of the tag and the value, which starts at the next multiple of the
+alignment of the widest value, so `Button` has 16 bytes:
 
 ```wyst
 enum Button: u8 {
@@ -231,8 +231,8 @@ main.wyst:7:12: error: `==` takes no enum with values, found Button; `match` tak
 ```
 
 A bit field holds only an enum without values. A module constant, a value
-in a constant table, an `Option` of an enum with values, and an `if` or
-`match` value of one are not implemented now.
+in a constant table, and an `Option` of an enum with values are not
+implemented now.
 
 ## Enum constants
 

@@ -33,13 +33,15 @@ This page lists both sides.
   assignment.
 - `if` with `else` and `else if`, `match` on an integer, an enum, or an
   enum with values, with `.V(v)` patterns, `if`
-  and `match` as values, `for` in five forms, with `..<` and `..=`
+  and `match` as values, also of an `Option` and of an enum with values,
+  `for` in five forms, with `..<` and `..=`
   ranges and over a slice, `break`, `continue`, and `return`.
 - `Option` results, parameters, and local constants of a value type, an
   enum, or a `#[bits]` struct, `Option` results of an address, `Option`
   fields and other memory of an integer or an enum without values, with
-  `load` and `store`, `else` unwrap, `?`, `match` with `.Some(v)` and
-  `.None`, and the check that each path reads an `Option`.
+  `load` and `store`, `else` unwrap, also as `return value else { ... }`,
+  `?`, `match` with `.Some(v)` and `.None`, and the check that each path
+  reads an `Option`.
 - Linear `#[bits]` structs and linear structs with no fields, `xfer`
   parameters, which take a linear value, and parameters that lend it.
 - Plain structs, struct values and structs with no fields as the type of
@@ -88,7 +90,7 @@ kernel needs it:
 | Labels and `goto` | Refused. |
 | `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Give the value of `.V(v)` to a local, and compare it. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
-| An `if` or `match` value of an `Option`, of an enum with values, of a slice, or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement, or assign an enum with values to a local `var`. |
+| An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
