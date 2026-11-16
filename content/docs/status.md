@@ -33,13 +33,15 @@ This page lists both sides.
   assignment.
 - `if` with `else` and `else if`, `match` on an integer, an enum, or an
   enum with values, with `.V(v)` patterns, `if`
-  and `match` as values, `for` in five forms, with `..<` and `..=`
+  and `match` as values, also of an `Option` and of an enum with values,
+  `for` in five forms, with `..<` and `..=`
   ranges and over a slice, `break`, `continue`, and `return`.
 - `Option` results, parameters, and local constants of a value type, an
   enum, or a `#[bits]` struct, `Option` results of an address, `Option`
   fields and other memory of an integer or an enum without values, with
-  `load` and `store`, `else` unwrap, `?`, `match` with `.Some(v)` and
-  `.None`, and the check that each path reads an `Option`.
+  `load` and `store`, `else` unwrap, also as `return value else { ... }`,
+  `?`, `match` with `.Some(v)` and `.None`, and the check that each path
+  reads an `Option`.
 - Linear `#[bits]` structs and linear structs with no fields, `xfer`
   parameters, which take a linear value, and parameters that lend it.
 - Plain structs, struct values and structs with no fields as the type of
@@ -88,7 +90,7 @@ kernel needs it:
 | Labels and `goto` | Refused. |
 | `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i64`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Give the value of `.V(v)` to a local, and compare it. |
 | A range loop on `i64` values | Use a `for cond {}` loop on a local `var`. |
-| An `if` or `match` value of an `Option`, of an enum with values, of a slice, or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement, or assign an enum with values to a local `var`. |
+| An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
@@ -109,12 +111,12 @@ kernel needs it:
 | Register maps, devices, and the vector table of another module, and `pub` on a register map or a device | A module uses only the `pub` functions, constants, plain structs, `#[bits]` structs, enums, and system registers, and `@m.f` of the `pub` functions of another module. |
 | A plain struct with fields as a module variable, a local `var`, or an `Option`, a value of a struct with a field of another type, such as an array, a struct value in a naked function, `@` of a struct local or parameter, and the read of a field of the struct of a call, such as `f().x` | Use a local `const`, as `const v = f()`, and read `v.x`, or use the address of the struct. |
 | A local `var` or an `Option` of a struct with no fields, and an argument of it that is a call or an `if` or `match` value | Use a local `const`. |
-| A value of a plain struct that is not `pub` as a parameter or a result of a `pub` function | Make the struct `pub`. |
+| A value of a plain struct or of a `#[bits]` struct that is not `pub`, also in an `Option`, as a parameter or a result of a `pub` function, and a `pub` constant or constant table of such a struct | Make the struct `pub`. |
 | A field of a `pub` struct whose type is a plain struct or a `#[bits]` struct that is not `pub`, or an array of one | Make the struct of the field `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as `bool` | A field is `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |
-| A constant table of more than 65536 bytes, and a `pub` constant table of a plain struct that is not `pub` | Refused. |
+| A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than `u8`, `u16`, `u32`, `u64`, `i64`, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |

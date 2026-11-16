@@ -1,6 +1,6 @@
 ---
 title: Optional values
-summary: Option results, parameters, locals, and fields, match, else blocks, and the ? operator.
+summary: Option results, parameters, locals, fields, and values, match, else blocks, and the ? operator.
 ---
 
 ## Option
@@ -29,7 +29,9 @@ fn find(table: @[slots]u64, key: u64) -> Option<u64> {
 ```
 
 `return` takes `.Some(value)`, `.None`, a call with the same result type,
-an `Option` local or parameter of that type, or a `load` of that type.
+an `Option` local or parameter of that type, a `load` of that type, or an
+`if` or `match` value of that type, as [Option values](#option-values)
+shows.
 
 An `Option` takes two registers: the tag, 0 for `None` and not 0 for
 `Some`, and the value of `Some`. `.Some(v)` gives the tag 1, and a `load`
@@ -41,7 +43,7 @@ the 8 parameter registers. No operator takes an `Option`: `else`, `?`, and
 
 A call statement cannot drop an `Option`. `else` takes the value of
 `.Some` of a call, of an `asm` block, of an `Option` local or parameter,
-or of a `load` of an `Option` in memory:
+of a `load` of an `Option` in memory, or of an `if` or `match` value:
 
 ```wyst
 const slots: u64 = 8
@@ -73,6 +75,27 @@ a `never` function such as `trap()`, `for {}`, or an `asm -> never` block.
 
 `find(table, 0) else { trap() }` drops the value of `.Some`. It states that
 the key must be in the table.
+
+`return value else { ... }` returns the value of `.Some`, so the function
+has the result type of that value, or a `#[bits]` struct of that backing
+type, as `const x: T = value else { ... }` has:
+
+```wyst
+const slots: u64 = 8
+
+fn find(table: @[slots]u64, key: u64) -> Option<u64> {
+  for i in 0 ..< slots {
+    if load(@table[i]) == key {
+      return .Some(i)
+    }
+  }
+  return .None
+}
+
+fn index(table: @[slots]u64, key: u64) -> u64 {
+  return find(table, key) else { trap() }
+}
+```
 
 ## match
 
@@ -112,7 +135,7 @@ fn twice(x: u8) -> u8 {
 An arm has one pattern. A `match` statement can omit an arm, and then no
 arm runs for that variant. A `match` value has an arm for each variant,
 or `_`. `match` also takes a call directly, as `match pick(x + 1)` does,
-and a `load`.
+a `load`, and an `if` or `match` value.
 
 ## Must-use
 
@@ -165,9 +188,78 @@ fn distance(table: @[slots]u64, a: u64, b: u64) -> Option<u64> {
 }
 ```
 
-`?` is only the whole value of a statement or of `const` now. `?` gives
-the value of `.Some`, not an `Option`, so `else` or a second `?` cannot
-follow it.
+`?` is only the whole value of a statement, of `const`, or of `_ =` now.
+`?` gives the value of `.Some`, not an `Option`, so `else` or a second `?`
+cannot follow it. Thus `return value?` is an error: `?` needs an `Option`
+result, and the value of `.Some` is not an `Option`. A `?` in a block of
+an `if` or `match` value returns `.None` from the function, as
+[Option values](#option-values) shows.
+
+## Option values
+
+An `if` or `match` value can be an `Option`. Its value takes two
+registers, as the result of a call does, so it goes where such a result
+goes: `return`, a local, an argument, a `store`, and the value of `else`,
+`?`, and `match`. A variant takes its type from its position, so a value
+of `return` gives `.Some` and `.None` the result type. Thus a call that
+tries a second source when the first gives `.None`, and a call that puts
+a key in a free slot when it does not find the key, are each one value.
+The `?` in the block returns `.None` when no slot is free:
+
+```wyst
+const slots: u64 = 8
+
+fn find(table: @[slots]u64, key: u64) -> Option<u64> {
+  for i in 0 ..< slots {
+    if load(@table[i]) == key {
+      return .Some(i)
+    }
+  }
+  return .None
+}
+
+fn either(first: @[slots]u64, second: @[slots]u64, key: u64) -> Option<u64> {
+  return match find(first, key) {
+    .Some(i) { .Some(i) }
+    .None { find(second, key) }
+  }
+}
+
+fn slot(table: @[slots]u64, key: u64) -> Option<u64> {
+  return match find(table, key) {
+    .Some(i) { .Some(i) }
+    .None {
+      const i = find(table, 0)?
+      store(@table[i & (slots - 1)], key)
+      .Some(i)
+    }
+  }
+}
+```
+
+Each block gives an `Option` of one type, so `Option<u64>` and
+`Option<u8>` in two arms are an error:
+
+```wyst fails
+fn wide() -> Option<u64> {
+  return .None
+}
+
+fn narrow() -> Option<u8> {
+  return .None
+}
+
+fn pick(k: u64) -> Option<u64> {
+  return match k {
+    0 { wide() }
+    _ { narrow() }
+  }
+}
+```
+
+```text
+main.wyst:12:9: error: expected Option<u64>, found Option<u8>
+```
 
 ## Option fields
 
@@ -256,6 +348,5 @@ then `load(@record.back)`.
 of a `Result` returns its error from a function with a `Result` result of
 the same error type. An `Option` as a local `var`, a module variable, or
 a module constant, an `Option` in memory of another type, such as
-`Option<bool>`, a value of an `Option` in a constant table, an `Option`
-parameter of a naked function, and an `if` or `match` value of an
-`Option` are not implemented now.
+`Option<bool>`, a value of an `Option` in a constant table, and an
+`Option` parameter of a naked function are not implemented now.
