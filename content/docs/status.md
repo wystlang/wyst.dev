@@ -49,7 +49,7 @@ This page lists both sides.
   `load` of a struct value, `size_of`, `field_offset`, address types,
   address constants, also `pub`, address and slice results of `pub`
   functions, places, `load`, `store`, `store` of a struct literal with
-  nested literals, `bitcast`, `widen`, and `truncate`.
+  nested literals and array literals, `bitcast`, `widen`, and `truncate`.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
@@ -117,7 +117,7 @@ kernel needs it:
 | A field of a `pub` struct whose type is a plain struct or a `#[bits]` struct that is not `pub`, or an array of one | Make the struct of the field `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
 | A field of a plain struct of another type, such as a slice | A field is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
-| A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, a value of an array field in a literal of `store`, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, store a literal, and store the elements of an array field after the literal. |
+| A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, and store a literal. |
 | A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
 | An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
@@ -127,7 +127,7 @@ kernel needs it:
 | `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@u64` or `@[2][2]u8` | `T` is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
-| Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table | An array is only the target of an address, an array of devices, or a constant table. |
+| Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
 | A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |

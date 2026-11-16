@@ -17,11 +17,11 @@ struct Slot {
 }
 ```
 
-A field type is `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an
+A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
 [with values](/docs/enums-and-bit-structs/#enums-with-values), an
 [`Option`](/docs/options/#option-fields) of one of these that has no
-values, a plain struct, a
+values, a `bool`, a plain struct, a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
 backing integer, or an array `[N]T` of one of these. Other field types,
 such as an [address](/docs/addresses/), are not implemented now:
@@ -237,8 +237,31 @@ writes the zero bytes, and then computes and writes each field value in
 the order of the literal. Thus a field value that reads the struct, also
 through a call, reads the bytes that the store wrote before it.
 
-A field of an array type takes no value in a literal now, so it is 0.
-Store its elements after the literal:
+A field of an array type `[N]T` takes an array literal of N elements.
+Each element has the rules of a `store` of a `T`, at the offset of the
+element, and the code writes the elements in their order:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  source: [6]u8
+  #[big_endian] type: u16
+}
+
+fn broadcast(frame: @Ethernet, own: @[6]u8) {
+  store(
+    frame,
+    {
+      destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+      source = [load(@own[0]), load(@own[1]), load(@own[2]), load(@own[3]), load(@own[4]), load(@own[5])]
+      type = 0x0806
+    },
+  )
+}
+```
+
+An array literal of another number of elements is an error, as in a
+constant table, so the literal gives each element, also each 0:
 
 ```wyst fails
 struct Ethernet {
@@ -247,19 +270,19 @@ struct Ethernet {
 }
 
 fn broadcast(frame: @Ethernet) {
-  store(frame, { destination = 0xff, type = 0x0800 })
+  store(frame, { destination = [0xff, 0xff], type = 0x0800 })
 }
 ```
 
 ```text
-main.wyst:7:18: error: a value of array field `destination` in a literal is not implemented now; store its elements after the literal
+main.wyst:7:32: error: expected 6 elements, found 2
 ```
 
 A literal of a struct of more than 4096 bytes is not implemented now.
 
 A struct literal is also the value of a
 [constant table](/docs/constants-and-variables/#constant-tables) of a
-plain struct type. There, a field of an array type takes an array
+plain struct type. There, a field of an array type also takes an array
 literal:
 
 ```wyst

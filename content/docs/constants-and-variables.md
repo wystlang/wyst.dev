@@ -117,8 +117,10 @@ main.wyst:1:23: error: expected 4 elements, found 3
 ```
 
 An array literal has no type of its own, so it is only the value of a
-constant table, and the table needs its type. A table is in the section
-`.rodata`, after the string literals, and it has at most 65536 bytes now.
+constant table, where the table needs its type, and of an array field in
+a [literal of `store`](/docs/structs/#struct-literals). A table is in the
+section `.rodata`, after the string literals, and it has at most 65536
+bytes now.
 
 ## Shared constants
 
