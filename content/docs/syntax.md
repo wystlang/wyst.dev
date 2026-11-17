@@ -13,12 +13,12 @@ The grammar is a parsing expression grammar: `/` is an ordered choice,
 
 ## Words
 
-Twenty keywords are reserved:
+Twenty-one keywords are reserved:
 
 ```text
 import  pub  fn  struct  enum  interface  const  var
 if  else  for  break  continue  return  match  goto
-mut  xfer  linear  asm
+mut  xfer  linear  asm  undo
 ```
 
 No other word is reserved. A declaration, an import, a parameter, and a
@@ -118,7 +118,8 @@ Type <- '@' Type                            // address
 Block   <- '{' Stmt* '}'
 Stmt    <- (Name ':')? (Bind / If / For / Match / Jump / Assign
                         / Expr ('else' Block)?)
-Bind    <- ('const' / 'var') Name (':' Type ('in' Register)?)? '=' Expr
+Bind    <- 'const' Name (':' Type ('in' Register)?)? '=' Expr 'undo' Block
+         / ('const' / 'var') Name (':' Type ('in' Register)?)? '=' Expr
            ('else' Block)?
 If      <- 'if' Expr Block ('else' (If / Block))?
 For     <- 'for' (Name 'in' Expr (('..<' / '..=') Expr)? / Expr)? Block

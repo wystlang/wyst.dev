@@ -1,6 +1,6 @@
 ---
 title: Registers and devices
-summary: Register maps, register banks, devices at physical addresses, arrays of devices, shared register maps, register access, and big-endian registers.
+summary: Register maps, register banks, devices at physical addresses, arrays of devices, shared register maps, addresses of register maps, register access, and big-endian registers.
 ---
 
 A device has registers at fixed offsets from its base address. Wyst
@@ -134,7 +134,9 @@ implemented now. Put the result of the call in a local first.
 register map put the map at its own address: `m.S` names the `pub`
 register map `S` of module `m` as the type of an `#[mmio]` constant. Thus
 the drivers of one kind of device declare its registers one time. This
-module declares registers of the common configuration of a virtio device:
+module declares registers of the common configuration of a virtio device,
+and a function that resets a device at the
+[address](#addresses-of-register-maps) `common`:
 
 ```wyst drivers/virtio.wyst
 #[register_map]
@@ -142,10 +144,16 @@ pub struct Common {
   DEVICE_STATUS: readwrite u8  at 0x14 { BITS: u8 at 0..=7 }
   QUEUE_SELECT:  writeonly u16 at 0x16 { QUEUE: u16 at 0..=15 }
 }
+
+pub fn reset(common: @Common) {
+  common.DEVICE_STATUS.write(BITS = 0)
+  for common.DEVICE_STATUS.read().BITS != 0 {}
+}
 ```
 
 Each driver puts the map at the address of its own device, and the device
-is local to the driver:
+is local to the driver. The driver gives the address of its device to the
+function, so the drivers also share the code:
 
 ```wyst
 import drivers.virtio
@@ -153,14 +161,15 @@ import drivers.virtio
 #[mmio(0x1000_0000)]
 const configuration: virtio.Common
 
-fn reset() {
-  configuration.DEVICE_STATUS.write(BITS = 0)
-  for configuration.DEVICE_STATUS.read().BITS != 0 {}
+fn open() {
+  virtio.reset(@configuration)
+  configuration.QUEUE_SELECT.write(QUEUE = 0)
 }
 ```
 
 A field takes `.Variant` also when its enum is not `pub`, because the
-field gives the enum. A `pub` register map is still not a value:
+field gives the enum. A `pub` register map is still not a value, so a
+parameter takes the address of the device, `@virtio.Common`:
 
 ```wyst fails
 import drivers.virtio
@@ -169,8 +178,108 @@ fn reset(configuration: virtio.Common) {}
 ```
 
 ```text
-main.wyst:3:25: error: a `#[register_map]` struct is only the type of an `#[mmio]` constant now
+main.wyst:3:25: error: a `#[register_map]` struct is only the type of an `#[mmio]` constant or the target of an address now
 ```
+
+## Addresses of register maps
+
+`@M`, where `M` is a register map, is the address of a device of map `M`.
+It is the type of a parameter, a local, and a result. `@d` gives the
+address of device `d` of the module, and `@d[i]` the address of device
+`i` of an array of devices. The compiler proves the index, as for
+`d[i].R`. Thus one function accesses the registers of each device of one
+map:
+
+```wyst
+#[register_map]
+struct Pl011 {
+  DR: readwrite u32 at 0x00 { DATA: u8 at 0..=7 }
+  FR: readonly  u32 at 0x18 { TXFF: bool at 5 }
+}
+
+#[mmio(0x0900_0000)]
+const console: Pl011
+
+#[mmio(0x0904_0000, 0x1000)]
+const ports: [2]Pl011
+
+fn put(uart: @Pl011, byte: u8) {
+  for uart.FR.read().TXFF {}
+  uart.DR.write(DATA = byte)
+}
+
+fn hello(n: u64) {
+  put(@console, 0x48)
+  put(@ports[n & 1], 0x48)
+}
+```
+
+`p.R.read()`, `p.R.write(F = v, ...)`, and `p.R.modify(F = v, ...)` are
+the accesses of register `R` at the address `p`, a local or a parameter,
+and `p.R[i]` is register `i` of bank `R`. They follow the rules of
+[Reading and writing](#reading-and-writing): the access kinds, the
+fields, and one load or store for each access, which the compiler keeps
+as for a device.
+
+`bitcast` of a `u64` gives the address of a device that the code finds
+only at run time. The operational registers of an xHCI controller are at
+the offset that CAPLENGTH gives:
+
+```wyst
+#[register_map]
+struct Capability {
+  CAPLENGTH: readonly u8 at 0x00 { LENGTH: u8 at 0..=7 }
+}
+
+#[register_map]
+struct Operational {
+  USBCMD: readwrite u32 at 0x00 { RS: bool at 0, HCRST: bool at 1 }
+  USBSTS: readwrite u32 at 0x04 { HCH: bool at 0, CNR: bool at 11 }
+}
+
+const base: u64 = 0x0110_0000
+
+#[mmio(base)]
+const capability: Capability
+
+fn reset() {
+  const operational: @Operational = bitcast(base + widen(capability.CAPLENGTH.read().LENGTH))
+  operational.USBCMD.write(HCRST = true)
+  for operational.USBCMD.read().HCRST || operational.USBSTS.read().CNR {}
+}
+```
+
+`bitcast` is the only form that makes `@M` from an integer, and the
+checker does not examine the address. The code asserts that a device of
+the map is at the address, so that the address of each register is a
+multiple of the register size, as `bitcast` of an
+[address of memory](/docs/addresses/#bitcast) asserts its memory.
+
+A register map is not memory and not a value. Thus `load`, `store`, and
+`@p.f` do not take its address, and memory does not hold it, also as a
+field of a plain struct:
+
+```wyst fails
+#[register_map]
+struct Pl011 {
+  FR: readonly u32 at 0x18 { TXFF: bool at 5 }
+}
+
+struct Port {
+  uart: @Pl011
+}
+```
+
+```text
+main.wyst:7:9: error: a register map is not a value, so memory does not hold its address
+```
+
+`modify` computes the address two times, as it computes an index two
+times, so a call in the place of `p`, such as `f().R.read()`, is not
+implemented now. Put the address in a local first: `const p = f()`. A
+module constant, a module variable, a local `var`, and an `Option` of the
+address are not implemented now, and so is the address of a register map
+that is not `pub` as the result of a `pub` function.
 
 ## Register banks
 

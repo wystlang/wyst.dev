@@ -297,6 +297,88 @@ fn handle(stop: bool) {
 main.wyst:18:5: error: this path drops linear local `interrupt`
 ```
 
+The call takes `v` only after its last argument, as the code does. Thus
+a later argument cannot use `v`, and a `?`, a `return`, a `break`, or a
+`continue` in a later argument, also in a call in that argument, keeps
+`v`. Here the path through `?` drops the interrupt:
+
+```wyst fails
+#[bits]
+linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+fn acknowledge() -> Option<Interrupt> {
+  return .Some({ NUMBER = 30 })
+}
+
+fn priority() -> Option<u8> {
+  return .Some(1)
+}
+
+fn end(interrupt: xfer Interrupt, level: u8) {
+  _ = interrupt
+}
+
+fn handle(raise: bool) -> Option<u8> {
+  const interrupt = acknowledge()?
+  end(xfer interrupt, if raise {
+      const level = priority()?
+      level
+    } else {
+      0
+    },
+  )
+
+  return .Some(0)
+}
+```
+
+```text
+main.wyst:21:21: error: this path drops linear local `interrupt`
+```
+
+A call, a literal, or an `if` or `match` value as the argument of an
+`xfer` parameter also goes to the call only after the last argument.
+Thus a `?`, a `return`, a `break`, or a `continue` in a later argument
+that leaves the call drops the value, which is an error. A `break` or
+`continue` of a loop in the argument stays in the call, so it is
+correct. Here the path through `?` drops the interrupt of `timer()`:
+
+```wyst fails
+#[bits]
+linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+fn timer() -> Interrupt {
+  return { NUMBER = 30 }
+}
+
+fn priority() -> Option<u8> {
+  return .Some(1)
+}
+
+fn end(interrupt: xfer Interrupt, level: u8) {
+  _ = interrupt
+}
+
+fn handle(raise: bool) -> Option<u8> {
+  end(timer(), if raise {
+      const level = priority()?
+      level
+    } else {
+      0
+    },
+  )
+  return .Some(0)
+}
+```
+
+```text
+main.wyst:20:21: error: this path drops the linear value of an earlier argument of a call, which the call takes only after its last argument
+```
+
 A use after `xfer` is an error, also when only one path gave the value
 away:
 
@@ -471,6 +553,33 @@ fn update() {
 
 ```text
 main.wyst:16:10: error: linear local `held` is used after a path gave it away
+```
+
+The callee uses the value for the call. When a path reaches the call,
+another argument of the call cannot give the value away:
+
+```wyst fails
+pub linear struct Held {}
+
+pub fn lock() -> Held {
+  return {}
+}
+
+pub fn unlock(held: xfer Held) -> u64 {
+  _ = held
+  return 0
+}
+
+fn change(held: Held, value: u64) {}
+
+fn update() {
+  const held = lock()
+  change(held, unlock(xfer held))
+}
+```
+
+```text
+main.wyst:16:10: error: the call lends this value, so another argument cannot give it away
 ```
 
 A function cannot release a lock that its caller lends:

@@ -4,7 +4,7 @@ summary: What Wyst is for, the rules that keep it small, and what it leaves out.
 ---
 
 The goal of Wyst is low-level code that a reader can read and reason about.
-The language has about 20 keywords and about 25 builtin names, and it aims
+The language has 21 keywords and about 25 builtin names, and it aims
 to have no feature that kernel code does not use. The programmer writes
 only what the compiler cannot infer.
 
@@ -50,8 +50,9 @@ These properties together are the reason for the language:
 A signature states only types and parameter modes. The compiler infers the
 rest from the body:
 
-- A function cannot keep an address parameter after the call, except
-  through its result. There is no `noescape` marker.
+- A function keeps an address parameter after the call only through its
+  result, a `store` of it in memory, or an assignment of it to a module
+  variable. There is no `noescape` marker.
 - There are no effect clauses. Inference of the effects of each call is not
   implemented now.
 - Each value result, address result, and `Option` result of a call must
@@ -108,7 +109,10 @@ change before it enters:
 - staged specialization (`comptime`, `where`) and conditional compilation
   (`#if`, `#target`): the build selects the target;
 - floating point and `switch`;
-- explicit uninitialized storage.
+- explicit uninitialized storage;
+- a block that runs at each exit of a scope, as `defer` does in Go:
+  an [`undo`](/docs/options/#undo) block runs only before a return of
+  `.None`, and a return of `.Some` keeps what the function took.
 
 ## How Wyst grows
 

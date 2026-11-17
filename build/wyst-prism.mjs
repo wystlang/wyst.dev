@@ -6,12 +6,12 @@
 export const KEYWORDS = [
 	"import", "pub", "fn", "struct", "enum", "interface", "const", "var",
 	"if", "else", "for", "break", "continue", "return", "match", "goto",
-	"mut", "xfer", "linear", "asm",
+	"mut", "xfer", "linear", "asm", "undo",
 ];
 
 export const BUILTIN_TYPES = [
-	"bool", "u8", "u16", "u32", "u64", "i64", "string", "never", "Result",
-	"Option",
+	"bool", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "string",
+	"never", "Result", "Option",
 ];
 
 export const BUILTIN_FUNCTIONS = [

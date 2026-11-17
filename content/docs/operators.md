@@ -185,6 +185,112 @@ fn held(key: Option<u8>) -> bool {
 }
 ```
 
+## Operands without a type
+
+An operand without a type of its own takes the type of the other
+operand: a literal, `widen`, `truncate`, an operator on such operands, or
+an `if` or `match` value whose blocks end with one. A comparison, the
+value of a `const` without a type, and the start of a range give the
+operator no type. There, the compiler checks such a left operand after
+the right operand, but the code computes the left operand first. Thus
+such a left operand that gives a
+[linear value](/docs/functions/#linear-values) away or consumes it, as
+`_ = v` does, or that has a `?`, a `return`, or a `break` or `continue`
+that leaves it, is not implemented now. Here `priority` would use the
+interrupt after `end` took it:
+
+```wyst fails
+#[bits]
+linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+fn end(interrupt: xfer Interrupt) -> u16 {
+  const number = interrupt.NUMBER
+  _ = interrupt
+
+  return number
+}
+
+fn priority(interrupt: Interrupt) -> u32 {
+  return widen(interrupt.NUMBER) * 2
+}
+
+fn same(interrupt: xfer Interrupt) -> bool {
+  return widen(end(xfer interrupt)) == priority(interrupt)
+}
+```
+
+```text
+main.wyst:18:25: error: an operand without a type of its own that gives a value away or exits, as the left operand of `==`, is not implemented now; give its value to a local with a type first
+```
+
+Give the value to a local with a type first. Here `priority` lends the
+interrupt before `end` takes it:
+
+```wyst
+#[bits]
+linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+fn end(interrupt: xfer Interrupt) -> u16 {
+  const number = interrupt.NUMBER
+  _ = interrupt
+
+  return number
+}
+
+fn priority(interrupt: Interrupt) -> u32 {
+  return widen(interrupt.NUMBER) * 2
+}
+
+fn same(interrupt: xfer Interrupt) -> bool {
+  const level = priority(interrupt)
+
+  const number: u32 = widen(end(xfer interrupt))
+  return number == level
+}
+```
+
+For the same reason, a `?` or a `return` in the right operand is an
+error when only the left operand reads an
+[`Option` local](/docs/options/#must-use): the compiler finds no read of
+the local on that path, although the code computes the left operand
+first. Here only the left operand reads `picked`:
+
+```wyst fails
+fn pick(x: u8) -> Option<u8> {
+  if x == 0 {
+    return .None
+  }
+  return .Some(x)
+}
+
+fn size() -> Option<u64> {
+  return .Some(4)
+}
+
+fn fits(x: u8, wide: bool) -> Option<bool> {
+  const picked = pick(x)
+  const fit = if picked == .None { 0 } else { 1 } < if wide {
+    const most = size()?
+    most
+  } else {
+    1
+  }
+
+  return .Some(fit)
+}
+```
+
+```text
+main.wyst:15:18: error: local `picked` is an `Option` that this path does not read
+```
+
+A local with a type also takes the value of such a left operand first,
+as in `const count: u64 = if picked == .None { 0 } else { 1 }`.
+
 ## Logical operators
 
 `!` gives the other `bool`. `a && b` is true when `a` and `b` are true, and
