@@ -103,6 +103,7 @@ kernel needs it:
 | `match` on a value that is not a `uN`, an enum, or an `Option`, such as an `i32`, and a pattern in `.V(p)` other than a new local or `_`, such as `.Row(0)` | Refused. A `match` on a `uN`, an enum, also with values, or an `Option` works. Compare the value with `==`, as in `x == .Row(0)`, or give the value of `.V(v)` to a local, and compare it. |
 | A range loop on signed values, such as `i32` values | Use a `for cond {}` loop on a local `var`. |
 | A variant with a value as the left operand of `==` or `!=`, such as `.Some(v) == x` | Write `x == .Some(v)`. A variant without a value, such as `.None`, can be either operand. |
+| A left operand without a type of its own, such as `widen(end(xfer v))`, that gives a linear value away or that has a `?`, a `return`, or a `break` or `continue` that leaves it, in a comparison, in the value of a `const` without a type, or as the start of a range | Give its value to a local with a type first, as in `const n: u32 = widen(end(xfer v))`. |
 | An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than a `bool`, an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
