@@ -154,8 +154,9 @@ fn under(slot: u64, x: u64) -> Button {
 ```
 
 The value of a variant is `u8`, `u16`, `u32`, `u64`, `i64`, or an enum
-without values of `u8` to `u64`, so that memory holds it. A variant with
-two or more values is not implemented now.
+without values of `u8` to `u64`, so that memory holds it. A value of
+`i8`, `i16`, or `i32`, and a variant with two or more values, are not
+implemented now.
 
 An enum with values is the type of a parameter, a local `const` or `var`,
 a result, an `if` or `match` value, a field of a plain struct, an element

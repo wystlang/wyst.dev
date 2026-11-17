@@ -10,20 +10,25 @@ division by 0 can fail at run time. An operand can be a call, as
 
 ## Arithmetic
 
-`+`, `-`, and `*` wrap modulo 2^N for a `uN` value, and modulo 2^64 for
-an `i64`. For `x` equal to 255, this function gives 0:
+`+`, `-`, and `*` wrap modulo 2^N for a `uN` value and for an `iN`
+value. For `x` equal to 255, `next` gives 0, and for `y` equal to 127,
+`step` gives -128:
 
 ```wyst
 fn next(x: u8) -> u8 {
   return x + 1
 }
+
+fn step(y: i8) -> i8 {
+  return y + 1
+}
 ```
 
 `a / b` divides and drops the remainder, and `a % b` gives that
-remainder. For a `uN`, it divides without sign. For an `i64`, it divides
+remainder. For a `uN`, it divides without sign. For an `iN`, it divides
 with the sign and rounds toward 0, and the remainder has the sign of `a`:
-`-7 / 2` is -3, and `-7 % 2` is -1. -2^63 / -1 wraps to -2^63. When `b` is
-0 at run time, the code traps, as `trap()` does:
+`-7 / 2` is -3, and `-7 % 2` is -1. -2^(N-1) / -1 wraps to -2^(N-1). When
+`b` is 0 at run time, the code traps, as `trap()` does:
 
 ```wyst
 const slots: u64 = 6
@@ -78,9 +83,9 @@ fn partner(entry: u64) -> u64 {
 `a << k` and `a >> k` shift `a` by `k` bits. `k` has the type of `a`, and
 it must be less than the width of that type. `<<` drops the bits that move
 out of the type, and `>>` puts zeros in the high bits of a `uN`. `>>` of an
-`i64` keeps the sign: it copies the sign bit into the high bits, so
-`-3 >> 1` is -2. The amount of a shift is not an `i64`, so the amount of
-a shift of an `i64` is a constant.
+`iN` keeps the sign: it copies the sign bit into the high bits, so
+`-3 >> 1` is -2. The amount of a shift is not signed, so the amount of a
+shift of an `iN` is a constant.
 
 ```wyst
 const page_shift: u64 = 14
@@ -123,7 +128,7 @@ main.wyst:2:12: error: the checker cannot prove that the amount of `<<` is less 
 
 `==`, `!=`, `<`, `<=`, `>`, and `>=` compare two integers of the same type
 and give a `bool`. `<`, `<=`, `>`, and `>=` compare a `uN` without sign,
-and an `i64` with the sign. A `bool` is not an integer, so `==` and `!=`
+and an `iN` with the sign. A `bool` is not an integer, so `==` and `!=`
 do not take it: use the `bool` itself, or `!`. Comparisons do not chain:
 `a < b < c` is an error.
 
@@ -270,15 +275,15 @@ For a value with each bit of its type set, write `~0`:
 const all: u8 = ~0
 ```
 
-For an `i64`, a constant `+`, `-`, `*`, `<<`, or `-a` whose value is not
-from -2^63 to 2^63 - 1 is an error:
+For an `iN`, a constant `+`, `-`, `*`, `<<`, or `-a` whose value is not
+from -2^(N-1) to 2^(N-1) - 1 is an error:
 
 ```wyst fails
-const below: i64 = -9223372036854775807 - 2
+const below: i8 = -127 - 2
 ```
 
 ```text
-main.wyst:1:41: error: -9223372036854775807 - 2 does not fit in i64
+main.wyst:1:24: error: -127 - 2 does not fit in i8
 ```
 
 ## Assignment
