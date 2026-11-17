@@ -218,11 +218,9 @@ that, also in the functions that it calls, and the signature does not say
 it. Memory cannot keep the address of read-only data, as
 [Read-only addresses](#read-only-addresses) gives.
 
-Memory and a module variable never hold a slice, an `Option` of an
-address, or the [address of a register map](/docs/registers/#addresses-of-register-maps).
-No operator takes an address, so a link that can be empty, such as the
-next record of a list or 0, stays a `u64`, which `bitcast` makes an
-address at each use:
+Memory and a module variable never hold a slice or the
+[address of a register map](/docs/registers/#addresses-of-register-maps).
+An `Option` of an address in memory is not implemented now:
 
 ```wyst fails
 struct Record {
@@ -235,8 +233,12 @@ struct Link {
 ```
 
 ```text
-main.wyst:6:9: error: an `Option` of an address is only a result, which `else`, `?`, or `match` takes at the call
+main.wyst:6:9: error: an `Option` of `@Record` in memory is not implemented now: memory holds an `Option` of `uN` or `iN` with N 8, 16, 32, or 64, or of an enum without values
 ```
+
+No operator takes an address, so a link that can be empty, such as the
+next record of a list or 0, stays a `u64`, which `bitcast` makes an
+address at each use.
 
 The address of another type in memory, such as `@bool` or `@[4]u64`, the
 address of a struct in a field of that struct, such as `next: @Thread` in
@@ -324,10 +326,10 @@ it comes from a parameter, from `bitcast`, from `@c` of a constant
 table, from a `load`, or from a module variable. A call statement that
 drops the address is an error, as for a value result.
 
-A result can also be an `Option` of an address. An address is never in
-memory or in a module variable, and a parameter and a local cannot hold
-an `Option` of an address. `else`, `?`, and `match` take it at the call,
-and give the address of `Some` to a local:
+A result can also be an `Option` of an address. A parameter and a local
+cannot hold an `Option` of an address, and an `Option` of an address in
+memory or in a module variable is not implemented now. `else`, `?`, and
+`match` take it at the call, and give the address of `Some` to a local:
 
 ```wyst
 struct Domain {

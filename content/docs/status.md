@@ -42,10 +42,12 @@ This page lists both sides.
   enum, or a `#[bits]` struct, `Option` results of an address, `Option`
   fields and other memory of an integer or an enum without values, with
   `load` and `store`, `else` unwrap, also as `return value else { ... }`,
-  `?`, `match` with `.Some(v)` and `.None`, `==` and `!=`, and the check
-  that each path reads an `Option`.
+  `?`, `undo` blocks, which run before each return of `.None`, `match`
+  with `.Some(v)` and `.None`, `==` and `!=`, and the check that each
+  path reads an `Option`.
 - Linear `#[bits]` structs and linear structs with no fields, `xfer`
-  parameters, which take a linear value, and parameters that lend it.
+  parameters, which take a linear value, parameters that lend it, and
+  `undo` blocks that give it away.
 - Plain structs, struct values and structs with no fields as the type of
   parameters, local constants, and results, struct literals, field reads,
   `load` of a struct value, `size_of`, `field_offset`, address types,

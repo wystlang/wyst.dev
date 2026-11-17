@@ -1,6 +1,6 @@
 ---
 title: Control flow
-summary: if, match, their values, the five forms of for, break and continue, and return.
+summary: if, match, their values, the five forms of for, break and continue, return, and undo.
 ---
 
 ## if
@@ -427,6 +427,40 @@ and runs the `else` block for `.None`, as
 
 When `value` is `.None`, `value?` also returns `.None`, as
 [Optional values](/docs/options/#the-operator) shows.
+
+A return of `.None` first runs each
+[`undo`](/docs/options/#undo) block in scope, from the last to the first.
+A `?` and a return of an `Option` value that is `.None`, such as
+`return start(b)` below, are also returns of `.None`. A return of
+`.Some` runs no block:
+
+```wyst
+// The number of devices that `start` started.
+var started: u64 = 0
+
+fn start(device: u64) -> Option<u64> {
+  if device == 0 {
+    return .None
+  }
+
+  started += 1
+
+  return .Some(device)
+}
+
+fn stop(device: u64) {
+  started -= 1
+}
+
+// Starts two devices, or none.
+fn both(a: u64, b: u64) -> Option<u64> {
+  const first = start(a)? undo { stop(first) }
+  return start(b)
+}
+```
+
+An `undo` block cannot exit, so it has no `return`, `break`, `continue`,
+or `?`.
 
 ## Not implemented now
 

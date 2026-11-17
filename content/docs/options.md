@@ -269,6 +269,165 @@ result, and the value of `.Some` is not an `Option`. A `?` in a block of
 an `if` or `match` value returns `.None` from the function, as
 [Option values](#option-values) shows.
 
+## Undo
+
+`const x = value undo { ... }` in a function with an `Option` result
+gives `x` a block that runs before each later return of `.None` in the
+scope of `x`: a `return .None`, a `?`, an `else` block that returns
+`.None`, and a return of an `Option` value that is `.None`. Thus a
+function that takes several things, and then fails at a later step,
+gives back each thing that it took in one place, and each later step is
+one `?`:
+
+```wyst
+const slots: u64 = 8
+
+// The slots that `take` gave out, one bit for each slot.
+var used: u64 = 0
+
+// Takes the lowest free slot.
+fn take() -> Option<u64> {
+  for slot in 0 ..< slots {
+    if used & (1 << slot) == 0 {
+      used |= 1 << slot
+      return .Some(slot)
+    }
+  }
+  return .None
+}
+
+fn give(slot: u64) {
+  used &= ~(1 << (slot & 63))
+}
+
+// Takes three slots, and gives them in bytes 0 to 2 of the result. When
+// no third slot is free, gives back the first two.
+fn three() -> Option<u64> {
+  const a = take()? undo { give(a) }
+  const b = take()? undo { give(b) }
+
+  const c = take()?
+  return .Some(a | b << 8 | c << 16)
+}
+```
+
+When the third `take` gives `.None`, its `?` runs the block of `b` and
+then the block of `a`: the blocks of a scope run from the last to the
+first. The `?` of the value of `a` runs no block, because the block of
+`a` comes after it. A return of `.Some` runs no block, and neither does
+`trap()`: the function then keeps what it took.
+
+`undo` comes after the value on its line, as `else` does, and the value
+can end with `?`. The block can use `x`. It is a clause and not a
+statement, so no step that can fail comes between a value and its block.
+The block is in scope to the end of the block that declares `x`, so the
+block of a name in a loop ends with the pass. A loop that takes one
+thing in each pass keeps its `else` block, because one block after the
+loop does not know the number of the passes.
+
+The block runs before a return, so it cannot exit. It has no `return`,
+`break`, `continue`, or `?`, also in a loop in the block:
+
+```wyst fails
+fn take() -> Option<u64> {
+  return .Some(1)
+}
+
+fn give(slot: u64) {}
+
+fn two() -> Option<u64> {
+  const a = take()? undo {
+    give(a)
+    return .Some(a)
+  }
+
+  const b = take()?
+  return .Some(a + b)
+}
+```
+
+```text
+main.wyst:10:5: error: an `undo` block cannot exit, so it cannot have `return`
+```
+
+A function without an `Option` result has no `undo`.
+
+The block can give away a [linear value](/docs/functions/#linear-values)
+with `xfer`. It gives the value away on each path that runs the block, so
+a `?` after the clause does not drop the value. The path that returns
+`.Some` gives the value away as each other path does, after its last step
+that can fail:
+
+```wyst
+#[bits]
+linear struct Frame: u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+fn alloc() -> Option<Frame> {
+  return .Some({ ADDRESS = 0x4000_0000 })
+}
+
+fn free(frame: xfer Frame) {
+  _ = frame
+}
+
+// Puts the frame in a table, which then holds it.
+fn keep(frame: xfer Frame) {
+  _ = frame
+}
+
+fn find() -> Option<u64> {
+  return .Some(1)
+}
+
+fn map() -> Option<u64> {
+  const frame = alloc()? undo { free(xfer frame) }
+  const n = find()?
+  keep(xfer frame)
+
+  return .Some(n)
+}
+```
+
+A return of `.None` after a path gave the value away is an error, because
+the block would use the value again:
+
+```wyst fails
+#[bits]
+linear struct Frame: u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+fn alloc() -> Option<Frame> {
+  return .Some({ ADDRESS = 0x4000_0000 })
+}
+
+fn free(frame: xfer Frame) {
+  _ = frame
+}
+
+fn keep(frame: xfer Frame) {
+  _ = frame
+}
+
+fn find() -> Option<u64> {
+  return .Some(1)
+}
+
+fn map() -> Option<u64> {
+  const frame = alloc()? undo { free(xfer frame) }
+  keep(xfer frame)
+
+  const n = find()?
+  return .Some(n)
+}
+```
+
+```text
+main.wyst:26:13: error: the `undo` block that this return of `.None` runs uses linear local `frame`, which this path gave away
+```
+
 ## Option values
 
 An `if` or `match` value can be an `Option`. Its value takes two

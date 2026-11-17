@@ -9,7 +9,7 @@ source and writes one AArch64 ELF executable. The QEMU `virt` board is the
 target now.
 
 The goal of Wyst is low-level code that a reader can read and reason about.
-The language has 20 keywords, and its features are mainly the ones that
+The language has 21 keywords, and its features are mainly the ones that
 kernel code needs.
 
 ## A first look

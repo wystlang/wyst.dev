@@ -3,7 +3,7 @@ title: Keywords and builtins
 summary: Each reserved word, builtin name, attribute, and positional word, and what exists now.
 ---
 
-The 20 keywords are reserved. No other word is reserved, but a
+The 21 keywords are reserved. No other word is reserved, but a
 declaration, an import, a parameter, and a local cannot take a builtin
 name. A field and an argument can.
 
@@ -31,6 +31,7 @@ name. A field and an argument can.
 | `xfer` | A parameter mode that takes ownership, also marked at the call site. | yes, on a parameter of a linear type |
 | `linear` | A type whose values the declaring module must consume. | only on a `#[bits]` struct |
 | `asm` | An assembly block. | yes |
+| `undo` | The block of a `const` that runs before each later return of `.None`. | yes, in a function with an `Option` result |
 
 ## Builtin names
 

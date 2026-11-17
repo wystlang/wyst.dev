@@ -6,7 +6,7 @@
 export const KEYWORDS = [
 	"import", "pub", "fn", "struct", "enum", "interface", "const", "var",
 	"if", "else", "for", "break", "continue", "return", "match", "goto",
-	"mut", "xfer", "linear", "asm",
+	"mut", "xfer", "linear", "asm", "undo",
 ];
 
 export const BUILTIN_TYPES = [
