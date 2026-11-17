@@ -416,6 +416,58 @@ fn broadcast(frame: @Ethernet) {
 main.wyst:7:32: error: expected 6 elements, found 2
 ```
 
+A field that the literal does not name is 0. But a `#[bits]` value that
+the compiler computes gives each
+[fixed field](/docs/enums-and-bit-structs/#bit-structs) its fixed value,
+so the literal names each field in which 0 gives a fixed field another
+value, also in a struct or an array that the field holds, as a
+[constant table](/docs/constants-and-variables/#constant-tables) does. A
+nested literal and each element of an array field have the same rule:
+
+```wyst fails
+#[bits]
+struct Flags: u32 {
+  ON:   bool at 0     = true
+  MODE: u4   at 4..=7
+}
+
+struct Record {
+  count: u64
+  flags: Flags
+}
+
+fn reset(record: @Record) {
+  store(record, { count = 1 })
+}
+```
+
+```text
+main.wyst:13:17: error: the literal does not name field `flags`, so it is 0, which gives fixed field `ON` the value false, not true
+```
+
+`flags = {}` names the field and gives each fixed field its fixed value:
+
+```wyst
+#[bits]
+struct Flags: u32 {
+  ON:   bool at 0     = true
+  MODE: u4   at 4..=7
+}
+
+struct Record {
+  count: u64
+  flags: Flags
+}
+
+struct Log {
+  records: [2]Record
+}
+
+fn reset(log: @Log) {
+  store(log, { records = [{ count = 1, flags = {} }, { flags = { MODE = 2 } }] })
+}
+```
+
 A literal of a struct of more than 4096 bytes is not implemented now.
 
 A struct literal is also the value of a
@@ -527,9 +579,11 @@ fields in the 8 registers of the parameters of a
 [function](/docs/functions/#declaring-a-function).
 
 A struct literal gives the value where its position gives the type, and
-each field that it does not name is 0. `v.f` reads field `f` of a local
-or a parameter `v`. `load` of the struct gives the value, with one load
-for each field, and `load(p).f` loads one field:
+each field that it does not name is 0. Thus the literal names each
+`#[bits]` field in which 0 gives a fixed field another value, as in
+`flags = {}`, as a [literal of `store`](#struct-literals) does. `v.f`
+reads field `f` of a local or a parameter `v`. `load` of the struct gives
+the value, with one load for each field, and `load(p).f` loads one field:
 
 ```wyst
 struct Answer {
