@@ -297,6 +297,47 @@ fn handle(stop: bool) {
 main.wyst:18:5: error: this path drops linear local `interrupt`
 ```
 
+The call takes `v` only after its last argument, as the code does. Thus
+a later argument cannot use `v`, and a `?`, a `return`, a `break`, or a
+`continue` in a later argument, also in a call in that argument, keeps
+`v`. Here the path through `?` drops the interrupt:
+
+```wyst fails
+#[bits]
+linear struct Interrupt: u16 {
+  NUMBER: u16 at 0..=15
+}
+
+fn acknowledge() -> Option<Interrupt> {
+  return .Some({ NUMBER = 30 })
+}
+
+fn priority() -> Option<u8> {
+  return .Some(1)
+}
+
+fn end(interrupt: xfer Interrupt, level: u8) {
+  _ = interrupt
+}
+
+fn handle(raise: bool) -> Option<u8> {
+  const interrupt = acknowledge()?
+  end(xfer interrupt, if raise {
+      const level = priority()?
+      level
+    } else {
+      0
+    },
+  )
+
+  return .Some(0)
+}
+```
+
+```text
+main.wyst:21:21: error: this path drops linear local `interrupt`
+```
+
 A use after `xfer` is an error, also when only one path gave the value
 away:
 
