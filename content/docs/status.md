@@ -118,6 +118,7 @@ kernel needs it:
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
+| `undo` in a block of an `if` or `match` value | Declare the name in a block of an `if` or `match` statement, and `return` there. |
 | `Option` as the type of a local `var`, a module variable, or a module constant, and an `Option` parameter of a naked function | Use a local `const` or a field of a plain struct, or unwrap the `Option` with `else`, `?`, or `match`. |
 | An `Option` in memory of a type other than an integer or an enum without values, such as `Option<bool>`, and a value of an `Option` in a constant table | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |

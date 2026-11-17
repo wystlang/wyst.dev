@@ -428,6 +428,51 @@ fn map() -> Option<u64> {
 main.wyst:26:13: error: the `undo` block that this return of `.None` runs uses linear local `frame`, which this path gave away
 ```
 
+A block that only lends the value or reads a field of it gives the same
+error when a path gave the value away before the return. So do two
+blocks that each give the value away: the blocks run from the last to the
+first, so the earlier block uses the value after the later block gave it
+away:
+
+```wyst fails
+#[bits]
+linear struct Frame: u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+fn alloc() -> Option<Frame> {
+  return .Some({ ADDRESS = 0x4000_0000 })
+}
+
+fn free(frame: xfer Frame) {
+  _ = frame
+}
+
+fn find() -> Option<u64> {
+  return .Some(1)
+}
+
+fn map() -> Option<u64> {
+  const frame = alloc()? undo { free(xfer frame) }
+  const n = find()? undo { free(xfer frame) }
+
+  const m = find()?
+  free(xfer frame)
+
+  return .Some(n + m)
+}
+```
+
+```text
+main.wyst:22:13: error: the `undo` block that this return of `.None` runs uses linear local `frame`, which this path gave away
+```
+
+`undo` in a block of an `if` or `match` value is not implemented now.
+The value of the block can be the `.None` of a `return` after the end of
+the block, and the scope of the name ends with the block, so no block
+would run. Declare the name in a block of an `if` or `match` statement,
+and `return` there.
+
 ## Option values
 
 An `if` or `match` value can be an `Option`. Its value takes two
