@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, size_of, field_offset, struct values, and structs with no fields.
+summary: Plain structs, their layout in memory, packed structs, struct literals, big-endian fields, fields with a limit, size_of, field_offset, struct values, and structs with no fields.
 ---
 
 ## Plain structs
@@ -21,19 +21,42 @@ A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
 [with values](/docs/enums-and-bit-structs/#enums-with-values), an
 [`Option`](/docs/options/#option-fields) of one of these that has no
-values, a plain struct, a
+values, a `bool`, a plain struct, a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
-backing integer, or an array `[N]T` of one of these. Other field types
-are not implemented now:
+backing integer, or an array `[N]T` of one of these. Other field types,
+such as an [address](/docs/addresses/), are not implemented now:
 
 ```wyst fails
-struct Flag {
-  set: bool
+struct Link {
+  next: @u64
 }
 ```
 
 ```text
-main.wyst:2:8: error: a field of a plain struct is only `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:9: error: a field of a plain struct is only `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+```
+
+A `bool` field is one byte. 0 is `false`, and each other value is
+`true`, so each byte in memory gives a value, and memory of zeros is
+`false`. `load` gives `true` or `false`, and `store` writes 1 for `true`
+and 0 for `false`. Thus the test of a field that tells if a state is on
+is the `load` of the field, or `!` of the `load`:
+
+```wyst
+struct Shell {
+  saving: bool
+  count: u64
+}
+
+fn start_save(shell: @Shell) -> bool {
+  if load(@shell.saving) {
+    return false
+  }
+
+  store(@shell.saving, true)
+
+  return true
+}
 ```
 
 A field is visible wherever its type is. Wyst has no private fields.
@@ -65,7 +88,8 @@ fn clear(block: @channels.Message) {
 
 In another module, the name of a struct that is not `pub` gives the error
 ``struct `Slot` of module `table` is not `pub` ``. A `pub` register map is
-not implemented now.
+the type of a device of another module, as
+[Sharing a register map](/docs/registers/#sharing-a-register-map) gives.
 
 Each module that imports the module uses each field of a `pub` struct, so
 a field of a plain struct or of a `#[bits]` struct that is not `pub`, or
@@ -100,7 +124,8 @@ structs. See [Registers and devices](/docs/registers/) and
 
 ## Layout
 
-A plain struct lays out its fields as C does:
+A plain struct lays out its fields as C does, unless it is
+[`#[packed]`](#packed-structs):
 
 - The fields are in declaration order.
 - Each field starts at the next multiple of its alignment. The alignment
@@ -131,6 +156,79 @@ struct Table {
 A struct comes after the structs and the constants that its fields use.
 Thus a struct cannot hold itself. The items of an imported module up to
 the struct or the constant that a field uses come first.
+
+## Packed structs
+
+`#[packed]` before a plain struct puts each field directly after the
+field before it. The struct has no padding, and its alignment is 1. A
+field keeps its own layout, so a field of a struct or of an `Option`
+keeps the padding in it.
+[`#[big_endian]`](#big-endian-fields) and
+[`#[below(n)]`](#fields-with-a-limit) before a field work as in each
+other plain struct. Thus a header of a network protocol starts directly
+after the header before it in a frame:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  source: [6]u8
+  #[big_endian] type: u16
+}
+
+// An IPv4 header with no options.
+#[packed]
+struct Ipv4 {
+  version: u8
+  service: u8
+  #[big_endian] length: u16
+  #[big_endian] identification: u16
+  #[big_endian] fragment: u16
+  ttl: u8
+  protocol: u8
+  #[big_endian] checksum: u16
+  #[big_endian] source: u32
+  #[big_endian] destination: u32
+}
+
+struct Frame {
+  ethernet: Ethernet
+  ip: Ipv4
+}
+
+static_assert(field_offset(Frame, ip) == 14)
+static_assert(size_of(Frame) == 34)
+
+fn sender(frame: @Frame) -> u32 {
+  return load(@frame.ip.source)
+}
+```
+
+Without `#[packed]`, `Ipv4` has the alignment 4, and `ip` starts at
+byte 16.
+
+A `load` or a `store` of a field is one access at the address of the
+field, also when that address is not a multiple of the size of the
+field, as for `source` at byte 26 of the frame. AArch64 permits such an
+access to Normal memory when bit A of `SCTLR_EL1`, the alignment check,
+is 0. Device memory refuses it with an alignment fault, and with the MMU
+off, each data access is to Device memory. Thus code that runs with the
+MMU off must not use such a field, and a register map, which is the type
+of a device, cannot be `#[packed]`:
+
+```wyst fails
+#[packed]
+#[register_map]
+struct Uart {
+  DR: readwrite u32 at 0x00 { DATA: u8 at 0..=7 }
+}
+```
+
+```text
+main.wyst:1:3: error: a `#[packed]` struct is not the type of a device, because a device needs aligned accesses
+```
+
+The address `@p.f` of a field of a packed struct has the type of the
+address of each other field, such as `@u32`.
 
 ## Big-endian fields
 
@@ -175,6 +273,64 @@ struct Header {
 main.wyst:2:5: error: a big-endian field is `u16`, `u32`, or `u64`, not u8
 ```
 
+## Fields with a limit
+
+`#[below(n)]` before a field of type `u8`, `u16`, `u32`, or `u64`, or of
+an array of one of these, gives each value of the field the limit `n`, a
+constant from 1 to the highest value of the type. A `load` of the field
+traps when the value is not below `n`, as `trap()` does, so the value of
+the load is below `n`, and it proves an index, as
+[What the checker knows](/docs/index-proofs/#what-the-checker-knows)
+gives. Thus the code needs no test of its own after the load:
+
+```wyst
+const slots: u64 = 16
+
+// The strip of a shell. Only this module writes it.
+struct Strip {
+  #[below(slots)] focus: u64
+  #[below(slots)] order: [slots]u8
+}
+
+fn focused(strip: @Strip, names: @[slots]u64) -> u64 {
+  return load(@names[load(@strip.focus)])
+}
+
+fn follow(strip: @Strip, place: u64) {
+  store(@strip.focus, widen(load(@strip.order[place & (slots - 1)])))
+}
+```
+
+Hostile code or a device can write the memory, so the load tests the
+value: one compare and one branch, as `/` tests its divisor. A field
+whose bad value must not stop the code, such as a count in a message of
+another domain, has no limit, and the code tests its value. The
+attribute does not change the layout.
+
+The value of the field in a `store`, in a struct literal, and in a
+constant table needs a proof that it is below `n`, as an index does. A
+`u64` from memory has no such proof:
+
+```wyst fails
+struct Strip {
+  #[below(16)] focus: u64
+}
+
+fn choose(strip: @Strip, chosen: @u64) {
+  store(@strip.focus, load(chosen))
+}
+```
+
+```text
+main.wyst:6:23: error: the checker cannot prove that the value of a field with a limit is less than 16
+```
+
+The address `@p.f` of a field with a limit keeps the limit, as the
+address of a big-endian field keeps the byte order. It is not a `@u64`,
+because a store through such an address would need no proof. A limit on
+an `i64` field, and a big-endian field with a limit, are not implemented
+now.
+
 ## Struct literals
 
 `store(p, { f = v, ... })` writes the full struct at the address `p`.
@@ -214,8 +370,31 @@ writes the zero bytes, and then computes and writes each field value in
 the order of the literal. Thus a field value that reads the struct, also
 through a call, reads the bytes that the store wrote before it.
 
-A field of an array type takes no value in a literal now, so it is 0.
-Store its elements after the literal:
+A field of an array type `[N]T` takes an array literal of N elements.
+Each element has the rules of a `store` of a `T`, at the offset of the
+element, and the code writes the elements in their order:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  source: [6]u8
+  #[big_endian] type: u16
+}
+
+fn broadcast(frame: @Ethernet, own: @[6]u8) {
+  store(
+    frame,
+    {
+      destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
+      source = [load(@own[0]), load(@own[1]), load(@own[2]), load(@own[3]), load(@own[4]), load(@own[5])]
+      type = 0x0806
+    },
+  )
+}
+```
+
+An array literal of another number of elements is an error, as in a
+constant table, so the literal gives each element, also each 0:
 
 ```wyst fails
 struct Ethernet {
@@ -224,19 +403,19 @@ struct Ethernet {
 }
 
 fn broadcast(frame: @Ethernet) {
-  store(frame, { destination = 0xff, type = 0x0800 })
+  store(frame, { destination = [0xff, 0xff], type = 0x0800 })
 }
 ```
 
 ```text
-main.wyst:7:18: error: a value of array field `destination` in a literal is not implemented now; store its elements after the literal
+main.wyst:7:32: error: expected 6 elements, found 2
 ```
 
 A literal of a struct of more than 4096 bytes is not implemented now.
 
 A struct literal is also the value of a
 [constant table](/docs/constants-and-variables/#constant-tables) of a
-plain struct type. There, a field of an array type takes an array
+plain struct type. There, a field of an array type also takes an array
 literal:
 
 ```wyst
@@ -334,12 +513,12 @@ main.wyst:10:8: error: a call or an `if` or `match` value as an argument of Mark
 
 ## Struct values
 
-A plain struct whose fields are integers, enums without values, or
-`#[bits]` structs is also a value: the type of a parameter, a local
-`const`, and a result. The value takes one register for each field, in
-the order of the declaration, as an `Option` takes two. Thus a struct
-value has at most 8 fields, and a parameter of it counts its fields in
-the 8 registers of the parameters of a
+A plain struct whose fields are `bool` values, integers, enums without
+values, or `#[bits]` structs is also a value: the type of a parameter, a
+local `const`, and a result. The value takes one register for each
+field, in the order of the declaration, as an `Option` takes two. Thus a
+struct value has at most 8 fields, and a parameter of it counts its
+fields in the 8 registers of the parameters of a
 [function](/docs/functions/#declaring-a-function).
 
 A struct literal gives the value where its position gives the type, and
@@ -425,8 +604,11 @@ a struct, and `store` writes a struct only from a literal now.
 A parameter or a result of a `pub` function that is a value of a plain
 struct or of a `#[bits]` struct that is not `pub`, also in an `Option`,
 is not implemented now, because it would give another module the fields
-of that struct. Make the struct `pub`, as [pub structs](#pub-structs)
-gives:
+of that struct. This is also true for a
+[struct with no fields](#structs-with-no-fields). It has no fields to
+give, but a struct that is not `pub` is local to its module, and a value
+of it would take the struct to another module. Make the struct `pub`, as
+[pub structs](#pub-structs) gives:
 
 ```wyst fails
 struct Point {

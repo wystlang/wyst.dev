@@ -63,11 +63,14 @@ name. A field and an argument can.
 | `#[section(.name)]` | `fn` | Puts the code in a section of the layout. |
 | `#[register_map]` | `struct` | The registers of a device. |
 | `#[bits]` | `struct` | The named bits of an integer. |
+| `#[packed]` | `struct` | A plain struct with no padding. |
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
 | `#[sysreg]` | `const` | A system register of the A64 tables. |
 | `#[sysreg(S3_5_C15_C1_3)]` | `const` | An implementation-defined system register, by its encoding. |
 | `#[vector_table]` | `const` | The EL1 exception vector table. |
+| `#[big_endian]` | field, register | Bytes in big-endian order. |
+| `#[below(n)]` | field | A limit: a load traps on a value that is not below `n`. |
 
 Attribute names are not reserved.
 

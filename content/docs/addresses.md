@@ -9,15 +9,14 @@ offset.
 
 ## Address types
 
-`@T` is the type of an address of memory of type `T`. `T` is `u8`, `u16`,
-`u32`, `u64`, `i64`, an enum of `u8` to `u64`, an
+`@T` is the type of an address of memory of type `T`. `T` is `u8`,
+`u16`, `u32`, `u64`, `i64`, an enum of `u8` to `u64`, an
 [`Option`](/docs/options/#option-fields) of one of these that has no
-values, a plain struct or a
+values, a `bool`, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
 `pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
 of these. `N` is a constant, such as a module constant. Another target,
-such as `bool`, an address, or an array of arrays, is not implemented
-now.
+such as an address or an array of arrays, is not implemented now.
 
 An address is not an integer. No operator takes an address, and `@u8` and
 `@u32` are different types:
@@ -484,11 +483,13 @@ so a string argument of such a function is an error.
 
 ## load and store
 
-`load(a)` reads the integer, the enum value, or the `#[bits]` struct
-value at address `a`, and `store(a, v)` writes `v` there. `a` is `@u8`,
-`@u16`, `@u32`, `@u64`, or the address of an enum or of a `#[bits]`
-struct. Each is one load or one store of the size of the integer, or of
-the backing type of the enum or of the `#[bits]` struct, and two for an
+`load(a)` reads the `bool`, the integer, the enum value, or the
+`#[bits]` struct value at address `a`, and `store(a, v)` writes `v`
+there. `a` is `@bool`, `@u8`, `@u16`, `@u32`, `@u64`, or the address of
+an enum or of a `#[bits]` struct. Each is one load or one store of the
+size of the integer, of one byte for a
+[`bool`](/docs/structs/#plain-structs), or of the backing type of the
+enum or of the `#[bits]` struct, and two for an
 [enum with values](/docs/enums-and-bit-structs/#enums-with-values): the
 tag and the value. A value of an enum from memory can have a tag that no
 variant has, as [Enum values](/docs/enums-and-bit-structs/#enum-values)
@@ -529,6 +530,6 @@ fn give(descriptor: @Descriptor, buffer: u64) {
 ```
 
 `load` of a whole struct gives a [struct value](/docs/structs/#struct-values)
-when each field is an integer, an enum without values, or a `#[bits]`
-struct. `load` of another struct, and `load` and `store` of a whole
-array, are not implemented now.
+when each field is a `bool`, an integer, an enum without values, or a
+`#[bits]` struct. `load` of another struct, and `load` and `store` of a
+whole array, are not implemented now.
