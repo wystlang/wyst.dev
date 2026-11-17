@@ -63,6 +63,7 @@ name. A field and an argument can.
 | `#[section(.name)]` | `fn` | Puts the code in a section of the layout. |
 | `#[register_map]` | `struct` | The registers of a device. |
 | `#[bits]` | `struct` | The named bits of an integer. |
+| `#[packed]` | `struct` | A plain struct with no padding. |
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
 | `#[sysreg]` | `const` | A system register of the A64 tables. |

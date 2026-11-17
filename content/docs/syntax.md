@@ -94,6 +94,7 @@ form of `Field` is valid only in a `#[register_map] struct`; its second
 name is `readonly`, `writeonly`, or `readwrite`, and a `[N]` before it
 declares a bank of N registers. The `Bits` form of
 `Field` and the `:` type of a struct are valid only in a `#[bits] struct`.
+Only a plain struct can be [`#[packed]`](/docs/structs/#packed-structs).
 An attribute before a field can only be `#[big_endian]` or `#[below(n)]`,
 as [Structs](/docs/structs/#big-endian-fields) and
 [Fields with a limit](/docs/structs/#fields-with-a-limit) give, and one

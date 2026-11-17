@@ -91,7 +91,7 @@ already proved:
 - Hardware declarations are attributes on ordinary declarations, such as
   `#[naked] fn` and `#[register_map] struct`.
 - A struct lays out its fields in declaration order with natural
-  alignment, as C does.
+  alignment, as C does, or with no padding when it is `#[packed]`.
 - Stack setup and memory barriers are `asm` lines.
 - Layouts are a separate file format that the build reads, as `go.mod` is.
 

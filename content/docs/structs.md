@@ -1,6 +1,6 @@
 ---
 title: Structs
-summary: Plain structs, their layout in memory, struct literals, big-endian fields, fields with a limit, size_of, field_offset, struct values, and structs with no fields.
+summary: Plain structs, their layout in memory, packed structs, struct literals, big-endian fields, fields with a limit, size_of, field_offset, struct values, and structs with no fields.
 ---
 
 ## Plain structs
@@ -124,7 +124,8 @@ structs. See [Registers and devices](/docs/registers/) and
 
 ## Layout
 
-A plain struct lays out its fields as C does:
+A plain struct lays out its fields as C does, unless it is
+[`#[packed]`](#packed-structs):
 
 - The fields are in declaration order.
 - Each field starts at the next multiple of its alignment. The alignment
@@ -155,6 +156,79 @@ struct Table {
 A struct comes after the structs and the constants that its fields use.
 Thus a struct cannot hold itself. The items of an imported module up to
 the struct or the constant that a field uses come first.
+
+## Packed structs
+
+`#[packed]` before a plain struct puts each field directly after the
+field before it. The struct has no padding, and its alignment is 1. A
+field keeps its own layout, so a field of a struct or of an `Option`
+keeps the padding in it.
+[`#[big_endian]`](#big-endian-fields) and
+[`#[below(n)]`](#fields-with-a-limit) before a field work as in each
+other plain struct. Thus a header of a network protocol starts directly
+after the header before it in a frame:
+
+```wyst
+struct Ethernet {
+  destination: [6]u8
+  source: [6]u8
+  #[big_endian] type: u16
+}
+
+// An IPv4 header with no options.
+#[packed]
+struct Ipv4 {
+  version: u8
+  service: u8
+  #[big_endian] length: u16
+  #[big_endian] identification: u16
+  #[big_endian] fragment: u16
+  ttl: u8
+  protocol: u8
+  #[big_endian] checksum: u16
+  #[big_endian] source: u32
+  #[big_endian] destination: u32
+}
+
+struct Frame {
+  ethernet: Ethernet
+  ip: Ipv4
+}
+
+static_assert(field_offset(Frame, ip) == 14)
+static_assert(size_of(Frame) == 34)
+
+fn sender(frame: @Frame) -> u32 {
+  return load(@frame.ip.source)
+}
+```
+
+Without `#[packed]`, `Ipv4` has the alignment 4, and `ip` starts at
+byte 16.
+
+A `load` or a `store` of a field is one access at the address of the
+field, also when that address is not a multiple of the size of the
+field, as for `source` at byte 26 of the frame. AArch64 permits such an
+access to Normal memory when bit A of `SCTLR_EL1`, the alignment check,
+is 0. Device memory refuses it with an alignment fault, and with the MMU
+off, each data access is to Device memory. Thus code that runs with the
+MMU off must not use such a field, and a register map, which is the type
+of a device, cannot be `#[packed]`:
+
+```wyst fails
+#[packed]
+#[register_map]
+struct Uart {
+  DR: readwrite u32 at 0x00 { DATA: u8 at 0..=7 }
+}
+```
+
+```text
+main.wyst:1:3: error: a `#[packed]` struct is not the type of a device, because a device needs aligned accesses
+```
+
+The address `@p.f` of a field of a packed struct has the type of the
+address of each other field, such as `@u32`.
 
 ## Big-endian fields
 

@@ -62,6 +62,8 @@ This page lists both sides.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - `#[below(n)]` fields of plain structs: a load traps on a value that is
   not below `n`, and a store needs a proof of its value.
+- `#[packed]` plain structs: no padding, the alignment 1, and one access
+  for each `load` and `store` of a field.
 - `bool` fields of plain structs and other memory of a `bool`: one byte,
   in which each value other than 0 is `true`.
 - Index proofs from constants, masks and other operators, field widths,
