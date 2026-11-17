@@ -123,9 +123,45 @@ Two kinds of function save no registers:
 - A function without a call and without homes in `x19` to `x28` or on the
   stack. It has no prologue, and its epilogue is `ret`.
 
-An inline function runs in the frame of its caller, with new homes for
-each copy. The homes of a copy are free after it, and so are the homes of
-a loop after the loop, so the next copy takes them.
+An inline function runs in the frame of its caller. A parameter takes
+the home of an argument that is a local, because no code changes a
+parameter. A `const` in the top block of the body whose value is a
+parameter, or a field that fills a parameter, takes the home of the
+parameter too, so it makes no code. The other parameters and locals get
+new homes in each copy. The homes of a copy are free after it, and so are
+the homes of a loop after the loop, so the next copy takes them.
+
+A `return` in a copy puts its value in `x0` and branches to the end of
+the copy, but a `return` at the end of the copy needs no branch. When the
+last statement of the body is its one `return`, and it gives a parameter
+whose argument is a local, or such a `const`, the value of the copy is
+the home of that local, as the value of the local is. Thus a copy of
+`keep` makes no instruction:
+
+```wyst
+#[bits]
+pub linear struct Frame: u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+var total: u64 = 0
+
+#[inline]
+pub fn keep(frame: xfer Frame) -> u64 {
+  const address = frame.ADDRESS
+  _ = frame
+
+  return address
+}
+
+fn add(frame: xfer Frame) {
+  total = keep(xfer frame) + total
+}
+```
+
+In `add`, the `add` instruction reads the home of `frame`. A `return` of
+the copy moves the home to `x0`, and an argument moves it to its
+register.
 
 ## Costs
 
