@@ -77,6 +77,9 @@ This page lists both sides.
   of constants, parameters, locals, local `var`s, results, and fields of
   plain structs, with field values at run time, register maps, `pub`
   register maps as the type of a device of another module, register banks, devices, arrays of devices,
+  addresses of register maps as the type of parameters, locals, and
+  results, with `@d`, `@d[i]`, and `bitcast`, and the register accesses
+  at such an address,
   system registers, offsets and bit positions that the compiler computes,
   locals that keep a register snapshot, and `modify` of a register.
 - Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
@@ -139,7 +142,8 @@ kernel needs it:
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
 | A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |
-| A device as a parameter, such as `gic: Gic` | A function names the device of its module. |
+| A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |
+| A call in the place of the address of a register access, such as `f().R.read()`, the address of a register map as a module constant, a module variable, a local `var`, or an `Option`, and the address of a register map that is not `pub` as the result of a `pub` function | Put the address in a local `const` or a parameter, and make the register map `pub`. |
 | A limit on a signed field, such as an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |
 | A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
 | A variant with two or more values, a value of a variant of type `i8`, `i16`, or `i32`, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |

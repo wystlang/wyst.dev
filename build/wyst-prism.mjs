@@ -10,8 +10,8 @@ export const KEYWORDS = [
 ];
 
 export const BUILTIN_TYPES = [
-	"bool", "u8", "u16", "u32", "u64", "i64", "string", "never", "Result",
-	"Option",
+	"bool", "u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64", "string",
+	"never", "Result", "Option",
 ];
 
 export const BUILTIN_FUNCTIONS = [

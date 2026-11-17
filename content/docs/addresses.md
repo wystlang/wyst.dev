@@ -31,6 +31,11 @@ fn next(base: @u64) {
 main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
+`@M`, where `M` is a register map, is the address of a device, not of
+memory, as
+[Addresses of register maps](/docs/registers/#addresses-of-register-maps)
+gives.
+
 An address is the type of a parameter, a local, a result, or a
 [module constant](#address-constants), and `@c` gives the address of a
 [constant table](#read-only-addresses). A module variable and memory
@@ -533,3 +538,24 @@ fn give(descriptor: @Descriptor, buffer: u64) {
 when each field is a `bool`, an integer, an enum without values, or a
 `#[bits]` struct. `load` of another struct, and `load` and `store` of a
 whole array, are not implemented now.
+
+A register map is not memory, so `load` and `store` do not take the
+[address of a register map](/docs/registers/#addresses-of-register-maps).
+A register access uses it:
+
+```wyst fails
+#[register_map]
+struct Pl011 {
+  FR: readonly u32 at 0x18 { TXFF: bool at 5 }
+}
+
+fn busy(uart: @Pl011) -> bool {
+  return load(uart) & 0x20 != 0
+}
+```
+
+```text
+main.wyst:7:15: error: a register map is not memory, so `load` does not take @Pl011; a register access, such as `p.R.read()`, uses the address `p`
+```
+
+Here `uart.FR.read().TXFF` reads the flag.
