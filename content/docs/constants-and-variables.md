@@ -221,6 +221,42 @@ pub fn stop() {
 `name |= value`, change a module variable or a [local `var`](#locals).
 [Operators](/docs/operators/#assignment) gives their rules.
 
+A module variable can also hold an address `@T`, where `T` is `u8` to
+`u64`, `i8` to `i64`, or a plain struct. Its initial value is `bitcast`
+of a `u64` constant, as for an
+[address constant](/docs/addresses/#address-constants). Each read gives
+the address, and an assignment gives it another one, as
+[Addresses in memory](/docs/addresses/#addresses-in-memory) gives:
+
+```wyst
+struct Queue {
+  first: u64
+  last: u64
+}
+
+const unset: u64 = 0
+
+var queue: @Queue = bitcast(unset)
+
+pub fn init(frame: u64) {
+  queue = bitcast(frame)
+}
+
+pub fn first() -> u64 {
+  return load(@queue.first)
+}
+```
+
+The initial value is only `bitcast` of a `u64` constant now:
+
+```wyst fails
+var saved: @u64 = 0
+```
+
+```text
+main.wyst:1:19: error: the value of an address variable is only `bitcast` of a `u64` constant now
+```
+
 Each module variable is in the ELF file with its initial value, in the
 section `.data`. The program does not need to clear memory before it
 starts.

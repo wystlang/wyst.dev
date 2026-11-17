@@ -52,6 +52,11 @@ This page lists both sides.
   address constants, also `pub`, address and slice results of `pub`
   functions, places, `load`, `store`, `store` of a struct literal with
   nested literals and array literals, `bitcast`, `widen`, and `truncate`.
+- Addresses in memory: fields of plain structs and module variables of
+  type `@T`, where `T` is an integer or a plain struct, with `load`,
+  `store`, and assignments, and the check that memory and a module
+  variable keep no address of a table or of a byte of a string, also
+  through a parameter that a function keeps.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
@@ -128,16 +133,16 @@ kernel needs it:
 | A value of a plain struct or of a `#[bits]` struct that is not `pub`, also of a struct with no fields and in an `Option`, as a parameter or a result of a `pub` function, and a `pub` constant or constant table of such a struct | Make the struct `pub`. |
 | A field of a `pub` struct whose type is a plain struct or a `#[bits]` struct that is not `pub`, or an array of one | Make the struct of the field `pub`. |
 | A parameter of a struct with no fields or of a linear type in a naked function | Refused. |
-| A field of a plain struct of another type, such as a slice | A field is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
+| A field of a plain struct of another type, such as a slice | A field is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, or an array of them. |
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, and store a literal. |
 | A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
-| An address as a module variable or a field | An address is only the type of a parameter, a local, a result, or a constant. Keep a `u64`, and make the address with `bitcast`. |
+| An address in memory or in a module variable of a target other than an integer or a plain struct, such as `@bool` or `@[4]u64`, the address of a struct in a field of that struct, an address variable whose first value is not `bitcast` of a `u64` constant, and a value of a struct with an address field | Keep a `u64`, and make the address with `bitcast` at each use. |
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than an integer, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
 | An `Option` of an address as a parameter or a local | Refused. `else`, `?`, or `match` takes it at the call. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
-| `@` of a local, of a module variable, or of a module constant that is not an address or a constant table | Refused. |
-| `@T` for another `T`, such as `@@u64` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, or an array of them. |
+| `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
+| `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |

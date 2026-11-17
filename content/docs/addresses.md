@@ -14,9 +14,11 @@ offset.
 [`Option`](/docs/options/#option-fields) of one of these that has no
 values, a `bool`, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
-`pub` plain struct `m.S` of an imported module, or an array `[N]T` of one
-of these. `N` is a constant, such as a module constant. Another target,
-such as an address or an array of arrays, is not implemented now.
+`pub` plain struct `m.S` of an imported module, an address of `u8` to
+`u64`, of `i8` to `i64`, or of a plain struct, as
+[Addresses in memory](#addresses-in-memory) gives, or an array `[N]T` of
+one of these. `N` is a constant, such as a module constant. Another
+target, such as an array of arrays, is not implemented now.
 
 An address is not an integer. No operator takes an address, and `@u8` and
 `@u32` are different types:
@@ -36,12 +38,12 @@ memory, as
 [Addresses of register maps](/docs/registers/#addresses-of-register-maps)
 gives.
 
-An address is the type of a parameter, a local, a result, or a
-[module constant](#address-constants), and `@c` gives the address of a
-[constant table](#read-only-addresses). A module variable and memory
-cannot hold an address now. Thus a function cannot keep an address after
-the call, except through its result. A [slice](#slices) is an address and
-a length, with the same rule.
+An address is the type of a parameter, a local, a result, a
+[module constant](#address-constants), a module variable, and a field of
+a plain struct, as [Addresses in memory](#addresses-in-memory) gives, and
+`@c` gives the address of a [constant table](#read-only-addresses). A
+[slice](#slices) is an address and a length, and it is never in memory or
+in a module variable.
 
 ## bitcast
 
@@ -133,6 +135,114 @@ fn total() -> u64 {
 The target of a `pub` address constant has the rule of an
 [address result of a `pub` function](#pub-results).
 
+## Addresses in memory
+
+A field of a plain struct and a module variable can hold an address
+`@T`, where `T` is `u8` to `u64`, `i8` to `i64`, or a plain struct. The
+address has 8 bytes, with the alignment 8. `store` writes it, also as a
+field of a [struct literal](/docs/structs/#struct-literals), and `load`
+gives it, so `@load(@link.record).value` is the address of a field of
+the record:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+struct Link {
+  count: u32
+  record: @Record
+}
+
+fn attach(link: @Link, record: @Record) {
+  store(link, { count = 1, record = record })
+}
+
+fn value(link: @Link) -> u64 {
+  return load(@load(@link.record).value)
+}
+```
+
+Memory gives no proof of the address, because hostile code or a device
+can write the memory. Thus the `load` asserts the address, as
+[`bitcast`](#bitcast) of a `u64` does.
+
+A module variable of type `@T` takes `bitcast` of a `u64` constant as its
+first value, as an [address constant](#address-constants) does. Each read
+gives its address, and an assignment gives it another address, so the
+functions of the module use it with no `bitcast`:
+
+```wyst
+struct Records {
+  count: u64
+  lines: [8]u64
+}
+
+const unset: u64 = 0
+
+var records: @Records = bitcast(unset)
+
+fn init(frame: u64) {
+  records = bitcast(frame)
+  store(@records.count, 0)
+}
+
+fn line(i: u64) -> u64 {
+  return load(@records.lines[i & 7])
+}
+```
+
+Only `bitcast` makes an address from an integer, also for a field:
+
+```wyst fails
+struct Record {
+  value: u64
+}
+
+struct Link {
+  record: @Record
+}
+
+fn put(link: @Link, record: u64) {
+  store(@link.record, record)
+}
+```
+
+```text
+main.wyst:10:23: error: expected @Record, found u64
+```
+
+A function that stores an address parameter in memory, or that assigns
+it to a module variable, keeps it after the call. The compiler infers
+that, also in the functions that it calls, and the signature does not say
+it. Memory cannot keep the address of read-only data, as
+[Read-only addresses](#read-only-addresses) gives.
+
+Memory and a module variable never hold a slice, an `Option` of an
+address, or the [address of a register map](/docs/registers/#addresses-of-register-maps).
+No operator takes an address, so a link that can be empty, such as the
+next record of a list or 0, stays a `u64`, which `bitcast` makes an
+address at each use:
+
+```wyst fails
+struct Record {
+  value: u64
+}
+
+struct Link {
+  next: Option<@Record>
+}
+```
+
+```text
+main.wyst:6:9: error: an `Option` of an address is only a result, which `else`, `?`, or `match` takes at the call
+```
+
+The address of another type in memory, such as `@bool` or `@[4]u64`, the
+address of a struct in a field of that struct, such as `next: @Thread` in
+`Thread`, and a [struct value](/docs/structs/#struct-values) with an
+address field are not implemented now.
+
 ## Places
 
 `@p.f` is the address of field `f` of the struct at address `p`. `@p[i]`
@@ -210,9 +320,9 @@ fn root_of(domain: u64) -> u64 {
 
 No address points to a local, because `@` of a local is not implemented
 now. Thus the address that a function gives stays valid after the call:
-it comes from a parameter, from `bitcast`, or from `@c` of a constant
-table. A call statement that drops
-the address is an error, as for a value result.
+it comes from a parameter, from `bitcast`, from `@c` of a constant
+table, from a `load`, or from a module variable. A call statement that
+drops the address is an error, as for a value result.
 
 A result can also be an `Option` of an address. An address is never in
 memory or in a module variable, and a parameter and a local cannot hold
@@ -477,6 +587,35 @@ main.wyst:10:9: error: function `main.clear` stores through parameter `cells`, s
 A byte of a [string](/docs/values/#strings) is read-only data in the same
 way, so a `store` through `@s[i]` is an error, also in a function that
 takes the address.
+
+A `load` of an [address in memory](#addresses-in-memory) gives no
+origin, so a `store` through it would not find the table. Thus memory
+and a module variable cannot keep the address of a table or of a byte of
+a string, also through a parameter that a function keeps:
+
+```wyst fails
+struct Palette {
+  bar: u32
+}
+
+struct Theme {
+  palette: @Palette
+}
+
+const light: Palette = { bar = 0x00f8_f9fc }
+
+fn choose(theme: @Theme, palette: @Palette) {
+  store(@theme.palette, palette)
+}
+
+fn start(theme: @Theme) {
+  choose(theme, @light)
+}
+```
+
+```text
+main.wyst:16:17: error: function `main.choose` keeps parameter `palette`, so it cannot take this address: it can be the address of constant table `main.light`, which is read-only data
+```
 
 An `asm` input cannot hold the address of a table, as it cannot hold
 another address. The `asm` blocks of a naked function, and an `asm`

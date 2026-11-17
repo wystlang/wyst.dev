@@ -23,17 +23,32 @@ A field type is `u8` to `u64`, `i8` to `i64`, an
 [`Option`](/docs/options/#option-fields) of one of these that has no
 values, a `bool`, a plain struct, a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
-backing integer, or an array `[N]T` of one of these. Other field types,
-such as an [address](/docs/addresses/), are not implemented now:
+backing integer, an [address](/docs/addresses/#addresses-in-memory) of
+`u8` to `u64`, of `i8` to `i64`, or of a plain struct, or an array
+`[N]T` of one of these:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+struct Link {
+  count: u32
+  record: @Record
+}
+```
+
+A slice is never in memory, so it is not a field type, and other field
+types, such as `@bool`, are not implemented now:
 
 ```wyst fails
-struct Link {
-  next: @u64
+struct Text {
+  bytes: []u8
 }
 ```
 
 ```text
-main.wyst:2:9: error: a field of a plain struct is only `bool`, `uN` or `iN` with N 8, 16, 32, or 64, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:10: error: a slice is only the type of a parameter, a local, or a result, and never in memory
 ```
 
 A `bool` field is one byte. 0 is `false`, and each other value is
@@ -630,7 +645,7 @@ main.wyst:6:16: error: the checker cannot prove that the index is less than 8
 big-endian in memory holds the normal integer.
 
 These forms are not implemented now: a value of a struct with a field of
-another type, such as an array, a local `var` of a struct, an `Option` of
+another type, such as an array or an address, a local `var` of a struct, an `Option` of
 a struct, an `if` or `match` value of a struct, a struct value in a naked
 function, `@` of a struct local or parameter, and the read of a field of
 the struct of a call. `const x = f()` keeps the struct of a call:
