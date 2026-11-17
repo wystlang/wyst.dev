@@ -18,14 +18,14 @@ name. A field and an argument can.
 | `enum` | Declares an enum. | with a backing type and a tag for each variant: the type of a bit field, a module constant, a parameter, a local, a result, a field of a plain struct, and the value of `Some`; an enum with values, such as `Row(u64) = 5`, of a parameter, a local, a result, and memory; not of a module variable |
 | `interface` | Declares an interface: a set of methods. A type implements it by having the methods. | no |
 | `const` | Declares a constant or a local. | yes |
-| `var` | Declares a variable. | module variables, and locals of `bool`, `u8` to `u64`, and `i64` |
+| `var` | Declares a variable. | module variables, and locals of `bool`, `u8` to `u64`, `i8` to `i64`, a `#[bits]` struct, and an enum |
 | `if` | Runs a block when a condition is true. | yes |
 | `else` | The other block of `if`, or the block of an unwrap. | yes |
 | `for` | The one loop. | `for {}`, `for c {}`, `for i in a ..< b {}`, `for i in a ..= b {}`, `for x in "text" {}`, and `for x in s {}` of a slice; not `for x in` an array |
 | `break` | Leaves a loop. | yes |
 | `continue` | Starts the next pass of a loop. | yes |
 | `return` | Leaves a function. | yes |
-| `match` | Selects a block by the value or the variant of a value. | on an integer other than `i64`, an enum, an enum with values, and an `Option`, as a statement and as a value; a pattern in `.V(p)` and `.Some(p)` is a new local or `_` |
+| `match` | Selects a block by the value or the variant of a value. | on an unsigned integer, an enum, an enum with values, and an `Option`, as a statement and as a value; a pattern in `.V(p)` and `.Some(p)` is a new local or `_` |
 | `goto` | Jumps to a label. | no |
 | `mut` | A parameter mode, also marked at the call site. | no |
 | `xfer` | A parameter mode that takes ownership, also marked at the call site. | yes, on a parameter of a linear type |
@@ -37,21 +37,21 @@ name. A field and an argument can.
 | Name | Meaning | Now |
 | --- | --- | --- |
 | `bool`, `u8`, `u16`, `u32`, `u64` | Value types. | yes |
-| `i64` | The signed 64-bit integer, a value type. | yes |
+| `i8`, `i16`, `i32`, `i64` | The signed integers of 8, 16, 32, and 64 bits, value types. | yes |
 | `string` | A string value. | as the type of a parameter, a local `const`, a result, and an `if` or `match` value; not as a local `var`, a module variable, a module constant, or a field |
 | `never` | The type of a function that does not return. | yes |
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of a slice, a `u64`. | of a slice local or parameter |
-| `size_of` | The size of a type in bytes. | for `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option` in memory, a plain struct, a `#[bits]` struct, and an array of them |
+| `size_of` | The size of a type in bytes. | for `u8` to `u64`, `i8` to `i64`, an enum, an `Option` in memory, a plain struct, a `#[bits]` struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
 | `static_assert` | Checks a constant condition. | yes |
 | `trap` | Stops the program with `brk #0`. | yes |
 | `load`, `store` | Read and write the integer at an address. | yes |
 | `widen`, `truncate` | Convert an integer to a wider or a narrower type. | yes |
-| `bitcast` | Makes an address from a `u64`, or a `u64` from a `string`. | yes |
+| `bitcast` | Makes an address from a `u64`, a `u64` from a `string`, and an `iN` from the `uN` of the same width, and the reverse. | yes |
 
 ## Attributes
 

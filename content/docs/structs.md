@@ -17,7 +17,7 @@ struct Slot {
 }
 ```
 
-A field type is `u8`, `u16`, `u32`, `u64`, `i64`, an
+A field type is `u8` to `u64`, `i8` to `i64`, an
 [enum](/docs/enums-and-bit-structs/#enum-values) of `u8` to `u64`, also
 [with values](/docs/enums-and-bit-structs/#enums-with-values), an
 [`Option`](/docs/options/#option-fields) of one of these that has no
@@ -33,7 +33,7 @@ struct Link {
 ```
 
 ```text
-main.wyst:2:9: error: a field of a plain struct is only `bool`, `u8`, `u16`, `u32`, `u64`, `i64`, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
+main.wyst:2:9: error: a field of a plain struct is only `bool`, `uN` or `iN` with N 8, 16, 32, or 64, an enum, an `Option`, a plain struct, a `#[bits]` struct, or an array of them now
 ```
 
 A `bool` field is one byte. 0 is `false`, and each other value is
@@ -228,7 +228,12 @@ main.wyst:1:3: error: a `#[packed]` struct is not the type of a device, because 
 ```
 
 The address `@p.f` of a field of a packed struct has the type of the
-address of each other field, such as `@u32`.
+address of each other field, such as `@u32`, so a function that takes a
+`@u32` can get an address that is not a multiple of 4. An exclusive,
+atomic, load-acquire, or store-release instruction, such as `ldxr`,
+`stxr`, `cas`, `ldar`, or `stlr`, can take an alignment fault at such an
+address also when bit A is 0. Thus an `asm` block with one of these
+instructions must not get the address of a field of a packed struct.
 
 ## Big-endian fields
 
@@ -328,8 +333,8 @@ main.wyst:6:23: error: the checker cannot prove that the value of a field with a
 The address `@p.f` of a field with a limit keeps the limit, as the
 address of a big-endian field keeps the byte order. It is not a `@u64`,
 because a store through such an address would need no proof. A limit on
-an `i64` field, and a big-endian field with a limit, are not implemented
-now.
+a signed field, such as an `i64` field, and a big-endian field with a
+limit, are not implemented now.
 
 ## Struct literals
 

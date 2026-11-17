@@ -6,15 +6,16 @@ summary: Integers, characters, literals, bool, strings, conversions, and never.
 ## Integers
 
 `u8`, `u16`, `u32`, and `u64` are unsigned integers of 8, 16, 32, and 64
-bits. `i64` is a signed integer of 64 bits in two's complement, from
--2^63 to 2^63 - 1. These are the integer types of values. There is no
-`i8`, `i16`, or `i32`.
+bits. `i8`, `i16`, `i32`, and `i64` are signed integers of 8, 16, 32, and
+64 bits in two's complement: an `iN` is from -2^(N-1) to 2^(N-1) - 1.
+These are the integer types of values.
 
-An `i64` holds a value that can be less than 0, such as the move of the
-pointer from a press. It is the type of a parameter, a local, a constant,
-a variable, a result, and a field of a plain struct, as `u64` is. An
-index, the amount of a shift, and an address are not an `i64`, and a range
-loop and a `match` on an `i64` are not implemented now.
+A signed integer holds a value that can be less than 0, such as the move
+of the pointer from a press, or the move of a mouse in a HID report. It
+is the type of a parameter, a local, a constant, a variable, a result,
+and a field of a plain struct, as an unsigned integer is. An index, the
+amount of a shift, and an address are not signed, and a range loop and a
+`match` on a signed integer are not implemented now.
 
 An integer literal is decimal, hexadecimal with `0x`, or binary with `0b`.
 `_` can separate the digits:
@@ -30,14 +31,14 @@ The prefixes are lowercase, so `0X10` is an error that gives the prefix
 `0x`.
 
 A literal is at least 0. `-` before it gives a value less than 0, as in
-`-3`, so an `i64` constant can be negative:
+`-3`, so a signed constant can be negative:
 
 ```wyst
 const back: i64 = -3
-const least: i64 = -9223372036854775807 - 1
+const least: i8 = -127 - 1
 ```
 
-The largest literal of an `i64` is 2^63 - 1, so the constant -2^63
+The largest literal of an `iN` is 2^(N-1) - 1, so the constant -2^(N-1)
 needs an operator, as `least` shows.
 
 ## Characters
@@ -152,12 +153,14 @@ fn stop(card: @Card) {
 
 Wyst does not convert a value from one type to another by itself. `widen`
 and `truncate` convert a `uN` to the `uN` type that their position
-expects:
+expects, and an `iN` to the `iN` type that their position expects:
 
 - `widen(x)` gives `x` in a type that is at least as wide. For a value
   of an enum, it gives the value of the enum value.
 - `truncate(x)` gives the low bits of `x` in a type that is at most as
-  wide. The compiler does not check the bits that it removes.
+  wide. The compiler does not check the bits that it removes. For an
+  `iN`, the top one of those bits is the sign, so -70000 as an `i32`
+  gives -112 as an `i8`, the value of its low byte 0x90.
 
 ```wyst
 fn low_byte(x: u64) -> u8 {
@@ -168,6 +171,10 @@ fn low_byte(x: u64) -> u8 {
 fn bits(count: u32) -> u64 {
   const total: u64 = widen(count)
   return total * 8
+}
+
+fn level(sample: i16) -> i32 {
+  return widen(sample) * 2
 }
 ```
 
@@ -183,21 +190,23 @@ fn low_byte(x: u64) -> u8 {
 main.wyst:2:10: error: expected u8, found u64
 ```
 
-`widen` and `truncate` do not take or give an `i64`. `bitcast` gives the
-`i64` with the bits of a `u64`, and the reverse, so a `u64` of 2^63 or more
-gives an `i64` less than 0. To get a value less than 0 from `u64` values,
-give the operands to `bitcast`. Where the position expects an `i64`, an
-operand without a type of its own is a `u64`, so `bitcast(widen(x))` is
-the `i64` of a `u32` `x`. Here `signed` gives the `i64` of a 32-bit count
-with its sign in bit 31, because `>>` of an `i64` keeps the sign:
+`widen` and `truncate` do not change a `uN` to an `iN`, or the reverse.
+`bitcast` gives the `iN` with the bits of the `uN` of the same width, and
+the reverse, so a `u8` of 0x80 or more gives an `i8` less than 0. To get
+a value less than 0 from `u64` values, give the operands to `bitcast`.
+Where the position expects an `iN`, an operand without a type of its own
+is the `uN` of the same width, so `bitcast(truncate(x))` is the `i8` of
+the low byte of `x`. Here `signed` gives the `i64` of a byte of a HID
+report with its sign in bit 7, as the Studio `input` driver does:
 
 ```wyst
 fn moved(x: u64, press: u64) -> i64 {
   return bitcast(x) - bitcast(press)
 }
 
-fn signed(value: u32) -> i64 {
-  return bitcast(widen(value) << 32) >> 32
+fn signed(value: u64) -> i64 {
+  const byte: i8 = bitcast(truncate(value))
+  return widen(byte)
 }
 ```
 

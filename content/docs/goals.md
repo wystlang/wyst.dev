@@ -107,7 +107,7 @@ change before it enters:
   work (`Result`, and `match` on a `Result`, are not implemented now);
 - staged specialization (`comptime`, `where`) and conditional compilation
   (`#if`, `#target`): the build selects the target;
-- floating point, `switch`, `i8`, `i16`, and `i32`;
+- floating point and `switch`;
 - explicit uninitialized storage.
 
 ## How Wyst grows

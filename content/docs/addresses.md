@@ -9,8 +9,8 @@ offset.
 
 ## Address types
 
-`@T` is the type of an address of memory of type `T`. `T` is `u8`,
-`u16`, `u32`, `u64`, `i64`, an enum of `u8` to `u64`, an
+`@T` is the type of an address of memory of type `T`. `T` is `u8` to
+`u64`, `i8` to `i64`, an enum of `u8` to `u64`, an
 [`Option`](/docs/options/#option-fields) of one of these that has no
 values, a `bool`, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
@@ -62,9 +62,9 @@ fn banner() -> u64 {
 ```
 
 `bitcast` makes only an address from a `u64`, a `u64` from a `string`,
-and an `i64` from a `u64` and the reverse now, as
+and an `iN` from the `uN` of the same width and the reverse now, as
 [Values and types](/docs/values/#no-implicit-conversions) gives for
-`i64`. An integer literal has no type in `bitcast(...)` of an address.
+`iN`. An integer literal has no type in `bitcast(...)` of an address.
 Put the value in a typed constant, such as
 `const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
 
@@ -263,9 +263,9 @@ main.wyst:10:17: error: an `Option` of an address is only a result, which `else`
 
 The result of a `pub` function can be an address, an `Option` of an
 address, or a [slice](#slices). Another module uses the call as each
-other address. The target is `u8`, `u16`, `u32`, `u64`, `i64`, a `pub`
-struct, or an array of one of these, so no module gets the fields of a
-struct that is not `pub`:
+other address. The target is an integer, a `pub` struct, or an array of
+one of these, so no module gets the fields of a struct that is not
+`pub`:
 
 ```wyst
 pub struct Slot {
@@ -296,7 +296,7 @@ pub fn same(p: @Point) -> @Point {
 ```
 
 ```text
-main.wyst:6:27: error: an address of `Point` as the result of a `pub` function is not implemented now: the target is `u8`, `u16`, `u32`, `u64`, `i64`, a `pub` struct, or an array of one of these
+main.wyst:6:27: error: an address of `Point` as the result of a `pub` function is not implemented now: the target is an integer, a `pub` struct, or an array of one of these
 ```
 
 The compiler infers what the result of a `pub` function can come from, as
