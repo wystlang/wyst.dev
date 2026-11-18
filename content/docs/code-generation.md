@@ -127,15 +127,21 @@ An inline function runs in the frame of its caller. A parameter takes
 the home of an argument that is a local, because no code changes a
 parameter. A `const` in the top block of the body whose value is a
 parameter, or a field that fills a parameter, takes the home of the
-parameter too, so it makes no code. The other parameters and locals get
+parameter too, so it makes no code. `widen` and `bitcast` of a parameter
+make no code, so a `const` whose value is one of them, such as
+`widen(color)` of a `u32` to a `u64`, also takes the home of the
+parameter. A `var` keeps its own home, because an assignment can change
+it. The other parameters and locals get
 new homes in each copy. The homes of a copy are free after it, and so are
 the homes of a loop after the loop, so the next copy takes them.
 
-A `return` in a copy puts its value in `x0` and branches to the end of
-the copy, but a `return` at the end of the copy needs no branch. When the
-last statement of the body is its one `return`, and it gives a parameter
-whose argument is a local, or such a `const`, the value of the copy is
-the home of that local, as the value of the local is. Thus a copy of
+The value of a copy is in `x0`, or in `x0` to `x7`, as the result of a
+call is, with one exception. When the last statement of the body is its one `return`, and
+it gives a parameter whose argument is a local, or such a `const`, the
+value of the copy is the home of that local, as the value of the local
+is, and that `return` makes no code. Each other `return` puts its value
+in `x0` and branches to the end of the copy, but a `return` at the end
+of the copy needs no branch. Thus a copy of
 `keep` makes no instruction:
 
 ```wyst
