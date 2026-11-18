@@ -9,8 +9,9 @@ summary: Option results, parameters, locals, fields, and values, match, else blo
 enum without values, a `#[bits]` struct, or an address type. Its variants are
 `.Some(value)` and `.None`. An `Option` is the type of a function result,
 of a parameter, and of a local `const`, and memory holds an `Option` of an
-integer or of an enum without values, as [Option fields](#option-fields)
-shows. An `Option` of an address is only a result, as
+integer, of an enum without values, or of an address, as
+[Option fields](#option-fields) shows. A parameter and a local of an
+`Option` of an address are not implemented now, as
 [Addresses and memory](/docs/addresses/#address-results) shows. The
 output `Option<u64>` of an `asm` block is also an `Option`, as
 [Assembly](/docs/assembly/#option-outputs) shows.
@@ -172,7 +173,9 @@ fn together(table: @[slots]u64, a: u64, b: u64) -> bool {
 ```
 
 The value of `.Some` has a type that `==` takes: an integer, an enum
-without values, or a `#[bits]` struct that is not linear. Each tag that is
+without values, or a `#[bits]` struct that is not linear. No operator
+takes an address, so `==` and `!=` take an `Option` of an address only
+with `.None`, as in `load(@link.next) == .None`. Each tag that is
 not 0 is `.Some`, also a tag from memory, and `x == .None` reads only the
 tag of `x`. Else the code computes the tag and the value of each operand,
 from left to right, also the value `v` of `.Some(v)` when the other
@@ -618,11 +621,19 @@ main.wyst:10:15: error: `load` of an `Option` at an address with a call is not i
 Put the address in a local first, as in `const record = column(slot)` and
 then `load(@record.back)`.
 
+An `Option` of an address in memory is one word, the address of `.Some`
+or 0 for `.None`, as
+[Addresses in memory](/docs/addresses/#addresses-in-memory) shows. Its
+`load` is one load, so its address can have a call, and a module variable
+can also hold it, with the first value `.None`.
+
 ## Not implemented now
 
 `Result<T, E>`, with `.Ok` and `.Error`, is not implemented now. The `?`
 of a `Result` returns its error from a function with a `Result` result of
-the same error type. An `Option` as a local `var`, a module variable, or
-a module constant, an `Option` in memory of another type, such as
-`Option<bool>`, a value of an `Option` in a constant table, and an
-`Option` parameter of a naked function are not implemented now.
+the same error type. An `Option` as a local `var` or a module constant, a
+module variable of an `Option` other than an `Option` of an address, an
+`Option` in memory of another type, such as `Option<bool>`, a value of an
+`Option` in a constant table, other than `.None` of an `Option` of an
+address, and an `Option` parameter of a naked function are not
+implemented now.

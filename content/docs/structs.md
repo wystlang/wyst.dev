@@ -24,8 +24,8 @@ A field type is `u8` to `u64`, `i8` to `i64`, an
 values, a `bool`, a plain struct, a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values), which holds its
 backing integer, an [address](/docs/addresses/#addresses-in-memory) of
-`u8` to `u64`, of `i8` to `i64`, or of a plain struct, or an array
-`[N]T` of one of these:
+`u8` to `u64`, of `i8` to `i64`, or of a plain struct, also in an
+`Option`, or an array `[N]T` of one of these:
 
 ```wyst
 struct Record {
@@ -148,6 +148,7 @@ A plain struct lays out its fields as C does, unless it is
   element, and the alignment of a struct is the largest alignment of its
   fields. An `Option<T>` is the tag and the value, each in a word of the
   width of `T`, so an `Option<u64>` has 16 bytes, with the alignment 8.
+  An address, also in an `Option`, has 8 bytes, with the alignment 8.
 - The size of a struct is a multiple of its alignment.
 
 Thus `Slot` above is 16 bytes. In `Table` below, `marks` starts at byte 2,
@@ -505,10 +506,10 @@ const broadcast: Ethernet = { destination = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
 gives the offset of field `f` in the plain struct `T`. Both are `u64`
 constants. The argument `T` is a type: `u8`, `u16`, `u32`, `u64`, an
 enum of one of these, a plain struct, or, for `size_of`, a `#[bits]`
-struct, an `Option` in memory, such as `Option<u64>`, or an array of them,
-such as `[4]Slot`. A module constant or a `static_assert` that uses them comes
-after the declaration of `T`. A function that uses them can come before
-it.
+struct, an `Option` in memory, such as `Option<u64>` or
+`Option<@Slot>`, or an array of them, such as `[4]Slot`. A module
+constant or a `static_assert` that uses them comes after the declaration
+of `T`. A function that uses them can come before it.
 
 Code that depends on a layout states it with `static_assert`, directly
 below the struct:

@@ -15,7 +15,7 @@ offset.
 values, a `bool`, a plain struct or a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) of the module, a
 `pub` plain struct `m.S` of an imported module, an address of `u8` to
-`u64`, of `i8` to `i64`, or of a plain struct, as
+`u64`, of `i8` to `i64`, or of a plain struct, also in an `Option`, as
 [Addresses in memory](#addresses-in-memory) gives, or an array `[N]T` of
 one of these. `N` is a constant, such as a module constant. Another
 target, such as an array of arrays, is not implemented now.
@@ -218,9 +218,54 @@ that, also in the functions that it calls, and the signature does not say
 it. Memory cannot keep the address of read-only data, as
 [Read-only addresses](#read-only-addresses) gives.
 
-Memory and a module variable never hold a slice or the
-[address of a register map](/docs/registers/#addresses-of-register-maps).
-An `Option` of an address in memory is not implemented now:
+A field and a module variable can also hold an `Option` of such an
+address, for a link that can be empty. It is one word of 8 bytes: the
+address of `.Some`, or 0 for `.None`, so memory of zeros is `.None`, and
+so is a field that a literal does not name. `load` gives the `Option`,
+and asserts the address of `.Some`, as for an address. `match`, `else`,
+`?`, and a `return` of that result type take the `load`, as they take a
+call, and the code loads the word one time. `store` and an assignment
+write the address of `.Some(a)`, or 0 for `.None`, also for a call that
+returns `.None`. The first value of a module variable is `.None`, and a
+read of it is as a `load`:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+struct Link {
+  count: u32
+  next: Option<@Record>
+}
+
+static_assert(size_of(Option<@Record>) == 8)
+
+var last: Option<@Record> = .None
+
+fn attach(link: @Link, record: @Record) {
+  store(@link.next, .Some(record))
+  last = .Some(record)
+}
+
+fn value(link: @Link) -> u64 {
+  const record = load(@link.next) else { return 0 }
+  return load(@record.value)
+}
+
+fn last_value() -> u64 {
+  match last {
+    .Some(record) { return load(@record.value) }
+    .None { return 0 }
+  }
+}
+```
+
+No operator takes an address, so `==` and `!=` take an `Option` of an
+address only with `.None`, as in `load(@link.next) == .None`, and read
+only its word. A parameter and a local of an `Option` of an address are
+not implemented now, also of a `load`, so `else`, `?`, or `match` takes
+the `load`:
 
 ```wyst fails
 struct Record {
@@ -230,20 +275,32 @@ struct Record {
 struct Link {
   next: Option<@Record>
 }
+
+fn value(link: @Link) -> u64 {
+  const next = load(@link.next)
+  const record = next else { return 0 }
+  return load(@record.value)
+}
 ```
 
 ```text
-main.wyst:6:9: error: an `Option` of `@Record` in memory is not implemented now: memory holds an `Option` of `uN` or `iN` with N 8, 16, 32, or 64, or of an enum without values
+main.wyst:10:16: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
 ```
 
-No operator takes an address, so a link that can be empty, such as the
-next record of a list or 0, stays a `u64`, which `bitcast` makes an
-address at each use.
+A local `var` and a module constant of an `Option` of an address, a
+value other than `.None` in a constant table or as the first value of a
+module variable, `#[big_endian]` and `#[below(n)]` before such a field,
+and an `asm` input or output of it are not implemented now.
 
+Memory and a module variable never hold a slice or the
+[address of a register map](/docs/registers/#addresses-of-register-maps).
 The address of another type in memory, such as `@bool` or `@[4]u64`, the
 address of a struct in a field of that struct, such as `next: @Thread` in
-`Thread`, and a [struct value](/docs/structs/#struct-values) with an
-address field are not implemented now.
+`Thread`, also in an `Option`, and a
+[struct value](/docs/structs/#struct-values) with an address field are
+not implemented now. A link that holds the address of a record of its
+own type, such as the next record of a list, stays a `u64`, which
+`bitcast` makes an address at each use.
 
 ## Places
 
@@ -326,10 +383,10 @@ it comes from a parameter, from `bitcast`, from `@c` of a constant
 table, from a `load`, or from a module variable. A call statement that
 drops the address is an error, as for a value result.
 
-A result can also be an `Option` of an address. A parameter and a local
-cannot hold an `Option` of an address, and an `Option` of an address in
-memory or in a module variable is not implemented now. `else`, `?`, and
-`match` take it at the call, and give the address of `Some` to a local:
+A result can also be an `Option` of an address, as memory can. A
+parameter and a local of an `Option` of an address are not implemented
+now. `else`, `?`, and `match` take it at the call, and give the address
+of `Some` to a local:
 
 ```wyst
 struct Domain {
@@ -373,7 +430,7 @@ fn keep(domain: u64) {
 ```
 
 ```text
-main.wyst:10:17: error: an `Option` of an address is only a result, which `else`, `?`, or `match` takes at the call
+main.wyst:10:17: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
 ```
 
 ### Pub results

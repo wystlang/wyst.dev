@@ -257,6 +257,47 @@ var saved: @u64 = 0
 main.wyst:1:19: error: the value of an address variable is only `bitcast` of a `u64` constant now
 ```
 
+A module variable can also hold an `Option` of such an address, for a
+link that can be empty. Its initial value is `.None`, and a read of it
+is as a [`load`](/docs/addresses/#addresses-in-memory): `match`, `else`,
+`?`, and `return` take it. An assignment gives it `.Some` of an address,
+or `.None`:
+
+```wyst
+struct Queue {
+  first: u64
+  last: u64
+}
+
+var waiting: Option<@Queue> = .None
+
+pub fn wait(queue: @Queue) {
+  waiting = .Some(queue)
+}
+
+pub fn first() -> u64 {
+  const queue = waiting else { return 0 }
+  return load(@queue.first)
+}
+```
+
+An initial value other than `.None`, and a module variable of another
+`Option`, are not implemented now:
+
+```wyst fails
+struct Queue {
+  first: u64
+}
+
+const unset: u64 = 0x4100_0000
+
+var waiting: Option<@Queue> = .Some(bitcast(unset))
+```
+
+```text
+main.wyst:7:31: error: a first value of a variable of Option<@Queue> other than `.None` is not implemented now
+```
+
 Each module variable is in the ELF file with its initial value, in the
 section `.data`. The program does not need to clear memory before it
 starts.
