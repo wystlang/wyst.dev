@@ -1,6 +1,6 @@
 ---
 title: Assembly
-summary: Checked asm blocks, their inputs and outputs, Option outputs, and blocks that do not return.
+summary: Checked asm blocks, their inputs and outputs, Option outputs, blocks that do not return, and SIMD lines.
 ---
 
 An `asm` block writes A64 instructions directly. The compiler checks each
@@ -37,11 +37,13 @@ as `at s1e1r` is an error.
 
 The compiler checks each line for the kernel at EL1, or at EL2 in an
 [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), on the QEMU
-`virt` target: the base A64 instructions, the atomic instructions
-(`FEAT_LSE`) and the VHE registers (`FEAT_VHE`) of the Cortex-A76, the
-GICv3 CPU interface (`FEAT_GICv3`), and the PMUv3 (`FEAT_PMUv3`). An
-instruction or a system register that needs a higher exception level or
-another feature is an error.
+`virt` target: the base A64 instructions, the SIMD registers (`FEAT_FP`
+and `FEAT_AdvSIMD`), the atomic instructions (`FEAT_LSE`) and the VHE
+registers (`FEAT_VHE`) of the Cortex-A76, the GICv3 CPU interface
+(`FEAT_GICv3`), and the PMUv3 (`FEAT_PMUv3`). An instruction or a system
+register that needs a higher exception level or another feature is an
+error. [SIMD lines](#simd-lines) gives where a line can name a SIMD
+register.
 
 ## Inputs
 
@@ -262,3 +264,50 @@ needs `in xN`, and these blocks have no output.
 
 A naked function sets the stack with such a block, as
 [Boot and exceptions](/docs/boot-and-exceptions/) shows.
+
+## SIMD lines
+
+A line that names a SIMD register, such as `v0.16b`, `d0`, or `q0`, is a
+SIMD line. The language has no type for these registers, and the compiler
+makes no SIMD line of its own. A line names a physical SIMD register, also
+in a block with inputs, because the compiler does not allocate them. The
+A64 tables have only the SIMD lines that the kernel uses: `ldr q` and
+`str q`, `orr` and `ext` of two vectors, and `fmov` from `d` to a general
+register. Floating point is not in the language, so the tables have no
+floating-point line.
+
+A function in the section `.el0` can have each SIMD line, because EL0 code
+uses the SIMD registers, and the kernel keeps them for each thread. This
+function gives the OR of the four 64-bit halves of `v0` and `v1`:
+
+```wyst
+#[section(.el0)]
+fn halves() -> u64 {
+  return asm -> value {
+    orr v0.16b, v0.16b, v1.16b
+    ext v1.16b, v0.16b, v0.16b, #8
+    orr v0.16b, v0.16b, v1.16b
+    fmov value.x, d0
+  }
+}
+```
+
+Outside `.el0`, a SIMD line can only load or store a full SIMD register,
+with `ldr q` or `str q`. Thus the kernel keeps the registers of a thread,
+and changes none of them. An inline function has no section, so it is
+outside `.el0`:
+
+```wyst fails
+fn mix() {
+  asm {
+    orr v0.16b, v0.16b, v1.16b
+  }
+}
+```
+
+```text
+main.wyst:3:5: error: outside section `.el0`, an `asm` line can name a SIMD register only to load or store it whole, with `ldr q` or `str q`
+```
+
+A SIMD register holds no value of the language, and a call can change it,
+so the code keeps such values in memory between two blocks.
