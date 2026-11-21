@@ -108,7 +108,8 @@ change before it enters:
   work (`Result`, and `match` on a `Result`, are not implemented now);
 - staged specialization (`comptime`, `where`) and conditional compilation
   (`#if`, `#target`): the build selects the target;
-- floating point and `switch`;
+- floating point, also as an `asm` line, and `switch`. The
+  [SIMD lines](/docs/assembly/#simd-lines) of `asm` hold integers;
 - explicit uninitialized storage;
 - a block that runs at each exit of a scope, as `defer` does in Go:
   an [`undo`](/docs/options/#undo) block runs only before a return of
