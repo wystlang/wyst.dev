@@ -174,6 +174,15 @@ fn copy(to: u64, from: u64) {
 }
 ```
 
+A line that reads a `scratch` operand before a line writes it is an error,
+because its register can be one of `x0` to `x8`, which can hold a
+parameter or the result of a call when the block starts. A line such as
+`add t.x, t.x, #1` reads `t` before it writes it. The handler of an
+exception, such as that of `svc`, `hvc`, `smc`, `brk`, `hlt`, or `udf`, can
+change `x0` to `x17`. Thus after such a line, a line that reads a
+`scratch` operand in these registers is an error until a line writes it
+again.
+
 Each input comes before each `scratch` operand. A naked function and a
 block that does not return name physical registers, so they have no
 `scratch` operand.
@@ -181,7 +190,7 @@ block that does not return name physical registers, so they have no
 ```wyst fails
 fn store_zero(address: u64) {
   asm(address, scratch zero) {
-    str zero.x, [address]
+    str xzr, [address]
   }
 }
 ```
@@ -192,7 +201,7 @@ main.wyst:2:24: error: no line of this `asm` block writes `scratch zero`
 
 ## Registers
 
-A block has at most 24 registers for its inputs, its output, and its
+A block has at most 24 registers for its inputs, a `u64` output, and its
 `scratch` operands together. The largest block of the models of the
 secure pages of the kernel, one step of AES-GCM, has 23 general registers
 and the address of its work area.
@@ -202,7 +211,13 @@ the register after the inputs, so a block has at most 9 inputs, or 8 with
 an output. The `scratch` operands take the registers after the output to
 `x17`, then `x0` to `x8`, and then `x19` and the registers after it. A
 `scratch` operand does not take the register of an `in xN` input, or `x0`
-and `x1` of an `Option<u64>` output.
+and `x1` of an `Option<u64>` output. An `in xN` input also takes its place
+`x(9 + i)`. Thus a block has at most 28 registers, less one for each
+`in xN` input and, with an `Option<u64>` output, less each of `x0` and
+`x1` that no input holds, and never more than 24. An `Option<u64>` output
+is in `x0` and `x1`, which are not in this count. When this limit is less
+than 24, the error for the first `scratch` operand after the limit says
+that no register is free for it.
 
 A call must keep `x19` to `x28`. The function of a block that uses them
 saves them in its prologue, with the registers of its locals, and loads
@@ -342,8 +357,9 @@ and `ld1` and `st1` of a list of registers. Floating point is not in the
 language, so the tables have no floating-point line.
 
 A list of registers, such as `{ v0.4s, v1.4s }`, is in one line, so its
-`}` does not end the block. An element, such as `v1.d[1]`, has its index
-after the arrangement.
+`}` does not end the block. A list holds only registers, so a `{` in a
+list is an error. An element, such as `v1.d[1]`, has its index after the
+arrangement.
 
 A function in the section `.el0` can have each SIMD line, because EL0 code
 uses the SIMD registers, and the kernel keeps them for each thread. This
