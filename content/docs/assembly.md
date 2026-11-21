@@ -70,6 +70,22 @@ A line cannot name a physical general register, such as `x3`, or `sp`. The
 compiler chooses the registers, except as
 [Physical registers](#physical-registers) gives.
 
+An input, the output, or a `scratch` operand with the form of a register
+name, such as `x0`, `d0`, or `x32`, is an error, because a line does not
+read such a name as an operand:
+
+```wyst fails
+fn save(address: u64, value: u64) {
+  asm(address, x1 = value) {
+    str x1, [address]
+  }
+}
+```
+
+```text
+main.wyst:2:16: error: `asm` operand `x1` has the form of a register name
+```
+
 ## Inputs in fixed registers
 
 `name in xN = value`, with N from 0 to 7, puts the input in `xN`. Two
