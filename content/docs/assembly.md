@@ -1,6 +1,6 @@
 ---
 title: Assembly
-summary: Checked asm blocks, their inputs and outputs, Option outputs, blocks that do not return, and SIMD lines.
+summary: Checked asm blocks, their inputs, outputs, and registers, Option outputs, blocks that do not return, and SIMD lines.
 ---
 
 An `asm` block writes A64 instructions directly. The compiler checks each
@@ -28,7 +28,11 @@ instruction that the alias names:
 - `orr to.x, xzr, from.x` for `mov to.x, from.x`
 - `subs xzr, from.x, #1` for `cmp from.x, #1`
 - `ubfm to.x, from.x, #61, #60` for `lsl to.x, from.x, #3`
+- `madd to.x, a.x, b.x, xzr` for `mul to.x, a.x, b.x`
+- `csinc to.x, xzr, xzr, cs` for `cset to.x, cc`
 - `add sp, x0, #0` for `mov sp, x0`
+
+The conditions `hs` and `lo` are `cs` and `cc`.
 
 A barrier option is a number or its Arm name: `dsb sy` is `dsb #15`. A DC,
 IC, or TLBI operation of the A64 tables can use its Arm name, such as
@@ -38,7 +42,9 @@ as `at s1e1r` is an error.
 The compiler checks each line for the kernel at EL1, or at EL2 in an
 [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), on the QEMU
 `virt` target: the base A64 instructions, the SIMD registers (`FEAT_FP`
-and `FEAT_AdvSIMD`), the atomic instructions (`FEAT_LSE`) and the VHE
+and `FEAT_AdvSIMD`), the lines of AES, of the polynomial multiplication
+of 64-bit elements, and of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and
+`FEAT_SHA256`), the atomic instructions (`FEAT_LSE`) and the VHE
 registers (`FEAT_VHE`) of the Cortex-A76, the GICv3 CPU interface
 (`FEAT_GICv3`), and the PMUv3 (`FEAT_PMUv3`). An instruction or a system
 register that needs a higher exception level or another feature is an
@@ -168,10 +174,9 @@ fn copy(to: u64, from: u64) {
 }
 ```
 
-The inputs, the output, and the `scratch` operands share 9 registers, so a
-block has at most 9 of them together. Each input comes before each
-`scratch` operand. A naked function and a block that does not return name
-physical registers, so they have no `scratch` operand.
+Each input comes before each `scratch` operand. A naked function and a
+block that does not return name physical registers, so they have no
+`scratch` operand.
 
 ```wyst fails
 fn store_zero(address: u64) {
@@ -183,6 +188,44 @@ fn store_zero(address: u64) {
 
 ```text
 main.wyst:2:24: error: no line of this `asm` block writes `scratch zero`
+```
+
+## Registers
+
+A block has at most 24 registers for its inputs, its output, and its
+`scratch` operands together. The largest block of the models of the
+secure pages of the kernel, one step of AES-GCM, has 23 general registers
+and the address of its work area.
+
+Input `i` is in `x(9 + i)`, or in `xN` for `in xN`, and the output is in
+the register after the inputs, so a block has at most 9 inputs, or 8 with
+an output. The `scratch` operands take the registers after the output to
+`x17`, then `x0` to `x8`, and then `x19` and the registers after it. A
+`scratch` operand does not take the register of an `in xN` input, or `x0`
+and `x1` of an `Option<u64>` output.
+
+A call must keep `x19` to `x28`. The function of a block that uses them
+saves them in its prologue, with the registers of its locals, and loads
+them again in its epilogue, so the block needs no line to save them. This
+block adds two numbers of 256 bits with 11 registers, so `m2` and `m3` are
+in `x0` and `x1`:
+
+```wyst
+// z = x + y, for four limbs of 64 bits each, the low limb first.
+fn add256(z: u64, x: u64, y: u64) {
+  asm(z, x, y, scratch a0, scratch a1, scratch a2, scratch a3, scratch m0, scratch m1, scratch m2, scratch m3) {
+    ldp a0, a1, [x]
+    ldp a2, a3, [x, #16]
+    ldp m0, m1, [y]
+    ldp m2, m3, [y, #16]
+    adds a0, a0, m0
+    adcs a1, a1, m1
+    adcs a2, a2, m2
+    adc a3, a3, m3
+    stp a0, a1, [z]
+    stp a2, a3, [z, #16]
+  }
+}
 ```
 
 ## Outputs
@@ -289,8 +332,18 @@ makes no SIMD line of its own. A line names a physical SIMD register, also
 in a block with inputs, because the compiler does not allocate them. The
 A64 tables have only the SIMD lines that the kernel uses: `ldr q` and
 `str q`, `orr` and `ext` of two vectors, and `fmov` from `d` to a general
-register. Floating point is not in the language, so the tables have no
-floating-point line.
+register, and the lines of AES, of GCM, and of SHA-256. These are `aese`
+and `aesmc`, `pmull` and `pmull2` of 64-bit elements, `sha256h`,
+`sha256h2`, `sha256su0`, and `sha256su1`, and the SIMD lines with them:
+`eor`, `and`, and `add` of vectors, `rev32` and `rev64`, `tbl` of one
+register, `shl`, `ushr`, and `sshr`, `movi` of bytes, `dup` and `ins` of
+an element, `ldr q` and `str q` with a post-index, `ldur q` and `stur q`,
+and `ld1` and `st1` of a list of registers. Floating point is not in the
+language, so the tables have no floating-point line.
+
+A list of registers, such as `{ v0.4s, v1.4s }`, is in one line, so its
+`}` does not end the block. An element, such as `v1.d[1]`, has its index
+after the arrangement.
 
 A function in the section `.el0` can have each SIMD line, because EL0 code
 uses the SIMD registers, and the kernel keeps them for each thread. This
@@ -326,4 +379,18 @@ main.wyst:3:5: error: outside section `.el0`, an `asm` line can name a SIMD regi
 ```
 
 A SIMD register holds no value of the language, and a call can change it,
-so the code keeps such values in memory between two blocks.
+so the code keeps such values in memory between two blocks. This function
+does one round of AES on the 16 bytes at `block`:
+
+```wyst
+#[section(.el0)]
+fn round(block: u64, key: u64) {
+  asm(block, key) {
+    ld1 { v0.16b }, [block]
+    ld1 { v1.16b }, [key]
+    aese v0.16b, v1.16b
+    aesmc v0.16b, v0.16b
+    st1 { v0.16b }, [block]
+  }
+}
+```

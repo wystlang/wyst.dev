@@ -57,8 +57,10 @@ A token of digits and then a letter, such as `16K`, is a variant name. It
 is valid only after `.` and as a variant of an enum.
 
 The body of an `asm` block is not Wyst. Each line of the body, up to the
-first `}` that is not in a comment, is one assembly line, and `//` starts a
-comment. Outside a comment, a line cannot have `{`.
+first `}` that is not in a comment and closes no `{` of its line, is one
+assembly line, and `//` starts a comment. Outside a comment, a `{` starts a
+list of registers, such as `{ v0.4s, v1.4s }`, which a `}` of the same line
+ends.
 
 ## Files and declarations
 
