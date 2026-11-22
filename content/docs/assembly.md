@@ -41,16 +41,16 @@ as `at s1e1r` is an error.
 
 The compiler checks each line for the kernel at EL1, at EL2 in an
 [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or at EL0
-in a function in the section `.el0`, on the QEMU `virt` target: the base
-A64 instructions, the SIMD registers (`FEAT_FP` and `FEAT_AdvSIMD`), the
-lines of AES, of the polynomial multiplication of 64-bit elements, and of
-SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic
+in another function in the section `.el0`, on the QEMU `virt` target: the
+base A64 instructions, the SIMD registers (`FEAT_FP` and `FEAT_AdvSIMD`),
+the lines of AES, of the polynomial multiplication of 64-bit elements, and
+of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic
 instructions (`FEAT_LSE`) and the VHE registers (`FEAT_VHE`) of the
 Cortex-A76, the GICv3 CPU interface (`FEAT_GICv3`), and the PMUv3
 (`FEAT_PMUv3`). An instruction or a system register that needs a higher
 exception level or another feature is an error. An inline function has no
-section, so the compiler checks it at EL1. A function in `.el0` can read
-`cntvct_el0`, but not `ttbr0_el1`:
+section, so the compiler checks it at EL1 when it does not have `#[el2]`.
+A function in `.el0` can read `cntvct_el0`, but not `ttbr0_el1`:
 
 ```wyst fails
 #[section(.el0)]
@@ -322,7 +322,9 @@ left in a register:
 - After an exception line, a line that reads a `scratch` operand in `x0`
   to `x17` is an error until a line writes it again. A `scratch` operand
   from `x19` keeps its value.
-- The handler of an `svc` gives an `Option<u64>` output its value, as
+- After an exception line, only the handler of an `svc` gives an
+  `Option<u64>` output its value in `x0` and `x1`, so the last exception
+  line of a block with such an output must be `svc`, as
   [Option outputs](#option-outputs) gives.
 
 ```wyst fails
@@ -380,6 +382,22 @@ fn midr() -> u64 {
 
 ```text
 main.wyst:2:21: error: `else` takes an `Option`, and an `asm` output with no type is a `u64`
+```
+
+The handler of an exception line other than `svc`, such as `hvc` or
+`brk`, can change `x0` and `x1`. Thus when the block has an exception
+line, its last exception line must be `svc`:
+
+```wyst fails
+fn query(function: u64, argument: u64) -> Option<u64> {
+  return asm(function in x0, argument in x1) -> result: Option<u64> {
+    hvc #0
+  }
+}
+```
+
+```text
+main.wyst:2:49: error: the handler of an exception of a line of this `asm` block can change its output `result` in x0 and x1, so its last exception line must be `svc`
 ```
 
 ## Blocks that do not return

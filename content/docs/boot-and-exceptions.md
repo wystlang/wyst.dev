@@ -391,8 +391,8 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
 `eret`.
 
 - The compiler checks the `asm` lines and the system register accesses of
-  an `#[el2]` function for EL2, those of a function in the section `.el0`
-  for EL0, and those of each other function for EL1.
+  an `#[el2]` function for EL2, those of each other function in the
+  section `.el0` for EL0, and those of each other function for EL1.
 - An `#[el2]` function can call only `#[el2]` functions, and only an
   `#[el2]` function can call one, because a callee runs at the EL of its
   caller. A function of the vector table runs at EL1, so it cannot have
