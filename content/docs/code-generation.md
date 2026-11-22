@@ -182,7 +182,7 @@ register.
 | A system register `read` or `write` | One `mrs` or `msr`. |
 | A field read | One `ubfx`. A field at bit 0 that fills its value adds no code: a field of 64 bits, or `VALUE: u32 at 0..=31` in a `u32` register. |
 | A field write | One `lsl` or `orr` for each field value that is not a constant. The fixed fields and the constant values make one constant. One `orr` adds it when it fits in the instruction. If it does not fit, the code of the constant and one `orr` add it. A write of only constants is one constant. |
-| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`. A big-endian field adds one `rev16` or `rev`, except in a store of a constant, which the compiler reverses itself. The address of a field, or of an element at a constant index, adds one `add` for the offset, except at an [address constant](/docs/addresses/#address-constants): the compiler adds the offset to the constant. An index adds one shifted `add`, or `mov`, `mul`, and `add` when the element size is not a power of two. |
+| `load`, `store` | One `ldrb`, `ldrh`, `ldr`, `strb`, `strh`, or `str`, which takes a part of its address, as [Addresses of loads and stores](#addresses-of-loads-and-stores) gives. A big-endian field adds one `rev16` or `rev`, except in a store of a constant, which the compiler reverses itself. At an [address constant](/docs/addresses/#address-constants), the compiler adds the offset to the constant. An index of an element whose size is not a power of two adds `mov` and `mul`. |
 | `widen`, `bitcast` | No code. |
 | `truncate` | One `ubfx`. |
 | `x * 2^k` | One `lsl`, and one `ubfx` for a type below 64 bits. |
@@ -200,7 +200,7 @@ register.
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. A constant end that fits in the `cmp`, such as `0 ..< 512`, has no home. |
 | A string loop | Its cursor and its end are in homes. One `ldr` reads the length before the loop, and each pass reads its byte with one `ldrb`. The test is `cmp` and `b.lo`. |
-| A slice loop | A range loop over an index with no name, from 0 to the length. The address, the index, and the end are in homes. Each pass starts with the load of the element: one `add`, with a shift for an element of 2, 4, or 8 bytes, and one load. |
+| A slice loop | A range loop over an index with no name, from 0 to the length. The address, the index, and the end are in homes. Each pass starts with the load of the element: one load at the address and the index, which the load shifts for an element of 2, 4, or 8 bytes. |
 | `const x = f() else { trap() }` | The call, then `cbnz x0`. `else { break }` and `else { continue }` are one `cbz x0` to the target of the jump. |
 | `trap()` | `brk #0`. |
 | A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register, and `bitcast` of a `string` gives this register as a `u64`. `len(s)` is one `ldr` from the value of `s`, and `@s[i]` adds `i + 8` to it. |
@@ -211,6 +211,68 @@ A constant operand goes in the instruction when it fits, such as a value
 below 4096 for `add`, `sub`, and `cmp`. A `tbz` or a `tbnz` reaches only 32
 KiB, so a condition on a one-bit field, or on one bit of a value, is an
 error when its `if` body or loop body is longer than 32 KiB.
+
+## Addresses of loads and stores
+
+The address of a `load` or a `store` is a sum: of an address, the offset
+of a field, and the index of an element times the element size. The load
+or the store takes a part of the sum, so the compiler adds few `add`
+instructions of its own:
+
+- The constants of the sum are the offset of the instruction, when the
+  offset is a multiple of the size below 4096 times the size. Thus the
+  field of an address in a local is one load or store with no `add`.
+- Two values with no constant are the base and the index of the
+  instruction. An index of elements of the size of the load or the store
+  has the shift of the instruction.
+- Two values and a constant are one `add` and the offset. In straight
+  code, the next load or store with the same two locals uses that `add`
+  again. A label, a branch, a call, an `asm` block, and a write of one of
+  the locals end the straight code.
+- Another offset, such as that of a `u16` field of a `#[packed]` struct
+  at an odd offset, keeps its `add`, and the offset is 0.
+
+Each `load` and `store` is one load or store of its size, in the order of
+the source, so the compiler joins no stores.
+
+```wyst
+struct Record {
+  head: [11]u64
+  asked: u64
+  question: [38]u8
+}
+
+fn ask(record: @Record, count: u64) {
+  if count > 32 {
+    return
+  }
+
+  store(@record.question[count + 1], 0)
+  store(@record.question[count + 2], 0)
+  store(@record.asked, count + 3)
+}
+
+fn element(table: @[8]u64, i: u64) -> u64 {
+  if i < 8 {
+    return load(@table[i])
+  }
+  return 0
+}
+```
+
+With `record` in `x12` and `count` in `x11`, the stores of `ask` are:
+
+```text
+add   x9, x12, x11
+strb  wzr, [x9, #0x61]
+strb  wzr, [x9, #0x62]
+add   x10, x11, #0x3
+str   x10, [x12, #0x58]
+```
+
+The field `question` is at offset 96, so the first store has the offset
+97. The second store uses the `add` of the first. With `table` in `x12`
+and `i` in `x11`, the load of `element` is `ldr x0, [x12, x11, lsl #3]`.
 
 ## Linking
 
