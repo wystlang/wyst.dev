@@ -39,17 +39,33 @@ IC, or TLBI operation of the A64 tables can use its Arm name, such as
 `tlbi vmalle1`. The tables have no other system operation, so a line such
 as `at s1e1r` is an error.
 
-The compiler checks each line for the kernel at EL1, or at EL2 in an
-[`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), on the QEMU
-`virt` target: the base A64 instructions, the SIMD registers (`FEAT_FP`
-and `FEAT_AdvSIMD`), the lines of AES, of the polynomial multiplication
-of 64-bit elements, and of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and
-`FEAT_SHA256`), the atomic instructions (`FEAT_LSE`) and the VHE
-registers (`FEAT_VHE`) of the Cortex-A76, the GICv3 CPU interface
-(`FEAT_GICv3`), and the PMUv3 (`FEAT_PMUv3`). An instruction or a system
-register that needs a higher exception level or another feature is an
-error. [SIMD lines](#simd-lines) gives where a line can name a SIMD
-register.
+The compiler checks each line for the kernel at EL1, at EL2 in an
+[`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or at EL0
+in a function in the section `.el0`, on the QEMU `virt` target: the base
+A64 instructions, the SIMD registers (`FEAT_FP` and `FEAT_AdvSIMD`), the
+lines of AES, of the polynomial multiplication of 64-bit elements, and of
+SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic
+instructions (`FEAT_LSE`) and the VHE registers (`FEAT_VHE`) of the
+Cortex-A76, the GICv3 CPU interface (`FEAT_GICv3`), and the PMUv3
+(`FEAT_PMUv3`). An instruction or a system register that needs a higher
+exception level or another feature is an error. An inline function has no
+section, so the compiler checks it at EL1. A function in `.el0` can read
+`cntvct_el0`, but not `ttbr0_el1`:
+
+```wyst fails
+#[section(.el0)]
+fn table() -> u64 {
+  return asm -> value {
+    mrs value.x, ttbr0_el1
+  }
+}
+```
+
+```text
+main.wyst:4:5: error: system register `TTBR0_EL1` requires EL1 or higher
+```
+
+[SIMD lines](#simd-lines) gives where a line can name a SIMD register.
 
 ## Inputs
 
@@ -177,11 +193,10 @@ fn copy(to: u64, from: u64) {
 A line that reads a `scratch` operand before a line writes it is an error,
 because its register can be one of `x0` to `x8`, which can hold a
 parameter or the result of a call when the block starts. A line such as
-`add t.x, t.x, #1` reads `t` before it writes it. The handler of an
-exception, such as that of `svc`, `hvc`, `smc`, `brk`, `hlt`, or `udf`, can
-change `x0` to `x17`. Thus after such a line, a line that reads a
-`scratch` operand in these registers is an error until a line writes it
-again.
+`add t.x, t.x, #1` reads `t` before it writes it. After an exception
+line, a line that reads a `scratch` operand in `x0` to `x17` is an error
+until a line writes it again, as [Exception lines](#exception-lines)
+gives.
 
 Each input comes before each `scratch` operand. A naked function and a
 block that does not return name physical registers, so they have no
@@ -272,6 +287,58 @@ compiler keeps each value that it needs after the block in a home while
 the block runs, as for a call. An output in a named register,
 `-> name in xN`, an output with a value, a `scratch` output, and a list of
 outputs, `-> (a, b)`, are not implemented now.
+
+The output is in the register after the inputs. When the block starts,
+the code before the block, or the code of an input, can leave a value in
+that register, such as an address that it computed. Thus a line that
+reads the output before a line writes it is an error:
+
+```wyst fails
+fn next(count: u64) -> u64 {
+  return asm(count) -> out {
+    add out.x, out.x, count.x
+  }
+}
+```
+
+```text
+main.wyst:3:5: error: the `asm` line reads output `out` before a line writes it
+```
+
+## Exception lines
+
+A line of `svc`, `hvc`, `smc`, `brk`, `hlt`, or `udf` is an exception
+line. It goes to the handler of an exception, which can change `x0` to
+`x17`, and the block continues after the line when the handler returns.
+Thus a line after an exception line cannot read a value that the handler
+left in a register:
+
+- Each input is in `x0` to `x17`, and a line cannot write an input, so a
+  line after an exception line that reads an input is an error.
+- The output is in `x9` to `x17`, so after an exception line, a line that
+  reads it is an error until a line writes it again. The value of the
+  block is a read of the output after its last line, so a line after the
+  last exception line must write the output.
+- After an exception line, a line that reads a `scratch` operand in `x0`
+  to `x17` is an error until a line writes it again. A `scratch` operand
+  from `x19` keeps its value.
+- The handler of an `svc` gives an `Option<u64>` output its value, as
+  [Option outputs](#option-outputs) gives.
+
+```wyst fails
+const call_send: u64 = 11
+
+fn send(message: u64) -> u64 {
+  return asm(message) -> sent {
+    svc #call_send
+    orr sent.x, xzr, message.x
+  }
+}
+```
+
+```text
+main.wyst:6:5: error: the `asm` line reads input `message`, which the handler of an exception of a line before it can change
+```
 
 ## Option outputs
 
