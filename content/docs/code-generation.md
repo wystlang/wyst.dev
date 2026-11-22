@@ -72,9 +72,11 @@ fn init() {
 | `x19` to `x28` | Homes of locals, loop values, and values that wait while a call runs, which a callee saves. |
 | `x29`, `x30` | The frame pointer and the return address. |
 
-Each local has a home. In a function without a call and without an `asm`
-block, the homes can take the scratch registers above the deepest
-expression. Then they take `x19` to `x28`, and the others are 8-byte stack
+Each local has a home. In a function without a call, the homes can take
+the scratch registers above the deepest expression and above the operands
+of its `asm` blocks. An `asm` block with a line that can go to an
+exception handler, such as `svc` or `hvc`, can change each scratch
+register, so a function with one keeps no home there. Then they take `x19` to `x28`, and the others are 8-byte stack
 slots. The homes that the code uses most get the registers first: each
 read and each write of a home counts 8 to the power of the loops around
 it. Thus the locals of an inner loop are in registers before a local that
@@ -114,7 +116,8 @@ sub sp, sp, #size
 There is one `stp` for each pair of home registers that the function uses,
 and `size` is the stack slot area, rounded up to 16 bytes. A `sub` holds at
 most 4095, so a slot area larger than 4095 bytes is an error. The epilogue
-undoes the prologue and ends with `ret`.
+restores the pairs and ends with `ret`. Only a frame with a slot area
+first moves `sp` back to the last pair.
 
 Two kinds of function save no registers:
 
@@ -191,7 +194,7 @@ register.
 | `-x` | One `sub` from `xzr`, and one `ubfx` for a type below 64 bits. |
 | `~x` | One `mvn`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
-| An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `!` adds no instruction. |
+| An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `x == 0` and `x != 0` are `cbz` or `cbnz` on `x`, and `tbz` or `tbnz` when `x` is `y & c` with one bit in the constant `c`. `!` adds no instruction. |
 | An `if` or `match` value | The code of the statement, and each block puts its value in one register: the home of the local, x0 for `return`, or a scratch register. A `match` value without `_` has a `brk #0` for a value that no variant has. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
@@ -206,8 +209,8 @@ register.
 
 A constant operand goes in the instruction when it fits, such as a value
 below 4096 for `add`, `sub`, and `cmp`. A `tbz` or a `tbnz` reaches only 32
-KiB, so a condition on a one-bit field is an error when its `if` body or
-loop body is longer than 32 KiB.
+KiB, so a condition on a one-bit field, or on one bit of a value, is an
+error when its `if` body or loop body is longer than 32 KiB.
 
 ## Linking
 
