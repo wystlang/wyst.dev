@@ -33,22 +33,25 @@ target module cannot hide a shared module. When the two directories are
 one directory, the file is one file.
 
 For `wync build kernel/src/kernel.wyst --layout
-kernel/src/qemu_virt/qemu_virt.layout`, the root is `kernel/src/` and the
-target directory is `kernel/src/qemu_virt/`:
+kernel/src/targets/qemu_virt/qemu_virt.layout`, the root is `kernel/src/`
+and the target directory is `kernel/src/targets/qemu_virt/`:
 
 ```text
 kernel/
   src/
-    kernel.wyst        module kernel
-    pages.wyst         module pages
-    el0/
-      root.wyst        module el0.root
-    qemu_virt/
-      qemu_virt.layout entry boot._start
-      boot.wyst        module boot
-      cpus.wyst        module cpus
-      el0/
-        console.wyst   module el0.console
+    kernel.wyst          module kernel
+    kernel/
+      pages.wyst         module kernel.pages
+    system/
+      root.wyst          module system.root
+    targets/
+      qemu_virt/
+        qemu_virt.layout entry kernel.boot._start
+        kernel/
+          boot.wyst      module kernel.boot
+          cpus.wyst      module kernel.cpus
+        drivers/
+          console.wyst   module drivers.console
 ```
 
 The build reads `<file.wyst>`, the module of the layout entry, and each
@@ -56,10 +59,10 @@ module that they import, directly or indirectly. Imports can make a cycle.
 No module has to import the entry module. Thus the layout file selects the
 target: the shared modules are in `src/`, and each target directory in it
 has its layout file and its target modules. The target directory is in
-the root, so `qemu_virt.boot` also names `boot.wyst`. The build reads each
-file one time, so a second module path for a file is an error at its
-import. Thus import a target module only by its name in the target, such
-as `boot`.
+the root, so `targets.qemu_virt.kernel.boot` also names `boot.wyst`. The
+build reads each file one time, so a second module path for a file is an
+error at its import. Thus import a target module only by its name in the
+target, such as `kernel.boot`.
 
 ## What the build makes
 
