@@ -56,6 +56,12 @@ This page lists both sides.
   address constants, also `pub`, address and slice results of `pub`
   functions, places, `load`, `store`, `store` of a struct literal with
   nested literals and array literals, `bitcast`, `widen`, and `truncate`.
+- `bitcast` of an address of memory or of a slice to a `u64`, also as an
+  `asm` input or an operand, and views: `bitcast` of an address or a
+  slice as an address or a slice of another type that holds no address,
+  with the proof that the view is in the memory, and the check that no
+  `bitcast` to a `u64` keeps the address of a table or of a byte of a
+  string, also through a view or a parameter that a function keeps.
 - Addresses in memory: fields of plain structs and module variables of
   type `@T` or `Option<@T>`, where `T` is an integer or a plain struct,
   with `load`, `store`, and assignments, `match`, `else`, `?`, and `==`
@@ -153,6 +159,9 @@ kernel needs it:
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
+| `bitcast` of a slice that is not a local or a parameter, such as `bitcast(@a[4 ..])` | Put the slice in a local first: `const s = @a[4 ..]`. |
+| A view `[]F` of an address, such as `[]u8` of a `@Note` | View the address as an array, such as `@[12]u8`, and take a slice of the array. |
+| A view `[]F` of a slice whose length needs more than one shift or one division, such as `[]u16` of a slice of 3-byte structs, and a view of a slice, or as a slice, of a struct with no fields | Refused. |
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
 | A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |
 | A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |

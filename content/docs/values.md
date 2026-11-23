@@ -220,6 +220,10 @@ fn wide(value: u32) -> i64 {
 main.wyst:2:10: error: `widen` cannot make i64 from u32
 ```
 
+`bitcast` also gives the address of memory, or of a slice, as a `u64`,
+and makes an address from a `u64`, as
+[Addresses and memory](/docs/addresses/#bitcast) gives.
+
 ## Strings
 
 A string literal is a sequence of bytes. It has no zero byte at its end,
@@ -327,6 +331,10 @@ fn address(text: string) -> u64 {
 ```text
 main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local or parameter `s` as a `[]u8`
 ```
+
+`bitcast` of a slice of a string to a `u64` is also an error, as for each
+address of read-only data, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
 
 A local `var`, a module variable, a module constant, a field, and an
 `Option` cannot be a `string` now. `@s[i]` and `@s[x ..]` take a `string`

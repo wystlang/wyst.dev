@@ -33,6 +33,9 @@ fn next(base: @u64) {
 main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
+[`bitcast`](#bitcast) gives the address as a `u64`, and a
+[view](#views) gives the same memory as another type.
+
 `@M`, where `M` is a register map, is the address of a device, not of
 memory, as
 [Addresses of register maps](/docs/registers/#addresses-of-register-maps)
@@ -69,17 +72,48 @@ fn banner() -> []u8 {
 }
 ```
 
-`bitcast` makes only an address from a `u64`, and an `iN` from the `uN`
-of the same width and the reverse now, as
+`bitcast(a)` of an address of memory `a`, or of a slice local or
+parameter `a`, gives the address as a `u64` where the position expects a
+`u64` or gives no type, as an `asm` input or an operand. It makes no code.
+Of a slice, it is the address of its first element:
+
+```wyst
+struct Message {
+  count: u64
+  bytes: [256]u8
+}
+
+fn end(block: @Message) -> u64 {
+  return bitcast(block) + size_of(Message)
+}
+
+fn clean(block: @Message) {
+  asm(start = bitcast(@block.bytes)) {
+    dc civac, start
+  }
+}
+```
+
+The address of a register map, a `string`, and an `Option` give no
+integer. An integer is not an address, so a function that gives an
+address parameter to `bitcast` as a `u64` keeps it, as a `store` of it in
+memory does, and the address cannot be read-only data, as
+[Read-only addresses](#read-only-addresses) gives. Where the position
+expects an address or a slice, `bitcast` of an address or of a slice is a
+[view](#views).
+
+`bitcast` makes only an address from a `u64`, a `u64` or a view from an
+address of memory or a slice, and an `iN` from the `uN` of the same width
+and the reverse now, as
 [Values and types](/docs/values/#no-implicit-conversions) gives for
 `iN`. An integer literal has no type in `bitcast(...)` of an address.
 Put the value in a typed constant, such as
 `const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
 
-The code that calls `bitcast` asserts that memory of that type is at `x`
-while the address is in use. The compiler does not check this. Thus each
-`bitcast` marks a place where the program trusts a fact that the compiler
-cannot prove.
+The code that makes an address with `bitcast` of a `u64` asserts that
+memory of that type is at `x` while the address is in use. The compiler
+does not check this. Thus each such `bitcast` marks a place where the
+program trusts a fact that the compiler cannot prove.
 
 ## Address constants
 
@@ -380,9 +414,10 @@ fn root_of(domain: u64) -> u64 {
 
 No address points to a local, because `@` of a local is not implemented
 now. Thus the address that a function gives stays valid after the call:
-it comes from a parameter, from `bitcast`, from `@c` of a constant
-table, from a `load`, or from a module variable. A call statement that
-drops the address is an error, as for a value result.
+it comes from a parameter, from `bitcast`, also as a [view](#views) of
+another address, from `@c` of a constant table, from a `load`, or from a
+module variable. A call statement that drops the address is an error, as
+for a value result.
 
 A result can also be an `Option` of an address, as memory can. A
 parameter and a local of an `Option` of an address are not implemented
@@ -550,6 +585,116 @@ These forms are not implemented now:
 - a slice parameter of a naked function;
 - a slice of arrays, such as `[][4]u8`.
 
+## Views
+
+`bitcast(x)` of an address `@A`, or of a slice local or parameter `[]E`,
+where the position expects an address `@B` or a slice `[]F`, is a view:
+the same memory as another type. A view makes no code. Thus a note is a
+view of the bytes of a message:
+
+```wyst
+struct Message {
+  count: u64
+  bytes: [256]u8
+}
+
+struct Note {
+  kind: u32
+  width: u32
+  height: u32
+}
+
+fn width(block: @Message) -> u32 {
+  const note: @Note = bitcast(@block.bytes)
+  return load(@note.width)
+}
+```
+
+`A`, `E`, `B`, and `F` hold no address and no `Option` of an address, in
+a field or an element at each depth. Thus each bit pattern of the memory
+is a value of each type, and no view writes other bytes over an address:
+
+```wyst fails
+struct Link {
+  next: @u64
+}
+
+fn link(bytes: @[16]u8) -> @Link {
+  return bitcast(bytes)
+}
+```
+
+```text
+main.wyst:6:10: error: `bitcast` gives no view of @[16]u8 as @Link, because Link holds an address or an `Option` of one: the view could write other bytes over the address
+```
+
+A view `@B` of `@A` needs `size_of(B) <= size_of(A)`:
+
+```wyst fails
+fn third(pair: @[2]u64) -> u64 {
+  const three: @[3]u64 = bitcast(pair)
+  return load(@three[2])
+}
+```
+
+```text
+main.wyst:2:26: error: a view of @[2]u64 as @[3]u64 is larger than the memory at the address: 24 bytes, and 16
+```
+
+A view `@B` of a slice needs the proof of the index
+`(size_of(B) - 1) / size_of(E)` of the slice, as `@s[i]` does, so that
+`B` is in the elements. A test of the length gives it, as
+[Index proofs](/docs/index-proofs/#slices) gives:
+
+```wyst
+struct Header {
+  kind: u16
+  size: u16
+}
+
+fn size(bytes: []u8) -> u16 {
+  if len(bytes) < size_of(Header) {
+    return 0
+  }
+
+  const header: @Header = bitcast(bytes)
+  return load(@header.size)
+}
+```
+
+A view `[]F` of a slice `[]E` has `len(x) * size_of(E) / size_of(F)`
+elements, which one shift or one division of the length gives. Thus a
+`[]u64` of a `[]u8` has `len(x) >> 3` elements:
+
+```wyst
+fn sum(bytes: []u8) -> u64 {
+  const words: []u64 = bitcast(bytes)
+  var total: u64 = 0
+
+  for word in words {
+    total += word
+  }
+
+  return total
+}
+```
+
+A view has the origin of `x`, so a view of read-only data is read-only
+data, as [Read-only addresses](#read-only-addresses) gives. A view has no
+rule of alignment: on Normal memory it is as a field of a
+[`#[packed]` struct](/docs/structs/#packed-structs). Thus code that runs
+with the MMU off, or that uses an exclusive or atomic instruction, needs
+a view at a multiple of the size of each access.
+
+These forms are not implemented now:
+
+- a view `[]F` of an address, such as `[]u8` of a `@Note`;
+- `bitcast` of a slice that is not a local or a parameter, such as
+  `bitcast(@a[4 ..])`: `const s = @a[4 ..]` comes first;
+- a view `[]F` of `[]E` whose length needs more than one shift or one
+  division, such as `[]u16` of a slice of 3-byte structs;
+- a view of a slice, or as a slice, of a struct with no fields.
+
 ## Read-only addresses
 
 `@c` gives the address of the
@@ -678,13 +823,38 @@ fn start(theme: @Theme) {
 main.wyst:16:17: error: function `main.choose` keeps parameter `palette`, so it cannot take this address: it can be the address of constant table `main.light`, which is read-only data
 ```
 
+`bitcast` of an address to a `u64` keeps the address in the same way, so
+it cannot be the address of a table or of a byte of a string, also
+through a local, a result, a [view](#views), or a parameter that a
+function gives to `bitcast`:
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn number(cell: @u16) -> u64 {
+  return bitcast(cell)
+}
+
+fn start() -> u64 {
+  return number(@steps[1])
+}
+```
+
+```text
+main.wyst:8:17: error: function `main.number` keeps parameter `cell`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+A view of a table is read-only data, as the table is, so a `store`
+through it is an error.
+
 An `asm` input cannot hold the address of a table, as it cannot hold
-another address. The `asm` blocks of a naked function, and an `asm`
-block that does not return, name physical registers, so they can read
-the parameters of the function in their registers. Thus a naked
-function, and a function with such a block, stores through each of its
-address and `string` parameters. A byte of a string is read-only data,
-so a string argument of such a function is an error.
+another address, also as the `u64` that `bitcast` gives. The `asm`
+blocks of a naked function, and an `asm` block that does not return,
+name physical registers, so they can read the parameters of the function
+in their registers. Thus a naked function, and a function with such a
+block, stores through each of its address and `string` parameters. A
+byte of a string is read-only data, so a string argument of such a
+function is an error.
 
 ## load and store
 

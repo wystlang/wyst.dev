@@ -37,6 +37,16 @@ parameter of a linear type with `xfer` takes the value, and one without
 `xfer` lends it, as [Linear values](#linear-values) gives. A function
 cannot change its parameters, because a `mut` parameter is not
 implemented now.
+
+The signature does not say what a function does with an address
+parameter. The compiler infers the address parameters that a function
+stores through, and those that it keeps after the call: in memory, in a
+module variable, or as the `u64` that
+[`bitcast`](/docs/addresses/#bitcast) gives. It infers them also in the
+functions that it calls. Thus a function that keeps a parameter cannot
+take the address of a constant table or of a byte of a string, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
+
 No call starts the entry or a naked function, so no
 string literal gives their parameters, and a `string` parameter of one of
 them is not implemented now.

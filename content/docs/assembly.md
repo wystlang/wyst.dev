@@ -75,6 +75,40 @@ such as the type `@u64` of `@p.f`, is not a value type, so `@p.f` is not
 an input. A block has at most 9 inputs. A typed input, `name: T in xN`, is
 not implemented now.
 
+[`bitcast`](/docs/addresses/#bitcast) of an address of memory, or of a
+slice, gives the address as a `u64`, so it is an input. A line that uses
+that `u64` as an address asserts that each access stays in the memory of
+the address, which the compiler does not check. The function keeps the
+address, so the input cannot be the address of a constant table or of a
+byte of a string, which are read-only data:
+
+```wyst
+struct Message {
+  count: u64
+  bytes: [256]u8
+}
+
+fn clean(block: @Message) {
+  asm(start = bitcast(@block.bytes)) {
+    dc civac, start
+  }
+}
+```
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn clear() {
+  asm(cell = bitcast(@steps[0])) {
+    strh wzr, [cell]
+  }
+}
+```
+
+```text
+main.wyst:4:22: error: `bitcast` gives no integer of this address: it can be the address of constant table `main.steps`, which is read-only data
+```
+
 Where an instruction takes a general register, a line names an input:
 `name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
 can also name `xzr` or `wzr`. When a 32-bit form and a 64-bit form both

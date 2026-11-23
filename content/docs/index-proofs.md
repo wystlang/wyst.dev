@@ -591,6 +591,53 @@ fn header(bytes: []u8) -> u64 {
 `x != c` gives no lowest value, so `if len(s) == 0 { return }` does not
 prove `@s[0]`. `if len(s) < 1 { return }` proves it.
 
+A [view](/docs/addresses/#views) `@B` of a slice `s` of `E` needs the
+proof of the index `(size_of(B) - 1) / size_of(E)` of `s`, so that `B` is
+in the elements. Here `Header` has 8 bytes, so the view needs a proof of
+the index 7, and the test proves only 6:
+
+```wyst fails
+struct Header {
+  kind: u32
+  size: u32
+}
+
+fn kind(bytes: []u8) -> u32 {
+  if len(bytes) < 7 {
+    return 0
+  }
+
+  const header: @Header = bitcast(bytes)
+  return load(@header.kind)
+}
+```
+
+```text
+main.wyst:11:35: error: the checker cannot prove that the index 7 is less than the length of `bytes`, so that the view of @Header is in the slice
+```
+
+`x >> k` and `x / n` are at most `x`, so they have each bound of `x`, and
+their lowest value is the lowest value of `x` shifted right by `k`, or
+divided by `n` when `n` is a constant. Thus the length of a view `[]u64`
+of a `[]u8`, which is the length of the bytes shifted right by 3, is at
+most the length of the bytes, and after a test of the length of the
+bytes, it has a lowest value:
+
+```wyst
+fn second(bytes: []u8) -> u64 {
+  if len(bytes) < 16 {
+    return 0
+  }
+
+  const words: []u64 = bitcast(bytes)
+  for i in 0 ..< len(words) {
+    store(@bytes[i], 0)
+  }
+
+  return load(@words[1])
+}
+```
+
 `x <= y` holds when `x` is 0, when `y` is a constant and `x` is at most
 `y`, or when `x` has a bound against the local `y`, as after
 `if x > y { return }`:
