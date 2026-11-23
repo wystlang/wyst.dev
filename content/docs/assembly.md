@@ -76,11 +76,11 @@ an input. A block has at most 9 inputs. A typed input, `name: T in xN`, is
 not implemented now.
 
 [`bitcast`](/docs/addresses/#bitcast) of an address of memory, or of a
-slice, gives the address as a `u64`, so it is an input. A line that uses
-that `u64` as an address asserts that each access stays in the memory of
-the address, which the compiler does not check. The function keeps the
-address, so the input cannot be the address of a constant table or of a
-byte of a string, which are read-only data:
+slice local or parameter, gives the address as a `u64`, so it is an
+input. A line that uses that `u64` as an address asserts that each access
+stays in the memory of the address, which the compiler does not check.
+The function keeps the address, so the input cannot be the address of a
+constant table or of a byte of a string, which are read-only data:
 
 ```wyst
 struct Message {

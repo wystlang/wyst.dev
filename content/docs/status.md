@@ -153,7 +153,7 @@ kernel needs it:
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than an integer, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
 | An `Option` of an address as a parameter or a local, also of a `load` | Refused. `else`, `?`, or `match` takes it at the call, at the `load`, or at the read of the variable. |
 | `==` and `!=` of an `Option` of an address with an operand other than `.None`, such as `.Some(r)` | Refused, because no operator takes an address. |
-| An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
+| An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` or the view `bitcast(@own.lines)` | Refused. |
 | `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, also in an `Option`, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |

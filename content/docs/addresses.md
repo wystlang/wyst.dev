@@ -141,7 +141,8 @@ fn count() -> u64 {
 }
 ```
 
-Another value, such as `@own.lines`, is not implemented now.
+Another value, such as `@own.lines` or the [view](#views)
+`bitcast(@own.lines)`, is not implemented now.
 
 A `pub` address constant gives the address to each module that imports
 its module. `m.c` of the `pub` address constant `c` of module `m` is the
@@ -628,6 +629,10 @@ fn link(bytes: @[16]u8) -> @Link {
 main.wyst:6:10: error: `bitcast` gives no view of @[16]u8 as @Link, because Link holds an address or an `Option` of one: the view could write other bytes over the address
 ```
 
+A view can write a value at or above the limit of a
+[`#[below(n)]` field](/docs/structs/#fields-with-a-limit). Then the next
+`load` of that field traps, as when hostile code writes the value.
+
 A view `@B` of `@A` needs `size_of(B) <= size_of(A)`:
 
 ```wyst fails
@@ -686,8 +691,17 @@ rule of alignment: on Normal memory it is as a field of a
 with the MMU off, or that uses an exclusive or atomic instruction, needs
 a view at a multiple of the size of each access.
 
+`bitcast(bitcast(a))` is not a view. The inner `bitcast` gives the
+address `a` as a `u64`, and the outer `bitcast` makes an address from
+that `u64`: an assertion that the compiler does not check, as
+[`bitcast`](#bitcast) gives. Thus the compiler checks none of the rules
+of a view there.
+
 These forms are not implemented now:
 
+- a view as the value of an address constant or as the first value of a
+  module variable, such as `bitcast(@own.lines)`: that value is `bitcast`
+  of a `u64` constant, as [Address constants](#address-constants) gives;
 - a view `[]F` of an address, such as `[]u8` of a `@Note`;
 - `bitcast` of a slice that is not a local or a parameter, such as
   `bitcast(@a[4 ..])`: `const s = @a[4 ..]` comes first;

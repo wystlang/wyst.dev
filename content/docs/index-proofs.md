@@ -620,8 +620,9 @@ main.wyst:11:35: error: the checker cannot prove that the index 7 is less than t
 their lowest value is the lowest value of `x` shifted right by `k`, or
 divided by `n` when `n` is a constant. Thus the length of a view `[]u64`
 of a `[]u8`, which is the length of the bytes shifted right by 3, is at
-most the length of the bytes, and after a test of the length of the
-bytes, it has a lowest value:
+most the length of the bytes. The length of the view gets a lowest value
+from a test of the length of the bytes that comes before the view, not
+after it:
 
 ```wyst
 fn second(bytes: []u8) -> u64 {

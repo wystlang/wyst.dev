@@ -252,7 +252,7 @@ fn reset() {
 `bitcast` is the only form that makes `@M` from an integer, and the
 checker does not examine the address. The code asserts that a device of
 the map is at the address, so that the address of each register is a
-multiple of the register size, as `bitcast` of an
+multiple of the register size, as `bitcast` of a `u64` to an
 [address of memory](/docs/addresses/#bitcast) asserts its memory.
 
 A register map is not memory and not a value. Thus `load`, `store`, and
