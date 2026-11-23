@@ -71,7 +71,7 @@ This page lists both sides.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
-- Slices `[]T` as the type of parameters, local constants, and results,
+- Slices `@[]T` as the type of parameters, local constants, and results,
   `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array address or a
   slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
   writes through a slice of a table.
@@ -166,10 +166,10 @@ kernel needs it:
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
 | `bitcast` of a slice that is not a local or a parameter, such as `bitcast(@a[4 ..])` | Put the slice in a local first: `const s = @a[4 ..]`. |
-| A view `[]F` of an address, such as `[]u8` of a `@Note` | View the address as an array, such as `@[12]u8`, and take a slice of the array. |
-| A view `[]F` of a slice whose length needs more than one shift or one division, such as `[]u16` of a slice of 3-byte structs, and a view of a slice, or as a slice, of a struct with no fields | Refused. |
+| A view `@[]F` of an address, such as `@[]u8` of a `@Note` | View the address as an array, such as `@[12]u8`, and take a slice of the array. |
+| A view `@[]F` of a slice whose length needs more than one shift or one division, such as `@[]u16` of a slice of 3-byte structs, and a view of a slice, or as a slice, of a struct with no fields | Refused. |
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
-| A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |
+| A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `@[][4]u8` | Refused. |
 | A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |
 | A call in the place of the address of a register access, such as `f().R.read()`, the address of a register map as a module constant, a module variable, a local `var`, or an `Option`, and the address of a register map that is not `pub` as the result of a `pub` function | Put the address in a local `const` or a parameter, and make the register map `pub`. |
 | A limit on a signed field, such as an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |

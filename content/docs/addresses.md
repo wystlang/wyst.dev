@@ -66,7 +66,7 @@ to a `u64`: the code could make the address again and write through it.
 [Values and types](/docs/values/#strings) gives:
 
 ```wyst
-fn banner() -> []u8 {
+fn banner() -> @[]u8 {
   const name = "Wyst"
   return @name[0 ..]
 }
@@ -517,10 +517,13 @@ error when the result can be the address of a
 
 ## Slices
 
-`[]T` is the type of a slice: the address of a number of elements of type
+`@[]T` is the type of a slice: the address of a number of elements of type
 `T`, one after the other, and that number, its length. `T` is a type that
 an address can have. A slice takes two registers: the address, and then
-the length.
+the length. `@` marks each address, as in `@[N]T`, the address of an
+array, so the type shows that a slice holds an address. `[]T` alone is an
+array with no length, which is never a value, so a type `[]T` without `@`
+is an error.
 
 `@a[x ..< y]` gives the slice of the elements of `a` from `x` up to, but
 not including, `y`. `a` is the address of an array `[N]T`, or a slice
@@ -535,14 +538,14 @@ struct Buffer {
   bytes: [64]u8
 }
 
-fn used(buffer: @Buffer) -> []u8 {
+fn used(buffer: @Buffer) -> @[]u8 {
   const count = load(@buffer.count)
   if count > 64 { trap() }
 
   return @buffer.bytes[..< count]
 }
 
-fn clear(bytes: []u8) {
+fn clear(bytes: @[]u8) {
   for i in 0 ..< len(bytes) {
     store(@bytes[i], 0)
   }
@@ -565,7 +568,7 @@ module variable:
 
 ```wyst fails
 struct Text {
-  bytes: []u8
+  bytes: @[]u8
 }
 ```
 
@@ -584,12 +587,12 @@ These forms are not implemented now:
 - `len(f())` and `@f()[i]` of a call `f()`: `const s = f()` comes first;
 - a local `var`, an `Option`, and an `if` or `match` value of a slice;
 - a slice parameter of a naked function;
-- a slice of arrays, such as `[][4]u8`.
+- a slice of arrays, such as `@[][4]u8`.
 
 ## Views
 
-`bitcast(x)` of an address `@A`, or of a slice local or parameter `[]E`,
-where the position expects an address `@B` or a slice `[]F`, is a view:
+`bitcast(x)` of an address `@A`, or of a slice local or parameter `@[]E`,
+where the position expects an address `@B` or a slice `@[]F`, is a view:
 the same memory as another type. A view makes no code. Thus a note is a
 view of the bytes of a message:
 
@@ -657,7 +660,7 @@ struct Header {
   size: u16
 }
 
-fn size(bytes: []u8) -> u16 {
+fn size(bytes: @[]u8) -> u16 {
   if len(bytes) < size_of(Header) {
     return 0
   }
@@ -667,13 +670,13 @@ fn size(bytes: []u8) -> u16 {
 }
 ```
 
-A view `[]F` of a slice `[]E` has `len(x) * size_of(E) / size_of(F)`
+A view `@[]F` of a slice `@[]E` has `len(x) * size_of(E) / size_of(F)`
 elements, which one shift or one division of the length gives. Thus a
-`[]u64` of a `[]u8` has `len(x) >> 3` elements:
+`@[]u64` of a `@[]u8` has `len(x) >> 3` elements:
 
 ```wyst
-fn sum(bytes: []u8) -> u64 {
-  const words: []u64 = bitcast(bytes)
+fn sum(bytes: @[]u8) -> u64 {
+  const words: @[]u64 = bitcast(bytes)
   var total: u64 = 0
 
   for word in words {
@@ -702,11 +705,11 @@ These forms are not implemented now:
 - a view as the value of an address constant or as the first value of a
   module variable, such as `bitcast(@own.lines)`: that value is `bitcast`
   of a `u64` constant, as [Address constants](#address-constants) gives;
-- a view `[]F` of an address, such as `[]u8` of a `@Note`;
+- a view `@[]F` of an address, such as `@[]u8` of a `@Note`;
 - `bitcast` of a slice that is not a local or a parameter, such as
   `bitcast(@a[4 ..])`: `const s = @a[4 ..]` comes first;
-- a view `[]F` of `[]E` whose length needs more than one shift or one
-  division, such as `[]u16` of a slice of 3-byte structs;
+- a view `@[]F` of `@[]E` whose length needs more than one shift or one
+  division, such as `@[]u16` of a slice of 3-byte structs;
 - a view of a slice, or as a slice, of a struct with no fields.
 
 ## Read-only addresses
@@ -788,7 +791,7 @@ stores through its slice parameter, so it cannot take a slice of
 ```wyst fails
 const steps: [4]u16 = [0, 0x1018, 0x204f, 0x308a]
 
-fn clear(cells: []u16) {
+fn clear(cells: @[]u16) {
   for i in 0 ..< len(cells) {
     store(@cells[i], 0)
   }

@@ -517,7 +517,7 @@ When `n` is such a local, `for i in a ..< n` gives `i < n`, and
 `for i in 0 ..< len(s)` proves `@s[i]`:
 
 ```wyst
-fn clear(bytes: []u8) {
+fn clear(bytes: @[]u8) {
   for i in 0 ..< len(bytes) {
     store(@bytes[i], 0)
   }
@@ -530,7 +530,7 @@ cannot reach its end, and with `&&` and `||`, as [Conditions](#conditions)
 gives:
 
 ```wyst
-fn get(bytes: []u8, i: u64) -> u8 {
+fn get(bytes: @[]u8, i: u64) -> u8 {
   if i >= len(bytes) { return 0 }
   return load(@bytes[i])
 }
@@ -540,7 +540,7 @@ fn get(bytes: []u8, i: u64) -> u8 {
 `i` is less than `len(to)`:
 
 ```wyst
-fn copy(from: []u8, to: []u8) {
+fn copy(from: @[]u8, to: @[]u8) {
   if len(from) > len(to) { trap() }
 
   for i in 0 ..< len(from) {
@@ -559,7 +559,7 @@ A copy of a slice is another slice. For `const other = bytes`,
 `i < len(bytes)` does not prove `@other[i]`:
 
 ```wyst fails
-fn mark(bytes: []u8, i: u64) {
+fn mark(bytes: @[]u8, i: u64) {
   const other = bytes
 
   if i < len(bytes) {
@@ -580,7 +580,7 @@ length. Thus after `if len(s) < 4 { trap() }`, `@s[3]` and `@s[4 ..]` are
 correct:
 
 ```wyst
-fn header(bytes: []u8) -> u64 {
+fn header(bytes: @[]u8) -> u64 {
   if len(bytes) < 4 { trap() }
 
   const body = @bytes[4 ..]
@@ -602,7 +602,7 @@ struct Header {
   size: u32
 }
 
-fn kind(bytes: []u8) -> u32 {
+fn kind(bytes: @[]u8) -> u32 {
   if len(bytes) < 7 {
     return 0
   }
@@ -618,19 +618,19 @@ main.wyst:11:35: error: the checker cannot prove that the index 7 is less than t
 
 `x >> k` and `x / n` are at most `x`, so they have each bound of `x`, and
 their lowest value is the lowest value of `x` shifted right by `k`, or
-divided by `n` when `n` is a constant. Thus the length of a view `[]u64`
-of a `[]u8`, which is the length of the bytes shifted right by 3, is at
+divided by `n` when `n` is a constant. Thus the length of a view `@[]u64`
+of a `@[]u8`, which is the length of the bytes shifted right by 3, is at
 most the length of the bytes. The length of the view gets a lowest value
 from a test of the length of the bytes that comes before the view, not
 after it:
 
 ```wyst
-fn second(bytes: []u8) -> u64 {
+fn second(bytes: @[]u8) -> u64 {
   if len(bytes) < 16 {
     return 0
   }
 
-  const words: []u64 = bitcast(bytes)
+  const words: @[]u64 = bitcast(bytes)
   for i in 0 ..< len(words) {
     store(@bytes[i], 0)
   }
@@ -644,7 +644,7 @@ fn second(bytes: []u8) -> u64 {
 `if x > y { return }`:
 
 ```wyst
-fn part(bytes: []u8, from: u64, to: u64) -> []u8 {
+fn part(bytes: @[]u8, from: u64, to: u64) -> @[]u8 {
   if to > len(bytes) || from > to { trap() }
   return @bytes[from ..< to]
 }
@@ -653,7 +653,7 @@ fn part(bytes: []u8, from: u64, to: u64) -> []u8 {
 Two highest values do not put a start and an end in order:
 
 ```wyst fails
-fn part(table: @[4]u8, from: u64, to: u64) -> []u8 {
+fn part(table: @[4]u8, from: u64, to: u64) -> @[]u8 {
   if from > 4 || to > 4 { trap() }
   return @table[from ..< to]
 }
@@ -668,7 +668,7 @@ is against a `var`. Thus `@s[i]` with a `var` `i` is an error, also after
 `i < len(s)`:
 
 ```wyst fails
-fn clear(bytes: []u8) {
+fn clear(bytes: @[]u8) {
   var i: u64 = 0
   for i < len(bytes) {
     store(@bytes[i], 0)
@@ -716,7 +716,7 @@ bounds and lowest values. `@s[x ..]` ends at `len(s)`, so it needs only
 `x <= len(s)`:
 
 ```wyst
-fn rest(text: string, from: u64) -> []u8 {
+fn rest(text: string, from: u64) -> @[]u8 {
   if from > len(text) {
     return @text[..< 0]
   }

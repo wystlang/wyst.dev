@@ -272,15 +272,15 @@ fn first(text: string) -> u8 {
 }
 ```
 
-`@s[x ..< y]`, `@s[..< y]`, and `@s[x ..]` give a slice `[]u8` of the
+`@s[x ..< y]`, `@s[..< y]`, and `@s[x ..]` give a slice `@[]u8` of the
 bytes of the `string` local or parameter `s`, from byte `x` up to, but
 not including, byte `y`. `@s[x ..]` ends at `len(s)`. The compiler must
 prove that `x` is at most `y` and that `y` is at most `len(s)`, as for a
 slice of a slice. Thus text is a slice of bytes, and a function that
-takes a `[]u8` takes the bytes of a string:
+takes a `@[]u8` takes the bytes of a string:
 
 ```wyst
-fn total(bytes: []u8) -> u64 {
+fn total(bytes: @[]u8) -> u64 {
   var sum: u64 = 0
 
   for byte in bytes {
@@ -329,7 +329,7 @@ fn address(text: string) -> u64 {
 ```
 
 ```text
-main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local or parameter `s` as a `[]u8`
+main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local or parameter `s` as a `@[]u8`
 ```
 
 `bitcast` of a slice of a string to a `u64` is also an error, as for each

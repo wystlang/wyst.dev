@@ -30,7 +30,7 @@ A parameter has a value type, an
 [struct value](/docs/structs/#struct-values), a
 [struct with no fields](/docs/structs/#structs-with-no-fields), an
 address type, which [Addresses and memory](/docs/addresses/) describes, a
-slice type `[]T`, which [Slices](/docs/addresses/#slices) describes,
+slice type `@[]T`, which [Slices](/docs/addresses/#slices) describes,
 `string`, which [Values and types](/docs/values/#strings) describes, or
 an `Option`, which [Optional values](/docs/options/) describes. A
 parameter of a linear type with `xfer` takes the value, and one without

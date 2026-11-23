@@ -43,7 +43,7 @@ types, such as `@bool`, are not implemented now:
 
 ```wyst fails
 struct Text {
-  bytes: []u8
+  bytes: @[]u8
 }
 ```
 
