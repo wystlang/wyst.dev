@@ -1,6 +1,6 @@
 ---
 title: Assembly
-summary: Checked asm blocks, their inputs, outputs, and registers, Option outputs, blocks that do not return, and SIMD lines.
+summary: Checked asm blocks, their inputs, address inputs, outputs, and registers, Option outputs, blocks that do not return, and SIMD lines.
 ---
 
 An `asm` block writes A64 instructions directly. The compiler checks each
@@ -70,9 +70,10 @@ main.wyst:4:5: error: system register `TTBR0_EL1` requires EL1 or higher
 ## Inputs
 
 An input is `name = value`, or `name` alone, which is `name = name`. The
-value has a value type. An untyped integer is a `u64`. An address type,
-such as the type `@u64` of `@p.f`, is not a value type, so `@p.f` is not
-an input. A block has at most 9 inputs. A typed input, `name: T in xN`, is
+value has a value type, or it is an address of memory, as
+[Address inputs](#address-inputs) gives. An untyped integer is a `u64`. A
+slice, a `string`, an `Option`, and the address of a register map are not
+inputs. A block has at most 9 inputs. A typed input, `name: T in xN`, is
 not implemented now.
 
 [`bitcast`](/docs/addresses/#bitcast) of an address of memory, or of a
@@ -109,13 +110,13 @@ fn clear() {
 main.wyst:4:22: error: `bitcast` gives no integer of this address: it can be the address of constant table `main.steps`, which is read-only data
 ```
 
-Where an instruction takes a general register, a line names an input:
-`name`, or `name.x` and `name.w` for the 64-bit and the 32-bit view. A line
-can also name `xzr` or `wzr`. When a 32-bit form and a 64-bit form both
-accept a line, the line must give the view:
+Where an instruction takes a general register, a line names an input
+that is not an address: `name`, or `name.x` and `name.w` for the 64-bit
+and the 32-bit view. A line can also name `xzr` or `wzr`. When a 32-bit
+form and a 64-bit form both accept a line, the line must give the view:
 
 ```wyst
-fn save(address: u64, value: u64) {
+fn save(address: @u64, value: u64) {
   asm(address, value) {
     str value.x, [address]
   }
@@ -141,6 +142,115 @@ fn save(address: u64, value: u64) {
 ```text
 main.wyst:2:16: error: `asm` operand `x1` has the form of a register name
 ```
+
+## Address inputs
+
+An input can be an address of memory `@T`: `name = a`, as in
+`asm(simd = @before.simd)`, or `name` alone for a local, a parameter, or
+a module variable of type `@T`, also with `in xN`. Its register holds the
+address for the block, and the compiler proves each access through it.
+
+A memory operand of a line names the input with a path of fields and an
+optional immediate: `[work]`, `[work.state]`, and `[work.state, #16]`.
+The compiler adds the offset of the path to the immediate, and the sum
+must fit the field of the encoding. The input has no `.x` or `.w` view,
+so `.f` after it always names a field:
+
+```wyst
+struct Work {
+  count: u64
+  state: [4]u64
+}
+
+fn second(work: @Work) -> u64 {
+  return asm(work) -> value {
+    ldr value.x, [work.state, #8]
+  }
+}
+```
+
+The line is `ldr value.x, [work, #16]`, because `state` is at offset 8.
+The A64 tables give the bytes of each access, also of a pair, such as
+`ldp`, and of a list of SIMD registers. The compiler proves that each
+byte of the access is in the field that the path names, or in `T` when
+the path names no field:
+
+```wyst fails
+struct Work {
+  count: u64
+  state: [4]u64
+}
+
+fn after(work: @Work) -> u64 {
+  return asm(work) -> value {
+    ldr value.x, [work.state, #32]
+  }
+}
+```
+
+```text
+main.wyst:8:5: error: the `asm` line accesses 8 bytes at offset 32 of `work.state`, which has 32 bytes
+```
+
+A post-index form, such as `ld1 { v0.4s }, [keys], #16`, accesses the
+memory at the register, and then adds its step to the register. The
+compiler checks each later access at the new offset. A block has no
+branch, so each offset is a number, and the proof is exact. A pre-index
+form, such as `ldr value.x, [keys, #16]!`, is an error.
+
+Each other use of the register is an error: a line that writes it, a
+copy, a register offset form, such as `ldr value.x, [keys, index.x]`, and
+a store of its value. Thus the address does not go out of the block:
+
+```wyst fails
+fn copy(record: @[2]u64) -> u64 {
+  return asm(record) -> address {
+    orr address.x, xzr, record.x
+  }
+}
+```
+
+```text
+main.wyst:3:5: error: input `record` is an address, so a line names it only as the base of the memory operand of a load or a store
+```
+
+A line that stores through the input stores through the address, as
+[`store`](/docs/addresses/#load-and-store) does. Thus a store through the
+address of a constant table or of a byte of a string, which are
+read-only data, is an error, also in a function that takes the address,
+and a load through it is correct. This function loads 32 bytes of a
+table:
+
+```wyst
+const keys: [8]u32 = [1, 2, 3, 4, 5, 6, 7, 8]
+
+#[section(.el0)]
+fn load_keys() {
+  asm(table = @keys) {
+    ld1 { v0.4s }, [table], #16
+    ld1 { v1.4s }, [table], #16
+  }
+}
+```
+
+```wyst fails
+const steps: [2]u16 = [0, 0x1018]
+
+fn clear() {
+  asm(cell = @steps) {
+    strh wzr, [cell]
+  }
+}
+```
+
+```text
+main.wyst:5:5: error: the `asm` line cannot store through this input: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+The lines of a naked function and of a block that does not return name
+physical registers, and a line can write the register of an input, so
+these blocks have no address input. They take the `u64` of an address
+from `bitcast`, as above, and the compiler does not check those accesses.
 
 ## Inputs in fixed registers
 
@@ -189,7 +299,9 @@ expression, so the line stays one instruction. A local is not a constant.
 
 ## What a line cannot do
 
-A line cannot write an input, branch, or refer to a label. Thus control
+A line cannot write an input, except with the post-index form of an
+[address input](#address-inputs). A line cannot branch or refer to a
+label. Thus control
 leaves the block only after its last line, or by an exception, as with
 `brk`, `svc`, or `hvc`.
 
@@ -216,7 +328,7 @@ and a block that does not write it is an error. Thus a block can copy 16
 bytes with `ldp` and `stp`:
 
 ```wyst
-fn copy(to: u64, from: u64) {
+fn copy(to: @[2]u64, from: @[2]u64) {
   asm(to, from, scratch low, scratch high) {
     ldp low, high, [from]
     stp low, high, [to]
@@ -237,7 +349,7 @@ block that does not return name physical registers, so they have no
 `scratch` operand.
 
 ```wyst fails
-fn store_zero(address: u64) {
+fn store_zero(address: @u64) {
   asm(address, scratch zero) {
     str xzr, [address]
   }
@@ -276,7 +388,7 @@ in `x0` and `x1`:
 
 ```wyst
 // z = x + y, for four limbs of 64 bits each, the low limb first.
-fn add256(z: u64, x: u64, y: u64) {
+fn add256(z: @[4]u64, x: @[4]u64, y: @[4]u64) {
   asm(z, x, y, scratch a0, scratch a1, scratch a2, scratch a3, scratch m0, scratch m1, scratch m2, scratch m3) {
     ldp a0, a1, [x]
     ldp a2, a3, [x, #16]
@@ -301,7 +413,7 @@ argument. A line can read and write the output. A block that does not
 write its output is an error.
 
 ```wyst
-fn try_lock(word: u64) -> u64 {
+fn try_lock(word: @u64) -> u64 {
   return asm(word, one = 1) -> held {
     swpa one.x, held.x, [word]
   }
@@ -347,8 +459,9 @@ line. It goes to the handler of an exception, which can change `x0` to
 Thus a line after an exception line cannot read a value that the handler
 left in a register:
 
-- Each input is in `x0` to `x17`, and a line cannot write an input, so a
-  line after an exception line that reads an input is an error.
+- Each input is in `x0` to `x17`, and a line writes an input only with
+  the post-index form of an address input, so a line after an exception
+  line that reads an input, also in a memory operand, is an error.
 - The output is in `x9` to `x17`, so after an exception line, a line that
   reads it is an error until a line writes it again. The value of the
   block is a read of the output after its last line, so a line after the
@@ -453,7 +566,8 @@ fn resume() -> never {
 The lines of a naked function and of a block with output `never` name
 physical general registers and `sp`, and no input names. No code of the
 compiler needs a register after these blocks. Each input of these blocks
-needs `in xN`, and these blocks have no output.
+needs `in xN`, these blocks have no address input, and they have no
+output.
 
 A naked function sets the stack with such a block, as
 [Boot and exceptions](/docs/boot-and-exceptions/) shows.
@@ -519,7 +633,7 @@ does one round of AES on the 16 bytes at `block`:
 
 ```wyst
 #[section(.el0)]
-fn round(block: u64, key: u64) {
+fn round(block: @[16]u8, key: @[16]u8) {
   asm(block, key) {
     ld1 { v0.16b }, [block]
     ld1 { v1.16b }, [key]

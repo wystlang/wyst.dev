@@ -861,14 +861,16 @@ main.wyst:8:17: error: function `main.number` keeps parameter `cell`, so it cann
 A view of a table is read-only data, as the table is, so a `store`
 through it is an error.
 
-An `asm` input cannot hold the address of a table, as it cannot hold
-another address, also as the `u64` that `bitcast` gives. The `asm`
-blocks of a naked function, and an `asm` block that does not return,
-name physical registers, so they can read the parameters of the function
-in their registers. Thus a naked function, and a function with such a
-block, stores through each of its address and `string` parameters. A
-byte of a string is read-only data, so a string argument of such a
-function is an error.
+An `asm` input can hold the address of a table, as an
+[address input](/docs/assembly/#address-inputs). A line that loads
+through it is correct, and a line that stores through it is an error.
+The `u64` that `bitcast` gives of the address of a table is an error,
+also as an `asm` input. The `asm` blocks of a naked function, and an
+`asm` block that does not return, name physical registers, so they can
+read the parameters of the function in their registers. Thus a naked
+function, and a function with such a block, stores through each of its
+address and `string` parameters. A byte of a string is read-only data,
+so a string argument of such a function is an error.
 
 ## load and store
 
