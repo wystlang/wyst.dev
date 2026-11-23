@@ -100,9 +100,12 @@ This page lists both sides.
   locals that keep a register snapshot, and `modify` of a register.
 - Checked `asm` blocks, with inputs, address inputs whose memory
   operands name a path of fields, with the proof that each access is in
-  the place that it names and the check that no line stores through the
-  address of a table or of a byte of a string, outputs as values,
-  `Option` outputs, and blocks that do not return.
+  the place that it names, the proof of the alignment of exclusive,
+  atomic, load-acquire, and store-release lines, the checks that the
+  address does not go out of the block, and the check that no line stores
+  through the address of a table or of a byte of a string, or into a
+  place that holds an address, outputs as values, `Option` outputs, and
+  blocks that do not return.
 - Naked functions with parameters, the check that a function that runs
   with no stack uses none, the check that each function that starts on a
   new stack fits in the `stack` of the layout, `#[el2]` functions, code

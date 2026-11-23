@@ -151,10 +151,13 @@ a module variable of type `@T`, also with `in xN`. Its register holds the
 address for the block, and the compiler proves each access through it.
 
 A memory operand of a line names the input with a path of fields and an
-optional immediate: `[work]`, `[work.state]`, and `[work.state, #16]`.
-The compiler adds the offset of the path to the immediate, and the sum
-must fit the field of the encoding. The input has no `.x` or `.w` view,
-so `.f` after it always names a field:
+optional immediate `#N`, `#-N`, or `#0xN`: `[work]`, `[work.state]`, and
+`[work.state, #16]`. The compiler adds the offset of the path to the
+immediate, and the sum must fit the field of the encoding, as an
+immediate must. Thus a form with no immediate, such as `swp` or `ldar`,
+takes only a path at offset 0, such as `[lock]` of
+`asm(lock = @state.lock)`. The input has no `.x` or `.w` view, so `.f`
+after it always names a field:
 
 ```wyst
 struct Work {
@@ -192,15 +195,49 @@ fn after(work: @Work) -> u64 {
 main.wyst:8:5: error: the `asm` line accesses 8 bytes at offset 32 of `work.state`, which has 32 bytes
 ```
 
+An exclusive, atomic, load-acquire, or store-release line, such as
+`ldxr`, `swp`, `ldar`, or `stlr`, takes an alignment fault at an address
+that is not a multiple of its bytes. The target of an address input has
+the alignment of `T`, so for such a line the compiler proves that the
+alignment of `T` is at least the bytes of the access, and that the offset
+of the access is a multiple of them:
+
+```wyst fails
+fn take(word: @[2]u32) -> u64 {
+  return asm(word) -> old {
+    ldar old.x, [word]
+  }
+}
+```
+
+```text
+main.wyst:3:5: error: the `asm` line is an exclusive, atomic, load-acquire, or store-release access of 8 bytes, so its address must be a multiple of 8: it is at offset 0 of the target of `word`, which has the alignment 4
+```
+
+The address of a field of a
+[`#[packed]` struct](/docs/structs/#packed-structs) and a
+[view](/docs/addresses/#views) have the type of an aligned address, so
+for these inputs the alignment is an assertion, which the compiler does
+not check. Thus the view `@[2]u64` of a field `bytes: [16]u8` at offset 1
+is an address input that `ldxr` accepts, and `ldxr` takes an alignment
+fault there.
+
 A post-index form, such as `ld1 { v0.4s }, [keys], #16`, accesses the
 memory at the register, and then adds its step to the register. The
 compiler checks each later access at the new offset. A block has no
-branch, so each offset is a number, and the proof is exact. A pre-index
-form, such as `ldr value.x, [keys, #16]!`, is an error.
+branch, so each offset is a number, and the proof is exact. The memory
+operand of a post-index form names no field at an offset, such as
+`[keys.round]` when `round` is not at offset 0, because the access is at
+the register. A pre-index form, such as `ldr value.x, [keys, #16]!`, is
+an error.
 
 Each other use of the register is an error: a line that writes it, a
 copy, a register offset form, such as `ldr value.x, [keys, index.x]`, and
-a store of its value. Thus the address does not go out of the block:
+a store of its value. The handler of an exception can read each
+register, so a block with an address input has no exception line, such
+as `svc`. An `Option<u64>` output gives the values of `x0` and `x1`, so an
+address input is not in `x0` or `x1` of a block with such an output. Thus
+the address does not go out of the block:
 
 ```wyst fails
 fn copy(record: @[2]u64) -> u64 {
@@ -212,6 +249,23 @@ fn copy(record: @[2]u64) -> u64 {
 
 ```text
 main.wyst:3:5: error: input `record` is an address, so a line names it only as the base of the memory operand of a load or a store
+```
+
+A block with an exception line takes an address as the `u64` of
+`bitcast`, as [Inputs](#inputs) gives:
+
+```wyst fails
+const call_send: u64 = 11
+
+fn send(message: @[8]u64) {
+  asm(message in x0) {
+    svc #call_send
+  }
+}
+```
+
+```text
+main.wyst:5:5: error: the handler of the exception of this `asm` line can read the register of address input `message`; `bitcast` gives the address as a `u64`
 ```
 
 A line that stores through the input stores through the address, as
@@ -245,6 +299,33 @@ fn clear() {
 
 ```text
 main.wyst:5:5: error: the `asm` line cannot store through this input: it can be the address of constant table `main.steps`, which is read-only data
+```
+
+A `load` of an address from memory asserts the address, as
+[Addresses in memory](/docs/addresses/#addresses-in-memory) gives. Thus a
+line that stores through the input, also with an atomic operation, into a
+place that holds an address or an `Option` of an address, in a field or
+an element at each depth, is an error, as such a
+[view](/docs/addresses/#views) is, and no line writes an integer over an
+address. A load from such a place is correct. The place is the field
+that the path names, or `T` when the path names no field, so
+`str xzr, [link.count]` is correct, and `str xzr, [link]` is an error:
+
+```wyst fails
+struct Link {
+  count: u64
+  record: @u64
+}
+
+fn clear(link: @Link) {
+  asm(link) {
+    str xzr, [link]
+  }
+}
+```
+
+```text
+main.wyst:8:5: error: the `asm` line cannot store into `link`, which holds an address or an `Option` of one: the line could write other bytes over the address
 ```
 
 The lines of a naked function and of a block that does not return name
@@ -459,9 +540,10 @@ line. It goes to the handler of an exception, which can change `x0` to
 Thus a line after an exception line cannot read a value that the handler
 left in a register:
 
-- Each input is in `x0` to `x17`, and a line writes an input only with
-  the post-index form of an address input, so a line after an exception
-  line that reads an input, also in a memory operand, is an error.
+- Each input is in `x0` to `x17`, and a line cannot write an input that
+  is not an address. A block with an address input has no exception
+  line, as [Address inputs](#address-inputs) gives. Thus a line after an
+  exception line that reads an input is an error.
 - The output is in `x9` to `x17`, so after an exception line, a line that
   reads it is an error until a line writes it again. The value of the
   block is a read of the output after its last line, so a line after the
