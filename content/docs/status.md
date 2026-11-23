@@ -60,8 +60,8 @@ This page lists both sides.
   read-only through each address that a read-only address reaches, and
   the checks that `store`, an `asm` line that stores, and `bitcast` to a
   `u64` take only an `@var`, and that a naked function, and a function
-  with an `asm` block that does not return, take each address parameter
-  as `@var`.
+  with an `asm` block that does not return, take each address and slice
+  parameter as `@var` and refuse a `string` parameter.
 - `bitcast` of an `@var` address of memory or of an `@var` slice to a
   `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
   address or a slice as an address or a slice of another type that holds

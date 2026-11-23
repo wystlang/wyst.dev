@@ -751,8 +751,11 @@ main.wyst:2:9: error: `store` writes only through an `@var` address, and this is
 `Option` and in a slice: an argument, the value of a `store`, of an
 assignment, of a `return`, of `.Some`, of a `const` with a type, and of a
 field of a literal. An `if` or `match` value is `@var` only when each
-block gives an `@var`. `@` never converts to `@var`, so a function that
-stores through its parameter cannot take a read-only address:
+block gives an `@var`. Where the position gives no type, `.None`,
+`.Some(v)`, and `bitcast(n)` in a block take the read-only type of the
+blocks before them, so the value is read-only. `@` never converts to
+`@var`, so a function that stores through its parameter cannot take a
+read-only address:
 
 ```wyst fails
 fn reset(cell: @var u16) {
@@ -818,11 +821,11 @@ main.wyst:11:9: error: `store` writes only through an `@var` address, and this i
 
 Writable memory stays writable for code that holds its own `@var`
 address: `@T` limits only what the code can do through the address that
-it got. Two `@var` addresses can name the same memory, and the compiler
-checks no borrow, as Rust does for `&mut`. The conversion removes only
-the first `var`, so `@var @var T` does not convert to `@var @T`: else a
-store through that address could put a read-only address in memory where
-other code loads an `@var T`.
+it got. This is not `&mut` of Rust: two `@var` addresses can name the
+same memory, and the compiler checks no borrow. The conversion removes
+only the first `var`, so `@var @var T` does not convert to `@var @T`:
+else a store through that address could put a read-only address in
+memory where other code loads an `@var T`.
 
 `@c` gives the address of the
 [constant table](/docs/constants-and-variables/#constant-tables) `c`, and

@@ -266,7 +266,7 @@ fn send(message: @[8]u64) {
 ```
 
 ```text
-main.wyst:5:5: error: the handler of the exception of this `asm` line can read the register of address input `message`; `bitcast` gives the address as a `u64`
+main.wyst:5:5: error: the handler of the exception of this `asm` line can read the register of address input `message`; `bitcast` gives the `u64` of an `@var` address
 ```
 
 A line that stores through the input needs an `@var` input, as

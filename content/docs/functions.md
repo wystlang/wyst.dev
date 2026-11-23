@@ -38,22 +38,23 @@ parameter of a linear type with `xfer` takes the value, and one without
 cannot change its parameters, because a `mut` parameter is not
 implemented now.
 
-The signature gives the access of each address parameter: `@var T` where
-the function, or a function that it calls, stores through the address or
-gives it to [`bitcast`](/docs/addresses/#bitcast) as a `u64`, and `@T`
-where it only reads through it. An `@var` argument converts to an `@T`
-parameter, but a read-only address, such as the address of a constant
-table or of a byte of a string, is not an argument of an `@var`
+The signature gives the access of each address and slice parameter:
+`@var T` where the function, or a function that it calls, stores through
+the address, gives it to [`bitcast`](/docs/addresses/#bitcast) as a
+`u64`, or gives it to a position that takes only an `@var`, such as a
+field `@var T` or an `@var T` result, and `@T` where it only reads
+through it. A naked function, and a function with an `asm` block that
+does not return, take each address and slice parameter as `@var`, and a
+`string` parameter of one of them is an error, because their lines can
+store through the register of a parameter. An `@var` argument converts
+to an `@T` parameter, but a read-only address, such as the address of a
+constant table or of a byte of a string, is not an argument of an `@var`
 parameter, as [Read-only addresses](/docs/addresses/#read-only-addresses)
 gives. The compiler checks each access in one function, and it infers no
 store through a parameter.
 
 No call starts the entry, so no string literal gives its parameters, and
-a `string` parameter of the entry is not implemented now. A naked
-function, and a function with an `asm` block that does not return, take
-each address parameter as `@var`, and a `string` parameter of one of
-them is an error, because their lines can store through the register of
-a parameter.
+a `string` parameter of the entry is not implemented now.
 
 A parameter `_` takes its argument and gives it no name, so the body
 cannot read it:
