@@ -57,19 +57,20 @@ fn table_at(frame: u64) {
 }
 ```
 
-`bitcast(s)` of a `string` `s` gives the `u64` that is the value of `s`:
-the address of its length, which its bytes follow, as
-[Code generation](/docs/code-generation/) gives. `len(s)` and `@s[i]` read
-a string, as [Values and types](/docs/values/#strings) gives:
+A string is read-only data, so `bitcast` of a `string` is an error, also
+to a `u64`: the code could make the address again and write through it.
+`len(s)`, `@s[i]`, and `@s[x ..]` read a string, as
+[Values and types](/docs/values/#strings) gives:
 
 ```wyst
-fn banner() -> u64 {
-  return bitcast("Wyst")
+fn banner() -> []u8 {
+  const name = "Wyst"
+  return @name[0 ..]
 }
 ```
 
-`bitcast` makes only an address from a `u64`, a `u64` from a `string`,
-and an `iN` from the `uN` of the same width and the reverse now, as
+`bitcast` makes only an address from a `u64`, and an `iN` from the `uN`
+of the same width and the reverse now, as
 [Values and types](/docs/values/#no-implicit-conversions) gives for
 `iN`. An integer literal has no type in `bitcast(...)` of an address.
 Put the value in a typed constant, such as
@@ -643,9 +644,10 @@ fn start() {
 main.wyst:10:9: error: function `main.clear` stores through parameter `cells`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
 ```
 
-A byte of a [string](/docs/values/#strings) is read-only data in the same
-way, so a `store` through `@s[i]` is an error, also in a function that
-takes the address.
+A byte of a [string](/docs/values/#strings), and a slice of its bytes, is
+read-only data in the same way, so a `store` through `@s[i]` or through
+an element of `@s[x ..]` is an error, also in a function that takes the
+address or the slice.
 
 A `load` of an [address in memory](#addresses-in-memory) gives no
 origin, so a `store` through it would not find the table. Thus memory

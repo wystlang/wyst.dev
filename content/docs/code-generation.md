@@ -203,7 +203,7 @@ register.
 | A slice loop | A range loop over an index with no name, from 0 to the length. The address, the index, and the end are in homes. Each pass starts with the load of the element: one load at the address and the index, which the load shifts for an element of 2, 4, or 8 bytes. |
 | `const x = f() else { trap() }` | The call, then `cbnz x0`. `else { break }` and `else { continue }` are one `cbz x0` to the target of the jump. |
 | `trap()` | `brk #0`. |
-| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register, and `bitcast` of a `string` gives this register as a `u64`. `len(s)` is one `ldr` from the value of `s`, and `@s[i]` adds `i + 8` to it. |
+| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register. `len(s)` is one `ldr` from the value of `s`, and `@s[i]` adds `i + 8` to it. A slice of a string takes two registers: `@s[x ..< y]` is the value of `s` plus `x + 8`, and `y - x`. |
 | A module variable | `adrp` and one load or store. |
 | `v += x`, `v -= x` | `adrp` and one load, `add` or `sub` (and a `ubfx` for a type below 64 bits), then `adrp` and one store. |
 

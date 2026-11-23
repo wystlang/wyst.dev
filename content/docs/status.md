@@ -17,8 +17,10 @@ This page lists both sides.
 - The value types `bool`, `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`,
   and `i64`, and `never`.
 - `string` parameters, local constants, results, and `if` and `match`
-  values, and `len(s)` and `@s[i]` of a `string` local or parameter, with
-  a proof of the index.
+  values, and `len(s)`, `@s[i]`, and the slices `@s[x ..< y]`,
+  `@s[..< y]`, and `@s[x ..]` of a `string` local or parameter, with a
+  proof of the index and of the slice, and the check that no `store`
+  writes through a byte or a slice of a string.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -125,7 +127,7 @@ kernel needs it:
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry or of a naked function | Use a local `const`, a parameter of a function that a call starts, or a result. |
-| A slice of a `string`, such as `@s[1 ..]`, and `len` and a byte of a `string` that is not a local or a parameter, such as `len(f())` | Use `@s[i]`, and put the string in a local first: `const s = f()`. |
+| `len`, a byte, and a slice of a `string` that is not a local or a parameter, such as `len(f())` and `@"text"[1 ..]` | Put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |

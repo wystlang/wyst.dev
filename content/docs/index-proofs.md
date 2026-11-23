@@ -9,7 +9,8 @@ build stops. There is no bounds check at run time, so a proved index costs
 nothing. Each index of a slice must be less than the length of the slice,
 and the start and the end of a slice must be in order and in the array or
 the slice that it comes from, as [Slices](#slices) gives. Each index of a
-`string` must be less than its length, as [Strings](#strings) gives.
+`string` must be less than its length, and a slice of a `string` must be
+in its bytes, as [Strings](#strings) gives.
 
 The same rule applies to an index of an array of devices, as in
 `redistributors[cpu]`. See [Registers and devices](/docs/registers/). When
@@ -659,6 +660,38 @@ fn kind(text: string) -> u8 {
   }
   return load(@text[1])
 }
+```
+
+A slice `@s[x ..< y]` of the bytes of `s` has the proof of a slice of a
+slice: `x` is at most `y`, and `y` is at most `len(s)`, from the same
+bounds and lowest values. `@s[x ..]` ends at `len(s)`, so it needs only
+`x <= len(s)`:
+
+```wyst
+fn rest(text: string, from: u64) -> []u8 {
+  if from > len(text) {
+    return @text[..< 0]
+  }
+  return @text[from ..]
+}
+```
+
+The length of `@s[x ..]` is `len(s) - x`, not `len(s)`, so a bound
+against `len(s)` does not prove an index of the slice:
+
+```wyst fails
+fn second(text: string, i: u64) -> u8 {
+  if len(text) < 1 || i >= len(text) {
+    return 0
+  }
+
+  const tail = @text[1 ..]
+  return load(@tail[i])
+}
+```
+
+```text
+main.wyst:7:21: error: the checker cannot prove that the index is less than the length of `tail`
 ```
 
 `len(s) - 1` has no highest value, because `-` can wrap, so it is not an
