@@ -9,7 +9,9 @@ offset.
 
 ## Address types
 
-`@T` is the type of an address of memory of type `T`. `T` is `u8` to
+`@T` is the type of a read-only address of memory of type `T`, and
+`@var T` is the type of a writable address, as
+[Read-only addresses](#read-only-addresses) gives. `T` is `u8` to
 `u64`, `i8` to `i64`, an enum of `u8` to `u64`, an
 [`Option`](/docs/options/#option-fields) of one of these that has no
 values, a `bool`, a plain struct or a
@@ -21,7 +23,8 @@ one of these. `N` is a constant, such as a module constant. Another
 target, such as an array of arrays, is not implemented now.
 
 An address is not an integer. No operator takes an address, and `@u8` and
-`@u32` are different types:
+`@u32` are different types, and so are `@u8` and `@var u8`, but `@var`
+converts to `@`:
 
 ```wyst fails
 fn next(base: @u64) {
@@ -51,11 +54,12 @@ in a module variable.
 ## bitcast
 
 `bitcast(x)` gives the `u64` `x` as the address type that its position
-expects. It is the only way to make an address from an integer:
+expects, with its access: `@T` or `@var T`. It is the only way to make an
+address from an integer:
 
 ```wyst
 fn table_at(frame: u64) {
-  const table: @[2048]u64 = bitcast(frame)
+  const table: @var [2048]u64 = bitcast(frame)
   store(@table[0], 0)
 }
 ```
@@ -72,10 +76,10 @@ fn banner() -> @[]u8 {
 }
 ```
 
-`bitcast(a)` of an address of memory `a`, or of a slice local or
-parameter `a`, gives the address as a `u64` where the position expects a
-`u64` or gives no type, as an `asm` input or an operand. It makes no code.
-Of a slice, it is the address of its first element:
+`bitcast(a)` of an `@var` address of memory `a`, or of an `@var` slice
+local or parameter `a`, gives the address as a `u64` where the position
+expects a `u64` or gives no type, as an `asm` input or an operand. It
+makes no code. Of a slice, it is the address of its first element:
 
 ```wyst
 struct Message {
@@ -83,11 +87,11 @@ struct Message {
   bytes: [256]u8
 }
 
-fn end(block: @Message) -> u64 {
+fn end(block: @var Message) -> u64 {
   return bitcast(block) + size_of(Message)
 }
 
-fn clean(block: @Message) {
+fn clean(block: @var Message) {
   asm(start = bitcast(@block.bytes)) {
     dc civac, start
   }
@@ -95,9 +99,8 @@ fn clean(block: @Message) {
 ```
 
 The address of a register map, a `string`, and an `Option` give no
-integer. An integer is not an address, so a function that gives an
-address parameter to `bitcast` as a `u64` keeps it, as a `store` of it in
-memory does, and the address cannot be read-only data, as
+integer. An integer has no access, and `bitcast` of an integer gives an
+`@var`, so `bitcast` of a read-only address to a `u64` is an error, as
 [Read-only addresses](#read-only-addresses) gives. Where the position
 expects an address or a slice, `bitcast` of an address or of a slice is a
 [view](#views).
@@ -129,7 +132,7 @@ struct State {
 }
 
 const state: u64 = 0x0100_8000
-const own: @State = bitcast(state)
+const own: @var State = bitcast(state)
 
 fn reset() {
   store(@own.count, 0)
@@ -174,7 +177,8 @@ The target of a `pub` address constant has the rule of an
 ## Addresses in memory
 
 A field of a plain struct and a module variable can hold an address
-`@T`, where `T` is `u8` to `u64`, `i8` to `i64`, or a plain struct. The
+`@T` or `@var T`, where `T` is `u8` to `u64`, `i8` to `i64`, or a plain
+struct. The
 address has 8 bytes, with the alignment 8. `store` writes it, also as a
 field of a [struct literal](/docs/structs/#struct-literals), and `load`
 gives it, so `@load(@link.record).value` is the address of a field of
@@ -190,7 +194,7 @@ struct Link {
   record: @Record
 }
 
-fn attach(link: @Link, record: @Record) {
+fn attach(link: @var Link, record: @Record) {
   store(link, { count = 1, record = record })
 }
 
@@ -216,7 +220,7 @@ struct Records {
 
 const unset: u64 = 0
 
-var records: @Records = bitcast(unset)
+var records: @var Records = bitcast(unset)
 
 fn init(frame: u64) {
   records = bitcast(frame)
@@ -239,7 +243,7 @@ struct Link {
   record: @Record
 }
 
-fn put(link: @Link, record: u64) {
+fn put(link: @var Link, record: u64) {
   store(@link.record, record)
 }
 ```
@@ -248,11 +252,10 @@ fn put(link: @Link, record: u64) {
 main.wyst:10:23: error: expected @Record, found u64
 ```
 
-A function that stores an address parameter in memory, or that assigns
-it to a module variable, keeps it after the call. The compiler infers
-that, also in the functions that it calls, and the signature does not say
-it. Memory cannot keep the address of read-only data, as
-[Read-only addresses](#read-only-addresses) gives.
+Memory and a module variable of type `@T` can hold a read-only address,
+such as the address of a constant table, and memory of type `@var T`
+holds only an `@var`, as [Read-only addresses](#read-only-addresses)
+gives.
 
 A field and a module variable can also hold an `Option` of such an
 address, for a link that can be empty. It is one word of 8 bytes: the
@@ -279,7 +282,7 @@ static_assert(size_of(Option<@Record>) == 8)
 
 var last: Option<@Record> = .None
 
-fn attach(link: @Link, record: @Record) {
+fn attach(link: @var Link, record: @Record) {
   store(@link.next, .Some(record))
   last = .Some(record)
 }
@@ -363,6 +366,10 @@ fn kind_of(base: u64, index: u64) -> u16 {
 The compiler must prove that each index is less than the length of its
 array or slice. [Index proofs](/docs/index-proofs/) gives the rules.
 
+A place keeps the access of its base: `@p.f` and `@p[i]` are `@var` when
+`p` is `@var`, and else read-only, as
+[Read-only addresses](#read-only-addresses) gives.
+
 An element is memory, not a value, so `load` reads it:
 
 ```wyst fails
@@ -398,8 +405,8 @@ const count: u64 = 256
 
 var records: u64 = 0
 
-fn record(domain: u64) -> @Domain {
-  const all: @[count]Domain = bitcast(records)
+fn record(domain: u64) -> @var Domain {
+  const all: @var [count]Domain = bitcast(records)
   return @all[domain & (count - 1)]
 }
 
@@ -510,16 +517,16 @@ pub fn same(p: @Point) -> @Point {
 main.wyst:6:27: error: an address of `Point` as the result of a `pub` function is not implemented now: the target is an integer, a `pub` struct, or an array of one of these
 ```
 
-The compiler infers what the result of a `pub` function can come from, as
-for each other result, so a `store` through the result of a call is an
-error when the result can be the address of a
-[constant table](#read-only-addresses), also in another module.
+The result type gives the access, so a `store` through the result of a
+call needs an `@var` result, also in another module, as
+[Read-only addresses](#read-only-addresses) gives.
 
 ## Slices
 
-`@[]T` is the type of a slice: the address of a number of elements of type
-`T`, one after the other, and that number, its length. `T` is a type that
-an address can have. A slice takes two registers: the address, and then
+`@[]T` is the type of a read-only slice: the address of a number of
+elements of type `T`, one after the other, and that number, its length.
+`@var []T` is a writable slice, and a slice keeps the access of its base,
+as a place does. `T` is a type that an address can have. A slice takes two registers: the address, and then
 the length. `@` marks each address, as in `@[N]T`, the address of an
 array, so the type shows that a slice holds an address. `[]T` alone is an
 array with no length, which is never a value, so a type `[]T` without `@`
@@ -538,20 +545,20 @@ struct Buffer {
   bytes: [64]u8
 }
 
-fn used(buffer: @Buffer) -> @[]u8 {
+fn used(buffer: @var Buffer) -> @var []u8 {
   const count = load(@buffer.count)
   if count > 64 { trap() }
 
   return @buffer.bytes[..< count]
 }
 
-fn clear(bytes: @[]u8) {
+fn clear(bytes: @var []u8) {
   for i in 0 ..< len(bytes) {
     store(@bytes[i], 0)
   }
 }
 
-fn reset(buffer: @Buffer) {
+fn reset(buffer: @var Buffer) {
   clear(used(buffer))
 }
 ```
@@ -687,9 +694,10 @@ fn sum(bytes: @[]u8) -> u64 {
 }
 ```
 
-A view has the origin of `x`, so a view of read-only data is read-only
-data, as [Read-only addresses](#read-only-addresses) gives. A view has no
-rule of alignment: on Normal memory it is as a field of a
+A view keeps the access of `x`: a view of an `@var` address can be
+`@var` or read-only, and a view of a read-only address is read-only, as
+[Read-only addresses](#read-only-addresses) gives. A view has no rule of
+alignment: on Normal memory it is as a field of a
 [`#[packed]` struct](/docs/structs/#packed-structs). Thus code that runs
 with the MMU off, or that uses an exclusive or atomic instruction, needs
 a view at a multiple of the size of each access.
@@ -714,10 +722,114 @@ These forms are not implemented now:
 
 ## Read-only addresses
 
+The type of an address gives its access. `@T` is read-only, and `@var T`
+is writable: `store`, and an `asm` line that stores through an address
+input, need an `@var`. A `load` takes each address. `var` comes directly
+after the `@`: `@var T`, `@var [N]T`, `@var []T`, and `Option<@var T>`.
+The signature gives the access of each parameter and result, so a
+function that only reads through an address takes `@T`:
+
+```wyst
+fn copy(from: @u32, to: @var u32) {
+  store(to, load(from))
+}
+```
+
+A `store` through a read-only address is an error:
+
+```wyst fails
+fn clear(cell: @u16) {
+  store(cell, 0)
+}
+```
+
+```text
+main.wyst:2:9: error: `store` writes only through an `@var` address, and this is @u16
+```
+
+`@var` converts to `@` where the position expects `@`, also in an
+`Option` and in a slice: an argument, the value of a `store`, of an
+assignment, of a `return`, of `.Some`, of a `const` with a type, and of a
+field of a literal. An `if` or `match` value is `@var` only when each
+block gives an `@var`. `@` never converts to `@var`, so a function that
+stores through its parameter cannot take a read-only address:
+
+```wyst fails
+fn reset(cell: @var u16) {
+  store(cell, 0)
+}
+
+fn start(cell: @u16) {
+  reset(cell)
+}
+```
+
+```text
+main.wyst:6:9: error: expected @var u16, found @u16
+```
+
+Read-only is transitive, as in Rust and D. Through a read-only address,
+each address that the code loads or reaches is read-only too: a `load` of
+a field `@var U` gives `@U`, and of a field `Option<@var U>` gives
+`Option<@U>`, and a place, a [slice](#slices), and a [view](#views) of a
+read-only address are read-only. Through an `@var` address, a `load`
+gives the type of the field:
+
+```wyst
+struct Node {
+  value: u64
+}
+
+struct Chain {
+  node: @var Node
+}
+
+fn clear(chain: @var Chain) {
+  const node = load(@chain.node)
+  store(@node.value, 0)
+}
+
+fn sum(chain: @Chain) -> u64 {
+  const node = load(@chain.node)
+  return load(@node.value)
+}
+```
+
+In `sum`, `node` is `@Node`, so a `store` through it is an error:
+
+```wyst fails
+struct Node {
+  value: u64
+}
+
+struct Chain {
+  node: @var Node
+}
+
+fn clear(chain: @Chain) {
+  const node = load(@chain.node)
+  store(@node.value, 0)
+}
+```
+
+```text
+main.wyst:11:9: error: `store` writes only through an `@var` address, and this is @u64
+```
+
+Writable memory stays writable for code that holds its own `@var`
+address: `@T` limits only what the code can do through the address that
+it got. Two `@var` addresses can name the same memory, and the compiler
+checks no borrow, as Rust does for `&mut`. The conversion removes only
+the first `var`, so `@var @var T` does not convert to `@var @T`: else a
+store through that address could put a read-only address in memory where
+other code loads an `@var T`.
+
 `@c` gives the address of the
 [constant table](/docs/constants-and-variables/#constant-tables) `c`, and
-`@m.c` of a `pub` table of the imported module `m`. A function can take
-the address and give it as its result, as each other address:
+`@m.c` of a `pub` table of the imported module `m`. A table is read-only
+data, so `@c` is a read-only address, and so is each place, slice, and
+view of it. A function can take the address as `@T` and give it as its
+result, as each other address:
 
 ```wyst
 struct Palette {
@@ -735,16 +847,17 @@ fn palette(night: bool) -> @Palette {
   return @light
 }
 
-fn copy(from: @u32, to: @u32) {
+fn copy(from: @u32, to: @var u32) {
   store(to, load(from))
 }
 
-fn paint(night: bool, pixel: @u32) {
+fn paint(night: bool, pixel: @var u32) {
   copy(@palette(night).text, pixel)
 }
 ```
 
-A table is read-only, so a `store` through its address is an error:
+A `store` through the address of a table is an error, and so is an
+argument of an `@var` parameter:
 
 ```wyst fails
 const steps: [2]u16 = [0, 0x1018]
@@ -755,43 +868,13 @@ fn clear() {
 ```
 
 ```text
-main.wyst:4:9: error: `store` cannot write through this address: it can be the address of constant table `main.steps`, which is read-only data
+main.wyst:4:9: error: `store` writes only through an `@var` address, and this is @u16
 ```
-
-The signature does not say which parameters a function writes through.
-The compiler infers, for each function, the address parameters that it
-stores through, also in the functions that it calls, and the parameters
-and the tables that its result can come from. Thus `copy` above can take
-the address of a table as `from`, but not as `to`:
-
-```wyst fails
-const steps: [2]u16 = [0, 0x1018]
-
-fn reset(cell: @u16) {
-  clear(cell)
-}
-
-fn clear(at: @u16) {
-  store(at, 0)
-}
-
-fn start() {
-  reset(@steps[0])
-}
-```
-
-```text
-main.wyst:12:9: error: function `main.reset` stores through parameter `cell`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
-```
-
-A [slice](#slices) of a table is read-only data in the same way. `clear`
-stores through its slice parameter, so it cannot take a slice of
-`steps`:
 
 ```wyst fails
 const steps: [4]u16 = [0, 0x1018, 0x204f, 0x308a]
 
-fn clear(cells: @[]u16) {
+fn clear(cells: @var []u16) {
   for i in 0 ..< len(cells) {
     store(@cells[i], 0)
   }
@@ -803,20 +886,16 @@ fn start() {
 ```
 
 ```text
-main.wyst:10:9: error: function `main.clear` stores through parameter `cells`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
+main.wyst:10:9: error: expected @var []u16, found @[]u16
 ```
 
-A byte of a [string](/docs/values/#strings), and a slice of its bytes, is
-read-only data in the same way, so a `store` through `@s[i]` or through
-an element of `@s[x ..]` is an error, also in a function that takes the
-address or the slice.
+A byte of a [string](/docs/values/#strings) is read-only data in the same
+way: `@s[i]` is a `@u8`, and `@s[x ..]` is a `@[]u8`.
 
-A `load` of an [address in memory](#addresses-in-memory) gives no
-origin, so a `store` through it would not find the table. Thus memory
-and a module variable cannot keep the address of a table or of a byte of
-a string, also through a parameter that a function keeps:
+Memory and a module variable of type `@T` can hold a read-only address,
+and memory of type `@var T` holds only an `@var`:
 
-```wyst fails
+```wyst
 struct Palette {
   bar: u32
 }
@@ -827,53 +906,54 @@ struct Theme {
 
 const light: Palette = { bar = 0x00f8_f9fc }
 
-fn choose(theme: @Theme, palette: @Palette) {
-  store(@theme.palette, palette)
+fn start(theme: @var Theme) {
+  store(@theme.palette, @light)
+}
+```
+
+```wyst fails
+struct Palette {
+  bar: u32
 }
 
-fn start(theme: @Theme) {
-  choose(theme, @light)
+struct Theme {
+  palette: @var Palette
+}
+
+const light: Palette = { bar = 0x00f8_f9fc }
+
+fn start(theme: @var Theme) {
+  store(@theme.palette, @light)
 }
 ```
 
 ```text
-main.wyst:16:17: error: function `main.choose` keeps parameter `palette`, so it cannot take this address: it can be the address of constant table `main.light`, which is read-only data
+main.wyst:12:25: error: expected @var Palette, found @Palette
 ```
 
-`bitcast` of an address to a `u64` keeps the address in the same way, so
-it cannot be the address of a table or of a byte of a string, also
-through a local, a result, a [view](#views), or a parameter that a
-function gives to `bitcast`:
+An integer has no access, and `bitcast` of an integer gives an `@var`, so
+`bitcast` of an address or of a slice to a `u64` needs an `@var`:
 
 ```wyst fails
 const steps: [2]u16 = [0, 0x1018]
 
-fn number(cell: @u16) -> u64 {
-  return bitcast(cell)
-}
-
 fn start() -> u64 {
-  return number(@steps[1])
+  return bitcast(@steps[1])
 }
 ```
 
 ```text
-main.wyst:8:17: error: function `main.number` keeps parameter `cell`, so it cannot take this address: it can be the address of constant table `main.steps`, which is read-only data
+main.wyst:4:18: error: `bitcast` gives a `u64` only of an `@var` address or slice, because `bitcast` of an integer gives an `@var`, and this is @u16
 ```
-
-A view of a table is read-only data, as the table is, so a `store`
-through it is an error.
 
 An `asm` input can hold the address of a table, as an
 [address input](/docs/assembly/#address-inputs). A line that loads
 through it is correct, and a line that stores through it is an error.
-The `u64` that `bitcast` gives of the address of a table is an error,
-also as an `asm` input. The `asm` blocks of a naked function, and an
-`asm` block that does not return, name physical registers, so they can
-read the parameters of the function in their registers. Thus a naked
-function, and a function with such a block, stores through each of its
-address and `string` parameters. A byte of a string is read-only data,
-so a string argument of such a function is an error.
+The `asm` blocks of a naked function, and an `asm` block that does not
+return, name physical registers, so they can read the parameters of the
+function in their registers and store through them. Thus a naked
+function, and a function with such a block, take each address and slice
+parameter as `@var`, and a `string` parameter is an error.
 
 ## load and store
 
@@ -899,7 +979,7 @@ struct Slot {
   rights: u16
 }
 
-fn reuse(slot: @Slot, object: u64) {
+fn reuse(slot: @var Slot, object: u64) {
   const generation = load(@slot.generation)
   store(@slot.generation, generation + 1)
   store(@slot.object, object)
@@ -918,7 +998,7 @@ struct Descriptor {
   next: u16
 }
 
-fn give(descriptor: @Descriptor, buffer: u64) {
+fn give(descriptor: @var Descriptor, buffer: u64) {
   store(descriptor, { address = buffer, length = 2048, flags = 2 })
 }
 ```

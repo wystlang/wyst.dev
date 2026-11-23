@@ -142,7 +142,7 @@ struct Card {
   counting: bool
 }
 
-fn stop(card: @Card) {
+fn stop(card: @var Card) {
   if load(@card.counting) {
     store(@card.counting, false)
   }
@@ -299,10 +299,10 @@ fn tail(text: string) -> u64 {
 ```
 
 A string is read-only data, as a
-[constant table](/docs/addresses/#read-only-addresses) is, so a `store`
-through the address of one of its bytes is an error, and so is a `store`
-through an element of a slice of a string, also in a function that takes
-the slice:
+[constant table](/docs/addresses/#read-only-addresses) is, so `@s[i]` is
+a read-only `@u8`, and `@s[x ..]` is a read-only `@[]u8`. A `store`
+through them is an error, and a function that takes `@var u8` or
+`@var []u8` cannot take them:
 
 ```wyst fails
 fn shout(text: string) {
@@ -315,12 +315,12 @@ fn shout(text: string) {
 ```
 
 ```text
-main.wyst:6:9: error: `store` cannot write through this address: it can be the address of a byte of a string, which is read-only data
+main.wyst:6:9: error: `store` writes only through an `@var` address, and this is @u8
 ```
 
 `bitcast` takes no `string`: it gives no integer and no address of
-read-only data that the compiler cannot follow, so the bytes of a string
-come only from `@s[i]` and `@s[x ..]`:
+read-only data, so the bytes of a string come only from `@s[i]` and
+`@s[x ..]`, which are read-only:
 
 ```wyst fails
 fn address(text: string) -> u64 {
@@ -333,7 +333,7 @@ main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integ
 ```
 
 `bitcast` of a slice of a string to a `u64` is also an error, as for each
-address of read-only data, as
+read-only address, as
 [Read-only addresses](/docs/addresses/#read-only-addresses) gives.
 
 A local `var`, a module variable, a module constant, a field, and an

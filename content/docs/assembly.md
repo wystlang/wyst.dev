@@ -76,12 +76,13 @@ slice, a `string`, an `Option`, and the address of a register map are not
 inputs. A block has at most 9 inputs. A typed input, `name: T in xN`, is
 not implemented now.
 
-[`bitcast`](/docs/addresses/#bitcast) of an address of memory, or of a
-slice local or parameter, gives the address as a `u64`, so it is an
-input. A line that uses that `u64` as an address asserts that each access
-stays in the memory of the address, which the compiler does not check.
-The function keeps the address, so the input cannot be the address of a
-constant table or of a byte of a string, which are read-only data:
+[`bitcast`](/docs/addresses/#bitcast) of an `@var` address of memory, or
+of an `@var` slice local or parameter, gives the address as a `u64`, so it
+is an input. A line that uses that `u64` as an address asserts that each
+access stays in the memory of the address, which the compiler does not
+check. An integer has no access, so `bitcast` gives no `u64` of a
+read-only address, such as the address of a constant table or of a byte
+of a string:
 
 ```wyst
 struct Message {
@@ -89,7 +90,7 @@ struct Message {
   bytes: [256]u8
 }
 
-fn clean(block: @Message) {
+fn clean(block: @var Message) {
   asm(start = bitcast(@block.bytes)) {
     dc civac, start
   }
@@ -107,7 +108,7 @@ fn clear() {
 ```
 
 ```text
-main.wyst:4:22: error: `bitcast` gives no integer of this address: it can be the address of constant table `main.steps`, which is read-only data
+main.wyst:4:22: error: `bitcast` gives a `u64` only of an `@var` address or slice, because `bitcast` of an integer gives an `@var`, and this is @u16
 ```
 
 Where an instruction takes a general register, a line names an input
@@ -116,7 +117,7 @@ and the 32-bit view. A line can also name `xzr` or `wzr`. When a 32-bit
 form and a 64-bit form both accept a line, the line must give the view:
 
 ```wyst
-fn save(address: @u64, value: u64) {
+fn save(address: @var u64, value: u64) {
   asm(address, value) {
     str value.x, [address]
   }
@@ -268,12 +269,12 @@ fn send(message: @[8]u64) {
 main.wyst:5:5: error: the handler of the exception of this `asm` line can read the register of address input `message`; `bitcast` gives the address as a `u64`
 ```
 
-A line that stores through the input stores through the address, as
-[`store`](/docs/addresses/#load-and-store) does. Thus a store through the
-address of a constant table or of a byte of a string, which are
-read-only data, is an error, also in a function that takes the address,
-and a load through it is correct. This function loads 32 bytes of a
-table:
+A line that stores through the input needs an `@var` input, as
+[`store`](/docs/addresses/#load-and-store) does, and a line that only
+loads takes each input. Thus a store through the address of a constant
+table or of a byte of a string, which are
+[read-only](/docs/addresses/#read-only-addresses), is an error, and a
+load through it is correct. This function loads 32 bytes of a table:
 
 ```wyst
 const keys: [8]u32 = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -298,7 +299,7 @@ fn clear() {
 ```
 
 ```text
-main.wyst:5:5: error: the `asm` line cannot store through this input: it can be the address of constant table `main.steps`, which is read-only data
+main.wyst:5:5: error: the `asm` line stores through input `cell`, which is @[2]u16, but a store needs an `@var` address
 ```
 
 A `load` of an address from memory asserts the address, as
@@ -409,7 +410,7 @@ and a block that does not write it is an error. Thus a block can copy 16
 bytes with `ldp` and `stp`:
 
 ```wyst
-fn copy(to: @[2]u64, from: @[2]u64) {
+fn copy(to: @var [2]u64, from: @[2]u64) {
   asm(to, from, scratch low, scratch high) {
     ldp low, high, [from]
     stp low, high, [to]
@@ -430,7 +431,7 @@ block that does not return name physical registers, so they have no
 `scratch` operand.
 
 ```wyst fails
-fn store_zero(address: @u64) {
+fn store_zero(address: @var u64) {
   asm(address, scratch zero) {
     str xzr, [address]
   }
@@ -469,7 +470,7 @@ in `x0` and `x1`:
 
 ```wyst
 // z = x + y, for four limbs of 64 bits each, the low limb first.
-fn add256(z: @[4]u64, x: @[4]u64, y: @[4]u64) {
+fn add256(z: @var [4]u64, x: @[4]u64, y: @[4]u64) {
   asm(z, x, y, scratch a0, scratch a1, scratch a2, scratch a3, scratch m0, scratch m1, scratch m2, scratch m3) {
     ldp a0, a1, [x]
     ldp a2, a3, [x, #16]
@@ -494,7 +495,7 @@ argument. A line can read and write the output. A block that does not
 write its output is an error.
 
 ```wyst
-fn try_lock(word: @u64) -> u64 {
+fn try_lock(word: @var u64) -> u64 {
   return asm(word, one = 1) -> held {
     swpa one.x, held.x, [word]
   }
@@ -649,7 +650,22 @@ The lines of a naked function and of a block with output `never` name
 physical general registers and `sp`, and no input names. No code of the
 compiler needs a register after these blocks. Each input of these blocks
 needs `in xN`, these blocks have no address input, and they have no
-output.
+output. A line can read a parameter of the function in its register and
+store through it, so the function takes each address and slice parameter
+as `@var`, and a `string` parameter is an error:
+
+```wyst fails
+fn halt(record: @u64) -> never {
+  asm -> never {
+    str xzr, [x0]
+    eret
+  }
+}
+```
+
+```text
+main.wyst:1:17: error: a function with an `asm` block that does not return takes each address and slice parameter as `@var`, because its lines can store through the register of a parameter, and parameter `record` is @u64
+```
 
 A naked function sets the stack with such a block, as
 [Boot and exceptions](/docs/boot-and-exceptions/) shows.
@@ -715,7 +731,7 @@ does one round of AES on the 16 bytes at `block`:
 
 ```wyst
 #[section(.el0)]
-fn round(block: @[16]u8, key: @[16]u8) {
+fn round(block: @var [16]u8, key: @[16]u8) {
   asm(block, key) {
     ld1 { v0.16b }, [block]
     ld1 { v1.16b }, [key]

@@ -242,7 +242,7 @@ struct Record {
   question: [38]u8
 }
 
-fn ask(record: @Record, count: u64) {
+fn ask(record: @var Record, count: u64) {
   if count > 32 {
     return
   }

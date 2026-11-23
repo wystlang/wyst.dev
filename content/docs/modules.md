@@ -109,10 +109,10 @@ pub struct Page {
 
 const base: u64 = 0x4100_0000
 
-pub const first: @Page = bitcast(base)
+pub const first: @var Page = bitcast(base)
 
-pub fn page(i: u64) -> @Page {
-  const pages: @[16]Page = bitcast(base)
+pub fn page(i: u64) -> @var Page {
+  const pages: @var [16]Page = bitcast(base)
   return @pages[i & 15]
 }
 ```

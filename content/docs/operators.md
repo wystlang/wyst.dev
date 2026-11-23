@@ -107,7 +107,7 @@ value 3, so `1 << core` is a correct shift of a `u64`:
 ```wyst
 const cores: u64 = 4
 
-fn mark_all(masks: @[cores]u64) {
+fn mark_all(masks: @var [cores]u64) {
   for core in 0 ..< cores {
     store(@masks[core], 1 << core)
   }

@@ -47,7 +47,7 @@ struct Counter {
 }
 
 const counter: u64 = 0x0100_8000
-const own: @Counter = bitcast(counter)
+const own: @var Counter = bitcast(counter)
 
 fn tick() {
   store(@own.ticks, load(@own.ticks) + 1)
@@ -89,8 +89,9 @@ fn step(i: u64) -> u16 {
 }
 ```
 
-`@name` gives the address of the table, and `@m.name` of a `pub` table
-of an imported module, so `load` reads it, as
+`@name` gives the address of the table, a read-only address, and
+`@m.name` of a `pub` table of an imported module, so `load` reads it, and
+`store` through it is an error, as
 [Read-only addresses](/docs/addresses/#read-only-addresses) gives. The
 name alone is not a value:
 
@@ -136,7 +137,7 @@ pub const count: u64 = 4
 ```wyst
 import platform.cpus
 
-fn clear(stacks: @[cpus.count]u64, cpu: u64) {
+fn clear(stacks: @var [cpus.count]u64, cpu: u64) {
   store(@stacks[cpu & (cpus.count - 1)], 0)
 }
 ```
@@ -171,7 +172,7 @@ pub struct Shade {
   color: u32
 }
 
-fn paint(column: @site.Column) {
+fn paint(column: @var site.Column) {
   const sample = load(@column.sample)
   if sample < site.samples {
     store(@column.shade.color, load(@colors[sample]))

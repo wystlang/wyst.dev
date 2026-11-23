@@ -38,18 +38,22 @@ parameter of a linear type with `xfer` takes the value, and one without
 cannot change its parameters, because a `mut` parameter is not
 implemented now.
 
-The signature does not say what a function does with an address
-parameter. The compiler infers the address parameters that a function
-stores through, and those that it keeps after the call: in memory, in a
-module variable, or as the `u64` that
-[`bitcast`](/docs/addresses/#bitcast) gives. It infers them also in the
-functions that it calls. Thus a function that keeps a parameter cannot
-take the address of a constant table or of a byte of a string, as
-[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
+The signature gives the access of each address parameter: `@var T` where
+the function, or a function that it calls, stores through the address or
+gives it to [`bitcast`](/docs/addresses/#bitcast) as a `u64`, and `@T`
+where it only reads through it. An `@var` argument converts to an `@T`
+parameter, but a read-only address, such as the address of a constant
+table or of a byte of a string, is not an argument of an `@var`
+parameter, as [Read-only addresses](/docs/addresses/#read-only-addresses)
+gives. The compiler checks each access in one function, and it infers no
+store through a parameter.
 
-No call starts the entry or a naked function, so no
-string literal gives their parameters, and a `string` parameter of one of
-them is not implemented now.
+No call starts the entry, so no string literal gives its parameters, and
+a `string` parameter of the entry is not implemented now. A naked
+function, and a function with an `asm` block that does not return, take
+each address parameter as `@var`, and a `string` parameter of one of
+them is an error, because their lines can store through the register of
+a parameter.
 
 A parameter `_` takes its argument and gives it no name, so the body
 cannot read it:
@@ -107,7 +111,7 @@ fn slot(ticket: u64) -> u64 {
   return ticket % 4
 }
 
-fn mark(table: @[4]u64, ticket: u64) {
+fn mark(table: @var [4]u64, ticket: u64) {
   store(@table[slot(ticket)], 1)
 }
 ```

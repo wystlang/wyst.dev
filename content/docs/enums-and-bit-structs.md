@@ -81,7 +81,7 @@ struct Slot {
   kind: Kind
 }
 
-fn take(slot: @Slot, kind: Kind) -> bool {
+fn take(slot: @var Slot, kind: Kind) -> bool {
   if load(@slot.kind) != .Free {
     return false
   }
@@ -91,7 +91,7 @@ fn take(slot: @Slot, kind: Kind) -> bool {
   return true
 }
 
-fn grant(slot: @Slot) -> bool {
+fn grant(slot: @var Slot) -> bool {
   return take(slot, .Memory)
 }
 ```
@@ -180,7 +180,7 @@ struct State {
 
 static_assert(size_of(Button) == 16 && field_offset(State, pushed) == 8)
 
-fn press(state: @State, slot: u64) {
+fn press(state: @var State, slot: u64) {
   store(@state.pushed, .Back(slot))
 }
 ```
@@ -450,7 +450,7 @@ fn half(size: Size) -> Size {
   return { WIDTH = size.WIDTH / 2, HEIGHT = size.HEIGHT }
 }
 
-fn shrink(column: @Column) {
+fn shrink(column: @var Column) {
   var size = load(@column.sheet)
   if size.WIDTH > 640 {
     size = half(size)
@@ -482,7 +482,7 @@ struct Entry: u64 {
 
 const data: Entry = { Valid = true, UXN = true }
 
-fn map(table: @[2048]u64, index: u64, frame: u64) {
+fn map(table: @var [2048]u64, index: u64, frame: u64) {
   store(@table[index & 2047], frame | data)
 }
 

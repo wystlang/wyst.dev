@@ -45,7 +45,7 @@ The checker knows the highest value of:
 A mask is the simplest proof. For an array of 8, `i & 7` is at most 7:
 
 ```wyst
-fn clear(table: @[8]u64, i: u64) {
+fn clear(table: @var [8]u64, i: u64) {
   store(@table[i & 7], 0)
 }
 ```
@@ -55,7 +55,7 @@ A range loop proves its variable:
 ```wyst
 const slots: u64 = 8
 
-fn clear_all(table: @[slots]u64) {
+fn clear_all(table: @var [slots]u64) {
   for i in 0 ..< slots {
     store(@table[i], 0)
   }
@@ -70,7 +70,7 @@ struct Slot: u8 {
   Way: u2 at 0..=1
 }
 
-fn clear(table: @[4]u64, cursor: @u8) {
+fn clear(table: @var [4]u64, cursor: @u8) {
   const slot: Slot = load(cursor)
   store(@table[slot.Way], 0)
 }
@@ -82,7 +82,7 @@ field with a limit is the one exception, because it traps on a value that
 is not below the limit. A `u8` from memory is at most 255:
 
 ```wyst
-fn mark(table: @[256]u64, cursor: @u8) {
+fn mark(table: @var [256]u64, cursor: @u8) {
   store(@table[widen(load(cursor))], 1)
 }
 ```
@@ -123,7 +123,7 @@ and `column` at most 3, so `row * 4 + column` is at most 11:
 const rows: u64 = 3
 const columns: u64 = 4
 
-fn clear(table: @[12]u64) {
+fn clear(table: @var [12]u64) {
   for row in 0 ..< rows {
     for column in 0 ..< columns {
       store(@table[row * columns + column], 0)
@@ -137,7 +137,7 @@ Thus a division that rounds up is `(x + (n - 1)) / n`, where `n - 1` is a
 constant. Here `count` is at most 32, so `(count + 7) / 8` is at most 4:
 
 ```wyst
-fn mark(table: @[4]u64, count: u64) {
+fn mark(table: @var [4]u64, count: u64) {
   if count > 32 {
     return
   }
@@ -154,7 +154,7 @@ not a power of two:
 ```wyst
 const slots: u64 = 5
 
-fn clear(table: @[slots]u64, ticket: u64) {
+fn clear(table: @var [slots]u64, ticket: u64) {
   store(@table[ticket % slots], 0)
 }
 ```
@@ -164,7 +164,7 @@ as a constant or a value that a condition bounds. Here the condition gives
 `page` the highest value 15, so `page / 4` is at most 3:
 
 ```wyst
-fn mark(table: @[4]u64, page: u64) {
+fn mark(table: @var [4]u64, page: u64) {
   if page < 16 {
     store(@table[page / 4], 1)
   }
@@ -194,7 +194,7 @@ The bound holds in the body of the `if`, and the bound of the false
 condition holds in its `else` block.
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at < 4 {
     store(@table[at], 1)
@@ -207,7 +207,7 @@ has the largest of the highest values of its blocks, so it can be an
 index:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   store(@table[if at < 4 { at } else { 0 }], 1)
 }
@@ -228,7 +228,7 @@ the bound of `a + b` is not its bound. Thus a range loop that ends at the
 sum proves its variable:
 
 ```wyst
-fn clear(table: @[8]u64, first: u64, count: u64) {
+fn clear(table: @var [8]u64, first: u64, count: u64) {
   if first + count > 8 { return }
 
   for i in first ..< first + count {
@@ -245,7 +245,7 @@ When the body cannot reach its end, the condition is false after the
 of the block:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at >= 4 { return }
 
@@ -259,7 +259,7 @@ gives the bounds of the false `a` and of the false `b`. The code computes
 in `b`:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at < 4 && load(@table[at]) == 0 {
     store(@table[at], 1)
@@ -303,7 +303,7 @@ In an arm of a `match` on a parameter, a loop variable, or a `const` local
 The arm `_` gives no bound:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   match at {
     0, 3 {
@@ -326,12 +326,12 @@ cannot prove.
 ```wyst fails
 const slots: u64 = 8
 
-fn clear(table: @[slots]u64, i: u64) {
+fn clear(table: @var [slots]u64, i: u64) {
   store(@table[i], 0)
 }
 
 fn reset(base: u64) {
-  const table: @[slots]u64 = bitcast(base)
+  const table: @var [slots]u64 = bitcast(base)
 
   for i in 0 ..< slots {
     clear(table, i)
@@ -354,7 +354,7 @@ ring of 4 slots masks each new value:
 ```wyst
 var next: u64 = 0
 
-fn record(table: @[4]u64) {
+fn record(table: @var [4]u64) {
   store(@table[next], 1)
   next = (next + 1) & 3
 }
@@ -365,7 +365,7 @@ Without the mask, the checker knows no highest value of the write:
 ```wyst fails
 var next: u64 = 0
 
-fn record(table: @[4]u64) {
+fn record(table: @var [4]u64) {
   store(@table[next], 1)
   next = next + 1
 }
@@ -413,7 +413,7 @@ fn current() -> u64 {
   return n
 }
 
-fn clear(table: @[cpus * slots]u64) {
+fn clear(table: @var [cpus * slots]u64) {
   const first = current() * slots
 
   for slot in 0 ..< slots {
@@ -468,7 +468,7 @@ index of a local `var` needs an operator that gives a highest value, such
 as a mask:
 
 ```wyst
-fn fill(table: @[8]u64, count: u64) {
+fn fill(table: @var [8]u64, count: u64) {
   var i: u64 = 0
   for i != count {
     store(@table[i & 7], i)
@@ -517,7 +517,7 @@ When `n` is such a local, `for i in a ..< n` gives `i < n`, and
 `for i in 0 ..< len(s)` proves `@s[i]`:
 
 ```wyst
-fn clear(bytes: @[]u8) {
+fn clear(bytes: @var []u8) {
   for i in 0 ..< len(bytes) {
     store(@bytes[i], 0)
   }
@@ -540,7 +540,7 @@ fn get(bytes: @[]u8, i: u64) -> u8 {
 `i` is less than `len(to)`:
 
 ```wyst
-fn copy(from: @[]u8, to: @[]u8) {
+fn copy(from: @[]u8, to: @var []u8) {
   if len(from) > len(to) { trap() }
 
   for i in 0 ..< len(from) {
@@ -625,7 +625,7 @@ from a test of the length of the bytes that comes before the view, not
 after it:
 
 ```wyst
-fn second(bytes: @[]u8) -> u64 {
+fn second(bytes: @var []u8) -> u64 {
   if len(bytes) < 16 {
     return 0
   }

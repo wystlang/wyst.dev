@@ -19,8 +19,7 @@ This page lists both sides.
 - `string` parameters, local constants, results, and `if` and `match`
   values, and `len(s)`, `@s[i]`, and the slices `@s[x ..< y]`,
   `@s[..< y]`, and `@s[x ..]` of a `string` local or parameter, with a
-  proof of the index and of the slice, and the check that no `store`
-  writes through a byte or a slice of a string.
+  proof of the index and of the slice, which are read-only.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -56,18 +55,22 @@ This page lists both sides.
   address constants, also `pub`, address and slice results of `pub`
   functions, places, `load`, `store`, `store` of a struct literal with
   nested literals and array literals, `bitcast`, `widen`, and `truncate`.
-- `bitcast` of an address of memory or of a slice to a `u64`, also as an
-  `asm` input or an operand, and views: `bitcast` of an address or a
-  slice as an address or a slice of another type that holds no address,
-  with the proof that the view is in the memory, and the check that no
-  `bitcast` to a `u64` keeps the address of a table or of a byte of a
-  string, also through a view or a parameter that a function keeps.
+- Read-only and writable addresses: `@T` and `@var T`, also of arrays and
+  slices, in fields, and in an `Option`, the conversion of `@var` to `@`,
+  read-only through each address that a read-only address reaches, and
+  the checks that `store`, an `asm` line that stores, and `bitcast` to a
+  `u64` take only an `@var`, and that a naked function, and a function
+  with an `asm` block that does not return, take each address parameter
+  as `@var`.
+- `bitcast` of an `@var` address of memory or of an `@var` slice to a
+  `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
+  address or a slice as an address or a slice of another type that holds
+  no address, with the access of its operand and the proof that the view
+  is in the memory.
 - Addresses in memory: fields of plain structs and module variables of
-  type `@T` or `Option<@T>`, where `T` is an integer or a plain struct,
-  with `load`, `store`, and assignments, `match`, `else`, `?`, and `==`
-  and `!=` with `.None` on an `Option` of an address, and the check that
-  memory and a module variable keep no address of a table or of a byte of
-  a string, also through a parameter that a function keeps.
+  type `@T`, `@var T`, or an `Option` of one, where `T` is an integer or a
+  plain struct, with `load`, `store`, and assignments, `match`, `else`,
+  `?`, and `==` and `!=` with `.None` on an `Option` of an address.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
@@ -138,7 +141,7 @@ kernel needs it:
 | An `Option` in memory of a type other than an integer, an enum without values, or an address that memory holds, such as `Option<bool>`, and a value of an `Option` in a constant table, other than `.None` of an `Option` of an address | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
-| `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry or of a naked function | Use a local `const`, a parameter of a function that a call starts, or a result. |
+| `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry | Use a local `const`, a parameter of a function that a call starts, or a result. |
 | `len`, a byte, and a slice of a `string` that is not a local or a parameter, such as `len(f())` and `@"text"[1 ..]` | Put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
