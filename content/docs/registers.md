@@ -252,7 +252,7 @@ fn reset() {
 `bitcast` is the only form that makes `@M` from an integer, and the
 checker does not examine the address. The code asserts that a device of
 the map is at the address, so that the address of each register is a
-multiple of the register size, as `bitcast` of an
+multiple of the register size, as `bitcast` of a `u64` to an
 [address of memory](/docs/addresses/#bitcast) asserts its memory.
 
 A register map is not memory and not a value. Thus `load`, `store`, and
@@ -272,6 +272,25 @@ struct Port {
 
 ```text
 main.wyst:7:9: error: a register map is not a value, so memory does not hold its address
+```
+
+Each register gives its access kind, so the address of a register map
+has no `var`, as an address of memory has, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives:
+
+```wyst fails
+#[register_map]
+struct Pl011 {
+  DR: readwrite u32 at 0x00 { DATA: u8 at 0..=7 }
+}
+
+fn put(uart: @var Pl011) {
+  uart.DR.write(DATA = 0x41)
+}
+```
+
+```text
+main.wyst:6:14: error: the address of a register map has no `var`, because each register gives its access kind
 ```
 
 `modify` computes the address two times, as it computes an index two

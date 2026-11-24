@@ -85,10 +85,10 @@ main.wyst:2:16: error: `SCR_EL3` can be read only at EL3 or higher
 ```
 
 Each read and each write must be possible at the EL of its function: EL1,
-or EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions).
-The compiler checks a function that runs at EL0, such as a function in the
-section `.el0`, for EL1. Thus a function without `#[el2]` cannot read
-`VBAR_EL2`:
+EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or
+EL0 in another function in the section `.el0`. An inline function has no
+section, so the compiler checks it for EL1 when it does not have
+`#[el2]`. Thus a function without `#[el2]` cannot read `VBAR_EL2`:
 
 ```wyst fails
 #[sysreg]
@@ -103,6 +103,24 @@ fn installed() -> bool {
 
 ```text
 main.wyst:7:19: error: `VBAR_EL2` can be read only at EL2, in an `#[el2]` function
+```
+
+A function in `.el0` cannot read `VBAR_EL1`:
+
+```wyst fails
+#[sysreg]
+const VBAR_EL1: readonly u64 {
+  VBA: u53 at 11..=63
+}
+
+#[section(.el0)]
+fn installed() -> bool {
+  return VBAR_EL1.read().VBA != 0
+}
+```
+
+```text
+main.wyst:8:19: error: `VBAR_EL1` can be read only at EL1 or EL2, so not in a function of section `.el0`
 ```
 
 ## EL1 registers at EL2

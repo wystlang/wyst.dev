@@ -142,7 +142,7 @@ struct Card {
   counting: bool
 }
 
-fn stop(card: @Card) {
+fn stop(card: @var Card) {
   if load(@card.counting) {
     store(@card.counting, false)
   }
@@ -220,6 +220,10 @@ fn wide(value: u32) -> i64 {
 main.wyst:2:10: error: `widen` cannot make i64 from u32
 ```
 
+`bitcast` also gives the address of memory, or of a slice, as a `u64`,
+and makes an address from a `u64`, as
+[Addresses and memory](/docs/addresses/#bitcast) gives.
+
 ## Strings
 
 A string literal is a sequence of bytes. It has no zero byte at its end,
@@ -229,10 +233,9 @@ as a C string has. The escapes are `\n`, `\r`, `\t`, `\0`, `\\`, `\"`, and
 A string literal has the type `string`, and so does a parameter, a local
 `const`, a result, and an `if` or `match` value. A `string` value is one
 register: the address of its length, which its bytes follow, as
-[Code generation](/docs/code-generation/) gives. It is an argument, the
-head of a `for` loop, or the operand of `bitcast`, which gives its address
-as a `u64`, as [Addresses and memory](/docs/addresses/#bitcast)
-describes. A `for` loop on a `string` visits each byte as a `u8`:
+[Code generation](/docs/code-generation/) gives. It is an argument or the
+head of a `for` loop. A `for` loop on a `string` visits each byte as a
+`u8`:
 
 ```wyst
 fn checksum(text: string) -> u8 {
@@ -269,9 +272,37 @@ fn first(text: string) -> u8 {
 }
 ```
 
+`@s[x ..< y]`, `@s[..< y]`, and `@s[x ..]` give a slice `@[]u8` of the
+bytes of the `string` local or parameter `s`, from byte `x` up to, but
+not including, byte `y`. `@s[x ..]` ends at `len(s)`. The compiler must
+prove that `x` is at most `y` and that `y` is at most `len(s)`, as for a
+slice of a slice. Thus text is a slice of bytes, and a function that
+takes a `@[]u8` takes the bytes of a string:
+
+```wyst
+fn total(bytes: @[]u8) -> u64 {
+  var sum: u64 = 0
+
+  for byte in bytes {
+    sum += widen(byte)
+  }
+
+  return sum
+}
+
+fn tail(text: string) -> u64 {
+  if len(text) < 1 {
+    return 0
+  }
+  return total(@text[1 ..])
+}
+```
+
 A string is read-only data, as a
-[constant table](/docs/addresses/#read-only-addresses) is, so a `store`
-through the address of one of its bytes is an error:
+[constant table](/docs/addresses/#read-only-addresses) is, so `@s[i]` is
+a read-only `@u8`, and `@s[x ..]` is a read-only `@[]u8`. A `store`
+through them is an error, and a function that takes `@var u8` or
+`@var []u8` cannot take them:
 
 ```wyst fails
 fn shout(text: string) {
@@ -284,14 +315,33 @@ fn shout(text: string) {
 ```
 
 ```text
-main.wyst:6:9: error: `store` cannot write through this address: it can be the address of a byte of a string, which is read-only data
+main.wyst:6:9: error: `store` writes only through an `@var` address, and this is @u8
 ```
 
+`bitcast` takes no `string`: it gives no integer and no address of
+read-only data, so the bytes of a string come only from `@s[i]` and
+`@s[x ..]`, which are read-only:
+
+```wyst fails
+fn address(text: string) -> u64 {
+  return bitcast(text)
+}
+```
+
+```text
+main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local or parameter `s` as a `@[]u8`
+```
+
+`bitcast` of a slice of a string to a `u64` is also an error, as for each
+read-only address, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
+
 A local `var`, a module variable, a module constant, a field, and an
-`Option` cannot be a `string` now, and neither can a slice of a string,
-such as `@s[1 ..]`. `string` takes no type arguments, and memory at an
-address is not a `string` now, so `string<u8>` and `@string` are errors
-too:
+`Option` cannot be a `string` now. `@s[i]` and `@s[x ..]` take a `string`
+local or parameter, so a byte or a slice of a string literal, such as
+`@"text"[1 ..]`, is not implemented now. `string` takes no type
+arguments, and memory at an address is not a `string` now, so
+`string<u8>` and `@string` are errors too:
 
 ```wyst fails
 fn greet() {

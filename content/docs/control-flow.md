@@ -361,7 +361,7 @@ not implemented now, but `for x in @a[0 ..] {}` gives the elements of the
 array at `a`:
 
 ```wyst
-fn sum(values: []u32) -> u64 {
+fn sum(values: @[]u32) -> u64 {
   var total: u64 = 0
 
   for value in values {

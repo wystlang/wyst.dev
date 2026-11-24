@@ -50,9 +50,10 @@ These properties together are the reason for the language:
 A signature states only types and parameter modes. The compiler infers the
 rest from the body:
 
-- A function keeps an address parameter after the call only through its
-  result, a `store` of it in memory, or an assignment of it to a module
-  variable. There is no `noescape` marker.
+- The type of an address gives its access, `@T` or `@var T`, so the
+  compiler infers no store through a parameter and no address that a
+  function keeps. No address points to a local, so there is no
+  `noescape` marker.
 - There are no effect clauses. Inference of the effects of each call is not
   implemented now.
 - Each value result, address result, and `Option` result of a call must

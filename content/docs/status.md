@@ -17,8 +17,9 @@ This page lists both sides.
 - The value types `bool`, `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`,
   and `i64`, and `never`.
 - `string` parameters, local constants, results, and `if` and `match`
-  values, and `len(s)` and `@s[i]` of a `string` local or parameter, with
-  a proof of the index.
+  values, and `len(s)`, `@s[i]`, and the slices `@s[x ..< y]`,
+  `@s[..< y]`, and `@s[x ..]` of a `string` local or parameter, with a
+  proof of the index and of the slice, which are read-only.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -54,16 +55,26 @@ This page lists both sides.
   address constants, also `pub`, address and slice results of `pub`
   functions, places, `load`, `store`, `store` of a struct literal with
   nested literals and array literals, `bitcast`, `widen`, and `truncate`.
+- Read-only and writable addresses: `@T` and `@var T`, also of arrays and
+  slices, in fields, and in an `Option`, the conversion of `@var` to `@`,
+  read-only through each address that a read-only address reaches, and
+  the checks that `store`, an `asm` line that stores, and `bitcast` to a
+  `u64` take only an `@var`, and that a naked function, and a function
+  with an `asm` block that does not return, take each address and slice
+  parameter as `@var` and refuse a `string` parameter.
+- `bitcast` of an `@var` address of memory or of an `@var` slice to a
+  `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
+  address or a slice as an address or a slice of another type that holds
+  no address, with the access of its operand and the proof that the view
+  is in the memory.
 - Addresses in memory: fields of plain structs and module variables of
-  type `@T` or `Option<@T>`, where `T` is an integer or a plain struct,
-  with `load`, `store`, and assignments, `match`, `else`, `?`, and `==`
-  and `!=` with `.None` on an `Option` of an address, and the check that
-  memory and a module variable keep no address of a table or of a byte of
-  a string, also through a parameter that a function keeps.
+  type `@T`, `@var T`, or an `Option` of one, where `T` is an integer or a
+  plain struct, with `load`, `store`, and assignments, `match`, `else`,
+  `?`, and `==` and `!=` with `.None` on an `Option` of an address.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
-- Slices `[]T` as the type of parameters, local constants, and results,
+- Slices `@[]T` as the type of parameters, local constants, and results,
   `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array address or a
   slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
   writes through a slice of a table.
@@ -90,8 +101,14 @@ This page lists both sides.
   at such an address,
   system registers, offsets and bit positions that the compiler computes,
   locals that keep a register snapshot, and `modify` of a register.
-- Checked `asm` blocks, with inputs, outputs as values, `Option` outputs,
-  and blocks that do not return.
+- Checked `asm` blocks, with inputs, address inputs whose memory
+  operands name a path of fields, with the proof that each access is in
+  the place that it names, the proof of the alignment of exclusive,
+  atomic, load-acquire, and store-release lines, the checks that the
+  address does not go out of the block, and the check that no line stores
+  through the address of a table or of a byte of a string, or into a
+  place that holds an address, outputs as values, `Option` outputs, and
+  blocks that do not return.
 - Naked functions with parameters, the check that a function that runs
   with no stack uses none, the check that each function that starts on a
   new stack fits in the `stack` of the layout, `#[el2]` functions, code
@@ -124,8 +141,8 @@ kernel needs it:
 | An `Option` in memory of a type other than an integer, an enum without values, or an address that memory holds, such as `Option<bool>`, and a value of an `Option` in a constant table, other than `.None` of an `Option` of an address | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
-| `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry or of a naked function | Use a local `const`, a parameter of a function that a call starts, or a result. |
-| A slice of a `string`, such as `@s[1 ..]`, and `len` and a byte of a `string` that is not a local or a parameter, such as `len(f())` | Use `@s[i]`, and put the string in a local first: `const s = f()`. |
+| `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry | Use a local `const`, a parameter of a function that a call starts, or a result. |
+| `len`, a byte, and a slice of a `string` that is not a local or a parameter, such as `len(f())` and `@"text"[1 ..]` | Put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |
@@ -145,14 +162,17 @@ kernel needs it:
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than an integer, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
 | An `Option` of an address as a parameter or a local, also of a `load` | Refused. `else`, `?`, or `match` takes it at the call, at the `load`, or at the read of the variable. |
 | `==` and `!=` of an `Option` of an address with an operand other than `.None`, such as `.Some(r)` | Refused, because no operator takes an address. |
-| An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` | Refused. |
+| An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` or the view `bitcast(@own.lines)` | Refused. |
 | `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, also in an `Option`, or an array of them. |
 | `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
+| `bitcast` of a slice that is not a local or a parameter, such as `bitcast(@a[4 ..])` | Put the slice in a local first: `const s = @a[4 ..]`. |
+| A view `@[]F` of an address, such as `@[]u8` of a `@Note` | View the address as an array, such as `@[12]u8`, and take a slice of the array. |
+| A view `@[]F` of a slice whose length needs more than one shift or one division, such as `@[]u16` of a slice of 3-byte structs, and a view of a slice, or as a slice, of a struct with no fields | Refused. |
 | `len` and an element of a slice that is not a local or a parameter, such as `len(f())` and `@f()[0]` | Put the slice in a local first: `const s = f()`. |
-| A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `[][4]u8` | Refused. |
+| A slice parameter of a naked function, an `Option` of a slice, and a slice of arrays, such as `@[][4]u8` | Refused. |
 | A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |
 | A call in the place of the address of a register access, such as `f().R.read()`, the address of a register map as a module constant, a module variable, a local `var`, or an `Option`, and the address of a register map that is not `pub` as the result of a `pub` function | Put the address in a local `const` or a parameter, and make the register map `pub`. |
 | A limit on a signed field, such as an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |

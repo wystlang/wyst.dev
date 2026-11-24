@@ -45,19 +45,19 @@ Thus a region comes before its sections, and a section comes before each
 layout and the source use one value, such as the size of a page:
 
 ```text
-entry boot._start at boot.image_start
-region ram: readwrite at boot.image_start size boot.image_size
-section .text: code in ram align frames.size
+entry kernel.boot._start at kernel.boot.image_start
+region ram: readwrite at kernel.boot.image_start size kernel.boot.image_size
+section .text: code in ram align kernel.frames.size
 stack kernel.stack_size
 ```
 
 `m` is a module path, as in an import. The module must be in the build:
 the entry module, or a module that a module of the build imports. Else
-the error is ``module `frames` is not in the build``. The compiler gives
-the value after it checks the source, and then checks the line: an
+the error is ``module `kernel.frames` is not in the build``. The compiler
+gives the value after it checks the source, and then checks the line: an
 alignment is a power of two. A layout file has no operators, so the
-source computes a value in a constant, such as `boot.image_start`, and
-the layout names it.
+source computes a value in a constant, such as `kernel.boot.image_start`,
+and the layout names it.
 
 ## Placement
 
@@ -91,15 +91,17 @@ another section only when the program puts something in it.
 The line `functions m in s` puts the code of each function of each module
 whose path starts with `m.` in the section `s`, in place of `.text`. `m`
 is a module path, as in an import, and `s` is a `code` section other than
-`.vectors`. Thus `functions el0 in .el0` puts the code of `el0.shell` and
-of `el0.drivers.uart` in `.el0`, but not the code of a module `el0`.
+`.vectors`. Thus `functions drivers in .el0` puts the code of
+`drivers.display` and of `drivers.serial.uart` in `.el0`, but not the code
+of a module `drivers`.
 `#[section]` on a function wins over the line, as
 [Sections](/docs/boot-and-exceptions/#sections) gives. An inline function
 has no code of its own, so the line does not place it. The kernel puts
-the code of its EL0 modules in `.el0` in this way, so that its page
-tables let EL0 execute only these pages.
+the code of its EL0 modules in `.el0` in this way, with one line for each
+topic but `kernel`, so that its page tables let EL0 execute only these
+pages.
 
-```wyst el0/drivers/uart.wyst
+```wyst drivers/serial/uart.wyst
 pub fn start() -> never {
   for {}
 }
@@ -112,15 +114,15 @@ entry main._start at 0x4008_0000
 region ram: readwrite at 0x4008_0000 size 0x0001_0000
 section .text: code in ram align 16
 section .el0: code in ram after .text align 16
-functions el0 in .el0
+functions drivers in .el0
 symbol __stack_top: u64 = 0x4009_0000
 ```
 
 the code of `_start` goes in `.text`, and the code of
-`el0.drivers.uart.start` in `.el0`:
+`drivers.serial.uart.start` in `.el0`:
 
 ```wyst
-import el0.drivers.uart
+import drivers.serial.uart
 
 #[naked]
 pub fn _start() -> never {
@@ -139,14 +141,14 @@ entry main._start at 0x4008_0000
 region ram: readwrite at 0x4008_0000 size 0x0001_0000
 section .text: code in ram align 16
 section .el0: code in ram after .text align 16
-section .drivers: code in ram after .el0 align 16
-functions el0 in .el0
-functions el0.drivers in .drivers
+section .serial: code in ram after .el0 align 16
+functions drivers in .el0
+functions drivers.serial in .serial
 symbol __stack_top: u64 = 0x4009_0000
 ```
 
 ```wyst fails
-import el0.drivers.uart
+import drivers.serial.uart
 
 #[naked]
 pub fn _start() -> never {
@@ -159,11 +161,11 @@ pub fn _start() -> never {
 ```
 
 ```text
-check.layout:7:1: error: a second `functions` line for module `el0.drivers.uart`
+check.layout:7:1: error: a second `functions` line for module `drivers.serial.uart`
 ```
 
 A line that matches no module of the build is also an error, such as
-``no module of the build has a path that starts with `el0.` ``, because
+``no module of the build has a path that starts with `drivers.` ``, because
 with a wrong path the code stays in `.text` with no other error.
 
 ## Stacks

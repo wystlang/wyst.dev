@@ -43,7 +43,7 @@ types, such as `@bool`, are not implemented now:
 
 ```wyst fails
 struct Text {
-  bytes: []u8
+  bytes: @[]u8
 }
 ```
 
@@ -63,7 +63,7 @@ struct Shell {
   count: u64
 }
 
-fn start_save(shell: @Shell) -> bool {
+fn start_save(shell: @var Shell) -> bool {
   if load(@shell.saving) {
     return false
   }
@@ -96,7 +96,7 @@ import ipc.channels
 
 static_assert(field_offset(channels.Message, bytes) == 40)
 
-fn clear(block: @channels.Message) {
+fn clear(block: @var channels.Message) {
   store(@block.count, 0)
 }
 ```
@@ -270,7 +270,7 @@ struct Arp {
   #[big_endian] oper: u16
 }
 
-fn request(arp: @Arp) {
+fn request(arp: @var Arp) {
   store(arp, { htype = 1, ptype = 0x0800, hlen = 6, plen = 4, oper = 1 })
 }
 
@@ -317,7 +317,7 @@ fn focused(strip: @Strip, names: @[slots]u64) -> u64 {
   return load(@names[load(@strip.focus)])
 }
 
-fn follow(strip: @Strip, place: u64) {
+fn follow(strip: @var Strip, place: u64) {
   store(@strip.focus, widen(load(@strip.order[place & (slots - 1)])))
 }
 ```
@@ -337,7 +337,7 @@ struct Strip {
   #[below(16)] focus: u64
 }
 
-fn choose(strip: @Strip, chosen: @u64) {
+fn choose(strip: @var Strip, chosen: @u64) {
   store(@strip.focus, load(chosen))
 }
 ```
@@ -380,7 +380,7 @@ struct Flush {
   padding: u32
 }
 
-fn flush(request: @Flush, width: u32, height: u32) {
+fn flush(request: @var Flush, width: u32, height: u32) {
   store(request, { header = { kind = 0x0104 }, rect = { width = width, height = height }, resource = 1 })
 }
 ```
@@ -402,7 +402,7 @@ struct Ethernet {
   #[big_endian] type: u16
 }
 
-fn broadcast(frame: @Ethernet, own: @[6]u8) {
+fn broadcast(frame: @var Ethernet, own: @[6]u8) {
   store(
     frame,
     {
@@ -423,7 +423,7 @@ struct Ethernet {
   #[big_endian] type: u16
 }
 
-fn broadcast(frame: @Ethernet) {
+fn broadcast(frame: @var Ethernet) {
   store(frame, { destination = [0xff, 0xff], type = 0x0800 })
 }
 ```
@@ -452,7 +452,7 @@ struct Record {
   flags: Flags
 }
 
-fn reset(record: @Record) {
+fn reset(record: @var Record) {
   store(record, { count = 1 })
 }
 ```
@@ -479,7 +479,7 @@ struct Log {
   records: [2]Record
 }
 
-fn reset(log: @Log) {
+fn reset(log: @var Log) {
   store(log, { records = [{ count = 1, flags = {} }, { flags = { MODE = 2 } }] })
 }
 ```

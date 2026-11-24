@@ -9,7 +9,8 @@ build stops. There is no bounds check at run time, so a proved index costs
 nothing. Each index of a slice must be less than the length of the slice,
 and the start and the end of a slice must be in order and in the array or
 the slice that it comes from, as [Slices](#slices) gives. Each index of a
-`string` must be less than its length, as [Strings](#strings) gives.
+`string` must be less than its length, and a slice of a `string` must be
+in its bytes, as [Strings](#strings) gives.
 
 The same rule applies to an index of an array of devices, as in
 `redistributors[cpu]`. See [Registers and devices](/docs/registers/). When
@@ -44,7 +45,7 @@ The checker knows the highest value of:
 A mask is the simplest proof. For an array of 8, `i & 7` is at most 7:
 
 ```wyst
-fn clear(table: @[8]u64, i: u64) {
+fn clear(table: @var [8]u64, i: u64) {
   store(@table[i & 7], 0)
 }
 ```
@@ -54,7 +55,7 @@ A range loop proves its variable:
 ```wyst
 const slots: u64 = 8
 
-fn clear_all(table: @[slots]u64) {
+fn clear_all(table: @var [slots]u64) {
   for i in 0 ..< slots {
     store(@table[i], 0)
   }
@@ -69,7 +70,7 @@ struct Slot: u8 {
   Way: u2 at 0..=1
 }
 
-fn clear(table: @[4]u64, cursor: @u8) {
+fn clear(table: @var [4]u64, cursor: @u8) {
   const slot: Slot = load(cursor)
   store(@table[slot.Way], 0)
 }
@@ -81,7 +82,7 @@ field with a limit is the one exception, because it traps on a value that
 is not below the limit. A `u8` from memory is at most 255:
 
 ```wyst
-fn mark(table: @[256]u64, cursor: @u8) {
+fn mark(table: @var [256]u64, cursor: @u8) {
   store(@table[widen(load(cursor))], 1)
 }
 ```
@@ -122,7 +123,7 @@ and `column` at most 3, so `row * 4 + column` is at most 11:
 const rows: u64 = 3
 const columns: u64 = 4
 
-fn clear(table: @[12]u64) {
+fn clear(table: @var [12]u64) {
   for row in 0 ..< rows {
     for column in 0 ..< columns {
       store(@table[row * columns + column], 0)
@@ -136,7 +137,7 @@ Thus a division that rounds up is `(x + (n - 1)) / n`, where `n - 1` is a
 constant. Here `count` is at most 32, so `(count + 7) / 8` is at most 4:
 
 ```wyst
-fn mark(table: @[4]u64, count: u64) {
+fn mark(table: @var [4]u64, count: u64) {
   if count > 32 {
     return
   }
@@ -153,7 +154,7 @@ not a power of two:
 ```wyst
 const slots: u64 = 5
 
-fn clear(table: @[slots]u64, ticket: u64) {
+fn clear(table: @var [slots]u64, ticket: u64) {
   store(@table[ticket % slots], 0)
 }
 ```
@@ -163,7 +164,7 @@ as a constant or a value that a condition bounds. Here the condition gives
 `page` the highest value 15, so `page / 4` is at most 3:
 
 ```wyst
-fn mark(table: @[4]u64, page: u64) {
+fn mark(table: @var [4]u64, page: u64) {
   if page < 16 {
     store(@table[page / 4], 1)
   }
@@ -193,7 +194,7 @@ The bound holds in the body of the `if`, and the bound of the false
 condition holds in its `else` block.
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at < 4 {
     store(@table[at], 1)
@@ -206,7 +207,7 @@ has the largest of the highest values of its blocks, so it can be an
 index:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   store(@table[if at < 4 { at } else { 0 }], 1)
 }
@@ -227,7 +228,7 @@ the bound of `a + b` is not its bound. Thus a range loop that ends at the
 sum proves its variable:
 
 ```wyst
-fn clear(table: @[8]u64, first: u64, count: u64) {
+fn clear(table: @var [8]u64, first: u64, count: u64) {
   if first + count > 8 { return }
 
   for i in first ..< first + count {
@@ -244,7 +245,7 @@ When the body cannot reach its end, the condition is false after the
 of the block:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at >= 4 { return }
 
@@ -258,7 +259,7 @@ gives the bounds of the false `a` and of the false `b`. The code computes
 in `b`:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   if at < 4 && load(@table[at]) == 0 {
     store(@table[at], 1)
@@ -302,7 +303,7 @@ In an arm of a `match` on a parameter, a loop variable, or a `const` local
 The arm `_` gives no bound:
 
 ```wyst
-fn mark(table: @[4]u64, cursor: @u64) {
+fn mark(table: @var [4]u64, cursor: @u64) {
   const at = load(cursor)
   match at {
     0, 3 {
@@ -325,12 +326,12 @@ cannot prove.
 ```wyst fails
 const slots: u64 = 8
 
-fn clear(table: @[slots]u64, i: u64) {
+fn clear(table: @var [slots]u64, i: u64) {
   store(@table[i], 0)
 }
 
 fn reset(base: u64) {
-  const table: @[slots]u64 = bitcast(base)
+  const table: @var [slots]u64 = bitcast(base)
 
   for i in 0 ..< slots {
     clear(table, i)
@@ -353,7 +354,7 @@ ring of 4 slots masks each new value:
 ```wyst
 var next: u64 = 0
 
-fn record(table: @[4]u64) {
+fn record(table: @var [4]u64) {
   store(@table[next], 1)
   next = (next + 1) & 3
 }
@@ -364,7 +365,7 @@ Without the mask, the checker knows no highest value of the write:
 ```wyst fails
 var next: u64 = 0
 
-fn record(table: @[4]u64) {
+fn record(table: @var [4]u64) {
   store(@table[next], 1)
   next = next + 1
 }
@@ -412,7 +413,7 @@ fn current() -> u64 {
   return n
 }
 
-fn clear(table: @[cpus * slots]u64) {
+fn clear(table: @var [cpus * slots]u64) {
   const first = current() * slots
 
   for slot in 0 ..< slots {
@@ -467,7 +468,7 @@ index of a local `var` needs an operator that gives a highest value, such
 as a mask:
 
 ```wyst
-fn fill(table: @[8]u64, count: u64) {
+fn fill(table: @var [8]u64, count: u64) {
   var i: u64 = 0
   for i != count {
     store(@table[i & 7], i)
@@ -516,7 +517,7 @@ When `n` is such a local, `for i in a ..< n` gives `i < n`, and
 `for i in 0 ..< len(s)` proves `@s[i]`:
 
 ```wyst
-fn clear(bytes: []u8) {
+fn clear(bytes: @var []u8) {
   for i in 0 ..< len(bytes) {
     store(@bytes[i], 0)
   }
@@ -529,7 +530,7 @@ cannot reach its end, and with `&&` and `||`, as [Conditions](#conditions)
 gives:
 
 ```wyst
-fn get(bytes: []u8, i: u64) -> u8 {
+fn get(bytes: @[]u8, i: u64) -> u8 {
   if i >= len(bytes) { return 0 }
   return load(@bytes[i])
 }
@@ -539,7 +540,7 @@ fn get(bytes: []u8, i: u64) -> u8 {
 `i` is less than `len(to)`:
 
 ```wyst
-fn copy(from: []u8, to: []u8) {
+fn copy(from: @[]u8, to: @var []u8) {
   if len(from) > len(to) { trap() }
 
   for i in 0 ..< len(from) {
@@ -558,7 +559,7 @@ A copy of a slice is another slice. For `const other = bytes`,
 `i < len(bytes)` does not prove `@other[i]`:
 
 ```wyst fails
-fn mark(bytes: []u8, i: u64) {
+fn mark(bytes: @[]u8, i: u64) {
   const other = bytes
 
   if i < len(bytes) {
@@ -579,7 +580,7 @@ length. Thus after `if len(s) < 4 { trap() }`, `@s[3]` and `@s[4 ..]` are
 correct:
 
 ```wyst
-fn header(bytes: []u8) -> u64 {
+fn header(bytes: @[]u8) -> u64 {
   if len(bytes) < 4 { trap() }
 
   const body = @bytes[4 ..]
@@ -590,12 +591,60 @@ fn header(bytes: []u8) -> u64 {
 `x != c` gives no lowest value, so `if len(s) == 0 { return }` does not
 prove `@s[0]`. `if len(s) < 1 { return }` proves it.
 
+A [view](/docs/addresses/#views) `@B` of a slice `s` of `E` needs the
+proof of the index `(size_of(B) - 1) / size_of(E)` of `s`, so that `B` is
+in the elements. Here `Header` has 8 bytes, so the view needs a proof of
+the index 7, and the test proves only 6:
+
+```wyst fails
+struct Header {
+  kind: u32
+  size: u32
+}
+
+fn kind(bytes: @[]u8) -> u32 {
+  if len(bytes) < 7 {
+    return 0
+  }
+
+  const header: @Header = bitcast(bytes)
+  return load(@header.kind)
+}
+```
+
+```text
+main.wyst:11:35: error: the checker cannot prove that the index 7 is less than the length of `bytes`, so that the view of @Header is in the slice
+```
+
+`x >> k` and `x / n` are at most `x`, so they have each bound of `x`, and
+their lowest value is the lowest value of `x` shifted right by `k`, or
+divided by `n` when `n` is a constant. Thus the length of a view `@[]u64`
+of a `@[]u8`, which is the length of the bytes shifted right by 3, is at
+most the length of the bytes. The length of the view gets a lowest value
+from a test of the length of the bytes that comes before the view, not
+after it:
+
+```wyst
+fn second(bytes: @var []u8) -> u64 {
+  if len(bytes) < 16 {
+    return 0
+  }
+
+  const words: @[]u64 = bitcast(bytes)
+  for i in 0 ..< len(words) {
+    store(@bytes[i], 0)
+  }
+
+  return load(@words[1])
+}
+```
+
 `x <= y` holds when `x` is 0, when `y` is a constant and `x` is at most
 `y`, or when `x` has a bound against the local `y`, as after
 `if x > y { return }`:
 
 ```wyst
-fn part(bytes: []u8, from: u64, to: u64) -> []u8 {
+fn part(bytes: @[]u8, from: u64, to: u64) -> @[]u8 {
   if to > len(bytes) || from > to { trap() }
   return @bytes[from ..< to]
 }
@@ -604,7 +653,7 @@ fn part(bytes: []u8, from: u64, to: u64) -> []u8 {
 Two highest values do not put a start and an end in order:
 
 ```wyst fails
-fn part(table: @[4]u8, from: u64, to: u64) -> []u8 {
+fn part(table: @[4]u8, from: u64, to: u64) -> @[]u8 {
   if from > 4 || to > 4 { trap() }
   return @table[from ..< to]
 }
@@ -619,7 +668,7 @@ is against a `var`. Thus `@s[i]` with a `var` `i` is an error, also after
 `i < len(s)`:
 
 ```wyst fails
-fn clear(bytes: []u8) {
+fn clear(bytes: @[]u8) {
   var i: u64 = 0
   for i < len(bytes) {
     store(@bytes[i], 0)
@@ -659,6 +708,38 @@ fn kind(text: string) -> u8 {
   }
   return load(@text[1])
 }
+```
+
+A slice `@s[x ..< y]` of the bytes of `s` has the proof of a slice of a
+slice: `x` is at most `y`, and `y` is at most `len(s)`, from the same
+bounds and lowest values. `@s[x ..]` ends at `len(s)`, so it needs only
+`x <= len(s)`:
+
+```wyst
+fn rest(text: string, from: u64) -> @[]u8 {
+  if from > len(text) {
+    return @text[..< 0]
+  }
+  return @text[from ..]
+}
+```
+
+The length of `@s[x ..]` is `len(s) - x`, not `len(s)`, so a bound
+against `len(s)` does not prove an index of the slice:
+
+```wyst fails
+fn second(text: string, i: u64) -> u8 {
+  if len(text) < 1 || i >= len(text) {
+    return 0
+  }
+
+  const tail = @text[1 ..]
+  return load(@tail[i])
+}
+```
+
+```text
+main.wyst:7:21: error: the checker cannot prove that the index is less than the length of `tail`
 ```
 
 `len(s) - 1` has no highest value, because `-` can wrap, so it is not an

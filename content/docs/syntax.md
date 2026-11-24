@@ -108,11 +108,15 @@ Only a `#[mmio(address)]` or `#[sysreg]` `const` has no initializer.
 ## Types
 
 ```text
-Type <- '@' Type                            // address
-      / '[' ']' Type                        // slice
+Type <- '@' 'var'? '[' ']' Type             // slice
+      / '@' 'var'? Type                     // address
       / '[' Expr ']' Type                   // array
       / Path ('<' List(Type) '>')?
 ```
+
+`var` after `@` makes a writable address, and an address without `var`
+is read-only, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
 
 ## Statements
 

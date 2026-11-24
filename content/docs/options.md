@@ -506,7 +506,7 @@ fn either(first: @[slots]u64, second: @[slots]u64, key: u64) -> Option<u64> {
   }
 }
 
-fn slot(table: @[slots]u64, key: u64) -> Option<u64> {
+fn slot(table: @var [slots]u64, key: u64) -> Option<u64> {
   return match find(table, key) {
     .Some(i) { .Some(i) }
     .None {
@@ -563,7 +563,7 @@ struct State {
 static_assert(size_of(State) == 32 && field_offset(State, keys) == 24)
 
 const state: u64 = 0x4008_8000
-const own: @State = bitcast(state)
+const own: @var State = bitcast(state)
 
 fn enter(slot: u64) {
   store(@own.hover, .Some(slot))
@@ -625,7 +625,11 @@ An `Option` of an address in memory is one word, the address of `.Some`
 or 0 for `.None`, as
 [Addresses in memory](/docs/addresses/#addresses-in-memory) shows. Its
 `load` is one load, so its address can have a call, and a module variable
-can also hold it, with the first value `.None`.
+can also hold it, with the first value `.None`. `Option<@var T>` holds a
+writable address, and `.Some` of an `@var T` converts to `Option<@T>`.
+Through a read-only address, a `load` of `Option<@var T>` gives
+`Option<@T>`, as
+[Read-only addresses](/docs/addresses/#read-only-addresses) gives.
 
 ## Not implemented now
 
