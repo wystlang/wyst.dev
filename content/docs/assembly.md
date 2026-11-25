@@ -678,9 +678,13 @@ makes no SIMD line of its own. A line names a physical SIMD register, also
 in a block with inputs, because the compiler does not allocate them. The
 A64 tables have only the SIMD lines that the kernel uses: `ldr q` and
 `str q`, `orr` and `ext` of two vectors, and `fmov` from `d` to a general
-register, and the lines of AES, of GCM, and of SHA-256. These are `aese`
-and `aesmc`, `pmull` and `pmull2` of 64-bit elements, `sha256h`,
-`sha256h2`, `sha256su0`, and `sha256su1`, and the SIMD lines with them:
+register, the lines that blend pixels, and the lines of AES, of GCM, and
+of SHA-256. The lines that blend pixels are `umull`, `umull2`, `umlal`,
+and `umlal2` of vectors, `uzp2`, `sli` and `sri` of vectors, and `dup` of
+a general register, whose view is `x` for the arrangement `2d` and else
+`w`. The lines of AES, of GCM, and of SHA-256 are `aese` and `aesmc`,
+`pmull` and `pmull2` of 64-bit elements, `sha256h`, `sha256h2`,
+`sha256su0`, and `sha256su1`, and the SIMD lines with them:
 `eor`, `and`, and `add` of vectors, `rev32` and `rev64`, `tbl` of one
 register, `shl`, `ushr`, and `sshr`, `movi` of bytes, `dup` and `ins` of
 an element, `ldr q` and `str q` with a post-index, `ldur q` and `stur q`,
@@ -704,6 +708,24 @@ fn halves() -> u64 {
     ext v1.16b, v0.16b, v0.16b, #8
     orr v0.16b, v0.16b, v1.16b
     fmov value.x, d0
+  }
+}
+```
+
+This function multiplies each byte of four pixels by `part` over 256:
+`umull` and `umull2` give the products in 16 bits, and `uzp2` takes the
+high byte of each:
+
+```wyst
+#[section(.el0)]
+fn darken(pixels: @var [4]u32, part: u64) {
+  asm(pixels, part) {
+    dup v1.16b, part.w
+    ldr q0, [pixels]
+    umull v2.8h, v0.8b, v1.8b
+    umull2 v3.8h, v0.16b, v1.16b
+    uzp2 v0.16b, v2.16b, v3.16b
+    str q0, [pixels]
   }
 }
 ```
