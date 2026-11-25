@@ -330,9 +330,7 @@ fn clear(table: @var [slots]u64, i: u64) {
   store(@table[i], 0)
 }
 
-fn reset(base: u64) {
-  const table: @var [slots]u64 = bitcast(base)
-
+fn reset(table: @var [slots]u64) {
   for i in 0 ..< slots {
     clear(table, i)
   }
@@ -342,7 +340,7 @@ fn reset(base: u64) {
 ```
 
 ```text
-main.wyst:14:16: error: the checker cannot prove that this argument is less than 8
+main.wyst:12:16: error: the checker cannot prove that this argument is less than 8
 ```
 
 The calls in the loop pass `i`, which is at most 7. The last call passes

@@ -62,6 +62,10 @@ This page lists both sides.
   `u64` take only an `@var`, and that a naked function, and a function
   with an `asm` block that does not return, take each address and slice
   parameter as `@var` and refuse a `string` parameter.
+- `bitcast` of a `u64` to an address, with the checks that a function makes
+  only the address of a type of its module, that a function of a module of
+  `.el0` makes only the address of a register map of its module, and that
+  the memory of an address constant is in no region of the layout.
 - `bitcast` of an `@var` address of memory or of an `@var` slice to a
   `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
   address or a slice as an address or a slice of another type that holds
@@ -158,7 +162,7 @@ kernel needs it:
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, and store a literal. |
 | A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
-| An address in memory or in a module variable of a target other than an integer or a plain struct, such as `@bool` or `@[4]u64`, also in an `Option`, the address of a struct in a field of that struct, also in an `Option`, an address variable whose first value is not `bitcast` of a `u64` constant, a variable of an `Option` of an address whose first value is not `.None`, and a value of a struct with an address field | Keep a `u64`, and make the address with `bitcast` at each use. |
+| An address in memory or in a module variable of a target other than an integer or a plain struct, such as `@bool` or `@[4]u64`, also in an `Option`, the address of a struct in a field of that struct, also in an `Option`, an address variable whose first value is not `bitcast` of a `u64` constant, a variable of an `Option` of an address whose first value is not `.None`, and a value of a struct with an address field | Hold the address of a plain struct with that field, or keep a `u64`, and make the address with `bitcast` at each use, in the module that declares the struct. |
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than an integer, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
 | An `Option` of an address as a parameter or a local, also of a `load` | Refused. `else`, `?`, or `match` takes it at the call, at the `load`, or at the read of the variable. |
 | `==` and `!=` of an `Option` of an address with an operand other than `.None`, such as `.Some(r)` | Refused, because no operator takes an address. |

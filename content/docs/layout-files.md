@@ -168,6 +168,46 @@ A line that matches no module of the build is also an error, such as
 ``no module of the build has a path that starts with `drivers.` ``, because
 with a wrong path the code stays in `.text` with no other error.
 
+A function of a module that a line puts in `.el0`, also an inline function,
+makes no address of memory from an integer, as
+[Points of trust](/docs/addresses/#points-of-trust) gives.
+
+## Address constants
+
+The build fails when a byte of the memory of an
+[address constant](/docs/addresses/#address-constants) is in a region of
+the layout. Thus an address constant is never code or read-only data of the
+image. With this layout:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+```
+
+the memory of `own` is in the region `ram`:
+
+```wyst fails
+struct State {
+  count: u64
+}
+
+const state: u64 = 0x4008_8000
+const own: @var State = bitcast(state)
+
+#[naked]
+pub fn _start() -> never {
+  for {}
+}
+```
+
+```text
+main.wyst:6:25: error: the memory of address constant `own` is in region `ram` of the layout
+```
+
+The build does not check the first value of a module variable, or an
+address in a constant table.
+
 ## Stacks
 
 `stack N` gives the size of each stack of the build, in bytes. A function

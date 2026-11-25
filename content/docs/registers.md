@@ -249,8 +249,47 @@ fn reset() {
 }
 ```
 
-`bitcast` is the only form that makes `@M` from an integer, and the
-checker does not examine the address. The code asserts that a device of
+`bitcast` is the only form that makes `@M` from an integer. Only a function
+of the module that declares the register map makes it, also in a module of
+EL0 code, as [Points of trust](/docs/addresses/#points-of-trust) gives. The
+module `drivers.timer` makes the address of a `Timer`:
+
+```wyst drivers/timer.wyst
+#[register_map]
+pub struct Timer {
+  COUNT: readonly u32 at 0x00 { VALUE: u32 at 0..=31 }
+}
+
+pub fn at(address: u64) -> @Timer {
+  return bitcast(address)
+}
+```
+
+```wyst
+import drivers.timer
+
+fn count(address: u64) -> u32 {
+  const clock = timer.at(address)
+  return clock.COUNT.read().VALUE
+}
+```
+
+Another module makes no such address:
+
+```wyst fails
+import drivers.timer
+
+fn count(address: u64) -> u32 {
+  const clock: @timer.Timer = bitcast(address)
+  return clock.COUNT.read().VALUE
+}
+```
+
+```text
+main.wyst:4:31: error: `bitcast` of an integer gives no @Timer in a function of this module, because module `drivers.timer` declares `Timer`; it gives only the address of a type that this module declares, or of an array of one
+```
+
+The checker does not examine the address. The code asserts that a device of
 the map is at the address, so that the address of each register is a
 multiple of the register size, as `bitcast` of a `u64` to an
 [address of memory](/docs/addresses/#bitcast) asserts its memory.
