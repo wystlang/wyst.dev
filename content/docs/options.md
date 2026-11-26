@@ -10,10 +10,10 @@ enum without values, a `#[bits]` struct, or an address type. Its variants are
 `.Some(value)` and `.None`. An `Option` is the type of a function result,
 of a parameter, and of a local `const`, and memory holds an `Option` of an
 integer, of an enum without values, or of an address, as
-[Option fields](#option-fields) shows. A parameter and a local of an
-`Option` of an address are not implemented now, as
-[Addresses and memory](/docs/addresses/#address-results) shows. The
-output `Option<u64>` of an `asm` block is also an `Option`, as
+[Option fields](#option-fields) shows. A local `var` can hold an `Option`
+of an address, so a loop goes along a list, as
+[Lists](/docs/addresses/#lists) shows. The output `Option<u64>` of an
+`asm` block is also an `Option`, as
 [Assembly](/docs/assembly/#option-outputs) shows.
 
 ```wyst
@@ -172,14 +172,43 @@ fn together(table: @[slots]u64, a: u64, b: u64) -> bool {
 }
 ```
 
-The value of `.Some` has a type that `==` takes: an integer, an enum
-without values, or a `#[bits]` struct that is not linear. No operator
-takes an address, so `==` and `!=` take an `Option` of an address only
-with `.None`, as in `load(@link.next) == .None`. Each tag that is
-not 0 is `.Some`, also a tag from memory, and `x == .None` reads only the
-tag of `x`. Else the code computes the tag and the value of each operand,
-from left to right, also the value `v` of `.Some(v)` when the other
-operand gives `.None`. Operands of two types are an error:
+`==` and `!=` take an `Option` of an integer, an enum without values, an
+address, or a `#[bits]` struct that is not linear. Two addresses are
+equal when they are the same address. Each tag that is not 0 is `.Some`,
+also a tag from memory, and `x == .None` reads only the tag of `x`. Else
+the code computes the tag and the value of each operand, from left to
+right, also the value `v` of `.Some(v)` when the other operand gives
+`.None`. The word of an `Option` of an address in memory is its tag and
+its address, so the code reads it one time:
+
+```wyst
+struct Record {
+  value: u64
+  next: Option<@Record>
+}
+
+fn before(record: @Record, other: @Record) -> bool {
+  return load(@record.next) == .Some(other)
+}
+
+fn last(record: @Record) -> bool {
+  return load(@record.next) == .None
+}
+```
+
+An `Option` of another type, such as `Option<bool>`, is an error:
+
+```wyst fails
+fn same(a: Option<bool>, b: Option<bool>) -> bool {
+  return a == b
+}
+```
+
+```text
+main.wyst:2:12: error: `==` takes an `Option` only of an integer, an enum, an address, or a `#[bits]` struct that is not linear, found Option<bool>
+```
+
+Operands of two types are an error:
 
 ```wyst fails
 fn wide() -> Option<u64> {
@@ -216,14 +245,16 @@ main.wyst:2:10: error: a variant with a value as the left operand of `==` is not
 
 ## Must-use
 
-An `Option` must be used. A path from an `Option` local or parameter to
-the end of its block, or to a `return`, a `?`, a `break`, or a `continue`
-that leaves its block, must read it: with `else`, `?`, `match`, `==`, or
-`!=`, as an argument, as the value of `return`, or as the value of another
-local. A path that calls a `never` function, such as `trap()`, needs no
-read. A loop body can run no time, and the code can skip the right operand
-of `&&` and `||`, so a read there does not count for a local outside it.
-`_ = value` and a parameter `_` cannot drop an `Option`.
+An `Option` must be used. A path from an `Option` local `const` or
+parameter to the end of its block, or to a `return`, a `?`, a `break`, or
+a `continue` that leaves its block, must read it: with `else`, `?`,
+`match`, `==`, or `!=`, as an argument, as the value of `return`, or as
+the value of another local. An assignment changes a local `var`, so this
+rule does not take it. A path that calls a `never` function, such as
+`trap()`, needs no read. A loop body can run no time, and the code can
+skip the right operand of `&&` and `||`, so a read there does not count
+for a local outside it. `_ = value` and a parameter `_` cannot drop an
+`Option`.
 
 ```wyst fails
 fn pick(x: u8) -> Option<u8> {
@@ -635,8 +666,8 @@ Through a read-only address, a `load` of `Option<@var T>` gives
 
 `Result<T, E>`, with `.Ok` and `.Error`, is not implemented now. The `?`
 of a `Result` returns its error from a function with a `Result` result of
-the same error type. An `Option` as a local `var` or a module constant, a
-module variable of an `Option` other than an `Option` of an address, an
+the same error type. An `Option` as a module constant, a local `var` and
+a module variable of an `Option` other than an `Option` of an address, an
 `Option` in memory of another type, such as `Option<bool>`, a value of an
 `Option` in a constant table, other than `.None` of an `Option` of an
 address, and an `Option` parameter of a naked function are not

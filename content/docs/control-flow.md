@@ -276,6 +276,31 @@ fn shape(length: u64) -> Shape {
 }
 ```
 
+An `if` value can also be a [slice](/docs/addresses/#slices), in two
+registers in the same way. It is `@var []T` only when each block gives an
+`@var []T`, so a block of a string literal makes it read-only:
+
+```wyst
+fn greeting(night: bool, name: @[]u8) -> @[]u8 {
+  return if night { @"Good night"[0 ..] } else { name }
+}
+```
+
+A `match` value of a slice is not implemented now:
+
+```wyst fails
+fn word(n: u64) -> @[]u8 {
+  return match n {
+    0 { @"zero"[0 ..] }
+    _ { @"many"[0 ..] }
+  }
+}
+```
+
+```text
+main.wyst:2:10: error: a `match` value of @[]u8 is not implemented now
+```
+
 ## for
 
 `for` is the one loop. The compiler implements five forms of it now.
@@ -474,4 +499,5 @@ now:
   `for x in @a[0 ..]` gives;
 - `for x in s` over a slice of a type other than an integer, an enum
   without values, or a `#[bits]` struct;
-- an `if` or `match` value of a slice or of a plain struct with fields.
+- a `match` value of a slice, also in a block of an `if` value, and an
+  `if` or `match` value of a plain struct with fields.

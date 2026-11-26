@@ -392,7 +392,10 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
 
 - The compiler checks the `asm` lines and the system register accesses of
   an `#[el2]` function for EL2, those of each other function in the
-  section `.el0` for EL0, and those of each other function for EL1.
+  section `.el0` for EL0, and those of each other function for EL1. An
+  inline function has the section of its module, as
+  [Function sections](/docs/layout-files/#function-sections) gives, so
+  it has the same check.
 - An `#[el2]` function can call only `#[el2]` functions, and only an
   `#[el2]` function can call one, because a callee runs at the EL of its
   caller. A function of the vector table runs at EL1, so it cannot have
@@ -559,8 +562,8 @@ See [Blocks that do not return](/docs/assembly/#blocks-that-do-not-return).
 
 `#[section(.name)]` puts the code of a function in the section `.name` of
 the layout, in place of `.text`. `.name` must be a code section other than
-`.vectors`. An inline function has no code of its own, so it cannot have a
-section.
+`.vectors`. An inline function has no code of its own, so it cannot have
+`#[section]`, but it has the section of its module.
 
 ```wyst
 #[section(.el0)]
@@ -575,7 +578,9 @@ module whose path starts with `m.` in the section `s`, as
 `#[section]` on a function of such a module wins over the line. The
 kernel layouts have a line `functions m in .el0` for each topic `m` of the
 kernel but `kernel`, such as `functions shell in .el0`, so that the page
-tables let EL0 execute only the code of the EL0 modules.
+tables let EL0 execute only the code of the EL0 modules. No call crosses
+the boundary of `.el0`, as [Calls between
+sections](/docs/layout-files/#calls-between-sections) gives.
 
 ## Semihosting
 

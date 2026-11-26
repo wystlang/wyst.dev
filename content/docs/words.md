@@ -41,10 +41,10 @@ name. A field and an argument can.
 | `i8`, `i16`, `i32`, `i64` | The signed integers of 8, 16, 32, and 64 bits, value types. | yes |
 | `string` | A string value. | as the type of a parameter, a local `const`, a result, and an `if` or `match` value; not as a local `var`, a module variable, a module constant, or a field |
 | `never` | The type of a function that does not return. | yes |
-| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
+| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, in memory of an integer, an enum without values, or an address, and as a local `var` and a module variable of an `Option` of an address; not as a module constant, or as another local `var` or module variable |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
-| `len` | The length of a slice, a `u64`. | of a slice local or parameter |
+| `len` | The length of a slice or of a `string`, a `u64`. | of a slice local or parameter, and of a `string` local, parameter, or literal |
 | `size_of` | The size of a type in bytes. | for `u8` to `u64`, `i8` to `i64`, an enum, an `Option` in memory, a plain struct, a `#[bits]` struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
@@ -68,7 +68,7 @@ name. A field and an argument can.
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
 | `#[sysreg]` | `const` | A system register of the A64 tables. |
-| `#[sysreg(S3_5_C15_C1_3)]` | `const` | An implementation-defined system register, by its encoding. |
+| `#[sysreg(S3_5_C15_C1_3, el2)]` | `const` | An implementation-defined system register, by its encoding and the lowest EL that can access it. |
 | `#[vector_table]` | `const` | The EL1 exception vector table. |
 | `#[big_endian]` | field, register | Bytes in big-endian order. |
 | `#[below(n)]` | field | A limit: a load traps on a value that is not below `n`. |

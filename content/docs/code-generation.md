@@ -195,7 +195,7 @@ register.
 | `~x` | One `mvn`, and one `ubfx` for a type below 64 bits. |
 | `a == b` as a value | `cmp` and `cset`. |
 | An `if` or `for` condition | One branch: `tbz` or `tbnz` for a one-bit field, `cmp` and `b.cond` for a comparison, and `cbz` or `cbnz` for another value. `x == 0` and `x != 0` are `cbz` or `cbnz` on `x`, and `tbz` or `tbnz` when `x` is `y & c` with one bit in the constant `c`. `!` adds no instruction. |
-| An `if` or `match` value | The code of the statement, and each block puts its value in one register: the home of the local, x0 for `return`, or a scratch register. A `match` value without `_` has a `brk #0` for a value that no variant has. |
+| An `if` or `match` value | The code of the statement, and each block puts its value in one register: the home of the local, x0 for `return`, or a scratch register. A value in two registers, an `Option`, an enum with values, or a slice, is in x0 and x1, as a result is. A `match` value without `_` has a `brk #0` for a value that no variant has. |
 | A loop with a condition | The test is after the body, so each pass has one branch. |
 | `break`, `continue` | One `b`. `if c { break }` and `if c { continue }` are one branch on `c`, as a condition is. A `continue` at the end of a loop body adds no code. |
 | A range loop | Its variable and its end are in homes. The test is `cmp` and `b.lo`. A constant end that fits in the `cmp`, such as `0 ..< 512`, has no home. |
@@ -203,7 +203,7 @@ register.
 | A slice loop | A range loop over an index with no name, from 0 to the length. The address, the index, and the end are in homes. Each pass starts with the load of the element: one load at the address and the index, which the load shifts for an element of 2, 4, or 8 bytes. |
 | `const x = f() else { trap() }` | The call, then `cbnz x0`. `else { break }` and `else { continue }` are one `cbz x0` to the target of the jump. |
 | `trap()` | `brk #0`. |
-| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register. `len(s)` is one `ldr` from the value of `s`, and `@s[i]` adds `i + 8` to it. A slice of a string takes two registers: `@s[x ..< y]` is the value of `s` plus `x + 8`, and `y - x`. |
+| A string, a function address, or a section symbol | `adrp` and `add`. A `string` value is the address of the `u64` length of the string, which its bytes follow, so it is one register. `len(s)` is one `ldr` from the value of `s`, and `@s[i]` adds `i + 8` to it. A slice of a string takes two registers: `@s[x ..< y]` is the value of `s` plus `x + 8`, and `y - x`. `.rodata` keeps one copy of equal string literals. `len` of a literal is a constant, with no `ldr`, and `@"text"[x ..]` is the address of the literal plus 8, then plus `x`, and the constant 4 less `x`. |
 | A module variable | `adrp` and one load or store. |
 | `v += x`, `v -= x` | `adrp` and one load, `add` or `sub` (and a `ubfx` for a type below 64 bits), then `adrp` and one store. |
 

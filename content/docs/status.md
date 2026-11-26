@@ -18,8 +18,9 @@ This page lists both sides.
   and `i64`, and `never`.
 - `string` parameters, local constants, results, and `if` and `match`
   values, and `len(s)`, `@s[i]`, and the slices `@s[x ..< y]`,
-  `@s[..< y]`, and `@s[x ..]` of a `string` local or parameter, with a
-  proof of the index and of the slice, which are read-only.
+  `@s[..< y]`, and `@s[x ..]` of a `string` local, parameter, or literal,
+  with a proof of the index and of the slice, which are read-only, and one
+  copy of equal string literals in `.rodata`.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -27,8 +28,8 @@ This page lists both sides.
   which drops a value.
 - The operators `+`, `-`, `*`, `/` and `%` by a constant, `&`, `|`, `^`,
   `<<`, `>>`, unary `-`, `~`, `!`, `&&`, `||`, and the six comparisons.
-  `==` and `!=` also compare two values of an enum, also with values, and
-  two `Option` values.
+  `==` and `!=` also compare two values of an enum, also with values, two
+  addresses of one target type, and two `Option` values.
 - Functions with up to 8 parameters in 8 registers, value, struct, and
   `Option` results, `never`, and `#[inline]`. A struct value takes one
   register for each field, and a struct with no fields takes no
@@ -40,13 +41,14 @@ This page lists both sides.
   `for` in five forms, with `..<` and `..=`
   ranges and over a slice, `break`, `continue`, and `return`.
 - `Option` results, parameters, and local constants of a value type, an
-  enum, or a `#[bits]` struct, `Option` results of an address, `Option`
-  fields and other memory of an integer or an enum without values, with
-  `load` and `store`, `else` unwrap, also as `return value else { ... }`,
-  `?`, `undo` blocks, which run before each return of `.None`, `match`
-  with `.Some(v)` and `.None`, `==` and `!=`, and the check that each
-  path reads an `Option`.
-- Linear `#[bits]` structs and linear structs with no fields, `xfer`
+  enum, a `#[bits]` struct, or an address, local `var`s of an `Option` of
+  an address, `Option` fields and other memory of an integer or an enum
+  without values, with `load` and `store`, `else` unwrap, also as
+  `return value else { ... }`, `?`, `undo` blocks, which run before each
+  return of `.None`, `match` with `.Some(v)` and `.None`, `==` and `!=`,
+  and the check that each path reads an `Option`.
+- Linear `#[bits]` structs and linear structs with no fields, which only
+  the declaring module makes with a literal and consumes, `xfer`
   parameters, which take a linear value, parameters that lend it, and
   `undo` blocks that give it away.
 - Plain structs, struct values and structs with no fields as the type of
@@ -62,6 +64,10 @@ This page lists both sides.
   `u64` take only an `@var`, and that a naked function, and a function
   with an `asm` block that does not return, take each address and slice
   parameter as `@var` and refuse a `string` parameter.
+- `bitcast` of a `u64` to an address, with the checks that a function makes
+  only the address of a type of its module, that a function of a module of
+  `.el0` makes only the address of a register map of its module, and that
+  the memory of an address constant is in no region of the layout.
 - `bitcast` of an `@var` address of memory or of an `@var` slice to a
   `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
   address or a slice as an address or a slice of another type that holds
@@ -69,15 +75,16 @@ This page lists both sides.
   is in the memory.
 - Addresses in memory: fields of plain structs and module variables of
   type `@T`, `@var T`, or an `Option` of one, where `T` is an integer or a
-  plain struct, with `load`, `store`, and assignments, `match`, `else`,
-  `?`, and `==` and `!=` with `.None` on an `Option` of an address.
+  plain struct, also the struct of the field, so the records of one struct
+  make a list, with `load`, `store`, and assignments, `match`, `else`,
+  `?`, `==`, and `!=` on an `Option` of an address.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
-- Slices `@[]T` as the type of parameters, local constants, and results,
-  `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array address or a
-  slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
-  writes through a slice of a table.
+- Slices `@[]T` as the type of parameters, local constants, results, and
+  `if` values, `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array
+  address or a slice, `len`, `@s[i]`, `for x in s`, and the check that no
+  `store` writes through a slice of a table.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - `#[below(n)]` fields of plain structs: a load traps on a value that is
   not below `n`, and a store needs a proof of its value.
@@ -108,13 +115,15 @@ This page lists both sides.
   address does not go out of the block, and the check that no line stores
   through the address of a table or of a byte of a string, or into a
   place that holds an address, outputs as values, `Option` outputs, and
-  blocks that do not return.
+  blocks that do not return, which an inline function cannot have.
 - Naked functions with parameters, the check that a function that runs
   with no stack uses none, the check that each function that starts on a
   new stack fits in the `stack` of the layout, `#[el2]` functions, code
-  addresses, the exception vector table, function sections, and
-  semihosting.
-- Implementation-defined system registers, by their encoding.
+  addresses, the exception vector table, function sections, the section
+  of an inline function, which is the section of its module, the check
+  that no call crosses the boundary of `.el0`, and semihosting.
+- Implementation-defined system registers, by their encoding and the
+  lowest EL that can access them.
 - `wync build` and `wync fmt`.
 
 ## Not implemented now
@@ -129,20 +138,20 @@ kernel needs it:
 | A range loop on signed values, such as `i32` values | Use a `for cond {}` loop on a local `var`. |
 | A variant with a value as the left operand of `==` or `!=`, such as `.Some(v) == x` | Write `x == .Some(v)`. A variant without a value, such as `.None`, can be either operand. |
 | A left operand without a type of its own, such as `widen(end(xfer v))`, that gives a linear value away or consumes it, as `_ = v` does, or that has a `?`, a `return`, or a `break` or `continue` that leaves it, in a comparison, in the value of a `const` without a type, or as the start of a range | Give its value to a local with a type first, as in `const n: u32 = widen(end(xfer v))`. |
-| An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
+| A `match` value of a slice, also in a block of an `if` value, and an `if` or `match` value of a plain struct with fields | `return` the value in each block of a `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than a `bool`, an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
-| A local `var` of a type other than `bool`, `u8` to `u64`, `i8` to `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
+| A local `var` of a type other than `bool`, `u8` to `u64`, `i8` to `i64`, a `#[bits]` struct, an enum, and an `Option` of an address, such as an address that is not in an `Option`, or a slice | Use a `const`, or put the address in an `Option`. |
 | `var x = f() else { trap() }` | Use `const y = f() else { trap() }`, then `var x = y`. |
 | A call in the index of a device, such as `redistributors[cpu() & 3]` | Put the result in a local. |
 | `?` inside an expression, such as `return f()?` | Use `const x = f()?`, then use `x`. |
 | `undo` in a block of an `if` or `match` value | Declare the name in a block of an `if` or `match` statement, and `return` there. |
-| `Option` as the type of a local `var` or a module constant, a module variable of an `Option` other than an `Option` of an address, and an `Option` parameter of a naked function | Use a local `const` or a field of a plain struct, or unwrap the `Option` with `else`, `?`, or `match`. |
+| `Option` as the type of a module constant, a local `var` and a module variable of an `Option` other than an `Option` of an address, and an `Option` parameter of a naked function | Use a local `const` or a field of a plain struct, or unwrap the `Option` with `else`, `?`, or `match`. |
 | An `Option` in memory of a type other than an integer, an enum without values, or an address that memory holds, such as `Option<bool>`, and a value of an `Option` in a constant table, other than `.None` of an `Option` of an address | Refused. |
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry | Use a local `const`, a parameter of a function that a call starts, or a result. |
-| `len`, a byte, and a slice of a `string` that is not a local or a parameter, such as `len(f())` and `@"text"[1 ..]` | Put the string in a local first: `const s = f()`. |
+| `len`, a byte, and a slice of a `string` that is not a local, a parameter, or a literal, such as `len(f())` and `@f()[1 ..]` | Put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |
@@ -158,10 +167,8 @@ kernel needs it:
 | A struct value literal with a call or a register read that names the fields in another order than the declaration, `store` of a struct value other than a literal, and a literal of `store` of a struct of more than 4096 bytes | Name the fields in the order of the declaration, and store a literal. |
 | A constant table of more than 65536 bytes | Refused. |
 | `load` of a struct with a field of another type, `load` of a struct at an address with a call or a register read, `load` of a struct with no fields, and `load` and `store` of an array | Load each field, or store each element. Put the address in a local first. `{}` is the value of a struct with no fields. |
-| An address in memory or in a module variable of a target other than an integer or a plain struct, such as `@bool` or `@[4]u64`, also in an `Option`, the address of a struct in a field of that struct, also in an `Option`, an address variable whose first value is not `bitcast` of a `u64` constant, a variable of an `Option` of an address whose first value is not `.None`, and a value of a struct with an address field | Keep a `u64`, and make the address with `bitcast` at each use. |
+| An address in memory or in a module variable of a target other than an integer or a plain struct, such as `@bool` or `@[4]u64`, also in an `Option`, an address variable whose first value is not `bitcast` of a `u64` constant, a variable of an `Option` of an address whose first value is not `.None`, and a value of a struct with an address field | Hold the address of a plain struct with that field, or keep a `u64`, and make the address with `bitcast` at each use, in the module that declares the struct. |
 | An address, a slice, or an `Option` of an address as the result of a `pub` function, and a `pub` address constant, of a target other than an integer, a `pub` struct, or an array of one of these | Make the struct `pub`, or give the address from a function that is not `pub`. |
-| An `Option` of an address as a parameter or a local, also of a `load` | Refused. `else`, `?`, or `match` takes it at the call, at the `load`, or at the read of the variable. |
-| `==` and `!=` of an `Option` of an address with an operand other than `.None`, such as `.Some(r)` | Refused, because no operator takes an address. |
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` or the view `bitcast(@own.lines)` | Refused. |
 | `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, also in an `Option`, or an array of them. |

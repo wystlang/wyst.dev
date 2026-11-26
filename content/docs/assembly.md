@@ -48,9 +48,11 @@ of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic
 instructions (`FEAT_LSE`) and the VHE registers (`FEAT_VHE`) of the
 Cortex-A76, the GICv3 CPU interface (`FEAT_GICv3`), and the PMUv3
 (`FEAT_PMUv3`). An instruction or a system register that needs a higher
-exception level or another feature is an error. An inline function has no
-section, so the compiler checks it at EL1 when it does not have `#[el2]`.
-A function in `.el0` can read `cntvct_el0`, but not `ttbr0_el1`:
+exception level or another feature is an error. An inline function has
+the section of its module, as a line `functions m in s` of the layout
+gives, so the compiler checks it at EL0 when the line puts its module in
+`.el0`, as [Function sections](/docs/layout-files/#function-sections)
+gives. A function in `.el0` can read `cntvct_el0`, but not `ttbr0_el1`:
 
 ```wyst fails
 #[section(.el0)]
@@ -670,6 +672,29 @@ main.wyst:1:17: error: a function with an `asm` block that does not return takes
 A naked function sets the stack with such a block, as
 [Boot and exceptions](/docs/boot-and-exceptions/) shows.
 
+An inline function is not naked, and it cannot have a block that does not
+return. Its body is in the code of each caller, so a line could read a
+parameter of that caller in its register and store through it, also
+through a read-only address, as `first` here:
+
+```wyst fails
+fn wipe_first(first: @u64) -> never {
+  wipe()
+}
+
+#[inline]
+fn wipe() -> never {
+  asm -> never {
+    str xzr, [x0]
+    eret
+  }
+}
+```
+
+```text
+main.wyst:7:3: error: an inline function cannot have an `asm` block that does not return, because its lines name physical registers, and in the code of a caller they can read the parameters of that caller
+```
+
 ## SIMD lines
 
 A line that names a SIMD register, such as `v0.16b`, `d0`, or `q0`, is a
@@ -732,8 +757,7 @@ fn darken(pixels: @var [4]u32, part: u64) {
 
 Outside `.el0`, a SIMD line can only load or store a full SIMD register,
 with `ldr q` or `str q`. Thus the kernel keeps the registers of a thread,
-and changes none of them. An inline function has no section, so it is
-outside `.el0`:
+and changes none of them:
 
 ```wyst fails
 fn mix() {
@@ -745,6 +769,46 @@ fn mix() {
 
 ```text
 main.wyst:3:5: error: outside section `.el0`, an `asm` line can name a SIMD register only to load or store it whole, with `ldr q` or `str q`
+```
+
+An inline function of a module that a line `functions m in .el0` of the
+layout puts in `.el0` can have each SIMD line. Only a function of `.el0`
+can call it, as [Calls between
+sections](/docs/layout-files/#calls-between-sections) gives, so no SIMD
+line of `.el0` comes into code at EL1. This inline function puts the XOR
+of two blocks of 16 bytes in the first block:
+
+```wyst graphics/blend.wyst
+#[inline]
+pub fn mix(pair: @var [4]u64) {
+  asm(pair) {
+    ldr q0, [pair]
+    ldr q1, [pair, #16]
+    eor v0.16b, v0.16b, v1.16b
+    str q0, [pair]
+  }
+}
+```
+
+With a layout that puts `graphics.blend` in `.el0`:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .el0: code in ram after .text align 16
+functions graphics in .el0
+```
+
+a function of `.el0` calls it:
+
+```wyst
+import graphics.blend
+
+#[section(.el0)]
+fn draw(pair: @var [4]u64) {
+  blend.mix(pair)
+}
 ```
 
 A SIMD register holds no value of the language, and a call can change it,

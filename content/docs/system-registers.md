@@ -86,9 +86,10 @@ main.wyst:2:16: error: `SCR_EL3` can be read only at EL3 or higher
 
 Each read and each write must be possible at the EL of its function: EL1,
 EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or
-EL0 in another function in the section `.el0`. An inline function has no
-section, so the compiler checks it for EL1 when it does not have
-`#[el2]`. Thus a function without `#[el2]` cannot read `VBAR_EL2`:
+EL0 in another function in the section `.el0`, also an inline one. An
+inline function has the section of its module, as
+[Function sections](/docs/layout-files/#function-sections) gives. Thus a
+function without `#[el2]` cannot read `VBAR_EL2`:
 
 ```wyst fails
 #[sysreg]
@@ -240,14 +241,15 @@ when the enum is not `pub`, because the field gives the enum.
 
 ## Implementation-defined registers
 
-`#[sysreg(S3_5_C15_C1_3)] const NAME: access u64 { fields }` declares, by
-its encoding, an implementation-defined system register, which the A64
-tables do not name. The Apple cores have such registers for their FIQ
-sources and for the per-core setup of m1n1.
+`#[sysreg(S3_5_C15_C1_3, el2)] const NAME: access u64 { fields }`
+declares, by its encoding, an implementation-defined system register,
+which the A64 tables do not name, and the lowest EL that can access it.
+The Apple cores have such registers for their FIQ sources and for the
+per-core setup of m1n1.
 
 ```wyst
 // IMODE 0 turns off the FIQ of the performance counters.
-#[sysreg(S3_1_C15_C0_0)]
+#[sysreg(S3_1_C15_C0_0, el1)]
 const PMCR0_EL1: writeonly u64 {
   IMODE: u3 at 8..=10
 }
@@ -262,7 +264,7 @@ fn mask_counters() {
   a wrong encoding names the wrong part:
 
 ```wyst fails
-#[sysreg(S3_8_C15_C1_3)]
+#[sysreg(S3_8_C15_C1_3, el2)]
 const VM_TMR_FIQ_ENA_EL2: readwrite u64 {
   P: bool at 1
 }
@@ -277,7 +279,7 @@ main.wyst:1:10: error: op1 is at most 7, found 8
   also the encoding of a register that the tables name:
 
 ```wyst fails
-#[sysreg(S3_0_C1_C0_0)]
+#[sysreg(S3_0_C1_C0_0, el1)]
 const SCTLR: readwrite u64 {
   M: bool at 0
 }
@@ -287,11 +289,42 @@ const SCTLR: readwrite u64 {
 main.wyst:1:10: error: `S3_0_C1_C0_0` is not implementation-defined: op0 must be 3, and CRn 11 or 15
 ```
 
-- The name is free. The other rules of a system register apply, but not
-  the EL rules.
-- The tables do not give the EL of such a register, so a function at each
-  EL can access it, as its access kind lets. The declaration asserts that
-  the code accesses the register only at an EL that can.
+- The level is `el0`, `el1`, or `el2`. There is no default, so a
+  declaration with no level is an error:
+
+```wyst fails
+#[sysreg(S3_1_C15_C0_0)]
+const PMCR0_EL1: writeonly u64 {
+  IMODE: u3 at 8..=10
+}
+```
+
+```text
+main.wyst:1:3: error: `sysreg` takes an encoding and a level, such as `S3_5_C15_C1_3, el2`
+```
+
+- The name is free, and the other rules of a system register apply. The
+  compiler checks each read and each write as for a register of the A64
+  tables whose lowest EL is the level: a function in `.el0` cannot access
+  an `el1` register, and only an `#[el2]` function can access an `el2`
+  register. The tables do not give the EL of such a register, so the
+  level is an assertion of the declaration, as the encoding is:
+
+```wyst fails
+#[sysreg(S3_1_C15_C0_0, el1)]
+const PMCR0_EL1: readwrite u64 {
+  IMODE: u3 at 8..=10
+}
+
+#[section(.el0)]
+fn counting() -> bool {
+  return PMCR0_EL1.read().IMODE != 0
+}
+```
+
+```text
+main.wyst:8:20: error: `PMCR0_EL1` can be read only at EL1 or EL2, so not in a function of section `.el0`
+```
 
 ## Reading and writing
 
@@ -345,14 +378,15 @@ changes only the bits that m1n1 changes:
 
 ```wyst
 // Bits of an implementation-defined register of the Apple P cores, with
-// the names of m1n1.
-#[sysreg(S3_0_C15_C4_0)]
+// the names of m1n1, which writes the register at EL2.
+#[sysreg(S3_0_C15_C4_0, el2)]
 const HID4: readwrite u64 {
   DISABLE_DC_MVA:       bool at 11
   CNF_CNTR_THRESH:      u2   at 40..=41
   DISABLE_DC_SW_L2_OPS: bool at 44
 }
 
+#[el2]
 fn setup_core() {
   HID4.modify(DISABLE_DC_MVA = true, DISABLE_DC_SW_L2_OPS = true)
   HID4.modify(CNF_CNTR_THRESH = 3)

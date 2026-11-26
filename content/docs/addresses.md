@@ -22,9 +22,36 @@ values, a `bool`, a plain struct or a
 one of these. `N` is a constant, such as a module constant. Another
 target, such as an array of arrays, is not implemented now.
 
-An address is not an integer. No operator takes an address, and `@u8` and
-`@u32` are different types, and so are `@u8` and `@var u8`, but `@var`
-converts to `@`:
+An address is not an integer. `@u8` and `@u32` are different types, and
+so are `@u8` and `@var u8`, but `@var` converts to `@`. `==` and `!=` are
+the only operators on an address of memory. They take two addresses of
+one target type, with or without `var`, and tell if the two are the same
+address:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+fn same(record: @Record, other: @var Record) -> bool {
+  return other == record
+}
+```
+
+Two addresses of different types are an error:
+
+```wyst fails
+fn same(bytes: @u8, words: @u32) -> bool {
+  return bytes == words
+}
+```
+
+```text
+main.wyst:2:19: error: expected @u8, found @u32
+```
+
+Each other operator on an address is an error, so no operator makes an
+address:
 
 ```wyst fails
 fn next(base: @u64) {
@@ -33,10 +60,10 @@ fn next(base: @u64) {
 ```
 
 ```text
-main.wyst:2:28: error: `+` needs integers, found @u64
+main.wyst:2:28: error: `+` needs integers, found @u64; an address takes only `==` and `!=`
 ```
 
-[`bitcast`](#bitcast) gives the address as a `u64`, and a
+[`bitcast`](#bitcast) gives the `u64` of an `@var` address, and a
 [view](#views) gives the same memory as another type.
 
 `@M`, where `M` is a register map, is the address of a device, not of
@@ -55,12 +82,18 @@ in a module variable.
 
 `bitcast(x)` gives the `u64` `x` as the address type that its position
 expects, with its access: `@T` or `@var T`. It is the only way to make an
-address from an integer:
+address from an integer, and it is correct only at a
+[point of trust](#points-of-trust), such as a function of the module that
+declares `T`:
 
 ```wyst
-fn table_at(frame: u64) {
-  const table: @var [2048]u64 = bitcast(frame)
-  store(@table[0], 0)
+struct Table {
+  entries: [512]u64
+}
+
+fn clear_at(frame: u64) {
+  const table: @var Table = bitcast(frame)
+  store(@table.entries[0], 0)
 }
 ```
 
@@ -118,6 +151,137 @@ memory of that type is at `x` while the address is in use. The compiler
 does not check this. Thus each such `bitcast` marks a place where the
 program trusts a fact that the compiler cannot prove.
 
+## Points of trust
+
+Each address comes from a typed source: a parameter, a result, a module
+variable, an address constant, `@c` of a constant table, `@s[i]` of a
+string, `@d` of a device, a place, a slice, a view, or a `load` of an
+address. `bitcast` of an integer makes an address only at a point of trust,
+which is one of these:
+
+- The value of an [address constant](#address-constants), the first value
+  of a module variable of an address, and an address in a constant table.
+  It is `bitcast` of a `u64` constant, and the target can be each type.
+- A function of the module that declares the target, or the element of an
+  array target: a struct, an enum, or a register map. Thus the module that
+  owns a kind of memory makes its addresses.
+- In a module of EL0 code, which a line `functions m in .el0` of the
+  [layout](/docs/layout-files/#function-sections) places, only a function
+  that makes the address of a register map of the module.
+
+A module makes the address of a word as the address of a struct of its own,
+because no module declares `u64`:
+
+```wyst
+struct Word {
+  value: u64
+}
+
+fn read(address: u64) -> u64 {
+  const word: @Word = bitcast(address)
+  return load(@word.value)
+}
+```
+
+```wyst fails
+fn read(address: u64) -> u64 {
+  const word: @u64 = bitcast(address)
+  return load(word)
+}
+```
+
+```text
+main.wyst:2:22: error: `bitcast` of an integer gives no @u64 in a function of this module, because no module declares `u64`; it gives only the address of a type that this module declares, or of an array of one
+```
+
+Another module gets the address from a function of the module that declares
+the struct, or from a `pub` address constant. The module
+`platform.records` makes the address of a `Record`:
+
+```wyst platform/records.wyst
+pub struct Record {
+  value: u64
+}
+
+pub fn at(address: u64) -> @var Record {
+  return bitcast(address)
+}
+```
+
+```wyst fails
+import platform.records
+
+fn reset(address: u64) {
+  const record: @var records.Record = bitcast(address)
+  store(@record.value, 0)
+}
+```
+
+```text
+main.wyst:4:39: error: `bitcast` of an integer gives no @var Record in a function of this module, because module `platform.records` declares `Record`; it gives only the address of a type that this module declares, or of an array of one
+```
+
+EL0 code gets each address of memory from an address constant and from the
+typed sources that start there. Its functions, also its inline functions,
+make only the address of a register map of the module from an integer, as a
+driver does with an offset that its device gives. In the module
+`drivers.clock`, `now` is correct, because `Clock` is a register map, and
+`own` is an address constant:
+
+```wyst drivers/clock.wyst
+struct State {
+  registers: u64
+}
+
+#[register_map]
+struct Clock {
+  COUNT: readonly u32 at 0x00 { VALUE: u32 at 0..=31 }
+}
+
+const state: u64 = 0x0100_8000
+const own: @State = bitcast(state)
+
+pub fn now() -> u32 {
+  const clock: @Clock = bitcast(load(@own.registers))
+  return clock.COUNT.read().VALUE
+}
+
+pub fn read(address: u64) -> u64 {
+  const other: @State = bitcast(address)
+  return load(@other.registers)
+}
+```
+
+With this layout, `drivers.clock` is a module of EL0 code, so `read` is an
+error:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .el0: code in ram after .text align 16
+functions drivers in .el0
+```
+
+```wyst fails
+import drivers.clock
+
+#[naked]
+pub fn _start() -> never {
+  for {}
+}
+```
+
+```text
+drivers/clock.wyst:19:25: error: `bitcast` of an integer gives no @State in a function of this module, because the layout puts this module in `.el0`; it gives only the address of a register map of this module, and an address constant gives an address of memory
+```
+
+The check of the [access](#read-only-addresses) holds for each address that
+does not come from a point of trust. The code of a point of trust asserts
+that the memory is memory of its module and not read-only data. A `load` of
+an address from memory is also an assertion, as
+[Addresses in memory](#addresses-in-memory) gives.
+
 ## Address constants
 
 A module constant can be an address when its value is `bitcast` of a
@@ -146,6 +310,11 @@ fn count() -> u64 {
 
 Another value, such as `@own.lines` or the [view](#views)
 `bitcast(@own.lines)`, is not implemented now.
+
+An address constant names memory at a fixed address, which the program
+maps. The build fails when that memory is in a region of the layout, as
+[Layout files](/docs/layout-files/#address-constants) gives, so an address
+constant is never code or read-only data of the image.
 
 A `pub` address constant gives the address to each module that imports
 its module. `m.c` of the `pub` address constant `c` of module `m` is the
@@ -178,7 +347,7 @@ The target of a `pub` address constant has the rule of an
 
 A field of a plain struct and a module variable can hold an address
 `@T` or `@var T`, where `T` is `u8` to `u64`, `i8` to `i64`, or a plain
-struct. The
+struct, also the struct of the field, as [Lists](#lists) gives. The
 address has 8 bytes, with the alignment 8. `store` writes it, also as a
 field of a [struct literal](/docs/structs/#struct-literals), and `load`
 gives it, so `@load(@link.record).value` is the address of a field of
@@ -262,11 +431,11 @@ address, for a link that can be empty. It is one word of 8 bytes: the
 address of `.Some`, or 0 for `.None`, so memory of zeros is `.None`, and
 so is a field that a literal does not name. `load` gives the `Option`,
 and asserts the address of `.Some`, as for an address. `match`, `else`,
-`?`, and a `return` of that result type take the `load`, as they take a
-call, and the code loads the word one time. `store` and an assignment
-write the address of `.Some(a)`, or 0 for `.None`, also for a call that
-returns `.None`. The first value of a module variable is `.None`, and a
-read of it is as a `load`:
+`?`, a local, and a `return` of that result type take the `load`, as they
+take a call, and the code loads the word one time. `store` and an
+assignment write the address of `.Some(a)`, or 0 for `.None`, also for a
+call that returns `.None`. The first value of a module variable is
+`.None`, and a read of it is as a `load`:
 
 ```wyst
 struct Record {
@@ -300,46 +469,95 @@ fn last_value() -> u64 {
 }
 ```
 
-No operator takes an address, so `==` and `!=` take an `Option` of an
-address only with `.None`, as in `load(@link.next) == .None`, and read
-only its word. A parameter and a local of an `Option` of an address are
-not implemented now, also of a `load`, so `else`, `?`, or `match` takes
-the `load`:
+A parameter and a local `const` can also hold an `Option` of an address,
+and so can a local `var`, as [Lists](#lists) gives. Each takes two
+registers, the tag and the address, as an
+[`Option` result](#address-results) does. The word in memory is the tag
+and the address, so `const next = load(@link.next)` loads it one time.
+`else`, `?`, and `match` take the local as they take the `load`. `==` and
+`!=` take such an `Option` with `.None`, with `.Some(a)`, or with a second
+`Option` of that type, as [Compare options](/docs/options/#compare-options)
+gives. With `.None`, as in `load(@link.next) == .None`, they read only the
+word.
 
-```wyst fails
-struct Record {
-  value: u64
-}
-
-struct Link {
-  next: Option<@Record>
-}
-
-fn value(link: @Link) -> u64 {
-  const next = load(@link.next)
-  const record = next else { return 0 }
-  return load(@record.value)
-}
-```
-
-```text
-main.wyst:10:16: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
-```
-
-A local `var` and a module constant of an `Option` of an address, a
-value other than `.None` in a constant table or as the first value of a
-module variable, `#[big_endian]` and `#[below(n)]` before such a field,
-and an `asm` input or output of it are not implemented now.
+A module constant of an `Option` of an address, a value other than
+`.None` in a constant table or as the first value of a module variable,
+`#[big_endian]` and `#[below(n)]` before such a field, and an `asm` input
+or output of it are not implemented now.
 
 Memory and a module variable never hold a slice or the
 [address of a register map](/docs/registers/#addresses-of-register-maps).
-The address of another type in memory, such as `@bool` or `@[4]u64`, the
-address of a struct in a field of that struct, such as `next: @Thread` in
-`Thread`, also in an `Option`, and a
-[struct value](/docs/structs/#struct-values) with an address field are
-not implemented now. A link that holds the address of a record of its
-own type, such as the next record of a list, stays a `u64`, which
-`bitcast` makes an address at each use.
+The address of another type in memory, such as `@bool` or `@[4]u64`, also
+in an `Option`, and a [struct value](/docs/structs/#struct-values) with an
+address field are not implemented now.
+
+### Lists
+
+A field of a plain struct, also as the element of an array field, can
+hold the address of a record of the same struct, also in an `Option`.
+The address is one word, so the layout of the struct does not need its
+own layout. Thus the records of one struct make a list, or a tree with a
+field such as `children: [2]Option<@var Node>`.
+
+A local `var` of an `Option` of an address goes along a list. An
+assignment gives it the next link, as in `current = load(@record.next)`.
+An assignment to a local `var` of `Option<@var T>` takes only an
+`Option<@var T>`. `==` finds a record, as in `first == record`:
+
+```wyst
+struct Record {
+  value: u64
+  next: Option<@var Record>
+}
+
+struct List {
+  first: Option<@var Record>
+}
+
+fn sum(list: @List) -> u64 {
+  var total: u64 = 0
+  var current = load(@list.first)
+
+  for {
+    const record = current else { break }
+    total += load(@record.value)
+    current = load(@record.next)
+  }
+
+  return total
+}
+
+fn remove(list: @var List, record: @var Record) {
+  const first = load(@list.first) else { return }
+  if first == record {
+    store(@list.first, load(@record.next))
+    return
+  }
+
+  var current: Option<@var Record> = .Some(first)
+
+  for {
+    const other = current else { return }
+    const next = load(@other.next)
+    if next == .Some(record) {
+      store(@other.next, load(@record.next))
+      return
+    }
+
+    current = next
+  }
+}
+```
+
+Through a read-only address, the `load` of a link gives a read-only
+address, as [Read-only addresses](#read-only-addresses) gives. Thus in
+`sum`, `current` is `Option<@Record>`, and a function that only reads a
+list takes `@List`. Each `load` of a link asserts its address, so a list
+is only in memory that hostile code cannot write.
+
+A local `var` of an address that is not in an `Option` is not implemented
+now, as [Locals](/docs/constants-and-variables/#locals) gives. Put the
+address in an `Option`, as `remove` does with `.Some(first)`.
 
 ## Places
 
@@ -427,10 +645,9 @@ another address, from `@c` of a constant table, from a `load`, or from a
 module variable. A call statement that drops the address is an error, as
 for a value result.
 
-A result can also be an `Option` of an address, as memory can. A
-parameter and a local of an `Option` of an address are not implemented
-now. `else`, `?`, and `match` take it at the call, and give the address
-of `Some` to a local:
+A result can also be an `Option` of an address, as memory can. `else`,
+`?`, and `match` take it at the call, and give the address of `Some` to a
+local:
 
 ```wyst
 struct Domain {
@@ -457,9 +674,11 @@ fn root_of(domain: u64) -> Option<u64> {
 }
 ```
 
-A local of the `Option` is an error:
+A parameter and a local `const` can also hold the `Option`, in two
+registers, the tag and the address, as the result does. Thus a function
+gives the `Option` of a call to another function:
 
-```wyst fails
+```wyst
 struct Domain {
   root: u64
 }
@@ -468,13 +687,17 @@ fn lookup(domain: u64) -> Option<@Domain> {
   return .None
 }
 
-fn keep(domain: u64) {
-  const found = lookup(domain)
+fn root_or(found: Option<@Domain>, other: u64) -> u64 {
+  match found {
+    .Some(own) { return load(@own.root) }
+    .None { return other }
+  }
 }
-```
 
-```text
-main.wyst:10:17: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
+fn root(domain: u64) -> u64 {
+  const found = lookup(domain)
+  return root_or(found, 0)
+}
 ```
 
 ### Pub results
@@ -533,10 +756,11 @@ array with no length, which is never a value, so a type `[]T` without `@`
 is an error.
 
 `@a[x ..< y]` gives the slice of the elements of `a` from `x` up to, but
-not including, `y`. `a` is the address of an array `[N]T`, or a slice
-local or parameter. `@a[..< y]` starts at 0, and `@a[x ..]` ends at the
-end of `a`: `N`, or the length of the slice. `x` and `y` are `uN` values,
-as an index is. `len(s)` gives the length of the slice local or
+not including, `y`. `a` is the address of an array `[N]T`, a slice local
+or parameter, or a [`string`](/docs/values/#strings) local, parameter, or
+literal. `@a[..< y]` starts at 0, and `@a[x ..]` ends at the end of `a`:
+`N`, or the length of the slice or of the string. `x` and `y` are `uN`
+values, as an index is. `len(s)` gives the length of the slice local or
 parameter `s`, a `u64`, and `@s[i]` is the address of element `i`:
 
 ```wyst
@@ -586,13 +810,52 @@ main.wyst:2:10: error: a slice is only the type of a parameter, a local, or a re
 No operator takes a slice. A slice is not memory, so `@s` of a slice `s`
 is an error.
 
+An `if` value of a slice gives the slice of the block that runs, in two
+registers, as a call does. It is `@var []T` only when each block gives an
+`@var []T`, so a block of read-only data, such as the bytes of a string
+literal, makes the value `@[]T`:
+
+```wyst
+struct Host {
+  count: u64
+  bytes: [64]u8
+}
+
+fn bytes(host: @Host) -> @[]u8 {
+  const count = load(@host.count)
+  if count > 64 { trap() }
+
+  return @host.bytes[..< count]
+}
+
+fn shown(host: @Host, typed: bool) -> @[]u8 {
+  return if typed { bytes(host) } else { @"no host"[0 ..] }
+}
+```
+
+A `store` through an element of such a value is an error, as for each
+read-only slice:
+
+```wyst fails
+fn clear(bytes: @var [4]u8, all: bool) {
+  const part = if all { @bytes[0 ..] } else { @""[0 ..] }
+  if len(part) > 0 {
+    store(@part[0], 0)
+  }
+}
+```
+
+```text
+main.wyst:4:11: error: `store` writes only through an `@var` address, and this is @u8
+```
+
 The address and the length of a slice each use its start `x`, so `x` is a
 constant or a local. `len` and `@s[i]` take a slice local or parameter.
 These forms are not implemented now:
 
 - a start that is not a constant or a local, such as `@a[x + 1 ..]`;
 - `len(f())` and `@f()[i]` of a call `f()`: `const s = f()` comes first;
-- a local `var`, an `Option`, and an `if` or `match` value of a slice;
+- a local `var`, an `Option`, and a `match` value of a slice;
 - a slice parameter of a naked function;
 - a slice of arrays, such as `@[][4]u8`.
 
@@ -704,9 +967,9 @@ a view at a multiple of the size of each access.
 
 `bitcast(bitcast(a))` is not a view. The inner `bitcast` gives the
 address `a` as a `u64`, and the outer `bitcast` makes an address from
-that `u64`: an assertion that the compiler does not check, as
-[`bitcast`](#bitcast) gives. Thus the compiler checks none of the rules
-of a view there.
+that `u64`, only at a [point of trust](#points-of-trust): an assertion that
+the compiler does not check, as [`bitcast`](#bitcast) gives. Thus the
+compiler checks none of the rules of a view there.
 
 These forms are not implemented now:
 

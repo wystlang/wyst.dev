@@ -455,10 +455,11 @@ fn handle() -> u16 {
 main.wyst:16:23: error: linear local `interrupt` cannot be copied: only a field read, a lent argument, `xfer interrupt`, `return interrupt`, and `_ = interrupt` use it
 ```
 
-Only the module that declares a linear type consumes its value, also when
-the type is `pub`. Fields have no visibility, so another module reads the
-fields of a value and makes a value with a literal, but it only gives a
-value away:
+Only the module that declares a linear type makes its value with a
+literal and consumes its value, also when the type is `pub`. Another
+module gets a value from a function of the declaring module, so a value
+shows that such a function gave it. Fields have no visibility, so another
+module reads the fields of a value, but it only gives a value away:
 
 ```wyst irq/interrupts.wyst
 #[bits]
@@ -489,6 +490,22 @@ fn handle(interrupt: xfer interrupts.Interrupt) {
 
 ```text
 main.wyst:4:7: error: only module `irq.interrupts`, which declares the linear type Interrupt, can consume its value
+```
+
+A literal in another module is an error in each place of a value: a
+local `const`, an argument, a `return`, `.Some(...)`, and an `if` or
+`match` value:
+
+```wyst fails
+import irq.interrupts
+
+fn spurious() {
+  interrupts.end({ NUMBER = 1023 })
+}
+```
+
+```text
+main.wyst:4:18: error: only module `irq.interrupts`, which declares the linear type Interrupt, can make its value with a literal
 ```
 
 The body of a loop can run again, so a pass cannot give away a linear
@@ -666,7 +683,32 @@ fn add_two() {
 ```
 
 An inline function cannot call itself, directly or through other inline
-functions. It cannot be naked or the entry.
+functions. It cannot be naked or the entry, and it cannot have an `asm`
+block that does not return, as
+[Physical registers](/docs/assembly/#physical-registers) gives.
+
+An inline function has the section of its module and the EL of that
+section, as [Function sections](/docs/layout-files/#function-sections)
+gives. Thus a call of an inline function cannot cross the boundary of
+`.el0`, as [Calls between
+sections](/docs/layout-files/#calls-between-sections) gives. Here `twice`
+is in `.text`, so `quad`, in `.el0`, cannot call it:
+
+```wyst fails
+#[inline]
+fn twice(x: u64) -> u64 {
+  return x + x
+}
+
+#[section(.el0)]
+fn quad(x: u64) -> u64 {
+  return twice(twice(x))
+}
+```
+
+```text
+main.wyst:8:10: error: `main.quad` of `.el0` calls `main.twice` of `.text`, but a function of `.el0` can call only functions of `.el0`
+```
 
 ## Which functions get code
 

@@ -185,6 +185,33 @@ fn held(key: Option<u8>) -> bool {
 }
 ```
 
+`==` and `!=` also compare two addresses of memory of one target type,
+with or without `var`, such as `@Record` and `@var Record`. The two are
+equal when they are the same address:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+fn moved(record: @Record, first: @var Record) -> bool {
+  return first != record
+}
+```
+
+No other operator takes an address, as
+[Address types](/docs/addresses/#address-types) gives:
+
+```wyst fails
+fn below(a: @u64, b: @u64) -> bool {
+  return a < b
+}
+```
+
+```text
+main.wyst:2:12: error: `<` needs integers, found @u64; an address takes only `==` and `!=`
+```
+
 ## Operands without a type
 
 An operand without a type of its own takes the type of the other

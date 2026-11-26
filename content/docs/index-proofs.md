@@ -330,9 +330,7 @@ fn clear(table: @var [slots]u64, i: u64) {
   store(@table[i], 0)
 }
 
-fn reset(base: u64) {
-  const table: @var [slots]u64 = bitcast(base)
-
+fn reset(table: @var [slots]u64) {
   for i in 0 ..< slots {
     clear(table, i)
   }
@@ -342,7 +340,7 @@ fn reset(base: u64) {
 ```
 
 ```text
-main.wyst:14:16: error: the checker cannot prove that this argument is less than 8
+main.wyst:12:16: error: the checker cannot prove that this argument is less than 8
 ```
 
 The calls in the loop pass `i`, which is at most 7. The last call passes
@@ -753,4 +751,36 @@ fn last(text: string) -> u8 {
 
 ```text
 main.wyst:2:31: error: the checker cannot prove that the index is less than the length of `text`
+```
+
+The bytes of a string literal are an array of as many bytes, and
+`len` of a literal is a constant. Thus the checker proves an index, a
+start, and an end of a literal as for an array, from the
+[highest value](#what-the-checker-knows) of each:
+
+```wyst
+fn digits(at: u64) -> u8 {
+  if at < len("0123456789") {
+    return load(@"0123456789"[at])
+  }
+  return 0
+}
+```
+
+A loop to the length with `..=` passes the last byte:
+
+```wyst fails
+fn sum() -> u64 {
+  var total: u64 = 0
+
+  for i in 0 ..= len("vale") {
+    total += widen(load(@"vale"[i]))
+  }
+
+  return total
+}
+```
+
+```text
+main.wyst:5:33: error: the checker cannot prove that the index is less than 4
 ```
