@@ -172,6 +172,58 @@ In `add`, the `add` instruction reads the home of `frame`. A `return` of
 the copy moves the home to `x0`, and an argument moves it to its
 register.
 
+A call of an inline function has no copy when the function has one
+parameter of one register, and its body is only a `return` of that
+parameter. The function can also have parameters of a struct with no
+fields, which take no register. The `return` can also give a field that
+fills the parameter, or `widen`, `bitcast`, or a `#[bits]` literal of the
+parameter that makes no code. The compiler puts the argument in the place
+of the call. Thus the call has the code of its argument, and it adds no
+home and no `mov`. The argument runs one time, in the position of the
+call, and each rule of this page applies to it, such as the order of the
+arguments of a call. `_ =` of such a call makes no code when its argument
+is a local. The rule examines only the body in the source, so a function
+whose `return` gives a call of such a function has a copy. Thus a call of
+`kept` has the code of a literal:
+
+```wyst
+#[bits]
+pub linear struct Frame: u64 {
+  ADDRESS: u64 at 0..=63
+}
+
+struct Thread {
+  stack: u64
+}
+
+var total: u64 = 0
+
+#[inline]
+pub fn kept(address: u64) -> Frame {
+  return { ADDRESS = address }
+}
+
+fn free(domain: u64, frame: xfer Frame) {
+  total = domain + frame.ADDRESS
+  _ = frame
+}
+
+fn release(domain: u64, thread: @Thread) {
+  free(domain, kept(load(@thread.stack)))
+}
+```
+
+With `domain` in `x19` and `thread` in `x20`, the arguments of `free` in
+`release` are:
+
+```text
+mov   x0, x19
+ldr   x1, [x20]
+```
+
+This is also the code of `free(domain, { ADDRESS = load(@thread.stack) })`.
+The `ldr` puts the argument of `kept` directly in `x1`.
+
 ## Costs
 
 | Source | Machine code |
