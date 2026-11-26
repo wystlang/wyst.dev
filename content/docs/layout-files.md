@@ -96,10 +96,11 @@ is a module path, as in an import, and `s` is a `code` section other than
 of a module `drivers`.
 `#[section]` on a function wins over the line, as
 [Sections](/docs/boot-and-exceptions/#sections) gives. An inline function
-has no code of its own, so the line does not place it. The kernel puts
-the code of its EL0 modules in `.el0` in this way, with one line for each
-topic but `kernel`, so that its page tables let EL0 execute only these
-pages.
+has no code of its own, but it has the section of its module, as the line
+gives, and the EL of that section, as
+[Assembly](/docs/assembly/#asm-blocks) gives. The kernel puts the code of
+its EL0 modules in `.el0` in this way, with one line for each topic but
+`kernel`, so that its page tables let EL0 execute only these pages.
 
 ```wyst drivers/serial/uart.wyst
 pub fn start() -> never {
@@ -119,18 +120,19 @@ symbol __stack_top: u64 = 0x4009_0000
 ```
 
 the code of `_start` goes in `.text`, and the code of
-`drivers.serial.uart.start` in `.el0`:
+`drivers.serial.uart.start` in `.el0`. `_start` goes to it with `eret`,
+because no call crosses the boundary of `.el0`, as [Calls between
+sections](#calls-between-sections) gives:
 
 ```wyst
 import drivers.serial.uart
 
 #[naked]
 pub fn _start() -> never {
-  asm(top in x0 = __stack_top) {
-    add sp, x0, #0
+  asm(entry in x0 = @uart.start) -> never {
+    msr elr_el1, x0
+    eret
   }
-
-  uart.start()
 }
 ```
 
@@ -152,11 +154,10 @@ import drivers.serial.uart
 
 #[naked]
 pub fn _start() -> never {
-  asm(top in x0 = __stack_top) {
-    add sp, x0, #0
+  asm(entry in x0 = @uart.start) -> never {
+    msr elr_el1, x0
+    eret
   }
-
-  uart.start()
 }
 ```
 
@@ -171,6 +172,48 @@ with a wrong path the code stays in `.text` with no other error.
 A function of a module that a line puts in `.el0`, also an inline function,
 makes no address of memory from an integer, as
 [Points of trust](/docs/addresses/#points-of-trust) gives.
+
+## Calls between sections
+
+A function can call a function of another section, but no call crosses
+the boundary of `.el0`. A function of `.el0` calls only functions of
+`.el0`, also inline ones, and a function of another section does not call
+a function of `.el0`. EL0 cannot read the code of another section, and
+EL1 cannot execute `.el0`, so such a call would fault when it runs. The
+body of an inline function is in the code of each caller, and the
+compiler checks it at the EL of its own section, so the call keeps the
+body at that EL. With the layout of
+[Function sections](#function-sections):
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .el0: code in ram after .text align 16
+functions drivers in .el0
+symbol __stack_top: u64 = 0x4009_0000
+```
+
+```wyst fails
+import drivers.serial.uart
+
+#[naked]
+pub fn _start() -> never {
+  asm(top in x0 = __stack_top) {
+    add sp, x0, #0
+  }
+
+  uart.start()
+}
+```
+
+```text
+main.wyst:9:8: error: `main._start` of `.text` calls `drivers.serial.uart.start` of `.el0`, but only a function of `.el0` can call a function of `.el0`
+```
+
+`@f` is not a call, so code of EL1 starts a thread at a function of
+`.el0` with `@f`, as `_start` does above. A layout without a section
+`.el0` has no such boundary.
 
 ## Address constants
 

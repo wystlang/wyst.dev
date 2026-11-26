@@ -113,12 +113,13 @@ This page lists both sides.
   address does not go out of the block, and the check that no line stores
   through the address of a table or of a byte of a string, or into a
   place that holds an address, outputs as values, `Option` outputs, and
-  blocks that do not return.
+  blocks that do not return, which an inline function cannot have.
 - Naked functions with parameters, the check that a function that runs
   with no stack uses none, the check that each function that starts on a
   new stack fits in the `stack` of the layout, `#[el2]` functions, code
-  addresses, the exception vector table, function sections, and
-  semihosting.
+  addresses, the exception vector table, function sections, the section
+  of an inline function, which is the section of its module, the check
+  that no call crosses the boundary of `.el0`, and semihosting.
 - Implementation-defined system registers, by their encoding.
 - `wync build` and `wync fmt`.
 

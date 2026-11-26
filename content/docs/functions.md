@@ -666,7 +666,32 @@ fn add_two() {
 ```
 
 An inline function cannot call itself, directly or through other inline
-functions. It cannot be naked or the entry.
+functions. It cannot be naked or the entry, and it cannot have an `asm`
+block that does not return, as
+[Physical registers](/docs/assembly/#physical-registers) gives.
+
+An inline function has the section of its module and the EL of that
+section, as [Function sections](/docs/layout-files/#function-sections)
+gives. Thus a call of an inline function cannot cross the boundary of
+`.el0`, as [Calls between
+sections](/docs/layout-files/#calls-between-sections) gives. Here `twice`
+is in `.text`, so `quad`, in `.el0`, cannot call it:
+
+```wyst fails
+#[inline]
+fn twice(x: u64) -> u64 {
+  return x + x
+}
+
+#[section(.el0)]
+fn quad(x: u64) -> u64 {
+  return twice(twice(x))
+}
+```
+
+```text
+main.wyst:8:10: error: `main.quad` of `.el0` calls `main.twice` of `.text`, but a function of `.el0` can call only functions of `.el0`
+```
 
 ## Which functions get code
 
