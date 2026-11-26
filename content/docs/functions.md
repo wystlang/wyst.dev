@@ -34,9 +34,12 @@ slice type `@[]T`, which [Slices](/docs/addresses/#slices) describes,
 `string`, which [Values and types](/docs/values/#strings) describes, or
 an `Option`, which [Optional values](/docs/options/) describes. A
 parameter of a linear type with `xfer` takes the value, and one without
-`xfer` lends it, as [Linear values](#linear-values) gives. A function
-cannot change its parameters, because a `mut` parameter is not
-implemented now.
+`xfer` lends it, as [Linear values](#linear-values) gives. A parameter of
+a `#[bits]` struct type takes only a value of that type, so a call that
+gives two such arguments in the wrong order, or an integer there, is an
+error, and `bitcast` gives the struct from an integer, as
+[Values](/docs/enums-and-bit-structs/#values) gives. A function cannot
+change its parameters, because a `mut` parameter is not implemented now.
 
 The signature gives the access of each address and slice parameter:
 `@var T` where the function, or a function that it calls, stores through
@@ -84,7 +87,8 @@ A result is a value type, an enum, a `#[bits]` struct, a
 [struct value](/docs/structs/#struct-values), a struct with no fields,
 an address type, a [slice](/docs/addresses/#slices) type,
 [`string`](/docs/values/#strings), `Option<T>`, or `never`. A result takes at most 8 registers, so a struct result has
-at most 8 fields. A function with a result must not reach the end of its
+at most 8 fields. A result of a `#[bits]` struct type, also in an
+`Option`, takes only a value of that type, as a parameter does. A function with a result must not reach the end of its
 body.
 Each path ends with `return`, with a call to a `never` function such as
 `trap()`, with a `for {}` without a `break`, or with an

@@ -101,7 +101,9 @@ This page lists both sides.
   values as the type of parameters, locals, local `var`s, results, and
   memory, `#[bits]` structs as the type
   of constants, parameters, locals, local `var`s, results, and fields of
-  plain structs, with field values at run time, register maps, `pub`
+  plain structs, with field values at run time, which take only a value of
+  the struct type, and `bitcast` of an integer or of another `#[bits]`
+  struct of the backing type to one, register maps, `pub`
   register maps as the type of a device of another module, register banks, devices, arrays of devices,
   addresses of register maps as the type of parameters, locals, and
   results, with `@d`, `@d[i]`, and `bitcast`, and the register accesses
@@ -183,7 +185,7 @@ kernel needs it:
 | A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |
 | A call in the place of the address of a register access, such as `f().R.read()`, the address of a register map as a module constant, a module variable, a local `var`, or an `Option`, and the address of a register map that is not `pub` as the result of a `pub` function | Put the address in a local `const` or a parameter, and make the register map `pub`. |
 | A limit on a signed field, such as an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |
-| A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
+| A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give `bitcast` of the value to a local of the struct type. |
 | A variant with two or more values, a value of a variant of type `i8`, `i16`, or `i32`, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
 | `load` of an enum with values or of an `Option` at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
 | An enum without a backing type, a variant without a tag, and a tag other than an integer literal | Give the backing type `uN` and an integer literal tag for each variant. |

@@ -509,8 +509,9 @@ fn ticks_since(start: u64) -> u64 {
 ```
 
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
-is a `u64`, because a register holds 64 bits. A local `const` of the block
-can also have a `#[bits]` struct type with backing type `u64`. A block with
+is a `u64`, because a register holds 64 bits. `bitcast` gives a
+[`#[bits]` struct](/docs/enums-and-bit-structs/#values) with backing type
+`u64` from the value. A block with
 a `u64` output has at most 8 inputs. The inputs are in the scratch
 registers, and an `svc` or an `hvc` can change `x0` to `x17`. Thus the
 compiler keeps each value that it needs after the block in a home while

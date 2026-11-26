@@ -220,6 +220,38 @@ fn wide(value: u32) -> i64 {
 main.wyst:2:10: error: `widen` cannot make i64 from u32
 ```
 
+`bitcast` also gives a [`#[bits]` struct](/docs/enums-and-bit-structs/#values)
+from an integer of its backing type, or from another `#[bits]` struct of
+that backing type, with no code. A position of a `#[bits]` struct type
+takes no integer:
+
+```wyst
+#[bits]
+struct Entry: u64 {
+  Valid: bool at 0
+}
+
+fn valid(word: u64) -> bool {
+  const entry: Entry = bitcast(word)
+  return entry.Valid
+}
+```
+
+```wyst fails
+#[bits]
+struct Entry: u64 {
+  Valid: bool at 0
+}
+
+fn entry(word: u64) -> Entry {
+  return word
+}
+```
+
+```text
+main.wyst:7:10: error: expected Entry, found u64
+```
+
 `bitcast` also gives the address of memory, or of a slice, as a `u64`,
 and makes an address from a `u64`, as
 [Addresses and memory](/docs/addresses/#bitcast) gives.
@@ -456,7 +488,7 @@ struct Entry: u64 {
 }
 
 fn low(slot: @u64) {
-  const entry: Entry = load(slot)
+  const entry: Entry = bitcast(load(slot))
   const low = entry.Low
 }
 ```
@@ -474,7 +506,7 @@ struct Entry: u64 {
 }
 
 fn low(slot: @u64) -> u8 {
-  const entry: Entry = load(slot)
+  const entry: Entry = bitcast(load(slot))
   const low: u8 = widen(entry.Low)
   return low
 }
