@@ -68,7 +68,7 @@ name. A field and an argument can.
 | `#[mmio(address)]` | `const` | A device at a physical address. |
 | `#[mmio(address, stride)]` | `const` | An array of devices. |
 | `#[sysreg]` | `const` | A system register of the A64 tables. |
-| `#[sysreg(S3_5_C15_C1_3)]` | `const` | An implementation-defined system register, by its encoding. |
+| `#[sysreg(S3_5_C15_C1_3, el2)]` | `const` | An implementation-defined system register, by its encoding and the lowest EL that can access it. |
 | `#[vector_table]` | `const` | The EL1 exception vector table. |
 | `#[big_endian]` | field, register | Bytes in big-endian order. |
 | `#[below(n)]` | field | A limit: a load traps on a value that is not below `n`. |

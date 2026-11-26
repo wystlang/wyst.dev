@@ -120,7 +120,8 @@ This page lists both sides.
   addresses, the exception vector table, function sections, the section
   of an inline function, which is the section of its module, the check
   that no call crosses the boundary of `.el0`, and semihosting.
-- Implementation-defined system registers, by their encoding.
+- Implementation-defined system registers, by their encoding and the
+  lowest EL that can access them.
 - `wync build` and `wync fmt`.
 
 ## Not implemented now
