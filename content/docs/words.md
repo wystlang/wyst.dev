@@ -44,7 +44,7 @@ name. A field and an argument can.
 | `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
-| `len` | The length of a slice, a `u64`. | of a slice local or parameter |
+| `len` | The length of a slice or of a `string`, a `u64`. | of a slice local or parameter, and of a `string` local, parameter, or literal |
 | `size_of` | The size of a type in bytes. | for `u8` to `u64`, `i8` to `i64`, an enum, an `Option` in memory, a plain struct, a `#[bits]` struct, and an array of them |
 | `align_of` | The alignment of a type in bytes. | no |
 | `field_offset` | The offset of a field of a plain struct. | yes |
