@@ -174,7 +174,7 @@ kernel needs it:
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` or the view `bitcast(@own.lines)` | Refused. |
 | `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, also in an `Option`, or an array of them. |
-| `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
+| `bitcast` of a `u8`, `u16`, or `u32` to a type of another width, such as a `u64` or an address | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
 | `bitcast` of a slice that is not a local or a parameter, such as `bitcast(@a[4 ..])` | Put the slice in a local first: `const s = @a[4 ..]`. |

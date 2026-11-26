@@ -594,8 +594,8 @@ fn take(interrupt: xfer interrupts.Interrupt) -> u16 {
 ```
 
 A linear value is not its backing integer: a field read, such as
-`interrupt.NUMBER`, gives its bits. A `#[bits]` struct that is not `pub`
-is local to its module:
+`interrupt.NUMBER`, gives its bits, and `bitcast` does not give a linear
+value. A `#[bits]` struct that is not `pub` is local to its module:
 
 ```wyst platform/entries.wyst
 #[bits]
