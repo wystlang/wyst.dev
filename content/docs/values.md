@@ -373,7 +373,7 @@ fn address(text: string) -> u64 {
 ```
 
 ```text
-main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local or parameter `s` as a `@[]u8`
+main.wyst:2:10: error: a `string` is read-only data, so `bitcast` gives no integer and no address of it; `@s[x ..]` gives the bytes of a `string` local, parameter, or literal `s` as a `@[]u8`
 ```
 
 `bitcast` of a slice of a string to a `u64` is also an error, as for each
