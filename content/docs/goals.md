@@ -88,7 +88,7 @@ already proved:
 - `_ = v` consumes a value.
 - Fields have no visibility. The programmer, not the compiler, keeps the
   invariants of a type. `linear` stays sound, because only the declaring
-  module can consume a linear value.
+  module makes a linear value with a literal and consumes it.
 - `never` is a type name.
 - Hardware declarations are attributes on ordinary declarations, such as
   `#[naked] fn` and `#[register_map] struct`.

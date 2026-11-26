@@ -47,7 +47,8 @@ This page lists both sides.
   `return value else { ... }`, `?`, `undo` blocks, which run before each
   return of `.None`, `match` with `.Some(v)` and `.None`, `==` and `!=`,
   and the check that each path reads an `Option`.
-- Linear `#[bits]` structs and linear structs with no fields, `xfer`
+- Linear `#[bits]` structs and linear structs with no fields, which only
+  the declaring module makes with a literal and consumes, `xfer`
   parameters, which take a linear value, parameters that lend it, and
   `undo` blocks that give it away.
 - Plain structs, struct values and structs with no fields as the type of

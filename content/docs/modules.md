@@ -126,11 +126,12 @@ fn take(i: u64) {
 }
 ```
 
-Only the module that declares a linear type consumes a value of it, also
-when the type is `pub`, as [Linear values](/docs/functions/#linear-values)
-gives. A module variable, a device, and the vector table are local to
-their module now. A `pub` device is not implemented now. A call to a
-function that is not `pub` is an error:
+Only the module that declares a linear type makes a value of it with a
+literal and consumes a value of it, also when the type is `pub`, as
+[Linear values](/docs/functions/#linear-values) gives. A module variable,
+a device, and the vector table are local to their module now. A `pub`
+device is not implemented now. A call to a function that is not `pub` is
+an error:
 
 ```wyst fails
 import drivers.serial
