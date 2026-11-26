@@ -298,6 +298,50 @@ fn tail(text: string) -> u64 {
 }
 ```
 
+`len`, `@s[i]`, and `@s[x ..]` also take a string literal. Its bytes are
+an array of as many bytes, so `len("text")` is the constant 4, also in a
+module constant and in `static_assert`, and the compiler proves an index
+and a slice of a literal as for an array. Equal literals share one copy
+in `.rodata`:
+
+```wyst
+const prefix_length: u64 = len("tls13 ")
+static_assert(prefix_length == 6)
+
+fn sum(bytes: @[]u8) -> u64 {
+  var total: u64 = 0
+
+  for byte in bytes {
+    total += widen(byte)
+  }
+
+  return total
+}
+
+fn version(column: u64, byte: u8) -> bool {
+  if column >= len("HTTP/") {
+    return false
+  }
+  return byte == load(@"HTTP/"[column])
+}
+
+fn empty() -> u64 {
+  return sum(@""[0 ..]) + sum(@"HTTP/"[1 ..< 4])
+}
+```
+
+An index of a literal past its last byte is an error:
+
+```wyst fails
+fn last() -> u8 {
+  return load(@"HTTP/"[5])
+}
+```
+
+```text
+main.wyst:2:24: error: the checker cannot prove that the index is less than 5
+```
+
 A string is read-only data, as a
 [constant table](/docs/addresses/#read-only-addresses) is, so `@s[i]` is
 a read-only `@u8`, and `@s[x ..]` is a read-only `@[]u8`. A `store`
@@ -338,10 +382,10 @@ read-only address, as
 
 A local `var`, a module variable, a module constant, a field, and an
 `Option` cannot be a `string` now. `@s[i]` and `@s[x ..]` take a `string`
-local or parameter, so a byte or a slice of a string literal, such as
-`@"text"[1 ..]`, is not implemented now. `string` takes no type
-arguments, and memory at an address is not a `string` now, so
-`string<u8>` and `@string` are errors too:
+local, parameter, or literal, so a byte or a slice of the `string` of a
+call, such as `@f()[1 ..]`, is not implemented now: `const s = f()` comes
+first. `string` takes no type arguments, and memory at an address is not
+a `string` now, so `string<u8>` and `@string` are errors too:
 
 ```wyst fails
 fn greet() {

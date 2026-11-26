@@ -36,7 +36,7 @@ fn next(base: @u64) {
 main.wyst:2:28: error: `+` needs integers, found @u64
 ```
 
-[`bitcast`](#bitcast) gives the address as a `u64`, and a
+[`bitcast`](#bitcast) gives the `u64` of an `@var` address, and a
 [view](#views) gives the same memory as another type.
 
 `@M`, where `M` is a register map, is the address of a device, not of
@@ -676,10 +676,11 @@ array with no length, which is never a value, so a type `[]T` without `@`
 is an error.
 
 `@a[x ..< y]` gives the slice of the elements of `a` from `x` up to, but
-not including, `y`. `a` is the address of an array `[N]T`, or a slice
-local or parameter. `@a[..< y]` starts at 0, and `@a[x ..]` ends at the
-end of `a`: `N`, or the length of the slice. `x` and `y` are `uN` values,
-as an index is. `len(s)` gives the length of the slice local or
+not including, `y`. `a` is the address of an array `[N]T`, a slice local
+or parameter, or a [`string`](/docs/values/#strings) local, parameter, or
+literal. `@a[..< y]` starts at 0, and `@a[x ..]` ends at the end of `a`:
+`N`, or the length of the slice or of the string. `x` and `y` are `uN`
+values, as an index is. `len(s)` gives the length of the slice local or
 parameter `s`, a `u64`, and `@s[i]` is the address of element `i`:
 
 ```wyst
@@ -729,13 +730,52 @@ main.wyst:2:10: error: a slice is only the type of a parameter, a local, or a re
 No operator takes a slice. A slice is not memory, so `@s` of a slice `s`
 is an error.
 
+An `if` value of a slice gives the slice of the block that runs, in two
+registers, as a call does. It is `@var []T` only when each block gives an
+`@var []T`, so a block of read-only data, such as the bytes of a string
+literal, makes the value `@[]T`:
+
+```wyst
+struct Host {
+  count: u64
+  bytes: [64]u8
+}
+
+fn bytes(host: @Host) -> @[]u8 {
+  const count = load(@host.count)
+  if count > 64 { trap() }
+
+  return @host.bytes[..< count]
+}
+
+fn shown(host: @Host, typed: bool) -> @[]u8 {
+  return if typed { bytes(host) } else { @"no host"[0 ..] }
+}
+```
+
+A `store` through an element of such a value is an error, as for each
+read-only slice:
+
+```wyst fails
+fn clear(bytes: @var [4]u8, all: bool) {
+  const part = if all { @bytes[0 ..] } else { @""[0 ..] }
+  if len(part) > 0 {
+    store(@part[0], 0)
+  }
+}
+```
+
+```text
+main.wyst:4:11: error: `store` writes only through an `@var` address, and this is @u8
+```
+
 The address and the length of a slice each use its start `x`, so `x` is a
 constant or a local. `len` and `@s[i]` take a slice local or parameter.
 These forms are not implemented now:
 
 - a start that is not a constant or a local, such as `@a[x + 1 ..]`;
 - `len(f())` and `@f()[i]` of a call `f()`: `const s = f()` comes first;
-- a local `var`, an `Option`, and an `if` or `match` value of a slice;
+- a local `var`, an `Option`, and a `match` value of a slice;
 - a slice parameter of a naked function;
 - a slice of arrays, such as `@[][4]u8`.
 

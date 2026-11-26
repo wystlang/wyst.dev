@@ -18,8 +18,9 @@ This page lists both sides.
   and `i64`, and `never`.
 - `string` parameters, local constants, results, and `if` and `match`
   values, and `len(s)`, `@s[i]`, and the slices `@s[x ..< y]`,
-  `@s[..< y]`, and `@s[x ..]` of a `string` local or parameter, with a
-  proof of the index and of the slice, which are read-only.
+  `@s[..< y]`, and `@s[x ..]` of a `string` local, parameter, or literal,
+  with a proof of the index and of the slice, which are read-only, and one
+  copy of equal string literals in `.rodata`.
 - Character literals, such as `'q'`, which are integer literals with the
   value of one byte.
 - Module constants, `static_assert`, module variables, local constants,
@@ -78,10 +79,10 @@ This page lists both sides.
 - Constant tables of an array or a plain struct type, with array and
   struct literals, `@c` of a table, and the check that no `store` writes
   through the address of a table, also in a function that takes it.
-- Slices `@[]T` as the type of parameters, local constants, and results,
-  `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array address or a
-  slice, `len`, `@s[i]`, `for x in s`, and the check that no `store`
-  writes through a slice of a table.
+- Slices `@[]T` as the type of parameters, local constants, results, and
+  `if` values, `@a[x ..< y]`, `@a[..< y]`, and `@a[x ..]` of an array
+  address or a slice, `len`, `@s[i]`, `for x in s`, and the check that no
+  `store` writes through a slice of a table.
 - `#[big_endian]` fields of plain structs and `#[big_endian]` registers.
 - `#[below(n)]` fields of plain structs: a load traps on a value that is
   not below `n`, and a store needs a proof of its value.
@@ -133,7 +134,7 @@ kernel needs it:
 | A range loop on signed values, such as `i32` values | Use a `for cond {}` loop on a local `var`. |
 | A variant with a value as the left operand of `==` or `!=`, such as `.Some(v) == x` | Write `x == .Some(v)`. A variant without a value, such as `.None`, can be either operand. |
 | A left operand without a type of its own, such as `widen(end(xfer v))`, that gives a linear value away or consumes it, as `_ = v` does, or that has a `?`, a `return`, or a `break` or `continue` that leaves it, in a comparison, in the value of a `const` without a type, or as the start of a range | Give its value to a local with a type first, as in `const n: u32 = widen(end(xfer v))`. |
-| An `if` or `match` value of a slice or of a plain struct with fields | `return` the value in each block of an `if` or `match` statement. |
+| A `match` value of a slice, also in a block of an `if` value, and an `if` or `match` value of a plain struct with fields | `return` the value in each block of a `match` statement. |
 | `for x in` an array | Use `for x in @a[0 ..]`. |
 | `for x in` a slice of a type other than a `bool`, an integer, an enum without values, or a `#[bits]` struct, such as a plain struct | Use `for i in 0 ..< len(s)` and `@s[i]`. |
 | A local `var` of a type other than `bool`, `u8` to `u64`, `i8` to `i64`, a `#[bits]` struct, and an enum, such as an address or a slice | Use a `const`. |
@@ -146,7 +147,7 @@ kernel needs it:
 | `in xN` on a parameter or a local, such as `a: u64 in x0` | Use an `asm` input `name in xN = value`. |
 | Named arguments of a function, such as `g(a = 1)` | Give the arguments in order. |
 | `string` as the type of a local `var`, a module variable, a module constant, a field, or an `Option`, and a `string` parameter of the entry | Use a local `const`, a parameter of a function that a call starts, or a result. |
-| `len`, a byte, and a slice of a `string` that is not a local or a parameter, such as `len(f())` and `@"text"[1 ..]` | Put the string in a local first: `const s = f()`. |
+| `len`, a byte, and a slice of a `string` that is not a local, a parameter, or a literal, such as `len(f())` and `@f()[1 ..]` | Put the string in a local first: `const s = f()`. |
 | `Result` and `align_of` | Refused. |
 | Methods, generics, and interfaces | Refused. |
 | `mut`, a `linear` plain struct with fields, and a `linear` enum | Refused. |

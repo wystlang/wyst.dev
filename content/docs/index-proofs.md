@@ -752,3 +752,35 @@ fn last(text: string) -> u8 {
 ```text
 main.wyst:2:31: error: the checker cannot prove that the index is less than the length of `text`
 ```
+
+The bytes of a string literal are an array of as many bytes, and
+`len` of a literal is a constant. Thus the checker proves an index, a
+start, and an end of a literal as for an array, from the
+[highest value](#what-the-checker-knows) of each:
+
+```wyst
+fn digits(at: u64) -> u8 {
+  if at < len("0123456789") {
+    return load(@"0123456789"[at])
+  }
+  return 0
+}
+```
+
+A loop to the length with `..=` passes the last byte:
+
+```wyst fails
+fn sum() -> u64 {
+  var total: u64 = 0
+
+  for i in 0 ..= len("vale") {
+    total += widen(load(@"vale"[i]))
+  }
+
+  return total
+}
+```
+
+```text
+main.wyst:5:33: error: the checker cannot prove that the index is less than 4
+```
