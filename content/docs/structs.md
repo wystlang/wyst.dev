@@ -170,8 +170,24 @@ struct Table {
 ```
 
 A struct comes after the structs and the constants that its fields use.
-Thus a struct cannot hold itself. The items of an imported module up to
-the struct or the constant that a field uses come first.
+The items of an imported module up to the struct or the constant that a
+field uses come first. Thus a struct cannot hold itself:
+
+```wyst fails
+struct Thread {
+  id: u64
+  next: Thread
+}
+```
+
+```text
+main.wyst:3:9: error: struct `Thread` cannot hold itself
+```
+
+A field can hold the address of a record of its own struct, also in an
+`Option`, as in `next: Option<@var Thread>`, because the address is one
+word. Thus the records of one struct make a list, as
+[Lists](/docs/addresses/#lists) gives.
 
 ## Packed structs
 

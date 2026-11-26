@@ -309,9 +309,10 @@ starts.
 change. `var name: T = value` declares a local `var`, which an assignment
 can change while its name is in scope. As a module variable, a local `var`
 has the type `bool`, `u8` to `u64`, or `i8` to `i64`, and it can also
-have a [`#[bits]` struct](/docs/enums-and-bit-structs/#values) type or an
-[enum](/docs/enums-and-bit-structs/#enum-values) type, also with values.
-The type is optional when the value has a type:
+have a [`#[bits]` struct](/docs/enums-and-bit-structs/#values) type, an
+[enum](/docs/enums-and-bit-structs/#enum-values) type, also with values,
+or an `Option` of an address. The type is optional when the value has a
+type:
 
 ```wyst
 fn sum(limit: u64) -> u64 {
@@ -364,8 +365,32 @@ fn edge(left: u64, width: u64, right: bool) -> u64 {
 }
 ```
 
-A local `var` of another type, such as an address, is not implemented
-now:
+A local `var` of an `Option` of an address goes along a list of records,
+as [Lists](/docs/addresses/#lists) gives. Each assignment gives it the
+next link:
+
+```wyst
+struct Record {
+  value: u64
+  next: Option<@Record>
+}
+
+fn length(first: Option<@Record>) -> u64 {
+  var count: u64 = 0
+  var current = first
+
+  for {
+    const record = current else { break }
+    current = load(@record.next)
+    count += 1
+  }
+
+  return count
+}
+```
+
+A local `var` of another type, such as an address that is not in an
+`Option`, or an `Option` of an integer, is not implemented now:
 
 ```wyst fails
 fn first(table: @[4]u64) {

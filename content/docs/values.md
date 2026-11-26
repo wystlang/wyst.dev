@@ -129,7 +129,7 @@ fn done(ready: bool) -> bool {
 ```
 
 ```text
-main.wyst:2:16: error: `==` takes only integers, enums, and `Option` values, found bool
+main.wyst:2:16: error: `==` takes only integers, enums, addresses, and `Option` values, found bool
 ```
 
 In memory, as a [field of a plain struct](/docs/structs/#plain-structs)

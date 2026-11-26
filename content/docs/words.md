@@ -41,7 +41,7 @@ name. A field and an argument can.
 | `i8`, `i16`, `i32`, `i64` | The signed integers of 8, 16, 32, and 64 bits, value types. | yes |
 | `string` | A string value. | as the type of a parameter, a local `const`, a result, and an `if` or `match` value; not as a local `var`, a module variable, a module constant, or a field |
 | `never` | The type of a function that does not return. | yes |
-| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, and in memory of an integer or an enum without values; not as a local `var`, a module variable, or a module constant |
+| `Option` | A value or no value: `.Some(v)` and `.None`. | as a function result, a parameter, a local `const`, and an `asm` output, in memory of an integer, an enum without values, or an address, and as a local `var` and a module variable of an `Option` of an address; not as a module constant, or as another local `var` or module variable |
 | `Result` | A value or an error: `.Ok(v)` and `.Error(e)`. | no |
 | `true`, `false` | The values of `bool`. | yes |
 | `len` | The length of a slice or of a `string`, a `u64`. | of a slice local or parameter, and of a `string` local, parameter, or literal |

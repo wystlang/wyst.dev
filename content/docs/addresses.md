@@ -22,9 +22,36 @@ values, a `bool`, a plain struct or a
 one of these. `N` is a constant, such as a module constant. Another
 target, such as an array of arrays, is not implemented now.
 
-An address is not an integer. No operator takes an address, and `@u8` and
-`@u32` are different types, and so are `@u8` and `@var u8`, but `@var`
-converts to `@`:
+An address is not an integer. `@u8` and `@u32` are different types, and
+so are `@u8` and `@var u8`, but `@var` converts to `@`. `==` and `!=` are
+the only operators on an address of memory. They take two addresses of
+one target type, with or without `var`, and tell if the two are the same
+address:
+
+```wyst
+struct Record {
+  value: u64
+}
+
+fn same(record: @Record, other: @var Record) -> bool {
+  return other == record
+}
+```
+
+Two addresses of different types are an error:
+
+```wyst fails
+fn same(bytes: @u8, words: @u32) -> bool {
+  return bytes == words
+}
+```
+
+```text
+main.wyst:2:19: error: expected @u8, found @u32
+```
+
+Each other operator on an address is an error, so no operator makes an
+address:
 
 ```wyst fails
 fn next(base: @u64) {
@@ -33,7 +60,7 @@ fn next(base: @u64) {
 ```
 
 ```text
-main.wyst:2:28: error: `+` needs integers, found @u64
+main.wyst:2:28: error: `+` needs integers, found @u64; an address takes only `==` and `!=`
 ```
 
 [`bitcast`](#bitcast) gives the `u64` of an `@var` address, and a
@@ -320,7 +347,7 @@ The target of a `pub` address constant has the rule of an
 
 A field of a plain struct and a module variable can hold an address
 `@T` or `@var T`, where `T` is `u8` to `u64`, `i8` to `i64`, or a plain
-struct. The
+struct, also the struct of the field, as [Lists](#lists) gives. The
 address has 8 bytes, with the alignment 8. `store` writes it, also as a
 field of a [struct literal](/docs/structs/#struct-literals), and `load`
 gives it, so `@load(@link.record).value` is the address of a field of
@@ -404,11 +431,11 @@ address, for a link that can be empty. It is one word of 8 bytes: the
 address of `.Some`, or 0 for `.None`, so memory of zeros is `.None`, and
 so is a field that a literal does not name. `load` gives the `Option`,
 and asserts the address of `.Some`, as for an address. `match`, `else`,
-`?`, and a `return` of that result type take the `load`, as they take a
-call, and the code loads the word one time. `store` and an assignment
-write the address of `.Some(a)`, or 0 for `.None`, also for a call that
-returns `.None`. The first value of a module variable is `.None`, and a
-read of it is as a `load`:
+`?`, a local, and a `return` of that result type take the `load`, as they
+take a call, and the code loads the word one time. `store` and an
+assignment write the address of `.Some(a)`, or 0 for `.None`, also for a
+call that returns `.None`. The first value of a module variable is
+`.None`, and a read of it is as a `load`:
 
 ```wyst
 struct Record {
@@ -442,47 +469,95 @@ fn last_value() -> u64 {
 }
 ```
 
-No operator takes an address, so `==` and `!=` take an `Option` of an
-address only with `.None`, as in `load(@link.next) == .None`, and read
-only its word. A parameter and a local of an `Option` of an address are
-not implemented now, also of a `load`, so `else`, `?`, or `match` takes
-the `load`:
+A parameter and a local `const` can also hold an `Option` of an address,
+and so can a local `var`, as [Lists](#lists) gives. Each takes two
+registers, the tag and the address, as an
+[`Option` result](#address-results) does. The word in memory is the tag
+and the address, so `const next = load(@link.next)` loads it one time.
+`else`, `?`, and `match` take the local as they take the `load`. `==` and
+`!=` take such an `Option` with `.None`, with `.Some(a)`, or with a second
+`Option` of that type, as [Compare options](/docs/options/#compare-options)
+gives. With `.None`, as in `load(@link.next) == .None`, they read only the
+word.
 
-```wyst fails
-struct Record {
-  value: u64
-}
-
-struct Link {
-  next: Option<@Record>
-}
-
-fn value(link: @Link) -> u64 {
-  const next = load(@link.next)
-  const record = next else { return 0 }
-  return load(@record.value)
-}
-```
-
-```text
-main.wyst:10:16: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
-```
-
-A local `var` and a module constant of an `Option` of an address, a
-value other than `.None` in a constant table or as the first value of a
-module variable, `#[big_endian]` and `#[below(n)]` before such a field,
-and an `asm` input or output of it are not implemented now.
+A module constant of an `Option` of an address, a value other than
+`.None` in a constant table or as the first value of a module variable,
+`#[big_endian]` and `#[below(n)]` before such a field, and an `asm` input
+or output of it are not implemented now.
 
 Memory and a module variable never hold a slice or the
 [address of a register map](/docs/registers/#addresses-of-register-maps).
-The address of another type in memory, such as `@bool` or `@[4]u64`, the
-address of a struct in a field of that struct, such as `next: @Thread` in
-`Thread`, also in an `Option`, and a
-[struct value](/docs/structs/#struct-values) with an address field are
-not implemented now. A link that holds the address of a record of its
-own type, such as the next record of a list, stays a `u64`, which
-`bitcast` makes an address at each use, in the module that declares the
-type.
+The address of another type in memory, such as `@bool` or `@[4]u64`, also
+in an `Option`, and a [struct value](/docs/structs/#struct-values) with an
+address field are not implemented now.
+
+### Lists
+
+A field of a plain struct, also as the element of an array field, can
+hold the address of a record of the same struct, also in an `Option`.
+The address is one word, so the layout of the struct does not need its
+own layout. Thus the records of one struct make a list, or a tree with a
+field such as `children: [2]Option<@var Node>`.
+
+A local `var` of an `Option` of an address goes along a list. An
+assignment gives it the next link, as in `current = load(@record.next)`.
+An assignment to a local `var` of `Option<@var T>` takes only an
+`Option<@var T>`. `==` finds a record, as in `first == record`:
+
+```wyst
+struct Record {
+  value: u64
+  next: Option<@var Record>
+}
+
+struct List {
+  first: Option<@var Record>
+}
+
+fn sum(list: @List) -> u64 {
+  var total: u64 = 0
+  var current = load(@list.first)
+
+  for {
+    const record = current else { break }
+    total += load(@record.value)
+    current = load(@record.next)
+  }
+
+  return total
+}
+
+fn remove(list: @var List, record: @var Record) {
+  const first = load(@list.first) else { return }
+  if first == record {
+    store(@list.first, load(@record.next))
+    return
+  }
+
+  var current: Option<@var Record> = .Some(first)
+
+  for {
+    const other = current else { return }
+    const next = load(@other.next)
+    if next == .Some(record) {
+      store(@other.next, load(@record.next))
+      return
+    }
+
+    current = next
+  }
+}
+```
+
+Through a read-only address, the `load` of a link gives a read-only
+address, as [Read-only addresses](#read-only-addresses) gives. Thus in
+`sum`, `current` is `Option<@Record>`, and a function that only reads a
+list takes `@List`. Each `load` of a link asserts its address, so a list
+is only in memory that hostile code cannot write.
+
+A local `var` of an address that is not in an `Option` is not implemented
+now, as [Locals](/docs/constants-and-variables/#locals) gives. Put the
+address in an `Option`, as `remove` does with `.Some(first)`.
 
 ## Places
 
@@ -570,10 +645,9 @@ another address, from `@c` of a constant table, from a `load`, or from a
 module variable. A call statement that drops the address is an error, as
 for a value result.
 
-A result can also be an `Option` of an address, as memory can. A
-parameter and a local of an `Option` of an address are not implemented
-now. `else`, `?`, and `match` take it at the call, and give the address
-of `Some` to a local:
+A result can also be an `Option` of an address, as memory can. `else`,
+`?`, and `match` take it at the call, and give the address of `Some` to a
+local:
 
 ```wyst
 struct Domain {
@@ -600,9 +674,11 @@ fn root_of(domain: u64) -> Option<u64> {
 }
 ```
 
-A local of the `Option` is an error:
+A parameter and a local `const` can also hold the `Option`, in two
+registers, the tag and the address, as the result does. Thus a function
+gives the `Option` of a call to another function:
 
-```wyst fails
+```wyst
 struct Domain {
   root: u64
 }
@@ -611,13 +687,17 @@ fn lookup(domain: u64) -> Option<@Domain> {
   return .None
 }
 
-fn keep(domain: u64) {
-  const found = lookup(domain)
+fn root_or(found: Option<@Domain>, other: u64) -> u64 {
+  match found {
+    .Some(own) { return load(@own.root) }
+    .None { return other }
+  }
 }
-```
 
-```text
-main.wyst:10:17: error: an `Option` of an address as a parameter or a local is not implemented now: `else`, `?`, or `match` takes it at the call, the `load`, or the read of the variable
+fn root(domain: u64) -> u64 {
+  const found = lookup(domain)
+  return root_or(found, 0)
+}
 ```
 
 ### Pub results
