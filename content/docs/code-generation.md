@@ -89,8 +89,11 @@ on constants and layout symbols with an integer value, a string literal,
 or a local does not wait, because no call changes it: the code computes it
 after the call. No scratch register holds a value while the code computes
 an argument or a value that waits, so each starts at depth 0. An `asm`
-block is a call for this rule, because its inputs are in the scratch
+block is a call for this rule, because it puts its inputs in the scratch
 registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
+An input whose value is a local with a home in a register is in that
+register, with no move, as [Registers](/docs/assembly/#registers) of
+Assembly gives.
 
 In a function without a `bl`, the home of parameter N is its argument
 register `xN` when no code that can run after a change of `xN` reads the
@@ -98,9 +101,11 @@ parameter. Such a home needs no move and no saved register. A value or a
 move that the code puts in `x0` to `x7` changes the register, such as the
 value of `return` or the move of an `asm` input to its `in xN` register.
 A `scratch` operand of an `asm` block there, and an `in xN` input that a
-post-index form moves, change it before the block reads its inputs. A
-line that can go to an exception handler, such as `svc`, changes `x0` to
-`x17`. A move to the same register is no change. A change counts for each
+post-index form moves, change it before the block reads its inputs. The
+lines of a block read an input in the home of a parameter after the
+moves of the other inputs. A line that can go to an exception handler,
+such as `svc`, changes `x0` to `x17`. A move to the same register is no
+change. A change counts for each
 read on a path from it, and the blocks of an `if` are different paths:
 
 ```wyst
