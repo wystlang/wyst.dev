@@ -91,9 +91,9 @@ after the call. No scratch register holds a value while the code computes
 an argument or a value that waits, so each starts at depth 0. An `asm`
 block is a call for this rule, because it puts its inputs in the scratch
 registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
-An input whose value is a local with a home in a register is in that
-register, with no move, as [Registers](/docs/assembly/#registers) of
-Assembly gives.
+An input without `in` whose value is a local with a home in a register
+can be in that register, with no move, as
+[Registers](/docs/assembly/#registers) of Assembly gives.
 
 In a function without a `bl`, the home of parameter N is its argument
 register `xN` when no code that can run after a change of `xN` reads the

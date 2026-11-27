@@ -239,9 +239,9 @@ copy, a register offset form, such as `ldr value.x, [keys, index.x]`, and
 a store of its value. The handler of an exception can read each
 register, so a block with an address input has no exception line, such
 as `svc`. An `Option<u64>` output gives the values of `x0` and `x1`, so an
-address input is not in `x0` or `x1` of a block with such an output, also
-when its local has a home there. Thus the address does not go out of the
-block:
+address input is not in `x0` or `x1` of a block with such an output:
+without `in`, it keeps `x(9 + i)`, also when its local has a home in `x0`
+or `x1`. Thus the address does not go out of the block:
 
 ```wyst fails
 fn copy(record: @[2]u64) -> u64 {
@@ -490,17 +490,20 @@ fn add256(z: @var [4]u64, x: @[4]u64, y: @[4]u64) {
 ```
 
 An input without `in` whose value is a local with a home in a register
-is in that register, and the compiler makes no move. Two inputs with the
-same local are in one register. A line cannot write such an input, so the
-local keeps its value. The home is in no register of another operand: it
-is above them in the scratch registers, in `x19` to `x28` after the
+is in that register, and the compiler makes no move. Two such inputs with
+the same local are in one register. A line cannot write such an input, so
+the local keeps its value. The home is not the register of a `u64`
+output, of a `scratch` operand, or of an input that a line writes: it is
+above the operands in the scratch registers, in `x19` to `x28` after the
 registers of the blocks, or in the argument register of a parameter that
-the block does not change before it reads it, as
-[Registers](/docs/code-generation/#registers) gives. An input keeps
-`x(9 + i)` when its value is not such a local, when it comes before the
-last input with a call, or when a post-index form moves it, because that
-line writes its register. In this loop, `to` is the local `at` in `x11`,
-and `value` is the parameter in `x2`:
+no line writes and that no move of the block changes before the lines
+read it, as [Registers](/docs/code-generation/#registers) gives. An input
+keeps `x(9 + i)` when its value is not such a local, when it comes before
+the last input with a call, when it is an address input of a block with
+an `Option<u64>` output, as [Address inputs](#address-inputs) gives, or
+when a post-index form moves it. The line of that form writes the
+register, so the local keeps its value. In this loop, `to` is the local
+`at` in `x11`, and `value` is the parameter in `x2`:
 
 ```wyst
 // Writes `value` to each 8 bytes from `start` to `end`, 16 bytes at a
@@ -553,12 +556,11 @@ fn ticks_since(start: u64) -> u64 {
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. `bitcast` gives a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) with backing type
-`u64` from the value. A block with
-a `u64` output has at most 8 inputs. The inputs that are not in the homes
-of their locals are in the scratch registers, and an `svc` or an `hvc`
-can change `x0` to `x17`. Thus the
-compiler keeps each value that it needs after the block in a home while
-the block runs, as for a call. An output in a named register,
+`u64` from the value. A block with a `u64` output has at most 8 inputs.
+The inputs without `in` that are not in the homes of their locals are in
+the scratch registers, and an `svc` or an `hvc` can change `x0` to `x17`.
+Thus the compiler keeps each value that it needs after the block in a
+home while the block runs, as for a call. An output in a named register,
 `-> name in xN`, an output with a value, a `scratch` output, and a list of
 outputs, `-> (a, b)`, are not implemented now.
 
