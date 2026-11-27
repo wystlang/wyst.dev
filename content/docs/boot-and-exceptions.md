@@ -408,7 +408,7 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
   [EL1 registers at EL2](/docs/system-registers/#el1-registers-at-el2)
   gives.
 - `@f` of a naked function without `#[el2]` gives the address at which
-  `eret` goes to EL1.
+  `eret` goes to EL1, or to EL0 for a function of `.el0`.
 - `_start` reads CurrentEL, because it starts at EL1 when the m1n1
   hypervisor runs the kernel as a guest. At EL1, it writes no EL2
   register, and its `eret` stays at EL1.
@@ -586,7 +586,7 @@ tables let EL0 execute only the code of the EL0 modules. No call crosses
 the boundary of `.el0`, as [Calls between
 sections](/docs/layout-files/#calls-between-sections) gives.
 
-The section of a function gives its EL, not its module. The code of
+The section of a function gives EL0, not its module. The code of
 `.el0` runs only at EL0, so a function of `.el0` is not the entry of the
 layout or an entry of the vector table, and it cannot have `#[el2]`. The
 error of `#[el2]` is at the attribute:
