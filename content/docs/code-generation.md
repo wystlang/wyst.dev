@@ -93,7 +93,9 @@ block is a call for this rule, because it puts its inputs in the scratch
 registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
 An input without `in` whose value is a local with a home in a register
 can be in that register, with no move, as
-[Registers](/docs/assembly/#registers) of Assembly gives.
+[Registers](/docs/assembly/#registers) of Assembly gives, and a `u64`
+output can be in the register that its value goes to, as
+[Outputs](/docs/assembly/#outputs) of Assembly gives.
 
 In a function without a `bl`, the home of parameter N is its argument
 register `xN` when no code that can run after a change of `xN` reads the
@@ -103,7 +105,9 @@ value of `return` or the move of an `asm` input to its `in xN` register.
 A `scratch` operand of an `asm` block there, and an `in xN` input that a
 post-index form moves, change it before the block reads its inputs. The
 lines of a block read an input in the home of a parameter after the
-moves of the other inputs. A line that can go to an exception handler,
+moves of the other inputs. The output of a block in `xN` changes it after
+these reads, because no line after the line that first writes the output
+reads an operand in `xN`. A line that can go to an exception handler,
 such as `svc`, changes `x0` to `x17`. A move to the same register is no
 change. A change counts for each
 read on a path from it, and the blocks of an `if` are different paths:
