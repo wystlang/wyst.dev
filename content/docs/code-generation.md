@@ -92,6 +92,38 @@ an argument or a value that waits, so each starts at depth 0. An `asm`
 block is a call for this rule, because its inputs are in the scratch
 registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
 
+In a function without a call, the home of parameter N is its argument
+register `xN` when no code that can run after a change of `xN` reads the
+parameter. Such a home needs no move and no saved register. A value or a
+move that the code puts in `x0` to `x7` changes the register, such as the
+value of `return` or the move of an `asm` input to its `in xN` register.
+A `scratch` operand of an `asm` block there, and an `in xN` input that a
+post-index form moves, change it before the block reads its inputs. A
+line that can go to an exception handler, such as `svc`, changes `x0` to
+`x17`. A move to the same register is no change. A change counts for each
+read on a path from it, and the blocks of an `if` are different paths:
+
+```wyst
+fn least(a: u64, b: u64) -> u64 {
+  return if a < b { a } else { b }
+}
+```
+
+```text
+40080108: eb01001f  cmp   x0, x1
+4008010c: 54000042  b.hs  0x40080114
+40080110: 14000002  b     0x40080118
+40080114: aa0103e0  mov   x0, x1
+40080118: d65f03c0  ret
+```
+
+`a` stays in `x0`, so the first block needs no move, and the move of `b`
+to `x0` in the second block does not change `a` on the path of the first
+block. A path in a loop goes on to the next pass, so a change in the loop
+counts for each read in the loop. A parameter that code can read after a
+change moves to a home first, and a call changes `x0` to `x17`, so each
+parameter of a function with a call moves to a home.
+
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in
 its register. A call of a naked function puts its arguments in `x0` to
@@ -104,7 +136,7 @@ An operation on a `uN` value with N below 64 clears the bits above N after
 ## Frames
 
 A function that is not naked starts with this code, then moves each
-parameter to its home:
+parameter that is not in its argument register to its home:
 
 ```text
 stp x29, x30, [sp, #-16]!
@@ -124,7 +156,9 @@ Two kinds of function save no registers:
 - A function that returns `never`. Control does not come back to its
   caller. Its prologue is only the `sub`.
 - A function without a call and without homes in `x19` to `x28` or on the
-  stack. It has no prologue, and its epilogue is `ret`.
+  stack. It has no prologue, and its epilogue is `ret`. A parameter in its
+  argument register is no such home, so a function whose `svc` comes after
+  its last read of a parameter can save no register.
 
 An inline function runs in the frame of its caller. A parameter takes
 the home of an argument that is a local, because no code changes a
