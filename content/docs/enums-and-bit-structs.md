@@ -428,10 +428,10 @@ computes, such as a literal or another constant.
 
 ## Values
 
-A bit struct is a value of its backing type with names for its bits. A
-parameter, a result, a local, a local `var`, and a field of a plain
-struct can have the struct type, as a module constant can. A field of a
-plain struct holds the backing integer, and `load` and `store` of the
+A bit struct is a type of its own, with names for the bits of its backing
+type. A parameter, a result, a local, a local `var`, and a field of a
+plain struct can have the struct type, as a module constant can. A field
+of a plain struct holds the backing integer, and `load` and `store` of the
 field read and write it:
 
 ```wyst
@@ -467,10 +467,43 @@ constant of an imported module, or a call of a function of an imported
 module that gives the struct type. A local without a type, such as
 `var size` above, keeps the struct type of its value.
 
-Each other use of a value of the struct type gives the backing type, and
-a value that is not a literal, such as `load(slot)` of a `@u64`, has the
-backing type. Thus a table of entries can be an array of `u64`, and
-`frame | data` makes an entry for the address `frame`:
+A position of the struct type takes only a value of that type: a literal,
+`bitcast`, or a local, a parameter, a constant, a call, or a `load` of
+that type. An integer, also 0, and a value of another bit struct are
+errors there, so a call that gives two such arguments in the wrong order
+is an error:
+
+```wyst fails
+#[bits]
+struct Domain: u64 {
+  INDEX: u8 at 0..=7
+}
+
+#[bits]
+struct Handle: u64 {
+  SLOT: u8 at 0..=7
+}
+
+fn take(domain: Domain, handle: Handle) -> u8 {
+  return domain.INDEX
+}
+
+fn swapped(domain: Domain, handle: Handle) -> u8 {
+  return take(handle, domain)
+}
+```
+
+```text
+main.wyst:16:15: error: expected Domain, found Handle
+```
+
+`bitcast` gives the struct type from an integer of its backing type, or
+from another bit struct of that backing type, with no code, such as
+`bitcast(load(slot))` of a `@u64`. Each other use of a value of the
+struct type gives the backing type: an operand, an argument of an integer
+parameter, a store to an integer, and an integer result. Thus a table of
+entries can be an array of `u64`, and `frame | data` makes an entry for
+the address `frame`:
 
 ```wyst
 #[bits]
@@ -487,9 +520,31 @@ fn map(table: @var [2048]u64, index: u64, frame: u64) {
 }
 
 fn executable(slot: @u64) -> bool {
-  const entry: Entry = load(slot)
+  const entry: Entry = bitcast(load(slot))
   return !entry.UXN
 }
+```
+
+`==` and `!=` compare two values of one struct type. An operator gives
+the backing type, so `x op= v` of a local `var` of the struct type is an
+error, and `x = bitcast(x | v)` changes it:
+
+```wyst fails
+#[bits]
+struct Size: u64 {
+  WIDTH: u16 at 0..=15
+}
+
+fn wider(size: Size) -> u16 {
+  var next: Size = size
+  next += 1
+
+  return next.WIDTH
+}
+```
+
+```text
+main.wyst:8:3: error: expected Size, found u64; `next = bitcast(next + value)` gives Size
 ```
 
 When the compiler computes a value of the struct type, each fixed field
@@ -539,8 +594,8 @@ fn take(interrupt: xfer interrupts.Interrupt) -> u16 {
 ```
 
 A linear value is not its backing integer: a field read, such as
-`interrupt.NUMBER`, gives its bits. A `#[bits]` struct that is not `pub`
-is local to its module:
+`interrupt.NUMBER`, gives its bits, and `bitcast` does not give a linear
+value. A `#[bits]` struct that is not `pub` is local to its module:
 
 ```wyst platform/entries.wyst
 #[bits]

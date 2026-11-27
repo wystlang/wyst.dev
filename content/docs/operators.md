@@ -159,7 +159,7 @@ struct Entry: u64 {
 }
 
 fn normal(value: u64) -> bool {
-  const entry: Entry = value
+  const entry: Entry = bitcast(value)
   return entry.AttrIndx == .Normal
 }
 ```

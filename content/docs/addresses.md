@@ -139,11 +139,13 @@ expects an address or a slice, `bitcast` of an address or of a slice is a
 [view](#views).
 
 `bitcast` makes only an address from a `u64`, a `u64` or a view from an
-address of memory or a slice, and an `iN` from the `uN` of the same width
-and the reverse now, as
+address of memory or a slice, an `iN` from the `uN` of the same width and
+the reverse, and a `#[bits]` struct from an integer or a `#[bits]` struct
+of its backing type now, as
 [Values and types](/docs/values/#no-implicit-conversions) gives for
-`iN`. An integer literal has no type in `bitcast(...)` of an address.
-Put the value in a typed constant, such as
+`iN` and [Values](/docs/enums-and-bit-structs/#values) gives for a
+`#[bits]` struct. An integer literal has no type in `bitcast(...)` of an
+address. Put the value in a typed constant, such as
 `const uart: u64 = 0x0900_0000`, and use `bitcast(uart)`.
 
 The code that makes an address with `bitcast` of a `u64` asserts that

@@ -79,8 +79,8 @@ a `never` function such as `trap()`, `for {}`, or an `asm -> never` block.
 the key must be in the table.
 
 `return value else { ... }` returns the value of `.Some`, so the function
-has the result type of that value, or a `#[bits]` struct of that backing
-type, as `const x: T = value else { ... }` has:
+has the result type of that value, as `const x: T = value else { ... }`
+has:
 
 ```wyst
 const slots: u64 = 8

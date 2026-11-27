@@ -101,7 +101,9 @@ This page lists both sides.
   values as the type of parameters, locals, local `var`s, results, and
   memory, `#[bits]` structs as the type
   of constants, parameters, locals, local `var`s, results, and fields of
-  plain structs, with field values at run time, register maps, `pub`
+  plain structs, with field values at run time, which take only a value of
+  the struct type, and `bitcast` of an integer or of another `#[bits]`
+  struct of the backing type to one, register maps, `pub`
   register maps as the type of a device of another module, register banks, devices, arrays of devices,
   addresses of register maps as the type of parameters, locals, and
   results, with `@d`, `@d[i]`, and `bitcast`, and the register accesses
@@ -172,7 +174,7 @@ kernel needs it:
 | An address constant whose value is not `bitcast` of a `u64` constant, such as `@own.lines` or the view `bitcast(@own.lines)` | Refused. |
 | `@` of a local, or of a module variable or a module constant that is not an address or a constant table | Refused. |
 | `@T` for another `T`, such as `@@bool` or `@[2][2]u8` | `T` is `bool`, `u8` to `u64`, `i8` to `i64`, an enum, an `Option` of an integer or an enum without values, a plain struct, a `#[bits]` struct, an address of an integer or of a plain struct, also in an `Option`, or an array of them. |
-| `bitcast` of a `u8`, `u16`, or `u32` | Make a `u64` with `widen` first. |
+| `bitcast` of a `u8`, `u16`, or `u32` to a type of another width, such as a `u64` or an address | Make a `u64` with `widen` first. |
 | Arrays as values: parameters, locals, and variables, and a literal such as `[1, 2]` other than the value of a constant table or of an array field in a literal of `store` | An array is only the target of an address, an array of devices, or a constant table. |
 | A start of a slice that is not a constant or a local, such as `@a[x + 1 ..]` | Put the start in a local. |
 | `bitcast` of a slice that is not a local or a parameter, such as `bitcast(@a[4 ..])` | Put the slice in a local first: `const s = @a[4 ..]`. |
@@ -183,7 +185,7 @@ kernel needs it:
 | A device as a parameter, such as `gic: Gic` | Take the address of the device, `gic: @Gic`, and give it `@gic`. |
 | A call in the place of the address of a register access, such as `f().R.read()`, the address of a register map as a module constant, a module variable, a local `var`, or an `Option`, and the address of a register map that is not `pub` as the result of a `pub` function | Put the address in a local `const` or a parameter, and make the register map `pub`. |
 | A limit on a signed field, such as an `i64` field, and a big-endian field with a limit | Refused. A limit is on a field of `u8` to `u64`, or of an array of one. |
-| A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give the value to a local of the struct type. |
+| A `#[bits]` struct as a module variable | Use the backing type, such as `u64`. To read a field, give `bitcast` of the value to a local of the struct type. |
 | A variant with two or more values, a value of a variant of type `i8`, `i16`, or `i32`, a module variable of an enum type, and an enum with values as a module constant, a value in a constant table, or the value of `Some` | Refused. A parameter, a local, a result, and a field of a plain struct can have an enum type, also with values, and the value of `Some` an enum without values. |
 | `load` of an enum with values or of an `Option` at an address with a call or a register read, such as `load(@slot().shape)` | Put the address in a local first. |
 | An enum without a backing type, a variant without a tag, and a tag other than an integer literal | Give the backing type `uN` and an integer literal tag for each variant. |

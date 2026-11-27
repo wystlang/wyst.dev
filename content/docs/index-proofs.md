@@ -71,7 +71,7 @@ struct Slot: u8 {
 }
 
 fn clear(table: @var [4]u64, cursor: @u8) {
-  const slot: Slot = load(cursor)
+  const slot: Slot = bitcast(load(cursor))
   store(@table[slot.Way], 0)
 }
 ```
