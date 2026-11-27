@@ -72,7 +72,7 @@ fn init() {
 | `x19` to `x28` | Homes of locals, loop values, and values that wait while a call runs, which a callee saves. |
 | `x29`, `x30` | The frame pointer and the return address. |
 
-Each local has a home. In a function without a call, the homes can take
+Each local has a home. In a function without a `bl`, the homes can take
 the scratch registers above the deepest expression and above the operands
 of its `asm` blocks. An `asm` block with a line that can go to an
 exception handler, such as `svc` or `hvc`, can change each scratch
@@ -92,7 +92,7 @@ an argument or a value that waits, so each starts at depth 0. An `asm`
 block is a call for this rule, because its inputs are in the scratch
 registers from `x9`, and an `svc` or an `hvc` can change `x0` to `x17`.
 
-In a function without a call, the home of parameter N is its argument
+In a function without a `bl`, the home of parameter N is its argument
 register `xN` when no code that can run after a change of `xN` reads the
 parameter. Such a home needs no move and no saved register. A value or a
 move that the code puts in `x0` to `x7` changes the register, such as the
@@ -121,8 +121,10 @@ fn least(a: u64, b: u64) -> u64 {
 to `x0` in the second block does not change `a` on the path of the first
 block. A path in a loop goes on to the next pass, so a change in the loop
 counts for each read in the loop. A parameter that code can read after a
-change moves to a home first, and a call changes `x0` to `x17`, so each
-parameter of a function with a call moves to a home.
+change moves first to a home in another register or on the stack. A `bl`
+changes `x0` to `x17`, so each parameter of a function with a `bl` moves
+to such a home. A call of a naked function is a `b`, which does not come
+back, so it is not such a call.
 
 A naked function has no frame, so the home of its parameter N is `xN`. A
 call in it takes these parameters in order, so each argument is already in
@@ -155,7 +157,7 @@ Two kinds of function save no registers:
 
 - A function that returns `never`. Control does not come back to its
   caller. Its prologue is only the `sub`.
-- A function without a call and without homes in `x19` to `x28` or on the
+- A function without a `bl` and without homes in `x19` to `x28` or on the
   stack. It has no prologue, and its epilogue is `ret`. A parameter in its
   argument register is no such home, so a function whose `svc` comes after
   its last read of a parameter can save no register.
@@ -346,19 +348,20 @@ fn element(table: @[8]u64, i: u64) -> u64 {
 }
 ```
 
-With `record` in `x12` and `count` in `x11`, the stores of `ask` are:
+`ask` has no `bl`, so `record` stays in `x0` and `count` in `x1`. The
+stores of `ask` are:
 
 ```text
-add   x9, x12, x11
+add   x9, x0, x1
 strb  wzr, [x9, #0x61]
 strb  wzr, [x9, #0x62]
-add   x10, x11, #0x3
-str   x10, [x12, #0x58]
+add   x10, x1, #0x3
+str   x10, [x0, #0x58]
 ```
 
 The field `question` is at offset 96, so the first store has the offset
-97. The second store uses the `add` of the first. With `table` in `x12`
-and `i` in `x11`, the load of `element` is `ldr x0, [x12, x11, lsl #3]`.
+97. The second store uses the `add` of the first. `table` stays in `x0`
+and `i` in `x1`, so the load of `element` is `ldr x0, [x0, x1, lsl #3]`.
 
 ## Linking
 
