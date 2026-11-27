@@ -167,9 +167,11 @@ which is one of these:
 - A function of the module that declares the target, or the element of an
   array target: a struct, an enum, or a register map. Thus the module that
   owns a kind of memory makes its addresses.
-- In a module of EL0 code, which a line `functions m in .el0` of the
-  [layout](/docs/layout-files/#function-sections) places, only a function
-  that makes the address of a register map of the module.
+- In a function of EL0 code, in the section `.el0` by `#[section(.el0)]`
+  or by a line `functions m in .el0` of the
+  [layout](/docs/layout-files/#function-sections), only the address of a
+  register map of the module. The section of the function gives this
+  rule, not its module.
 
 A module makes the address of a word as the address of a struct of its own,
 because no module declares `u64`:
@@ -224,11 +226,11 @@ main.wyst:4:39: error: `bitcast` of an integer gives no @var Record in a functio
 ```
 
 EL0 code gets each address of memory from an address constant and from the
-typed sources that start there. Its functions, also its inline functions,
-make only the address of a register map of the module from an integer, as a
-driver does with an offset that its device gives. In the module
-`drivers.clock`, `now` is correct, because `Clock` is a register map, and
-`own` is an address constant:
+typed sources that start there. A function of `.el0`, also an inline
+function of a module of `.el0`, makes only the address of a register map of
+the module from an integer, as a driver does with an offset that its device
+gives. In the module `drivers.clock`, `now` is correct, because `Clock` is
+a register map, and `own` is an address constant:
 
 ```wyst drivers/clock.wyst
 struct State {
@@ -254,8 +256,8 @@ pub fn read(address: u64) -> u64 {
 }
 ```
 
-With this layout, `drivers.clock` is a module of EL0 code, so `read` is an
-error:
+With this layout, `drivers.clock` is a module of EL0 code, so `read` is in
+`.el0` and is an error:
 
 ```layout check
 entry main._start at 0x4008_0000
@@ -275,8 +277,33 @@ pub fn _start() -> never {
 ```
 
 ```text
-drivers/clock.wyst:19:25: error: `bitcast` of an integer gives no @State in a function of this module, because the layout puts this module in `.el0`; it gives only the address of a register map of this module, and an address constant gives an address of memory
+drivers/clock.wyst:19:25: error: `bitcast` of an integer gives no @State in a function of this module, because function `read` is in `.el0`; it gives only the address of a register map of this module, and an address constant gives an address of memory
 ```
+
+`#[section(.el0)]` puts one function in `.el0`, also in a module of
+`.text`, and the function then has the rule of `.el0`. `mark` makes the
+address of a struct of its module, but it is in `.el0`:
+
+```wyst fails
+struct Record {
+  value: u64
+}
+
+#[section(.el0)]
+fn mark(address: u64) {
+  const record: @var Record = bitcast(address)
+  store(@record.value, 1)
+}
+```
+
+```text
+main.wyst:7:31: error: `bitcast` of an integer gives no @var Record in a function of this module, because function `mark` is in `.el0`; it gives only the address of a register map of this module, and an address constant gives an address of memory
+```
+
+A function that `#[section]` puts in another section has the rule of the
+other sections, also in a module of `.el0`. With `#[section(.text)]`, `read`
+of `drivers.clock` above is correct with the same layout, and only a
+function outside `.el0` can call it.
 
 The check of the [access](#read-only-addresses) holds for each address that
 does not come from a point of trust. The code of a point of trust asserts

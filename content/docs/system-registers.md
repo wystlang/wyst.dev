@@ -86,7 +86,7 @@ main.wyst:2:16: error: `SCR_EL3` can be read only at EL3 or higher
 
 Each read and each write must be possible at the EL of its function: EL1,
 EL2 in an [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or
-EL0 in another function in the section `.el0`, also an inline one. An
+EL0 in a function in the section `.el0`, also an inline one. An
 inline function has the section of its module, as
 [Function sections](/docs/layout-files/#function-sections) gives. Thus a
 function without `#[el2]` cannot read `VBAR_EL2`:

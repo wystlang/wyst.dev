@@ -41,7 +41,7 @@ as `at s1e1r` is an error.
 
 The compiler checks each line for the kernel at EL1, at EL2 in an
 [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or at EL0
-in another function in the section `.el0`, on the QEMU `virt` target: the
+in a function in the section `.el0`, on the QEMU `virt` target: the
 base A64 instructions, the SIMD registers (`FEAT_FP` and `FEAT_AdvSIMD`),
 the lines of AES, of the polynomial multiplication of 64-bit elements, and
 of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic

@@ -65,9 +65,9 @@ This page lists both sides.
   with an `asm` block that does not return, take each address and slice
   parameter as `@var` and refuse a `string` parameter.
 - `bitcast` of a `u64` to an address, with the checks that a function makes
-  only the address of a type of its module, that a function of a module of
-  `.el0` makes only the address of a register map of its module, and that
-  the memory of an address constant is in no region of the layout.
+  only the address of a type of its module, that a function of `.el0`
+  makes only the address of a register map of its module, and that the
+  memory of an address constant is in no region of the layout.
 - `bitcast` of an `@var` address of memory or of an `@var` slice to a
   `u64`, also as an `asm` input or an operand, and views: `bitcast` of an
   address or a slice as an address or a slice of another type that holds
@@ -123,7 +123,9 @@ This page lists both sides.
   new stack fits in the `stack` of the layout, `#[el2]` functions, code
   addresses, the exception vector table, function sections, the section
   of an inline function, which is the section of its module, the check
-  that no call crosses the boundary of `.el0`, and semihosting.
+  that no call crosses the boundary of `.el0`, the checks that the entry
+  of the layout, an entry of the vector table, and an `#[el2]` function
+  are not in `.el0`, and semihosting.
 - Implementation-defined system registers, by their encoding and the
   lowest EL that can access them.
 - `wync build` and `wync fmt`.

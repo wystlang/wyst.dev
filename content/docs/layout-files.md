@@ -71,7 +71,9 @@ and the layout names it.
   [raw image](/docs/elf-output/#raw-image) holds no gap between two
   regions.
 - The entry function is first in its section, so that section must start
-  at the entry address.
+  at the entry address. The boot starts the entry at EL1 or at EL2, so the
+  entry is not in `.el0`, as [Function sections](#function-sections)
+  gives.
 
 ## Which section holds what
 
@@ -169,9 +171,31 @@ A line that matches no module of the build is also an error, such as
 ``no module of the build has a path that starts with `drivers.` ``, because
 with a wrong path the code stays in `.text` with no other error.
 
-A function of a module that a line puts in `.el0`, also an inline function,
-makes no address of memory from an integer, as
-[Points of trust](/docs/addresses/#points-of-trust) gives.
+The section of a function gives each rule of EL0 for it, not its module.
+The code of a function of `.el0` runs only at EL0, so it makes no address
+of memory from an integer, as
+[Points of trust](/docs/addresses/#points-of-trust) gives, and it is not
+the entry of the layout, an entry of the vector table, or an `#[el2]`
+function, as [Sections](/docs/boot-and-exceptions/#sections) gives. A
+function that `#[section]` puts in another section has the rules of that
+section, also in a module of `.el0`. An entry of the layout in `.el0` is an
+error at the line `entry`:
+
+```layout check
+entry drivers.serial.uart.start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .el0: code in ram align 16
+section .text: code in ram after .el0 align 16
+functions drivers in .el0
+```
+
+```wyst fails
+import drivers.serial.uart
+```
+
+```text
+check.layout:1:1: error: the entry `drivers.serial.uart.start` is in `.el0`
+```
 
 ## Calls between sections
 
