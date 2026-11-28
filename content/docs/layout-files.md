@@ -259,7 +259,11 @@ its first domain, and no module of the kernel imports `system.root`.
   reach, as for `@f`. The code goes in the section of `f`, which can be
   `.el0`: the code that reads the symbol makes no call.
 - When `f` is not naked, it starts on a new stack, so the line `stack`
-  gives the size of its stack, as [Stacks](#stacks) gives.
+  gives the size of its stack, as [Stacks](#stacks) gives. The compiler
+  does not check what the code does with the value of the symbol. Thus a
+  naked function that reads the symbol and starts `f` must give `f` its
+  stack: the build does not make sure that `f` uses no stack, as it does
+  for `@f` in a naked function.
 
 With this layout, no module imports `drivers.serial.uart`, and the build
 reads it for `__task`:
@@ -286,7 +290,10 @@ pub fn _start() -> never {
 The error is at the value of the line `symbol`: a module path that names
 no file, a function that the module does not declare, a function that is
 not `pub`, an inline function, and a function that is not naked and that
-has a parameter or can return. This layout names a function that
+has a parameter or can return. The error of the stack of `f` is there
+too, but when code of the build also starts `f` on a new stack, with a
+call or `@f`, the error is at that call or `@f`. This layout names a
+function that
 `drivers.serial.uart` does not declare:
 
 ```layout check

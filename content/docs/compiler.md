@@ -56,10 +56,13 @@ kernel/
           console.wyst   module drivers.console
 ```
 
-The build reads `<file.wyst>`, the module of the layout entry, the module
-of each function symbol of the layout, and each module that they import,
-directly or indirectly, in this order. Imports can make a cycle. No module
-has to import the entry module or the module of a function symbol. Thus the layout file selects the
+The build reads `<file.wyst>`, the module of the layout entry, the modules
+that `<file.wyst>` imports, the module of each function symbol of the
+layout, and then each other module that they import, directly or
+indirectly, in this order. Thus the build reads the module of a function
+symbol as a last import of `<file.wyst>`. Imports can make a cycle. No
+module has to import the entry module or the module of a function symbol.
+Thus the layout file selects the
 target: the shared modules are in `src/`, and each target directory in it
 has its layout file and its target modules. The target directory is in
 the root, so `targets.qemu_virt.kernel.boot` also names `boot.wyst`. The
