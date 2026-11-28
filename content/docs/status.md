@@ -121,8 +121,9 @@ This page lists both sides.
 - Naked functions with parameters, the check that a function that runs
   with no stack uses none, the check that each function that starts on a
   new stack fits in the `stack` of the layout, `#[el2]` functions, code
-  addresses, the exception vector table, function sections, the section
-  of an inline function, which is the section of its module, the check
+  addresses, the exception vector table, function sections, function
+  symbols of a layout, the section of an inline function, which is the
+  section of its module, the check
   that no call crosses the boundary of `.el0`, the checks that the entry
   of the layout, an entry of the vector table, and an `#[el2]` function
   are not in `.el0`, and semihosting.

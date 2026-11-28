@@ -717,8 +717,9 @@ main.wyst:8:10: error: `main.quad` of `.el0` calls `main.twice` of `.text`, but 
 ## Which functions get code
 
 The compiler checks every function. It generates code only for the
-functions that the entry or the exception vector table can reach, through
-calls and `@`. Thus a module can keep a function that the program does not
+functions that the entry, the exception vector table, or a
+[function symbol](/docs/layout-files/#function-symbols) of the layout can
+reach, through calls and `@`. Thus a module can keep a function that the program does not
 use, at no cost.
 
 These forms are not implemented now:
