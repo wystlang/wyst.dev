@@ -10,7 +10,9 @@ wync build <file.wyst> --layout <layout-file> [--raw] -o <output>
 ```
 
 `wync build` reads the module `<file.wyst>`, the layout file, the module
-of the layout entry, and each module that they import. It writes one
+of the layout entry, the module of each
+[function symbol](/docs/layout-files/#function-symbols) of the layout,
+and each module that they import. It writes one
 static AArch64 ELF executable. With `--raw`, it writes the
 [raw image](/docs/elf-output/#raw-image) of the same build in place of the
 ELF file.
@@ -54,9 +56,13 @@ kernel/
           console.wyst   module drivers.console
 ```
 
-The build reads `<file.wyst>`, the module of the layout entry, and each
-module that they import, directly or indirectly. Imports can make a cycle.
-No module has to import the entry module. Thus the layout file selects the
+The build reads `<file.wyst>`, the module of the layout entry, the modules
+that `<file.wyst>` imports, the module of each function symbol of the
+layout, and then each other module that they import, directly or
+indirectly, in this order. Thus the build reads the module of a function
+symbol as a last import of `<file.wyst>`. Imports can make a cycle. No
+module has to import the entry module or the module of a function symbol.
+Thus the layout file selects the
 target: the shared modules are in `src/`, and each target directory in it
 has its layout file and its target modules. The target directory is in
 the root, so `targets.qemu_virt.kernel.boot` also names `boot.wyst`. The
@@ -67,8 +73,8 @@ target, such as `kernel.boot`.
 ## What the build makes
 
 - The compiler checks every function. It generates code only for the
-  functions that the entry or the exception vector table can reach,
-  through calls and `@`.
+  functions that the entry, the exception vector table, or a function
+  symbol of the layout can reach, through calls and `@`.
 - Each module variable goes in `.data`, with its natural alignment, in
   module and declaration order.
 - The output depends only on the source files and the layout file. Two

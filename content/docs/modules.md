@@ -85,7 +85,10 @@ Two modules can import each other.
 - `m.E` names the `pub` enum `E`. See
   [Enums and bit structs](/docs/enums-and-bit-structs/#enum-constants).
 - `@m.f` gives the address of the `pub` naked function `f`. See
-  [Boot and exceptions](/docs/boot-and-exceptions/).
+  [Boot and exceptions](/docs/boot-and-exceptions/). A layout file can
+  also name `@m.f`, as the value of a symbol, and then the build reads
+  module `m` when no module imports it. See
+  [Layout files](/docs/layout-files/#function-symbols).
 - `m.R.read()`, `m.R.write(...)`, and `m.R.modify(...)` access the `pub`
   system register `R`.
   See [System registers](/docs/system-registers/#sharing-a-register).

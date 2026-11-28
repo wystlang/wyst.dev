@@ -84,7 +84,9 @@ names elsewhere:
   `name: T in xN` of a parameter or a local, which is not implemented now;
 - `at`: the offset of a register or the bits of a field;
 - `readonly`, `writeonly`, `readwrite`: the access kind of a register;
-- `scratch`: an `asm` argument form that is not implemented now.
+- `scratch`: in `scratch name` of an `asm` block, which gives the block a
+  register of its own, as [Scratch registers](/docs/assembly/#scratch-registers)
+  gives.
 
 The layout file has its own words: `entry`, `region`, `section`,
 `functions`, `symbol`, `stack`, `at`, `size`, `in`, `after`, `align`,

@@ -391,11 +391,14 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
 `eret`.
 
 - The compiler checks the `asm` lines and the system register accesses of
-  an `#[el2]` function for EL2, those of each other function in the
-  section `.el0` for EL0, and those of each other function for EL1. An
-  inline function has the section of its module, as
+  an `#[el2]` function for EL2, those of a function in the section `.el0`
+  for EL0, and those of each other function for EL1. An inline function
+  has the section of its module, as
   [Function sections](/docs/layout-files/#function-sections) gives, so
   it has the same check.
+- A function in the section `.el0`, also an inline function of a module
+  of `.el0`, cannot have `#[el2]`, because the code of `.el0` runs only at
+  EL0, as [Sections](#sections) gives.
 - An `#[el2]` function can call only `#[el2]` functions, and only an
   `#[el2]` function can call one, because a callee runs at the EL of its
   caller. A function of the vector table runs at EL1, so it cannot have
@@ -405,7 +408,7 @@ The boot code and the per-core setup run at EL2, and then go to EL1 with
   [EL1 registers at EL2](/docs/system-registers/#el1-registers-at-el2)
   gives.
 - `@f` of a naked function without `#[el2]` gives the address at which
-  `eret` goes to EL1.
+  `eret` goes to EL1, or to EL0 for a function of `.el0`.
 - `_start` reads CurrentEL, because it starts at EL1 when the m1n1
   hypervisor runs the kernel as a guest. At EL1, it writes no EL2
   register, and its `eret` stays at EL1.
@@ -541,8 +544,9 @@ fn stop() -> never {
   `lower_aarch32`, each with `_sync`, `_irq`, `_fiq`, and `_serror`. Each
   entry is necessary. There is no default.
 - Each entry names a function of its module. The function has no
-  parameters and returns `never`. It can be naked, but not inline, and it
-  cannot have `#[el2]`.
+  parameters and returns `never`. It can be naked, but not inline. The
+  table is the table of EL1, so the function cannot have `#[el2]`, and it
+  is not in the section `.el0`, whose code runs only at EL0.
 - The table is 0x800 bytes: 16 slots of 0x80 bytes. Each slot is one `b`
   to the function of its entry.
 - The table goes in the section `.vectors` of the layout, which must have
@@ -581,6 +585,23 @@ kernel but `kernel`, such as `functions shell in .el0`, so that the page
 tables let EL0 execute only the code of the EL0 modules. No call crosses
 the boundary of `.el0`, as [Calls between
 sections](/docs/layout-files/#calls-between-sections) gives.
+
+The section of a function gives EL0, not its module. The code of
+`.el0` runs only at EL0, so a function of `.el0` is not the entry of the
+layout or an entry of the vector table, and it cannot have `#[el2]`. The
+error of `#[el2]` is at the attribute:
+
+```wyst fails
+#[el2]
+#[section(.el0)]
+fn hold() -> never {
+  trap()
+}
+```
+
+```text
+main.wyst:1:3: error: function `hold` is in `.el0`, so it cannot have `#[el2]`
+```
 
 ## Semihosting
 

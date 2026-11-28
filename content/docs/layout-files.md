@@ -33,7 +33,7 @@ symbol __bss_end:   u64 = end(.bss)
 | `section s: k in r align N` | A section of kind `code`, `rodata`, `data`, or `bss` in region `r`. `N` is a power of two, and at least 4 for a `code` section. |
 | `section s: k in r after t align N` | The section starts at the end of the earlier section `t`, in the same region. |
 | `functions m in s` | Each function of each module whose path starts with `m.` goes in the `code` section `s`. See [Function sections](#function-sections). |
-| `symbol n: u64 = v` | A `u64` name that each function can read. `v` is an integer, `start(s)`, or `end(s)`. |
+| `symbol n: u64 = v` | A `u64` name that each function can read. `v` is an integer, `start(s)`, `end(s)`, or `@m.f`, the address of function `f` of module `m`. See [Function symbols](#function-symbols). |
 | `stack N` | Each stack of the build has `N` bytes. There is at most one `stack`. |
 
 A line can name only a region or a section that an earlier line declares.
@@ -52,7 +52,8 @@ stack kernel.stack_size
 ```
 
 `m` is a module path, as in an import. The module must be in the build:
-the entry module, or a module that a module of the build imports. Else
+the entry module, the module of a [function symbol](#function-symbols),
+or a module that a module of the build imports. Else
 the error is ``module `kernel.frames` is not in the build``. The compiler
 gives the value after it checks the source, and then checks the line: an
 alignment is a power of two. A layout file has no operators, so the
@@ -71,7 +72,9 @@ and the layout names it.
   [raw image](/docs/elf-output/#raw-image) holds no gap between two
   regions.
 - The entry function is first in its section, so that section must start
-  at the entry address.
+  at the entry address. The boot starts the entry at EL1 or at EL2, so the
+  entry is not in `.el0`, as [Function sections](#function-sections)
+  gives.
 
 ## Which section holds what
 
@@ -169,9 +172,31 @@ A line that matches no module of the build is also an error, such as
 ``no module of the build has a path that starts with `drivers.` ``, because
 with a wrong path the code stays in `.text` with no other error.
 
-A function of a module that a line puts in `.el0`, also an inline function,
-makes no address of memory from an integer, as
-[Points of trust](/docs/addresses/#points-of-trust) gives.
+The section of a function gives each rule of EL0 for it, not its module.
+The code of a function of `.el0` runs only at EL0, so it makes no address
+of memory from an integer, as
+[Points of trust](/docs/addresses/#points-of-trust) gives, and it is not
+the entry of the layout, an entry of the vector table, or an `#[el2]`
+function, as [Sections](/docs/boot-and-exceptions/#sections) gives. A
+function that `#[section]` puts in another section has the rules of that
+section, also in a module of `.el0`. An entry of the layout in `.el0` is an
+error at the line `entry`:
+
+```layout check
+entry drivers.serial.uart.start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .el0: code in ram align 16
+section .text: code in ram after .el0 align 16
+functions drivers in .el0
+```
+
+```wyst fails
+import drivers.serial.uart
+```
+
+```text
+check.layout:1:1: error: the entry `drivers.serial.uart.start` is in `.el0`
+```
 
 ## Calls between sections
 
@@ -215,6 +240,80 @@ main.wyst:9:8: error: `main._start` of `.text` calls `drivers.serial.uart.start`
 `.el0` with `@f`, as `_start` does above. A layout without a section
 `.el0` has no such boundary.
 
+## Function symbols
+
+`symbol n: u64 = @m.f` gives `n` the address of the code of function `f`
+of module `m`. Each part of `m.f` is a name, as in an import. Thus the
+layout can select a function that no source names: two layouts can build
+two images from one root file, each with its own first function. The
+kernel layout has `symbol __root: u64 = @system.root.start`, the entry of
+its first domain, and no module of the kernel imports `system.root`.
+
+- The build reads module `m`, as it reads the module of the entry, and
+  each module that `m` imports. No module has to import `m`.
+- `f` is a `pub` function with the rules of `@f` in the source: it is
+  naked, or it has no parameters and returns `never`, because a CPU or a
+  thread starts at the address with no call. An inline function has no
+  code of its own, so it has no address.
+- The build generates the code of `f` and of each function that `f` can
+  reach, as for `@f`. The code goes in the section of `f`, which can be
+  `.el0`: the code that reads the symbol makes no call.
+- When `f` is not naked, it starts on a new stack, so the line `stack`
+  gives the size of its stack, as [Stacks](#stacks) gives. The compiler
+  does not check what the code does with the value of the symbol. Thus a
+  naked function that reads the symbol and starts `f` must give `f` its
+  stack: the build does not make sure that `f` uses no stack, as it does
+  for `@f` in a naked function.
+
+With this layout, no module imports `drivers.serial.uart`, and the build
+reads it for `__task`:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+section .el0: code in ram after .text align 16
+functions drivers in .el0
+symbol __task: u64 = @drivers.serial.uart.start
+```
+
+```wyst
+#[naked]
+pub fn _start() -> never {
+  asm(entry in x0 = __task) -> never {
+    msr elr_el1, x0
+    eret
+  }
+}
+```
+
+The error is at the value of the line `symbol`: a module path that names
+no file, a function that the module does not declare, a function that is
+not `pub`, an inline function, and a function that is not naked and that
+has a parameter or can return. The error of the stack of `f` is there
+too, but when code of the build also starts `f` on a new stack, with a
+call or `@f`, the error is at that call or `@f`. This layout names a
+function that
+`drivers.serial.uart` does not declare:
+
+```layout check
+entry main._start at 0x4008_0000
+region ram: readwrite at 0x4008_0000 size 0x0001_0000
+section .text: code in ram align 16
+symbol __task: u64 = @drivers.serial.uart.stop
+```
+
+```wyst fails
+#[naked]
+pub fn _start() -> never {
+  for {}
+}
+```
+
+```text
+check.layout:4:22: error: module `drivers.serial.uart` has no function `stop`
+```
+
 ## Address constants
 
 The build fails when a byte of the memory of an
@@ -255,7 +354,8 @@ address in a constant table.
 
 `stack N` gives the size of each stack of the build, in bytes. A function
 starts on a new stack when a naked function calls it after it sets `sp`,
-or when a function that is not naked takes its address, so that a thread
+or when a function that is not naked or a
+[function symbol](#function-symbols) takes its address, so that a thread
 can start there. The build fails when such a function can use more than
 `N` bytes with its calls, as [the stack](/docs/boot-and-exceptions/#the-size-of-the-stack)
 gives. A layout without `stack` has no such check.
@@ -321,7 +421,8 @@ Each layout symbol becomes an absolute global symbol of the ELF file. A
 function reads a symbol by its name, as `__stack_top` in
 [Hello, world!](/docs/hello-world/). The compiler computes each operation
 on a symbol with an integer value. A symbol of the start or the end of a
-section uses an address that the code computes when it runs.
+section, or of the address of a function, uses an address that the code
+computes when it runs.
 
 A module `const` or `var` cannot use a layout symbol. The checker computes
 these values, and the layout is not part of the language.

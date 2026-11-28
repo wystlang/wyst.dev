@@ -250,8 +250,8 @@ fn reset() {
 ```
 
 `bitcast` is the only form that makes `@M` from an integer. Only a function
-of the module that declares the register map makes it, also in a module of
-EL0 code, as [Points of trust](/docs/addresses/#points-of-trust) gives. The
+of the module that declares the register map makes it, also in a function
+of EL0 code, as [Points of trust](/docs/addresses/#points-of-trust) gives. The
 module `drivers.timer` makes the address of a `Timer`:
 
 ```wyst drivers/timer.wyst

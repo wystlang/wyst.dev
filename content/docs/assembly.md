@@ -41,7 +41,7 @@ as `at s1e1r` is an error.
 
 The compiler checks each line for the kernel at EL1, at EL2 in an
 [`#[el2]` function](/docs/boot-and-exceptions/#el2-functions), or at EL0
-in another function in the section `.el0`, on the QEMU `virt` target: the
+in a function in the section `.el0`, on the QEMU `virt` target: the
 base A64 instructions, the SIMD registers (`FEAT_FP` and `FEAT_AdvSIMD`),
 the lines of AES, of the polynomial multiplication of 64-bit elements, and
 of SHA-256 (`FEAT_AES`, `FEAT_PMULL`, and `FEAT_SHA256`), the atomic
@@ -239,8 +239,9 @@ copy, a register offset form, such as `ldr value.x, [keys, index.x]`, and
 a store of its value. The handler of an exception can read each
 register, so a block with an address input has no exception line, such
 as `svc`. An `Option<u64>` output gives the values of `x0` and `x1`, so an
-address input is not in `x0` or `x1` of a block with such an output. Thus
-the address does not go out of the block:
+address input is not in `x0` or `x1` of a block with such an output:
+without `in`, it keeps `x(9 + i)`, also when its local has a home in `x0`
+or `x1`. Thus the address does not go out of the block:
 
 ```wyst fails
 fn copy(record: @[2]u64) -> u64 {
@@ -339,7 +340,7 @@ from `bitcast`, as above, and the compiler does not check those accesses.
 ## Inputs in fixed registers
 
 `name in xN = value`, with N from 0 to 7, puts the input in `xN`. Two
-inputs cannot use one register. Thus a block can give the arguments of a
+inputs cannot name one register. Thus a block can give the arguments of a
 call to firmware, such as the PSCI call `CPU_ON`:
 
 ```wyst
@@ -451,9 +452,9 @@ A block has at most 24 registers for its inputs, a `u64` output, and its
 secure pages of the kernel, one step of AES-GCM, has 23 general registers
 and the address of its work area.
 
-Input `i` is in `x(9 + i)`, or in `xN` for `in xN`, and the output is in
-the register after the inputs, so a block has at most 9 inputs, or 8 with
-an output. The `scratch` operands take the registers after the output to
+Input `i` has the register `x(9 + i)`, or `xN` for `in xN`, and the
+output has the register after the inputs, so a block has at most 9
+inputs, or 8 with an output. The `scratch` operands take the registers after the output to
 `x17`, then `x0` to `x8`, and then `x19` and the registers after it. A
 `scratch` operand does not take the register of an `in xN` input, or `x0`
 and `x1` of an `Option<u64>` output. An `in xN` input also takes its place
@@ -488,6 +489,54 @@ fn add256(z: @var [4]u64, x: @[4]u64, y: @[4]u64) {
 }
 ```
 
+An input without `in` whose value is a local with a home in a register
+is in that register, and the compiler makes no move. Two such inputs with
+the same local are in one register. A line cannot write such an input,
+and the home is not the register of a `scratch` operand or of an input
+that a line writes: it is above the operands in the scratch registers,
+in `x19` to `x28` after the registers of the blocks, or in the argument
+register of a parameter that no line writes and that no move of the
+block changes before the lines read it, as
+[Registers](/docs/code-generation/#registers) gives. Thus the local keeps
+its value. Only a `u64` output can take the home, when the value of the
+block goes there, as [Outputs](#outputs) gives: the home of the local of
+an assignment, or the argument register of a parameter, which has
+another home when code reads it after the block. An input
+keeps `x(9 + i)` when its value is not such a local, when it comes before
+the last input with a call, when it is an address input of a block with
+an `Option<u64>` output, as [Address inputs](#address-inputs) gives, or
+when a post-index form moves it. The line of that form writes the
+register, so the local keeps its value. In this loop, `to` is the local
+`at` in `x11`, and `value` is the parameter in `x2`:
+
+```wyst
+// Writes `value` to each 8 bytes from `start` to `end`, 16 bytes at a
+// time.
+fn fill(start: u64, end: u64, value: u64) {
+  var at = start
+  for at < end {
+    asm(to = at, value) {
+      stp value.x, value.x, [to]
+    }
+
+    at += 16
+  }
+}
+```
+
+```text
+4008002c: aa0003eb  mov   x11, x0
+40080030: 14000003  b     0x4008003c
+40080034: a9000962  stp   x2, x2, [x11]
+40080038: 9100416b  add   x11, x11, #0x10
+4008003c: eb01017f  cmp   x11, x1
+40080040: 54ffffa3  b.lo  0x40080034
+40080044: d65f03c0  ret
+```
+
+Each pass of the loop is its `stp`, the `add` of `at`, and the test, with
+no move.
+
 ## Outputs
 
 `asm(inputs) -> out { lines }` is a value: the value of the output `out`
@@ -511,18 +560,53 @@ fn ticks_since(start: u64) -> u64 {
 `swpa` writes 1 to the lock word, and `held` gets the old word. The output
 is a `u64`, because a register holds 64 bits. `bitcast` gives a
 [`#[bits]` struct](/docs/enums-and-bit-structs/#values) with backing type
-`u64` from the value. A block with
-a `u64` output has at most 8 inputs. The inputs are in the scratch
-registers, and an `svc` or an `hvc` can change `x0` to `x17`. Thus the
-compiler keeps each value that it needs after the block in a home while
-the block runs, as for a call. An output in a named register,
+`u64` from the value. A block with a `u64` output has at most 8 inputs.
+The inputs without `in` that are not in the homes of their locals are in
+the scratch registers, and an `svc` or an `hvc` can change `x0` to `x17`.
+Thus the compiler keeps each value that it needs after the block in a
+home while the block runs, as for a call. An output in a named register,
 `-> name in xN`, an output with a value, a `scratch` output, and a list of
 outputs, `-> (a, b)`, are not implemented now.
 
-The output is in the register after the inputs. When the block starts,
-the code before the block, or the code of an input, can leave a value in
-that register, such as an address that it computed. Thus a line that
-reads the output before a line writes it is an error:
+A `u64` output is in the register that its value goes to: the home of
+the local of a `const`, a `var`, or an assignment, `x0` for `return`, or
+the register of the argument for an argument that goes directly to its
+register. The compiler makes no move after the block. A block has no
+branch, so the order of its lines gives each rule exactly. The output
+keeps the register after the inputs when that register holds an operand
+that a line writes, as a `scratch` operand or an input that a post-index
+form moves, or an operand that a line reads after the line that first
+writes the output. An exception line reads each `in xN` input, because
+the handler of its exception reads the arguments there. The line that
+first writes the output can read an operand in that register, but not
+when it is a load, a store, or an atomic line, because a status or a
+target register that is also a base or a value is CONSTRAINED
+UNPREDICTABLE for some of them, as `stxr`. Then the output moves after
+the block. An `Option<u64>` output stays in `x0` and `x1`.
+
+This function has no call, so `a` and `b` stay in `x0` and `x1`, where
+the lines read them. `csel` first writes `r`, and no line after it reads
+`a`, so `r` is in `x0`:
+
+```wyst
+fn least(a: u64, b: u64) -> u64 {
+  return asm(a, b) -> r {
+    subs xzr, a.x, b.x
+    csel r.x, a.x, b.x, cc
+  }
+}
+```
+
+```text
+40080020: eb01001f  cmp   x0, x1
+40080024: 9a813000  csel  x0, x0, x1, lo
+40080028: d65f03c0  ret
+```
+
+When the block starts, the code before the block, the code of an input,
+or an input can leave a value in the register of the output, such as an
+address that it computed. Thus a line that reads the output before a line
+writes it is an error:
 
 ```wyst fails
 fn next(count: u64) -> u64 {
@@ -544,12 +628,12 @@ line. It goes to the handler of an exception, which can change `x0` to
 Thus a line after an exception line cannot read a value that the handler
 left in a register:
 
-- Each input is in `x0` to `x17`, and a line cannot write an input that
-  is not an address. A block with an address input has no exception
+- An input can be in `x0` to `x17`, and a line cannot write an input
+  that is not an address. A block with an address input has no exception
   line, as [Address inputs](#address-inputs) gives. Thus a line after an
   exception line that reads an input is an error.
-- The output is in `x9` to `x17`, so after an exception line, a line that
-  reads it is an error until a line writes it again. The value of the
+- The output can be in `x0` to `x17`, so after an exception line, a line
+  that reads it is an error until a line writes it again. The value of the
   block is a read of the output after its last line, so a line after the
   last exception line must write the output.
 - After an exception line, a line that reads a `scratch` operand in `x0`
